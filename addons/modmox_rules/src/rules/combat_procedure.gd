@@ -15,6 +15,9 @@ var _is_done: bool = false
 ## of them have had their damage assigned.
 var _striking_attacker_ids: Array[int] = []
 var _next_attacker: int = 0
+## The blockers that deal damage in this step, in ID order, and how many are assigned.
+var _striking_blocker_ids: Array[int] = []
+var _next_blocker: int = 0
 ## Combat damage assigned so far, as three lists of the same length.
 var _source_ids: Array[int] = []
 var _recipients: Array[MmReference] = []
@@ -47,6 +50,9 @@ static func combat_damage(state: MmGameState) -> CombatProcedure:
 	for attacker_id: int in combat.attackers(state):
 		if procedure._strikes_in_this_step(attacker_id):
 			procedure._striking_attacker_ids.append(attacker_id)
+	for blocker_id: int in combat.blockers(state):
+		if procedure._strikes_in_this_step(blocker_id):
+			procedure._striking_blocker_ids.append(blocker_id)
 	return procedure
 
 
@@ -61,6 +67,8 @@ func copy_for(state: MmGameState) -> CombatProcedure:
 	copy._is_done = _is_done
 	copy._striking_attacker_ids = _striking_attacker_ids.duplicate()
 	copy._next_attacker = _next_attacker
+	copy._striking_blocker_ids = _striking_blocker_ids.duplicate()
+	copy._next_blocker = _next_blocker
 	copy._source_ids = _source_ids.duplicate()
 	copy._recipients = _recipients.duplicate()  # MmReferences never change, so sharing them is safe.
 	copy._amounts = _amounts.duplicate()
@@ -79,16 +87,22 @@ func next_decision() -> MmPendingDecision:
 		Kind.DECLARE_BLOCKERS:
 			var attackers: Array[int] = _state.combat.attackers(_state)
 			var defending_id: int = _state.combat.defending_player_id
-			var candidates: Array[int] = [] if attackers.is_empty() else _blocker_candidates(defending_id)
+			var legal: Dictionary[int, Array] = {}
+			var most: Dictionary[int, int] = {}
+			var candidates: Array[int] = [] if attackers.is_empty() else _blocker_candidates(defending_id, attackers, legal, most)
 			if not candidates.is_empty():
-				return DeclareBlockersDecision.new(defending_id, candidates, attackers)
+				return DeclareBlockersDecision.new(defending_id, candidates, attackers, legal, most)
 		Kind.COMBAT_DAMAGE:
 			while _next_attacker < _striking_attacker_ids.size():
 				var division: DivideCombatDamageDecision = _assign_or_ask(_striking_attacker_ids[_next_attacker])
 				if division != null:
 					return division
 				_next_attacker += 1
-			_assign_blockers_damage()
+			while _next_blocker < _striking_blocker_ids.size():
+				var blocker_division: DivideCombatDamageDecision = _assign_blocker_or_ask(_striking_blocker_ids[_next_blocker])
+				if blocker_division != null:
+					return blocker_division
+				_next_blocker += 1
 			_deal_assigned_damage()
 	_is_done = true
 	return null
@@ -105,8 +119,9 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 			var defending_id: int = _state.opponent_of(decision.player_id).id
 			_state.perform(AttackersDeclaredEvent.new(decision.player_id, attacker_ids, defending_id))
 			for id: int in attacker_ids:
-				# CR 508.1f. Later (milestone 9): vigilance.
-				_state.perform(TapEvent.new(id))
+				# CR 508.1f, except with vigilance (CR 702.20b).
+				if not _state.characteristics_of(_state.object(id)).has_ability(VigilanceAbility):
+					_state.perform(TapEvent.new(id))
 		_is_done = true
 	elif decision is DeclareBlockersDecision:
 		var blocker_ids: Array[int] = []
@@ -121,28 +136,57 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		var division: DivideCombatDamageDecision = decision as DivideCombatDamageDecision
 		var amounts: Array = answer
 		for index: int in division.recipients.size():
-			_assign(division.attacker_id, division.recipients[index], amounts[index] as int)
-		_next_attacker += 1
+			_assign(division.source_id, division.recipients[index], amounts[index] as int)
+		if _next_attacker < _striking_attacker_ids.size():
+			_next_attacker += 1
+		else:
+			_next_blocker += 1
 	else:
 		assert(false, "Combat cannot answer %s." % decision.describe())
 
 
-## CR 508.1a: untapped creatures the active player controls that are not summoning sick.
+## CR 508.1a: untapped creatures the active player controls that are not summoning sick
+## and do not have defender (CR 702.3b).
 func _attacker_candidates() -> Array[int]:
 	var candidates: Array[int] = []
 	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, _state.active_player_id):
-		if _is_untapped_creature(permanent) and not _state.is_summoning_sick(permanent):
+		if _is_untapped_creature(permanent) and not _state.is_summoning_sick(permanent) \
+				and not _state.characteristics_of(permanent).has_ability(DefenderAbility):
 			candidates.append(permanent.id)
 	return candidates
 
 
-## CR 509.1a: untapped creatures the defending player controls.
-func _blocker_candidates(defending_id: int) -> Array[int]:
+## CR 509.1a: untapped creatures the defending player controls that can block at least
+## one attacker. Fills [param legal] with the attackers each one can block, and
+## [param most] with how many it may block (CR 509.1a, BlockAdditionalAbility).
+func _blocker_candidates(defending_id: int, attackers: Array[int], legal: Dictionary[int, Array], most: Dictionary[int, int]) -> Array[int]:
 	var candidates: Array[int] = []
 	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, defending_id):
-		if _is_untapped_creature(permanent):
-			candidates.append(permanent.id)
+		if not _is_untapped_creature(permanent):
+			continue
+		var blockable: Array[int] = []
+		for attacker_id: int in attackers:
+			if _can_block(permanent, _state.object(attacker_id)):
+				blockable.append(attacker_id)
+		if blockable.is_empty():
+			continue
+		candidates.append(permanent.id)
+		legal[permanent.id] = blockable
+		var allowed: int = 1
+		for ability: MmAbility in _state.characteristics_of(permanent).abilities:
+			if ability is BlockAdditionalAbility:
+				allowed += (ability as BlockAdditionalAbility).count
+		most[permanent.id] = allowed
 	return candidates
+
+
+## CR 702.9b and 702.17b: a creature with flying can be blocked only by creatures with
+## flying or reach.
+func _can_block(blocker: MmGameObject, attacker: MmGameObject) -> bool:
+	if not _state.characteristics_of(attacker).has_ability(FlyingAbility):
+		return true
+	var blocking: MmCharacteristics = _state.characteristics_of(blocker)
+	return blocking.has_ability(FlyingAbility) or blocking.has_ability(ReachAbility)
 
 
 func _is_untapped_creature(permanent: MmGameObject) -> bool:
@@ -179,43 +223,53 @@ func _assign_or_ask(attacker_id: int) -> DivideCombatDamageDecision:
 		if tramples:
 			_assign(attacker_id, defending_player, power)
 		return null
-	if blockers.size() == 1 and (not tramples or power <= _lethal_damage(blockers[0])):
+	if blockers.size() == 1 and (not tramples or power <= _lethal_damage(blockers[0], attacker_id)):
 		_assign(attacker_id, MmReference.to_object(blockers[0]), power)  # CR 510.1c
 		return null
 	var recipients: Array[MmReference] = []
 	var lethal: Array[int] = []
 	for blocker_id: int in blockers:
 		recipients.append(MmReference.to_object(blocker_id))
-		lethal.append(_lethal_damage(blocker_id))
+		lethal.append(_lethal_damage(blocker_id, attacker_id))
 	if tramples:
 		recipients.append(defending_player)
 	return DivideCombatDamageDecision.new(attacker.controller_id, attacker_id, power, recipients, lethal)
 
 
 ## CR 702.19b: lethal damage counts damage already marked on the creature and damage
-## assigned to it earlier in this step. Later (milestone 9): deathtouch (CR 702.2c).
-func _lethal_damage(creature_id: int) -> int:
+## assigned to it earlier in this step. CR 702.2c: from a source with deathtouch, 1 damage
+## is lethal.
+func _lethal_damage(creature_id: int, source_id: int) -> int:
 	var creature: MmGameObject = _state.object(creature_id)
 	var already: int = creature.damage_marked
 	for index: int in _recipients.size():
 		if _recipients[index].is_object() and _recipients[index].id == creature_id:
 			already += _amounts[index]
-	return maxi(0, _state.characteristics_of(creature).toughness - already)
+	var lethal: int = maxi(0, _state.characteristics_of(creature).toughness - already)
+	if lethal > 0 and _state.characteristics_of(_state.object(source_id)).has_ability(DeathtouchAbility):
+		return 1
+	return lethal
 
 
-## CR 510.1d: each blocker that strikes in this step assigns all its combat damage to the
-## attacker it blocks; one whose attacker has left assigns none.
-func _assign_blockers_damage() -> void:
-	for blocker_id: int in _state.combat.blockers(_state):
-		if not _strikes_in_this_step(blocker_id):
-			continue
-		var power: int = _state.characteristics_of(_state.object(blocker_id)).power
-		var blocked: Array[int] = _state.combat.attackers_blocked_by(_state, blocker_id)
-		if power <= 0 or blocked.is_empty():
-			continue
-		# Later: a creature blocking several attackers divides its damage among them.
-		assert(blocked.size() == 1, "A creature blocking several attackers is not supported yet.")
+## CR 510.1d: a blocker that strikes in this step assigns its combat damage to the
+## attacker it blocks; one whose attackers have all left assigns none. A creature blocking
+## several attackers has its damage divided among them by its controller. Returns that
+## decision, or null once the damage is assigned.
+func _assign_blocker_or_ask(blocker_id: int) -> DivideCombatDamageDecision:
+	var blocker: MmGameObject = _state.object(blocker_id)
+	var power: int = _state.characteristics_of(blocker).power
+	var blocked: Array[int] = _state.combat.attackers_blocked_by(_state, blocker_id)
+	if power <= 0 or blocked.is_empty():
+		return null
+	if blocked.size() == 1:
 		_assign(blocker_id, MmReference.to_object(blocked[0]), power)
+		return null
+	var recipients: Array[MmReference] = []
+	var lethal: Array[int] = []
+	for attacker_id: int in blocked:
+		recipients.append(MmReference.to_object(attacker_id))
+		lethal.append(_lethal_damage(attacker_id, blocker_id))
+	return DivideCombatDamageDecision.new(blocker.controller_id, blocker_id, power, recipients, lethal)
 
 
 ## CR 510.2: all combat damage in the step is dealt at once. State-based actions are then

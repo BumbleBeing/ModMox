@@ -297,6 +297,115 @@ func _artifact_cast_on_turn_three(file_name: String, land_file: String) -> MmEng
 	return engine
 
 
+func test_the_milestone_nine_cards_have_the_right_printed_characteristics() -> void:
+	var white: MmCardTypes.CardColor = MmCardTypes.CardColor.WHITE
+	var red: MmCardTypes.CardColor = MmCardTypes.CardColor.RED
+	var green: MmCardTypes.CardColor = MmCardTypes.CardColor.GREEN
+	# file: [name, card type, colors, mana value, subtypes, power, toughness, keyword or null]
+	var expected: Dictionary[String, Array] = {
+		"giant_growth": ["Giant Growth", MmCardTypes.CardType.INSTANT, [green], 1, [], 0, 0, null],
+		"crusade": ["Crusade", MmCardTypes.CardType.ENCHANTMENT, [white], 2, [], 0, 0, ContinuousStaticAbility],
+		"serra_angel": ["Serra Angel", MmCardTypes.CardType.CREATURE, [white], 5, ["Angel"], 4, 4, VigilanceAbility],
+		"giant_spider": ["Giant Spider", MmCardTypes.CardType.CREATURE, [green], 4, ["Spider"], 2, 4, ReachAbility],
+		"wall_of_stone": ["Wall of Stone", MmCardTypes.CardType.CREATURE, [red], 3, ["Wall"], 0, 8, DefenderAbility],
+		"keldon_warlord": ["Keldon Warlord", MmCardTypes.CardType.CREATURE, [red], 4, ["Human", "Barbarian"], 0, 0, CharacteristicDefiningAbility],
+	}
+	for file_name: String in expected:
+		var facts: Array = expected[file_name]
+		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
+		assert_eq(printed.name, facts[0])
+		assert_eq(printed.card_types, [facts[1]], file_name)
+		assert_eq(printed.colors, facts[2], file_name)
+		assert_eq(printed.mana_value(), facts[3], file_name)
+		assert_eq(printed.subtypes, facts[4], file_name)
+		assert_eq([printed.power, printed.toughness], [facts[5], facts[6]], file_name)
+		if facts[7] != null:
+			assert_true(printed.has_ability(facts[7]), file_name)
+	assert_true(MmCharacteristics.printed(_alpha("serra_angel")).has_ability(FlyingAbility))
+	assert_true(MmCharacteristics.printed(_alpha("keldon_warlord")).is_power_variable, "Printed as */*.")
+
+
+func test_giant_growth_gives_plus_three_plus_three_until_end_of_turn() -> void:
+	var growth: MmCardDefinition = Scenario.free_copy(_alpha("giant_growth"))
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("grizzly_bears"))], [], [growth])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	Scenario.declare_attackers(engine, [bears])
+
+	Scenario.cast_and_resolve(engine, "Giant Growth", [MmReference.to_object(bears)])
+	Scenario.play_until_game_turn(engine, 4)
+
+	assert_eq(engine.villain().life, 15, "A 5/5 attacked.")
+	assert_eq(Scenario.pt(engine, bears), [2, 2], "Back to normal after the turn.")
+
+
+func test_crusade_pumps_every_white_creature_and_no_other() -> void:
+	var lion: MmCardDefinition = Scenario.creature("Lion", 2, 1, [], Scenario.mana_cost(0, [MmMana.Type.WHITE]))
+	var crusade: MmCardDefinition = Scenario.free_copy(_alpha("crusade"))
+	var cards: Array[MmCardDefinition] = Scenario.cycled([_alpha("plains"), lion, crusade, Scenario.creature("Golem", 2, 2)])
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		func(running: MmEngine) -> bool:
+			if not Scenario.ready_in_main(running, 1, 1, "Lion"):
+				return false
+			return Scenario.card_in_hand(running, running.hero(), "Crusade") != -1 \
+				and Scenario.card_in_hand(running, running.hero(), "Golem") != -1)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	Scenario.cast_and_resolve(engine, "Lion")
+	Scenario.cast_and_resolve(engine, "Golem")
+
+	Scenario.cast_and_resolve(engine, "Crusade")
+
+	assert_eq(Scenario.pt(engine, Scenario.permanent_named(engine, engine.hero().id, "Lion")), [3, 2])
+	assert_eq(Scenario.pt(engine, Scenario.permanent_named(engine, engine.hero().id, "Golem")), [2, 2], "Colorless.")
+
+
+func test_serra_angel_attacks_without_tapping_over_ground_blockers() -> void:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("serra_angel"))], [Scenario.free_copy(_alpha("grizzly_bears"))])
+	var angel: int = Scenario.permanent_named(engine, engine.hero().id, "Serra Angel")
+
+	Scenario.declare_attackers(engine, [angel])
+	Scenario.pass_until_step(engine, MmTurn.Step.DECLARE_BLOCKERS)
+
+	assert_false(engine.game_state().object(angel).is_tapped)
+	assert_true(engine.pending_decision() is PriorityDecision, "Grizzly Bears cannot block it.")
+	Scenario.pass_until_step(engine, MmTurn.Step.END_OF_COMBAT)
+	assert_eq(engine.villain().life, 16)
+
+
+func test_giant_spider_can_block_serra_angel() -> void:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("serra_angel"))], [Scenario.free_copy(_alpha("giant_spider"))])
+	var angel: int = Scenario.permanent_named(engine, engine.hero().id, "Serra Angel")
+	var spider: int = Scenario.permanent_named(engine, engine.villain().id, "Giant Spider")
+	Scenario.declare_attackers(engine, [angel])
+	Scenario.pass_to_blockers(engine)
+
+	assert_eq(Scenario.declare_blockers(engine, [[spider, angel]]), "")
+	Scenario.pass_until_step(engine, MmTurn.Step.END_OF_COMBAT)
+
+	assert_eq(Scenario.names(engine, engine.villain().graveyard), ["Giant Spider"])
+	assert_eq(Scenario.damage_on(engine, angel), 2)
+
+
+func test_wall_of_stone_cannot_attack() -> void:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("wall_of_stone")), Scenario.free_copy(_alpha("grizzly_bears"))], [])
+
+	var decision: DeclareAttackersDecision = engine.pending_decision() as DeclareAttackersDecision
+
+	assert_eq(decision.candidate_ids, [Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")])
+
+
+func test_keldon_warlord_counts_the_non_wall_creatures_its_controller_controls() -> void:
+	var warlord: MmCardDefinition = Scenario.free_copy(_alpha("keldon_warlord"))
+	var engine: MmEngine = Scenario.combat_ready(
+		[warlord, Scenario.free_copy(_alpha("grizzly_bears")), Scenario.free_copy(_alpha("wall_of_stone"))],
+		[Scenario.free_copy(_alpha("grizzly_bears"))])
+	assert_not_null(engine, "No seed gave the needed hand.")
+
+	var warlord_id: int = Scenario.permanent_named(engine, engine.hero().id, "Keldon Warlord")
+
+	assert_eq(Scenario.pt(engine, warlord_id), [2, 2])
+
+
 func _alpha(file_name: String) -> MmCardDefinition:
 	return load("%s/alpha/%s.tres" % [CONTENT_ROOT, file_name]) as MmCardDefinition
 

@@ -50,7 +50,7 @@ func test_an_attacker_blocked_by_two_creatures_divides_its_damage_as_its_control
 	var decision: DivideCombatDamageDecision = engine.pending_decision() as DivideCombatDamageDecision
 	assert_not_null(decision)
 	assert_eq(decision.player_id, engine.hero().id)
-	assert_eq(decision.attacker_id, ogre)
+	assert_eq(decision.source_id, ogre)
 	assert_eq(decision.amount, 3)
 	assert_eq(decision.recipients.size(), 2)
 	assert_true(decision.recipients[0].equals(MmReference.to_object(bears[0])))

@@ -20,6 +20,17 @@ var is_creature: bool = false
 ## Current power and toughness; meaningful only for a creature (CR 208.3).
 var power: int = 0
 var toughness: int = 0
+## Printed power and toughness, so the GUI can show when they have changed.
+var base_power: int = 0
+var base_toughness: int = 0
+## CR 604.3: shown as "*" when not worked out, as on a card.
+var is_power_variable: bool = false
+var is_toughness_variable: bool = false
+## Every ability it has right now, including granted ones such as "gains flying".
+var abilities: Array[MmAbility] = []
+## The "until end of turn" and other created effects applying to it, so the GUI can say
+## where a change came from.
+var continuous_effects: Array[ActiveContinuousEffect] = []
 var damage_marked: int = 0
 ## CR 302.6: a creature that cannot attack or pay {T} yet.
 var is_summoning_sick: bool = false
@@ -46,6 +57,14 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.is_creature = characteristics.has_card_type(MmCardTypes.CardType.CREATURE)
 	view.power = characteristics.power
 	view.toughness = characteristics.toughness
+	view.base_power = characteristics.base_power
+	view.base_toughness = characteristics.base_toughness
+	view.is_power_variable = characteristics.is_power_variable
+	view.is_toughness_variable = characteristics.is_toughness_variable
+	view.abilities = characteristics.abilities.duplicate()
+	for active: ActiveContinuousEffect in state.continuous_effects:
+		if active.affected_ids.has(game_object.id):
+			view.continuous_effects.append(active)
 	view.damage_marked = game_object.damage_marked
 	view.is_summoning_sick = state.is_summoning_sick(game_object)
 	if game_object.zone() == state.battlefield:

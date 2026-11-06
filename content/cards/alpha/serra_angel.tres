@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_aey1h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_kxqke"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="3_bpeyh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="4_y8dbg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="5_ubjel"]
+
+[sub_resource type="Resource" id="Resource_5wsyx"]
+script = ExtResource("2_kxqke")
+
+[sub_resource type="Resource" id="Resource_73ym8"]
+script = ExtResource("3_bpeyh")
+
+[sub_resource type="Resource" id="Resource_5vl1u"]
+script = ExtResource("4_y8dbg")
+generic = 3
+symbols = Array[int]([0, 0])
+
+[resource]
+script = ExtResource("5_ubjel")
+name = "Serra Angel"
+card_types = Array[int]([1])
+subtypes = Array[String](["Angel"])
+mana_cost = SubResource("Resource_5vl1u")
+power = 4
+toughness = 4
+abilities = Array[ExtResource("1_aey1h")]([SubResource("Resource_5wsyx"), SubResource("Resource_73ym8")])

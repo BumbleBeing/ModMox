@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_qa5y6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="2_q13dq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="3_i3hcg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_wp2nk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_color_filter.gd" id="5_k53sq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="6_ejm7v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="7_dlavl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="8_a8gsg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="9_44yai"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="10_86732"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="11_5yu6u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="12_6kuev"]
+
+[sub_resource type="Resource" id="Resource_4gee7"]
+script = ExtResource("4_wp2nk")
+
+[sub_resource type="Resource" id="Resource_d6kbc"]
+script = ExtResource("5_k53sq")
+
+[sub_resource type="Resource" id="Resource_edb70"]
+script = ExtResource("6_ejm7v")
+filters = Array[ExtResource("3_i3hcg")]([SubResource("Resource_4gee7"), SubResource("Resource_d6kbc")])
+
+[sub_resource type="Resource" id="Resource_mn6ka"]
+script = ExtResource("7_dlavl")
+filter = SubResource("Resource_edb70")
+
+[sub_resource type="Resource" id="Resource_cp7p6"]
+script = ExtResource("8_a8gsg")
+value = 1
+
+[sub_resource type="Resource" id="Resource_vt6ia"]
+script = ExtResource("8_a8gsg")
+value = 1
+
+[sub_resource type="Resource" id="Resource_h8mls"]
+script = ExtResource("9_44yai")
+power = SubResource("Resource_cp7p6")
+toughness = SubResource("Resource_vt6ia")
+affected = SubResource("Resource_mn6ka")
+
+[sub_resource type="Resource" id="Resource_mixc2"]
+script = ExtResource("10_86732")
+effects = Array[ExtResource("2_q13dq")]([SubResource("Resource_h8mls")])
+
+[sub_resource type="Resource" id="Resource_ekg6s"]
+script = ExtResource("11_5yu6u")
+symbols = Array[int]([0, 0])
+
+[resource]
+script = ExtResource("12_6kuev")
+name = "Crusade"
+card_types = Array[int]([2])
+mana_cost = SubResource("Resource_ekg6s")
+abilities = Array[ExtResource("1_qa5y6")]([SubResource("Resource_mixc2")])

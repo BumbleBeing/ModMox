@@ -63,12 +63,13 @@ static func _creatures_with_zero_toughness(state: MmGameState) -> Array[MmGameOb
 
 
 ## CR 704.5g: a creature with toughness greater than 0 and damage marked on it greater
-## than or equal to its toughness. Later (milestone 9): deathtouch (704.5h), indestructible.
+## than or equal to its toughness. CR 704.5h: one with toughness greater than 0 dealt damage
+## by a source with deathtouch. Later: indestructible.
 static func _creatures_with_lethal_damage(state: MmGameState) -> Array[MmGameObject]:
 	var found: Array[MmGameObject] = []
 	for creature: MmGameObject in _creatures(state):
 		var toughness: int = state.characteristics_of(creature).toughness
-		if toughness > 0 and creature.damage_marked >= toughness:
+		if toughness > 0 and (creature.damage_marked >= toughness or creature.was_dealt_deathtouch_damage):
 			found.append(creature)
 	return found
 

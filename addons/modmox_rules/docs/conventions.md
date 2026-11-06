@@ -24,6 +24,7 @@ addons/modmox_rules/
     effects/     effects and the context they resolve in
     events/      the event pipeline and every event type
     filters/     Filters and their all-of, any-of and not combinators
+    layers/      continuous effects and the layer engine
     mana/        mana units, mana costs, and the rules for paying them
     rules/       game procedures: pregame, turns and the stack, casting, combat
     selections/  Selections: who or what an effect applies to
@@ -45,8 +46,8 @@ tests/           game-side tests, such as checks on Content
 
 ## Naming classes
 
-- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`, `MmCombat`, `MmTrigger`, `MmCondition`.
-- **Specific subclasses** have no prefix and end with their base kind: `ChangeNameModification`, `ZoneChangeEvent`, `KeepOrMulliganDecision`, `DealDamageEffect`, `CreatureFilter`, `CountValue`.
+- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`, `MmCombat`, `MmTrigger`, `MmCondition`, `MmContinuousEffect`.
+- **Specific subclasses** have no prefix and end with their base kind: `ChangeNameModification`, `ZoneChangeEvent`, `KeepOrMulliganDecision`, `DealDamageEffect`, `CreatureFilter`, `CountValue`, `ModifyPowerToughnessContinuousEffect`.
 - Test files and test helpers never declare `class_name`.
 - Never reuse a name Godot already has as a built-in type or class (`Color`, `Rect2`, `Timer`, ...), even inside a class. It fails to compile. That is why the color enum is `MmCardTypes.CardColor`.
 

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_g2c6k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/defender_ability.gd" id="2_f6ta7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="3_k2ni7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="4_5rdbc"]
+
+[sub_resource type="Resource" id="Resource_vyny2"]
+script = ExtResource("2_f6ta7")
+
+[sub_resource type="Resource" id="Resource_xcg7s"]
+script = ExtResource("3_k2ni7")
+generic = 1
+symbols = Array[int]([3, 3])
+
+[resource]
+script = ExtResource("4_5rdbc")
+name = "Wall of Stone"
+card_types = Array[int]([1])
+subtypes = Array[String](["Wall"])
+mana_cost = SubResource("Resource_xcg7s")
+toughness = 8
+abilities = Array[ExtResource("1_g2c6k")]([SubResource("Resource_vyny2")])

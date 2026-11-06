@@ -24,6 +24,9 @@ var base_toughness: int = 0
 ## The current power and toughness, after every effect.
 var power: int = 0
 var toughness: int = 0
+## CR 604.3: set by a characteristic-defining ability, so a card prints "*" for it.
+var is_power_variable: bool = false
+var is_toughness_variable: bool = false
 ## Written abilities first, then abilities granted by rules, in a fixed order.
 var abilities: Array[MmAbility] = []
 
@@ -42,10 +45,14 @@ static func printed(definition: MmCardDefinition) -> MmCharacteristics:
 		result.colors = definition.mana_cost.colors()
 	result.base_power = definition.power
 	result.base_toughness = definition.toughness
-	# Later (milestone 9): layer 7 changes power and toughness (CR 613.4).
+	# The layer engine changes these in an encounter (CR 613.4).
 	result.power = result.base_power
 	result.toughness = result.base_toughness
 	result.abilities = definition.abilities.duplicate()
+	for ability: MmAbility in result.abilities:
+		if ability is CharacteristicDefiningAbility:
+			result.is_power_variable = true
+			result.is_toughness_variable = true
 	# CR 305.6: each basic land type grants "{T}: Add [its mana]", in subtype order.
 	if result.has_card_type(MmCardTypes.CardType.LAND):
 		for subtype: String in result.subtypes:

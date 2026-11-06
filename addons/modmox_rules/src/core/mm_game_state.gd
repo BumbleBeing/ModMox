@@ -25,6 +25,8 @@ var is_over: bool = false
 var winner_id: int = NO_PLAYER
 ## Triggered abilities waiting to be put on the stack, in the order they triggered.
 var pending_triggers: Array[PendingTrigger] = []
+## Continuous effects created by resolved spells and abilities, until they end (CR 611.2).
+var continuous_effects: Array[ActiveContinuousEffect] = []
 ## Every event performed, in order. Read-only outside perform(). Events never change once
 ## applied, so copies of the state share them.
 var event_log: Array[MmEvent] = []
@@ -36,6 +38,11 @@ var _next_card_id: int = 1
 var _next_batch: int = 0
 ## Objects that have left the battlefield, frozen with their last-known information.
 var _departed: Dictionary[int, MmGameObject] = {}
+## ADR 0018: the layer engine's results for the battlefield and command zone, kept until
+## the next event. Not game state: copies start without it.
+var _layer_results: Dictionary[int, MmCharacteristics] = {}
+var _layer_results_valid: bool = false
+var _computing_layers: bool = false
 
 
 ## Builds the starting state of an encounter, or an empty state when [param setup] is null
@@ -87,6 +94,7 @@ func duplicate_state() -> MmGameState:
 	copy.pending_triggers = pending_triggers.duplicate()  # Pending triggers never change.
 	copy._departed = _departed.duplicate()  # Departed objects are frozen.
 	copy._next_batch = _next_batch
+	copy.continuous_effects = continuous_effects.duplicate()  # Active effects never change.
 	copy.event_log = event_log.duplicate()
 	copy._run_cards = _run_cards.duplicate()  # Run Cards are read-only during an encounter.
 	copy._next_object_id = _next_object_id
@@ -149,16 +157,28 @@ func characteristics_of(game_object: MmGameObject) -> MmCharacteristics:
 		var ability_view: MmCharacteristics = MmCharacteristics.new()
 		ability_view.name = "%s ability" % game_object.source_name
 		return ability_view
-	# Later (milestone 9): apply continuous effects in layer order (CR 613).
+	var holder: MmZone = game_object.zone()
+	if holder != battlefield and holder != command:
+		return LayerEngine.outside_the_battlefield(self, game_object)
+	# ADR 0018: worked out for everything at once, layer by layer, and kept until the next
+	# event. While that is happening, this answers with the layers applied so far.
+	if not _computing_layers and not _layer_results_valid:
+		_layer_results = LayerEngine.compute(self)
+		_layer_results_valid = true
+	if _layer_results.has(game_object.id):
+		return _layer_results[game_object.id]
 	return MmCharacteristics.printed(game_object.definition)
 
 
 ## CR 302.6: whether [param game_object] is a creature whose controller has not controlled
 ## it continuously since their most recent turn began. Such a creature cannot attack or pay
-## {T} in a cost. Later (milestone 9): haste.
+## {T} in a cost. A creature with haste never is, for these rules.
 func is_summoning_sick(game_object: MmGameObject) -> bool:
-	if game_object.zone() != battlefield or not characteristics_of(game_object).has_card_type(MmCardTypes.CardType.CREATURE):
+	var characteristics: MmCharacteristics = characteristics_of(game_object)
+	if game_object.zone() != battlefield or not characteristics.has_card_type(MmCardTypes.CardType.CREATURE):
 		return false
+	if characteristics.has_ability(HasteAbility):
+		return false  # CR 702.10b
 	return game_object.controlled_since_game_turn >= player(game_object.controller_id).latest_turn_game_turn
 
 
@@ -178,6 +198,7 @@ func perform_together(events: Array[MmEvent]) -> void:
 		var final_event: MmEvent = _apply_replacement_effects(event)
 		final_event.batch = _next_batch
 		final_event.apply(self)
+		_layer_results_valid = false
 		event_log.append(final_event)
 		performed.append(final_event)
 	TriggerDetection.detect(self, performed, before)
@@ -188,6 +209,44 @@ func perform_together(events: Array[MmEvent]) -> void:
 func object_or_last_known(id: int) -> MmGameObject:
 	var live: MmGameObject = object(id)
 	return live if live != null else _departed.get(id, null) as MmGameObject
+
+
+## Cache only, for LayerEngine: answer characteristics queries from [param in_progress]
+## while the layers are being applied.
+func begin_layer_computation(in_progress: Dictionary[int, MmCharacteristics]) -> void:
+	_layer_results = in_progress
+	_computing_layers = true
+
+
+## Cache only, for LayerEngine: the layers are all applied.
+func end_layer_computation() -> void:
+	_computing_layers = false
+
+
+## Event-only: the next timestamp (CR 613.7). Object IDs come from the same counter, so an
+## object's ID is its timestamp (A117, A127).
+func next_timestamp() -> int:
+	var timestamp: int = _next_object_id
+	_next_object_id += 1
+	return timestamp
+
+
+## Event-only: a continuous effect starts.
+func add_continuous_effect(active: ActiveContinuousEffect) -> void:
+	continuous_effects.append(active)
+
+
+## Event-only: every continuous effect with [param duration] ends. Returns how many did.
+func end_continuous_effects(duration: CreateContinuousEffect.Duration) -> int:
+	var ending: int = 0
+	var staying: Array[ActiveContinuousEffect] = []
+	for active: ActiveContinuousEffect in continuous_effects:
+		if active.duration == duration:
+			ending += 1
+		else:
+			staying.append(active)
+	continuous_effects = staying
+	return ending
 
 
 ## Event-only: records a triggered ability that has triggered.
@@ -246,6 +305,8 @@ func fingerprint() -> String:
 	lines.append("over %s winner %d batch %d departed %d" % [is_over, winner_id, _next_batch, _departed.size()])
 	for pending: PendingTrigger in pending_triggers:
 		lines.append("pending " + pending.describe())
+	for active: ActiveContinuousEffect in continuous_effects:
+		lines.append("continuous " + active.describe())
 	lines.append("next ids %d %d" % [_next_object_id, _next_card_id])
 	for each_player: MmPlayer in players:
 		var mana: PackedStringArray = PackedStringArray()
@@ -265,6 +326,8 @@ func fingerprint() -> String:
 				game_object.controller_id, "tapped" if game_object.is_tapped else "untapped", game_object.damage_marked,
 				game_object.controlled_since_game_turn, game_object.source_card_id, game_object.triggering_player_id,
 				game_object.triggering_object_id, ",".join(target_text)])
+			if game_object.was_dealt_deathtouch_damage:
+				entries.append("deathtouch damage on %d" % game_object.id)
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 

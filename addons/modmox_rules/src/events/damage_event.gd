@@ -8,6 +8,8 @@ var recipient: MmReference
 var amount: int
 ## Whether this is combat damage (CR 510.2), which some abilities care about.
 var is_combat: bool
+## Whether the source had deathtouch, set when the event is applied (CR 702.2b).
+var is_deathtouch: bool = false
 
 
 func _init(damage_source_id: int, damaged: MmReference, damage: int, combat_damage: bool = false) -> void:
@@ -18,10 +20,15 @@ func _init(damage_source_id: int, damaged: MmReference, damage: int, combat_dama
 
 
 func apply(state: MmGameState) -> void:
+	var source: MmGameObject = state.object_or_last_known(source_object_id)
+	is_deathtouch = source != null and state.characteristics_of(source).has_ability(DeathtouchAbility)
 	if recipient.is_player():
 		state.player(recipient.id).change_life(-amount)
 	else:
-		state.object(recipient.id).mark_damage(amount)
+		var damaged: MmGameObject = state.object(recipient.id)
+		damaged.mark_damage(amount)
+		if is_deathtouch:
+			damaged.mark_deathtouch_damage()
 
 
 func describe() -> String:

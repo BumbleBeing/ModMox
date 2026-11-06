@@ -1,24 +1,27 @@
 class_name DivideCombatDamageDecision
 extends MmPendingDecision
-## An attacker's controller divides its combat damage among the creatures blocking it, as
-## they choose (CR 510.1c; there is no damage assignment order). With trample, the player
+## A creature's controller divides its combat damage as they choose: an attacker's among
+## the creatures blocking it (CR 510.1c; there is no damage assignment order), or a
+## blocker's among the attackers it blocks (CR 510.1d). With trample, the player
 ## it attacks is a recipient too, but may be assigned damage only once every blocker has
 ## been assigned lethal damage (CR 702.19b). Answer: an Array of non-negative amounts, one
 ## per entry of [member recipients], adding up to [member amount] (ADR 0016).
 
-var attacker_id: int
-## The combat damage to divide: the attacker's power.
+## The creature whose damage is divided.
+var source_id: int
+## The combat damage to divide: its power.
 var amount: int
-## The blockers in ID order, then the player being attacked if the attacker has trample.
+## The creatures it is blocked by, or blocking, in ID order, then the player being attacked
+## if an attacker has trample.
 var recipients: Array[MmReference]
-## For each blocker, how much more damage is lethal to it, counting damage already marked
-## and damage assigned to it earlier in this step.
+## For each creature, how much more damage is lethal to it, counting damage already marked
+## and damage assigned to it earlier in this step, and deathtouch (CR 702.2c).
 var lethal_amounts: Array[int]
 
 
-func _init(deciding_player_id: int, attacking_id: int, damage: int, damage_recipients: Array[MmReference], lethal: Array[int]) -> void:
+func _init(deciding_player_id: int, dividing_id: int, damage: int, damage_recipients: Array[MmReference], lethal: Array[int]) -> void:
 	super(deciding_player_id)
-	attacker_id = attacking_id
+	source_id = dividing_id
 	amount = damage
 	recipients = damage_recipients.duplicate()
 	lethal_amounts = lethal.duplicate()
@@ -50,4 +53,4 @@ func validate(answer: Variant) -> String:
 
 
 func describe() -> String:
-	return "player %d: divide %d combat damage of object %d among %d recipients" % [player_id, amount, attacker_id, recipients.size()]
+	return "player %d: divide %d combat damage of object %d among %d recipients" % [player_id, amount, source_id, recipients.size()]

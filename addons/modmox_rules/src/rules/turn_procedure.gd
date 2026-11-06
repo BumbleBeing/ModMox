@@ -182,14 +182,19 @@ func _perform_turn_based_actions() -> MmPendingDecision:
 	return null
 
 
-## CR 514.2: after any discarding, all damage marked on permanents is removed, all at once.
+## CR 514.2: after any discarding, all damage marked on permanents is removed and "until end
+## of turn" effects end, all at once.
 func _remove_damage() -> void:
-	# Later (milestone 9): a static ability can keep a permanent's damage from being removed.
 	var removals: Array[MmEvent] = []
 	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, _state.active_player_id) \
 			+ ManaPayment.sorted_permanents_of(_state, _state.opponent_of(_state.active_player_id).id):
-		if permanent.damage_marked > 0:
+		if permanent.damage_marked > 0 and not _state.characteristics_of(permanent).has_ability(DamageStaysAbility):
 			removals.append(DamageRemovedEvent.new(permanent.id))
+	# CR 514.2: "until end of turn" effects end at the same moment.
+	for active: ActiveContinuousEffect in _state.continuous_effects:
+		if active.duration == CreateContinuousEffect.Duration.UNTIL_END_OF_TURN:
+			removals.append(ContinuousEffectsEndedEvent.new(CreateContinuousEffect.Duration.UNTIL_END_OF_TURN))
+			break
 	if not removals.is_empty():
 		_state.perform_together(removals)
 
@@ -322,9 +327,17 @@ func _may_play_land(player: MmPlayer) -> bool:
 	return _sorcery_timing(player) and player.lands_played_this_turn < _land_plays_allowed(player)
 
 
-func _land_plays_allowed(_player: MmPlayer) -> int:
-	# Later (milestone 9): static abilities and Emblems that grant extra land plays.
-	return 1
+## One, plus any from AdditionalLandPlaysAbility on permanents or Emblems [param player]
+## controls.
+func _land_plays_allowed(player: MmPlayer) -> int:
+	var allowed: int = 1
+	for source: MmGameObject in TriggerDetection.observers(_state):
+		if source.controller_id != player.id:
+			continue
+		for ability: MmAbility in _state.characteristics_of(source).abilities:
+			if ability is AdditionalLandPlaysAbility:
+				allowed += (ability as AdditionalLandPlaysAbility).count
+	return allowed
 
 
 ## CR 307.1: "sorcery speed" means your own main phase with an empty stack.

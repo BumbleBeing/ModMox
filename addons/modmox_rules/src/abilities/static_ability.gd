@@ -5,7 +5,7 @@ extends MmAbility
 ## Modification adds or removes one like any other ability, and rules ask for it with
 ## MmCharacteristics.has_ability().
 ##
-## Later (milestone 9): static abilities that create continuous effects.
+## Static abilities that change characteristics are ContinuousStaticAbility instead.
 
 
 func describe() -> String:

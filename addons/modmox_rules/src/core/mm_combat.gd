@@ -140,7 +140,8 @@ func describe() -> String:
 
 
 ## The IDs in [param ids] of objects still on the battlefield, in ID order.
-## Later (milestone 9): also leave out a permanent that stopped being a creature (CR 506.4).
+## Later (type-changing effects, layer 4): also leave out a permanent that stopped being a
+## creature (CR 506.4).
 func _present(state: MmGameState, ids: Array[int]) -> Array[int]:
 	var result: Array[int] = []
 	for id: int in ids:

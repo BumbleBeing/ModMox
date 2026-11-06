@@ -827,3 +827,99 @@ static func resolve_stack(engine: MmEngine) -> String:
 	return autoplay(engine, func(running: MmEngine) -> bool:
 		return running.game_state().stack.is_empty() and running.pending_decision() is PriorityDecision \
 			and running.game_state().pending_triggers.is_empty())
+
+
+# --- Milestone 9: static abilities and layers ----------------------------------------
+
+
+static func continuous_static(effects: Array[MmContinuousEffect]) -> ContinuousStaticAbility:
+	var ability: ContinuousStaticAbility = ContinuousStaticAbility.new()
+	ability.effects = effects
+	return ability
+
+
+## Layer 7c: "[affected] get(s) +[power]/+[toughness]".
+static func modify_pt(power: int, toughness: int, affected: MmSelection) -> ModifyPowerToughnessContinuousEffect:
+	var effect: ModifyPowerToughnessContinuousEffect = ModifyPowerToughnessContinuousEffect.new()
+	effect.power = constant(power)
+	effect.toughness = constant(toughness)
+	effect.affected = affected
+	return effect
+
+
+## Layer 7b: "[affected] has base power and toughness [power]/[toughness]".
+static func set_pt(power: int, toughness: int, affected: MmSelection) -> SetPowerToughnessContinuousEffect:
+	var effect: SetPowerToughnessContinuousEffect = SetPowerToughnessContinuousEffect.new()
+	effect.power = constant(power)
+	effect.toughness = constant(toughness)
+	effect.affected = affected
+	return effect
+
+
+## Layer 6: "[affected] gain(s) [abilities]".
+static func gain_abilities(abilities: Array[MmAbility], affected: MmSelection) -> GainAbilitiesContinuousEffect:
+	var effect: GainAbilitiesContinuousEffect = GainAbilitiesContinuousEffect.new()
+	effect.abilities = abilities
+	effect.affected = affected
+	return effect
+
+
+## Layer 6: "[affected] lose(s) all abilities".
+static func lose_all_abilities(affected: MmSelection) -> LoseAllAbilitiesContinuousEffect:
+	var effect: LoseAllAbilitiesContinuousEffect = LoseAllAbilitiesContinuousEffect.new()
+	effect.affected = affected
+	return effect
+
+
+## "[continuous] until end of turn", as a one-shot effect.
+static func until_end_of_turn(continuous: MmContinuousEffect) -> CreateContinuousEffect:
+	var effect: CreateContinuousEffect = CreateContinuousEffect.new()
+	effect.continuous = continuous
+	effect.duration = CreateContinuousEffect.Duration.UNTIL_END_OF_TURN
+	return effect
+
+
+## An instant costing {0}: "Target creature [continuous] until end of turn", where
+## [param continuous] affects targeted(0).
+static func creature_spell_until_end_of_turn(card_name: String, continuous: MmContinuousEffect) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))], [until_end_of_turn(continuous)])
+
+
+## An instant costing {0}: "Target creature gets +[power]/+[toughness] until end of turn."
+static func pump_spell(card_name: String, power: int, toughness: int) -> MmCardDefinition:
+	return creature_spell_until_end_of_turn(card_name, modify_pt(power, toughness, targeted(0)))
+
+
+static func has_subtype(subtype: String) -> HasSubtypeFilter:
+	var filter: HasSubtypeFilter = HasSubtypeFilter.new()
+	filter.subtype = subtype
+	return filter
+
+
+static func all_of(filters: Array[MmFilter]) -> AllOfFilter:
+	var filter: AllOfFilter = AllOfFilter.new()
+	filter.filters = filters
+	return filter
+
+
+static func is_not(filter: MmFilter) -> NotFilter:
+	var negated: NotFilter = NotFilter.new()
+	negated.filter = filter
+	return negated
+
+
+## Every creature matching [param filter], or every creature.
+static func each_creature(filter: MmFilter = null) -> EachSelection:
+	var creature: MmFilter = of_type(MmCardTypes.CardType.CREATURE)
+	return each(creature if filter == null else all_of([creature, filter]))
+
+
+## The current characteristics of [param object_id].
+static func now(engine: MmEngine, object_id: int) -> MmCharacteristics:
+	return engine.game_state().characteristics_of(engine.game_state().object(object_id))
+
+
+## [power, toughness] of [param object_id] right now.
+static func pt(engine: MmEngine, object_id: int) -> Array[int]:
+	var characteristics: MmCharacteristics = now(engine, object_id)
+	return [characteristics.power, characteristics.toughness]

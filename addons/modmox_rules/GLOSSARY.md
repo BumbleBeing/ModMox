@@ -128,6 +128,24 @@ _Avoid_: Ghost, snapshot (in rules talk), LKI (in code)
 Something true or false about the game right now, such as "this permanent is untapped", used for an intervening "if" clause.
 _Avoid_: Predicate, check (Filter is the word when a player or object either matches or not)
 
+## Continuous effects
+
+**Continuous Effect**:
+A change to characteristics that lasts, such as "white creatures get +1/+1" or "+3/+3 until end of turn". It comes from a static ability, applying to whatever matches right now, or from a resolved spell or ability, applying to what it found when it resolved.
+_Avoid_: Buff, modifier, aura (unless an actual Aura is meant)
+
+**Layer**:
+One step in the fixed order in which continuous effects apply: copy, control, text, type, color, abilities, then power and toughness (characteristic-defining, setting, modifying).
+_Avoid_: Pass, stage
+
+**Timestamp**:
+When an object entered its zone or a continuous effect was created. Within a layer, earlier timestamps apply first. An object's ID is its timestamp.
+_Avoid_: Creation order, age
+
+**Characteristic-Defining Ability**:
+An ability that works out a characteristic, such as "its power and toughness are each equal to the number of non-Wall creatures you control". It works in every zone, and its card shows "*" for that number.
+_Avoid_: Variable stats, star ability
+
 ## Combat
 
 **Combat**:

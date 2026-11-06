@@ -10,7 +10,7 @@ extends RefCounted
 
 ## Tags mid-encounter saves (ADR 0010). Bump it whenever a change could make an existing
 ## decision log replay differently.
-const VERSION: String = "0.8.0"
+const VERSION: String = "0.9.0"
 ## The first entry of a concession in the decision log: ["concede", player ID]. No answer
 ## to a Pending Decision ever has this shape.
 const CONCEDE: String = "concede"

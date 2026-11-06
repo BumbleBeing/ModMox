@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_pmnyr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_1nlb4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="3_exkrv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_mprfl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_cosve"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_djcc5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="7_bh5qt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="8_3vok4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_13lyk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="10_3vmlp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="11_3h1vn"]
+
+[sub_resource type="Resource" id="Resource_vp60n"]
+script = ExtResource("3_exkrv")
+
+[sub_resource type="Resource" id="Resource_n0v26"]
+script = ExtResource("4_mprfl")
+value = 3
+
+[sub_resource type="Resource" id="Resource_6s3ub"]
+script = ExtResource("4_mprfl")
+value = 3
+
+[sub_resource type="Resource" id="Resource_n04c1"]
+script = ExtResource("5_cosve")
+power = SubResource("Resource_n0v26")
+toughness = SubResource("Resource_6s3ub")
+affected = SubResource("Resource_vp60n")
+
+[sub_resource type="Resource" id="Resource_em3jk"]
+script = ExtResource("6_djcc5")
+continuous = SubResource("Resource_n04c1")
+
+[sub_resource type="Resource" id="Resource_rov1l"]
+script = ExtResource("9_13lyk")
+
+[sub_resource type="Resource" id="Resource_smap8"]
+script = ExtResource("8_3vok4")
+filter = SubResource("Resource_rov1l")
+
+[sub_resource type="Resource" id="Resource_yp2yg"]
+script = ExtResource("7_bh5qt")
+targets = Array[ExtResource("8_3vok4")]([SubResource("Resource_smap8")])
+effects = Array[ExtResource("2_1nlb4")]([SubResource("Resource_em3jk")])
+
+[sub_resource type="Resource" id="Resource_umrfb"]
+script = ExtResource("10_3vmlp")
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("11_3h1vn")
+name = "Giant Growth"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_umrfb")
+abilities = Array[ExtResource("1_pmnyr")]([SubResource("Resource_yp2yg")])
