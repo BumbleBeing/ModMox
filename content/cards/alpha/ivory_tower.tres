@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_e15su"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_e78t6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="3_kiu32"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/hand_size_value.gd" id="4_7scg6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/difference_value.gd" id="5_lsfjp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_3hsjq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/gain_life_effect.gd" id="7_osnrn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_m4x0r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="9_fxqsf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/step_began_trigger.gd" id="10_r2u7i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="11_wesvi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="12_tc7xy"]
+
+[sub_resource type="Resource" id="Resource_u1aan"]
+script = ExtResource("3_kiu32")
+
+[sub_resource type="Resource" id="Resource_mneit"]
+script = ExtResource("4_7scg6")
+players = SubResource("Resource_u1aan")
+
+[sub_resource type="Resource" id="Resource_v8clg"]
+script = ExtResource("6_3hsjq")
+value = 4
+
+[sub_resource type="Resource" id="Resource_djsym"]
+script = ExtResource("5_lsfjp")
+minuend = SubResource("Resource_mneit")
+subtrahend = SubResource("Resource_v8clg")
+
+[sub_resource type="Resource" id="Resource_fl3ef"]
+script = ExtResource("3_kiu32")
+
+[sub_resource type="Resource" id="Resource_g6d42"]
+script = ExtResource("7_osnrn")
+amount = SubResource("Resource_djsym")
+players = SubResource("Resource_fl3ef")
+
+[sub_resource type="Resource" id="Resource_cnp71"]
+script = ExtResource("10_r2u7i")
+
+[sub_resource type="Resource" id="Resource_rrlxk"]
+script = ExtResource("8_m4x0r")
+trigger = SubResource("Resource_cnp71")
+effects = Array[ExtResource("2_e78t6")]([SubResource("Resource_g6d42")])
+
+[sub_resource type="Resource" id="Resource_48i8t"]
+script = ExtResource("11_wesvi")
+generic = 1
+
+[resource]
+script = ExtResource("12_tc7xy")
+name = "Ivory Tower"
+card_types = Array[int]([0])
+mana_cost = SubResource("Resource_48i8t")
+abilities = Array[ExtResource("1_e15su")]([SubResource("Resource_rrlxk")])

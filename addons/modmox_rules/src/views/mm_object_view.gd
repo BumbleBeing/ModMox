@@ -3,6 +3,13 @@ extends RefCounted
 ## What a player can see of one Game Object they are allowed to see.
 
 var id: int
+## The physical card's Card Identity, or MmGameObject.NO_CARD for an ability or Emblem.
+## For presentation only, such as finding the card again after it changes zones.
+var card_id: int
+## For an ability on the stack: its source object and that source's Card Identity, so the
+## GUI can highlight the card while the ability is hovered (NO_CARD for an Emblem's).
+var source_object_id: int = 0
+var source_card_id: int = MmGameObject.NO_CARD
 var name: String
 var owner_id: int
 var controller_id: int
@@ -27,6 +34,9 @@ var blocking_ids: Array[int] = []
 static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	var view: MmObjectView = MmObjectView.new()
 	view.id = game_object.id
+	view.card_id = game_object.card_id
+	view.source_object_id = game_object.source_object_id
+	view.source_card_id = game_object.source_card_id
 	view.name = state.characteristics_of(game_object).name
 	view.owner_id = game_object.owner_id
 	view.controller_id = game_object.controller_id

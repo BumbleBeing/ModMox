@@ -4,7 +4,8 @@ extends RefCounted
 ## and the first object of any other zone, except the stack, whose top is its last object. Every zone keeps a stable order so that views
 ## and replays are consistent; the GUI may display a hand in its own order.
 
-enum Kind { LIBRARY, HAND, GRAVEYARD, BATTLEFIELD, STACK, EXILE, COMMAND }
+## Saved card files store these as numbers: never change or reuse a value, only add new ones.
+enum Kind { LIBRARY = 0, HAND = 1, GRAVEYARD = 2, BATTLEFIELD = 3, STACK = 4, EXILE = 5, COMMAND = 6 }
 
 ## Owner ID of a shared zone (battlefield, stack, exile, command).
 const NO_OWNER: int = -1

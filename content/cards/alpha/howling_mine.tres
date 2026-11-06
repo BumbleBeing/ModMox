@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_17b2n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_tapped_filter.gd" id="2_xdhde"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="3_2gd00"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/selection_matches_condition.gd" id="4_n7kio"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_vuiqd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="6_v875q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="7_t8mlt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/triggering_player_selection.gd" id="8_bolxf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="9_ntls7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="10_84ebv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="11_73l16"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/step_began_trigger.gd" id="12_8ke36"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="13_shck7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="14_ftt4w"]
+
+[sub_resource type="Resource" id="Resource_4n2dx"]
+script = ExtResource("2_xdhde")
+
+[sub_resource type="Resource" id="Resource_i7oe6"]
+script = ExtResource("3_2gd00")
+filter = SubResource("Resource_4n2dx")
+
+[sub_resource type="Resource" id="Resource_fmvjg"]
+script = ExtResource("5_vuiqd")
+
+[sub_resource type="Resource" id="Resource_hxijj"]
+script = ExtResource("4_n7kio")
+selection = SubResource("Resource_fmvjg")
+filter = SubResource("Resource_i7oe6")
+
+[sub_resource type="Resource" id="Resource_2oxuf"]
+script = ExtResource("7_t8mlt")
+value = 1
+
+[sub_resource type="Resource" id="Resource_4imwe"]
+script = ExtResource("8_bolxf")
+
+[sub_resource type="Resource" id="Resource_xap8r"]
+script = ExtResource("9_ntls7")
+amount = SubResource("Resource_2oxuf")
+players = SubResource("Resource_4imwe")
+
+[sub_resource type="Resource" id="Resource_m4up3"]
+script = ExtResource("12_8ke36")
+step = 2
+whose = 0
+
+[sub_resource type="Resource" id="Resource_ktakv"]
+script = ExtResource("10_84ebv")
+trigger = SubResource("Resource_m4up3")
+condition = SubResource("Resource_hxijj")
+effects = Array[ExtResource("6_v875q")]([SubResource("Resource_xap8r")])
+
+[sub_resource type="Resource" id="Resource_ya0fp"]
+script = ExtResource("13_shck7")
+generic = 2
+
+[resource]
+script = ExtResource("14_ftt4w")
+name = "Howling Mine"
+card_types = Array[int]([0])
+mana_cost = SubResource("Resource_ya0fp")
+abilities = Array[ExtResource("1_17b2n")]([SubResource("Resource_ktakv")])

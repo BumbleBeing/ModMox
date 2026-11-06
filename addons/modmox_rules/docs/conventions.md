@@ -14,9 +14,10 @@ How code in `addons/modmox_rules/` is written. The goal is that any part of the 
 ```
 addons/modmox_rules/
   src/
-    abilities/   ability kinds (spell, activated, static and its keywords, and later triggered)
+    abilities/   ability kinds (spell, activated, triggered, static and its keywords)
     actions/     Actions a player may take while holding priority
     cards/       Card Definitions, Run Cards, Modifications, card types, characteristics
+    conditions/  Conditions (true or false questions about the game)
     core/        the engine facade, game state, players, zones, Game Objects, RNG
     costs/       cost parts, such as tapping
     decisions/   Pending Decisions and their kinds
@@ -27,6 +28,7 @@ addons/modmox_rules/
     rules/       game procedures: pregame, turns and the stack, casting, combat
     selections/  Selections: who or what an effect applies to
     targets/     Target Requirements
+    triggers/    what triggered abilities wait for, detecting them, and pending triggers
     values/      Values (numbers worked out when needed)
     views/       per-player views of the game state
   tests/         mirrors src/ (tests/cards/, tests/core/, ...)
@@ -43,7 +45,7 @@ tests/           game-side tests, such as checks on Content
 
 ## Naming classes
 
-- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`, `MmCombat`.
+- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`, `MmCombat`, `MmTrigger`, `MmCondition`.
 - **Specific subclasses** have no prefix and end with their base kind: `ChangeNameModification`, `ZoneChangeEvent`, `KeepOrMulliganDecision`, `DealDamageEffect`, `CreatureFilter`, `CountValue`.
 - Test files and test helpers never declare `class_name`.
 - Never reuse a name Godot already has as a built-in type or class (`Color`, `Rect2`, `Timer`, ...), even inside a class. It fails to compile. That is why the color enum is `MmCardTypes.CardColor`.
@@ -115,6 +117,7 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - When a scenario needs particular cards in hand, find a seed that deals them with `Scenario.find_engine()`. Never bypass the shuffle.
 - Drive a game forward with `Scenario.autoplay()` and its shortcuts (`keep_all`, `play_until_game_turn`, `play_until_step`) rather than submitting long answer lists by hand.
 - Play an encounter to its end with `Scenario.play_until_over()`.
+- Get permanents onto the battlefield on the first two turns and stop at any later step with `Scenario.permanents_ready_with()`. Let everything on the stack resolve with `Scenario.resolve_stack()`.
 - Set up a combat with `Scenario.combat_ready()`: free creatures cast on the first two turns, stopped at the Hero's attackers decision. Cast a card that has a cost for free in a scenario with `Scenario.free_copy()`.
 
 ## Formatting

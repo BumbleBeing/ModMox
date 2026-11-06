@@ -110,6 +110,24 @@ _Avoid_: History, game log
 Everything one player may legally see of the game, and nothing more. Agents and the GUI only ever read a Player View.
 _Avoid_: Snapshot, visible state
 
+## Triggered abilities
+
+**Pending Trigger**:
+A triggered ability that has triggered but has not been put on the stack yet, together with what triggered it ("that player", "that creature") and the card it came from.
+_Avoid_: Queued trigger, trigger instance
+
+**Batch**:
+Events that happen at the same moment, such as everything state-based actions do at once or all combat damage in a step. Triggers are looked for once, after the whole batch.
+_Avoid_: Transaction, group
+
+**Last-Known Information**:
+What an object was like the last time it was on the battlefield, kept after it leaves so that "dies" triggers and "its power" still have an answer.
+_Avoid_: Ghost, snapshot (in rules talk), LKI (in code)
+
+**Condition**:
+Something true or false about the game right now, such as "this permanent is untapped", used for an intervening "if" clause.
+_Avoid_: Predicate, check (Filter is the word when a player or object either matches or not)
+
 ## Combat
 
 **Combat**:

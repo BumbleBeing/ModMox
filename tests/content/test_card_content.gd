@@ -232,6 +232,71 @@ func test_ancestral_recall_from_a_short_library_makes_its_target_lose() -> void:
 	assert_eq(engine.hero().loss_reason, MmPlayer.LossReason.EMPTY_LIBRARY)
 
 
+func test_the_alpha_artifacts_have_the_right_printed_characteristics() -> void:
+	var expected: Dictionary[String, Array] = {
+		"ankh_of_mishra": ["Ankh of Mishra", 2],
+		"howling_mine": ["Howling Mine", 2],
+		"ivory_tower": ["Ivory Tower", 1],
+	}
+	for file_name: String in expected:
+		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
+		assert_eq(printed.name, expected[file_name][0])
+		assert_eq(printed.card_types, [MmCardTypes.CardType.ARTIFACT], file_name)
+		assert_eq(printed.colors, [], file_name)
+		assert_eq(printed.mana_value(), expected[file_name][1], file_name)
+		assert_true(printed.has_ability(TriggeredAbility), file_name)
+
+
+func test_ankh_of_mishra_damages_the_controller_of_each_land_that_enters() -> void:
+	var engine: MmEngine = _artifact_cast_on_turn_three("ankh_of_mishra", "mountain")
+
+	Scenario.play_until_step(engine, 4, MmTurn.Step.PRECOMBAT_MAIN)
+	Scenario.play_first_land(engine)
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.villain().life, 18)
+	assert_eq(engine.hero().life, 20)
+
+
+func test_howling_mine_gives_each_player_an_extra_card_in_their_draw_step() -> void:
+	var engine: MmEngine = _artifact_cast_on_turn_three("howling_mine", "island")
+	var hand_before: int = engine.villain().hand.size()
+
+	Scenario.play_until_step(engine, 4, MmTurn.Step.DRAW)
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.villain().hand.size(), hand_before + 2)
+
+
+func test_ivory_tower_gains_life_for_each_card_in_hand_beyond_four() -> void:
+	var tower: MmCardDefinition = _alpha("ivory_tower")
+	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha("plains"), 20, tower, 20)
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		func(running: MmEngine) -> bool: return Scenario.ready_in_main(running, 1, 1, "Ivory Tower"))
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Ivory Tower"), "")
+	var hand_at_upkeep: int = engine.hero().hand.size()
+	assert_eq(hand_at_upkeep, 5, "Seven, minus the Plains and the Tower.")
+
+	Scenario.play_until_step(engine, 3, MmTurn.Step.UPKEEP)
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.hero().life, 21)
+
+
+## The Hero's second turn (Game Turn 3) after casting the Alpha artifact in
+## [param file_name] with two lands from [param land_file].
+func _artifact_cast_on_turn_three(file_name: String, land_file: String) -> MmEngine:
+	var artifact: MmCardDefinition = _alpha(file_name)
+	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha(land_file), 20, artifact, 20)
+	var lands: Array[MmCardDefinition] = Scenario.copies(_alpha("forest"), 40)
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, lands),
+		func(running: MmEngine) -> bool: return Scenario.ready_in_main(running, 3, 2, artifact.name))
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_and_resolve(engine, artifact.name), "")
+	return engine
+
+
 func _alpha(file_name: String) -> MmCardDefinition:
 	return load("%s/alpha/%s.tres" % [CONTENT_ROOT, file_name]) as MmCardDefinition
 

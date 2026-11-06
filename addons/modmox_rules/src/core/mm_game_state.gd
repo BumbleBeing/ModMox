@@ -23,6 +23,8 @@ var combat: MmCombat = MmCombat.new()
 ## Whether the encounter has ended (CR 104), and who won: MmGameState.NO_PLAYER for a draw.
 var is_over: bool = false
 var winner_id: int = NO_PLAYER
+## Triggered abilities waiting to be put on the stack, in the order they triggered.
+var pending_triggers: Array[PendingTrigger] = []
 ## Every event performed, in order. Read-only outside perform(). Events never change once
 ## applied, so copies of the state share them.
 var event_log: Array[MmEvent] = []
@@ -31,6 +33,9 @@ var _objects: Dictionary[int, MmGameObject] = {}
 var _run_cards: Dictionary[int, MmRunCard] = {}
 var _next_object_id: int = 1
 var _next_card_id: int = 1
+var _next_batch: int = 0
+## Objects that have left the battlefield, frozen with their last-known information.
+var _departed: Dictionary[int, MmGameObject] = {}
 
 
 ## Builds the starting state of an encounter, or an empty state when [param setup] is null
@@ -50,6 +55,12 @@ func _init(setup: MmEncounterSetup) -> void:
 			_next_card_id += 1
 			_run_cards[card_id] = run_card
 			player.library.insert(create_object(card_id, player.id, run_card.flatten()), MmZone.BOTTOM)
+	# ADR 0011 and CR 114: each player's Emblems start in the command zone. An Emblem is not
+	# a card, so it has no Card Identity.
+	for player: MmPlayer in players:
+		var player_setup: MmPlayerSetup = setup.hero if player.id == MmEncounterSetup.HERO_PLAYER_ID else setup.villain
+		for emblem: MmCardDefinition in player_setup.emblems:
+			command.insert(create_object(MmGameObject.NO_CARD, player.id, emblem), MmZone.BOTTOM)
 
 
 ## An independent copy of this state: changing one never affects the other. Used for undo
@@ -73,6 +84,9 @@ func duplicate_state() -> MmGameState:
 	copy.combat = combat.duplicate_combat()
 	copy.is_over = is_over
 	copy.winner_id = winner_id
+	copy.pending_triggers = pending_triggers.duplicate()  # Pending triggers never change.
+	copy._departed = _departed.duplicate()  # Departed objects are frozen.
+	copy._next_batch = _next_batch
 	copy.event_log = event_log.duplicate()
 	copy._run_cards = _run_cards.duplicate()  # Run Cards are read-only during an encounter.
 	copy._next_object_id = _next_object_id
@@ -127,6 +141,8 @@ func run_card_of(game_object: MmGameObject) -> MmRunCard:
 ## The current characteristics of [param game_object]. The only place, together with
 ## MmCharacteristics.printed(), that reads a Card Definition's fields (ADR 0009).
 func characteristics_of(game_object: MmGameObject) -> MmCharacteristics:
+	if game_object.last_known_characteristics != null:
+		return game_object.last_known_characteristics  # CR 608.2h
 	if game_object.definition == null:
 		# CR 113.7a: an ability on the stack has no characteristics of its own beyond what
 		# the GUI needs to name it.
@@ -146,11 +162,47 @@ func is_summoning_sick(game_object: MmGameObject) -> bool:
 	return game_object.controlled_since_game_turn >= player(game_object.controller_id).latest_turn_game_turn
 
 
-## Performs [param event] through the pipeline: replacement, then apply, then log (ADR 0007).
+## Performs [param event] through the pipeline: replacement, then apply, then log, then
+## triggers (ADR 0007).
 func perform(event: MmEvent) -> void:
-	var final_event: MmEvent = _apply_replacement_effects(event)
-	final_event.apply(self)
-	event_log.append(final_event)
+	perform_together([event])
+
+
+## Performs [param events] as one simultaneous batch (ADR 0017), as state-based actions and
+## combat damage are (CR 704.3, 510.2). Triggers are looked for once, after all of them.
+func perform_together(events: Array[MmEvent]) -> void:
+	var before: Array[MmGameObject] = TriggerDetection.observers(self)
+	_next_batch += 1
+	var performed: Array[MmEvent] = []
+	for event: MmEvent in events:
+		var final_event: MmEvent = _apply_replacement_effects(event)
+		final_event.batch = _next_batch
+		final_event.apply(self)
+		event_log.append(final_event)
+		performed.append(final_event)
+	TriggerDetection.detect(self, performed, before)
+
+
+## The object with [param id], or its frozen last-known version if it has left the
+## battlefield (CR 608.2h), or null.
+func object_or_last_known(id: int) -> MmGameObject:
+	var live: MmGameObject = object(id)
+	return live if live != null else _departed.get(id, null) as MmGameObject
+
+
+## Event-only: records a triggered ability that has triggered.
+func add_pending_trigger(pending: PendingTrigger) -> void:
+	pending_triggers.append(pending)
+
+
+## Event-only: a pending trigger goes on the stack or is removed.
+func remove_pending_trigger(pending: PendingTrigger) -> void:
+	pending_triggers.erase(pending)
+
+
+## Event-only: keeps [param leaving], frozen, as it leaves the battlefield.
+func record_departure(leaving: MmGameObject) -> void:
+	_departed[leaving.id] = leaving
 
 
 ## Draws [param count] cards for a player, one at a time from the top (CR 121.2).
@@ -191,7 +243,9 @@ func fingerprint() -> String:
 	lines.append("game turn %d active %d step %d" % [game_turn, active_player_id, step])
 	lines.append("game rng %s" % game_rng.describe_state())
 	lines.append(combat.describe())
-	lines.append("over %s winner %d" % [is_over, winner_id])
+	lines.append("over %s winner %d batch %d departed %d" % [is_over, winner_id, _next_batch, _departed.size()])
+	for pending: PendingTrigger in pending_triggers:
+		lines.append("pending " + pending.describe())
 	lines.append("next ids %d %d" % [_next_object_id, _next_card_id])
 	for each_player: MmPlayer in players:
 		var mana: PackedStringArray = PackedStringArray()
@@ -207,9 +261,10 @@ func fingerprint() -> String:
 			var target_text: PackedStringArray = PackedStringArray()
 			for target: MmReference in game_object.targets:
 				target_text.append("none" if target == null else target.describe())
-			entries.append("%d:%d:%s:%d:%s:%d:%d:[%s]" % [game_object.id, game_object.card_id, characteristics_of(game_object).name,
+			entries.append("%d:%d:%s:%d:%s:%d:%d:%d:%d:%d:[%s]" % [game_object.id, game_object.card_id, characteristics_of(game_object).name,
 				game_object.controller_id, "tapped" if game_object.is_tapped else "untapped", game_object.damage_marked,
-				game_object.controlled_since_game_turn, ",".join(target_text)])
+				game_object.controlled_since_game_turn, game_object.source_card_id, game_object.triggering_player_id,
+				game_object.triggering_object_id, ",".join(target_text)])
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 

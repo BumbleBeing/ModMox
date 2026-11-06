@@ -8,23 +8,36 @@ extends RefCounted
 ## Performs state-based actions until none apply, then ends the encounter if anyone lost.
 static func check(state: MmGameState) -> void:
 	while not state.is_over:
-		var losers: Array[MmPlayer] = []
-		var reasons: Array[MmPlayer.LossReason] = []
-		_players_who_lose(state, losers, reasons)
-		var zero_toughness: Array[MmGameObject] = _creatures_with_zero_toughness(state)
-		var lethal: Array[MmGameObject] = _creatures_with_lethal_damage(state)
-		if losers.is_empty() and zero_toughness.is_empty() and lethal.is_empty():
+		var actions: Array[MmEvent] = _actions(state)
+		if actions.is_empty():
 			return
-		# CR 704.3: all at once. Later (milestone 8): mark these as one simultaneous batch,
-		# for "dies" triggers that look back in time (CR 603.10a).
-		for index: int in losers.size():
-			state.perform(PlayerLostEvent.new(losers[index].id, reasons[index]))
-		for creature: MmGameObject in zero_toughness:
-			_put_into_graveyard(state, creature, ZoneChangeEvent.Reason.ZERO_TOUGHNESS)
-		for creature: MmGameObject in lethal:
-			_put_into_graveyard(state, creature, ZoneChangeEvent.Reason.DESTROY)
-		if not losers.is_empty():
-			_end_encounter(state)
+		# CR 704.3: all at once, so "dies" triggers see everything that died together
+		# (ADR 0017).
+		state.perform_together(actions)
+		for player: MmPlayer in state.players:
+			if player.has_lost:
+				_end_encounter(state)
+				break
+
+
+## Whether any state-based action would be performed right now (CR 514.3a asks this).
+static func any_apply(state: MmGameState) -> bool:
+	return not state.is_over and not _actions(state).is_empty()
+
+
+## The events every state-based action that applies right now would perform.
+static func _actions(state: MmGameState) -> Array[MmEvent]:
+	var actions: Array[MmEvent] = []
+	var losers: Array[MmPlayer] = []
+	var reasons: Array[MmPlayer.LossReason] = []
+	_players_who_lose(state, losers, reasons)
+	for index: int in losers.size():
+		actions.append(PlayerLostEvent.new(losers[index].id, reasons[index]))
+	for creature: MmGameObject in _creatures_with_zero_toughness(state):
+		actions.append(_to_graveyard(state, creature, ZoneChangeEvent.Reason.ZERO_TOUGHNESS))
+	for creature: MmGameObject in _creatures_with_lethal_damage(state):
+		actions.append(_to_graveyard(state, creature, ZoneChangeEvent.Reason.DESTROY))
+	return actions
 
 
 ## CR 704.5a: 0 or less life. CR 704.5b: tried to draw from an empty library.
@@ -70,9 +83,8 @@ static func _creatures(state: MmGameState) -> Array[MmGameObject]:
 	return found
 
 
-static func _put_into_graveyard(state: MmGameState, creature: MmGameObject, reason: ZoneChangeEvent.Reason) -> void:
-	var graveyard: MmZone = state.player(creature.owner_id).graveyard
-	state.perform(ZoneChangeEvent.new(creature, graveyard, MmZone.BOTTOM, reason))
+static func _to_graveyard(state: MmGameState, creature: MmGameObject, reason: ZoneChangeEvent.Reason) -> ZoneChangeEvent:
+	return ZoneChangeEvent.new(creature, state.player(creature.owner_id).graveyard, MmZone.BOTTOM, reason)
 
 
 ## CR 104.2a: the player still in the game wins. CR 104.4a: a draw when nobody is.

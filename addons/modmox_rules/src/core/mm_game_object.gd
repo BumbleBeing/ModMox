@@ -34,6 +34,16 @@ var targets: Array[MmReference] = []
 var ability: MmAbility = null
 var source_object_id: int = 0
 var source_name: String = ""
+## For an ability on the stack: its source's Card Identity, so the GUI can find the card
+## even after it changed zones; NO_CARD for an Emblem's ability.
+var source_card_id: int = NO_CARD
+## For a triggered ability on the stack: what its event was about ("that player", "that
+## creature"); MmGameState.NO_PLAYER and 0 when nothing.
+var triggering_player_id: int = -1
+var triggering_object_id: int = 0
+## Set once this object has left the battlefield: its characteristics as it last existed
+## there (CR 608.2h). The object never changes after that.
+var last_known_characteristics: MmCharacteristics = null
 ## Weak, because the zone already holds this object strongly; a strong reference both ways
 ## is a cycle that reference counting never frees.
 var _zone_ref: WeakRef = null
@@ -58,6 +68,10 @@ func duplicate_object() -> MmGameObject:
 	copy.ability = ability
 	copy.source_object_id = source_object_id
 	copy.source_name = source_name
+	copy.source_card_id = source_card_id
+	copy.triggering_player_id = triggering_player_id
+	copy.triggering_object_id = triggering_object_id
+	copy.last_known_characteristics = last_known_characteristics  # Read-only, so shared.
 	return copy
 
 
@@ -95,6 +109,11 @@ func remove_damage() -> void:
 ## [param game_turn].
 func record_control_since(game_turn: int) -> void:
 	controlled_since_game_turn = game_turn
+
+
+## Event-only: freezes this object's last-known information as it leaves the battlefield.
+func freeze_last_known(characteristics: MmCharacteristics) -> void:
+	last_known_characteristics = characteristics
 
 
 ## Event-only: records the target chosen for requirement [param index].

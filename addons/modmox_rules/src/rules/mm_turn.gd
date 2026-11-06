@@ -5,13 +5,14 @@ extends RefCounted
 ## that every point in a turn can be named the same way.
 
 enum Phase { BEGINNING, PRECOMBAT_MAIN, COMBAT, POSTCOMBAT_MAIN, ENDING }
+## Saved card files store these as numbers: never change or reuse a value, only add new ones.
 enum Step {
 	NONE = -1,
-	UNTAP, UPKEEP, DRAW,
-	PRECOMBAT_MAIN,
-	BEGINNING_OF_COMBAT, DECLARE_ATTACKERS, DECLARE_BLOCKERS, COMBAT_DAMAGE, END_OF_COMBAT,
-	POSTCOMBAT_MAIN,
-	END, CLEANUP,
+	UNTAP = 0, UPKEEP = 1, DRAW = 2,
+	PRECOMBAT_MAIN = 3,
+	BEGINNING_OF_COMBAT = 4, DECLARE_ATTACKERS = 5, DECLARE_BLOCKERS = 6, COMBAT_DAMAGE = 7, END_OF_COMBAT = 8,
+	POSTCOMBAT_MAIN = 9,
+	END = 10, CLEANUP = 11,
 }
 
 ## Every step of a turn in order, before any are skipped.

@@ -143,7 +143,8 @@ static func keep_all(engine: MmEngine) -> String:
 
 ## Answers decisions with simple defaults until [param stop] returns true for the engine:
 ## play first, keep, pass priority, bottom or discard the first candidates offered, attack
-## and block with nothing, and put all combat damage on the first recipient.
+## and block with nothing, put all combat damage on the first recipient, stack triggers in
+## the order offered, and choose the first target offered.
 ## With [param play_lands], plays the first land offered instead of passing.
 ## Returns the first rejection reason, or "" once stopped. Gives up after [param limit].
 static func autoplay(engine: MmEngine, stop: Callable, play_lands: bool = false, limit: int = 2000) -> String:
@@ -173,6 +174,10 @@ static func autoplay(engine: MmEngine, stop: Callable, play_lands: bool = false,
 			answer = []
 		elif decision is DivideCombatDamageDecision:
 			answer = all_to_first(decision as DivideCombatDamageDecision)
+		elif decision is OrderTriggersDecision:
+			answer = range((decision as OrderTriggersDecision).source_object_ids.size())
+		elif decision is ChooseTargetDecision:
+			answer = 0
 		else:
 			return "Unexpected decision: %s" % ("none" if decision == null else decision.describe())
 		var error: String = engine.submit(answer)
@@ -543,6 +548,15 @@ static func combat_setup(hero_creatures: Array[MmCardDefinition], villain_creatu
 static func combat_ready_with(combat: MmEncounterSetup, hero_creatures: Array[MmCardDefinition],
 		villain_creatures: Array[MmCardDefinition], hero_extras: Array[MmCardDefinition] = [],
 		villain_extras: Array[MmCardDefinition] = []) -> MmEngine:
+	return permanents_ready_with(combat, hero_creatures, villain_creatures, hero_extras, villain_extras,
+		3, MmTurn.Step.DECLARE_ATTACKERS)
+
+
+## Like combat_ready_with(), but stops at the first decision of [param step] in
+## [param game_turn] instead, which must come after the Villain's first main phase.
+static func permanents_ready_with(combat: MmEncounterSetup, hero_creatures: Array[MmCardDefinition],
+		villain_creatures: Array[MmCardDefinition], hero_extras: Array[MmCardDefinition],
+		villain_extras: Array[MmCardDefinition], game_turn: int, step: MmTurn.Step) -> MmEngine:
 	return find_engine(combat, func(engine: MmEngine) -> bool:
 		if play_until_step(engine, 1, MmTurn.Step.PRECOMBAT_MAIN) != "":
 			return false
@@ -554,7 +568,7 @@ static func combat_ready_with(combat: MmEncounterSetup, hero_creatures: Array[Mm
 		for definition: MmCardDefinition in villain_creatures:
 			if cast_and_resolve(engine, definition.name) != "":
 				return false
-		if play_until_step(engine, 3, MmTurn.Step.DECLARE_ATTACKERS) != "":
+		if play_until_step(engine, game_turn, step) != "":
 			return false
 		for definition: MmCardDefinition in hero_extras:
 			if card_in_hand(engine, engine.hero(), definition.name) == -1:
@@ -695,3 +709,121 @@ static func events_of(engine: MmEngine, kind: Script) -> Array[MmEvent]:
 		if is_instance_of(event, kind):
 			result.append(event)
 	return result
+
+
+# --- Milestone 8: triggered abilities -------------------------------------------------
+
+
+## An artifact costing {0} with [param abilities].
+static func artifact(card_name: String, abilities: Array[MmAbility]) -> MmCardDefinition:
+	var definition: MmCardDefinition = vanilla(card_name)
+	definition.card_types = [MmCardTypes.CardType.ARTIFACT]
+	definition.mana_cost = mana_cost(0)
+	definition.abilities = abilities
+	return definition
+
+
+## An Emblem: abilities and nothing else.
+static func emblem(emblem_name: String, abilities: Array[MmAbility]) -> MmCardDefinition:
+	var definition: MmCardDefinition = vanilla(emblem_name)
+	definition.abilities = abilities
+	return definition
+
+
+static func triggered(trigger: MmTrigger, effects: Array[MmEffect], targets: Array[TargetSpec] = [],
+		condition: MmCondition = null) -> TriggeredAbility:
+	var ability: TriggeredAbility = TriggeredAbility.new()
+	ability.trigger = trigger
+	ability.effects = effects
+	ability.targets = targets
+	ability.condition = condition
+	return ability
+
+
+## "At the beginning of [whose] [step]".
+static func at_step(step: MmTurn.Step, whose: MmTrigger.Whose) -> StepBeganTrigger:
+	var trigger: StepBeganTrigger = StepBeganTrigger.new()
+	trigger.step = step
+	trigger.whose = whose
+	return trigger
+
+
+## "Whenever a [filter] [whose] enters the battlefield".
+static func enters(filter: MmFilter, whose: MmTrigger.Whose = MmTrigger.Whose.ANY) -> ZoneChangeTrigger:
+	var trigger: ZoneChangeTrigger = ZoneChangeTrigger.new()
+	trigger.to_zone = MmZone.Kind.BATTLEFIELD
+	trigger.filter = filter
+	trigger.whose = whose
+	return trigger
+
+
+## "Whenever a [filter] dies": from the battlefield to a graveyard (CR 700.4).
+static func dies(filter: MmFilter) -> ZoneChangeTrigger:
+	var trigger: ZoneChangeTrigger = ZoneChangeTrigger.new()
+	trigger.any_from_zone = false
+	trigger.from_zone = MmZone.Kind.BATTLEFIELD
+	trigger.to_zone = MmZone.Kind.GRAVEYARD
+	trigger.filter = filter
+	return trigger
+
+
+## "Whenever [whose] casts a [filter] spell".
+static func casts(filter: MmFilter, whose: MmTrigger.Whose) -> SpellCastTrigger:
+	var trigger: SpellCastTrigger = SpellCastTrigger.new()
+	trigger.filter = filter
+	trigger.whose = whose
+	return trigger
+
+
+static func of_type(card_type: MmCardTypes.CardType) -> HasCardTypeFilter:
+	var filter: HasCardTypeFilter = HasCardTypeFilter.new()
+	filter.card_type = card_type
+	return filter
+
+
+static func you() -> YouSelection:
+	return YouSelection.new()
+
+
+static func lose_life(amount: int, players: MmSelection) -> LoseLifeEffect:
+	var effect: LoseLifeEffect = LoseLifeEffect.new()
+	effect.amount = constant(amount)
+	effect.players = players
+	return effect
+
+
+static func controller_of(selection: MmSelection) -> ControllerOfSelection:
+	var controller: ControllerOfSelection = ControllerOfSelection.new()
+	controller.selection = selection
+	return controller
+
+
+## "if [selection] is [filter]", as an intervening "if" clause (CR 603.4).
+static func condition(selection: MmSelection, filter: MmFilter) -> SelectionMatchesCondition:
+	var result: SelectionMatchesCondition = SelectionMatchesCondition.new()
+	result.selection = selection
+	result.filter = filter
+	return result
+
+
+static func untapped() -> NotFilter:
+	var filter: NotFilter = NotFilter.new()
+	filter.filter = IsTappedFilter.new()
+	return filter
+
+
+## The triggered abilities on the stack, bottom first.
+static func stacked_abilities(engine: MmEngine) -> Array[MmGameObject]:
+	var result: Array[MmGameObject] = []
+	for item: MmGameObject in engine.game_state().stack.objects():
+		if item.ability is TriggeredAbility:
+			result.append(item)
+	return result
+
+
+## Passes priority until the stack is empty, answering any other decision with autoplay()
+## defaults.
+static func resolve_stack(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool:
+		return running.game_state().stack.is_empty() and running.pending_decision() is PriorityDecision \
+			and running.game_state().pending_triggers.is_empty())

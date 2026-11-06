@@ -15,6 +15,8 @@ var _passes_in_succession: int = 0
 var _cast: CastProcedure = null
 ## The combat step's turn-based actions, while their choices are being made.
 var _combat_step: CombatProcedure = null
+## Pending triggers being put on the stack, while their order and targets are chosen.
+var _stacking: TriggerProcedure = null
 var _needs_rewind: bool = false
 
 
@@ -32,6 +34,7 @@ func copy_for(state: MmGameState) -> TurnProcedure:
 	copy._passes_in_succession = _passes_in_succession
 	copy._cast = null if _cast == null else _cast.copy_for(state)
 	copy._combat_step = null if _combat_step == null else _combat_step.copy_for(state)
+	copy._stacking = null if _stacking == null else _stacking.copy_for(state)
 	copy._needs_rewind = _needs_rewind
 	return copy
 
@@ -62,6 +65,13 @@ func next_decision() -> MmPendingDecision:
 			_cast = null
 			_passes_in_succession = 0
 			_stage = Stage.PRIORITY
+		if _stacking != null:
+			var stacking_decision: MmPendingDecision = _stacking.next_decision()
+			if stacking_decision != null:
+				return stacking_decision
+			_stacking = null
+			# CR 117.4: the stack changed, so every player must pass again.
+			_passes_in_succession = 0
 		if _combat_step != null:
 			var combat_decision: MmPendingDecision = _combat_step.next_decision()
 			if combat_decision != null:
@@ -89,7 +99,11 @@ func next_decision() -> MmPendingDecision:
 				StateBasedActions.check(_state)
 				if _state.is_over:
 					return null
-				return PriorityDecision.new(_priority_player_id, _legal_actions(_priority_player_id))
+				if _state.pending_triggers.is_empty():
+					return PriorityDecision.new(_priority_player_id, _legal_actions(_priority_player_id))
+				# CR 603.3: triggers go on the stack after state-based actions, and both are
+				# checked again before the player finally receives priority.
+				_stacking = TriggerProcedure.new(_state)
 			Stage.END_STEP:
 				_end_step()
 	return null
@@ -99,6 +113,8 @@ func next_decision() -> MmPendingDecision:
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	if _cast != null:
 		_cast.apply_answer(decision, answer)
+	elif _stacking != null:
+		_stacking.apply_answer(decision, answer)
 	elif _combat_step != null:
 		_combat_step.apply_answer(decision, answer)
 	elif decision is PriorityDecision:
@@ -166,19 +182,25 @@ func _perform_turn_based_actions() -> MmPendingDecision:
 	return null
 
 
-## CR 514.2: after any discarding, all damage marked on permanents is removed.
-## Later (milestone 8): CR 514.3a, if state-based actions or triggers then apply, players
-## get priority and another cleanup step follows.
+## CR 514.2: after any discarding, all damage marked on permanents is removed, all at once.
 func _remove_damage() -> void:
 	# Later (milestone 9): a static ability can keep a permanent's damage from being removed.
+	var removals: Array[MmEvent] = []
 	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, _state.active_player_id) \
 			+ ManaPayment.sorted_permanents_of(_state, _state.opponent_of(_state.active_player_id).id):
 		if permanent.damage_marked > 0:
-			_state.perform(DamageRemovedEvent.new(permanent.id))
+			removals.append(DamageRemovedEvent.new(permanent.id))
+	if not removals.is_empty():
+		_state.perform_together(removals)
 
 
 func _begin_priority_or_end_step() -> void:
-	if MmTurn.grants_priority(_current_step()):
+	var cleanup_needs_priority: bool = _current_step() == MmTurn.Step.CLEANUP \
+		and (not _state.pending_triggers.is_empty() or StateBasedActions.any_apply(_state))
+	if cleanup_needs_priority:
+		# CR 514.3a: players get priority in this cleanup step, and another one follows.
+		_steps.insert(_step_index + 1, MmTurn.Step.CLEANUP)
+	if MmTurn.grants_priority(_current_step()) or cleanup_needs_priority:
 		# CR 117.3a: the active player receives priority first in each step.
 		_priority_player_id = _state.active_player_id
 		_passes_in_succession = 0
@@ -214,12 +236,17 @@ func _resolve_top_of_stack() -> void:
 		if spell != null:
 			specs = spell.targets
 			effects = spell.effects
+	elif resolving.ability is TriggeredAbility:
+		var triggered: TriggeredAbility = resolving.ability as TriggeredAbility
+		specs = triggered.targets
+		effects = triggered.effects
 	else:
 		var activated: ActivatedAbility = resolving.ability as ActivatedAbility
 		specs = activated.targets
 		effects = activated.effects
 	var source_id: int = resolving.id if resolving.is_card() else resolving.source_object_id
-	var checking: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id)
+	var checking: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id, [],
+		resolving.triggering_player_id, resolving.triggering_object_id)
 	var targets: Array[MmReference] = []
 	var any_legal: bool = specs.is_empty()
 	for index: int in specs.size():
@@ -227,8 +254,12 @@ func _resolve_top_of_stack() -> void:
 		var still_legal: bool = specs[index].is_still_legal(_state, chosen, checking)
 		targets.append(chosen if still_legal else null)
 		any_legal = any_legal or still_legal
+	var triggered_ability: TriggeredAbility = resolving.ability as TriggeredAbility
+	if triggered_ability != null and not triggered_ability.condition_holds(_state, checking):
+		any_legal = false  # CR 603.4: the intervening "if" no longer holds, so it does nothing.
 	if any_legal:
-		var context: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id, targets)
+		var context: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id, targets,
+			resolving.triggering_player_id, resolving.triggering_object_id)
 		for effect: MmEffect in effects:
 			effect.resolve(_state, context)
 	if resolving.is_card() and any_legal and _state.characteristics_of(resolving).is_permanent():

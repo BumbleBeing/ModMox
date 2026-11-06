@@ -21,6 +21,9 @@ var position: int
 var reason: Reason
 ## The new object's ID, set when the event is applied.
 var new_object_id: int = 0
+## For an object leaving the battlefield: its characteristics as it last existed there,
+## set when the event is applied (CR 608.2h).
+var last_known: MmCharacteristics = null
 
 
 func _init(leaving: MmGameObject, destination: MmZone, at_position: int, why: Reason) -> void:
@@ -39,6 +42,11 @@ func apply(state: MmGameState) -> void:
 	var to_zone: MmZone = state.zone(to_zone_kind, to_owner_id)
 	var leaving: MmGameObject = state.object(object_id)
 	assert(leaving != null and leaving.zone() == from_zone, "Object %d is no longer in the %s." % [object_id, from_zone.describe()])
+	if from_zone_kind == MmZone.Kind.BATTLEFIELD:
+		# CR 608.2h: keep what it last looked like, for look-back triggers and "its power".
+		last_known = state.characteristics_of(leaving)
+		leaving.freeze_last_known(last_known)
+		state.record_departure(leaving)
 	from_zone.remove(leaving)
 	state.retire_object(leaving)
 	var arriving: MmGameObject = state.create_object(leaving.card_id, leaving.owner_id, leaving.definition)

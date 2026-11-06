@@ -23,6 +23,7 @@ func apply(state: MmGameState) -> void:
 	created.ability = source_characteristics.abilities[ability_index]
 	created.source_object_id = source_object_id
 	created.source_name = source_characteristics.name
+	created.source_card_id = source.card_id
 	state.stack.insert(created, MmZone.BOTTOM)
 	new_object_id = created.id
 

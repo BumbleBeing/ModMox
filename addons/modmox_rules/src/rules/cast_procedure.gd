@@ -185,7 +185,9 @@ func _finish() -> void:
 	var activated: ActivatedAbility = _ability as ActivatedAbility
 	if activated != null:
 		activated.pay_costs(_state, _state.object(_source_object_id))
-	# Later (milestone 8): "whenever you cast" triggers (CR 601.2i).
+	else:
+		# CR 601.2i: the spell is now cast, which "whenever a player casts" triggers wait for.
+		_state.perform(SpellCastEvent.new(_stack_object_id, _player_id))
 
 
 func _context() -> MmEffectContext:

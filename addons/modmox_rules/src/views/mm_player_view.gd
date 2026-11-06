@@ -10,6 +10,8 @@ var hand: Array[MmObjectView] = []
 var battlefield: Array[MmObjectView] = []
 ## Every spell and ability on the stack, bottom first (the last one is on top). Public.
 var stack: Array[MmObjectView] = []
+## Every Emblem in the command zone, such as the Hero's Statuses. Public.
+var command: Array[MmObjectView] = []
 ## Each player's mana pool, as copies of its MmMana units. Mana pools are public.
 var mana_pools: Dictionary[int, Array] = {}
 var hand_sizes: Dictionary[int, int] = {}
@@ -44,6 +46,8 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		view.battlefield.append(MmObjectView.of(state, permanent))
 	for item: MmGameObject in state.stack.objects():
 		view.stack.append(MmObjectView.of(state, item))
+	for emblem: MmGameObject in state.command.objects():
+		view.command.append(MmObjectView.of(state, emblem))
 	for player: MmPlayer in state.players:
 		view.hand_sizes[player.id] = player.hand.size()
 		view.library_sizes[player.id] = player.library.size()

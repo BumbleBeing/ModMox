@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_8ecdq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_vao47"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_j2u0g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/controller_of_selection.gd" id="4_bk8ia"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/triggering_object_selection.gd" id="5_b3ml0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="6_tts73"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_tc6pp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="8_6mdg6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_6hu0u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_a4xnf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="11_i42lm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="12_65h5s"]
+
+[sub_resource type="Resource" id="Resource_mat2v"]
+script = ExtResource("3_j2u0g")
+value = 2
+
+[sub_resource type="Resource" id="Resource_tiv62"]
+script = ExtResource("5_b3ml0")
+
+[sub_resource type="Resource" id="Resource_5o6g5"]
+script = ExtResource("4_bk8ia")
+selection = SubResource("Resource_tiv62")
+
+[sub_resource type="Resource" id="Resource_rcasd"]
+script = ExtResource("6_tts73")
+amount = SubResource("Resource_mat2v")
+recipients = SubResource("Resource_5o6g5")
+
+[sub_resource type="Resource" id="Resource_3vpod"]
+script = ExtResource("9_6hu0u")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_6eu3m"]
+script = ExtResource("10_a4xnf")
+filter = SubResource("Resource_3vpod")
+
+[sub_resource type="Resource" id="Resource_0peex"]
+script = ExtResource("7_tc6pp")
+trigger = SubResource("Resource_6eu3m")
+effects = Array[ExtResource("2_vao47")]([SubResource("Resource_rcasd")])
+
+[sub_resource type="Resource" id="Resource_okhxl"]
+script = ExtResource("11_i42lm")
+generic = 2
+
+[resource]
+script = ExtResource("12_65h5s")
+name = "Ankh of Mishra"
+card_types = Array[int]([0])
+mana_cost = SubResource("Resource_okhxl")
+abilities = Array[ExtResource("1_8ecdq")]([SubResource("Resource_0peex")])
