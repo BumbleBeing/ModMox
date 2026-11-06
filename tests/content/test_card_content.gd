@@ -406,6 +406,160 @@ func test_keldon_warlord_counts_the_non_wall_creatures_its_controller_controls()
 	assert_eq(Scenario.pt(engine, warlord_id), [2, 2])
 
 
+func test_the_milestone_ten_cards_have_the_right_printed_characteristics() -> void:
+	var white: MmCardTypes.CardColor = MmCardTypes.CardColor.WHITE
+	var black: MmCardTypes.CardColor = MmCardTypes.CardColor.BLACK
+	var expected: Dictionary[String, Array] = {
+		"fog": ["Fog", MmCardTypes.CardType.INSTANT, [MmCardTypes.CardColor.GREEN], 1, [], 0, 0],
+		"samite_healer": ["Samite Healer", MmCardTypes.CardType.CREATURE, [white], 2, ["Human", "Cleric"], 1, 1],
+		"white_knight": ["White Knight", MmCardTypes.CardType.CREATURE, [white], 2, ["Human", "Knight"], 2, 2],
+		"black_knight": ["Black Knight", MmCardTypes.CardType.CREATURE, [black], 2, ["Human", "Knight"], 2, 2],
+		"drudge_skeletons": ["Drudge Skeletons", MmCardTypes.CardType.CREATURE, [black], 2, ["Skeleton"], 1, 1],
+		"terror": ["Terror", MmCardTypes.CardType.INSTANT, [black], 2, [], 0, 0],
+	}
+	for file_name: String in expected:
+		var facts: Array = expected[file_name]
+		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
+		assert_eq(printed.name, facts[0])
+		assert_eq(printed.card_types, [facts[1]], file_name)
+		assert_eq(printed.colors, facts[2], file_name)
+		assert_eq(printed.mana_value(), facts[3], file_name)
+		assert_eq(printed.subtypes, facts[4], file_name)
+		if facts[1] == MmCardTypes.CardType.CREATURE:
+			assert_eq([printed.power, printed.toughness], [facts[5], facts[6]], file_name)
+	for knight: String in ["white_knight", "black_knight"]:
+		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(knight))
+		assert_true(printed.has_ability(FirstStrikeAbility), knight)
+		assert_true(printed.has_ability(ProtectionAbility), knight)
+	var skeleton_ability: ActivatedAbility = _alpha("drudge_skeletons").abilities[0] as ActivatedAbility
+	assert_eq(skeleton_ability.mana_cost.symbols, [MmMana.Type.BLACK])
+	assert_eq(skeleton_ability.costs, [], "Regenerating does not tap it.")
+
+
+func test_fog_prevents_all_combat_damage() -> void:
+	var fog: MmCardDefinition = Scenario.free_copy(_alpha("fog"))
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("hill_giant"))], [], [fog])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	Scenario.declare_attackers(engine, [Scenario.permanent_named(engine, engine.hero().id, "Hill Giant")])
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Fog"), "")
+	Scenario.pass_until_step(engine, MmTurn.Step.END_OF_COMBAT)
+
+	assert_eq(engine.villain().life, 20)
+
+
+func test_fog_does_not_prevent_lightning_bolt() -> void:
+	var fog: MmCardDefinition = Scenario.free_copy(_alpha("fog"))
+	var bolt: MmCardDefinition = Scenario.free_copy(_alpha("lightning_bolt"))
+	var engine: MmEngine = Scenario.combat_ready([], [], [fog, bolt])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	Scenario.cast_and_resolve(engine, "Fog")
+
+	Scenario.cast_and_resolve(engine, "Lightning Bolt", [MmReference.to_player(engine.villain().id)])
+
+	assert_eq(engine.villain().life, 17)
+
+
+func test_samite_healer_prevents_one_damage_to_any_target() -> void:
+	var healer: MmCardDefinition = Scenario.free_copy(_alpha("samite_healer"))
+	var bolt: MmCardDefinition = Scenario.free_copy(_alpha("lightning_bolt"))
+	var engine: MmEngine = Scenario.combat_ready([healer], [], [bolt])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	var villain: MmReference = MmReference.to_player(engine.villain().id)
+
+	Scenario.activate(engine, Scenario.permanent_named(engine, engine.hero().id, "Samite Healer"), [villain])
+	Scenario.resolve_stack(engine)
+	Scenario.cast_and_resolve(engine, "Lightning Bolt", [villain])
+
+	assert_eq(engine.villain().life, 18)
+
+
+func test_black_knight_cannot_block_white_knight() -> void:
+	# CR 702.16c: each Knight has protection from the other's color, so neither can block
+	# the other.
+	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha("plains"), 20, _alpha("white_knight"), 20)
+	var villain_cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha("swamp"), 20, _alpha("black_knight"), 20)
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, villain_cards), func(running: MmEngine) -> bool:
+		if not Scenario.ready_in_main(running, 3, 2, "White Knight") or Scenario.cast_and_resolve(running, "White Knight") != "":
+			return false
+		return Scenario.ready_in_main(running, 4, 2, "Black Knight") and Scenario.cast_and_resolve(running, "Black Knight") == "")
+	assert_not_null(engine, "No seed gave the needed hands.")
+	Scenario.play_until_step(engine, 5, MmTurn.Step.DECLARE_ATTACKERS)
+	var white_knight: int = Scenario.permanent_named(engine, engine.hero().id, "White Knight")
+	var black_knight: int = Scenario.permanent_named(engine, engine.villain().id, "Black Knight")
+	assert_ne(black_knight, -1)
+	Scenario.declare_attackers(engine, [white_knight])
+
+	Scenario.pass_until_step(engine, MmTurn.Step.END_OF_COMBAT)
+
+	assert_eq(Scenario.events_of(engine, BlockersDeclaredEvent), [], "No blockers decision was even asked.")
+	assert_eq(engine.villain().life, 18)
+
+
+func test_terror_cannot_target_white_knight_but_destroys_grizzly_bears() -> void:
+	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha("swamp"), 20, _alpha("terror"), 20)
+	var villain_cards: Array[MmCardDefinition] = Scenario.cycled([Scenario.free_copy(_alpha("white_knight")), Scenario.free_copy(_alpha("grizzly_bears"))])
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, villain_cards), func(running: MmEngine) -> bool:
+		if not Scenario.ready_in_main(running, 1, 1, "Terror") or Scenario.play_until_step(running, 2, MmTurn.Step.PRECOMBAT_MAIN) != "":
+			return false
+		if Scenario.cast_and_resolve(running, "White Knight") != "" or Scenario.cast_and_resolve(running, "Grizzly Bears") != "":
+			return false
+		return Scenario.ready_in_main(running, 3, 2, "Terror"))
+	assert_not_null(engine, "No seed gave the needed hands.")
+	var knight: int = Scenario.permanent_named(engine, engine.villain().id, "White Knight")
+	var bears: int = Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears")
+	engine.submit(Scenario.cast_index(engine.pending_decision() as PriorityDecision, Scenario.card_in_hand(engine, engine.hero(), "Terror")))
+
+	var candidates: Array[MmReference] = (engine.pending_decision() as ChooseTargetDecision).candidates
+
+	assert_eq(candidates.size(), 1, "Only a creature, and not the Knight with protection from black.")
+	assert_true(candidates[0].equals(MmReference.to_object(bears)))
+	assert_ne(knight, -1)
+	Scenario.choose_target(engine, candidates[0])
+	Scenario.auto_pay(engine)
+	_resolve(engine)
+	assert_eq(Scenario.names(engine, engine.villain().graveyard), ["Grizzly Bears"])
+
+
+func test_terror_cannot_target_artifact_or_black_creatures() -> void:
+	var spec: TargetSpec = (_alpha("terror").abilities[0] as SpellAbility).targets[0]
+	var engine: MmEngine = MmEngine.start(_setup_with_deck_of(_alpha("black_knight")))
+	var state: MmGameState = engine.game_state()
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var black_creature: MmReference = MmReference.to_object(engine.hero().library.objects()[0].id)
+	var artifact_creature: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	artifact_creature.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	var artifact_engine: MmEngine = MmEngine.start(_setup_with_deck_of(artifact_creature))
+	var bears_engine: MmEngine = MmEngine.start(_setup_with_deck_of(Scenario.free_copy(_alpha("grizzly_bears"))))
+
+	assert_false(spec.filter.matches(state, black_creature, context), "Nonblack.")
+	assert_false(spec.filter.matches(artifact_engine.game_state(), MmReference.to_object(artifact_engine.hero().library.objects()[0].id), context), "Nonartifact.")
+	assert_true(spec.filter.matches(bears_engine.game_state(), MmReference.to_object(bears_engine.hero().library.objects()[0].id), context))
+	assert_false(((_alpha("terror").abilities[0] as SpellAbility).effects[0] as DestroyEffect).can_be_regenerated)
+
+
+func test_drudge_skeletons_regenerates_for_black_mana() -> void:
+	var skeletons: MmCardDefinition = Scenario.free_copy(_alpha("drudge_skeletons"))
+	var swamp: MmCardDefinition = _alpha("swamp")
+	var bolt: MmCardDefinition = Scenario.free_copy(_alpha("lightning_bolt"))
+	var no_cards: Array[MmCardDefinition] = []
+	var setup: MmEncounterSetup = Scenario.combat_setup([skeletons], no_cards, [swamp, bolt])
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, [skeletons], no_cards, [swamp, bolt], no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var skeleton: int = Scenario.permanent_named(engine, engine.hero().id, "Drudge Skeletons")
+	Scenario.play_first_land(engine)
+
+	assert_eq(Scenario.activate(engine, skeleton), "")
+	Scenario.resolve_stack(engine)
+	Scenario.cast_and_resolve(engine, "Lightning Bolt", [MmReference.to_object(skeleton)])
+
+	assert_not_null(engine.game_state().object(skeleton))
+	assert_true(engine.game_state().object(skeleton).is_tapped)
+	assert_eq(Scenario.damage_on(engine, skeleton), 0)
+
+
 func _alpha(file_name: String) -> MmCardDefinition:
 	return load("%s/alpha/%s.tres" % [CONTENT_ROOT, file_name]) as MmCardDefinition
 

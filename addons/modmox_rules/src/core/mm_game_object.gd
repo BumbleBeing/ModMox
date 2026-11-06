@@ -20,8 +20,9 @@ var controller_id: int
 var is_tapped: bool = false
 ## Damage marked on this permanent (CR 120.3e), until the cleanup step removes it.
 var damage_marked: int = 0
-## CR 704.5h: dealt damage by a source with deathtouch, so it is destroyed at the next
-## state-based action check. Later: clear it after that check once indestructible exists.
+## CR 704.5h: dealt damage by a source with deathtouch since state-based actions were last
+## checked, so it is destroyed at the next check. Cleared when it regenerates, or by that
+## check when it can't be destroyed.
 var was_dealt_deathtouch_damage: bool = false
 ## The Game Turn in which this permanent's current controller began controlling it. With
 ## each player's latest_turn_game_turn it tells summoning sickness (CR 302.6).
@@ -107,6 +108,11 @@ func mark_damage(amount: int) -> void:
 ## Event-only: records damage from a source with deathtouch (CR 704.5h).
 func mark_deathtouch_damage() -> void:
 	was_dealt_deathtouch_damage = true
+
+
+## Event-only: CR 704.5h asks only about deathtouch damage since the last check.
+func clear_deathtouch_damage() -> void:
+	was_dealt_deathtouch_damage = false
 
 
 ## Event-only: removes all damage marked on this permanent.

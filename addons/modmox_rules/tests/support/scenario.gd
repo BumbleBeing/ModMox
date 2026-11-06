@@ -144,7 +144,7 @@ static func keep_all(engine: MmEngine) -> String:
 ## Answers decisions with simple defaults until [param stop] returns true for the engine:
 ## play first, keep, pass priority, bottom or discard the first candidates offered, attack
 ## and block with nothing, put all combat damage on the first recipient, stack triggers in
-## the order offered, and choose the first target offered.
+## the order offered, and choose the first target and replacement effect offered.
 ## With [param play_lands], plays the first land offered instead of passing.
 ## Returns the first rejection reason, or "" once stopped. Gives up after [param limit].
 static func autoplay(engine: MmEngine, stop: Callable, play_lands: bool = false, limit: int = 2000) -> String:
@@ -177,6 +177,8 @@ static func autoplay(engine: MmEngine, stop: Callable, play_lands: bool = false,
 		elif decision is OrderTriggersDecision:
 			answer = range((decision as OrderTriggersDecision).source_object_ids.size())
 		elif decision is ChooseTargetDecision:
+			answer = 0
+		elif decision is ChooseReplacementEffectDecision:
 			answer = 0
 		else:
 			return "Unexpected decision: %s" % ("none" if decision == null else decision.describe())
@@ -923,3 +925,150 @@ static func now(engine: MmEngine, object_id: int) -> MmCharacteristics:
 static func pt(engine: MmEngine, object_id: int) -> Array[int]:
 	var characteristics: MmCharacteristics = now(engine, object_id)
 	return [characteristics.power, characteristics.toughness]
+
+
+# --- Milestone 10: replacement and prevention effects ---------------------------------
+
+
+## "Prevent the next [param amount] damage that would be dealt to [param recipients] this
+## turn."
+static func prevent_next(amount: int, recipients: MmSelection) -> PreventDamageEffect:
+	var effect: PreventDamageEffect = PreventDamageEffect.new()
+	effect.uses = PreventDamageEffect.Uses.NEXT_AMOUNT
+	effect.amount = constant(amount)
+	effect.recipients = recipients
+	return effect
+
+
+## "Prevent all [combat] damage that would be dealt [to recipients] [by sources] this
+## turn." A null [param recipients] or [param sources] means any.
+static func prevent_all(recipients: MmSelection, combat_only: bool, sources: MmFilter = null) -> PreventDamageEffect:
+	var effect: PreventDamageEffect = PreventDamageEffect.new()
+	effect.uses = PreventDamageEffect.Uses.ALL_THIS_TURN
+	effect.recipients = recipients
+	effect.combat_only = combat_only
+	effect.sources = sources
+	return effect
+
+
+## An instant costing {0}: "Prevent all combat damage that would be dealt this turn."
+static func free_fog(card_name: String) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [], [prevent_all(null, true)])
+
+
+## An instant costing {0}: "Prevent the next [param amount] damage that would be dealt to
+## any target this turn."
+static func free_shield(card_name: String, amount: int) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [any_target()], [prevent_next(amount, targeted(0))])
+
+
+## A 1/1 creature costing {0}: "{T}: Prevent the next 1 damage that would be dealt to any
+## target this turn."
+static func healer(card_name: String) -> MmCardDefinition:
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.costs = [TapCost.new()]
+	ability.targets = [any_target()]
+	ability.effects = [prevent_next(1, targeted(0))]
+	return creature(card_name, 1, 1, [ability])
+
+
+## Protection from whatever [param filter] matches (CR 702.16).
+static func protection_from(filter: MmFilter) -> ProtectionAbility:
+	var ability: ProtectionAbility = ProtectionAbility.new()
+	ability.from = filter
+	return ability
+
+
+static func of_color(color: MmCardTypes.CardColor) -> HasColorFilter:
+	var filter: HasColorFilter = HasColorFilter.new()
+	filter.color = color
+	return filter
+
+
+static func regenerate(selection: MmSelection) -> RegenerateEffect:
+	var effect: RegenerateEffect = RegenerateEffect.new()
+	effect.selection = selection
+	return effect
+
+
+## "[param cost]: Regenerate this creature."
+static func regenerate_ability(cost: MmManaCost) -> ActivatedAbility:
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.mana_cost = cost
+	ability.effects = [regenerate(SourceSelection.new())]
+	return ability
+
+
+## An instant costing {0}: "Regenerate target creature."
+static func free_regenerate(card_name: String) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))], [regenerate(targeted(0))])
+
+
+static func destroy(selection: MmSelection, can_be_regenerated: bool = true) -> DestroyEffect:
+	var effect: DestroyEffect = DestroyEffect.new()
+	effect.selection = selection
+	effect.can_be_regenerated = can_be_regenerated
+	return effect
+
+
+## An instant costing {0}: "Destroy target creature.", with "It can't be regenerated." when
+## [param can_be_regenerated] is false.
+static func free_destroy(card_name: String, can_be_regenerated: bool = true) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))],
+		[destroy(targeted(0), can_be_regenerated)])
+
+
+## Activates the first ability of [param object_id] offered, choosing [param targets] in
+## order, and pays automatically.
+static func activate(engine: MmEngine, object_id: int, targets: Array[MmReference] = []) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var index: int = activate_index(decision, object_id)
+	if index == -1:
+		return "Object %d has no ability to activate." % object_id
+	var error: String = engine.submit(index)
+	for chosen: MmReference in targets:
+		if error != "":
+			return error
+		error = choose_target(engine, chosen)
+	return error if error != "" else auto_pay(engine)
+
+
+## Chooses the option of the pending replacement decision whose source has Card Identity
+## [param source_card_id].
+static func choose_replacement_from(engine: MmEngine, source_card_id: int) -> String:
+	var decision: ChooseReplacementEffectDecision = engine.pending_decision() as ChooseReplacementEffectDecision
+	if decision == null:
+		return "Not a replacement decision."
+	for index: int in decision.options.size():
+		if decision.options[index].source_card_id == source_card_id:
+			return engine.submit(index)
+	return "No option comes from card %d." % source_card_id
+
+
+## Passes priority until [param step] of the current Game Turn begins, like
+## pass_until_step(), but stops early at any replacement decision. Returns whether it
+## reached the step without one being asked.
+static func pass_until_step_without_replacement_choice(engine: MmEngine, step: MmTurn.Step) -> bool:
+	var game_turn: int = engine.game_state().game_turn
+	autoplay(engine, func(running: MmEngine) -> bool:
+		if running.pending_decision() is ChooseReplacementEffectDecision:
+			return true
+		return running.game_state().game_turn == game_turn and running.game_state().step == step)
+	return not engine.pending_decision() is ChooseReplacementEffectDecision
+
+
+## Passes priority until a replacement decision is pending. Returns "" once there.
+static func pass_to_replacement_choice(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is ChooseReplacementEffectDecision)
+
+
+## Every DamagePreventedEvent in the log, in order.
+static func prevented(engine: MmEngine) -> Array[MmEvent]:
+	return events_of(engine, DamagePreventedEvent)
+
+
+## The Card Identity of the permanent [param object_id].
+static func card_of(engine: MmEngine, object_id: int) -> int:
+	return engine.game_state().object(object_id).card_id

@@ -17,6 +17,8 @@ var _cast: CastProcedure = null
 var _combat_step: CombatProcedure = null
 ## Pending triggers being put on the stack, while their order and targets are chosen.
 var _stacking: TriggerProcedure = null
+## The top of the stack resolving, while it waits for replacement choices.
+var _resolution: ResolutionProcedure = null
 var _needs_rewind: bool = false
 
 
@@ -35,6 +37,7 @@ func copy_for(state: MmGameState) -> TurnProcedure:
 	copy._cast = null if _cast == null else _cast.copy_for(state)
 	copy._combat_step = null if _combat_step == null else _combat_step.copy_for(state)
 	copy._stacking = null if _stacking == null else _stacking.copy_for(state)
+	copy._resolution = null if _resolution == null else _resolution.copy_for(state)
 	copy._needs_rewind = _needs_rewind
 	return copy
 
@@ -54,6 +57,8 @@ func needs_rewind() -> bool:
 ## Returns null when a cast must be rewound or the encounter is over.
 func next_decision() -> MmPendingDecision:
 	while true:
+		if _state.is_batch_suspended():
+			return _state.replacement_decision()  # A143: whatever proposed it carries on after.
 		if _cast != null:
 			var casting: MmPendingDecision = _cast.next_decision()
 			if casting != null:
@@ -78,6 +83,14 @@ func next_decision() -> MmPendingDecision:
 				return combat_decision
 			_combat_step = null
 			_begin_priority_or_end_step()
+		if _resolution != null:
+			var resolving: MmPendingDecision = _resolution.next_decision()
+			if resolving != null:
+				return resolving
+			_resolution = null
+			# CR 117.3b: after resolution the active player receives priority.
+			_priority_player_id = _state.active_player_id
+			_passes_in_succession = 0
 		match _stage:
 			Stage.START_TURN:
 				_start_turn()
@@ -97,6 +110,8 @@ func next_decision() -> MmPendingDecision:
 			Stage.PRIORITY:
 				# CR 704.3: state-based actions are checked whenever a player would receive priority.
 				StateBasedActions.check(_state)
+				if _state.is_batch_suspended():
+					return _state.replacement_decision()
 				if _state.is_over:
 					return null
 				if _state.pending_triggers.is_empty():
@@ -111,7 +126,9 @@ func next_decision() -> MmPendingDecision:
 
 ## Applies an already-validated [param answer] to [param decision].
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
-	if _cast != null:
+	if decision is ChooseReplacementEffectDecision:
+		_state.choose_replacement_effect(answer as int)  # next_decision() carries on from here.
+	elif _cast != null:
 		_cast.apply_answer(decision, answer)
 	elif _stacking != null:
 		_stacking.apply_answer(decision, answer)
@@ -164,6 +181,8 @@ func _perform_turn_based_actions() -> MmPendingDecision:
 				if permanent.controller_id == active.id and permanent.is_tapped:
 					_state.perform(UntapEvent.new(permanent.id))
 		MmTurn.Step.DRAW:
+			# Later: let this stop for a replacement choice once a card replaces draws, such
+			# as Island Sanctuary (A145).
 			_state.draw_cards(active.id, 1)  # CR 504.1
 		MmTurn.Step.DECLARE_ATTACKERS:
 			_combat_step = CombatProcedure.declare_attackers(_state)
@@ -190,11 +209,14 @@ func _remove_damage() -> void:
 			+ ManaPayment.sorted_permanents_of(_state, _state.opponent_of(_state.active_player_id).id):
 		if permanent.damage_marked > 0 and not _state.characteristics_of(permanent).has_ability(DamageStaysAbility):
 			removals.append(DamageRemovedEvent.new(permanent.id))
-	# CR 514.2: "until end of turn" effects end at the same moment.
+	# CR 514.2: "until end of turn" and "this turn" effects end at the same moment.
+	var ending: bool = false
 	for active: ActiveContinuousEffect in _state.continuous_effects:
-		if active.duration == CreateContinuousEffect.Duration.UNTIL_END_OF_TURN:
-			removals.append(ContinuousEffectsEndedEvent.new(CreateContinuousEffect.Duration.UNTIL_END_OF_TURN))
-			break
+		ending = ending or active.duration == CreateContinuousEffect.Duration.UNTIL_END_OF_TURN
+	for active: ActiveReplacementEffect in _state.replacement_effects:
+		ending = ending or active.duration == CreateContinuousEffect.Duration.UNTIL_END_OF_TURN
+	if ending:
+		removals.append(ContinuousEffectsEndedEvent.new(CreateContinuousEffect.Duration.UNTIL_END_OF_TURN))
 	if not removals.is_empty():
 		_state.perform_together(removals)
 
@@ -224,59 +246,7 @@ func _pass_priority() -> void:
 		_priority_player_id = MmGameState.NO_PLAYER
 		_stage = Stage.END_STEP
 	else:
-		_resolve_top_of_stack()
-		# CR 117.3b: after resolution the active player receives priority.
-		_priority_player_id = _state.active_player_id
-		_passes_in_succession = 0
-
-
-## CR 608.2: the top object resolves. Targets are rechecked first: if every target is now
-## illegal it does not resolve, and otherwise effects simply skip illegal targets.
-func _resolve_top_of_stack() -> void:
-	var resolving: MmGameObject = _state.stack.objects().back()
-	var specs: Array[TargetSpec] = []
-	var effects: Array[MmEffect] = []
-	if resolving.is_card():
-		var spell: SpellAbility = CastProcedure.spell_ability_of(_state.characteristics_of(resolving))
-		if spell != null:
-			specs = spell.targets
-			effects = spell.effects
-	elif resolving.ability is TriggeredAbility:
-		var triggered: TriggeredAbility = resolving.ability as TriggeredAbility
-		specs = triggered.targets
-		effects = triggered.effects
-	else:
-		var activated: ActivatedAbility = resolving.ability as ActivatedAbility
-		specs = activated.targets
-		effects = activated.effects
-	var source_id: int = resolving.id if resolving.is_card() else resolving.source_object_id
-	var checking: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id, [],
-		resolving.triggering_player_id, resolving.triggering_object_id)
-	var targets: Array[MmReference] = []
-	var any_legal: bool = specs.is_empty()
-	for index: int in specs.size():
-		var chosen: MmReference = resolving.targets[index] if index < resolving.targets.size() else null
-		var still_legal: bool = specs[index].is_still_legal(_state, chosen, checking)
-		targets.append(chosen if still_legal else null)
-		any_legal = any_legal or still_legal
-	var triggered_ability: TriggeredAbility = resolving.ability as TriggeredAbility
-	if triggered_ability != null and not triggered_ability.condition_holds(_state, checking):
-		any_legal = false  # CR 603.4: the intervening "if" no longer holds, so it does nothing.
-	if any_legal:
-		var context: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id, targets,
-			resolving.triggering_player_id, resolving.triggering_object_id)
-		for effect: MmEffect in effects:
-			effect.resolve(_state, context)
-	if resolving.is_card() and any_legal and _state.characteristics_of(resolving).is_permanent():
-		# CR 608.3: a permanent spell enters the battlefield. Its controller is its owner
-		# until control-changing effects exist (milestone 9), as CR 608.3a needs.
-		_state.perform(ZoneChangeEvent.new(_state.object(resolving.id), _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED))
-	elif resolving.is_card():
-		# CR 608.2n: an instant or sorcery goes to its owner's graveyard.
-		var reason: ZoneChangeEvent.Reason = ZoneChangeEvent.Reason.RESOLVED if any_legal else ZoneChangeEvent.Reason.DID_NOT_RESOLVE
-		_state.perform(ZoneChangeEvent.new(_state.object(resolving.id), _state.player(resolving.owner_id).graveyard, MmZone.BOTTOM, reason))
-	else:
-		_state.perform(AbilityLeftStackEvent.new(resolving.id, any_legal))
+		_resolution = ResolutionProcedure.begin(_state)
 
 
 func _end_step() -> void:
@@ -367,10 +337,15 @@ func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 
 
 ## Mana abilities whenever their cost can be paid; other abilities also need a legal
-## target for every requirement.
+## target for every requirement, and enough mana for any mana in their cost.
 func _may_activate(player: MmPlayer, permanent: MmGameObject, ability: ActivatedAbility) -> bool:
 	if not ability.can_pay_costs(_state, permanent):
 		return false
+	if ability.mana_cost != null:
+		if ability.is_mana_ability():
+			return false  # Later: mana abilities with mana in their cost, such as "{1}: Add {R}".
+		if not ManaPayment.can_afford(_state, player.id, ability.mana_cost):
+			return false
 	return ability.is_mana_ability() or _every_requirement_has_a_target(ability.targets, player.id, permanent.id)
 
 

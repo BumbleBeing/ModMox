@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_wkpeq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_u6gn6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/destroy_effect.gd" id="3_5ubus"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_4xhty"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="5_wvwou"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="6_2xtcq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="7_apntw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="8_22bof"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="9_hrg2w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_color_filter.gd" id="10_4pk58"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="11_gp31s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="12_bme2l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="13_hdpjf"]
+
+[sub_resource type="Resource" id="Resource_a3bp4"]
+script = ExtResource("4_4xhty")
+
+[sub_resource type="Resource" id="Resource_lr7av"]
+script = ExtResource("3_5ubus")
+selection = SubResource("Resource_a3bp4")
+can_be_regenerated = false
+
+[sub_resource type="Resource" id="Resource_4m78u"]
+script = ExtResource("8_22bof")
+
+[sub_resource type="Resource" id="Resource_s23vv"]
+script = ExtResource("8_22bof")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_xmsu0"]
+script = ExtResource("9_hrg2w")
+filter = SubResource("Resource_s23vv")
+
+[sub_resource type="Resource" id="Resource_u1ifd"]
+script = ExtResource("10_4pk58")
+color = 2
+
+[sub_resource type="Resource" id="Resource_4gcqi"]
+script = ExtResource("9_hrg2w")
+filter = SubResource("Resource_u1ifd")
+
+[sub_resource type="Resource" id="Resource_y5fsx"]
+script = ExtResource("11_gp31s")
+filters = Array[ExtResource("7_apntw")]([SubResource("Resource_4m78u"), SubResource("Resource_xmsu0"), SubResource("Resource_4gcqi")])
+
+[sub_resource type="Resource" id="Resource_2afrn"]
+script = ExtResource("6_2xtcq")
+filter = SubResource("Resource_y5fsx")
+
+[sub_resource type="Resource" id="Resource_4ovka"]
+script = ExtResource("5_wvwou")
+targets = Array[ExtResource("6_2xtcq")]([SubResource("Resource_2afrn")])
+effects = Array[ExtResource("2_u6gn6")]([SubResource("Resource_lr7av")])
+
+[sub_resource type="Resource" id="Resource_r5grt"]
+script = ExtResource("12_bme2l")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("13_hdpjf")
+name = "Terror"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_r5grt")
+abilities = Array[ExtResource("1_wkpeq")]([SubResource("Resource_4ovka")])

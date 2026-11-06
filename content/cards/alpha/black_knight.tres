@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_vlibd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/first_strike_ability.gd" id="2_i5h61"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_color_filter.gd" id="3_e7qs2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/protection_ability.gd" id="4_br4jb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="5_0cott"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="6_ux6bl"]
+
+[sub_resource type="Resource" id="Resource_wp38j"]
+script = ExtResource("2_i5h61")
+
+[sub_resource type="Resource" id="Resource_5yniw"]
+script = ExtResource("3_e7qs2")
+
+[sub_resource type="Resource" id="Resource_dfcsx"]
+script = ExtResource("4_br4jb")
+from = SubResource("Resource_5yniw")
+
+[sub_resource type="Resource" id="Resource_u7tdt"]
+script = ExtResource("5_0cott")
+symbols = Array[int]([2, 2])
+
+[resource]
+script = ExtResource("6_ux6bl")
+name = "Black Knight"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Knight"])
+mana_cost = SubResource("Resource_u7tdt")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_vlibd")]([SubResource("Resource_wp38j"), SubResource("Resource_dfcsx")])

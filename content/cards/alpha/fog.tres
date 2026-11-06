@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_83idm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_2dble"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/prevent_damage_effect.gd" id="3_1m6vr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="4_rnuvw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="5_jnbpy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="6_d4jv3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="7_gcdcr"]
+
+[sub_resource type="Resource" id="Resource_wl2g3"]
+script = ExtResource("3_1m6vr")
+uses = 1
+combat_only = true
+
+[sub_resource type="Resource" id="Resource_toiow"]
+script = ExtResource("4_rnuvw")
+effects = Array[ExtResource("2_2dble")]([SubResource("Resource_wl2g3")])
+
+[sub_resource type="Resource" id="Resource_rsil8"]
+script = ExtResource("6_d4jv3")
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("7_gcdcr")
+name = "Fog"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_rsil8")
+abilities = Array[ExtResource("1_83idm")]([SubResource("Resource_toiow")])

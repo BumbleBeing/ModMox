@@ -4,9 +4,34 @@ extends Resource
 ## each, and refer to who or what they affect only through Selections (ADR 0014).
 
 
-## Carries out this effect through events.
-func resolve(_state: MmGameState, _context: MmEffectContext) -> void:
-	assert(false, "%s must override resolve()." % get_script().resource_path)
+## The numbers this effect works out once, as it begins (CR 608.2h), such as how many cards
+## to draw. Each later step gets them again, so they cannot change part-way through.
+func numbers(_state: MmGameState, _context: MmEffectContext) -> Array[int]:
+	var none: Array[int] = []
+	return none
+
+
+## The events this effect proposes at [param step], counting from 0, as one simultaneous
+## batch worked out from the game as it is now. An empty batch means the effect is done.
+## Effects never perform events themselves: resolution performs each batch, and can stop
+## inside one for a replacement choice (A143).
+func next_batch(_state: MmGameState, _context: MmEffectContext, _step: int, _numbers: Array[int]) -> Array[MmEvent]:
+	assert(false, "%s must override next_batch()." % get_script().resource_path)
+	return []
+
+
+## Performs every step of this effect at once, for the few places that cannot stop for a
+## decision, such as a mana ability (CR 605.3a). MmGameState asserts that none of its
+## batches needs a replacement choice.
+func perform_now(state: MmGameState, context: MmEffectContext) -> void:
+	var worked_out: Array[int] = numbers(state, context)
+	var step: int = 0
+	while true:
+		var batch: Array[MmEvent] = next_batch(state, context, step, worked_out)
+		if batch.is_empty():
+			return
+		state.perform_together(batch)
+		step += 1
 
 
 ## The Selections this effect uses. Subclasses with Selections override this.

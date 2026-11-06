@@ -13,7 +13,7 @@ func legal_targets(state: MmGameState, context: MmEffectContext) -> Array[MmRefe
 	# Later: spells and abilities on the stack as targets ("counter target spell").
 	var result: Array[MmReference] = []
 	for candidate: MmReference in candidates(state):
-		if filter.matches(state, candidate, context):
+		if filter.matches(state, candidate, context) and not _is_protected(state, candidate, context):
 			result.append(candidate)
 	return result
 
@@ -27,7 +27,7 @@ func is_still_legal(state: MmGameState, target: MmReference, context: MmEffectCo
 		var game_object: MmGameObject = state.object(target.id)
 		if game_object == null or game_object.zone() != state.battlefield:
 			return false
-	return filter.matches(state, target, context)
+	return filter.matches(state, target, context) and not _is_protected(state, target, context)
 
 
 ## Every player and permanent that could be a target, players first, each in ID order.
@@ -40,3 +40,12 @@ static func candidates(state: MmGameState) -> Array[MmReference]:
 	for id: int in permanent_ids:
 		result.append(MmReference.to_object(id))
 	return result
+
+
+## CR 702.16b: a permanent can't be the target of a spell, or an ability from a source, that
+## it has protection from. The context's source is the spell or ability's own object or its
+## source; ProtectionAbility follows an ability to its source either way.
+func _is_protected(state: MmGameState, candidate: MmReference, context: MmEffectContext) -> bool:
+	if not candidate.is_object():
+		return false
+	return ProtectionAbility.protects(state, state.object(candidate.id), context.source_object_id)

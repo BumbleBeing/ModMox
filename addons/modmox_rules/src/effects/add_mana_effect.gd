@@ -6,10 +6,15 @@ extends MmEffect
 @export var amount: MmValue
 
 
-func resolve(state: MmGameState, context: MmEffectContext) -> void:
-	var count: int = amount.evaluate(state, context)
-	if count > 0:
-		state.perform(ManaAddedEvent.new(context.controller_id, mana_type, count, context.source_object_id))
+func numbers(state: MmGameState, context: MmEffectContext) -> Array[int]:
+	var worked_out: Array[int] = [amount.evaluate(state, context)]
+	return worked_out
+
+
+func next_batch(_state: MmGameState, context: MmEffectContext, step: int, worked_out: Array[int]) -> Array[MmEvent]:
+	if step > 0 or worked_out[0] <= 0:
+		return []
+	return [ManaAddedEvent.new(context.controller_id, mana_type, worked_out[0], context.source_object_id)]
 
 
 func adds_mana() -> bool:

@@ -45,7 +45,10 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	procedure._ability = ability
 	procedure._target_specs = ability.targets
 	procedure._source_object_id = source.id
-	# Later: mana in activation costs, such as "{1}, {T}: ...".
+	if ability.mana_cost != null:
+		# CR 602.2b: an activation's mana is paid like a spell's (CR 601.2g-h).
+		procedure._remaining_generic = ability.mana_cost.generic
+		procedure._remaining_symbols = ability.mana_cost.symbols.duplicate()
 	var put: AbilityPutOnStackEvent = AbilityPutOnStackEvent.new(source.id, ability_index, player_id)
 	state.perform(put)
 	procedure._stack_object_id = put.new_object_id
@@ -142,6 +145,8 @@ func _payment_options() -> Array[MmAction]:
 			var ability: ActivatedAbility = abilities[ability_index] as ActivatedAbility
 			if ability == null or not ability.is_mana_ability() or not ability.can_pay_costs(_state, permanent):
 				continue
+			if ability.mana_cost != null:
+				continue  # Later: mana abilities with mana in their cost.
 			var context: MmEffectContext = MmEffectContext.new(_player_id, permanent.id)
 			for type: MmMana.Type in ManaPayment.mana_made_by(_state, ability, context):
 				if ManaPayment.symbol_paid_by(type, _remaining_symbols, _remaining_generic) != ManaPayment.CANNOT_PAY:

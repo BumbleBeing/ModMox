@@ -5,12 +5,16 @@ extends MmEffect
 @export var recipients: MmSelection
 
 
-func resolve(state: MmGameState, context: MmEffectContext) -> void:
+func next_batch(state: MmGameState, context: MmEffectContext, step: int, _numbers: Array[int]) -> Array[MmEvent]:
+	var events: Array[MmEvent] = []
+	if step > 0:
+		return events
 	for recipient: MmReference in recipients.select(state, context):
 		var leaving: MmGameObject = state.object(recipient.id) if recipient.is_object() else null
 		if leaving != null:
 			# No zone-change reason exists for an effect yet; RESOLVED stands in for one.
-			state.perform(ZoneChangeEvent.new(leaving, state.exile, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED))
+			events.append(ZoneChangeEvent.new(leaving, state.exile, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED))
+	return events
 
 
 func selections() -> Array[MmSelection]:

@@ -5,7 +5,8 @@ extends RefCounted
 ##
 ## Creatures are recorded by object ID. A creature that leaves the battlefield becomes a
 ## new object (ADR 0008), so the queries that take the state leave it out: that is how it
-## is removed from combat (CR 506.4).
+## is removed from combat (CR 506.4). One removed from combat while it stays, as by
+## regenerating, is recorded as removed and left out the same way.
 
 ## The player being attacked, or MmGameState.NO_PLAYER before attackers are declared.
 var defending_player_id: int = MmGameState.NO_PLAYER
@@ -23,6 +24,8 @@ var _damage_steps_begun: int = 0
 ## The creatures that had first strike or double strike as the first-strike combat damage
 ## step began, and so dealt their damage in it.
 var _first_strike_ids: Array[int] = []
+## Creatures removed from combat while staying on the battlefield (CR 506.4).
+var _removed_ids: Array[int] = []
 
 
 ## An independent copy, for copies of the game state.
@@ -36,6 +39,7 @@ func duplicate_combat() -> MmCombat:
 	copy._block_attacker_ids = _block_attacker_ids.duplicate()
 	copy._damage_steps_begun = _damage_steps_begun
 	copy._first_strike_ids = _first_strike_ids.duplicate()
+	copy._removed_ids = _removed_ids.duplicate()
 	return copy
 
 
@@ -61,11 +65,11 @@ func blockers(state: MmGameState) -> Array[int]:
 
 
 func is_attacking(object_id: int) -> bool:
-	return _attacker_ids.has(object_id)
+	return _attacker_ids.has(object_id) and not _removed_ids.has(object_id)
 
 
 func is_blocking(object_id: int) -> bool:
-	return _block_blocker_ids.has(object_id)
+	return _block_blocker_ids.has(object_id) and not _removed_ids.has(object_id)
 
 
 ## CR 509.1h: whether [param attacker_id] became blocked, even if its blockers have left.
@@ -120,6 +124,13 @@ func begin_damage_step(first_strike: bool, first_strike_ids: Array[int]) -> void
 		_first_strike_ids = first_strike_ids.duplicate()
 
 
+## Event-only: CR 506.4: [param object_id] is no longer attacking or blocking. An attacker
+## it blocked stays blocked (CR 509.1h).
+func remove_from_combat(object_id: int) -> void:
+	if not _removed_ids.has(object_id):
+		_removed_ids.append(object_id)
+
+
 ## Event-only: CR 511.3: every creature is removed from combat.
 func clear() -> void:
 	defending_player_id = MmGameState.NO_PLAYER
@@ -130,13 +141,14 @@ func clear() -> void:
 	_block_attacker_ids.clear()
 	_damage_steps_begun = 0
 	_first_strike_ids.clear()
+	_removed_ids.clear()
 
 
 ## A description of everything recorded, for the state fingerprint.
 func describe() -> String:
-	return "combat defending %d attackers %s blocked %s blocks %s->%s damage steps %d first strike %s %s" % [
+	return "combat defending %d attackers %s blocked %s blocks %s->%s damage steps %d first strike %s %s removed %s" % [
 		defending_player_id, _attacker_ids, _blocked_attacker_ids, _block_blocker_ids, _block_attacker_ids,
-		_damage_steps_begun, is_first_strike_damage_step, _first_strike_ids]
+		_damage_steps_begun, is_first_strike_damage_step, _first_strike_ids, _removed_ids]
 
 
 ## The IDs in [param ids] of objects still on the battlefield, in ID order.
@@ -146,7 +158,7 @@ func _present(state: MmGameState, ids: Array[int]) -> Array[int]:
 	var result: Array[int] = []
 	for id: int in ids:
 		var game_object: MmGameObject = state.object(id)
-		if game_object != null and game_object.zone() == state.battlefield and not result.has(id):
+		if game_object != null and game_object.zone() == state.battlefield and not result.has(id) and not _removed_ids.has(id):
 			result.append(id)
 	result.sort()
 	return result

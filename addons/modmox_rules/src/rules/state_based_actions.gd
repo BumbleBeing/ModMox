@@ -6,18 +6,20 @@ extends RefCounted
 
 
 ## Performs state-based actions until none apply, then ends the encounter if anyone lost.
+## Stops while a batch waits for a replacement choice, such as which regeneration shield to
+## use; calling it again afterwards carries on (A143).
 static func check(state: MmGameState) -> void:
-	while not state.is_over:
+	while not state.is_over and not state.is_batch_suspended():
+		for player: MmPlayer in state.players:
+			if player.has_lost:
+				_end_encounter(state)
+				return
 		var actions: Array[MmEvent] = _actions(state)
 		if actions.is_empty():
 			return
 		# CR 704.3: all at once, so "dies" triggers see everything that died together
 		# (ADR 0017).
-		state.perform_together(actions)
-		for player: MmPlayer in state.players:
-			if player.has_lost:
-				_end_encounter(state)
-				break
+		state.perform_resumably(actions)
 
 
 ## Whether any state-based action would be performed right now (CR 514.3a asks this).
@@ -37,6 +39,8 @@ static func _actions(state: MmGameState) -> Array[MmEvent]:
 		actions.append(_to_graveyard(state, creature, ZoneChangeEvent.Reason.ZERO_TOUGHNESS))
 	for creature: MmGameObject in _creatures_with_lethal_damage(state):
 		actions.append(_to_graveyard(state, creature, ZoneChangeEvent.Reason.DESTROY))
+	for creature: MmGameObject in _indestructible_creatures_dealt_deathtouch_damage(state):
+		actions.append(DeathtouchDamageClearedEvent.new(creature.id))
 	return actions
 
 
@@ -64,12 +68,25 @@ static func _creatures_with_zero_toughness(state: MmGameState) -> Array[MmGameOb
 
 ## CR 704.5g: a creature with toughness greater than 0 and damage marked on it greater
 ## than or equal to its toughness. CR 704.5h: one with toughness greater than 0 dealt damage
-## by a source with deathtouch. Later: indestructible.
+## by a source with deathtouch. CR 702.12b: neither destroys an indestructible creature.
 static func _creatures_with_lethal_damage(state: MmGameState) -> Array[MmGameObject]:
 	var found: Array[MmGameObject] = []
 	for creature: MmGameObject in _creatures(state):
-		var toughness: int = state.characteristics_of(creature).toughness
-		if toughness > 0 and (creature.damage_marked >= toughness or creature.was_dealt_deathtouch_damage):
+		var characteristics: MmCharacteristics = state.characteristics_of(creature)
+		if characteristics.toughness > 0 and not characteristics.has_ability(IndestructibleAbility) \
+				and (creature.damage_marked >= characteristics.toughness or creature.was_dealt_deathtouch_damage):
+			found.append(creature)
+	return found
+
+
+## CR 704.5h asks only about deathtouch damage since the last check, so an indestructible
+## creature that survives this check stops counting it.
+static func _indestructible_creatures_dealt_deathtouch_damage(state: MmGameState) -> Array[MmGameObject]:
+	var found: Array[MmGameObject] = []
+	for creature: MmGameObject in _creatures(state):
+		var characteristics: MmCharacteristics = state.characteristics_of(creature)
+		if creature.was_dealt_deathtouch_damage and characteristics.toughness > 0 \
+				and characteristics.has_ability(IndestructibleAbility):
 			found.append(creature)
 	return found
 

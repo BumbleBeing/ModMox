@@ -19,6 +19,8 @@ var to_owner_id: int
 ## Position in the destination: 0 for the top, MmZone.BOTTOM for after the last object.
 var position: int
 var reason: Reason
+## For a destruction: false when it "can't be regenerated", as with Terror (CR 701.19c).
+var can_be_regenerated: bool = true
 ## The new object's ID, set when the event is applied.
 var new_object_id: int = 0
 ## For an object leaving the battlefield: its characteristics as it last existed there,
@@ -26,7 +28,7 @@ var new_object_id: int = 0
 var last_known: MmCharacteristics = null
 
 
-func _init(leaving: MmGameObject, destination: MmZone, at_position: int, why: Reason) -> void:
+func _init(leaving: MmGameObject, destination: MmZone, at_position: int, why: Reason, regenerable: bool = true) -> void:
 	object_id = leaving.id
 	card_id = leaving.card_id
 	from_zone_kind = leaving.zone().kind
@@ -35,6 +37,7 @@ func _init(leaving: MmGameObject, destination: MmZone, at_position: int, why: Re
 	to_owner_id = destination.owner_id
 	position = at_position
 	reason = why
+	can_be_regenerated = regenerable
 
 
 func apply(state: MmGameState) -> void:
@@ -60,6 +63,6 @@ func apply(state: MmGameState) -> void:
 
 
 func describe() -> String:
-	return "%s: object %d (card %d) from %s to %s as object %d" % [
-		Reason.find_key(reason), object_id, card_id,
+	return "%s%s: object %d (card %d) from %s to %s as object %d" % [
+		Reason.find_key(reason), "" if can_be_regenerated else " (can't be regenerated)", object_id, card_id,
 		MmZone.describe_zone(from_zone_kind, from_owner_id), MmZone.describe_zone(to_zone_kind, to_owner_id), new_object_id]

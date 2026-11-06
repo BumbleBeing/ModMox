@@ -12,18 +12,20 @@ enum Duration { UNTIL_END_OF_TURN = 0 }
 @export var duration: Duration = Duration.UNTIL_END_OF_TURN
 
 
-func resolve(state: MmGameState, context: MmEffectContext) -> void:
+func next_batch(state: MmGameState, context: MmEffectContext, step: int, _numbers: Array[int]) -> Array[MmEvent]:
+	if step > 0:
+		return []
 	var ids: Array[int] = []
 	for found: MmReference in continuous.affected.select(state, context):
 		var game_object: MmGameObject = state.object(found.id) if found.is_object() else null
 		if game_object != null and game_object.zone() == state.battlefield:
 			ids.append(found.id)
 	if ids.is_empty():
-		return
+		return []
 	var source: MmGameObject = state.object_or_last_known(context.source_object_id)
 	var source_card: int = MmGameObject.NO_CARD if source == null else source.card_id
-	state.perform(ContinuousEffectCreatedEvent.new(continuous, context.controller_id, context.source_object_id, source_card,
-		ids, continuous.numbers(state, context), duration))
+	return [ContinuousEffectCreatedEvent.new(continuous, context.controller_id, context.source_object_id, source_card,
+		ids, continuous.numbers(state, context), duration)]
 
 
 func selections() -> Array[MmSelection]:

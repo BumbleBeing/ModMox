@@ -27,6 +27,12 @@ var winner_id: int = NO_PLAYER
 var pending_triggers: Array[PendingTrigger] = []
 ## Continuous effects created by resolved spells and abilities, until they end (CR 611.2).
 var continuous_effects: Array[ActiveContinuousEffect] = []
+## Replacement and prevention effects created by resolved spells and abilities, in the
+## order they were created, until they end or are used up (ADR 0019).
+var replacement_effects: Array[ActiveReplacementEffect] = []
+## The batch waiting for a replacement choice, or null (A143). Nothing else can be
+## performed until it is answered.
+var suspended_batch: SuspendedBatch = null
 ## Every event performed, in order. Read-only outside perform(). Events never change once
 ## applied, so copies of the state share them.
 var event_log: Array[MmEvent] = []
@@ -95,6 +101,8 @@ func duplicate_state() -> MmGameState:
 	copy._departed = _departed.duplicate()  # Departed objects are frozen.
 	copy._next_batch = _next_batch
 	copy.continuous_effects = continuous_effects.duplicate()  # Active effects never change.
+	copy.replacement_effects = replacement_effects.duplicate()  # Nor do these.
+	copy.suspended_batch = null if suspended_batch == null else suspended_batch.copy_for(copy)
 	copy.event_log = event_log.duplicate()
 	copy._run_cards = _run_cards.duplicate()  # Run Cards are read-only during an encounter.
 	copy._next_object_id = _next_object_id
@@ -183,25 +191,48 @@ func is_summoning_sick(game_object: MmGameObject) -> bool:
 
 
 ## Performs [param event] through the pipeline: replacement, then apply, then log, then
-## triggers (ADR 0007).
+## triggers (ADR 0007). For callers that cannot stop for a decision (A145).
 func perform(event: MmEvent) -> void:
 	perform_together([event])
 
 
 ## Performs [param events] as one simultaneous batch (ADR 0017), as state-based actions and
 ## combat damage are (CR 704.3, 510.2). Triggers are looked for once, after all of them.
+## For callers that cannot stop for a decision: nothing they perform may need a replacement
+## choice (A145).
 func perform_together(events: Array[MmEvent]) -> void:
-	var before: Array[MmGameObject] = TriggerDetection.observers(self)
+	perform_resumably(events)
+	# Later: make each such caller resumable when a card first replaces its events, as
+	# Island Sanctuary would the draw step's draw.
+	assert(suspended_batch == null, "A replacement choice came up where the engine cannot stop for one.")
+
+
+## Performs [param events] as one batch, stopping part-way if a replacement choice is
+## needed (A143). The caller must then check is_batch_suspended() and stop too; the batch
+## carries on when choose_replacement_effect() is answered.
+func perform_resumably(events: Array[MmEvent]) -> void:
+	assert(suspended_batch == null, "A batch is waiting for a replacement choice.")
 	_next_batch += 1
-	var performed: Array[MmEvent] = []
-	for event: MmEvent in events:
-		var final_event: MmEvent = _apply_replacement_effects(event)
-		final_event.batch = _next_batch
-		final_event.apply(self)
-		_layer_results_valid = false
-		event_log.append(final_event)
-		performed.append(final_event)
-	TriggerDetection.detect(self, performed, before)
+	_continue_batch(SuspendedBatch.new(_next_batch, TriggerDetection.observers(self), events))
+
+
+## Whether a batch is waiting for a replacement choice.
+func is_batch_suspended() -> bool:
+	return suspended_batch != null
+
+
+## The replacement choice the suspended batch is waiting for (CR 616.1).
+func replacement_decision() -> ChooseReplacementEffectDecision:
+	var event: MmEvent = suspended_batch.next_event()
+	return ChooseReplacementEffectDecision.new(ReplacementRules.affected_player_id(self, event), event, suspended_batch.choices)
+
+
+## Applies option [param index] of the replacement decision, and carries on with the batch.
+func choose_replacement_effect(index: int) -> void:
+	var batch: SuspendedBatch = suspended_batch
+	suspended_batch = null
+	_replace_next(batch, batch.choices[index])
+	_continue_batch(batch)
 
 
 ## The object with [param id], or its frozen last-known version if it has left the
@@ -236,6 +267,37 @@ func add_continuous_effect(active: ActiveContinuousEffect) -> void:
 	continuous_effects.append(active)
 
 
+## Event-only: a replacement or prevention effect starts.
+func add_replacement_effect(active: ActiveReplacementEffect) -> void:
+	replacement_effects.append(active)
+
+
+## Event-only: [param amount] of the shield created at [param timestamp] is used. It ends
+## once nothing is left.
+func use_replacement_effect(timestamp: int, amount: int) -> void:
+	for index: int in replacement_effects.size():
+		var active: ActiveReplacementEffect = replacement_effects[index]
+		if active.timestamp == timestamp:
+			var left: int = active.remaining - amount
+			if left > 0:
+				replacement_effects[index] = active.with_remaining(left)
+			else:
+				replacement_effects.remove_at(index)
+			return
+	assert(false, "No replacement effect has timestamp %d." % timestamp)
+
+
+## Event-only: every replacement effect with [param duration] ends. Returns how many did.
+func end_replacement_effects(duration: CreateContinuousEffect.Duration) -> int:
+	var staying: Array[ActiveReplacementEffect] = []
+	for active: ActiveReplacementEffect in replacement_effects:
+		if active.duration != duration:
+			staying.append(active)
+	var ending: int = replacement_effects.size() - staying.size()
+	replacement_effects = staying
+	return ending
+
+
 ## Event-only: every continuous effect with [param duration] ends. Returns how many did.
 func end_continuous_effects(duration: CreateContinuousEffect.Duration) -> int:
 	var ending: int = 0
@@ -266,13 +328,17 @@ func record_departure(leaving: MmGameObject) -> void:
 
 ## Draws [param count] cards for a player, one at a time from the top (CR 121.2).
 func draw_cards(player_id: int, count: int) -> void:
-	var drawer: MmPlayer = player(player_id)
 	for _index: int in count:
-		if drawer.library.is_empty():
-			# CR 121.4: the attempt is recorded, and the player loses at the next check (704.5b).
-			perform(EmptyLibraryDrawEvent.new(player_id))
-			continue
-		perform(ZoneChangeEvent.new(drawer.library.top(), drawer.hand, MmZone.BOTTOM, ZoneChangeEvent.Reason.DRAW))
+		perform(draw_event(player_id))
+
+
+## The event of [param player_id] drawing their top card now.
+func draw_event(player_id: int) -> MmEvent:
+	var drawer: MmPlayer = player(player_id)
+	if drawer.library.is_empty():
+		# CR 121.4: the attempt is recorded, and the player loses at the next check (704.5b).
+		return EmptyLibraryDrawEvent.new(player_id)
+	return ZoneChangeEvent.new(drawer.library.top(), drawer.hand, MmZone.BOTTOM, ZoneChangeEvent.Reason.DRAW)
 
 
 ## Event-only: the encounter ends with [param winning_player_id] winning, or
@@ -307,6 +373,10 @@ func fingerprint() -> String:
 		lines.append("pending " + pending.describe())
 	for active: ActiveContinuousEffect in continuous_effects:
 		lines.append("continuous " + active.describe())
+	for active: ActiveReplacementEffect in replacement_effects:
+		lines.append("replacement " + active.describe())
+	if suspended_batch != null:
+		lines.append("suspended " + suspended_batch.describe())
 	lines.append("next ids %d %d" % [_next_object_id, _next_card_id])
 	for each_player: MmPlayer in players:
 		var mana: PackedStringArray = PackedStringArray()
@@ -340,6 +410,30 @@ func _all_zones() -> Array[MmZone]:
 	return zones
 
 
-func _apply_replacement_effects(event: MmEvent) -> MmEvent:
-	# Later (milestone 10): let replacement and prevention effects modify the event (CR 614).
-	return event
+## Performs the batch's events in order. Before each is applied, it is offered to the
+## replacement and prevention effects that apply to it (CR 614, 615); what replaces it
+## takes its place and is offered to the rest (CR 616.1, 616.2).
+func _continue_batch(batch: SuspendedBatch) -> void:
+	while batch.has_next_event():
+		var event: MmEvent = batch.next_event()
+		var choices: Array[ActiveReplacementEffect] = ReplacementRules.applicable(self, event, batch.next_applied_keys())
+		if choices.is_empty():
+			batch.take_next_event()
+			event.batch = batch.number
+			event.apply(self)
+			_layer_results_valid = false
+			event_log.append(event)
+			batch.performed.append(event)
+			continue
+		var chosen: ActiveReplacementEffect = ReplacementRules.automatic_choice(choices)
+		if chosen == null:
+			batch.choices = choices
+			suspended_batch = batch
+			return
+		_replace_next(batch, chosen)
+	TriggerDetection.detect(self, batch.performed, batch.before)
+
+
+func _replace_next(batch: SuspendedBatch, chosen: ActiveReplacementEffect) -> void:
+	var event: MmEvent = batch.next_event()
+	batch.replace_next_event(chosen.effect.replace(self, event, chosen), chosen.key())

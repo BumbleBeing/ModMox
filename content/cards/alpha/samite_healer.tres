@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_46fxn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_ag00k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="3_6ado5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_1rlxl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_72l46"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="6_ay7lx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/prevent_damage_effect.gd" id="7_qtij4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_6rbpa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="9_vlibd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_4rsmo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="11_icq63"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_p3f3y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="13_e5iv5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="14_hfhbr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="15_0u5yd"]
+
+[sub_resource type="Resource" id="Resource_o0v06"]
+script = ExtResource("3_6ado5")
+
+[sub_resource type="Resource" id="Resource_ju2ft"]
+script = ExtResource("5_72l46")
+value = 1
+
+[sub_resource type="Resource" id="Resource_ylnj5"]
+script = ExtResource("6_ay7lx")
+
+[sub_resource type="Resource" id="Resource_uf2kh"]
+script = ExtResource("7_qtij4")
+amount = SubResource("Resource_ju2ft")
+recipients = SubResource("Resource_ylnj5")
+
+[sub_resource type="Resource" id="Resource_mulwv"]
+script = ExtResource("11_icq63")
+
+[sub_resource type="Resource" id="Resource_mdr6b"]
+script = ExtResource("12_p3f3y")
+
+[sub_resource type="Resource" id="Resource_wcp8v"]
+script = ExtResource("13_e5iv5")
+filters = Array[ExtResource("10_4rsmo")]([SubResource("Resource_mulwv"), SubResource("Resource_mdr6b")])
+
+[sub_resource type="Resource" id="Resource_xxmu1"]
+script = ExtResource("9_vlibd")
+filter = SubResource("Resource_wcp8v")
+
+[sub_resource type="Resource" id="Resource_nkn8i"]
+script = ExtResource("8_6rbpa")
+costs = Array[ExtResource("2_ag00k")]([SubResource("Resource_o0v06")])
+targets = Array[ExtResource("9_vlibd")]([SubResource("Resource_xxmu1")])
+effects = Array[ExtResource("4_1rlxl")]([SubResource("Resource_uf2kh")])
+
+[sub_resource type="Resource" id="Resource_3tcdr"]
+script = ExtResource("14_hfhbr")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("15_0u5yd")
+name = "Samite Healer"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Cleric"])
+mana_cost = SubResource("Resource_3tcdr")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_46fxn")]([SubResource("Resource_nkn8i")])

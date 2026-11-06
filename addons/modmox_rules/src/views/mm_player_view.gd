@@ -17,6 +17,11 @@ var mana_pools: Dictionary[int, Array] = {}
 var hand_sizes: Dictionary[int, int] = {}
 var library_sizes: Dictionary[int, int] = {}
 var life_totals: Dictionary[int, int] = {}
+## The shields and other replacement effects locked to each player, by player ID (A140).
+var player_replacement_effects: Dictionary[int, Array] = {}
+## Replacement effects locked to no player or object, such as Fog's "prevent all combat
+## damage that would be dealt this turn".
+var game_replacement_effects: Array[ActiveReplacementEffect] = []
 ## The count of all turns begun by either player; 0 during the pregame.
 var game_turn: int = 0
 var active_player_id: int = MmGameState.NO_PLAYER
@@ -53,8 +58,16 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		view.library_sizes[player.id] = player.library.size()
 		view.life_totals[player.id] = player.life
 		view.mana_pools[player.id] = player.mana_pool()
+		var on_player: Array[ActiveReplacementEffect] = []
+		for active: ActiveReplacementEffect in state.replacement_effects:
+			if active.is_locked_to(MmReference.to_player(player.id)):
+				on_player.append(active)
+		view.player_replacement_effects[player.id] = on_player
 		if player.has_lost:
 			view.loss_reasons[player.id] = player.loss_reason
+	for active: ActiveReplacementEffect in state.replacement_effects:
+		if active.affected.is_empty():
+			view.game_replacement_effects.append(active)
 	view.game_turn = state.game_turn
 	view.active_player_id = state.active_player_id
 	if state.active_player_id != MmGameState.NO_PLAYER:

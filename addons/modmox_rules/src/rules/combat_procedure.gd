@@ -181,8 +181,10 @@ func _blocker_candidates(defending_id: int, attackers: Array[int], legal: Dictio
 
 
 ## CR 702.9b and 702.17b: a creature with flying can be blocked only by creatures with
-## flying or reach.
+## flying or reach. CR 702.16c: nor can a creature it has protection from block it.
 func _can_block(blocker: MmGameObject, attacker: MmGameObject) -> bool:
+	if ProtectionAbility.protects(_state, attacker, blocker.id):
+		return false
 	if not _state.characteristics_of(attacker).has_ability(FlyingAbility):
 		return true
 	var blocking: MmCharacteristics = _state.characteristics_of(blocker)
@@ -273,14 +275,16 @@ func _assign_blocker_or_ask(blocker_id: int) -> DivideCombatDamageDecision:
 
 
 ## CR 510.2: all combat damage in the step is dealt at once. State-based actions are then
-## checked as players would receive priority (CR 510.3).
+## checked as players would receive priority (CR 510.3). Dealing it is this step's last
+## action, so if its batch waits for a replacement choice, the turn procedure asks it and
+## the batch carries on from there (A143).
 func _deal_assigned_damage() -> void:
 	var damage: Array[MmEvent] = []
 	for index: int in _source_ids.size():
 		if _amounts[index] > 0:
 			damage.append(DamageEvent.new(_source_ids[index], _recipients[index], _amounts[index], true))
 	if not damage.is_empty():
-		_state.perform_together(damage)
+		_state.perform_resumably(damage)
 
 
 func _assign(source_id: int, recipient: MmReference, amount: int) -> void:

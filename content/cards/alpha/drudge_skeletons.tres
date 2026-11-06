@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_v51st"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_7h638"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_2b74c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/regenerate_effect.gd" id="4_8yqb6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_rodie"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="6_6cnch"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="7_ein1i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="8_o2rju"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="9_47auo"]
+
+[sub_resource type="Resource" id="Resource_eyvlj"]
+script = ExtResource("5_rodie")
+
+[sub_resource type="Resource" id="Resource_w878w"]
+script = ExtResource("4_8yqb6")
+selection = SubResource("Resource_eyvlj")
+
+[sub_resource type="Resource" id="Resource_tfm6u"]
+script = ExtResource("6_6cnch")
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_6f0tx"]
+script = ExtResource("7_ein1i")
+mana_cost = SubResource("Resource_tfm6u")
+effects = Array[ExtResource("3_2b74c")]([SubResource("Resource_w878w")])
+
+[sub_resource type="Resource" id="Resource_irkyv"]
+script = ExtResource("6_6cnch")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("9_47auo")
+name = "Drudge Skeletons"
+card_types = Array[int]([1])
+subtypes = Array[String](["Skeleton"])
+mana_cost = SubResource("Resource_irkyv")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_v51st")]([SubResource("Resource_6f0tx")])

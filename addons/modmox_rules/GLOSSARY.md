@@ -146,6 +146,28 @@ _Avoid_: Creation order, age
 An ability that works out a characteristic, such as "its power and toughness are each equal to the number of non-Wall creatures you control". It works in every zone, and its card shows "*" for that number.
 _Avoid_: Variable stats, star ability
 
+## Replacement effects
+
+**Replacement Effect**:
+An effect that waits for a particular event and changes it as it would happen, such as "the next time this creature would be destroyed this turn, instead tap it". When several apply to one event, the affected player chooses the order.
+_Avoid_: Override, interceptor, hook
+
+**Prevention Effect**:
+A replacement effect that stops damage from being dealt: all of it, or up to an amount. Prevented damage is never dealt, so nothing that reacts to damage sees it.
+_Avoid_: Damage reduction, absorb, block (blocking is combat)
+
+**Shield**:
+A replacement or prevention effect that is used up as it applies, such as "prevent the next 1 damage" or a regeneration shield. The GUI shows what each one has left and the card it came from.
+_Avoid_: Buffer, barrier, charge
+
+**Protection**:
+"Protection from [quality]": a permanent with it can't be dealt damage, blocked, or targeted by anything with that quality, which is a Filter, such as "black" or "creatures".
+_Avoid_: Immunity, ward (a different keyword), hexproof (a different keyword)
+
+**Suspended Batch**:
+A batch of events that stopped part-way because a player must choose which replacement effect applies first. It is kept in the game state until they answer, and then carries on.
+_Avoid_: Paused event, pending event, interrupted batch
+
 ## Combat
 
 **Combat**:

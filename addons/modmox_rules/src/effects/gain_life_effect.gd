@@ -6,13 +6,19 @@ extends MmEffect
 @export var players: MmSelection
 
 
-func resolve(state: MmGameState, context: MmEffectContext) -> void:
-	var life: int = amount.evaluate(state, context)
-	if life <= 0:  # CR 107.1b: a negative amount is treated as 0.
-		return
+func numbers(state: MmGameState, context: MmEffectContext) -> Array[int]:
+	var worked_out: Array[int] = [amount.evaluate(state, context)]
+	return worked_out
+
+
+func next_batch(state: MmGameState, context: MmEffectContext, step: int, worked_out: Array[int]) -> Array[MmEvent]:
+	var events: Array[MmEvent] = []
+	if step > 0 or worked_out[0] <= 0:  # CR 107.1b: a negative amount is treated as 0.
+		return events
 	for gainer: MmReference in players.select(state, context):
 		if gainer.is_player():
-			state.perform(LifeGainedEvent.new(gainer.id, life))
+			events.append(LifeGainedEvent.new(gainer.id, worked_out[0]))
+	return events
 
 
 func selections() -> Array[MmSelection]:

@@ -7,5 +7,5 @@ func has_targets() -> bool:
 	return true
 
 
-func resolve(_state: MmGameState, _context: MmEffectContext) -> void:
-	pass
+func next_batch(_state: MmGameState, _context: MmEffectContext, _step: int, _numbers: Array[int]) -> Array[MmEvent]:
+	return []

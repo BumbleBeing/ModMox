@@ -4,6 +4,10 @@ extends MmAbility
 ## content (CR 605.1a), never set by hand, so a Modification that adds a target turns a
 ## mana ability into one that uses the stack.
 
+## The mana part of its cost, such as {B} in "{B}: Regenerate this creature", paid like a
+## spell's mana cost (CR 602.2b). Null when it costs no mana.
+@export var mana_cost: MmManaCost = null
+## Every other part of its cost, such as {T}, paid once the mana is (CR 601.2h).
 @export var costs: Array[MmCost] = []
 @export var targets: Array[TargetSpec] = []
 @export var effects: Array[MmEffect] = []
@@ -37,10 +41,11 @@ func pay_costs(state: MmGameState, source: MmGameObject) -> void:
 		cost.pay(state, source)
 
 
-## Carries out every effect, in order.
+## Carries out every effect at once, in order, for a mana ability, which resolves
+## immediately without using the stack (CR 605.3a).
 func resolve_effects(state: MmGameState, context: MmEffectContext) -> void:
 	for effect: MmEffect in effects:
-		effect.resolve(state, context)
+		effect.perform_now(state, context)
 
 
 func describe() -> String:

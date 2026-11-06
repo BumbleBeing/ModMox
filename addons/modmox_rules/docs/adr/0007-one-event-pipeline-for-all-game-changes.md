@@ -3,3 +3,5 @@
 No rules code changes the game state directly (no `life -= 3`). Every change (damage, life change, zone change, tapping, counters, drawing, and so on) is first proposed as an event, then offered to replacement and prevention effects, then applied, then recorded in the event log, after which triggered abilities check the log. This single route is what lets replacement effects, triggers and GUI animation all see the same sequence of happenings. It is built in from the first milestone, even before any replacement effects or triggers exist, because retrofitting it would mean rewriting every rule that touches the state.
 
 Triggers are detected right after each event, or each batch of simultaneous events, is applied and logged (ADR 0017).
+
+Effects do not perform events themselves. They propose them, one simultaneous batch per step, and the procedure resolving them performs each batch. A batch can stop part-way when the affected player must choose among replacement effects. It is then kept in the game state until the choice is answered, and the procedure that proposed it carries on afterwards (ADR 0019).

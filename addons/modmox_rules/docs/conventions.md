@@ -26,7 +26,8 @@ addons/modmox_rules/
     filters/     Filters and their all-of, any-of and not combinators
     layers/      continuous effects and the layer engine
     mana/        mana units, mana costs, and the rules for paying them
-    rules/       game procedures: pregame, turns and the stack, casting, combat
+    replacements/ replacement and prevention effects, and the rules for applying them
+    rules/       game procedures: pregame, turns, casting, resolving, combat
     selections/  Selections: who or what an effect applies to
     targets/     Target Requirements
     triggers/    what triggered abilities wait for, detecting them, and pending triggers
@@ -46,7 +47,7 @@ tests/           game-side tests, such as checks on Content
 
 ## Naming classes
 
-- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`, `MmCombat`, `MmTrigger`, `MmCondition`, `MmContinuousEffect`.
+- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`, `MmCombat`, `MmTrigger`, `MmCondition`, `MmContinuousEffect`, `MmReplacementEffect`.
 - **Specific subclasses** have no prefix and end with their base kind: `ChangeNameModification`, `ZoneChangeEvent`, `KeepOrMulliganDecision`, `DealDamageEffect`, `CreatureFilter`, `CountValue`, `ModifyPowerToughnessContinuousEffect`.
 - Test files and test helpers never declare `class_name`.
 - Never reuse a name Godot already has as a built-in type or class (`Color`, `Rect2`, `Timer`, ...), even inside a class. It fails to compile. That is why the color enum is `MmCardTypes.CardColor`.
@@ -90,7 +91,7 @@ Follow the Godot style guide order:
 
 These are what keep the engine predictable. A violation is a bug even if the tests pass.
 
-1. **State changes only through events (ADR 0007).** Rules code builds an `MmEvent` and calls `MmGameState.perform(event)`. Only an event's `apply` method may call a mutating method on a zone, player or object.
+1. **State changes only through events (ADR 0007).** Rules code builds an `MmEvent` and calls `MmGameState.perform(event)`. Only an event's `apply` method may call a mutating method on a zone, player or object. Effects never perform anything: `next_batch()` returns the events of each step, and its numbers come from `numbers()`, worked out once as the effect begins (ADR 0019). Code that may need a replacement choice performs with `perform_resumably()`, then stops and returns `replacement_decision()` while `is_batch_suspended()`, and carries on from where it was once the choice is answered. Everything else uses `perform()` or `perform_together()`, which assert that no choice was needed.
 2. **Characteristics only through the query (ADR 0009).** Ask `MmGameState.characteristics_of(object)`. Never read `object.definition.<field>` in rules code.
 3. **Players are relative (ADR 0005).** Rules code says controller, owner, active player or opponent of. `hero()` and `villain()` exist only on the engine facade, for setup and presentation.
 4. **Randomness only from the Game RNG (ADR 0006).** No `randi()`, `randf()`, `randomize()`, `Array.shuffle()` or `Array.pick_random()`. No reading the clock (`Time`, `OS.get_ticks_*`). A test scans `src/` for these.
@@ -119,7 +120,8 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - Drive a game forward with `Scenario.autoplay()` and its shortcuts (`keep_all`, `play_until_game_turn`, `play_until_step`) rather than submitting long answer lists by hand.
 - Play an encounter to its end with `Scenario.play_until_over()`.
 - Get permanents onto the battlefield on the first two turns and stop at any later step with `Scenario.permanents_ready_with()`. Let everything on the stack resolve with `Scenario.resolve_stack()`.
-- Set up a combat with `Scenario.combat_ready()`: free creatures cast on the first two turns, stopped at the Hero's attackers decision. Cast a card that has a cost for free in a scenario with `Scenario.free_copy()`.
+- Set up a combat with `Scenario.combat_ready()`: free creatures cast on the first two turns, stopped at the Hero's attackers decision. Cast a card that has a cost for free in a scenario with `Scenario.free_copy()`. A free copy is colorless, because color comes from the mana cost, so a test that needs a colored source pays real mana or uses a Filter on something else, such as a subtype.
+- Activate an ability with `Scenario.activate()`, reach a replacement choice with `Scenario.pass_to_replacement_choice()`, and answer it by its source card with `Scenario.choose_replacement_from()`.
 
 ## Formatting
 
