@@ -23,9 +23,47 @@ _Avoid_: Card (when an in-game object is meant), entity
 ## Play
 
 **Encounter**:
-One complete game of Magic between the player and exactly one foe. Run Cards cannot change during an encounter.
+One complete game of Magic between the Hero and exactly one Villain. Run Cards cannot change during an encounter.
 _Avoid_: Match, battle, duel
+
+**Encounter Setup**:
+The starting conditions of an encounter: both decks, starting life totals, opening hand sizes, free mulligans, who goes first, and the encounter seed.
+_Avoid_: Game config, match settings
+
+**Free Mulligan**:
+A mulligan that puts no cards on the bottom of the library. A player's first mulligans are free, up to the number granted in the Encounter Setup.
+_Avoid_: Bonus mulligan, mulligan charge
+
+**Emblem**:
+A Game Object in the command zone that has abilities but no other characteristics, used to give an encounter or a player rules that last the whole game.
+_Avoid_: Encounter rule, modifier, aura (unless an actual Aura is meant)
+
+**Hero**:
+The player in an encounter who represents the human's character.
+_Avoid_: Player (when this specific player is meant), user, human
+
+**Villain**:
+The player in an encounter who represents the adversary.
+_Avoid_: Opponent (when this specific player is meant), enemy, foe, AI
+
+**Agent**:
+Whatever answers Pending Decisions on behalf of a player: the human through the GUI, or an AI. Usually the Hero has a Human Agent and the Villain an AI Agent, but either player can be driven by any Agent.
+_Avoid_: Controller, input, brain
 
 **Pending Decision**:
 A point where the engine has stopped because a player must make a choice, together with the legal options for that choice.
 _Avoid_: Prompt, callback, request
+
+## Randomness
+
+**Encounter Seed**:
+The single number from which all randomness in an encounter is derived, making the encounter exactly replayable from its seed and its decisions.
+_Avoid_: Random seed, game ID
+
+**Game RNG**:
+The randomness used by the rules themselves (shuffles, random discards, coin flips), hidden from both players.
+_Avoid_: RNG (unqualified)
+
+**AI RNG**:
+The randomness an AI Agent uses to choose among options, which never affects the Game RNG.
+_Avoid_: RNG (unqualified)

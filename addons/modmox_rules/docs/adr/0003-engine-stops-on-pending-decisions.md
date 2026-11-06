@@ -5,3 +5,5 @@ Whenever a choice is needed, the engine stops and returns a Pending Decision lis
 Pending Decisions come in a fixed set of typed kinds (choose targets, declare blockers, choose from a zone, and so on) that describe what is being chosen and from where. They contain no GUI hints: the GUI maps each kind to its own widget.
 
 The engine gives priority at every point the rules require and never skips any. MTG Arena-style auto-passing (configurable stops, skipping steps where no meaningful action is possible) is decided by whoever answers the decision, not by the engine.
+
+Likewise, paying a cost is always a Pending Decision (which mana abilities to activate and which mana pays which part of the cost). Arena-style auto-tapping is Agent policy: the Human Agent proposes a payment the human can override, and the AI Agent chooses its own.

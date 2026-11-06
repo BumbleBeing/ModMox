@@ -1,0 +1,8 @@
+# Godot 4+ generated files
+.godot/
+/android/
+
+# GUT output
+/.gut_editor_config.json
+/.gut_editor_shortcuts.cfg
+/test_results*.xml
