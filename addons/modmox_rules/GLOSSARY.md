@@ -20,6 +20,10 @@ _Avoid_: Upgrade, buff, patch, mod
 An object inside an encounter (a card in a zone, a spell on the stack, a permanent, a token, an ability on the stack), including everything currently affecting it in that game.
 _Avoid_: Card (when an in-game object is meant), entity
 
+**Card Identity**:
+The identity of a physical card, which survives every zone change even though each move creates a new Game Object. Used only to relate Game Objects back to their Run Card, never by the rules.
+_Avoid_: Card ID (when an object is meant), instance ID
+
 ## Play
 
 **Encounter**:
@@ -53,6 +57,22 @@ _Avoid_: Controller, input, brain
 **Pending Decision**:
 A point where the engine has stopped because a player must make a choice, together with the legal options for that choice.
 _Avoid_: Prompt, callback, request
+
+**Decision Log**:
+Every accepted answer to a Pending Decision in an encounter, in order. Together with the Encounter Setup it reproduces the encounter exactly.
+_Avoid_: Input history, move list, replay
+
+**Event**:
+A single change to the game, such as a card moving zones or a library being shuffled. It is proposed, offered to replacement effects, applied, and then recorded.
+_Avoid_: Action, change, signal
+
+**Event Log**:
+Every Event performed in an encounter, in order. Triggers and the GUI learn what happened from it.
+_Avoid_: History, game log
+
+**Player View**:
+Everything one player may legally see of the game, and nothing more. Agents and the GUI only ever read a Player View.
+_Avoid_: Snapshot, visible state
 
 ## Randomness
 
