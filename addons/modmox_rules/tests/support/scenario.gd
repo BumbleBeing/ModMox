@@ -658,3 +658,40 @@ static func cycled(definitions: Array[MmCardDefinition]) -> Array[MmCardDefiniti
 	for index: int in 40:
 		deck_cards.append(definitions[index % definitions.size()])
 	return deck_cards
+
+
+# --- Milestone 7: state-based actions and the end of an encounter ------------------
+
+
+## An instant costing {0}: "[param amount] damage to each player."
+static func damage_each_player(card_name: String, amount: int) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [], [deal_damage(amount, each(IsPlayerFilter.new()))])
+
+
+## An instant costing {0}: "Target player draws [param amount] cards."
+static func free_draw(card_name: String, amount: int) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target_player()], [draw_cards(amount, targeted(0))])
+
+
+## Plays on with autoplay() defaults until the encounter is over.
+static func play_until_over(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool: return running.is_over())
+
+
+## The zone-change reason of the last card to enter [param zone].
+static func last_reason_into(engine: MmEngine, zone_kind: MmZone.Kind) -> ZoneChangeEvent.Reason:
+	var reason: ZoneChangeEvent.Reason = ZoneChangeEvent.Reason.DRAW
+	for event: MmEvent in engine.event_log():
+		var moved: ZoneChangeEvent = event as ZoneChangeEvent
+		if moved != null and moved.to_zone_kind == zone_kind:
+			reason = moved.reason
+	return reason
+
+
+## Every event of [param kind] in the log, in order.
+static func events_of(engine: MmEngine, kind: Script) -> Array[MmEvent]:
+	var result: Array[MmEvent] = []
+	for event: MmEvent in engine.event_log():
+		if is_instance_of(event, kind):
+			result.append(event)
+	return result

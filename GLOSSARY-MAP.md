@@ -7,4 +7,4 @@
 
 ## Relationships
 
-- **Game → Rules Engine**: The game hands the engine an Encounter Setup (decks of Run Cards, final starting numbers, Emblems derived from Statuses) and receives the event log and the result. The engine never refers to the game.
+- **Game → Rules Engine**: The game hands the engine an Encounter Setup (decks of Run Cards, final starting numbers, Emblems derived from Statuses) and receives the event log and the Outcome. The engine never refers to the game.

@@ -20,6 +20,9 @@ var active_player_id: int = NO_PLAYER
 var step: MmTurn.Step = MmTurn.Step.NONE
 ## The current combat; empty outside combat.
 var combat: MmCombat = MmCombat.new()
+## Whether the encounter has ended (CR 104), and who won: MmGameState.NO_PLAYER for a draw.
+var is_over: bool = false
+var winner_id: int = NO_PLAYER
 ## Every event performed, in order. Read-only outside perform(). Events never change once
 ## applied, so copies of the state share them.
 var event_log: Array[MmEvent] = []
@@ -68,6 +71,8 @@ func duplicate_state() -> MmGameState:
 	copy.active_player_id = active_player_id
 	copy.step = step
 	copy.combat = combat.duplicate_combat()
+	copy.is_over = is_over
+	copy.winner_id = winner_id
 	copy.event_log = event_log.duplicate()
 	copy._run_cards = _run_cards.duplicate()  # Run Cards are read-only during an encounter.
 	copy._next_object_id = _next_object_id
@@ -153,9 +158,17 @@ func draw_cards(player_id: int, count: int) -> void:
 	var drawer: MmPlayer = player(player_id)
 	for _index: int in count:
 		if drawer.library.is_empty():
-			# Later (milestone 7): record the attempt so the player loses (CR 121.4, 704.5b).
-			return
+			# CR 121.4: the attempt is recorded, and the player loses at the next check (704.5b).
+			perform(EmptyLibraryDrawEvent.new(player_id))
+			continue
 		perform(ZoneChangeEvent.new(drawer.library.top(), drawer.hand, MmZone.BOTTOM, ZoneChangeEvent.Reason.DRAW))
+
+
+## Event-only: the encounter ends with [param winning_player_id] winning, or
+## MmGameState.NO_PLAYER for a draw.
+func end_encounter(winning_player_id: int) -> void:
+	is_over = true
+	winner_id = winning_player_id
 
 
 ## Event-only (and initial setup): creates a Game Object with the next free ID.
@@ -178,14 +191,16 @@ func fingerprint() -> String:
 	lines.append("game turn %d active %d step %d" % [game_turn, active_player_id, step])
 	lines.append("game rng %s" % game_rng.describe_state())
 	lines.append(combat.describe())
+	lines.append("over %s winner %d" % [is_over, winner_id])
 	lines.append("next ids %d %d" % [_next_object_id, _next_card_id])
 	for each_player: MmPlayer in players:
 		var mana: PackedStringArray = PackedStringArray()
 		for unit: MmMana in each_player.mana_pool():
 			mana.append(unit.describe())
-		lines.append("player %d life %d mulligans %d turn %d since %d lands %d mana [%s]" % [
+		lines.append("player %d life %d mulligans %d turn %d since %d lands %d empty draw %s lost %s %d mana [%s]" % [
 			each_player.id, each_player.life, each_player.mulligans_taken, each_player.turn_number,
-			each_player.latest_turn_game_turn, each_player.lands_played_this_turn, ", ".join(mana)])
+			each_player.latest_turn_game_turn, each_player.lands_played_this_turn,
+			each_player.has_drawn_from_empty_library, each_player.has_lost, each_player.loss_reason, ", ".join(mana)])
 	for each_zone: MmZone in _all_zones():
 		var entries: PackedStringArray = PackedStringArray()
 		for game_object: MmGameObject in each_zone.objects():

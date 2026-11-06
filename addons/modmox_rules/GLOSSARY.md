@@ -86,8 +86,12 @@ _Avoid_: Game Turn (when one player's count is meant), round
 How many turns have begun in the encounter across both players. Rules that speak of "the first turn of the game" use it.
 _Avoid_: Turn Number (when the overall count is meant), round
 
+**Outcome**:
+How an encounter ended: the Hero won, the Villain won, or a draw when both players lost at the same moment. The game around the engine reads it at the end of an encounter.
+_Avoid_: Result, score, victory (when a draw is possible)
+
 **Decision Log**:
-Every accepted answer to a Pending Decision in an encounter, in order. Together with the Encounter Setup it reproduces the encounter exactly.
+Every accepted answer to a Pending Decision in an encounter, in order, plus any concession. Together with the Encounter Setup it reproduces the encounter exactly.
 _Avoid_: Input history, move list, replay
 
 **Undo Barrier**:

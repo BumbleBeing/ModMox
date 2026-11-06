@@ -34,7 +34,7 @@ func test_drawing_takes_cards_from_the_top_of_the_library() -> void:
 
 
 func test_a_short_library_draws_as_many_cards_as_it_has() -> void:
-	# Later (milestone 7): a player who draws from an empty library loses the game (CR 704.5b).
+	# They lose at the first state-based action check (CR 704.5b; see test_encounter_end.gd).
 	var engine: MmEngine = MmEngine.start(Scenario.setup(Scenario.Rule.HERO_STARTS, 1, 5, 40))
 
 	assert_eq(engine.hero().hand.size(), 5)

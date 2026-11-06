@@ -48,7 +48,7 @@ func needs_rewind() -> bool:
 
 
 ## Runs every automatic step until a player must decide, and returns that decision.
-## Returns null only when a cast must be rewound.
+## Returns null when a cast must be rewound or the encounter is over.
 func next_decision() -> MmPendingDecision:
 	while true:
 		if _cast != null:
@@ -85,6 +85,10 @@ func next_decision() -> MmPendingDecision:
 				assert(false, "The discard decision has not been answered.")
 				return null
 			Stage.PRIORITY:
+				# CR 704.3: state-based actions are checked whenever a player would receive priority.
+				StateBasedActions.check(_state)
+				if _state.is_over:
+					return null
 				return PriorityDecision.new(_priority_player_id, _legal_actions(_priority_player_id))
 			Stage.END_STEP:
 				_end_step()
@@ -163,6 +167,8 @@ func _perform_turn_based_actions() -> MmPendingDecision:
 
 
 ## CR 514.2: after any discarding, all damage marked on permanents is removed.
+## Later (milestone 8): CR 514.3a, if state-based actions or triggers then apply, players
+## get priority and another cleanup step follows.
 func _remove_damage() -> void:
 	# Later (milestone 9): a static ability can keep a permanent's damage from being removed.
 	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, _state.active_player_id) \

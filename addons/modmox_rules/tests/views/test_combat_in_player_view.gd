@@ -25,7 +25,7 @@ func test_a_creature_shows_its_power_toughness_and_summoning_sickness() -> void:
 
 
 func test_attackers_blockers_and_damage_are_visible_to_both_players() -> void:
-	var engine: MmEngine = Scenario.combat_ready([Scenario.creature("Bear", 2, 2)], [Scenario.creature("Ogre", 3, 3)])
+	var engine: MmEngine = Scenario.combat_ready([Scenario.creature("Bear", 2, 4)], [Scenario.creature("Ogre", 3, 3)])
 	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
 	var ogre: int = Scenario.permanent_named(engine, engine.villain().id, "Ogre")
 	Scenario.declare_attackers(engine, [bear])

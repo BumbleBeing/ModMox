@@ -6,4 +6,6 @@ At each barrier the engine keeps a checkpoint copy of the game state and its pro
 
 Two alternatives were rejected. Replaying the whole encounter from its setup was simpler but repeats all the work for every undo, and players undo several times in a row when untapping lands. Writing an exact reverse for every event type would have to stay correct for every event added from now on, which is the kind of hand-written logic that quietly drifts.
 
+Once the encounter is over, whether by a state-based action or a concession, nothing can be undone.
+
 The checkpoint copy is the same state copying the AI will use to look ahead.

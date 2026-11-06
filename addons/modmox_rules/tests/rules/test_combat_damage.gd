@@ -23,7 +23,7 @@ func test_an_unblocked_attacker_deals_damage_equal_to_its_power_to_the_defending
 
 
 func test_an_attacker_and_its_blocker_deal_damage_to_each_other() -> void:
-	var engine: MmEngine = Scenario.combat_ready([_bear()], [_ogre()])
+	var engine: MmEngine = Scenario.combat_ready([_sturdy("Bear", 2)], [_sturdy("Ogre", 3)])
 	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
 	var ogre: int = Scenario.permanent_named(engine, engine.villain().id, "Ogre")
 	Scenario.declare_attackers(engine, [bear])
@@ -37,21 +37,8 @@ func test_an_attacker_and_its_blocker_deal_damage_to_each_other() -> void:
 	assert_eq(engine.villain().life, 20, "A blocked attacker without trample deals no damage to the player.")
 
 
-func test_lethal_damage_leaves_the_creature_on_the_battlefield_until_state_based_actions_exist() -> void:
-	var engine: MmEngine = Scenario.combat_ready([_bear()], [_ogre()])
-	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
-	var ogre: int = Scenario.permanent_named(engine, engine.villain().id, "Ogre")
-	Scenario.declare_attackers(engine, [bear])
-	Scenario.pass_to_blockers(engine)
-	Scenario.declare_blockers(engine, [[ogre, bear]])
-
-	Scenario.pass_until_step(engine, Step.END_OF_COMBAT)
-
-	assert_eq(engine.game_state().object(bear).zone(), engine.game_state().battlefield)
-
-
 func test_an_attacker_blocked_by_two_creatures_divides_its_damage_as_its_controller_chooses() -> void:
-	var engine: MmEngine = Scenario.combat_ready([_ogre()], [_bear(), _bear()])
+	var engine: MmEngine = Scenario.combat_ready([_sturdy("Ogre", 3)], [_sturdy("Bear", 2), _sturdy("Bear", 2)])
 	var ogre: int = Scenario.permanent_named(engine, engine.hero().id, "Ogre")
 	var bears: Array[int] = Scenario.permanents_named(engine, engine.villain().id, "Bear")
 	Scenario.declare_attackers(engine, [ogre])
@@ -98,7 +85,7 @@ func test_an_illegal_division_is_rejected_and_changes_nothing() -> void:
 
 
 func test_no_division_is_asked_for_an_attacker_with_one_blocker() -> void:
-	var engine: MmEngine = Scenario.combat_ready([_ogre()], [_bear()])
+	var engine: MmEngine = Scenario.combat_ready([_ogre()], [_sturdy("Bear", 2)])
 	var ogre: int = Scenario.permanent_named(engine, engine.hero().id, "Ogre")
 	var bear: int = Scenario.permanent_named(engine, engine.villain().id, "Bear")
 	Scenario.declare_attackers(engine, [ogre])
@@ -169,7 +156,7 @@ func test_a_trampler_must_assign_lethal_damage_to_its_blocker_before_the_player(
 	assert_eq(engine.submit([2, 2]), "")
 
 	assert_eq(engine.villain().life, 18)
-	assert_eq(Scenario.damage_on(engine, Scenario.permanent_named(engine, engine.villain().id, "Bear")), 2)
+	assert_eq(Scenario.names(engine, engine.villain().graveyard), ["Bear"], "Lethal damage, so it died.")
 
 
 func test_a_trampler_may_assign_more_than_lethal_damage_to_its_blocker() -> void:
@@ -207,7 +194,7 @@ func test_a_trampler_without_power_beyond_lethal_is_not_asked() -> void:
 	Scenario.pass_until_step(engine, Step.COMBAT_DAMAGE)
 
 	assert_true(engine.pending_decision() is PriorityDecision)
-	assert_eq(Scenario.damage_on(engine, bear), 2)
+	assert_null(engine.game_state().object(bear), "All of it went to the Bear, which died.")
 	assert_eq(engine.villain().life, 20)
 
 
@@ -231,7 +218,7 @@ func test_a_trampler_whose_blockers_all_left_deals_all_its_damage_to_the_player(
 
 func test_a_spell_marks_damage_on_a_creature() -> void:
 	var shock: MmCardDefinition = Scenario.free_shock("Shock", 3)
-	var engine: MmEngine = Scenario.combat_ready([], [_ogre()], [shock])
+	var engine: MmEngine = Scenario.combat_ready([], [_sturdy("Ogre", 3)], [shock])
 	var ogre: int = Scenario.permanent_named(engine, engine.villain().id, "Ogre")
 
 	assert_eq(Scenario.cast_and_resolve(engine, "Shock", [MmReference.to_object(ogre)]), "")
@@ -245,7 +232,7 @@ func test_a_spell_marks_damage_on_a_creature() -> void:
 
 
 func test_damage_is_removed_in_the_cleanup_step() -> void:
-	var engine: MmEngine = Scenario.combat_ready([_bear()], [_ogre()])
+	var engine: MmEngine = Scenario.combat_ready([_sturdy("Bear", 2)], [_sturdy("Ogre", 3)])
 	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
 	var ogre: int = Scenario.permanent_named(engine, engine.villain().id, "Ogre")
 	Scenario.declare_attackers(engine, [bear])
@@ -274,6 +261,11 @@ func _ogre() -> MmCardDefinition:
 	return Scenario.creature("Ogre", 3, 3)
 
 
+## A creature that survives any damage in these tests, so its marked damage can be read.
+func _sturdy(card_name: String, power: int) -> MmCardDefinition:
+	return Scenario.creature(card_name, power, 10)
+
+
 func _rhino() -> MmCardDefinition:
 	return _trampler("Rhino", 4, 4)
 
@@ -282,9 +274,10 @@ func _trampler(card_name: String, power: int, toughness: int) -> MmCardDefinitio
 	return Scenario.creature(card_name, power, toughness, [TrampleAbility.new()])
 
 
-## The Hero's 3/3 Ogre attacking, blocked by two 2/2 Bears, with the division pending.
+## The Hero's 3-power Ogre attacking, blocked by two 2-power Bears that survive it, with
+## the division pending.
 func _ogre_double_blocked() -> MmEngine:
-	var engine: MmEngine = Scenario.combat_ready([_ogre()], [_bear(), _bear()])
+	var engine: MmEngine = Scenario.combat_ready([_sturdy("Ogre", 3)], [_sturdy("Bear", 2), _sturdy("Bear", 2)])
 	var ogre: int = Scenario.permanent_named(engine, engine.hero().id, "Ogre")
 	var bears: Array[int] = Scenario.permanents_named(engine, engine.villain().id, "Bear")
 	Scenario.declare_attackers(engine, [ogre])

@@ -25,6 +25,11 @@ var priority_player_id: int = MmGameState.NO_PLAYER
 ## Whether the current combat damage step is the extra one for first and double strikers
 ## (CR 510.4), so the GUI can label it.
 var is_first_strike_damage_step: bool = false
+## Whether the encounter has ended, and the winner (MmGameState.NO_PLAYER for a draw).
+var is_over: bool = false
+var winner_id: int = MmGameState.NO_PLAYER
+## Why each player who lost did so, so the GUI can say "Out of life" or "Decked".
+var loss_reasons: Dictionary[int, MmPlayer.LossReason] = {}
 
 
 ## Builds [param viewing_player_id]'s view of [param state]. [param priority_holder_id]
@@ -44,11 +49,15 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		view.library_sizes[player.id] = player.library.size()
 		view.life_totals[player.id] = player.life
 		view.mana_pools[player.id] = player.mana_pool()
+		if player.has_lost:
+			view.loss_reasons[player.id] = player.loss_reason
 	view.game_turn = state.game_turn
 	view.active_player_id = state.active_player_id
 	if state.active_player_id != MmGameState.NO_PLAYER:
 		view.active_player_turn_number = state.player(state.active_player_id).turn_number
 	view.step = state.step
 	view.priority_player_id = priority_holder_id
+	view.is_over = state.is_over
+	view.winner_id = state.winner_id
 	view.is_first_strike_damage_step = state.step == MmTurn.Step.COMBAT_DAMAGE and state.combat.is_first_strike_damage_step
 	return view

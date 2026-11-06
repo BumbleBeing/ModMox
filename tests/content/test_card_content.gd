@@ -174,31 +174,62 @@ func test_hill_giant_deals_three_combat_damage() -> void:
 	assert_eq(engine.villain().life, 17)
 
 
-func test_lightning_bolt_marks_three_damage_on_a_creature() -> void:
+func test_lightning_bolt_destroys_grizzly_bears() -> void:
 	var bolt: MmCardDefinition = Scenario.free_copy(_alpha("lightning_bolt"))
-	var engine: MmEngine = Scenario.combat_ready([], [Scenario.free_copy(_alpha("hill_giant"))], [bolt])
+	var engine: MmEngine = Scenario.combat_ready([], [Scenario.free_copy(_alpha("grizzly_bears"))], [bolt])
 	assert_not_null(engine, "No seed gave the needed hand.")
-	var giant: int = Scenario.permanent_named(engine, engine.villain().id, "Hill Giant")
+	var bears: int = Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears")
 
-	assert_eq(Scenario.cast_and_resolve(engine, "Lightning Bolt", [MmReference.to_object(giant)]), "")
+	Scenario.cast_and_resolve(engine, "Lightning Bolt", [MmReference.to_object(bears)])
 
-	assert_eq(Scenario.damage_on(engine, giant), 3)
+	assert_eq(Scenario.names(engine, engine.villain().graveyard), ["Grizzly Bears"])
 
 
-func test_elvish_archers_strike_first() -> void:
+func test_elvish_archers_kill_a_one_one_blocker_before_it_strikes_back() -> void:
 	var archers: MmCardDefinition = Scenario.free_copy(_alpha("elvish_archers"))
 	var engine: MmEngine = Scenario.combat_ready([archers], [Scenario.creature("Goblin", 1, 1)])
-	assert_not_null(engine, "No seed gave the needed hand.")
 	var archers_id: int = Scenario.permanent_named(engine, engine.hero().id, "Elvish Archers")
 	var goblin: int = Scenario.permanent_named(engine, engine.villain().id, "Goblin")
 	Scenario.declare_attackers(engine, [archers_id])
 	Scenario.pass_to_blockers(engine)
 	Scenario.declare_blockers(engine, [[goblin, archers_id]])
 
-	Scenario.pass_until_step(engine, MmTurn.Step.COMBAT_DAMAGE)
+	Scenario.pass_until_step(engine, MmTurn.Step.END_OF_COMBAT)
 
-	assert_eq(Scenario.damage_on(engine, goblin), 1)
-	assert_eq(Scenario.damage_on(engine, archers_id), 0, "The Goblin has not struck yet.")
+	assert_eq(Scenario.names(engine, engine.villain().graveyard), ["Goblin"])
+	assert_eq(Scenario.damage_on(engine, archers_id), 0)
+
+
+func test_three_elvish_archers_kill_a_blocked_hill_giant_before_it_strikes() -> void:
+	var archers: MmCardDefinition = Scenario.free_copy(_alpha("elvish_archers"))
+	var giant: MmCardDefinition = Scenario.free_copy(_alpha("hill_giant"))
+	var engine: MmEngine = Scenario.combat_ready([giant], [archers, archers, archers])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var giant_id: int = Scenario.permanent_named(engine, engine.hero().id, "Hill Giant")
+	var blocks: Array = []
+	for archer_id: int in Scenario.permanents_named(engine, engine.villain().id, "Elvish Archers"):
+		blocks.append([archer_id, giant_id])
+	Scenario.declare_attackers(engine, [giant_id])
+	Scenario.pass_to_blockers(engine)
+	Scenario.declare_blockers(engine, blocks)
+
+	Scenario.pass_until_step(engine, MmTurn.Step.END_OF_COMBAT)
+
+	assert_eq(Scenario.names(engine, engine.hero().graveyard), ["Hill Giant"])
+	assert_eq(Scenario.permanents_named(engine, engine.villain().id, "Elvish Archers").size(), 3, "No Archer was hurt.")
+	assert_eq(Scenario.combat_damage_events(engine).size(), 3)
+
+
+func test_ancestral_recall_from_a_short_library_makes_its_target_lose() -> void:
+	var recall: MmCardDefinition = Scenario.free_copy(_alpha("ancestral_recall"))
+	var setup: MmEncounterSetup = Scenario.setup_with(Scenario.copies(recall, 8), Scenario.copies(Scenario.vanilla("Card"), 40))
+	var engine: MmEngine = MmEngine.start(setup)
+	Scenario.play_until_step(engine, 1, MmTurn.Step.PRECOMBAT_MAIN)
+
+	Scenario.cast_and_resolve(engine, "Ancestral Recall", [MmReference.to_player(engine.hero().id)])
+
+	assert_eq(engine.outcome(), MmEngine.Outcome.VILLAIN_WON)
+	assert_eq(engine.hero().loss_reason, MmPlayer.LossReason.EMPTY_LIBRARY)
 
 
 func _alpha(file_name: String) -> MmCardDefinition:

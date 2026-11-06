@@ -4,7 +4,10 @@ extends MmEvent
 ## Zones are named by kind and owner rather than referenced, so the event stays plain data
 ## that a copied game state can share.
 
-enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE }
+## Only ever add values at the end, so saved event histories keep their meaning.
+## DESTROY is CR 701.8 (indestructible and regeneration care); ZERO_TOUGHNESS is CR 704.5f,
+## which is not destruction.
+enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int

@@ -218,12 +218,12 @@ func _assign_blockers_damage() -> void:
 		_assign(blocker_id, MmReference.to_object(blocked[0]), power)
 
 
-## CR 510.2: all combat damage in the step is dealt at once, before anyone gets priority.
+## CR 510.2: all combat damage in the step is dealt at once. State-based actions are then
+## checked as players would receive priority (CR 510.3).
 func _deal_assigned_damage() -> void:
 	for index: int in _source_ids.size():
 		if _amounts[index] > 0:
 			_state.perform(DamageEvent.new(_source_ids[index], _recipients[index], _amounts[index], true))
-	# Later (milestone 7): state-based actions are checked before players get priority.
 
 
 func _assign(source_id: int, recipient: MmReference, amount: int) -> void:

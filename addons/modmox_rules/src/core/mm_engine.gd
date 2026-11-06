@@ -10,7 +10,13 @@ extends RefCounted
 
 ## Tags mid-encounter saves (ADR 0010). Bump it whenever a change could make an existing
 ## decision log replay differently.
-const VERSION: String = "0.6.0"
+const VERSION: String = "0.7.0"
+## The first entry of a concession in the decision log: ["concede", player ID]. No answer
+## to a Pending Decision ever has this shape.
+const CONCEDE: String = "concede"
+
+## How an encounter ended, for the game around the engine.
+enum Outcome { IN_PROGRESS, HERO_WON, VILLAIN_WON, DRAW }
 
 var _state: MmGameState
 var _pregame: PregameProcedure
@@ -41,7 +47,7 @@ static func start(setup: MmEncounterSetup) -> MmEngine:
 static func replay(setup: MmEncounterSetup, answers: Array) -> MmEngine:
 	var engine: MmEngine = MmEngine.new(setup)
 	for answer: Variant in answers:
-		var error: String = engine.submit(answer)
+		var error: String = engine._replay_entry(answer)
 		if error != "":
 			push_error("Replay stopped: answer %s was rejected: %s" % [answer, error])
 			break
@@ -67,6 +73,8 @@ func pending_decision() -> MmPendingDecision:
 ## answer is illegal, in which case nothing changes and the same decision stays pending.
 ## The answer is a Variant because each kind of decision takes a different shape.
 func submit(answer: Variant) -> String:
+	if is_over():
+		return "The encounter is over."
 	if _pending == null:
 		return "No decision is pending."
 	var error: String = _pending.validate(answer)
@@ -96,13 +104,45 @@ func submit(answer: Variant) -> String:
 	return ""
 
 
+## CR 104.3a: [param player] concedes, at any time, even while the other player is
+## deciding. Conceding is final. Returns "" when done, or why it cannot happen.
+func concede(player: MmPlayer) -> String:
+	if is_over():
+		return "The encounter is over."
+	_decision_log.append([CONCEDE, player.id])
+	_state.perform(PlayerLostEvent.new(player.id, MmPlayer.LossReason.CONCEDED))
+	_state.perform(EncounterEndedEvent.new(_state.opponent_of(player.id).id))
+	_pending = null
+	_cast_started_at = -1
+	if not _replaying:
+		_take_checkpoint()
+	return ""
+
+
+## Whether the encounter has ended. Then nothing more can be answered or undone.
+func is_over() -> bool:
+	return _state.is_over
+
+
+## How the encounter ended so far. Names the Hero and Villain, so it is for presentation
+## and the game around the engine only (ADR 0005).
+func outcome() -> Outcome:
+	if not _state.is_over:
+		return Outcome.IN_PROGRESS
+	if _state.winner_id == MmGameState.NO_PLAYER:
+		return Outcome.DRAW
+	return Outcome.HERO_WON if _state.winner_id == MmEncounterSetup.HERO_PLAYER_ID else Outcome.VILLAIN_WON
+
+
 ## Whether there is a decision that can be undone.
 func can_undo() -> bool:
-	return _decision_log.size() > _checkpoint_log_size
+	return not is_over() and _decision_log.size() > _checkpoint_log_size
 
 
 ## Undoes the most recent decision. Returns "" when done, or why it cannot be undone.
 func undo() -> String:
+	if is_over():
+		return "The encounter is over."
 	if not can_undo():
 		return "Nothing can be undone past this point."
 	_undo_to(_decision_log.size() - 1)
@@ -160,6 +200,13 @@ func decision_log() -> Array:
 func fingerprint() -> String:
 	var pending: String = "none" if _pending == null else _pending.describe()
 	return (_state.fingerprint() + "\npending " + pending).sha256_text()
+
+
+## Feeds one decision log entry back in, as when loading a save: an answer, or a concession.
+func _replay_entry(entry: Variant) -> String:
+	if entry is Array and (entry as Array).size() == 2 and (entry as Array)[0] is String and (entry as Array)[0] == CONCEDE:
+		return concede(_state.player((entry as Array)[1] as int))
+	return submit(entry)
 
 
 ## Runs the engine until the next decision: the pregame first, then turns.

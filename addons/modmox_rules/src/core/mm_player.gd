@@ -3,6 +3,10 @@ extends RefCounted
 ## A player in an encounter, with a life total and their own library, hand and graveyard.
 ## Rules code identifies players only by ID and relationship, never as Hero or Villain.
 
+## Why a player lost (CR 104.3). It only describes what happened, for the GUI; rules never
+## branch on it.
+enum LossReason { NONE = -1, ZERO_LIFE, EMPTY_LIBRARY, CONCEDED }
+
 var id: int
 var life: int
 var opening_hand_size: int
@@ -15,6 +19,10 @@ var turn_number: int = 0
 ## The Game Turn in which this player's most recent turn began; 0 before their first turn.
 var latest_turn_game_turn: int = 0
 var lands_played_this_turn: int = 0
+## CR 704.5b: tried to draw from an empty library since state-based actions were last checked.
+var has_drawn_from_empty_library: bool = false
+var has_lost: bool = false
+var loss_reason: LossReason = LossReason.NONE
 var library: MmZone
 var hand: MmZone
 var graveyard: MmZone
@@ -45,6 +53,9 @@ func duplicate_without_objects() -> MmPlayer:
 	copy.turn_number = turn_number
 	copy.latest_turn_game_turn = latest_turn_game_turn
 	copy.lands_played_this_turn = lands_played_this_turn
+	copy.has_drawn_from_empty_library = has_drawn_from_empty_library
+	copy.has_lost = has_lost
+	copy.loss_reason = loss_reason
 	copy._mana_pool = _mana_pool.duplicate()  # MmMana units never change, so sharing them is safe.
 	return copy
 
@@ -98,6 +109,18 @@ func empty_mana_pool() -> int:
 	var lost: int = _mana_pool.size()
 	_mana_pool.clear()
 	return lost
+
+
+## Event-only: records an attempt to draw from an empty library (CR 121.4).
+func record_empty_library_draw() -> void:
+	has_drawn_from_empty_library = true
+
+
+## Event-only: this player loses the game for [param reason].
+func lose(reason: LossReason) -> void:
+	has_lost = true
+	loss_reason = reason
+	has_drawn_from_empty_library = false
 
 
 ## Event-only: changes the life total by [param amount], which may be negative (CR 119.3).

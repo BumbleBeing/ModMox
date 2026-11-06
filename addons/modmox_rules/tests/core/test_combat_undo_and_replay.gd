@@ -31,7 +31,7 @@ func test_attacks_cannot_be_undone_once_the_defender_has_a_decision() -> void:
 
 
 func test_a_damage_division_can_be_undone() -> void:
-	var engine: MmEngine = Scenario.combat_ready([_ogre()], [_bear(), _bear()])
+	var engine: MmEngine = Scenario.combat_ready([_sturdy("Ogre", 3)], [_sturdy("Bear", 2), _sturdy("Bear", 2)])
 	var ogre: int = Scenario.permanent_named(engine, engine.hero().id, "Ogre")
 	var bears: Array[int] = Scenario.permanents_named(engine, engine.villain().id, "Bear")
 	Scenario.declare_attackers(engine, [ogre])
@@ -50,7 +50,7 @@ func test_a_damage_division_can_be_undone() -> void:
 
 
 func test_a_copy_of_the_state_keeps_combat_damage_and_summoning_sickness() -> void:
-	var engine: MmEngine = Scenario.combat_ready([_bear()], [_ogre()])
+	var engine: MmEngine = Scenario.combat_ready([_sturdy("Bear", 2)], [_sturdy("Ogre", 3)])
 	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
 	var ogre: int = Scenario.permanent_named(engine, engine.villain().id, "Ogre")
 	Scenario.declare_attackers(engine, [bear])
@@ -107,3 +107,8 @@ func _bear() -> MmCardDefinition:
 
 func _ogre() -> MmCardDefinition:
 	return Scenario.creature("Ogre", 3, 3)
+
+
+## A creature that survives any damage in these tests.
+func _sturdy(card_name: String, power: int) -> MmCardDefinition:
+	return Scenario.creature(card_name, power, 10)

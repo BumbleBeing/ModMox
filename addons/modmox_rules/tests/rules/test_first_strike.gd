@@ -47,7 +47,7 @@ func test_a_blocking_first_striker_also_strikes_first() -> void:
 	assert_eq(Scenario.damage_on(engine, archer), 0)
 	Scenario.pass_priority(engine)
 	Scenario.pass_priority(engine)
-	assert_eq(Scenario.damage_on(engine, archer), 2)
+	assert_eq(Scenario.names(engine, engine.villain().graveyard), ["Archer"], "The Bear's 2 damage killed it.")
 
 
 func test_without_a_first_striker_there_is_one_combat_damage_step() -> void:
@@ -91,22 +91,23 @@ func test_a_blocked_double_striker_damages_its_blocker_in_both_steps() -> void:
 
 func test_a_double_striker_with_trample_reaches_the_player_in_the_second_step() -> void:
 	var brute: MmCardDefinition = Scenario.creature("Brute", 3, 3, [DoubleStrikeAbility.new(), TrampleAbility.new()])
-	var engine: MmEngine = Scenario.combat_ready([brute], [_bear()])
+	var engine: MmEngine = Scenario.combat_ready([brute], [Scenario.creature("Wall", 0, 5)])
 	var brute_id: int = Scenario.permanent_named(engine, engine.hero().id, "Brute")
-	var bear: int = Scenario.permanent_named(engine, engine.villain().id, "Bear")
+	var wall: int = Scenario.permanent_named(engine, engine.villain().id, "Wall")
 	Scenario.declare_attackers(engine, [brute_id])
 	Scenario.pass_to_blockers(engine)
-	Scenario.declare_blockers(engine, [[bear, brute_id]])
+	Scenario.declare_blockers(engine, [[wall, brute_id]])
 	Scenario.pass_until_step(engine, Step.COMBAT_DAMAGE)
-	assert_eq(engine.submit([3, 0]), "")
+	assert_eq(Scenario.damage_on(engine, wall), 3, "3 is not lethal to a 0/5, so there was nothing to divide.")
 	assert_eq(engine.villain().life, 20)
 
 	Scenario.pass_priority(engine)
 	Scenario.pass_priority(engine)
 
 	assert_true(engine.pending_decision() is DivideCombatDamageDecision)
-	assert_eq(engine.submit([0, 3]), "", "The Bear already has lethal damage marked.")
-	assert_eq(engine.villain().life, 17)
+	assert_ne(engine.submit([1, 2]), "", "2 more damage is lethal to the Wall now.")
+	assert_eq(engine.submit([2, 1]), "")
+	assert_eq(engine.villain().life, 19)
 
 
 func _archer() -> MmCardDefinition:
@@ -117,8 +118,9 @@ func _duelist() -> MmCardDefinition:
 	return Scenario.creature("Duelist", 2, 2, [DoubleStrikeAbility.new()])
 
 
+## A 1/3, so it survives a first strike and strikes back.
 func _goblin() -> MmCardDefinition:
-	return Scenario.creature("Goblin", 1, 1)
+	return Scenario.creature("Goblin", 1, 3)
 
 
 func _bear() -> MmCardDefinition:
