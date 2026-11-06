@@ -51,6 +51,10 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		var action: MmAction = (decision as PriorityDecision).actions[index]
 		if action is PassAction:
 			_pass_priority()
+		elif action is PlayLandAction:
+			_play_land(action as PlayLandAction)
+		elif action is ActivateAbilityAction:
+			_activate_mana_ability(action as ActivateAbilityAction)
 		else:
 			assert(false, "Unknown action: %s" % action.describe())
 	elif decision is ChooseCardsToDiscardDecision:
@@ -82,7 +86,10 @@ func _perform_turn_based_actions() -> MmPendingDecision:
 	var active: MmPlayer = _state.player(_state.active_player_id)
 	match _current_step():
 		MmTurn.Step.UNTAP:
-			pass  # Later (milestone 4): untap the active player's permanents (CR 502.3).
+			# CR 502.3: the active player untaps all their permanents.
+			for permanent: MmGameObject in _state.battlefield.objects():
+				if permanent.controller_id == active.id and permanent.is_tapped:
+					_state.perform(UntapEvent.new(permanent.id))
 		MmTurn.Step.DRAW:
 			_state.draw_cards(active.id, 1)  # CR 504.1
 		MmTurn.Step.DECLARE_ATTACKERS:
@@ -117,7 +124,10 @@ func _pass_priority() -> void:
 
 
 func _end_step() -> void:
-	# Later (milestone 4): mana pools empty at the end of each step (CR 500.4).
+	# CR 500.4: unspent mana empties from each pool at the end of each step and phase.
+	for player: MmPlayer in _state.turn_order():
+		if not player.mana_pool().is_empty():
+			_state.perform(ManaEmptiedEvent.new(player.id))
 	_step_index += 1
 	if not _attackers_declared:
 		# CR 508.8: without attackers, the declare blockers and combat damage steps are skipped.
@@ -130,8 +140,60 @@ func _current_step() -> MmTurn.Step:
 	return _steps[_step_index]
 
 
-## The actions [param player_id] may take while holding priority, in a deterministic order.
-func _legal_actions(_player_id: int) -> Array[MmAction]:
-	# Later (milestones 4 and 5): playing lands, casting spells, activating abilities.
+## The actions [param player_id] may take while holding priority, in a deterministic order
+## (ADR 0012): Pass, then land plays by object ID, then abilities by object ID and order.
+func _legal_actions(player_id: int) -> Array[MmAction]:
+	# Later (milestone 5): casting spells and activating abilities that use the stack.
 	var actions: Array[MmAction] = [PassAction.new()]
+	var player: MmPlayer = _state.player(player_id)
+	if _may_play_land(player):
+		for card: MmGameObject in _sorted_by_id(player.hand.objects()):
+			if _state.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND):
+				actions.append(PlayLandAction.new(card.id))
+	for permanent: MmGameObject in _sorted_by_id(_state.battlefield.objects()):
+		if permanent.controller_id != player_id:
+			continue
+		var abilities: Array[MmAbility] = _state.characteristics_of(permanent).abilities
+		for index: int in abilities.size():
+			var ability: ActivatedAbility = abilities[index] as ActivatedAbility
+			if ability != null and ability.is_mana_ability() and ability.can_pay_costs(_state, permanent):
+				actions.append(ActivateAbilityAction.new(permanent.id, index))
 	return actions
+
+
+## CR 305.2 and 505.6b: in your own main phase, with an empty stack, while you have a land
+## play left this turn.
+func _may_play_land(player: MmPlayer) -> bool:
+	var in_main_phase: bool = _current_step() in [MmTurn.Step.PRECOMBAT_MAIN, MmTurn.Step.POSTCOMBAT_MAIN]
+	return (player.id == _state.active_player_id and in_main_phase and _state.stack.is_empty()
+		and player.lands_played_this_turn < _land_plays_allowed(player))
+
+
+func _land_plays_allowed(_player: MmPlayer) -> int:
+	# Later (milestone 9): static abilities and Emblems that grant extra land plays.
+	return 1
+
+
+## CR 305.1: the land moves straight to the battlefield. The player keeps priority, and
+## taking an action means everyone must pass again before the step ends (CR 117.4).
+func _play_land(action: PlayLandAction) -> void:
+	var land: MmGameObject = _state.object(action.object_id)
+	_state.perform(ZoneChangeEvent.new(land, _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.PLAY_LAND))
+	_passes_in_succession = 0
+
+
+## CR 605.3: a mana ability resolves immediately without using the stack, and the player
+## keeps priority.
+func _activate_mana_ability(action: ActivateAbilityAction) -> void:
+	var source: MmGameObject = _state.object(action.object_id)
+	var ability: ActivatedAbility = _state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
+	assert(ability != null and ability.is_mana_ability(), "Only mana abilities can be activated so far.")
+	ability.pay_costs(_state, source)
+	ability.resolve_effects(_state, MmEffectContext.new(source.controller_id, source.id))
+	_passes_in_succession = 0
+
+
+func _sorted_by_id(objects: Array[MmGameObject]) -> Array[MmGameObject]:
+	var sorted: Array[MmGameObject] = objects.duplicate()
+	sorted.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return sorted

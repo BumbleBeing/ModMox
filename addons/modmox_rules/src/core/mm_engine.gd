@@ -5,7 +5,7 @@ extends RefCounted
 
 ## Tags mid-encounter saves (ADR 0010). Bump it whenever a change could make an existing
 ## decision log replay differently.
-const VERSION: String = "0.3.0"
+const VERSION: String = "0.4.0"
 
 var _state: MmGameState
 var _pregame: PregameProcedure

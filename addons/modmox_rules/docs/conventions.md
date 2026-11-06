@@ -13,24 +13,33 @@ How code in `addons/modmox_rules/` is written. The goal is that any part of the 
 ```
 addons/modmox_rules/
   src/
+    abilities/   ability kinds (activated, and later spell, triggered, static)
     actions/     Actions a player may take while holding priority
-    cards/       Card Definitions, Run Cards, Modifications, characteristics
+    cards/       Card Definitions, Run Cards, Modifications, card types, characteristics
     core/        the engine facade, game state, players, zones, Game Objects, RNG
-    events/      the event pipeline and every event type
+    costs/       cost parts, such as tapping
     decisions/   Pending Decisions and their kinds
-    rules/       game procedures (pregame, and later turn structure, combat, ...)
+    effects/     effects and the context they resolve in
+    events/      the event pipeline and every event type
+    mana/        mana units
+    rules/       game procedures: pregame, turn structure, and later combat, ...
+    values/      Values (numbers worked out when needed)
     views/       per-player views of the game state
   tests/         mirrors src/ (tests/cards/, tests/core/, ...)
     support/     shared test helpers (preloaded, never class_name'd)
   docs/
+
+content/cards/   game Content: authored Card Definitions (.tres), outside the engine
+tests/           game-side tests, such as checks on Content
 ```
 
 - One class per file. The file name is the class name in `snake_case`: `MmGameState` → `mm_game_state.gd`, `ZoneChangeEvent` → `zone_change_event.gd`.
-- Put a new class in the folder for its domain. Create a new folder only when a new domain appears, such as `effects/` in milestone 5.
+- Put a new class in the folder for its domain. Create a new folder only when a new domain appears, such as `filters/` when the first Filter is needed.
+- Author Content `.tres` files in the Godot editor, or generate them with `ResourceSaver`, never by hand-writing the file format.
 
 ## Naming classes
 
-- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`.
+- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`.
 - **Specific subclasses** have no prefix and end with their base kind: `ChangeNameModification`, `ZoneChangeEvent`, `KeepOrMulliganDecision`, `DealDamageEffect`, `CreatureFilter`, `CountValue`.
 - Test files and test helpers never declare `class_name`.
 
@@ -47,6 +56,7 @@ addons/modmox_rules/
 - Every variable, parameter, return value, loop variable and constant has an explicit type: `var count: int = 0`, not `var count := 0`. Untyped declarations fail to compile (ADR 0005). The one exception is `const Name := preload("...")`, where the inferred script type is more useful than `GDScript`.
 - Use typed collections: `Array[MmGameObject]`, `Dictionary[int, MmGameObject]`.
 - `Variant` is allowed only where data is genuinely open-ended, such as a Pending Decision's answer. Say why in a comment.
+- **Enums that end up in saved files get explicit values and are append-only.** `.tres` files store enum values as plain numbers, so reordering `CardType` would silently turn every saved Land into something else. Write `LAND = 4`, never change or reuse a value, and add new values at the end. This applies to every enum used by an `@export` property.
 
 ## Class layout
 

@@ -9,6 +9,8 @@ A roguelike RPG around a Magic-style rules engine, in Godot 4.7.2 / GDScript. Ri
 - `addons/modmox_rules/docs/adr/`: the design decisions. Don't contradict one without the user's agreement; if one changes, update it.
 - `addons/modmox_rules/docs/roadmap.md`: the milestone ladder and where we are.
 
+Game Content (authored `.tres` Card Definitions) lives at `content/cards/`, outside the engine; game-side tests live at `tests/`.
+
 ## How work proceeds
 
 - One milestone at a time. At the start of a milestone, agree its scope and test scenarios with the user before writing code.

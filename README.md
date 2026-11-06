@@ -6,6 +6,8 @@ A roguelike RPG built around a Magic-style rules engine, made in Godot 4.7.2 wit
 
 - `addons/modmox_rules/`: the rules engine, independent of the game ([glossary](addons/modmox_rules/GLOSSARY.md), [decisions](addons/modmox_rules/docs/adr/), [roadmap](addons/modmox_rules/docs/roadmap.md))
 - `addons/gut/`: GUT 9.7.1, the unit test framework (third party, MIT)
+- `content/cards/`: the game's authored Card Definitions, starting with the Alpha basic lands
+- `tests/`: game-side tests, such as checks on the card files
 - `tools/`: developer scripts
 - [GLOSSARY-MAP.md](GLOSSARY-MAP.md): how the game and engine vocabularies relate
 

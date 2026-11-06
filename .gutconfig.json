@@ -1,5 +1,8 @@
 {
-	"dirs": ["res://addons/modmox_rules/tests/"],
+	"dirs": [
+		"res://addons/modmox_rules/tests/",
+		"res://tests/"
+	],
 	"include_subdirs": true,
 	"prefix": "test_",
 	"suffix": ".gd",

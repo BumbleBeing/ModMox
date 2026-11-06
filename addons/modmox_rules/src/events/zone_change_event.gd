@@ -2,7 +2,7 @@ class_name ZoneChangeEvent
 extends MmEvent
 ## A card moves from one zone to another and becomes a new Game Object (CR 400.7, ADR 0008).
 
-enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD }
+enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -33,6 +33,8 @@ func apply(state: MmGameState) -> void:
 	var arriving: MmGameObject = state.create_object(leaving.card_id, leaving.owner_id, leaving.definition)
 	to_zone.insert(arriving, position)
 	new_object_id = arriving.id
+	if reason == Reason.PLAY_LAND:
+		state.player(arriving.controller_id).record_land_play()
 
 
 func describe() -> String:

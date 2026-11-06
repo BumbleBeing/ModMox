@@ -12,9 +12,11 @@ var free_mulligans: int
 var mulligans_taken: int = 0
 ## How many turns this player has begun. 0 until their first turn.
 var turn_number: int = 0
+var lands_played_this_turn: int = 0
 var library: MmZone
 var hand: MmZone
 var graveyard: MmZone
+var _mana_pool: Array[MmMana] = []
 
 
 func _init(player_id: int, setup: MmPlayerSetup) -> void:
@@ -35,6 +37,11 @@ func cards_over_maximum_hand_size() -> int:
 	return maxi(0, hand.size() - maximum_hand_size)
 
 
+## A copy of the mana in this player's pool, oldest first (ADR 0013).
+func mana_pool() -> Array[MmMana]:
+	return _mana_pool.duplicate()
+
+
 ## Event-only: counts one more mulligan taken.
 func record_mulligan() -> void:
 	mulligans_taken += 1
@@ -43,3 +50,25 @@ func record_mulligan() -> void:
 ## Event-only: counts the start of one of this player's turns.
 func begin_turn() -> void:
 	turn_number += 1
+
+
+## Event-only: clears the counts that last for one turn, at the start of every turn.
+func reset_turn_counters() -> void:
+	lands_played_this_turn = 0
+
+
+## Event-only: counts a land played this turn (CR 305.2).
+func record_land_play() -> void:
+	lands_played_this_turn += 1
+
+
+## Event-only: adds mana to the pool.
+func add_mana(units: Array[MmMana]) -> void:
+	_mana_pool.append_array(units)
+
+
+## Event-only: empties the pool and returns how much mana was lost.
+func empty_mana_pool() -> int:
+	var lost: int = _mana_pool.size()
+	_mana_pool.clear()
+	return lost

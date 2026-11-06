@@ -35,6 +35,18 @@ func test_replaying_several_turns_reproduces_the_state_exactly() -> void:
 	assert_eq(replayed.game_state().game_turn, 6)
 
 
+func test_replaying_turns_with_land_plays_reproduces_the_state_exactly() -> void:
+	var forests: Array[MmCardDefinition] = Scenario.copies(Scenario.basic_land("Forest"), 40)
+	var setup: MmEncounterSetup = Scenario.setup_with(forests, forests.duplicate(), Scenario.Rule.RANDOM_CHOOSER, 5)
+	var original: MmEngine = MmEngine.start(setup)
+	assert_eq(Scenario.play_until_game_turn(original, 6, true), "")
+	assert_eq(original.game_state().battlefield.size(), 5, "Five turns, one land each.")
+
+	var replayed: MmEngine = MmEngine.replay(setup, original.decision_log())
+
+	assert_eq(replayed.fingerprint(), original.fingerprint())
+
+
 func test_the_fingerprint_changes_when_the_state_changes() -> void:
 	var engine: MmEngine = MmEngine.start(Scenario.setup())
 	var before: String = engine.fingerprint()

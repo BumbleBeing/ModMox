@@ -1,3 +1,5 @@
 # Characteristics are always read through one query, never from raw fields
 
 Rules code never reads a Game Object's stored values directly. It always asks for the object's current characteristics, which include name, mana cost, colors, types, abilities, and base power and toughness as well as the final power and toughness. At first the query simply returns the printed values. It grows into the full layer system (copy, control, text, type, color, ability, then power/toughness effects with timestamps and dependencies) without any caller changing. Results are recomputed on every query until profiling shows a need for caching. Any direct read of a stored value would become a bug the moment the first continuous effect is added.
+
+The query is also where abilities granted by the rules appear. A basic land's mana ability is not written in its Card Definition; the query grants it from the basic land type (CR 305.6). An effect that changes a land's subtype therefore changes its mana ability with no special handling.

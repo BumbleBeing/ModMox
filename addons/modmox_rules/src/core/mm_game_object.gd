@@ -10,6 +10,10 @@ var id: int
 ## object back to its Run Card for presentation and rewards; rules code never uses it.
 var card_id: int
 var owner_id: int
+## Starts as the owner (CR 110.2). Control-changing effects arrive with layers (milestone 9).
+var controller_id: int
+## Meaningful for permanents (CR 110.5). A new object always starts untapped.
+var is_tapped: bool = false
 ## The flattened definition. Rules code reads characteristics through
 ## MmGameState.characteristics_of(), never from here (ADR 0009).
 var definition: MmCardDefinition
@@ -22,7 +26,13 @@ func _init(object_id: int, object_card_id: int, object_owner_id: int, object_def
 	id = object_id
 	card_id = object_card_id
 	owner_id = object_owner_id
+	controller_id = object_owner_id
 	definition = object_definition
+
+
+## Event-only: taps or untaps this permanent.
+func set_tapped(tapped: bool) -> void:
+	is_tapped = tapped
 
 
 ## The zone holding this object, or null while it is between zones.

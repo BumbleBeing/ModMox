@@ -4,6 +4,10 @@ The roguelike RPG around the rules engine: runs, characters, and everything that
 
 ## Language
 
+**Content**:
+The Card Definitions authored for the game and shipped with it, such as the Alpha cards. The rules engine never contains or depends on Content.
+_Avoid_: Card database, card pool, assets
+
 **Status**:
 A lasting condition on the Hero's character that changes the starting conditions of encounters or adds an Emblem to them.
 _Avoid_: Trait, perk, buff, condition

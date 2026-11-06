@@ -15,6 +15,8 @@ func _init(new_active_player_id: int) -> void:
 func apply(state: MmGameState) -> void:
 	state.game_turn += 1
 	state.active_player_id = active_player_id
+	for each_player: MmPlayer in state.players:
+		each_player.reset_turn_counters()
 	var active: MmPlayer = state.player(active_player_id)
 	active.begin_turn()
 	game_turn = state.game_turn

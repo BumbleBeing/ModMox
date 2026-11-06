@@ -7,3 +7,5 @@ The rules followed are the current Comprehensive Rules and current Oracle wordin
 Rules that only matter for a particular mechanic are not implemented until that mechanic enters the game. The architecture must leave room for them, but code for absent mechanics is not written ahead of time.
 
 Encounters are strictly 1v1. The engine does not need to support more than two players.
+
+There will never be planeswalkers, so loyalty abilities and every rule that exists only for them (such as the loyalty clause of CR 605.1a) are permanently out of scope.

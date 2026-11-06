@@ -36,6 +36,102 @@ static func player_setup(cards: Array[MmRunCard]) -> MmPlayerSetup:
 	return result
 
 
+## An Encounter Setup whose decks are built from the given Card Definitions, in order.
+static func setup_with(
+		hero_cards: Array[MmCardDefinition],
+		villain_cards: Array[MmCardDefinition],
+		rule: MmEncounterSetup.StartingPlayerRule = Rule.HERO_STARTS,
+		encounter_seed: int = 1) -> MmEncounterSetup:
+	var result: MmEncounterSetup = setup(rule, encounter_seed, 0, 0)
+	result.hero.deck = run_cards(hero_cards)
+	result.villain.deck = run_cards(villain_cards)
+	return result
+
+
+static func run_cards(definitions: Array[MmCardDefinition]) -> Array[MmRunCard]:
+	var cards: Array[MmRunCard] = []
+	for definition: MmCardDefinition in definitions:
+		var run_card: MmRunCard = MmRunCard.new()
+		run_card.base = definition
+		cards.append(run_card)
+	return cards
+
+
+## [param count] references to [param definition], for building decks.
+static func copies(definition: MmCardDefinition, count: int) -> Array[MmCardDefinition]:
+	var result: Array[MmCardDefinition] = []
+	for _index: int in count:
+		result.append(definition)
+	return result
+
+
+## A card with no types or abilities.
+static func vanilla(card_name: String) -> MmCardDefinition:
+	var definition: MmCardDefinition = MmCardDefinition.new()
+	definition.name = card_name
+	return definition
+
+
+## A basic land with no written abilities: its mana ability comes from its subtype.
+static func basic_land(land_type: String) -> MmCardDefinition:
+	var definition: MmCardDefinition = vanilla(land_type)
+	definition.card_types = [MmCardTypes.CardType.LAND]
+	definition.supertypes = [MmCardTypes.Supertype.BASIC]
+	definition.subtypes = [land_type]
+	return definition
+
+
+## A non-basic land with the written ability "{T}: Add [param amount] mana of [param type]".
+static func mana_land(card_name: String, type: MmMana.Type, amount: int) -> MmCardDefinition:
+	var definition: MmCardDefinition = vanilla(card_name)
+	definition.card_types = [MmCardTypes.CardType.LAND]
+	definition.abilities = [tap_for_mana(type, amount)]
+	return definition
+
+
+## The ability "{T}: Add [param amount] mana of [param type]".
+static func tap_for_mana(type: MmMana.Type, amount: int) -> ActivatedAbility:
+	var value: ConstantValue = ConstantValue.new()
+	value.value = amount
+	var effect: AddManaEffect = AddManaEffect.new()
+	effect.mana_type = type
+	effect.amount = value
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.costs = [TapCost.new()]
+	ability.effects = [effect]
+	return ability
+
+
+## The first action in a priority decision for which [param matches] returns true, as an
+## index, or -1.
+static func action_index(decision: PriorityDecision, matches: Callable) -> int:
+	for index: int in decision.actions.size():
+		if matches.call(decision.actions[index]):
+			return index
+	return -1
+
+
+## The index of the action that plays the land [param object_id], or -1.
+static func play_land_index(decision: PriorityDecision, object_id: int) -> int:
+	return action_index(decision, func(action: MmAction) -> bool:
+		return action is PlayLandAction and (action as PlayLandAction).object_id == object_id)
+
+
+## The index of the first action that activates an ability of [param object_id], or -1.
+static func activate_index(decision: PriorityDecision, object_id: int) -> int:
+	return action_index(decision, func(action: MmAction) -> bool:
+		return action is ActivateAbilityAction and (action as ActivateAbilityAction).object_id == object_id)
+
+
+## Plays the first land the priority holder may play. Returns the new object's ID, or -1.
+static func play_first_land(engine: MmEngine) -> int:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	var index: int = action_index(decision, func(action: MmAction) -> bool: return action is PlayLandAction)
+	if index == -1 or engine.submit(index) != "":
+		return -1
+	return engine.game_state().battlefield.object_ids().back()
+
+
 ## Answers every remaining pregame decision: choose to play, keep every hand, and bottom
 ## the first candidates offered. Stops at the first priority decision of the game.
 ## Returns the first rejection reason, or "" if none.
@@ -45,15 +141,21 @@ static func keep_all(engine: MmEngine) -> String:
 
 ## Answers decisions with simple defaults until [param stop] returns true for the engine:
 ## play first, keep, pass priority, and bottom or discard the first candidates offered.
+## With [param play_lands], plays the first land offered instead of passing.
 ## Returns the first rejection reason, or "" once stopped. Gives up after [param limit].
-static func autoplay(engine: MmEngine, stop: Callable, limit: int = 2000) -> String:
+static func autoplay(engine: MmEngine, stop: Callable, play_lands: bool = false, limit: int = 2000) -> String:
 	for _index: int in limit:
 		if stop.call(engine):
 			return ""
 		var decision: MmPendingDecision = engine.pending_decision()
 		var answer: Variant
 		if decision is PriorityDecision:
-			answer = pass_index(decision as PriorityDecision)
+			var priority: PriorityDecision = decision as PriorityDecision
+			answer = pass_index(priority)
+			if play_lands:
+				var land: int = action_index(priority, func(action: MmAction) -> bool: return action is PlayLandAction)
+				if land != -1:
+					answer = land
 		elif decision is KeepOrMulliganDecision:
 			answer = KeepOrMulliganDecision.Choice.KEEP
 		elif decision is ChooseCardsToBottomDecision:
@@ -73,17 +175,19 @@ static func autoplay(engine: MmEngine, stop: Callable, limit: int = 2000) -> Str
 
 
 ## Plays until the given Game Turn has begun and its first priority decision is pending.
-static func play_until_game_turn(engine: MmEngine, game_turn: int) -> String:
+static func play_until_game_turn(engine: MmEngine, game_turn: int, play_lands: bool = false) -> String:
 	return autoplay(engine, func(running: MmEngine) -> bool:
-		return running.game_state().game_turn >= game_turn and running.pending_decision() is PriorityDecision)
+		return running.game_state().game_turn >= game_turn and running.pending_decision() is PriorityDecision,
+		play_lands)
 
 
 ## Plays until [param step] of the given Game Turn has begun and the first decision in it
 ## is pending.
-static func play_until_step(engine: MmEngine, game_turn: int, step: MmTurn.Step) -> String:
+static func play_until_step(engine: MmEngine, game_turn: int, step: MmTurn.Step, play_lands: bool = false) -> String:
 	return autoplay(engine, func(running: MmEngine) -> bool:
 		var state: MmGameState = running.game_state()
-		return state.game_turn == game_turn and state.step == step)
+		return state.game_turn == game_turn and state.step == step,
+		play_lands)
 
 
 ## The index of the Pass action in a priority decision.

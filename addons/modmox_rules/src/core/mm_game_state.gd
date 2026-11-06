@@ -70,8 +70,17 @@ func run_card_of(game_object: MmGameObject) -> MmRunCard:
 ## Definition's fields (ADR 0009).
 func characteristics_of(game_object: MmGameObject) -> MmCharacteristics:
 	# Later (milestone 9): apply continuous effects in layer order (CR 613).
+	var definition: MmCardDefinition = game_object.definition
 	var result: MmCharacteristics = MmCharacteristics.new()
-	result.name = game_object.definition.name
+	result.name = definition.name
+	result.card_types = definition.card_types.duplicate()
+	result.supertypes = definition.supertypes.duplicate()
+	result.subtypes = definition.subtypes.duplicate()
+	result.abilities = definition.abilities.duplicate()
+	# CR 305.6: each basic land type grants "{T}: Add [its mana]", in subtype order.
+	for subtype: String in result.subtypes:
+		if result.has_card_type(MmCardTypes.CardType.LAND) and MmCardTypes.BASIC_LAND_TYPES.has(subtype):
+			result.abilities.append(_basic_land_ability(subtype))
 	return result
 
 
@@ -113,12 +122,17 @@ func fingerprint() -> String:
 	lines.append("game rng %s" % game_rng.describe_state())
 	lines.append("next ids %d %d" % [_next_object_id, _next_card_id])
 	for each_player: MmPlayer in players:
-		lines.append("player %d life %d mulligans %d turn %d" % [
-			each_player.id, each_player.life, each_player.mulligans_taken, each_player.turn_number])
+		var mana: PackedStringArray = PackedStringArray()
+		for unit: MmMana in each_player.mana_pool():
+			mana.append(unit.describe())
+		lines.append("player %d life %d mulligans %d turn %d lands %d mana [%s]" % [
+			each_player.id, each_player.life, each_player.mulligans_taken, each_player.turn_number,
+			each_player.lands_played_this_turn, ", ".join(mana)])
 	for zone: MmZone in _all_zones():
 		var entries: PackedStringArray = PackedStringArray()
 		for game_object: MmGameObject in zone.objects():
-			entries.append("%d:%d:%s" % [game_object.id, game_object.card_id, characteristics_of(game_object).name])
+			entries.append("%d:%d:%s:%d:%s" % [game_object.id, game_object.card_id, characteristics_of(game_object).name,
+				game_object.controller_id, "tapped" if game_object.is_tapped else "untapped"])
 		lines.append("%s [%s]" % [zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 
@@ -129,6 +143,25 @@ func _all_zones() -> Array[MmZone]:
 		zones.append_array([each_player.library, each_player.hand, each_player.graveyard])
 	zones.append_array([battlefield, stack, exile, command])
 	return zones
+
+
+## The intrinsic mana ability of a basic land type, built once per type and shared. It is
+## a read-only Resource like any written ability.
+static var _basic_land_abilities: Dictionary[String, ActivatedAbility] = {}
+
+
+static func _basic_land_ability(land_type: String) -> ActivatedAbility:
+	if not _basic_land_abilities.has(land_type):
+		var one: ConstantValue = ConstantValue.new()
+		one.value = 1
+		var add_mana: AddManaEffect = AddManaEffect.new()
+		add_mana.mana_type = MmCardTypes.BASIC_LAND_TYPES[land_type]
+		add_mana.amount = one
+		var ability: ActivatedAbility = ActivatedAbility.new()
+		ability.costs = [TapCost.new()]
+		ability.effects = [add_mana]
+		_basic_land_abilities[land_type] = ability
+	return _basic_land_abilities[land_type]
 
 
 func _apply_replacement_effects(event: MmEvent) -> MmEvent:
