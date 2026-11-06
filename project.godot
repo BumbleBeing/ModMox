@@ -15,11 +15,11 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 [debug]
 
-gdscript/warnings/untyped_declaration=2
 gdscript/warnings/directory_rules={
 "res://addons": 0,
 "res://addons/modmox_rules": 1
 }
+gdscript/warnings/untyped_declaration=2
 
 [editor_plugins]
 

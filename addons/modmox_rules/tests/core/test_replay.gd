@@ -24,6 +24,17 @@ func test_replaying_the_decision_log_reproduces_the_state_exactly() -> void:
 	assert_eq(replayed.decision_log(), original.decision_log())
 
 
+func test_replaying_several_turns_reproduces_the_state_exactly() -> void:
+	var setup: MmEncounterSetup = Scenario.setup(Scenario.Rule.RANDOM_CHOOSER, 77)
+	var original: MmEngine = MmEngine.start(setup)
+	assert_eq(Scenario.play_until_game_turn(original, 6), "")
+
+	var replayed: MmEngine = MmEngine.replay(setup, original.decision_log())
+
+	assert_eq(replayed.fingerprint(), original.fingerprint())
+	assert_eq(replayed.game_state().game_turn, 6)
+
+
 func test_the_fingerprint_changes_when_the_state_changes() -> void:
 	var engine: MmEngine = MmEngine.start(Scenario.setup())
 	var before: String = engine.fingerprint()

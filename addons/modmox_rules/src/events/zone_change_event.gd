@@ -2,7 +2,7 @@ class_name ZoneChangeEvent
 extends MmEvent
 ## A card moves from one zone to another and becomes a new Game Object (CR 400.7, ADR 0008).
 
-enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM }
+enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int

@@ -58,6 +58,18 @@ _Avoid_: Controller, input, brain
 A point where the engine has stopped because a player must make a choice, together with the legal options for that choice.
 _Avoid_: Prompt, callback, request
 
+**Action**:
+Something a player may do while holding priority, such as passing, playing a land or casting a spell. A priority decision offers the legal Actions as its options.
+_Avoid_: Move, play, command
+
+**Turn Number**:
+How many turns a particular player has begun this encounter; shown to people as "<name>'s Turn 3". A player who has not had a turn yet is on Turn Number 0.
+_Avoid_: Game Turn (when one player's count is meant), round
+
+**Game Turn**:
+How many turns have begun in the encounter across both players. Rules that speak of "the first turn of the game" use it.
+_Avoid_: Turn Number (when the overall count is meant), round
+
 **Decision Log**:
 Every accepted answer to a Pending Decision in an encounter, in order. Together with the Encounter Setup it reproduces the encounter exactly.
 _Avoid_: Input history, move list, replay

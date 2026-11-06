@@ -13,6 +13,7 @@ How code in `addons/modmox_rules/` is written. The goal is that any part of the 
 ```
 addons/modmox_rules/
   src/
+    actions/     Actions a player may take while holding priority
     cards/       Card Definitions, Run Cards, Modifications, characteristics
     core/        the engine facade, game state, players, zones, Game Objects, RNG
     events/      the event pipeline and every event type
@@ -29,7 +30,7 @@ addons/modmox_rules/
 
 ## Naming classes
 
-- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmRng`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`.
+- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`.
 - **Specific subclasses** have no prefix and end with their base kind: `ChangeNameModification`, `ZoneChangeEvent`, `KeepOrMulliganDecision`, `DealDamageEffect`, `CreatureFilter`, `CountValue`.
 - Test files and test helpers never declare `class_name`.
 
@@ -92,6 +93,8 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - Tests go through the public API (the `MmEngine` facade where possible) and check the outcome: the state, the views and the event log.
 - Arrange, act, assert, separated by a blank line. Build scenarios with `tests/support/` helpers rather than repeating setup code.
 - Name the rule being tested in the test's comment when there is one.
+- Give private test helpers descriptive names (`_pass_priority`, not `_pass`). `GutTest` defines its own `_pass`, `_fail` and similar methods, and a helper with the same name silently replaces them.
+- Drive a game forward with `Scenario.autoplay()` and its shortcuts (`keep_all`, `play_until_game_turn`, `play_until_step`) rather than submitting long answer lists by hand.
 
 ## Formatting
 

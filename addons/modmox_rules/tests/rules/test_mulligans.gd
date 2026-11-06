@@ -21,7 +21,7 @@ func test_keeping_seven_needs_no_bottom_decision() -> void:
 
 	_submit_all(engine, [KEEP, KEEP])
 
-	assert_null(engine.pending_decision(), "The pregame is over once both players keep seven.")
+	assert_true(engine.pending_decision() is PriorityDecision, "The pregame is over once both players keep seven.")
 	assert_eq(engine.hero().hand.size(), 7)
 	assert_eq(engine.villain().hand.size(), 7)
 
@@ -49,7 +49,7 @@ func test_london_mulligan_twice_without_free_mulligans_keeps_five() -> void:
 	engine.submit(bottom.candidate_ids.slice(0, 2))
 	assert_eq(engine.hero().hand.size(), 5)
 	assert_eq(engine.hero().library.size(), 35)
-	assert_null(engine.pending_decision())
+	assert_true(engine.pending_decision() is PriorityDecision, "The pregame is over.")
 
 
 func test_london_mulligan_twice_with_one_free_mulligan_keeps_six() -> void:
@@ -72,7 +72,7 @@ func test_a_free_mulligan_keeps_the_full_hand() -> void:
 
 	_submit_all(engine, [MULLIGAN, KEEP, KEEP])
 
-	assert_null(engine.pending_decision(), "A free mulligan puts nothing on the bottom.")
+	assert_true(engine.pending_decision() is PriorityDecision, "A free mulligan puts nothing on the bottom.")
 	assert_eq(engine.hero().hand.size(), 7)
 
 

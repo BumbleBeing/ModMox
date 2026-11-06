@@ -17,22 +17,7 @@ func _init(deciding_player_id: int, cards_to_bottom: int, hand_ids: Array[int]) 
 
 
 func validate(answer: Variant) -> String:
-	if typeof(answer) != TYPE_ARRAY:
-		return "Expected a list of object IDs, got %s." % type_string(typeof(answer))
-	var chosen: Array = answer
-	if chosen.size() != count:
-		return "Choose exactly %d cards, not %d." % [count, chosen.size()]
-	var seen: Dictionary[int, bool] = {}
-	for entry: Variant in chosen:
-		if typeof(entry) != TYPE_INT:
-			return "%s is not an object ID." % [entry]
-		var id: int = entry
-		if not candidate_ids.has(id):
-			return "Object %d is not in that hand." % id
-		if seen.has(id):
-			return "Object %d was chosen twice." % id
-		seen[id] = true
-	return ""
+	return _check_distinct_ids(answer, count, candidate_ids)
 
 
 func describe() -> String:

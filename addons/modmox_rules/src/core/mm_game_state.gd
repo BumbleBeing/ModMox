@@ -13,6 +13,10 @@ var exile: MmZone = MmZone.new(MmZone.Kind.EXILE)
 var command: MmZone = MmZone.new(MmZone.Kind.COMMAND)
 var game_rng: MmRng
 var starting_player_id: int = NO_PLAYER
+## The count of all turns begun by either player; 0 during the pregame.
+var game_turn: int = 0
+var active_player_id: int = NO_PLAYER
+var step: MmTurn.Step = MmTurn.Step.NONE
 ## Every event performed, in order. Read-only outside perform().
 var event_log: Array[MmEvent] = []
 
@@ -105,10 +109,12 @@ func retire_object(game_object: MmGameObject) -> void:
 func fingerprint() -> String:
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("starting player %d" % starting_player_id)
+	lines.append("game turn %d active %d step %d" % [game_turn, active_player_id, step])
 	lines.append("game rng %s" % game_rng.describe_state())
 	lines.append("next ids %d %d" % [_next_object_id, _next_card_id])
 	for each_player: MmPlayer in players:
-		lines.append("player %d life %d mulligans %d" % [each_player.id, each_player.life, each_player.mulligans_taken])
+		lines.append("player %d life %d mulligans %d turn %d" % [
+			each_player.id, each_player.life, each_player.mulligans_taken, each_player.turn_number])
 	for zone: MmZone in _all_zones():
 		var entries: PackedStringArray = PackedStringArray()
 		for game_object: MmGameObject in zone.objects():

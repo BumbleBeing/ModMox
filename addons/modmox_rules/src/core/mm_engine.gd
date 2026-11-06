@@ -5,10 +5,12 @@ extends RefCounted
 
 ## Tags mid-encounter saves (ADR 0010). Bump it whenever a change could make an existing
 ## decision log replay differently.
-const VERSION: String = "0.2.0"
+const VERSION: String = "0.3.0"
 
 var _state: MmGameState
 var _pregame: PregameProcedure
+var _turns: TurnProcedure
+var _pregame_over: bool = false
 var _pending: MmPendingDecision = null
 ## Every accepted answer, in order. Plain data, so it can be saved (ADR 0010).
 var _decision_log: Array = []
@@ -35,6 +37,7 @@ func _init(setup: MmEncounterSetup) -> void:
 	assert(error == "", "Invalid Encounter Setup: " + error)
 	_state = MmGameState.new(setup)
 	_pregame = PregameProcedure.new(_state, setup.starting_player_rule)
+	_turns = TurnProcedure.new(_state)
 	_advance()
 
 
@@ -56,7 +59,10 @@ func submit(answer: Variant) -> String:
 	_decision_log.append(stored)
 	var answered: MmPendingDecision = _pending
 	_pending = null
-	_pregame.apply_answer(answered, stored)
+	if _pregame_over:
+		_turns.apply_answer(answered, stored)
+	else:
+		_pregame.apply_answer(answered, stored)
 	_advance()
 	return ""
 
@@ -73,7 +79,8 @@ func villain() -> MmPlayer:
 
 ## What [param player] may legally see.
 func view_for(player: MmPlayer) -> MmPlayerView:
-	return MmPlayerView.build(_state, player.id)
+	var priority_player_id: int = _pending.player_id if _pending is PriorityDecision else MmGameState.NO_PLAYER
+	return MmPlayerView.build(_state, player.id, priority_player_id)
 
 
 ## The full game state. Read-only: change it only by answering decisions.
@@ -97,6 +104,10 @@ func fingerprint() -> String:
 	return (_state.fingerprint() + "\npending " + pending).sha256_text()
 
 
+## Runs the engine until the next decision: the pregame first, then turns.
 func _advance() -> void:
-	# Later (milestone 3): once the pregame is over, the turn structure takes over.
-	_pending = _pregame.next_decision()
+	if not _pregame_over:
+		_pending = _pregame.next_decision()
+		_pregame_over = _pending == null
+	if _pregame_over:
+		_pending = _turns.next_decision()

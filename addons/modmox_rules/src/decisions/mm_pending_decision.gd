@@ -32,3 +32,24 @@ func _check_choice(answer: Variant, choice_count: int) -> String:
 	if choice < 0 or choice >= choice_count:
 		return "Choice %d is not one of the options." % choice
 	return ""
+
+
+## Checks that [param answer] is an Array of exactly [param count] distinct object IDs, all
+## taken from [param candidate_ids].
+func _check_distinct_ids(answer: Variant, count: int, candidate_ids: Array[int]) -> String:
+	if typeof(answer) != TYPE_ARRAY:
+		return "Expected a list of object IDs, got %s." % type_string(typeof(answer))
+	var chosen: Array = answer
+	if chosen.size() != count:
+		return "Choose exactly %d, not %d." % [count, chosen.size()]
+	var seen: Dictionary[int, bool] = {}
+	for entry: Variant in chosen:
+		if typeof(entry) != TYPE_INT:
+			return "%s is not an object ID." % [entry]
+		var id: int = entry
+		if not candidate_ids.has(id):
+			return "Object %d is not one of the options." % id
+		if seen.has(id):
+			return "Object %d was chosen twice." % id
+		seen[id] = true
+	return ""
