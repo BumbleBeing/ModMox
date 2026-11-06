@@ -113,16 +113,18 @@ func test_a_written_mana_ability_can_add_several_mana() -> void:
 		assert_eq(mana.type, Type.RED)
 
 
-func test_an_ability_that_targets_is_not_offered_as_a_mana_ability() -> void:
-	# Until the stack exists (milestone 5), only mana abilities can be activated.
+func test_an_ability_that_adds_mana_but_targets_uses_the_stack() -> void:
+	# CR 605.1a: with a target it is not a mana ability, so activating it puts it on the stack.
 	var land_definition: MmCardDefinition = Scenario.mana_land("Odd Spring", Type.RED, 1)
 	(land_definition.abilities[0] as ActivatedAbility).effects.append(preload("res://addons/modmox_rules/tests/support/targeted_test_effect.gd").new())
 	var engine: MmEngine = MmEngine.start(Scenario.setup_with(Scenario.copies(land_definition, 40), Scenario.copies(Scenario.vanilla("Card"), 40)))
 	Scenario.play_until_step(engine, 1, Step.PRECOMBAT_MAIN)
-
 	var land: int = Scenario.play_first_land(engine)
 
-	assert_eq(Scenario.activate_index(_priority(engine), land), -1)
+	assert_eq(engine.submit(Scenario.activate_index(_priority(engine), land)), "")
+
+	assert_eq(engine.game_state().stack.size(), 1, "It went on the stack.")
+	assert_eq(engine.hero().mana_pool().size(), 0, "No mana until it resolves.")
 
 
 ## Plays the Hero's first land in their first main phase and returns its object ID.

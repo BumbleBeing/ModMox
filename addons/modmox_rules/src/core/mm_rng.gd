@@ -24,6 +24,13 @@ func _init(stream_seed: int) -> void:
 	_generator.seed = stream_seed
 
 
+## A copy of this stream at its current position. Both copies then produce the same numbers.
+func duplicate_stream() -> MmRng:
+	var copy: MmRng = MmRng.new(_generator.seed)
+	copy._generator.state = _generator.state
+	return copy
+
+
 ## A random integer from 0 up to but not including [param exclusive_max].
 func next_int(exclusive_max: int) -> int:
 	assert(exclusive_max > 0, "next_int needs a positive bound.")

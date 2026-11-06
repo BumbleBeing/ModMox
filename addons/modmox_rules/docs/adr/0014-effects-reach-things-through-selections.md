@@ -1,0 +1,5 @@
+# Effects reach players and objects only through Selections
+
+No effect holds a target or a list of objects itself. Every effect names who or what it affects through a Selection. `TargetSelection(n)` means the target chosen for target requirement n, and several effects may share it ("3 damage to target creature and 1 to its controller"). `EachSelection(filter)` means every player or permanent matching a Filter when the effect resolves, without targeting. `YouSelection` means the controller. Target requirements live on the spell or ability, each with a Filter, and Filters compose with AllOf, AnyOf and Not.
+
+This makes "target" versus "each" a data change instead of a code change. An "overload" Modification simply removes the target requirements and replaces each `TargetSelection` with an `EachSelection` using the same Filter, and the spell stops targeting, ignores hexproof, and can no longer fail to resolve for lack of targets. Whether something targets, which mana-ability classification depends on, is worked out from its Selections.

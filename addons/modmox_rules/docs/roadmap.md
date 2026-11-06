@@ -6,12 +6,12 @@ The engine is built one milestone at a time. Each milestone is test-first and fu
 2. ✅ **Core state**: players, zones, Game Objects with zone-change identity (ADR 0008), Encounter Setup, the Game RNG and AI RNG (ADR 0006), opening hands and London mulligans with Free Mulligans.
 3. ✅ **Turn structure and priority**: every phase and step, priority passing, an empty stack, and the turn passing. No cards yet.
 4. ✅ **Lands and mana**: playing a land, mana abilities, and the mana pool emptying between steps.
-5. **Casting and the stack**: costs, Values, Filters, targets, resolution, and spells fizzling when their targets become illegal. The first real cards are simple burn and draw spells. Mana costs bring color, derived from the cost (CR 202.2). The game will choose each card's frame (color category × creature/noncreature/land) from its characteristics, so the characteristics query must also work on a Run Card outside any encounter, giving deck and reward screens the same answer as the battlefield.
+5. ✅ **Casting and the stack**: costs, Values, Filters, targets, resolution, and spells fizzling when their targets become illegal. The first real cards are simple burn and draw spells. Mana costs bring color, derived from the cost (CR 202.2). The game will choose each card's frame (color category × creature/noncreature/land) from its characteristics, so the characteristics query must also work on a Run Card outside any encounter, giving deck and reward screens the same answer as the battlefield.
 6. **Creatures and combat**: summoning sickness, declaring attackers and blockers, combat damage, and first strike.
 7. **State-based actions**: dying, reaching 0 life, and drawing from an empty library.
 8. **Triggered abilities.**
 9. **Static abilities and layers.**
 10. **Replacement and prevention effects.**
-11. **First playable Alpha subset** against a simple AI Agent. By default the AI Agent chooses to play first whenever it gets the play/draw choice, unless a particular Villain is coded otherwise.
+11. **First playable Alpha subset** against a simple AI Agent. The AI's lookahead engines should be able to skip undo checkpoints, which copy the state at every undo barrier. By default the AI Agent chooses to play first whenever it gets the play/draw choice, unless a particular Villain is coded otherwise.
 
 The GUI is game-side work that can start after milestone 6 at the earliest.

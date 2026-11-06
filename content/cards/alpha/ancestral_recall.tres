@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_u3bnt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_5k2ke"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_e8pwp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_ggpmt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_yf2eu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="6_pm52e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="7_6ni6k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="8_npagr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="9_8mxw0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="10_j5e42"]
+
+[sub_resource type="Resource" id="Resource_2l3yj"]
+script = ExtResource("3_e8pwp")
+value = 3
+
+[sub_resource type="Resource" id="Resource_pa1sg"]
+script = ExtResource("4_ggpmt")
+
+[sub_resource type="Resource" id="Resource_51xi8"]
+script = ExtResource("5_yf2eu")
+amount = SubResource("Resource_2l3yj")
+players = SubResource("Resource_pa1sg")
+
+[sub_resource type="Resource" id="Resource_byve7"]
+script = ExtResource("8_npagr")
+
+[sub_resource type="Resource" id="Resource_ys8qy"]
+script = ExtResource("7_6ni6k")
+filter = SubResource("Resource_byve7")
+
+[sub_resource type="Resource" id="Resource_71ktd"]
+script = ExtResource("6_pm52e")
+targets = Array[ExtResource("7_6ni6k")]([SubResource("Resource_ys8qy")])
+effects = Array[ExtResource("2_5k2ke")]([SubResource("Resource_51xi8")])
+
+[sub_resource type="Resource" id="Resource_2d0ho"]
+script = ExtResource("9_8mxw0")
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("10_j5e42")
+name = "Ancestral Recall"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_2d0ho")
+abilities = Array[ExtResource("1_u3bnt")]([SubResource("Resource_71ktd")])

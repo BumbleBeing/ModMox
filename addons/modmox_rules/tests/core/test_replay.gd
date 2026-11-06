@@ -47,6 +47,22 @@ func test_replaying_turns_with_land_plays_reproduces_the_state_exactly() -> void
 	assert_eq(replayed.fingerprint(), original.fingerprint())
 
 
+func test_replaying_casts_and_resolutions_reproduces_the_state_exactly() -> void:
+	var cards: Array[MmCardDefinition] = Scenario.deck_of(Scenario.basic_land("Mountain"), 20, Scenario.bolt(), 20)
+	var setup: MmEncounterSetup = Scenario.setup_with(cards, cards.duplicate())
+	var original: MmEngine = Scenario.find_engine(setup,
+		func(running: MmEngine) -> bool: return Scenario.ready_in_main(running, 3, 2, "Bolt"))
+	Scenario.cast(original, Scenario.card_in_hand(original, original.hero(), "Bolt"), [MmReference.to_player(original.villain().id)])
+	Scenario.pass_priority(original)
+	Scenario.pass_priority(original)
+	assert_eq(Scenario.play_until_game_turn(original, 5, true), "")
+
+	var replayed: MmEngine = MmEngine.replay(setup, original.decision_log())
+
+	assert_eq(replayed.fingerprint(), original.fingerprint())
+	assert_eq(replayed.villain().life, 17)
+
+
 func test_the_fingerprint_changes_when_the_state_changes() -> void:
 	var engine: MmEngine = MmEngine.start(Scenario.setup())
 	var before: String = engine.fingerprint()

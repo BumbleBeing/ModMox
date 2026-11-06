@@ -2,18 +2,34 @@ class_name MmEngine
 extends RefCounted
 ## The rules engine's whole public interface for one encounter. Start it from an Encounter
 ## Setup, then answer each Pending Decision until none remains (ADR 0003).
+##
+## Recent decisions can be undone back to the last undo barrier (ADR 0015). The engine
+## keeps a checkpoint copy of itself at each barrier; undoing restores that copy and
+## replays the decisions made since, minus the undone ones. Callers only ever see the
+## result: after an undo, read the views again rather than animating anything.
 
 ## Tags mid-encounter saves (ADR 0010). Bump it whenever a change could make an existing
 ## decision log replay differently.
-const VERSION: String = "0.4.0"
+const VERSION: String = "0.5.0"
 
 var _state: MmGameState
 var _pregame: PregameProcedure
 var _turns: TurnProcedure
 var _pregame_over: bool = false
 var _pending: MmPendingDecision = null
-## Every accepted answer, in order. Plain data, so it can be saved (ADR 0010).
+## Every accepted answer, in order. Plain data, so it can be saved (ADR 0010). Undone
+## answers are removed, so saves and replays never see them.
 var _decision_log: Array = []
+## Where in the decision log the cast in progress began, or -1.
+var _cast_started_at: int = -1
+
+var _checkpoint_state: MmGameState
+var _checkpoint_pregame: PregameProcedure
+var _checkpoint_turns: TurnProcedure
+var _checkpoint_pregame_over: bool = false
+var _checkpoint_pending: MmPendingDecision = null
+var _checkpoint_log_size: int = 0
+var _replaying: bool = false
 
 
 ## Starts an encounter and runs it to the first decision.
@@ -39,6 +55,7 @@ func _init(setup: MmEncounterSetup) -> void:
 	_pregame = PregameProcedure.new(_state, setup.starting_player_rule)
 	_turns = TurnProcedure.new(_state)
 	_advance()
+	_take_checkpoint()
 
 
 ## The decision the engine is waiting on, or null if none.
@@ -55,15 +72,55 @@ func submit(answer: Variant) -> String:
 	var error: String = _pending.validate(answer)
 	if error != "":
 		return error
+	var answered: MmPendingDecision = _pending
+	var events_before: int = _state.event_log.size()
+	var was_casting: bool = is_casting()
 	var stored: Variant = (answer as Array).duplicate(true) if answer is Array else answer
 	_decision_log.append(stored)
-	var answered: MmPendingDecision = _pending
 	_pending = null
 	if _pregame_over:
 		_turns.apply_answer(answered, stored)
 	else:
 		_pregame.apply_answer(answered, stored)
 	_advance()
+	if not was_casting and is_casting():
+		_cast_started_at = _decision_log.size() - 1
+	if _turns.needs_rewind():
+		# CR 728: a cast that can no longer be finished is rewound as if it never began.
+		_undo_to(_cast_started_at)
+		return ""
+	if not is_casting():
+		_cast_started_at = -1
+	if not _replaying and _is_undo_barrier(answered, events_before):
+		_take_checkpoint()
+	return ""
+
+
+## Whether there is a decision that can be undone.
+func can_undo() -> bool:
+	return _decision_log.size() > _checkpoint_log_size
+
+
+## Undoes the most recent decision. Returns "" when done, or why it cannot be undone.
+func undo() -> String:
+	if not can_undo():
+		return "Nothing can be undone past this point."
+	_undo_to(_decision_log.size() - 1)
+	return ""
+
+
+## Whether a spell is being cast or an ability activated: its targets or payment are
+## still being chosen.
+func is_casting() -> bool:
+	return _pregame_over and _turns.is_casting()
+
+
+## Abandons the spell or ability being cast, putting everything back as it was before it
+## began, including any lands tapped for it (CR 728).
+func cancel_cast() -> String:
+	if not is_casting():
+		return "Nothing is being cast."
+	_undo_to(_cast_started_at)
 	return ""
 
 
@@ -83,7 +140,8 @@ func view_for(player: MmPlayer) -> MmPlayerView:
 	return MmPlayerView.build(_state, player.id, priority_player_id)
 
 
-## The full game state. Read-only: change it only by answering decisions.
+## The full game state. Read-only: change it only by answering decisions. An undo
+## replaces it, so fetch it again afterwards rather than keeping it.
 func game_state() -> MmGameState:
 	return _state
 
@@ -111,3 +169,46 @@ func _advance() -> void:
 		_pregame_over = _pending == null
 	if _pregame_over:
 		_pending = _turns.next_decision()
+
+
+## ADR 0015: a point that cannot fairly be undone past. Hidden information was revealed or
+## randomness used (a draw, a shuffle), something left the stack, or the other player now
+## has a decision.
+func _is_undo_barrier(answered: MmPendingDecision, events_before: int) -> bool:
+	if _pending == null or _pending.player_id != answered.player_id:
+		return true
+	for index: int in range(events_before, _state.event_log.size()):
+		var event: MmEvent = _state.event_log[index]
+		if event is ShuffleEvent or event is AbilityLeftStackEvent:
+			return true
+		var moved: ZoneChangeEvent = event as ZoneChangeEvent
+		if moved != null and moved.from_zone_kind in [MmZone.Kind.LIBRARY, MmZone.Kind.STACK]:
+			return true
+	return false
+
+
+func _take_checkpoint() -> void:
+	_checkpoint_state = _state.duplicate_state()
+	_checkpoint_pregame = _pregame.copy_for(_checkpoint_state)
+	_checkpoint_turns = _turns.copy_for(_checkpoint_state)
+	_checkpoint_pregame_over = _pregame_over
+	_checkpoint_pending = _pending  # Decisions never change, so sharing one is safe.
+	_checkpoint_log_size = _decision_log.size()
+
+
+## Restores the checkpoint and replays the decisions after it, up to [param log_size].
+func _undo_to(log_size: int) -> void:
+	assert(log_size >= _checkpoint_log_size, "Cannot undo past the last undo barrier.")
+	var to_replay: Array = _decision_log.slice(_checkpoint_log_size, log_size)
+	_state = _checkpoint_state.duplicate_state()
+	_pregame = _checkpoint_pregame.copy_for(_state)
+	_turns = _checkpoint_turns.copy_for(_state)
+	_pregame_over = _checkpoint_pregame_over
+	_pending = _checkpoint_pending
+	_decision_log.resize(_checkpoint_log_size)
+	_cast_started_at = -1
+	_replaying = true
+	for answer: Variant in to_replay:
+		var error: String = submit(answer)
+		assert(error == "", "Replaying an undo window failed: " + error)
+	_replaying = false

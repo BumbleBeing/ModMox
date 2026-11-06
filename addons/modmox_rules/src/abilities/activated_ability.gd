@@ -5,12 +5,15 @@ extends MmAbility
 ## mana ability into one that uses the stack.
 
 @export var costs: Array[MmCost] = []
+@export var targets: Array[TargetSpec] = []
 @export var effects: Array[MmEffect] = []
 
 
 ## CR 605.1a: it could add mana and it has no target. There are no loyalty abilities in
 ## this game (ADR 0001), so that part of the rule never applies.
 func is_mana_ability() -> bool:
+	if not targets.is_empty():
+		return false
 	var adds_mana: bool = false
 	for effect: MmEffect in effects:
 		if effect.has_targets():
@@ -41,4 +44,4 @@ func resolve_effects(state: MmGameState, context: MmEffectContext) -> void:
 
 
 func describe() -> String:
-	return "activated ability (%d costs, %d effects)" % [costs.size(), effects.size()]
+	return "activated ability (%d costs, %d targets, %d effects)" % [costs.size(), targets.size(), effects.size()]

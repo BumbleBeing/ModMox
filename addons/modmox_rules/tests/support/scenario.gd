@@ -225,3 +225,258 @@ static func card_ids(zone: MmZone) -> Array[int]:
 	for object: MmGameObject in zone.objects():
 		result.append(object.card_id)
 	return result
+
+
+# --- Milestone 5: spells, targets and payment ---------------------------------------
+
+
+static func mana_cost(generic: int, symbols: Array[MmMana.Type] = []) -> MmManaCost:
+	var cost: MmManaCost = MmManaCost.new()
+	cost.generic = generic
+	cost.symbols = symbols
+	return cost
+
+
+static func constant(number: int) -> ConstantValue:
+	var value: ConstantValue = ConstantValue.new()
+	value.value = number
+	return value
+
+
+static func target(filter: MmFilter) -> TargetSpec:
+	var spec: TargetSpec = TargetSpec.new()
+	spec.filter = filter
+	return spec
+
+
+## "Any target": a creature or a player (there are no planeswalkers, ADR 0001).
+static func any_target() -> TargetSpec:
+	var creature: HasCardTypeFilter = HasCardTypeFilter.new()
+	creature.card_type = MmCardTypes.CardType.CREATURE
+	var either: AnyOfFilter = AnyOfFilter.new()
+	either.filters = [IsPlayerFilter.new(), creature]
+	return target(either)
+
+
+static func target_player() -> TargetSpec:
+	return target(IsPlayerFilter.new())
+
+
+## "Untapped land": AllOf(land, Not(tapped)).
+static func untapped_land() -> MmFilter:
+	var land: HasCardTypeFilter = HasCardTypeFilter.new()
+	land.card_type = MmCardTypes.CardType.LAND
+	var untapped: NotFilter = NotFilter.new()
+	untapped.filter = IsTappedFilter.new()
+	var both: AllOfFilter = AllOfFilter.new()
+	both.filters = [land, untapped]
+	return both
+
+
+static func targeted(index: int) -> TargetSelection:
+	var selection: TargetSelection = TargetSelection.new()
+	selection.target_index = index
+	return selection
+
+
+static func each(filter: MmFilter) -> EachSelection:
+	var selection: EachSelection = EachSelection.new()
+	selection.filter = filter
+	return selection
+
+
+static func deal_damage(amount: int, recipients: MmSelection) -> DealDamageEffect:
+	var effect: DealDamageEffect = DealDamageEffect.new()
+	effect.amount = constant(amount)
+	effect.recipients = recipients
+	return effect
+
+
+static func draw_cards(amount: int, players: MmSelection) -> DrawCardsEffect:
+	var effect: DrawCardsEffect = DrawCardsEffect.new()
+	effect.amount = constant(amount)
+	effect.players = players
+	return effect
+
+
+static func gain_life(amount: int, players: MmSelection) -> GainLifeEffect:
+	var effect: GainLifeEffect = GainLifeEffect.new()
+	effect.amount = constant(amount)
+	effect.players = players
+	return effect
+
+
+static func add_mana(type: MmMana.Type, amount: int) -> AddManaEffect:
+	var effect: AddManaEffect = AddManaEffect.new()
+	effect.mana_type = type
+	effect.amount = constant(amount)
+	return effect
+
+
+static func spell(card_name: String, card_type: MmCardTypes.CardType, cost: MmManaCost,
+		targets: Array[TargetSpec], effects: Array[MmEffect]) -> MmCardDefinition:
+	var definition: MmCardDefinition = vanilla(card_name)
+	definition.card_types = [card_type]
+	definition.mana_cost = cost
+	var ability: SpellAbility = SpellAbility.new()
+	ability.targets = targets
+	ability.effects = effects
+	definition.abilities = [ability]
+	return definition
+
+
+static func instant(card_name: String, cost: MmManaCost, targets: Array[TargetSpec], effects: Array[MmEffect]) -> MmCardDefinition:
+	return spell(card_name, MmCardTypes.CardType.INSTANT, cost, targets, effects)
+
+
+static func sorcery(card_name: String, cost: MmManaCost, targets: Array[TargetSpec], effects: Array[MmEffect]) -> MmCardDefinition:
+	return spell(card_name, MmCardTypes.CardType.SORCERY, cost, targets, effects)
+
+
+## {R} instant: 3 damage to any target.
+static func bolt() -> MmCardDefinition:
+	return instant("Bolt", mana_cost(0, [MmMana.Type.RED]), [any_target()], [deal_damage(3, targeted(0))])
+
+
+## A land with an ability that uses the stack: "{T}: Target player gains 1 life."
+static func life_land() -> MmCardDefinition:
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.costs = [TapCost.new()]
+	ability.targets = [target_player()]
+	ability.effects = [gain_life(1, targeted(0))]
+	var definition: MmCardDefinition = vanilla("Life Land")
+	definition.card_types = [MmCardTypes.CardType.LAND]
+	definition.abilities = [ability]
+	return definition
+
+
+## A deck of [param land_count] copies of [param land] followed by [param spell_count]
+## copies of [param spell_card].
+static func deck_of(land: MmCardDefinition, land_count: int, spell_card: MmCardDefinition, spell_count: int) -> Array[MmCardDefinition]:
+	var cards: Array[MmCardDefinition] = copies(land, land_count)
+	cards.append_array(copies(spell_card, spell_count))
+	return cards
+
+
+## Tries Encounter Seeds from 1 upward until [param ready] returns true for the started
+## engine, and returns that engine (or null). Keeps scenarios that need particular cards in
+## hand deterministic without bypassing the shuffle.
+static func find_engine(setup: MmEncounterSetup, ready: Callable, attempts: int = 300) -> MmEngine:
+	for encounter_seed: int in range(1, attempts + 1):
+		setup.encounter_seed = encounter_seed
+		var engine: MmEngine = MmEngine.start(setup)
+		if ready.call(engine):
+			return engine
+	return null
+
+
+## Plays to the active player's main phase of [param game_turn], playing a land each turn
+## including this one, and reports whether that player then controls at least
+## [param lands] lands and holds a card named [param card_name].
+static func ready_in_main(engine: MmEngine, game_turn: int, lands: int, card_name: String) -> bool:
+	if play_until_step(engine, game_turn, MmTurn.Step.PRECOMBAT_MAIN, true) != "":
+		return false
+	play_first_land(engine)
+	var active_id: int = engine.game_state().active_player_id
+	var controlled: int = 0
+	for permanent: MmGameObject in engine.game_state().battlefield.objects():
+		if permanent.controller_id == active_id:
+			controlled += 1
+	return controlled >= lands and card_in_hand(engine, engine.game_state().player(active_id), card_name) != -1
+
+
+## The object ID of the first card named [param card_name] in [param player]'s hand, or -1.
+static func card_in_hand(engine: MmEngine, player: MmPlayer, card_name: String) -> int:
+	for card: MmGameObject in player.hand.objects():
+		if engine.game_state().characteristics_of(card).name == card_name:
+			return card.id
+	return -1
+
+
+## The object ID of the first permanent [param player_id] controls, or -1.
+static func first_permanent_of(engine: MmEngine, player_id: int) -> int:
+	for permanent: MmGameObject in engine.game_state().battlefield.objects():
+		if permanent.controller_id == player_id:
+			return permanent.id
+	return -1
+
+
+static func cast_index(decision: PriorityDecision, object_id: int) -> int:
+	return action_index(decision, func(action: MmAction) -> bool:
+		return action is CastSpellAction and (action as CastSpellAction).object_id == object_id)
+
+
+static func offers_cast(engine: MmEngine, object_id: int) -> bool:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	return decision != null and cast_index(decision, object_id) != -1
+
+
+static func pass_priority(engine: MmEngine) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	return engine.submit(pass_index(decision))
+
+
+## Chooses [param chosen] in the pending target decision.
+static func choose_target(engine: MmEngine, chosen: MmReference) -> String:
+	var decision: ChooseTargetDecision = engine.pending_decision() as ChooseTargetDecision
+	if decision == null:
+		return "Not a target decision."
+	for index: int in decision.candidates.size():
+		if decision.candidates[index].equals(chosen):
+			return engine.submit(index)
+	return "%s is not a candidate." % chosen.describe()
+
+
+## Pays one step of the pending payment with the first pool unit of [param type].
+static func pay_with(engine: MmEngine, type: MmMana.Type) -> String:
+	var decision: PayManaDecision = engine.pending_decision() as PayManaDecision
+	if decision == null:
+		return "Not a payment decision."
+	var pool: Array[MmMana] = engine.game_state().player(decision.player_id).mana_pool()
+	var index: int = action_index(decision_as_actions(decision), func(action: MmAction) -> bool:
+		return action is PayWithManaAction and pool[(action as PayWithManaAction).unit_index].type == type)
+	return "No %s unit can pay." % MmMana.Type.find_key(type) if index == -1 else engine.submit(index)
+
+
+## Pays one step of the pending payment by activating a mana ability of [param object_id]
+## (its ability number [param ability_index] among those offered for that object).
+static func pay_by_tapping(engine: MmEngine, object_id: int, ability_index: int = -1) -> String:
+	var decision: PayManaDecision = engine.pending_decision() as PayManaDecision
+	if decision == null:
+		return "Not a payment decision."
+	var index: int = action_index(decision_as_actions(decision), func(action: MmAction) -> bool:
+		var activate: ActivateAbilityAction = action as ActivateAbilityAction
+		return activate != null and activate.object_id == object_id and (ability_index == -1 or activate.ability_index == ability_index))
+	return "Object %d cannot pay." % object_id if index == -1 else engine.submit(index)
+
+
+## Answers payment decisions until the cost is paid, using the first option each time.
+static func auto_pay(engine: MmEngine) -> String:
+	while engine.pending_decision() is PayManaDecision:
+		var error: String = engine.submit(0)
+		if error != "":
+			return error
+	return ""
+
+
+## Casts [param object_id], choosing [param targets] in order, and pays automatically.
+static func cast(engine: MmEngine, object_id: int, targets: Array[MmReference] = []) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var index: int = cast_index(decision, object_id)
+	if index == -1:
+		return "Object %d cannot be cast." % object_id
+	var error: String = engine.submit(index)
+	for chosen: MmReference in targets:
+		if error != "":
+			return error
+		error = choose_target(engine, chosen)
+	return error if error != "" else auto_pay(engine)
+
+
+## A payment decision viewed as a priority-like list of actions, for action_index().
+static func decision_as_actions(decision: PayManaDecision) -> PriorityDecision:
+	return PriorityDecision.new(decision.player_id, decision.actions)

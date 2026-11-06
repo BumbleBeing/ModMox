@@ -7,6 +7,8 @@ var name: String
 var owner_id: int
 var controller_id: int
 var is_tapped: bool
+## For a spell or ability on the stack: its chosen targets, in order (null if not chosen).
+var targets: Array[MmReference] = []
 
 
 ## The view of [param game_object] as it is now.
@@ -17,4 +19,5 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.owner_id = game_object.owner_id
 	view.controller_id = game_object.controller_id
 	view.is_tapped = game_object.is_tapped
+	view.targets = game_object.targets.duplicate()
 	return view

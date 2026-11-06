@@ -1,7 +1,7 @@
 class_name MmZone
 extends RefCounted
 ## A zone (CR 400): an ordered collection of Game Objects. Index 0 is the top of a library
-## and the first object of any other zone. Every zone keeps a stable order so that views
+## and the first object of any other zone, except the stack, whose top is its last object. Every zone keeps a stable order so that views
 ## and replays are consistent; the GUI may display a hand in its own order.
 
 enum Kind { LIBRARY, HAND, GRAVEYARD, BATTLEFIELD, STACK, EXILE, COMMAND }
@@ -53,8 +53,13 @@ func has(object: MmGameObject) -> bool:
 
 ## A short description for logs and debugging, such as "library of player 0".
 func describe() -> String:
-	var kind_name: String = Kind.find_key(kind).to_lower()
-	return kind_name if owner_id == NO_OWNER else "%s of player %d" % [kind_name, owner_id]
+	return describe_zone(kind, owner_id)
+
+
+## Describes the zone of [param zone_kind] owned by [param zone_owner_id].
+static func describe_zone(zone_kind: Kind, zone_owner_id: int) -> String:
+	var kind_name: String = Kind.find_key(zone_kind).to_lower()
+	return kind_name if zone_owner_id == NO_OWNER else "%s of player %d" % [kind_name, zone_owner_id]
 
 
 ## Event-only: puts [param object] at [param position] (0 = top, BOTTOM = last).

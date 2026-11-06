@@ -22,6 +22,17 @@ func _init(state: MmGameState, rule: MmEncounterSetup.StartingPlayerRule) -> voi
 	_rule = rule
 
 
+## A copy of this procedure working on [param state], a copy of the original state.
+func copy_for(state: MmGameState) -> PregameProcedure:
+	var copy: PregameProcedure = PregameProcedure.new(state, _rule)
+	copy._step = _step
+	copy._undecided = _undecided.duplicate()
+	copy._to_bottom = _to_bottom.duplicate()
+	copy._to_mulligan = _to_mulligan.duplicate()
+	copy._kept = _kept.duplicate()
+	return copy
+
+
 ## Runs every automatic step until a player must decide. Returns that decision, or null
 ## once the pregame is over.
 func next_decision() -> MmPendingDecision:

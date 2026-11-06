@@ -1,6 +1,6 @@
 class_name TurnProcedure
 extends RefCounted
-## Turns, steps and priority from the first turn on (CR 500, CR 117).
+## Turns, steps, priority and the stack, from the first turn on (CR 500, 117, 405, 608).
 
 enum Stage { START_TURN, START_STEP, TURN_BASED_ACTIONS, AWAIT_DISCARD, PRIORITY, END_STEP }
 
@@ -12,16 +12,55 @@ var _step_index: int = 0
 var _priority_player_id: int = MmGameState.NO_PLAYER
 var _passes_in_succession: int = 0
 var _attackers_declared: bool = false
+## The spell being cast or ability being activated, while its choices are being made.
+var _cast: CastProcedure = null
+var _needs_rewind: bool = false
 
 
 func _init(state: MmGameState) -> void:
 	_state = state
 
 
+## A copy of this procedure working on [param state], a copy of the original state.
+func copy_for(state: MmGameState) -> TurnProcedure:
+	var copy: TurnProcedure = TurnProcedure.new(state)
+	copy._stage = _stage
+	copy._steps = _steps.duplicate()
+	copy._step_index = _step_index
+	copy._priority_player_id = _priority_player_id
+	copy._passes_in_succession = _passes_in_succession
+	copy._attackers_declared = _attackers_declared
+	copy._cast = null if _cast == null else _cast.copy_for(state)
+	copy._needs_rewind = _needs_rewind
+	return copy
+
+
+## Whether a spell is being cast, or an ability activated, right now.
+func is_casting() -> bool:
+	return _cast != null
+
+
+## Whether the spell or ability being cast can no longer be paid for, so the engine must
+## rewind it (CR 728).
+func needs_rewind() -> bool:
+	return _needs_rewind
+
+
 ## Runs every automatic step until a player must decide, and returns that decision.
-## A turn always leads to another, so this never returns null.
+## Returns null only when a cast must be rewound.
 func next_decision() -> MmPendingDecision:
 	while true:
+		if _cast != null:
+			var casting: MmPendingDecision = _cast.next_decision()
+			if casting != null:
+				return casting
+			if _cast.is_stuck():
+				_needs_rewind = true
+				return null
+			# CR 117.3c: after casting or activating, that player receives priority.
+			_cast = null
+			_passes_in_succession = 0
+			_stage = Stage.PRIORITY
 		match _stage:
 			Stage.START_TURN:
 				_start_turn()
@@ -46,15 +85,19 @@ func next_decision() -> MmPendingDecision:
 
 ## Applies an already-validated [param answer] to [param decision].
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
-	if decision is PriorityDecision:
+	if _cast != null:
+		_cast.apply_answer(decision, answer)
+	elif decision is PriorityDecision:
 		var index: int = answer
 		var action: MmAction = (decision as PriorityDecision).actions[index]
 		if action is PassAction:
 			_pass_priority()
 		elif action is PlayLandAction:
 			_play_land(action as PlayLandAction)
+		elif action is CastSpellAction:
+			_cast = CastProcedure.cast_spell(_state, decision.player_id, _state.object((action as CastSpellAction).object_id))
 		elif action is ActivateAbilityAction:
-			_activate_mana_ability(action as ActivateAbilityAction)
+			_activate(action as ActivateAbilityAction, decision.player_id)
 		else:
 			assert(false, "Unknown action: %s" % action.describe())
 	elif decision is ChooseCardsToDiscardDecision:
@@ -112,15 +155,56 @@ func _begin_priority_or_end_step() -> void:
 		_stage = Stage.END_STEP
 
 
-## CR 117.3d and 117.4: priority passes to the next player; once every player has passed
-## in succession with an empty stack, the step ends.
+## CR 117.3d and 117.4: priority passes to the next player. Once every player has passed
+## in succession, the top of the stack resolves, or the step ends if the stack is empty.
 func _pass_priority() -> void:
 	_passes_in_succession += 1
-	if _passes_in_succession >= _state.players.size() and _state.stack.is_empty():
+	if _passes_in_succession < _state.players.size():
+		_priority_player_id = _state.opponent_of(_priority_player_id).id
+	elif _state.stack.is_empty():
 		_priority_player_id = MmGameState.NO_PLAYER
 		_stage = Stage.END_STEP
 	else:
-		_priority_player_id = _state.opponent_of(_priority_player_id).id
+		_resolve_top_of_stack()
+		# CR 117.3b: after resolution the active player receives priority.
+		_priority_player_id = _state.active_player_id
+		_passes_in_succession = 0
+
+
+## CR 608.2: the top object resolves. Targets are rechecked first: if every target is now
+## illegal it does not resolve, and otherwise effects simply skip illegal targets.
+func _resolve_top_of_stack() -> void:
+	var resolving: MmGameObject = _state.stack.objects().back()
+	var specs: Array[TargetSpec] = []
+	var effects: Array[MmEffect] = []
+	if resolving.is_card():
+		var spell: SpellAbility = CastProcedure.spell_ability_of(_state.characteristics_of(resolving))
+		specs = spell.targets
+		effects = spell.effects
+	else:
+		var activated: ActivatedAbility = resolving.ability as ActivatedAbility
+		specs = activated.targets
+		effects = activated.effects
+	var source_id: int = resolving.id if resolving.is_card() else resolving.source_object_id
+	var checking: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id)
+	var targets: Array[MmReference] = []
+	var any_legal: bool = specs.is_empty()
+	for index: int in specs.size():
+		var chosen: MmReference = resolving.targets[index] if index < resolving.targets.size() else null
+		var still_legal: bool = specs[index].is_still_legal(_state, chosen, checking)
+		targets.append(chosen if still_legal else null)
+		any_legal = any_legal or still_legal
+	if any_legal:
+		var context: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id, targets)
+		for effect: MmEffect in effects:
+			effect.resolve(_state, context)
+	if resolving.is_card():
+		# CR 608.2n: an instant or sorcery goes to its owner's graveyard.
+		# Later (milestone 6): a permanent spell enters the battlefield instead.
+		var reason: ZoneChangeEvent.Reason = ZoneChangeEvent.Reason.RESOLVED if any_legal else ZoneChangeEvent.Reason.DID_NOT_RESOLVE
+		_state.perform(ZoneChangeEvent.new(_state.object(resolving.id), _state.player(resolving.owner_id).graveyard, MmZone.BOTTOM, reason))
+	else:
+		_state.perform(AbilityLeftStackEvent.new(resolving.id, any_legal))
 
 
 func _end_step() -> void:
@@ -141,22 +225,24 @@ func _current_step() -> MmTurn.Step:
 
 
 ## The actions [param player_id] may take while holding priority, in a deterministic order
-## (ADR 0012): Pass, then land plays by object ID, then abilities by object ID and order.
+## (ADR 0012): Pass, then land plays, then spells, then abilities, each by object ID and
+## abilities by their order on the object.
 func _legal_actions(player_id: int) -> Array[MmAction]:
-	# Later (milestone 5): casting spells and activating abilities that use the stack.
 	var actions: Array[MmAction] = [PassAction.new()]
 	var player: MmPlayer = _state.player(player_id)
+	var hand: Array[MmGameObject] = _sorted_by_id(player.hand.objects())
 	if _may_play_land(player):
-		for card: MmGameObject in _sorted_by_id(player.hand.objects()):
+		for card: MmGameObject in hand:
 			if _state.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND):
 				actions.append(PlayLandAction.new(card.id))
-	for permanent: MmGameObject in _sorted_by_id(_state.battlefield.objects()):
-		if permanent.controller_id != player_id:
-			continue
+	for card: MmGameObject in hand:
+		if _may_cast(player, card):
+			actions.append(CastSpellAction.new(card.id))
+	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, player_id):
 		var abilities: Array[MmAbility] = _state.characteristics_of(permanent).abilities
 		for index: int in abilities.size():
 			var ability: ActivatedAbility = abilities[index] as ActivatedAbility
-			if ability != null and ability.is_mana_ability() and ability.can_pay_costs(_state, permanent):
+			if ability != null and _may_activate(player, permanent, ability):
 				actions.append(ActivateAbilityAction.new(permanent.id, index))
 	return actions
 
@@ -164,14 +250,50 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 ## CR 305.2 and 505.6b: in your own main phase, with an empty stack, while you have a land
 ## play left this turn.
 func _may_play_land(player: MmPlayer) -> bool:
-	var in_main_phase: bool = _current_step() in [MmTurn.Step.PRECOMBAT_MAIN, MmTurn.Step.POSTCOMBAT_MAIN]
-	return (player.id == _state.active_player_id and in_main_phase and _state.stack.is_empty()
-		and player.lands_played_this_turn < _land_plays_allowed(player))
+	return _sorcery_timing(player) and player.lands_played_this_turn < _land_plays_allowed(player)
 
 
 func _land_plays_allowed(_player: MmPlayer) -> int:
 	# Later (milestone 9): static abilities and Emblems that grant extra land plays.
 	return 1
+
+
+## CR 307.1: "sorcery speed" means your own main phase with an empty stack.
+func _sorcery_timing(player: MmPlayer) -> bool:
+	var in_main_phase: bool = _current_step() in [MmTurn.Step.PRECOMBAT_MAIN, MmTurn.Step.POSTCOMBAT_MAIN]
+	return player.id == _state.active_player_id and in_main_phase and _state.stack.is_empty()
+
+
+## Whether [param card] in hand could be cast right now from start to finish: its timing,
+## a legal target for every requirement (CR 601.2c), and a cost that can be paid.
+func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
+	var characteristics: MmCharacteristics = _state.characteristics_of(card)
+	var spell: SpellAbility = CastProcedure.spell_ability_of(characteristics)
+	if spell == null or characteristics.mana_cost == null:
+		return false  # CR 118.6: a card with no mana cost cannot be cast this way.
+	if characteristics.has_card_type(MmCardTypes.CardType.SORCERY) and not _sorcery_timing(player):
+		return false
+	if not characteristics.has_card_type(MmCardTypes.CardType.INSTANT) and not characteristics.has_card_type(MmCardTypes.CardType.SORCERY):
+		return false  # Later (milestone 6): permanent spells.
+	if not _every_requirement_has_a_target(spell.targets, player.id, card.id):
+		return false
+	return ManaPayment.can_afford(_state, player.id, characteristics.mana_cost)
+
+
+## Mana abilities whenever their cost can be paid; other abilities also need a legal
+## target for every requirement.
+func _may_activate(player: MmPlayer, permanent: MmGameObject, ability: ActivatedAbility) -> bool:
+	if not ability.can_pay_costs(_state, permanent):
+		return false
+	return ability.is_mana_ability() or _every_requirement_has_a_target(ability.targets, player.id, permanent.id)
+
+
+func _every_requirement_has_a_target(specs: Array[TargetSpec], player_id: int, source_id: int) -> bool:
+	var context: MmEffectContext = MmEffectContext.new(player_id, source_id)
+	for spec: TargetSpec in specs:
+		if spec.legal_targets(_state, context).is_empty():
+			return false
+	return true
 
 
 ## CR 305.1: the land moves straight to the battlefield. The player keeps priority, and
@@ -183,14 +305,16 @@ func _play_land(action: PlayLandAction) -> void:
 
 
 ## CR 605.3: a mana ability resolves immediately without using the stack, and the player
-## keeps priority.
-func _activate_mana_ability(action: ActivateAbilityAction) -> void:
+## keeps priority. Any other ability goes on the stack (CR 602.2).
+func _activate(action: ActivateAbilityAction, player_id: int) -> void:
 	var source: MmGameObject = _state.object(action.object_id)
 	var ability: ActivatedAbility = _state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
-	assert(ability != null and ability.is_mana_ability(), "Only mana abilities can be activated so far.")
-	ability.pay_costs(_state, source)
-	ability.resolve_effects(_state, MmEffectContext.new(source.controller_id, source.id))
-	_passes_in_succession = 0
+	if ability.is_mana_ability():
+		ability.pay_costs(_state, source)
+		ability.resolve_effects(_state, MmEffectContext.new(source.controller_id, source.id))
+		_passes_in_succession = 0
+	else:
+		_cast = CastProcedure.activate_ability(_state, player_id, source, action.ability_index)
 
 
 func _sorted_by_id(objects: Array[MmGameObject]) -> Array[MmGameObject]:

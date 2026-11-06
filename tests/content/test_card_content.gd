@@ -1,6 +1,7 @@
 extends GutTest
 ## Game-side checks on the authored Card Definitions in res://content/cards (ADR 0002).
 
+const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const CONTENT_ROOT: String = "res://content/cards"
 const BASIC_LANDS: Array[String] = ["Plains", "Island", "Swamp", "Mountain", "Forest"]
 
@@ -70,6 +71,82 @@ func test_a_basic_land_from_content_taps_for_its_mana_in_a_game() -> void:
 	assert_eq(abilities.size(), 1)
 	var add_mana: AddManaEffect = (abilities[0] as ActivatedAbility).effects[0] as AddManaEffect
 	assert_eq(add_mana.mana_type, MmMana.Type.GREEN)
+
+
+func test_the_alpha_spells_have_the_right_printed_characteristics() -> void:
+	var expected: Dictionary[String, Array] = {
+		"lightning_bolt": ["Lightning Bolt", MmCardTypes.CardColor.RED],
+		"ancestral_recall": ["Ancestral Recall", MmCardTypes.CardColor.BLUE],
+		"dark_ritual": ["Dark Ritual", MmCardTypes.CardColor.BLACK],
+	}
+	for file_name: String in expected:
+		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
+		assert_eq(printed.name, expected[file_name][0])
+		assert_eq(printed.card_types, [MmCardTypes.CardType.INSTANT], file_name)
+		assert_eq(printed.colors, [expected[file_name][1]], file_name)
+		assert_eq(printed.mana_value(), 1, file_name)
+
+
+func test_lightning_bolt_deals_three_damage_to_a_player() -> void:
+	var engine: MmEngine = _hero_ready_to_cast(_alpha("lightning_bolt"), "mountain")
+
+	Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Lightning Bolt"), [MmReference.to_player(engine.villain().id)])
+	_resolve(engine)
+
+	assert_eq(engine.villain().life, 17)
+
+
+func test_lightning_bolt_can_target_creatures_and_players_only() -> void:
+	# Its filter is saved with default values left out; check it still means "any target".
+	var spec: TargetSpec = (_alpha("lightning_bolt").abilities[0] as SpellAbility).targets[0]
+	var engine: MmEngine = _hero_ready_to_cast(_alpha("lightning_bolt"), "mountain")
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var land: MmReference = MmReference.to_object(Scenario.first_permanent_of(engine, engine.hero().id))
+
+	assert_true(spec.filter.matches(engine.game_state(), MmReference.to_player(engine.villain().id), context))
+	assert_false(spec.filter.matches(engine.game_state(), land, context), "A land is not a creature.")
+
+
+func test_ancestral_recall_makes_its_target_draw_three() -> void:
+	var engine: MmEngine = _hero_ready_to_cast(_alpha("ancestral_recall"), "island")
+	Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Ancestral Recall"), [MmReference.to_player(engine.hero().id)])
+	var hand_before: int = engine.hero().hand.size()
+
+	_resolve(engine)
+
+	assert_eq(engine.hero().hand.size(), hand_before + 3)
+
+
+func test_dark_ritual_adds_three_black_mana_when_it_resolves() -> void:
+	var engine: MmEngine = _hero_ready_to_cast(_alpha("dark_ritual"), "swamp")
+
+	Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Dark Ritual"))
+	assert_eq(engine.hero().mana_pool().size(), 0, "A spell is not a mana ability.")
+	_resolve(engine)
+
+	var pool: Array[MmMana] = engine.hero().mana_pool()
+	assert_eq(pool.size(), 3)
+	for mana: MmMana in pool:
+		assert_eq(mana.type, MmMana.Type.BLACK)
+
+
+func _alpha(file_name: String) -> MmCardDefinition:
+	return load("%s/alpha/%s.tres" % [CONTENT_ROOT, file_name]) as MmCardDefinition
+
+
+## The Hero in their first main phase with one basic land of [param land_file] in play and
+## [param spell] in hand.
+func _hero_ready_to_cast(spell: MmCardDefinition, land_file: String) -> MmEngine:
+	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha(land_file), 20, spell, 20)
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		func(running: MmEngine) -> bool: return Scenario.ready_in_main(running, 1, 1, spell.name))
+	assert_not_null(engine, "No seed gave the needed hand.")
+	return engine
+
+
+func _resolve(engine: MmEngine) -> void:
+	Scenario.pass_priority(engine)
+	Scenario.pass_priority(engine)
 
 
 func _setup_with_deck_of(card: MmCardDefinition) -> MmEncounterSetup:

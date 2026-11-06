@@ -11,6 +11,9 @@ extends Resource
 @export var card_types: Array[MmCardTypes.CardType] = []
 @export var supertypes: Array[MmCardTypes.Supertype] = []
 @export var subtypes: Array[String] = []
+## Null for a card with no mana cost, such as a land (CR 202.1b). That is different from a
+## cost of {0}.
+@export var mana_cost: MmManaCost = null
 ## Only the abilities written on the card. Abilities granted by rules, such as a basic
 ## land's mana ability, are added by the characteristics query.
 @export var abilities: Array[MmAbility] = []

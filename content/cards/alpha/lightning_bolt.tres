@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_kmloc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_wygrn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_8frmj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_nx3fj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="5_o74g8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="6_kjai5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="7_h1j7q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="8_s0ow2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="9_uj1bl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="10_rxtua"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="11_83vlw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="12_3jki8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="13_8l3u0"]
+
+[sub_resource type="Resource" id="Resource_uc4f8"]
+script = ExtResource("3_8frmj")
+value = 3
+
+[sub_resource type="Resource" id="Resource_1w61e"]
+script = ExtResource("4_nx3fj")
+
+[sub_resource type="Resource" id="Resource_upjju"]
+script = ExtResource("5_o74g8")
+amount = SubResource("Resource_uc4f8")
+recipients = SubResource("Resource_1w61e")
+
+[sub_resource type="Resource" id="Resource_l4usj"]
+script = ExtResource("9_uj1bl")
+
+[sub_resource type="Resource" id="Resource_ktsfd"]
+script = ExtResource("10_rxtua")
+
+[sub_resource type="Resource" id="Resource_idf0s"]
+script = ExtResource("11_83vlw")
+filters = Array[ExtResource("8_s0ow2")]([SubResource("Resource_l4usj"), SubResource("Resource_ktsfd")])
+
+[sub_resource type="Resource" id="Resource_o44xh"]
+script = ExtResource("7_h1j7q")
+filter = SubResource("Resource_idf0s")
+
+[sub_resource type="Resource" id="Resource_nl765"]
+script = ExtResource("6_kjai5")
+targets = Array[ExtResource("7_h1j7q")]([SubResource("Resource_o44xh")])
+effects = Array[ExtResource("2_wygrn")]([SubResource("Resource_upjju")])
+
+[sub_resource type="Resource" id="Resource_5ydij"]
+script = ExtResource("12_3jki8")
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("13_8l3u0")
+name = "Lightning Bolt"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_5ydij")
+abilities = Array[ExtResource("1_kmloc")]([SubResource("Resource_nl765")])

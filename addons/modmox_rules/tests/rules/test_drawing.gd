@@ -25,7 +25,8 @@ func test_drawing_takes_cards_from_the_top_of_the_library() -> void:
 	# The shuffle happened just before the draws; the log records the order it produced.
 	var shuffled_card_ids: Array[int] = []
 	for event: MmEvent in engine.event_log():
-		if event is ShuffleEvent and (event as ShuffleEvent).zone == engine.hero().library:
+		var shuffle: ShuffleEvent = event as ShuffleEvent
+		if shuffle != null and shuffle.zone_kind == MmZone.Kind.LIBRARY and shuffle.owner_id == engine.hero().id:
 			shuffled_card_ids = (event as ShuffleEvent).card_ids_after
 
 	assert_eq(Scenario.card_ids(engine.hero().hand), shuffled_card_ids.slice(0, 7))

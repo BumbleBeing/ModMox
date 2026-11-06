@@ -30,6 +30,22 @@ func _init(player_id: int, setup: MmPlayerSetup) -> void:
 	graveyard = MmZone.new(MmZone.Kind.GRAVEYARD, player_id)
 
 
+## A copy of this player with empty zones of their own. MmGameState.duplicate_state()
+## fills the zones with copies of their objects.
+func duplicate_without_objects() -> MmPlayer:
+	var setup: MmPlayerSetup = MmPlayerSetup.new()
+	var copy: MmPlayer = MmPlayer.new(id, setup)
+	copy.life = life
+	copy.opening_hand_size = opening_hand_size
+	copy.maximum_hand_size = maximum_hand_size
+	copy.free_mulligans = free_mulligans
+	copy.mulligans_taken = mulligans_taken
+	copy.turn_number = turn_number
+	copy.lands_played_this_turn = lands_played_this_turn
+	copy._mana_pool = _mana_pool.duplicate()  # MmMana units never change, so sharing them is safe.
+	return copy
+
+
 ## How many cards this player must discard to reach their maximum hand size (CR 514.1).
 func cards_over_maximum_hand_size() -> int:
 	if maximum_hand_size == MmPlayerSetup.NO_MAXIMUM_HAND_SIZE:
@@ -67,8 +83,18 @@ func add_mana(units: Array[MmMana]) -> void:
 	_mana_pool.append_array(units)
 
 
+## Event-only: removes and returns the mana unit at [param index] of the pool.
+func remove_mana_at(index: int) -> MmMana:
+	return _mana_pool.pop_at(index)
+
+
 ## Event-only: empties the pool and returns how much mana was lost.
 func empty_mana_pool() -> int:
 	var lost: int = _mana_pool.size()
 	_mana_pool.clear()
 	return lost
+
+
+## Event-only: changes the life total by [param amount], which may be negative (CR 119.3).
+func change_life(amount: int) -> void:
+	life += amount

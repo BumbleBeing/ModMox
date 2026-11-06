@@ -1,3 +1,5 @@
 # A mana pool is a list of mana units, not a count per type
 
 Each player's mana pool holds individual mana units, each recording its type and the object that produced it, instead of a count per type such as `{G: 2, R: 1}`. Later cards need to know more than the amount: "spend this mana only on creature spells", "mana from a snow source", and "whenever you tap a land for mana" triggers. Counts cannot carry that, and switching later would mean rewriting cost payment. Restrictions and other properties are added to the unit when the first card needs them. A pool rarely holds more than about ten mana, so the cost is negligible.
+
+Costs are paid one step at a time, matching a GUI where each click spends one mana: each step spends one unit from the pool or activates a mana ability. A unit pays a symbol of its own type if one is still owed, and generic mana otherwise, which with plain symbols is never the worse choice. Mana from an ability activated while paying goes straight to the cost, and any the cost no longer needs stays in the pool. When hybrid symbols arrive, a step will need to name the symbol it pays.

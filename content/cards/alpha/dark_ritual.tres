@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_7ms63"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_hj2er"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_6euaj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="4_jn1j4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="5_g1e1d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="6_uiiuc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="7_8l6e2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="8_mh3fr"]
+
+[sub_resource type="Resource" id="Resource_8cj6h"]
+script = ExtResource("3_6euaj")
+value = 3
+
+[sub_resource type="Resource" id="Resource_5bcmj"]
+script = ExtResource("4_jn1j4")
+mana_type = 2
+amount = SubResource("Resource_8cj6h")
+
+[sub_resource type="Resource" id="Resource_xhm0u"]
+script = ExtResource("5_g1e1d")
+effects = Array[ExtResource("2_hj2er")]([SubResource("Resource_5bcmj")])
+
+[sub_resource type="Resource" id="Resource_5hj6x"]
+script = ExtResource("7_8l6e2")
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("8_mh3fr")
+name = "Dark Ritual"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_5hj6x")
+abilities = Array[ExtResource("1_7ms63")]([SubResource("Resource_xhm0u")])

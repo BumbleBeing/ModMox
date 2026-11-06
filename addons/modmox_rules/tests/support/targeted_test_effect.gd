@@ -5,3 +5,7 @@ extends MmEffect
 
 func has_targets() -> bool:
 	return true
+
+
+func resolve(_state: MmGameState, _context: MmEffectContext) -> void:
+	pass

@@ -1,8 +1,12 @@
 class_name MmGameObject
 extends RefCounted
-## An object inside an encounter: a card in a zone, and in later milestones a spell,
-## permanent, token or ability. A card that changes zones becomes a new Game Object with
-## a new [member id] (ADR 0008, CR 400.7).
+## An object inside an encounter: a card in a zone, a spell or ability on the stack, and in
+## later milestones a token. A card that changes zones becomes a new Game Object with a new
+## [member id] (ADR 0008, CR 400.7). An ability on the stack is a Game Object that is not a
+## card (CR 113.7a): it has no definition and no Card Identity.
+
+## Card Identity of an object that is not a card, such as an ability on the stack.
+const NO_CARD: int = -1
 
 ## This object's identity. Every stored, logged or answered reference uses it.
 var id: int
@@ -14,9 +18,17 @@ var owner_id: int
 var controller_id: int
 ## Meaningful for permanents (CR 110.5). A new object always starts untapped.
 var is_tapped: bool = false
-## The flattened definition. Rules code reads characteristics through
-## MmGameState.characteristics_of(), never from here (ADR 0009).
+## The flattened definition, or null for an ability on the stack. Rules code reads
+## characteristics through MmGameState.characteristics_of(), never from here (ADR 0009).
 var definition: MmCardDefinition
+## For a spell or ability on the stack: the chosen target of each target requirement, in
+## order. An entry is null until that target is chosen.
+var targets: Array[MmReference] = []
+## For an ability on the stack: the ability, the object it came from, and that object's
+## name when it was activated (the source may have left the battlefield since).
+var ability: MmAbility = null
+var source_object_id: int = 0
+var source_name: String = ""
 ## Weak, because the zone already holds this object strongly; a strong reference both ways
 ## is a cycle that reference counting never frees.
 var _zone_ref: WeakRef = null
@@ -30,9 +42,21 @@ func _init(object_id: int, object_card_id: int, object_owner_id: int, object_def
 	definition = object_definition
 
 
-## Event-only: taps or untaps this permanent.
-func set_tapped(tapped: bool) -> void:
-	is_tapped = tapped
+## A copy of this object, not yet in any zone.
+func duplicate_object() -> MmGameObject:
+	var copy: MmGameObject = MmGameObject.new(id, card_id, owner_id, definition)
+	copy.controller_id = controller_id
+	copy.is_tapped = is_tapped
+	copy.targets = targets.duplicate()  # MmReferences never change, so sharing them is safe.
+	copy.ability = ability
+	copy.source_object_id = source_object_id
+	copy.source_name = source_name
+	return copy
+
+
+## Whether this object is a card (as opposed to an ability on the stack).
+func is_card() -> bool:
+	return card_id != NO_CARD
 
 
 ## The zone holding this object, or null while it is between zones.
@@ -43,3 +67,15 @@ func zone() -> MmZone:
 ## Zone-only: records which zone now holds this object (null when removed).
 func attach_to_zone(holder: MmZone) -> void:
 	_zone_ref = null if holder == null else weakref(holder)
+
+
+## Event-only: taps or untaps this permanent.
+func set_tapped(tapped: bool) -> void:
+	is_tapped = tapped
+
+
+## Event-only: records the target chosen for requirement [param index].
+func set_target(index: int, target: MmReference) -> void:
+	while targets.size() <= index:
+		targets.append(null)
+	targets[index] = target
