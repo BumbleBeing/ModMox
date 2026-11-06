@@ -1,6 +1,8 @@
 extends RefCounted
 ## Builders and shortcuts for encounter scenarios shared by tests.
 
+const ExileTestEffect := preload("res://addons/modmox_rules/tests/support/exile_test_effect.gd")
+
 const Rule := MmEncounterSetup.StartingPlayerRule
 
 
@@ -140,7 +142,8 @@ static func keep_all(engine: MmEngine) -> String:
 
 
 ## Answers decisions with simple defaults until [param stop] returns true for the engine:
-## play first, keep, pass priority, and bottom or discard the first candidates offered.
+## play first, keep, pass priority, bottom or discard the first candidates offered, attack
+## and block with nothing, and put all combat damage on the first recipient.
 ## With [param play_lands], plays the first land offered instead of passing.
 ## Returns the first rejection reason, or "" once stopped. Gives up after [param limit].
 static func autoplay(engine: MmEngine, stop: Callable, play_lands: bool = false, limit: int = 2000) -> String:
@@ -166,6 +169,10 @@ static func autoplay(engine: MmEngine, stop: Callable, play_lands: bool = false,
 			answer = discard.candidate_ids.slice(0, discard.count)
 		elif decision is ChoosePlayOrDrawDecision:
 			answer = ChoosePlayOrDrawDecision.Choice.PLAY
+		elif decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
+			answer = []
+		elif decision is DivideCombatDamageDecision:
+			answer = all_to_first(decision as DivideCombatDamageDecision)
 		else:
 			return "Unexpected decision: %s" % ("none" if decision == null else decision.describe())
 		var error: String = engine.submit(answer)
@@ -480,3 +487,174 @@ static func cast(engine: MmEngine, object_id: int, targets: Array[MmReference] =
 ## A payment decision viewed as a priority-like list of actions, for action_index().
 static func decision_as_actions(decision: PayManaDecision) -> PriorityDecision:
 	return PriorityDecision.new(decision.player_id, decision.actions)
+
+
+# --- Milestone 6: creatures and combat ----------------------------------------------
+
+
+## A creature card costing [param cost] ({0} by default), with [param abilities].
+static func creature(card_name: String, power: int, toughness: int, abilities: Array[MmAbility] = [],
+		cost: MmManaCost = null) -> MmCardDefinition:
+	var definition: MmCardDefinition = vanilla(card_name)
+	definition.card_types = [MmCardTypes.CardType.CREATURE]
+	definition.mana_cost = mana_cost(0) if cost == null else cost
+	definition.power = power
+	definition.toughness = toughness
+	definition.abilities = abilities
+	return definition
+
+
+## A copy of [param definition] that costs {0}, so a scenario can cast it without lands.
+static func free_copy(definition: MmCardDefinition) -> MmCardDefinition:
+	var copy: MmCardDefinition = definition.duplicate(true) as MmCardDefinition
+	copy.mana_cost = mana_cost(0)
+	return copy
+
+
+## Casts the card named [param card_name] from the priority holder's hand and lets it
+## resolve. Returns the first rejection reason, or "".
+static func cast_and_resolve(engine: MmEngine, card_name: String, targets: Array[MmReference] = []) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var card: int = card_in_hand(engine, engine.game_state().player(decision.player_id), card_name)
+	if card == -1:
+		return "No %s in hand." % card_name
+	var error: String = cast(engine, card, targets)
+	if error == "":
+		error = pass_priority(engine)
+	if error == "":
+		error = pass_priority(engine)
+	return error
+
+
+## An Encounter Setup for combat_ready_with(): decks cycling through each player's creatures
+## and extra cards.
+static func combat_setup(hero_creatures: Array[MmCardDefinition], villain_creatures: Array[MmCardDefinition],
+		hero_extras: Array[MmCardDefinition] = [], villain_extras: Array[MmCardDefinition] = []) -> MmEncounterSetup:
+	return setup_with(cycled(hero_creatures + hero_extras), cycled(villain_creatures + villain_extras))
+
+
+## Finds a seed for [param combat] (from combat_setup()) where the Hero casts one of each of
+## [param hero_creatures] on Game Turn 1 and the Villain one of each of
+## [param villain_creatures] on Game Turn 2, then plays on to the first decision in the
+## Hero's declare attackers step on Game Turn 3 with each player still holding their extra
+## cards. Every card must cost {0}. Returns null if no seed deals the needed hands.
+static func combat_ready_with(combat: MmEncounterSetup, hero_creatures: Array[MmCardDefinition],
+		villain_creatures: Array[MmCardDefinition], hero_extras: Array[MmCardDefinition] = [],
+		villain_extras: Array[MmCardDefinition] = []) -> MmEngine:
+	return find_engine(combat, func(engine: MmEngine) -> bool:
+		if play_until_step(engine, 1, MmTurn.Step.PRECOMBAT_MAIN) != "":
+			return false
+		for definition: MmCardDefinition in hero_creatures:
+			if cast_and_resolve(engine, definition.name) != "":
+				return false
+		if play_until_step(engine, 2, MmTurn.Step.PRECOMBAT_MAIN) != "":
+			return false
+		for definition: MmCardDefinition in villain_creatures:
+			if cast_and_resolve(engine, definition.name) != "":
+				return false
+		if play_until_step(engine, 3, MmTurn.Step.DECLARE_ATTACKERS) != "":
+			return false
+		for definition: MmCardDefinition in hero_extras:
+			if card_in_hand(engine, engine.hero(), definition.name) == -1:
+				return false
+		for definition: MmCardDefinition in villain_extras:
+			if card_in_hand(engine, engine.villain(), definition.name) == -1:
+				return false
+		return true)
+
+
+## combat_ready_with() on a fresh combat_setup().
+static func combat_ready(hero_creatures: Array[MmCardDefinition], villain_creatures: Array[MmCardDefinition],
+		hero_extras: Array[MmCardDefinition] = [], villain_extras: Array[MmCardDefinition] = []) -> MmEngine:
+	var combat: MmEncounterSetup = combat_setup(hero_creatures, villain_creatures, hero_extras, villain_extras)
+	return combat_ready_with(combat, hero_creatures, villain_creatures, hero_extras, villain_extras)
+
+
+## Passes priority until the defending player must declare blockers. Returns "" once there.
+static func pass_to_blockers(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is DeclareBlockersDecision)
+
+
+## An instant costing {0}: "Exile target creature." Test-only (see exile_test_effect.gd).
+static func exile_spell(card_name: String) -> MmCardDefinition:
+	var creature_filter: HasCardTypeFilter = HasCardTypeFilter.new()
+	creature_filter.card_type = MmCardTypes.CardType.CREATURE
+	var effect: ExileTestEffect = ExileTestEffect.new()
+	effect.recipients = targeted(0)
+	return instant(card_name, mana_cost(0), [target(creature_filter)], [effect])
+
+
+## An instant costing {0}: "[param amount] damage to any target."
+static func free_shock(card_name: String, amount: int) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [any_target()], [deal_damage(amount, targeted(0))])
+
+
+## The IDs of the permanents named [param card_name] that [param player_id] controls, in ID
+## order.
+static func permanents_named(engine: MmEngine, player_id: int, card_name: String) -> Array[int]:
+	var result: Array[int] = []
+	for permanent: MmGameObject in engine.game_state().battlefield.objects():
+		if permanent.controller_id == player_id and engine.game_state().characteristics_of(permanent).name == card_name:
+			result.append(permanent.id)
+	result.sort()
+	return result
+
+
+## The ID of the first permanent named [param card_name] that [param player_id] controls,
+## or -1.
+static func permanent_named(engine: MmEngine, player_id: int, card_name: String) -> int:
+	var found: Array[int] = permanents_named(engine, player_id, card_name)
+	return -1 if found.is_empty() else found[0]
+
+
+static func declare_attackers(engine: MmEngine, attacker_ids: Array[int]) -> String:
+	if not engine.pending_decision() is DeclareAttackersDecision:
+		return "Not an attackers decision."
+	return engine.submit(attacker_ids)
+
+
+## Declares blocks given as [blocker ID, attacker ID] pairs.
+static func declare_blockers(engine: MmEngine, pairs: Array) -> String:
+	if not engine.pending_decision() is DeclareBlockersDecision:
+		return "Not a blockers decision."
+	return engine.submit(pairs)
+
+
+## Passes priority (and answers combat decisions with nothing) until [param step] of the
+## current Game Turn has begun and its first decision is pending.
+static func pass_until_step(engine: MmEngine, step: MmTurn.Step) -> String:
+	return play_until_step(engine, engine.game_state().game_turn, step)
+
+
+## A legal division of combat damage: everything on the first recipient.
+static func all_to_first(decision: DivideCombatDamageDecision) -> Array[int]:
+	var amounts: Array[int] = []
+	for index: int in decision.recipients.size():
+		amounts.append(decision.amount if index == 0 else 0)
+	return amounts
+
+
+static func damage_on(engine: MmEngine, object_id: int) -> int:
+	return engine.game_state().object(object_id).damage_marked
+
+
+## Every combat DamageEvent in the log, in order.
+static func combat_damage_events(engine: MmEngine) -> Array[DamageEvent]:
+	var result: Array[DamageEvent] = []
+	for event: MmEvent in engine.event_log():
+		var damage: DamageEvent = event as DamageEvent
+		if damage != null and damage.is_combat:
+			result.append(damage)
+	return result
+
+
+## A 40-card deck cycling through [param definitions], or 40 vanilla cards if it is empty.
+static func cycled(definitions: Array[MmCardDefinition]) -> Array[MmCardDefinition]:
+	var deck_cards: Array[MmCardDefinition] = []
+	if definitions.is_empty():
+		return copies(vanilla("Card"), 40)
+	for index: int in 40:
+		deck_cards.append(definitions[index % definitions.size()])
+	return deck_cards

@@ -41,6 +41,9 @@ func apply(state: MmGameState) -> void:
 	var arriving: MmGameObject = state.create_object(leaving.card_id, leaving.owner_id, leaving.definition)
 	to_zone.insert(arriving, position)
 	new_object_id = arriving.id
+	if to_zone_kind == MmZone.Kind.BATTLEFIELD:
+		# CR 302.6: summoning sickness counts from when its controller began controlling it.
+		arriving.record_control_since(state.game_turn)
 	if reason == Reason.PLAY_LAND:
 		state.player(arriving.controller_id).record_land_play()
 

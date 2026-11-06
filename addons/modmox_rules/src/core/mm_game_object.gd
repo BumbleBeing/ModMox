@@ -18,6 +18,11 @@ var owner_id: int
 var controller_id: int
 ## Meaningful for permanents (CR 110.5). A new object always starts untapped.
 var is_tapped: bool = false
+## Damage marked on this permanent (CR 120.3e), until the cleanup step removes it.
+var damage_marked: int = 0
+## The Game Turn in which this permanent's current controller began controlling it. With
+## each player's latest_turn_game_turn it tells summoning sickness (CR 302.6).
+var controlled_since_game_turn: int = 0
 ## The flattened definition, or null for an ability on the stack. Rules code reads
 ## characteristics through MmGameState.characteristics_of(), never from here (ADR 0009).
 var definition: MmCardDefinition
@@ -47,6 +52,8 @@ func duplicate_object() -> MmGameObject:
 	var copy: MmGameObject = MmGameObject.new(id, card_id, owner_id, definition)
 	copy.controller_id = controller_id
 	copy.is_tapped = is_tapped
+	copy.damage_marked = damage_marked
+	copy.controlled_since_game_turn = controlled_since_game_turn
 	copy.targets = targets.duplicate()  # MmReferences never change, so sharing them is safe.
 	copy.ability = ability
 	copy.source_object_id = source_object_id
@@ -72,6 +79,22 @@ func attach_to_zone(holder: MmZone) -> void:
 ## Event-only: taps or untaps this permanent.
 func set_tapped(tapped: bool) -> void:
 	is_tapped = tapped
+
+
+## Event-only: marks [param amount] more damage on this permanent.
+func mark_damage(amount: int) -> void:
+	damage_marked += amount
+
+
+## Event-only: removes all damage marked on this permanent.
+func remove_damage() -> void:
+	damage_marked = 0
+
+
+## Event-only: records that the current controller began controlling this permanent in
+## [param game_turn].
+func record_control_since(game_turn: int) -> void:
+	controlled_since_game_turn = game_turn
 
 
 ## Event-only: records the target chosen for requirement [param index].

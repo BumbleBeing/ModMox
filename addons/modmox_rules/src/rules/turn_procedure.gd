@@ -11,9 +11,10 @@ var _steps: Array[MmTurn.Step] = []
 var _step_index: int = 0
 var _priority_player_id: int = MmGameState.NO_PLAYER
 var _passes_in_succession: int = 0
-var _attackers_declared: bool = false
 ## The spell being cast or ability being activated, while its choices are being made.
 var _cast: CastProcedure = null
+## The combat step's turn-based actions, while their choices are being made.
+var _combat_step: CombatProcedure = null
 var _needs_rewind: bool = false
 
 
@@ -29,8 +30,8 @@ func copy_for(state: MmGameState) -> TurnProcedure:
 	copy._step_index = _step_index
 	copy._priority_player_id = _priority_player_id
 	copy._passes_in_succession = _passes_in_succession
-	copy._attackers_declared = _attackers_declared
 	copy._cast = null if _cast == null else _cast.copy_for(state)
+	copy._combat_step = null if _combat_step == null else _combat_step.copy_for(state)
 	copy._needs_rewind = _needs_rewind
 	return copy
 
@@ -61,6 +62,12 @@ func next_decision() -> MmPendingDecision:
 			_cast = null
 			_passes_in_succession = 0
 			_stage = Stage.PRIORITY
+		if _combat_step != null:
+			var combat_decision: MmPendingDecision = _combat_step.next_decision()
+			if combat_decision != null:
+				return combat_decision
+			_combat_step = null
+			_begin_priority_or_end_step()
 		match _stage:
 			Stage.START_TURN:
 				_start_turn()
@@ -72,7 +79,8 @@ func next_decision() -> MmPendingDecision:
 				if decision != null:
 					_stage = Stage.AWAIT_DISCARD
 					return decision
-				_begin_priority_or_end_step()
+				if _combat_step == null:
+					_begin_priority_or_end_step()
 			Stage.AWAIT_DISCARD:
 				assert(false, "The discard decision has not been answered.")
 				return null
@@ -87,6 +95,8 @@ func next_decision() -> MmPendingDecision:
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	if _cast != null:
 		_cast.apply_answer(decision, answer)
+	elif _combat_step != null:
+		_combat_step.apply_answer(decision, answer)
 	elif decision is PriorityDecision:
 		var index: int = answer
 		var action: MmAction = (decision as PriorityDecision).actions[index]
@@ -104,6 +114,7 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		var discarding: MmPlayer = _state.player(decision.player_id)
 		for id: int in answer:
 			_state.perform(ZoneChangeEvent.new(_state.object(id), discarding.graveyard, MmZone.BOTTOM, ZoneChangeEvent.Reason.DISCARD))
+		_remove_damage()
 		_begin_priority_or_end_step()
 	else:
 		assert(false, "The turn procedure cannot answer %s." % decision.describe())
@@ -119,12 +130,11 @@ func _start_turn() -> void:
 		# CR 103.8a: in a two-player game the starting player skips their first draw step.
 		_steps.erase(MmTurn.Step.DRAW)
 	_step_index = 0
-	_attackers_declared = false
 	_stage = Stage.START_STEP
 
 
 ## Performs the current step's turn-based actions (CR 703). Returns a decision when one of
-## them needs a player's choice.
+## them needs a player's choice. A combat step's actions are left to a CombatProcedure.
 func _perform_turn_based_actions() -> MmPendingDecision:
 	var active: MmPlayer = _state.player(_state.active_player_id)
 	match _current_step():
@@ -136,13 +146,29 @@ func _perform_turn_based_actions() -> MmPendingDecision:
 		MmTurn.Step.DRAW:
 			_state.draw_cards(active.id, 1)  # CR 504.1
 		MmTurn.Step.DECLARE_ATTACKERS:
-			# Later (milestone 6): the active player declares attackers (CR 508.1).
-			_attackers_declared = false
+			_combat_step = CombatProcedure.declare_attackers(_state)
+		MmTurn.Step.DECLARE_BLOCKERS:
+			_combat_step = CombatProcedure.declare_blockers(_state)
+		MmTurn.Step.COMBAT_DAMAGE:
+			_combat_step = CombatProcedure.combat_damage(_state)
+			if _state.combat.is_first_strike_damage_step:
+				# CR 510.4: the regular combat damage step follows the first-strike one.
+				_steps.insert(_step_index + 1, MmTurn.Step.COMBAT_DAMAGE)
 		MmTurn.Step.CLEANUP:
 			var excess: int = active.cards_over_maximum_hand_size()
 			if excess > 0:
 				return ChooseCardsToDiscardDecision.new(active.id, excess, active.hand.object_ids())  # CR 514.1
+			_remove_damage()
 	return null
+
+
+## CR 514.2: after any discarding, all damage marked on permanents is removed.
+func _remove_damage() -> void:
+	# Later (milestone 9): a static ability can keep a permanent's damage from being removed.
+	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, _state.active_player_id) \
+			+ ManaPayment.sorted_permanents_of(_state, _state.opponent_of(_state.active_player_id).id):
+		if permanent.damage_marked > 0:
+			_state.perform(DamageRemovedEvent.new(permanent.id))
 
 
 func _begin_priority_or_end_step() -> void:
@@ -179,8 +205,9 @@ func _resolve_top_of_stack() -> void:
 	var effects: Array[MmEffect] = []
 	if resolving.is_card():
 		var spell: SpellAbility = CastProcedure.spell_ability_of(_state.characteristics_of(resolving))
-		specs = spell.targets
-		effects = spell.effects
+		if spell != null:
+			specs = spell.targets
+			effects = spell.effects
 	else:
 		var activated: ActivatedAbility = resolving.ability as ActivatedAbility
 		specs = activated.targets
@@ -198,9 +225,12 @@ func _resolve_top_of_stack() -> void:
 		var context: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id, targets)
 		for effect: MmEffect in effects:
 			effect.resolve(_state, context)
-	if resolving.is_card():
+	if resolving.is_card() and any_legal and _state.characteristics_of(resolving).is_permanent():
+		# CR 608.3: a permanent spell enters the battlefield. Its controller is its owner
+		# until control-changing effects exist (milestone 9), as CR 608.3a needs.
+		_state.perform(ZoneChangeEvent.new(_state.object(resolving.id), _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED))
+	elif resolving.is_card():
 		# CR 608.2n: an instant or sorcery goes to its owner's graveyard.
-		# Later (milestone 6): a permanent spell enters the battlefield instead.
 		var reason: ZoneChangeEvent.Reason = ZoneChangeEvent.Reason.RESOLVED if any_legal else ZoneChangeEvent.Reason.DID_NOT_RESOLVE
 		_state.perform(ZoneChangeEvent.new(_state.object(resolving.id), _state.player(resolving.owner_id).graveyard, MmZone.BOTTOM, reason))
 	else:
@@ -212,8 +242,10 @@ func _end_step() -> void:
 	for player: MmPlayer in _state.turn_order():
 		if not player.mana_pool().is_empty():
 			_state.perform(ManaEmptiedEvent.new(player.id))
+	if _current_step() == MmTurn.Step.END_OF_COMBAT and _state.combat.has_declared_attackers():
+		_state.perform(CombatEndedEvent.new())  # CR 511.3
 	_step_index += 1
-	if not _attackers_declared:
+	if not _state.combat.has_declared_attackers():
 		# CR 508.8: without attackers, the declare blockers and combat damage steps are skipped.
 		while _step_index < _steps.size() and _current_step() in [MmTurn.Step.DECLARE_BLOCKERS, MmTurn.Step.COMBAT_DAMAGE]:
 			_step_index += 1
@@ -265,17 +297,21 @@ func _sorcery_timing(player: MmPlayer) -> bool:
 
 
 ## Whether [param card] in hand could be cast right now from start to finish: its timing,
-## a legal target for every requirement (CR 601.2c), and a cost that can be paid.
+## a legal target for every requirement (CR 601.2c), and a cost that can be paid. Any card
+## but a land may be cast, so permanent spells need no special case (CR 608.3).
 func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 	var characteristics: MmCharacteristics = _state.characteristics_of(card)
-	var spell: SpellAbility = CastProcedure.spell_ability_of(characteristics)
-	if spell == null or characteristics.mana_cost == null:
+	if characteristics.mana_cost == null:
 		return false  # CR 118.6: a card with no mana cost cannot be cast this way.
-	if characteristics.has_card_type(MmCardTypes.CardType.SORCERY) and not _sorcery_timing(player):
+	if characteristics.has_card_type(MmCardTypes.CardType.LAND):
+		return false  # CR 305.9: a land is played, never cast.
+	# CR 307.1 and 702.8a: only an instant, or a card with flash, ignores sorcery timing.
+	var instant_speed: bool = characteristics.has_card_type(MmCardTypes.CardType.INSTANT) \
+		or characteristics.has_ability(FlashAbility)
+	if not instant_speed and not _sorcery_timing(player):
 		return false
-	if not characteristics.has_card_type(MmCardTypes.CardType.INSTANT) and not characteristics.has_card_type(MmCardTypes.CardType.SORCERY):
-		return false  # Later (milestone 6): permanent spells.
-	if not _every_requirement_has_a_target(spell.targets, player.id, card.id):
+	var spell: SpellAbility = CastProcedure.spell_ability_of(characteristics)
+	if spell != null and not _every_requirement_has_a_target(spell.targets, player.id, card.id):
 		return false
 	return ManaPayment.can_afford(_state, player.id, characteristics.mana_cost)
 

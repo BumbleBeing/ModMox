@@ -4,8 +4,8 @@ extends MmCost
 
 
 func can_pay(state: MmGameState, source: MmGameObject) -> bool:
-	# Later (milestone 6): a creature with summoning sickness cannot pay {T} (CR 302.6).
-	return source.zone() == state.battlefield and not source.is_tapped
+	# CR 302.6: a creature with summoning sickness cannot pay {T}.
+	return source.zone() == state.battlefield and not source.is_tapped and not state.is_summoning_sick(source)
 
 
 func pay(state: MmGameState, source: MmGameObject) -> void:

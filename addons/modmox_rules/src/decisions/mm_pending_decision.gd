@@ -4,6 +4,9 @@ extends RefCounted
 ## options (ADR 0003). Answers are plain data (ints and arrays of ints) so the decision
 ## log can be saved and replayed (ADR 0010).
 
+## For _check_distinct_ids(): any number of IDs may be chosen.
+const ANY_COUNT: int = -1
+
 ## The player who must answer.
 var player_id: int
 
@@ -35,12 +38,12 @@ func _check_choice(answer: Variant, choice_count: int) -> String:
 
 
 ## Checks that [param answer] is an Array of exactly [param count] distinct object IDs, all
-## taken from [param candidate_ids].
+## taken from [param candidate_ids]. A [param count] of ANY_COUNT allows any number.
 func _check_distinct_ids(answer: Variant, count: int, candidate_ids: Array[int]) -> String:
 	if typeof(answer) != TYPE_ARRAY:
 		return "Expected a list of object IDs, got %s." % type_string(typeof(answer))
 	var chosen: Array = answer
-	if chosen.size() != count:
+	if count != ANY_COUNT and chosen.size() != count:
 		return "Choose exactly %d, not %d." % [count, chosen.size()]
 	var seen: Dictionary[int, bool] = {}
 	for entry: Variant in chosen:

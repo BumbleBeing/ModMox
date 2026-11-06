@@ -22,6 +22,9 @@ var active_player_id: int = MmGameState.NO_PLAYER
 var active_player_turn_number: int = 0
 var step: MmTurn.Step = MmTurn.Step.NONE
 var priority_player_id: int = MmGameState.NO_PLAYER
+## Whether the current combat damage step is the extra one for first and double strikers
+## (CR 510.4), so the GUI can label it.
+var is_first_strike_damage_step: bool = false
 
 
 ## Builds [param viewing_player_id]'s view of [param state]. [param priority_holder_id]
@@ -47,4 +50,5 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		view.active_player_turn_number = state.player(state.active_player_id).turn_number
 	view.step = state.step
 	view.priority_player_id = priority_holder_id
+	view.is_first_strike_damage_step = state.step == MmTurn.Step.COMBAT_DAMAGE and state.combat.is_first_strike_damage_step
 	return view

@@ -12,6 +12,8 @@ var free_mulligans: int
 var mulligans_taken: int = 0
 ## How many turns this player has begun. 0 until their first turn.
 var turn_number: int = 0
+## The Game Turn in which this player's most recent turn began; 0 before their first turn.
+var latest_turn_game_turn: int = 0
 var lands_played_this_turn: int = 0
 var library: MmZone
 var hand: MmZone
@@ -41,6 +43,7 @@ func duplicate_without_objects() -> MmPlayer:
 	copy.free_mulligans = free_mulligans
 	copy.mulligans_taken = mulligans_taken
 	copy.turn_number = turn_number
+	copy.latest_turn_game_turn = latest_turn_game_turn
 	copy.lands_played_this_turn = lands_played_this_turn
 	copy._mana_pool = _mana_pool.duplicate()  # MmMana units never change, so sharing them is safe.
 	return copy
@@ -63,9 +66,11 @@ func record_mulligan() -> void:
 	mulligans_taken += 1
 
 
-## Event-only: counts the start of one of this player's turns.
-func begin_turn() -> void:
+## Event-only: counts the start of one of this player's turns, which begins in
+## [param game_turn].
+func begin_turn(game_turn: int) -> void:
 	turn_number += 1
+	latest_turn_game_turn = game_turn
 
 
 ## Event-only: clears the counts that last for one turn, at the start of every turn.

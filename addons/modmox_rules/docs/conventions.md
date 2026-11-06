@@ -14,7 +14,7 @@ How code in `addons/modmox_rules/` is written. The goal is that any part of the 
 ```
 addons/modmox_rules/
   src/
-    abilities/   ability kinds (activated, and later spell, triggered, static)
+    abilities/   ability kinds (spell, activated, static and its keywords, and later triggered)
     actions/     Actions a player may take while holding priority
     cards/       Card Definitions, Run Cards, Modifications, card types, characteristics
     core/        the engine facade, game state, players, zones, Game Objects, RNG
@@ -24,7 +24,7 @@ addons/modmox_rules/
     events/      the event pipeline and every event type
     filters/     Filters and their all-of, any-of and not combinators
     mana/        mana units, mana costs, and the rules for paying them
-    rules/       game procedures: pregame, turns and the stack, casting, and later combat
+    rules/       game procedures: pregame, turns and the stack, casting, combat
     selections/  Selections: who or what an effect applies to
     targets/     Target Requirements
     values/      Values (numbers worked out when needed)
@@ -43,7 +43,7 @@ tests/           game-side tests, such as checks on Content
 
 ## Naming classes
 
-- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`.
+- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`, `MmCombat`.
 - **Specific subclasses** have no prefix and end with their base kind: `ChangeNameModification`, `ZoneChangeEvent`, `KeepOrMulliganDecision`, `DealDamageEffect`, `CreatureFilter`, `CountValue`.
 - Test files and test helpers never declare `class_name`.
 - Never reuse a name Godot already has as a built-in type or class (`Color`, `Rect2`, `Timer`, ...), even inside a class. It fails to compile. That is why the color enum is `MmCardTypes.CardColor`.
@@ -114,6 +114,7 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - Give private test helpers descriptive names (`_pass_priority`, not `_pass`). `GutTest` defines its own `_pass`, `_fail` and similar methods, and a helper with the same name silently replaces them.
 - When a scenario needs particular cards in hand, find a seed that deals them with `Scenario.find_engine()`. Never bypass the shuffle.
 - Drive a game forward with `Scenario.autoplay()` and its shortcuts (`keep_all`, `play_until_game_turn`, `play_until_step`) rather than submitting long answer lists by hand.
+- Set up a combat with `Scenario.combat_ready()`: free creatures cast on the first two turns, stopped at the Hero's attackers decision. Cast a card that has a cost for free in a scenario with `Scenario.free_copy()`.
 
 ## Formatting
 

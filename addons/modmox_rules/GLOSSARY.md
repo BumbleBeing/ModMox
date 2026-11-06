@@ -106,6 +106,24 @@ _Avoid_: History, game log
 Everything one player may legally see of the game, and nothing more. Agents and the GUI only ever read a Player View.
 _Avoid_: Snapshot, visible state
 
+## Combat
+
+**Combat**:
+Which creatures are attacking and blocking, which player is defending, and which creatures have already struck first. It is part of the game state, and empty outside the combat phase.
+_Avoid_: Battle (a card type in Magic), fight
+
+**Summoning Sickness**:
+A creature cannot attack or pay {T} until its controller has controlled it continuously since the start of their most recent turn. The engine works this out from when control began; nothing has to clear it.
+_Avoid_: Sick (on its own), fresh, exhausted
+
+**Marked Damage**:
+Damage dealt to a creature, which stays on it until the cleanup step removes it.
+_Avoid_: Wounds, damage counters (counters are something else)
+
+**Damage Division**:
+An attacker's controller choosing how its combat damage is split among the creatures blocking it, and with trample the player it attacks. There is no damage assignment order. The GUI shows it as a damage-split popup.
+_Avoid_: Damage assignment order (removed from the rules), damage ordering
+
 ## Randomness
 
 **Encounter Seed**:

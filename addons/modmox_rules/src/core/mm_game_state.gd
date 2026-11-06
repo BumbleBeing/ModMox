@@ -18,6 +18,8 @@ var starting_player_id: int = NO_PLAYER
 var game_turn: int = 0
 var active_player_id: int = NO_PLAYER
 var step: MmTurn.Step = MmTurn.Step.NONE
+## The current combat; empty outside combat.
+var combat: MmCombat = MmCombat.new()
 ## Every event performed, in order. Read-only outside perform(). Events never change once
 ## applied, so copies of the state share them.
 var event_log: Array[MmEvent] = []
@@ -65,6 +67,7 @@ func duplicate_state() -> MmGameState:
 	copy.game_turn = game_turn
 	copy.active_player_id = active_player_id
 	copy.step = step
+	copy.combat = combat.duplicate_combat()
 	copy.event_log = event_log.duplicate()
 	copy._run_cards = _run_cards.duplicate()  # Run Cards are read-only during an encounter.
 	copy._next_object_id = _next_object_id
@@ -129,6 +132,15 @@ func characteristics_of(game_object: MmGameObject) -> MmCharacteristics:
 	return MmCharacteristics.printed(game_object.definition)
 
 
+## CR 302.6: whether [param game_object] is a creature whose controller has not controlled
+## it continuously since their most recent turn began. Such a creature cannot attack or pay
+## {T} in a cost. Later (milestone 9): haste.
+func is_summoning_sick(game_object: MmGameObject) -> bool:
+	if game_object.zone() != battlefield or not characteristics_of(game_object).has_card_type(MmCardTypes.CardType.CREATURE):
+		return false
+	return game_object.controlled_since_game_turn >= player(game_object.controller_id).latest_turn_game_turn
+
+
 ## Performs [param event] through the pipeline: replacement, then apply, then log (ADR 0007).
 func perform(event: MmEvent) -> void:
 	var final_event: MmEvent = _apply_replacement_effects(event)
@@ -165,22 +177,24 @@ func fingerprint() -> String:
 	lines.append("starting player %d" % starting_player_id)
 	lines.append("game turn %d active %d step %d" % [game_turn, active_player_id, step])
 	lines.append("game rng %s" % game_rng.describe_state())
+	lines.append(combat.describe())
 	lines.append("next ids %d %d" % [_next_object_id, _next_card_id])
 	for each_player: MmPlayer in players:
 		var mana: PackedStringArray = PackedStringArray()
 		for unit: MmMana in each_player.mana_pool():
 			mana.append(unit.describe())
-		lines.append("player %d life %d mulligans %d turn %d lands %d mana [%s]" % [
+		lines.append("player %d life %d mulligans %d turn %d since %d lands %d mana [%s]" % [
 			each_player.id, each_player.life, each_player.mulligans_taken, each_player.turn_number,
-			each_player.lands_played_this_turn, ", ".join(mana)])
+			each_player.latest_turn_game_turn, each_player.lands_played_this_turn, ", ".join(mana)])
 	for each_zone: MmZone in _all_zones():
 		var entries: PackedStringArray = PackedStringArray()
 		for game_object: MmGameObject in each_zone.objects():
 			var target_text: PackedStringArray = PackedStringArray()
 			for target: MmReference in game_object.targets:
 				target_text.append("none" if target == null else target.describe())
-			entries.append("%d:%d:%s:%d:%s:[%s]" % [game_object.id, game_object.card_id, characteristics_of(game_object).name,
-				game_object.controller_id, "tapped" if game_object.is_tapped else "untapped", ",".join(target_text)])
+			entries.append("%d:%d:%s:%d:%s:%d:%d:[%s]" % [game_object.id, game_object.card_id, characteristics_of(game_object).name,
+				game_object.controller_id, "tapped" if game_object.is_tapped else "untapped", game_object.damage_marked,
+				game_object.controlled_since_game_turn, ",".join(target_text)])
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 

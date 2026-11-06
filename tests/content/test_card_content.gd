@@ -130,6 +130,77 @@ func test_dark_ritual_adds_three_black_mana_when_it_resolves() -> void:
 		assert_eq(mana.type, MmMana.Type.BLACK)
 
 
+func test_the_alpha_creatures_have_the_right_printed_characteristics() -> void:
+	var expected: Dictionary[String, Array] = {
+		"grizzly_bears": ["Grizzly Bears", ["Bear"], MmCardTypes.CardColor.GREEN, 2, 2, 2],
+		"hill_giant": ["Hill Giant", ["Giant"], MmCardTypes.CardColor.RED, 4, 3, 3],
+		"elvish_archers": ["Elvish Archers", ["Elf", "Archer"], MmCardTypes.CardColor.GREEN, 2, 1, 2],
+	}
+	for file_name: String in expected:
+		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
+		assert_eq(printed.name, expected[file_name][0])
+		assert_eq(printed.card_types, [MmCardTypes.CardType.CREATURE], file_name)
+		assert_eq(printed.subtypes, expected[file_name][1], file_name)
+		assert_eq(printed.colors, [expected[file_name][2]], file_name)
+		assert_eq(printed.mana_value(), expected[file_name][3], file_name)
+		assert_eq(printed.power, expected[file_name][4], file_name)
+		assert_eq(printed.toughness, expected[file_name][5], file_name)
+		assert_eq(printed.has_ability(FirstStrikeAbility), file_name == "elvish_archers", file_name)
+
+
+func test_grizzly_bears_is_cast_with_forests_and_enters_the_battlefield_as_a_two_two() -> void:
+	var bears: MmCardDefinition = _alpha("grizzly_bears")
+	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha("forest"), 20, bears, 20)
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		func(running: MmEngine) -> bool: return Scenario.ready_in_main(running, 3, 2, "Grizzly Bears"))
+	assert_not_null(engine, "No seed gave the needed hand.")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Grizzly Bears"), "")
+
+	var on_battlefield: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	assert_ne(on_battlefield, -1)
+	var characteristics: MmCharacteristics = engine.game_state().characteristics_of(engine.game_state().object(on_battlefield))
+	assert_eq([characteristics.power, characteristics.toughness], [2, 2])
+
+
+func test_hill_giant_deals_three_combat_damage() -> void:
+	var giant: MmCardDefinition = Scenario.free_copy(_alpha("hill_giant"))
+	var engine: MmEngine = Scenario.combat_ready([giant], [])
+	assert_not_null(engine, "No seed gave the needed hand.")
+
+	Scenario.declare_attackers(engine, Scenario.permanents_named(engine, engine.hero().id, "Hill Giant"))
+	Scenario.pass_until_step(engine, MmTurn.Step.END_OF_COMBAT)
+
+	assert_eq(engine.villain().life, 17)
+
+
+func test_lightning_bolt_marks_three_damage_on_a_creature() -> void:
+	var bolt: MmCardDefinition = Scenario.free_copy(_alpha("lightning_bolt"))
+	var engine: MmEngine = Scenario.combat_ready([], [Scenario.free_copy(_alpha("hill_giant"))], [bolt])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var giant: int = Scenario.permanent_named(engine, engine.villain().id, "Hill Giant")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Lightning Bolt", [MmReference.to_object(giant)]), "")
+
+	assert_eq(Scenario.damage_on(engine, giant), 3)
+
+
+func test_elvish_archers_strike_first() -> void:
+	var archers: MmCardDefinition = Scenario.free_copy(_alpha("elvish_archers"))
+	var engine: MmEngine = Scenario.combat_ready([archers], [Scenario.creature("Goblin", 1, 1)])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var archers_id: int = Scenario.permanent_named(engine, engine.hero().id, "Elvish Archers")
+	var goblin: int = Scenario.permanent_named(engine, engine.villain().id, "Goblin")
+	Scenario.declare_attackers(engine, [archers_id])
+	Scenario.pass_to_blockers(engine)
+	Scenario.declare_blockers(engine, [[goblin, archers_id]])
+
+	Scenario.pass_until_step(engine, MmTurn.Step.COMBAT_DAMAGE)
+
+	assert_eq(Scenario.damage_on(engine, goblin), 1)
+	assert_eq(Scenario.damage_on(engine, archers_id), 0, "The Goblin has not struck yet.")
+
+
 func _alpha(file_name: String) -> MmCardDefinition:
 	return load("%s/alpha/%s.tres" % [CONTENT_ROOT, file_name]) as MmCardDefinition
 

@@ -6,6 +6,8 @@ Every number in an ability is a composable Value (a constant, X, a count of obje
 
 Rules classifications are worked out from a card's content, never set by hand. For example, whether an activated ability is a mana ability follows CR 605.1a (it could add mana and has no target), so a Modification that adds a target to "{T}: Add {R}" correctly turns it into an ability that uses the stack. A designer-set flag would silently get this wrong.
 
+Keywords are static abilities, one subclass each (first strike, double strike, trample, flash), so a Modification adds or removes a keyword like any other ability, and an effect that grants one later is just layer 6 granting an ability. Rules ask the characteristics query whether an object has one.
+
 All five ability kinds (spell, activated, mana, triggered and static) exist in the data model from the start, so early cards do not lock in a shape that later abilities cannot fit. Each kind is only implemented when a milestone needs it.
 
 Resources are the format the engine runs, and they are authored in the Godot Inspector for now. A text format or custom card-editor plugin that generates the same Resources is deferred until the card count makes Inspector editing painful. Because copied sub-resources can silently end up shared between two cards, a validation test checks that no two Card Definitions share a sub-resource.

@@ -24,8 +24,10 @@ var _stage: Stage = Stage.CHOOSE_TARGETS
 static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -> CastProcedure:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	var procedure: CastProcedure = CastProcedure.new(state, player_id)
-	procedure._ability = spell_ability_of(characteristics)
-	procedure._target_specs = (procedure._ability as SpellAbility).targets
+	var spell: SpellAbility = spell_ability_of(characteristics)
+	procedure._ability = spell
+	if spell != null:
+		procedure._target_specs = spell.targets
 	# Later: cost increases, reductions and additional costs (CR 601.2f).
 	procedure._remaining_generic = characteristics.mana_cost.generic
 	procedure._remaining_symbols = characteristics.mana_cost.symbols.duplicate()
@@ -50,7 +52,8 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	return procedure
 
 
-## The spell ability of an instant or sorcery, or null.
+## The spell ability of an instant or sorcery, or null, as for a creature with no spell
+## ability.
 static func spell_ability_of(characteristics: MmCharacteristics) -> SpellAbility:
 	for ability: MmAbility in characteristics.abilities:
 		if ability is SpellAbility:

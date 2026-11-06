@@ -18,7 +18,7 @@ func apply(state: MmGameState) -> void:
 	for each_player: MmPlayer in state.players:
 		each_player.reset_turn_counters()
 	var active: MmPlayer = state.player(active_player_id)
-	active.begin_turn()
+	active.begin_turn(state.game_turn)
 	game_turn = state.game_turn
 	turn_number = active.turn_number
 

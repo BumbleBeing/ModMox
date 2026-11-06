@@ -9,6 +9,18 @@ var controller_id: int
 var is_tapped: bool
 ## For a spell or ability on the stack: its chosen targets, in order (null if not chosen).
 var targets: Array[MmReference] = []
+var is_creature: bool = false
+## Current power and toughness; meaningful only for a creature (CR 208.3).
+var power: int = 0
+var toughness: int = 0
+var damage_marked: int = 0
+## CR 302.6: a creature that cannot attack or pay {T} yet.
+var is_summoning_sick: bool = false
+var is_attacking: bool = false
+## For an attacker: whether it has been blocked, even if its blockers are gone (CR 509.1h).
+var is_blocked: bool = false
+## For a blocker: the attackers it is blocking, in ID order.
+var blocking_ids: Array[int] = []
 
 
 ## The view of [param game_object] as it is now.
@@ -20,4 +32,14 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.controller_id = game_object.controller_id
 	view.is_tapped = game_object.is_tapped
 	view.targets = game_object.targets.duplicate()
+	var characteristics: MmCharacteristics = state.characteristics_of(game_object)
+	view.is_creature = characteristics.has_card_type(MmCardTypes.CardType.CREATURE)
+	view.power = characteristics.power
+	view.toughness = characteristics.toughness
+	view.damage_marked = game_object.damage_marked
+	view.is_summoning_sick = state.is_summoning_sick(game_object)
+	if game_object.zone() == state.battlefield:
+		view.is_attacking = state.combat.attackers(state).has(game_object.id)
+		view.is_blocked = view.is_attacking and state.combat.is_blocked(game_object.id)
+		view.blocking_ids = state.combat.attackers_blocked_by(state, game_object.id)
 	return view
