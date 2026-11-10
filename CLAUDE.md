@@ -9,7 +9,7 @@ A roguelike RPG around a Magic-style rules engine, in Godot 4.7.2 / GDScript. Ri
 - `addons/modmox_rules/docs/adr/`: the design decisions. Don't contradict one without the user's agreement; if one changes, update it.
 - `addons/modmox_rules/docs/roadmap.md`: the milestone ladder and where we are.
 
-Game Content (authored `.tres` Card Definitions) lives at `content/cards/`, and decks at `content/decks/`, outside the engine; game-side tests live at `tests/`. The AI's slow checks run only on request: `MODMOX_SOAK_SEEDS=100 tools/test.sh -gselect=test_soak` and `MODMOX_FULL_BENCHMARK=1 tools/test.sh -gselect=test_benchmark`.
+Game Content (authored `.tres` Card Definitions) lives at `content/cards/`, and decks at `content/decks/`, outside the engine; game-side tests live at `tests/`. The AI's slow checks run only on request: `MODMOX_SOAK_SEEDS=100 tools/test.sh -gselect=test_soak` (add `MODMOX_SOAK_DIFFICULTY=normal` for Monte Carlo), `MODMOX_FULL_BENCHMARK=1 tools/test.sh -gselect=test_benchmark`, and tournaments with `MODMOX_TOURNAMENT_SEEDS=100 tools/test.sh -gselect=test_tournament` (settings in `test_tournament.gd`).
 
 ## How work proceeds
 

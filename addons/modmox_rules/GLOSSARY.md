@@ -231,5 +231,17 @@ When a spell or ability is worth considering, worked out from what its effects d
 _Avoid_: AI hint, card flag, AILogic
 
 **AI Profile**:
-An AI Agent's temperament as a saved, moddable resource: whether it plays first, its mulligan land range, how readily it trades in combat, when its life is in danger, and its search budget.
+An AI Agent's temperament as a saved, moddable resource: whether it plays first, its mulligan land range, how readily it trades in combat, when its life is in danger, what the Board Evaluator thinks things are worth, and how much more or less than its AI Difficulty it searches.
 _Avoid_: Villain Profile, difficulty, personality file
+
+**AI Difficulty**:
+A global, game-side setting for how hard the AI plays, as a saved, moddable resource. It only sets how much the AI searches: whether it uses Rollouts, how many candidates and samples. It never adds mistakes or lets the AI cheat.
+_Avoid_: Skill level, AI level, handicap
+
+**Rollout**:
+One candidate answer played out on a Simulation Copy, by heuristic Agents for both players, through the rest of the Game Turn and the whole next one, then scored by the Board Evaluator. Flat Monte Carlo compares candidates by their Rollouts on the same re-dealt worlds and keeps the one-step pick unless another clearly beats it.
+_Avoid_: Playout, simulation (unqualified), search
+
+**Tournament**:
+Two AI contenders, each an AI Profile and an AI Difficulty, playing many seeded encounters with the seats swapped on each seed, to measure which plays better. It is how AI settings are tuned.
+_Avoid_: Match, ladder, self-play run

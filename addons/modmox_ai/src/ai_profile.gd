@@ -2,8 +2,8 @@ class_name AiProfile
 extends Resource
 ## An AI Agent's temperament (glossary "AI Profile"): the settings that make one Villain
 ## play differently from another. Saved as a .tres file, so players can mod it. Difficulty
-## comes from a Villain's deck and, from milestone 12, its search budget; never from
-## cheating (ADR 0020).
+## comes from a Villain's deck, the global AI Difficulty and [member search_budget_percent];
+## never from cheating (ADR 0020).
 ##
 ## Saved files leave out values equal to these defaults, so never change a default once
 ## profiles exist; add a new setting instead.
@@ -30,12 +30,12 @@ extends Resource
 @export var hand_mana_value_bonus: int = 10
 ## A creature that cannot attack yet is worth this share of its value, in percent.
 @export var summoning_sick_percent: int = 90
-## How many re-dealt worlds each candidate is simulated in (A182).
-@export var samples_per_candidate: int = 1
 ## A decision slower than this, in milliseconds, is reported as a warning. Never changes
 ## the answer (A159).
 @export var slow_decision_warning_ms: int = 500
-## Milestone 12: how many plays Flat Monte Carlo compares, and whether its rollouts play
-## out the other player's next turn too.
-@export var rollout_candidates: int = 4
-@export var rollouts_look_into_next_turn: bool = false
+## This Villain's search budget, in percent of the global AI Difficulty's samples, so a
+## boss can think harder than the rest (A195).
+@export var search_budget_percent: int = 100
+## Flat Monte Carlo keeps the one-step pick unless another play beats it by this many
+## Board Evaluator points per sample (A192).
+@export var rollout_switch_margin: int = 10

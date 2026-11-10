@@ -16,6 +16,9 @@ extends GutTest
 ## blocker, and pay with mana of a color still owed.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
+const Soak := preload("res://addons/modmox_ai/tests/test_soak.gd")
+## Monte Carlo decisions timed by default.
+const DEFAULT_MONTE_CARLO_DECISIONS: int = 6
 const CARDS: String = "res://content/cards/alpha/%s.tres"
 const ALL_SEEDS: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8]
 const DEFAULT_SEEDS: Array[int] = [1, 2]
@@ -50,6 +53,73 @@ func test_benchmark_copying_and_playing_turns() -> void:
 		turns_played.append(engine.game_state().game_turn)
 
 	_print_report(seeds, turns_played)
+
+
+## Milestone 12, step 1 (A187): how long a Flat Monte Carlo priority decision takes at
+## each AI Difficulty. Easy AIs play the soak's encounters; at every priority decision
+## where Normal would roll out, each level answers it too and is timed. Their answers are
+## thrown away. The gate: Normal's median must stay under the slow-decision warning.
+## By default it times the first DEFAULT_MONTE_CARLO_DECISIONS such decisions of seed 1;
+## MODMOX_FULL_BENCHMARK=1 times every one in seeds 1 to 4.
+func test_benchmark_monte_carlo_decisions() -> void:
+	var full: bool = OS.get_environment("MODMOX_FULL_BENCHMARK") != ""
+	var seeds: Array[int] = [1]
+	if full:
+		seeds.append_array([2, 3, 4])
+	var limit: int = 1000000 if full else DEFAULT_MONTE_CARLO_DECISIONS
+	var levels: Dictionary[String, AiDifficulty] = {
+		"easy": AiDifficulty.easy(), "normal": AiDifficulty.normal(), "hard": AiDifficulty.hard()}
+	var msec: Dictionary[String, Array] = {}
+	var rollouts: Dictionary[String, Array] = {}
+	for level: String in levels:
+		msec[level] = []
+		rollouts[level] = []
+	var timed: int = 0
+	var switched: Array[String] = []
+	for encounter_seed: int in seeds:
+		var engine: MmEngine = MmEngine.start(Soak.soak_setup(encounter_seed))
+		var easy: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
+		while not engine.is_over() and timed < limit:
+			var decision: MmPendingDecision = engine.pending_decision()
+			var answer: Variant = easy.answer(decision, null, engine.simulation_source_for(decision.player_id))
+			if decision is PriorityDecision and _would_roll_out(engine, decision):
+				timed += 1
+				var answers: Dictionary[String, Variant] = {}
+				var normal_detail: String = ""
+				for level: String in levels:
+					var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, levels[level])
+					var started: int = Time.get_ticks_usec()
+					answers[level] = agent.answer(decision, null, engine.simulation_source_for(decision.player_id))
+					msec[level].append((Time.get_ticks_usec() - started) / 1000.0)
+					rollouts[level].append(agent.rollout_count())
+					if level == "normal":
+						normal_detail = agent.explain_detail()
+				if answers["normal"] != answers["easy"]:
+					switched.append("  turn %d %s: one-step %s, Monte Carlo %s; %s" % [engine.game_state().game_turn,
+						MmTurn.Step.find_key(engine.game_state().step), _describe_action(engine, answers["easy"]),
+						_describe_action(engine, answers["normal"]), normal_detail])
+			assert_eq(engine.submit(answer), "")
+	assert_true(timed > 0)
+	var lines: Array[String] = ["", "=== ModMox Monte Carlo benchmark: %d priority decisions, seeds %s ===" % [timed, seeds]]
+	lines.append("%-7s %10s %10s %10s %12s %14s" % ["level", "median ms", "mean ms", "max ms", "rollouts", "ms per rollout"])
+	for level: String in levels:
+		var total_rollouts: float = _mean(rollouts[level]) * rollouts[level].size()
+		var per_rollout: float = 0.0 if total_rollouts == 0 else _mean(msec[level]) * msec[level].size() / total_rollouts
+		lines.append("%-7s %10.1f %10.1f %10.1f %12.1f %14.2f" % [level, _median(msec[level]), _mean(msec[level]),
+			_max(msec[level]), _mean(rollouts[level]), per_rollout])
+	lines.append("gate: Normal's median must stay under %d ms (A187)." % AiProfile.new().slow_decision_warning_ms)
+	lines.append("Normal changed the one-step pick in %d of %d decisions:" % [switched.size(), timed])
+	lines.append_array(switched)
+	print("\n".join(lines))
+
+
+## Whether a Normal Agent would run Flat Monte Carlo on [param decision].
+func _would_roll_out(engine: MmEngine, decision: MmPendingDecision) -> bool:
+	if (decision as PriorityDecision).actions.size() < 2:
+		return false
+	var probe: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
+	probe.answer(decision, null, engine.simulation_source_for(decision.player_id))
+	return probe.explain() in [AiAgent.Reason.BEST_SCORE, AiAgent.Reason.SCORES_WORSE_THAN_PASS]
 
 
 ## Two 40-card decks of existing Content, 17 lands each: red-green and white-black.
@@ -306,3 +376,31 @@ func _mean(values: Array) -> float:
 	for value: Variant in values:
 		total += float(value)
 	return total / values.size()
+
+
+func _median(values: Array) -> float:
+	if values.is_empty():
+		return 0.0
+	var sorted: Array = values.duplicate()
+	sorted.sort()
+	return float(sorted[sorted.size() / 2])
+
+
+func _max(values: Array) -> float:
+	var most: float = 0.0
+	for value: Variant in values:
+		most = maxf(most, float(value))
+	return most
+
+
+func _describe_action(engine: MmEngine, index: Variant) -> String:
+	var action: MmAction = (engine.pending_decision() as PriorityDecision).actions[index as int]
+	if action is PassAction:
+		return "pass"
+	var cast: CastSpellAction = action as CastSpellAction
+	if cast != null:
+		return "cast %s" % engine.game_state().object(cast.object_id).definition.name
+	var activate: ActivateAbilityAction = action as ActivateAbilityAction
+	if activate != null:
+		return "activate %s" % engine.game_state().object(activate.object_id).definition.name
+	return action.get_script().resource_path.get_file()

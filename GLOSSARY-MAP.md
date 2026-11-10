@@ -8,4 +8,4 @@
 ## Relationships
 
 - **Game → Rules Engine**: The game hands the engine an Encounter Setup (decks of Run Cards, final starting numbers, Emblems derived from Statuses) and receives the event log and the Outcome. The engine never refers to the game.
-- **Game → AI Agent**: The game gives each Villain an AI Profile and runs the encounter with an Encounter Driver, holding no Agent for the Hero so it stops for the GUI. The AI depends on the engine; the engine never refers to the AI.
+- **Game → AI Agent**: The game gives each Villain an AI Profile, sets one global AI Difficulty, and runs the encounter with an Encounter Driver, holding no Agent for the Hero so it stops for the GUI. The AI depends on the engine; the engine never refers to the AI.

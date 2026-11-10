@@ -14,7 +14,7 @@ func test_lightning_bolt_goes_at_the_creature_it_kills() -> void:
 
 	var play: int = AiScenario.ask(engine, agent)
 	assert_eq(AiScenario.cast_name(engine, play), "Lightning Bolt")
-	assert_eq(agent.explain(), AiAgent.Reason.BEST_SCORE)
+	assert_eq(agent.explain(), AiAgent.Reason.ROLLOUT_SCORE)
 	engine.submit(play)
 
 	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
@@ -43,11 +43,14 @@ func test_lightning_bolt_is_held_when_it_would_only_hit_the_face() -> void:
 	Scenario.play_first_land(engine)
 	var agent: AiAgent = AiAgent.new()
 	assert_true(Scenario.offers_cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Lightning Bolt")))
+	var easy: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
 
 	var play: int = AiScenario.ask(engine, agent)
+	var easy_play: int = AiScenario.ask(engine, easy)
 
 	assert_true(AiScenario.action_at(engine, play) is PassAction)
-	assert_eq(agent.explain(), AiAgent.Reason.SCORES_WORSE_THAN_PASS)
+	assert_true(AiScenario.action_at(engine, easy_play) is PassAction)
+	assert_eq(easy.explain(), AiAgent.Reason.SCORES_WORSE_THAN_PASS)
 
 
 func test_terror_is_never_aimed_at_its_own_creature() -> void:
@@ -166,13 +169,16 @@ func test_a_play_that_scores_no_better_than_passing_is_never_made() -> void:
 	Scenario.autoplay(engine, func(running: MmEngine) -> bool:
 		return running.game_state().step == Step.DECLARE_BLOCKERS and running.pending_decision().player_id == running.hero().id)
 	assert_true(engine.pending_decision() is PriorityDecision)
-	var agent: AiAgent = AiAgent.new()
+	var easy: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
+	var normal: AiAgent = AiAgent.new()
 
 	for ai_seed: int in 12:
 		var source: MmSimulationSource = MmSimulationSource.new(engine, engine.hero().id, ai_seed, true)
-		var play: int = agent.answer(engine.pending_decision(), null, source)
+		var play: int = easy.answer(engine.pending_decision(), null, source)
 		assert_true(AiScenario.action_at(engine, play) is PassAction, "AI seed %d" % ai_seed)
-		assert_eq(agent.explain(), AiAgent.Reason.SCORES_WORSE_THAN_PASS)
+		assert_eq(easy.explain(), AiAgent.Reason.SCORES_WORSE_THAN_PASS)
+		play = normal.answer(engine.pending_decision(), null, MmSimulationSource.new(engine, engine.hero().id, ai_seed, true))
+		assert_true(AiScenario.action_at(engine, play) is PassAction, "Normal, AI seed %d" % ai_seed)
 
 
 func test_payment_taps_the_land_whose_color_the_hand_needs_least() -> void:

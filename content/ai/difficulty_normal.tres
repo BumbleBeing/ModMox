@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="AiDifficulty" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_ai/src/ai_difficulty.gd" id="1_fkn17"]
+
+[resource]
+script = ExtResource("1_fkn17")

@@ -139,6 +139,7 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - **Randomness only from the AI RNG** (ADR 0006), taken once per decision from `MmSimulationSource.ai_rng()`. Compare candidates on the same re-dealt world by giving every candidate's copy the same seed.
 - **Budgets are counts, never time** (A159). The clock may only produce a warning about a slow decision. A test scans `src/` for both.
 - **A FULL Agent may simulate; a CHEAP one never does** (A178). Anything run inside a simulation must use CHEAP Agents.
+- **Search budgets belong to `AiDifficulty`; temperament belongs to `AiProfile`** (A195). A profile only scales the difficulty's samples, by `search_budget_percent`. Scale a sample count with `AiDifficulty.scaled()`, which never returns less than one.
 - **No card names and no authored hints.** Work out what a card does from its characteristics and effects, so a Modification that rewrites a card changes how the AI plays it.
 - A `Callable` to a method does not keep its object alive. Hold the object in a variable for as long as the Callable is used.
 - `pass` is a GDScript keyword and cannot name a variable.
@@ -149,6 +150,9 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - In AI tests, `AiScenario.ask()` gets an Agent's answer to the pending decision without submitting it, and `AiScenario.ready_with()` sets up both battlefields, with an optional starting life for the Villain.
 - A free copy has mana value 0, so the Board Evaluator values it as a card costing nothing. Use real cards and lands when a test depends on what a card in hand is worth.
 - A flying attacker that no creature can block gets no blockers decision at all, so check that none is asked rather than waiting for one.
+- `AiAgent.new()` plays at Normal, with Flat Monte Carlo. A test about one-step simulation's own reasons (`BEST_SCORE`, `SCORES_WORSE_THAN_PASS`) uses `AiDifficulty.easy()`. `rollout_count()` says how many Rollouts the last answer played.
+- The hand in an `AiScenario.ready_with()` setup holds every copy its cycled deck dealt, so count Monte Carlo candidates from `explain_detail()` rather than assuming one per card named.
+- A whole encounter takes seconds at Easy and much longer at Normal. Slow checks run at Easy by default, and only on request at other levels: the soak with `MODMOX_SOAK_DIFFICULTY`, tournaments with `MODMOX_TOURNAMENT_SEEDS` (see `test_tournament.gd`). A tournament can be split across processes with `MODMOX_TOURNAMENT_FIRST_SEED`.
 
 ## Formatting
 

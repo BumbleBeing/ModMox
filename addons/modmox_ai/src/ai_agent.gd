@@ -5,8 +5,9 @@ extends MmAgent
 ## and looks ahead on Simulation Copies. It keeps nothing between decisions apart from the
 ## reason for its last answer, which is for debugging only.
 ##
-## A FULL Agent answers the real encounter: it scores its options by one-step simulation
-## and asks the Combat Oracle about fights. A CHEAP Agent answers inside simulations by
+## A FULL Agent answers the real encounter: it scores its options by one-step simulation,
+## settles priority decisions by Flat Monte Carlo when its AI Difficulty uses it, and asks
+## the Combat Oracle about fights. A CHEAP Agent answers inside simulations by
 ## heuristics alone, since a simulation inside a simulation would multiply the cost (A178).
 
 enum Mode { FULL, CHEAP }
@@ -43,18 +44,24 @@ enum Reason {
 	PAYMENT_PLAN,
 	## Combat damage killed the most valuable blockers first.
 	KILL_MOST_VALUABLE,
+	## Flat Monte Carlo chose the answer, whether or not it kept the one-step pick (A202).
+	ROLLOUT_SCORE,
 }
 
 var profile: AiProfile
 var mode: Mode
+var difficulty: AiDifficulty
 
 var _reason: Reason = Reason.NONE
 var _detail: String = ""
+var _rollouts: int = 0
 
 
-func _init(agent_profile: AiProfile = null, agent_mode: Mode = Mode.FULL) -> void:
+## Without [param agent_difficulty] it plays at Normal.
+func _init(agent_profile: AiProfile = null, agent_mode: Mode = Mode.FULL, agent_difficulty: AiDifficulty = null) -> void:
 	profile = agent_profile if agent_profile != null else AiProfile.new()
 	mode = agent_mode
+	difficulty = agent_difficulty if agent_difficulty != null else AiDifficulty.normal()
 
 
 ## Why the last answer was chosen.
@@ -65,6 +72,11 @@ func explain() -> Reason:
 ## More about the last answer, for logs, such as each option's score.
 func explain_detail() -> String:
 	return _detail
+
+
+## How many rollouts the last answer played, for tests and the benchmark.
+func rollout_count() -> int:
+	return _rollouts
 
 
 func answer(decision: MmPendingDecision, _view: MmPlayerView, source: MmSimulationSource) -> Variant:
@@ -78,6 +90,7 @@ func answer(decision: MmPendingDecision, _view: MmPlayerView, source: MmSimulati
 func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant:
 	_reason = Reason.NONE
 	_detail = ""
+	_rollouts = 0
 	var priority: PriorityDecision = decision as PriorityDecision
 	if priority != null and priority.actions.size() == 1:
 		_reason = Reason.NOTHING_WORTH_DOING
@@ -122,7 +135,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 # --- Priority ----------------------------------------------------------------------
 
 ## Plays a land if it can; otherwise compares passing with every play worth looking at now
-## (A161, A183). CHEAP Agents use a fixed order instead.
+## (A161, A183), by one-step simulation and then, if the AI Difficulty uses it, by Flat
+## Monte Carlo (A188). CHEAP Agents use a fixed order instead.
 func _priority(decision: PriorityDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	var me: int = decision.player_id
 	var passing: int = _pass_index(decision)
@@ -159,7 +173,17 @@ func _priority(decision: PriorityDecision, world: MmGameState, source: MmSimulat
 		_reason = Reason.SCORES_WORSE_THAN_PASS
 	else:
 		_reason = Reason.BEST_SCORE
-	return best
+	if not difficulty.uses_monte_carlo:
+		return best
+	var rolled: Array[int] = AiMonteCarlo.candidates(options, scores, best, passing, difficulty.rollout_candidates)
+	if rolled.size() < 2:
+		return best
+	var samples: int = AiDifficulty.scaled(difficulty.rollout_samples, profile.search_budget_percent)
+	var rows: Array = AiMonteCarlo.sample_scores(source, rng, rolled, samples, me, profile)
+	_rollouts = rolled.size() * samples
+	_reason = Reason.ROLLOUT_SCORE
+	_detail = AiMonteCarlo.describe(rolled, rows)
+	return AiMonteCarlo.choose(rolled, AiMonteCarlo.totals(rows, rolled.size()), AiMonteCarlo.margin(profile, samples), rng)
 
 
 ## A CHEAP Agent's priority: in its own main phase with nothing on the stack, cast the most
@@ -436,7 +460,7 @@ func _simulate_each(source: MmSimulationSource, rng: MmRng, answers: Array, me: 
 	scores.resize(answers.size())
 	scores.fill(0)
 	var details: PackedStringArray = PackedStringArray()
-	for _sample: int in maxi(profile.samples_per_candidate, 1):
+	for _sample: int in AiDifficulty.scaled(difficulty.one_step_samples, profile.search_budget_percent):
 		var world_seed: int = rng.next_seed()
 		for index: int in answers.size():
 			var copy: MmEngine = source.simulation_copy(MmRng.new(world_seed))
