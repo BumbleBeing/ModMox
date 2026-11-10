@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://dcdab02c6tkh8"
+path="res://.godot/imported/title.png-597ac52afda274f031c9ae7d4d0aab14.image"
+
+[deps]
+
+source_file="res://assets/card_frames/masks/title.png"
+dest_files=["res://.godot/imported/title.png-597ac52afda274f031c9ae7d4d0aab14.image"]
+
+[params]
+

@@ -15,7 +15,6 @@
 [ext_resource type="Resource" path="res://content/cards/alpha/serra_angel.tres" id="13_mfudt"]
 [ext_resource type="Resource" path="res://content/cards/alpha/terror.tres" id="14_crwxh"]
 [ext_resource type="Resource" path="res://content/cards/alpha/dark_ritual.tres" id="15_3ktcg"]
-[ext_resource type="Resource" path="res://content/cards/alpha/crusade.tres" id="16_gr3lq"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="17_lovlc"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="18_pcpbo"]
 
@@ -173,11 +172,11 @@ base = ExtResource("15_3ktcg")
 
 [sub_resource type="Resource" id="Resource_2cjag"]
 script = ExtResource("1_ptjr7")
-base = ExtResource("16_gr3lq")
+base = ExtResource("6_y5v4w")
 
 [sub_resource type="Resource" id="Resource_eme58"]
 script = ExtResource("1_ptjr7")
-base = ExtResource("16_gr3lq")
+base = ExtResource("7_jsed3")
 
 [resource]
 script = ExtResource("18_pcpbo")

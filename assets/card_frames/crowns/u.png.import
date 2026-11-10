@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://c74l7ywj5jasj"
+path="res://.godot/imported/u.png-dc943e43a2e691bb79bae2b833453525.image"
+
+[deps]
+
+source_file="res://assets/card_frames/crowns/u.png"
+dest_files=["res://.godot/imported/u.png-dc943e43a2e691bb79bae2b833453525.image"]
+
+[params]
+

@@ -1,6 +1,6 @@
 # ModMox
 
-A roguelike RPG around a Magic-style rules engine, in Godot 4.7.2 / GDScript. Right now the work is the rules engine in `addons/modmox_rules/` and the AI Agent that plays it in `addons/modmox_ai/` (ADR 0020).
+A roguelike RPG around a Magic-style rules engine, in Godot 4.7.2 / GDScript. Right now the work is the GUI (milestone 13, game-side in `ui/`), around the rules engine in `addons/modmox_rules/` and the AI Agent that plays it in `addons/modmox_ai/` (ADR 0020).
 
 ## Read before writing engine code
 
@@ -9,7 +9,7 @@ A roguelike RPG around a Magic-style rules engine, in Godot 4.7.2 / GDScript. Ri
 - `addons/modmox_rules/docs/adr/`: the design decisions. Don't contradict one without the user's agreement; if one changes, update it.
 - `addons/modmox_rules/docs/roadmap.md`: the milestone ladder and where we are.
 
-Game Content (authored `.tres` Card Definitions) lives at `content/cards/`, and decks at `content/decks/`, outside the engine; game-side tests live at `tests/`. The AI's slow checks run only on request: `MODMOX_SOAK_SEEDS=100 tools/test.sh -gselect=test_soak` (add `MODMOX_SOAK_DIFFICULTY=normal` for Monte Carlo), `MODMOX_FULL_BENCHMARK=1 tools/test.sh -gselect=test_benchmark`, and tournaments with `MODMOX_TOURNAMENT_SEEDS=100 tools/test.sh -gselect=test_tournament` (settings in `test_tournament.gd`).
+Game Content (authored `.tres` Card Definitions) lives at `content/cards/`, and decks at `content/decks/`, outside the engine; game-side tests live at `tests/`. Card art lives at `content/art/`: `godot --headless --path . -s res://tools/art/fetch_art.gd` fetches art for any card that lacks it, and `godot --path . res://tools/card_gallery/card_gallery.tscn` shows every card and sets art focus points. Game-side code conventions are in the conventions' "Game-side code" section. The AI's slow checks run only on request: `MODMOX_SOAK_SEEDS=100 tools/test.sh -gselect=test_soak` (add `MODMOX_SOAK_DIFFICULTY=normal` for Monte Carlo), `MODMOX_FULL_BENCHMARK=1 tools/test.sh -gselect=test_benchmark`, and tournaments with `MODMOX_TOURNAMENT_SEEDS=100 tools/test.sh -gselect=test_tournament` (settings in `test_tournament.gd`).
 
 ## How work proceeds
 
@@ -31,7 +31,7 @@ Whenever the glossaries, an ADR, the roadmap or the conventions change, copy the
 - the engine glossary to `Rules Engine/Glossary.md`
 - the roadmap to `Rules Engine/Roadmap.md`
 - the conventions to `Rules Engine/Conventions.md`
-- the ADRs to `Rules Engine/Decisions/`
+- the ADRs, both the engine's and the game's in the root `docs/adr/`, to `Rules Engine/Decisions/`
 - the root `GLOSSARY.md` to `Game Glossary.md`
 
 Then regenerate the wikilinked index `Rules Engine/Design Decisions.md`. The repo copy is the source of truth.

@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://bk32cgw5givw7"
+path="res://.godot/imported/a.png-3bb6c7ba100f39fda03ac8cd7b37bd03.image"
+
+[deps]
+
+source_file="res://assets/card_frames/frames/a.png"
+dest_files=["res://.godot/imported/a.png-3bb6c7ba100f39fda03ac8cd7b37bd03.image"]
+
+[params]
+

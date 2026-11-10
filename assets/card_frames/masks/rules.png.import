@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://bvr3kxn3i3nd0"
+path="res://.godot/imported/rules.png-77a64b3b802b0d955b4d4152307a20d1.image"
+
+[deps]
+
+source_file="res://assets/card_frames/masks/rules.png"
+dest_files=["res://.godot/imported/rules.png-77a64b3b802b0d955b4d4152307a20d1.image"]
+
+[params]
+

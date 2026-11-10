@@ -133,7 +133,7 @@ func _benchmark_setup(encounter_seed: int) -> MmEncounterSetup:
 	setup.villain = Scenario.player_setup(Scenario.run_cards(_deck({
 		"plains": 9, "swamp": 8,
 		"white_knight": 3, "black_knight": 3, "serra_angel": 2, "samite_healer": 3,
-		"drudge_skeletons": 3, "terror": 3, "dark_ritual": 2, "crusade": 2, "fog": 2,
+		"drudge_skeletons": 3, "terror": 3, "dark_ritual": 2, "savannah_lions": 2, "fog": 2,
 	})))
 	setup.encounter_seed = encounter_seed
 	return setup

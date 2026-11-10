@@ -304,7 +304,6 @@ func test_the_milestone_nine_cards_have_the_right_printed_characteristics() -> v
 	# file: [name, card type, colors, mana value, subtypes, power, toughness, keyword or null]
 	var expected: Dictionary[String, Array] = {
 		"giant_growth": ["Giant Growth", MmCardTypes.CardType.INSTANT, [green], 1, [], 0, 0, null],
-		"crusade": ["Crusade", MmCardTypes.CardType.ENCHANTMENT, [white], 2, [], 0, 0, ContinuousStaticAbility],
 		"serra_angel": ["Serra Angel", MmCardTypes.CardType.CREATURE, [white], 5, ["Angel"], 4, 4, VigilanceAbility],
 		"giant_spider": ["Giant Spider", MmCardTypes.CardType.CREATURE, [green], 4, ["Spider"], 2, 4, ReachAbility],
 		"wall_of_stone": ["Wall of Stone", MmCardTypes.CardType.CREATURE, [red], 3, ["Wall"], 0, 8, DefenderAbility],
@@ -337,26 +336,6 @@ func test_giant_growth_gives_plus_three_plus_three_until_end_of_turn() -> void:
 
 	assert_eq(engine.villain().life, 15, "A 5/5 attacked.")
 	assert_eq(Scenario.pt(engine, bears), [2, 2], "Back to normal after the turn.")
-
-
-func test_crusade_pumps_every_white_creature_and_no_other() -> void:
-	var lion: MmCardDefinition = Scenario.creature("Lion", 2, 1, [], Scenario.mana_cost(0, [MmMana.Type.WHITE]))
-	var crusade: MmCardDefinition = Scenario.free_copy(_alpha("crusade"))
-	var cards: Array[MmCardDefinition] = Scenario.cycled([_alpha("plains"), lion, crusade, Scenario.creature("Golem", 2, 2)])
-	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
-		func(running: MmEngine) -> bool:
-			if not Scenario.ready_in_main(running, 1, 1, "Lion"):
-				return false
-			return Scenario.card_in_hand(running, running.hero(), "Crusade") != -1 \
-				and Scenario.card_in_hand(running, running.hero(), "Golem") != -1)
-	assert_not_null(engine, "No seed gave the needed hand.")
-	Scenario.cast_and_resolve(engine, "Lion")
-	Scenario.cast_and_resolve(engine, "Golem")
-
-	Scenario.cast_and_resolve(engine, "Crusade")
-
-	assert_eq(Scenario.pt(engine, Scenario.permanent_named(engine, engine.hero().id, "Lion")), [3, 2])
-	assert_eq(Scenario.pt(engine, Scenario.permanent_named(engine, engine.hero().id, "Golem")), [2, 2], "Colorless.")
 
 
 func test_serra_angel_attacks_without_tapping_over_ground_blockers() -> void:

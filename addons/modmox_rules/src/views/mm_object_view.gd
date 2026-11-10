@@ -14,6 +14,14 @@ var name: String
 var owner_id: int
 var controller_id: int
 var is_tapped: bool
+## The characteristics a card is drawn from, so the GUI can choose its Frame (ADR 0009).
+## In WUBRG order; empty means colorless.
+var colors: Array[MmCardTypes.CardColor] = []
+var card_types: Array[MmCardTypes.CardType] = []
+var supertypes: Array[MmCardTypes.Supertype] = []
+var subtypes: Array[String] = []
+## Null for a card with no mana cost, which is not the same as {0}.
+var mana_cost: MmManaCost = null
 ## For a spell or ability on the stack: its chosen targets, in order (null if not chosen).
 var targets: Array[MmReference] = []
 var is_creature: bool = false
@@ -58,6 +66,11 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.is_tapped = game_object.is_tapped
 	view.targets = game_object.targets.duplicate()
 	var characteristics: MmCharacteristics = state.characteristics_of(game_object)
+	view.colors = characteristics.colors.duplicate()
+	view.card_types = characteristics.card_types.duplicate()
+	view.supertypes = characteristics.supertypes.duplicate()
+	view.subtypes = characteristics.subtypes.duplicate()
+	view.mana_cost = characteristics.mana_cost
 	view.is_creature = characteristics.has_card_type(MmCardTypes.CardType.CREATURE)
 	view.power = characteristics.power
 	view.toughness = characteristics.toughness

@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://dij0baelqicw7"
+path="res://.godot/imported/b.svg-d4bc60b105a55d4198e53a2525d4b15e.image"
+
+[deps]
+
+source_file="res://assets/card_frames/pips/b.svg"
+dest_files=["res://.godot/imported/b.svg-d4bc60b105a55d4198e53a2525d4b15e.image"]
+
+[params]
+
