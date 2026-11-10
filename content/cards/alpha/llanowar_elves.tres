@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_20kj4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_tbcf7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="3_xru88"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_7wt0m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_7ijup"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="6_whvpg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="7_reulo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="8_xlch8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="9_2t45d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="10_uts2n"]
+
+[sub_resource type="Resource" id="Resource_kpgm6"]
+script = ExtResource("3_xru88")
+
+[sub_resource type="Resource" id="Resource_qttmd"]
+script = ExtResource("5_7ijup")
+value = 1
+
+[sub_resource type="Resource" id="Resource_4a8wk"]
+script = ExtResource("6_whvpg")
+mana_type = 4
+amount = SubResource("Resource_qttmd")
+
+[sub_resource type="Resource" id="Resource_qn4ey"]
+script = ExtResource("7_reulo")
+costs = Array[ExtResource("2_tbcf7")]([SubResource("Resource_kpgm6")])
+effects = Array[ExtResource("4_7wt0m")]([SubResource("Resource_4a8wk")])
+
+[sub_resource type="Resource" id="Resource_oacec"]
+script = ExtResource("9_2t45d")
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("10_uts2n")
+name = "Llanowar Elves"
+card_types = Array[int]([1])
+subtypes = Array[String](["Elf", "Druid"])
+mana_cost = SubResource("Resource_oacec")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_20kj4")]([SubResource("Resource_qn4ey")])

@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_yd4jn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_masjj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_ff7bl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_6tcwx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_4f6bp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_rkyka"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="7_ht3c6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="8_217jm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="9_tkuuc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="10_276re"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="11_w8pc4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="12_qn8xb"]
+
+[sub_resource type="Resource" id="Resource_f1efh"]
+script = ExtResource("2_masjj")
+
+[sub_resource type="Resource" id="Resource_56bi7"]
+script = ExtResource("5_4f6bp")
+
+[sub_resource type="Resource" id="Resource_p0cqy"]
+script = ExtResource("6_rkyka")
+value = 1
+
+[sub_resource type="Resource" id="Resource_36uro"]
+script = ExtResource("6_rkyka")
+
+[sub_resource type="Resource" id="Resource_d726r"]
+script = ExtResource("7_ht3c6")
+power = SubResource("Resource_p0cqy")
+toughness = SubResource("Resource_36uro")
+affected = SubResource("Resource_56bi7")
+
+[sub_resource type="Resource" id="Resource_73gcu"]
+script = ExtResource("8_217jm")
+continuous = SubResource("Resource_d726r")
+
+[sub_resource type="Resource" id="Resource_64rxq"]
+script = ExtResource("9_tkuuc")
+symbols = Array[int]([3])
+
+[sub_resource type="Resource" id="Resource_sg5l0"]
+script = ExtResource("10_276re")
+mana_cost = SubResource("Resource_64rxq")
+effects = Array[ExtResource("4_6tcwx")]([SubResource("Resource_73gcu")])
+
+[sub_resource type="Resource" id="Resource_8h13x"]
+script = ExtResource("9_tkuuc")
+generic = 4
+symbols = Array[int]([3, 3])
+
+[resource]
+script = ExtResource("12_qn8xb")
+name = "Shivan Dragon"
+card_types = Array[int]([1])
+subtypes = Array[String](["Dragon"])
+mana_cost = SubResource("Resource_8h13x")
+power = 5
+toughness = 5
+abilities = Array[ExtResource("1_yd4jn")]([SubResource("Resource_f1efh"), SubResource("Resource_sg5l0")])

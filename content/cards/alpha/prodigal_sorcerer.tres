@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_3cydf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_i5ydn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="3_g1ggd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_cv6nn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_iq3fv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="6_2bdtr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="7_epwuu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_16bok"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="9_7rsrl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_16g04"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="11_uaguh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_erbvk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="13_8wxh2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="14_4bsj8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="15_gutie"]
+
+[sub_resource type="Resource" id="Resource_dsyd5"]
+script = ExtResource("3_g1ggd")
+
+[sub_resource type="Resource" id="Resource_nsu8a"]
+script = ExtResource("5_iq3fv")
+value = 1
+
+[sub_resource type="Resource" id="Resource_mp052"]
+script = ExtResource("6_2bdtr")
+
+[sub_resource type="Resource" id="Resource_w8utc"]
+script = ExtResource("7_epwuu")
+amount = SubResource("Resource_nsu8a")
+recipients = SubResource("Resource_mp052")
+
+[sub_resource type="Resource" id="Resource_0n6f6"]
+script = ExtResource("11_uaguh")
+
+[sub_resource type="Resource" id="Resource_qhatt"]
+script = ExtResource("12_erbvk")
+
+[sub_resource type="Resource" id="Resource_4ga50"]
+script = ExtResource("13_8wxh2")
+filters = Array[ExtResource("10_16g04")]([SubResource("Resource_0n6f6"), SubResource("Resource_qhatt")])
+
+[sub_resource type="Resource" id="Resource_3hkps"]
+script = ExtResource("9_7rsrl")
+filter = SubResource("Resource_4ga50")
+
+[sub_resource type="Resource" id="Resource_xlxbc"]
+script = ExtResource("8_16bok")
+costs = Array[ExtResource("2_i5ydn")]([SubResource("Resource_dsyd5")])
+targets = Array[ExtResource("9_7rsrl")]([SubResource("Resource_3hkps")])
+effects = Array[ExtResource("4_cv6nn")]([SubResource("Resource_w8utc")])
+
+[sub_resource type="Resource" id="Resource_6leog"]
+script = ExtResource("14_4bsj8")
+generic = 2
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("15_gutie")
+name = "Prodigal Sorcerer"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Wizard"])
+mana_cost = SubResource("Resource_6leog")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_3cydf")]([SubResource("Resource_xlxbc")])

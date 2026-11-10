@@ -25,7 +25,7 @@ func test_using_the_ai_rng_does_not_change_the_game() -> void:
 	undisturbed.submit(ChoosePlayOrDrawDecision.Choice.PLAY)
 
 	var disturbed: MmEngine = MmEngine.start(setup)
-	var ai_rng: MmRng = MmRng.for_ai(setup.encounter_seed)
+	var ai_rng: MmRng = MmRng.for_ai(MmRng.ai_seed_for(setup.encounter_seed), 1, 0)
 	for _index: int in 100:
 		ai_rng.next_int(10)
 	disturbed.submit(ChoosePlayOrDrawDecision.Choice.PLAY)
@@ -35,7 +35,7 @@ func test_using_the_ai_rng_does_not_change_the_game() -> void:
 
 func test_game_and_ai_streams_differ_for_the_same_seed() -> void:
 	var game_rng: MmRng = MmRng.for_game(7)
-	var ai_rng: MmRng = MmRng.for_ai(7)
+	var ai_rng: MmRng = MmRng.for_ai(MmRng.ai_seed_for(7), 1, 0)
 
 	var game_numbers: Array[int] = []
 	var ai_numbers: Array[int] = []
@@ -63,3 +63,15 @@ func test_next_int_stays_in_range() -> void:
 
 	for _index: int in 200:
 		assert_between(rng.next_int(3), 0, 2)
+
+
+func test_each_ai_decision_gets_its_own_stream() -> void:
+	var seed: int = MmRng.ai_seed_for(7)
+
+	var again: Array[int] = [MmRng.for_ai(seed, 1, 5).next_int(1000000), MmRng.for_ai(seed, 1, 5).next_int(1000000)]
+	var other_player: int = MmRng.for_ai(seed, 0, 5).next_int(1000000)
+	var other_decision: int = MmRng.for_ai(seed, 1, 6).next_int(1000000)
+
+	assert_eq(again[0], again[1], "The same decision gets the same numbers.")
+	assert_ne(other_player, again[0], "Two AI players never share numbers.")
+	assert_ne(other_decision, again[0])

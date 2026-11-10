@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_s64fv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_3lc0h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_jilnn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="4_ftktk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_nfh5w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="6_dm6ky"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="7_vakfd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="8_44fqf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="9_adbh2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="10_evwtu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="11_7nsih"]
+
+[sub_resource type="Resource" id="Resource_xqrhs"]
+script = ExtResource("4_ftktk")
+
+[sub_resource type="Resource" id="Resource_2vcga"]
+script = ExtResource("5_nfh5w")
+value = 1
+
+[sub_resource type="Resource" id="Resource_uok87"]
+script = ExtResource("5_nfh5w")
+value = 1
+
+[sub_resource type="Resource" id="Resource_rwa2w"]
+script = ExtResource("6_dm6ky")
+power = SubResource("Resource_2vcga")
+toughness = SubResource("Resource_uok87")
+affected = SubResource("Resource_xqrhs")
+
+[sub_resource type="Resource" id="Resource_llt3o"]
+script = ExtResource("7_vakfd")
+continuous = SubResource("Resource_rwa2w")
+
+[sub_resource type="Resource" id="Resource_dqpve"]
+script = ExtResource("8_44fqf")
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_02g0p"]
+script = ExtResource("9_adbh2")
+mana_cost = SubResource("Resource_dqpve")
+effects = Array[ExtResource("3_jilnn")]([SubResource("Resource_llt3o")])
+
+[sub_resource type="Resource" id="Resource_xpxqf"]
+script = ExtResource("8_44fqf")
+generic = 2
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("11_7nsih")
+name = "Frozen Shade"
+card_types = Array[int]([1])
+subtypes = Array[String](["Shade"])
+mana_cost = SubResource("Resource_xpxqf")
+toughness = 1
+abilities = Array[ExtResource("1_s64fv")]([SubResource("Resource_02g0p")])

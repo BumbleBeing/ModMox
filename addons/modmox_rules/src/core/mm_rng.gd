@@ -15,9 +15,18 @@ static func for_game(encounter_seed: int) -> MmRng:
 	return MmRng.new(_derive_seed(encounter_seed, _GAME_LABEL))
 
 
-## The AI RNG for an encounter. Using it never affects the Game RNG.
-static func for_ai(encounter_seed: int) -> MmRng:
-	return MmRng.new(_derive_seed(encounter_seed, _AI_LABEL))
+## The seed every AI RNG of an encounter derives from. Knowing it reveals nothing about
+## the Game RNG.
+static func ai_seed_for(encounter_seed: int) -> int:
+	return _derive_seed(encounter_seed, _AI_LABEL)
+
+
+## The AI RNG for one decision: [param player_id]'s answer to decision number
+## [param decision_index] (ADR 0006, A158). Each decision gets a fresh stream, so the same
+## decision gets the same numbers after a save and reload, and two AI players never share
+## numbers. Using it never affects the Game RNG.
+static func for_ai(ai_seed: int, player_id: int, decision_index: int) -> MmRng:
+	return MmRng.new(("%d:%d:%d" % [ai_seed, player_id, decision_index]).hash())
 
 
 func _init(stream_seed: int) -> void:
@@ -29,6 +38,11 @@ func duplicate_stream() -> MmRng:
 	var copy: MmRng = MmRng.new(_generator.seed)
 	copy._generator.state = _generator.state
 	return copy
+
+
+## A seed for another stream, such as a Simulation Copy's Game RNG.
+func next_seed() -> int:
+	return _generator.randi()
 
 
 ## A random integer from 0 up to but not including [param exclusive_max].

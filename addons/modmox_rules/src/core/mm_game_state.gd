@@ -110,6 +110,20 @@ func duplicate_state() -> MmGameState:
 	return copy
 
 
+## ADR 0020: re-deals the cards [param viewer_id] cannot see, for a Simulation Copy. The
+## other player's hand and library are pooled and dealt back at random into the same
+## places, and so is the viewer's own library, so every zone keeps its size and objects keep
+## their IDs. The pool is sorted before shuffling, so two states that differ only in how
+## those cards are arranged are re-dealt identically. This builds an imagined state rather
+## than changing the game, so like the starting state (CR 103.2) it is not an event.
+func randomize_hidden_cards(viewer_id: int, rng: MmRng) -> void:
+	var other: MmPlayer = opponent_of(viewer_id)
+	var unseen: Array[MmGameObject] = other.hand.objects()
+	unseen.append_array(other.library.objects())
+	_redeal(unseen, rng)
+	_redeal(player(viewer_id).library.objects(), rng)
+
+
 func player(id: int) -> MmPlayer:
 	return players[id]
 
@@ -400,6 +414,19 @@ func fingerprint() -> String:
 				entries.append("deathtouch damage on %d" % game_object.id)
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
+
+
+## Gives [param places] the cards they hold, shuffled among them.
+func _redeal(places: Array[MmGameObject], rng: MmRng) -> void:
+	var cards: Array[MmGameObject] = places.duplicate()
+	cards.sort_custom(func(first: MmGameObject, second: MmGameObject) -> bool: return first.card_id < second.card_id)
+	var contents: Array = []
+	for card: MmGameObject in cards:
+		contents.append([card.card_id, card.definition])
+	rng.shuffle_in_place(contents)
+	for index: int in places.size():
+		places[index].card_id = contents[index][0]
+		places[index].definition = contents[index][1]
 
 
 func _all_zones() -> Array[MmZone]:

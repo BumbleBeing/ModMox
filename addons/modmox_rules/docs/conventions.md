@@ -15,6 +15,7 @@ How code in `addons/modmox_rules/` is written. The goal is that any part of the 
 addons/modmox_rules/
   src/
     abilities/   ability kinds (spell, activated, triggered, static and its keywords)
+    agents/      the Agent interface, the Encounter Driver and Simulation Sources
     actions/     Actions a player may take while holding priority
     cards/       Card Definitions, Run Cards, Modifications, card types, characteristics
     conditions/  Conditions (true or false questions about the game)
@@ -37,7 +38,13 @@ addons/modmox_rules/
     support/     shared test helpers (preloaded, never class_name'd)
   docs/
 
+addons/modmox_ai/  the AI Agent (ADR 0020): depends on the engine, never the other way round
+  src/           one flat folder: the Agent, its planners, the Board Evaluator, Timing Tags
+  tests/         AI tests, the benchmark and the soak test
+    support/     shared AI test helpers (preloaded, never class_name'd)
+
 content/cards/   game Content: authored Card Definitions (.tres), outside the engine
+content/decks/   authored decks, saved as Player Setups (.tres)
 tests/           game-side tests, such as checks on Content
 ```
 
@@ -122,6 +129,26 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - Get permanents onto the battlefield on the first two turns and stop at any later step with `Scenario.permanents_ready_with()`. Let everything on the stack resolve with `Scenario.resolve_stack()`.
 - Set up a combat with `Scenario.combat_ready()`: free creatures cast on the first two turns, stopped at the Hero's attackers decision. Cast a card that has a cost for free in a scenario with `Scenario.free_copy()`. A free copy is colorless, because color comes from the mana cost, so a test that needs a colored source pays real mana or uses a Filter on something else, such as a subtype.
 - Activate an ability with `Scenario.activate()`, reach a replacement choice with `Scenario.pass_to_replacement_choice()`, and answer it by its source card with `Scenario.choose_replacement_from()`.
+
+## The AI addon
+
+`addons/modmox_ai/` follows every rule above, with these differences:
+
+- Classes take the **`Ai` prefix** (`AiAgent`, `AiProfile`, `AiBoardEvaluator`), never `Mm`.
+- **The AI never reads the real game state** (ADR 0020). It reads its Player View, the decision, and its World from the Simulation Source, and may read Simulation Copies freely. Never keep or pass on a reference to an `MmEngine` that is not a Simulation Copy.
+- **Randomness only from the AI RNG** (ADR 0006), taken once per decision from `MmSimulationSource.ai_rng()`. Compare candidates on the same re-dealt world by giving every candidate's copy the same seed.
+- **Budgets are counts, never time** (A159). The clock may only produce a warning about a slow decision. A test scans `src/` for both.
+- **A FULL Agent may simulate; a CHEAP one never does** (A178). Anything run inside a simulation must use CHEAP Agents.
+- **No card names and no authored hints.** Work out what a card does from its characteristics and effects, so a Modification that rewrites a card changes how the AI plays it.
+- A `Callable` to a method does not keep its object alive. Hold the object in a variable for as long as the Callable is used.
+- `pass` is a GDScript keyword and cannot name a variable.
+
+## Agents in tests
+
+- Drive a whole encounter with `MmEncounterDriver` and test Agents from `tests/support/`: `default_answer_agent.gd` answers like `Scenario.autoplay()`, and `illegal_answer_agent.gd` never answers legally. `Scenario.default_answer()` gives autoplay's answer to any one decision.
+- In AI tests, `AiScenario.ask()` gets an Agent's answer to the pending decision without submitting it, and `AiScenario.ready_with()` sets up both battlefields, with an optional starting life for the Villain.
+- A free copy has mana value 0, so the Board Evaluator values it as a card costing nothing. Use real cards and lands when a test depends on what a card in hand is worth.
+- A flying attacker that no creature can block gets no blockers decision at all, so check that none is asked rather than waiting for one.
 
 ## Formatting
 

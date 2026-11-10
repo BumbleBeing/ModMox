@@ -3,6 +3,9 @@ extends RefCounted
 ## The rules engine's whole public interface for one encounter. Start it from an Encounter
 ## Setup, then answer each Pending Decision until none remains (ADR 0003).
 ##
+## An AI Agent looks ahead on Simulation Copies of an engine (ADR 0020): engines driven like
+## this one, whose hidden cards are re-dealt at random and which keep no undo checkpoints.
+##
 ## Recent decisions can be undone back to the last undo barrier (ADR 0015). The engine
 ## keeps a checkpoint copy of itself at each barrier; undoing restores that copy and
 ## replays the decisions made since, minus the undone ones. Callers only ever see the
@@ -10,7 +13,7 @@ extends RefCounted
 
 ## Tags mid-encounter saves (ADR 0010). Bump it whenever a change could make an existing
 ## decision log replay differently.
-const VERSION: String = "0.10.0"
+const VERSION: String = "0.11.0"
 ## The first entry of a concession in the decision log: ["concede", player ID]. No answer
 ## to a Pending Decision ever has this shape.
 const CONCEDE: String = "concede"
@@ -28,6 +31,15 @@ var _pending: MmPendingDecision = null
 var _decision_log: Array = []
 ## Where in the decision log the cast in progress began, or -1.
 var _cast_started_at: int = -1
+
+## ADR 0020: whether this is a Simulation Copy, and whether it stopped because a cast that
+## began before it was copied could no longer be finished.
+var _is_simulation: bool = false
+var _has_failed: bool = false
+## A Simulation Copy's decision log holds only its own answers; this many came before it.
+var _decisions_before_copy: int = 0
+## Where every AI RNG of this encounter derives from (ADR 0006).
+var _ai_seed: int = 0
 
 var _checkpoint_state: MmGameState
 var _checkpoint_pregame: PregameProcedure
@@ -55,11 +67,14 @@ static func replay(setup: MmEncounterSetup, answers: Array) -> MmEngine:
 
 
 func _init(setup: MmEncounterSetup) -> void:
+	if setup == null:
+		return  # simulation_copy() fills in the rest.
 	var error: String = setup.validate()
 	assert(error == "", "Invalid Encounter Setup: " + error)
 	_state = MmGameState.new(setup)
 	_pregame = PregameProcedure.new(_state, setup.starting_player_rule)
 	_turns = TurnProcedure.new(_state)
+	_ai_seed = MmRng.ai_seed_for(setup.encounter_seed)
 	_advance()
 	_take_checkpoint()
 
@@ -84,6 +99,10 @@ func submit(answer: Variant) -> String:
 	var events_before: int = _state.event_log.size()
 	var was_casting: bool = is_casting()
 	var stored: Variant = (answer as Array).duplicate(true) if answer is Array else answer
+	if _is_simulation and not _replaying and _begins_action(answered, stored):
+		# ADR 0020: a Simulation Copy keeps no undo barriers, only a checkpoint before each
+		# action, so a cast that cannot be finished can still be rewound (CR 728).
+		_take_checkpoint()
 	_decision_log.append(stored)
 	_pending = null
 	if _pregame_over:
@@ -94,12 +113,17 @@ func submit(answer: Variant) -> String:
 	if not was_casting and is_casting():
 		_cast_started_at = _decision_log.size() - 1
 	if _turns.needs_rewind():
+		if _is_simulation and _cast_started_at < _checkpoint_log_size:
+			# The cast began before this copy was made, so it cannot be rewound here.
+			_has_failed = true
+			_pending = null
+			return ""
 		# CR 728: a cast that can no longer be finished is rewound as if it never began.
 		_undo_to(_cast_started_at)
 		return ""
 	if not is_casting():
 		_cast_started_at = -1
-	if not _replaying and _is_undo_barrier(answered, events_before):
+	if not _replaying and not _is_simulation and _is_undo_barrier(answered, events_before):
 		_take_checkpoint()
 	return ""
 
@@ -134,9 +158,9 @@ func outcome() -> Outcome:
 	return Outcome.HERO_WON if _state.winner_id == MmEncounterSetup.HERO_PLAYER_ID else Outcome.VILLAIN_WON
 
 
-## Whether there is a decision that can be undone.
+## Whether there is a decision that can be undone. Never in a Simulation Copy.
 func can_undo() -> bool:
-	return not is_over() and _decision_log.size() > _checkpoint_log_size
+	return not _is_simulation and not is_over() and _decision_log.size() > _checkpoint_log_size
 
 
 ## Undoes the most recent decision. Returns "" when done, or why it cannot be undone.
@@ -160,6 +184,8 @@ func is_casting() -> bool:
 func cancel_cast() -> String:
 	if not is_casting():
 		return "Nothing is being cast."
+	if _cast_started_at < _checkpoint_log_size:
+		return "This cast began before this Simulation Copy was made."
 	_undo_to(_cast_started_at)
 	return ""
 
@@ -191,9 +217,58 @@ func event_log() -> Array[MmEvent]:
 	return _state.event_log.duplicate()
 
 
-## A copy of every accepted answer so far, in order.
+## A copy of every accepted answer so far, in order. A Simulation Copy's holds only the
+## answers given to it.
 func decision_log() -> Array:
 	return _decision_log.duplicate(true)
+
+
+## How many answers have been accepted in this encounter, including, for a Simulation Copy,
+## those given before it was copied. Undone answers do not count.
+func decision_count() -> int:
+	return _decisions_before_copy + _decision_log.size()
+
+
+## Whether this is a Simulation Copy (ADR 0020).
+func is_simulation() -> bool:
+	return _is_simulation
+
+
+## Whether this Simulation Copy stopped because a cast that began before it was copied
+## could no longer be paid for. Nothing more can be answered then.
+func has_failed() -> bool:
+	return _has_failed
+
+
+## A Simulation Copy of this engine as [param viewer_id] might imagine it (ADR 0020), to be
+## driven with submit() like the real one without affecting it. Unless
+## [param keeps_hidden_cards], the cards that player cannot see are re-dealt at random from
+## [param rng]: the other player's hand and library together, and their own library. The
+## Game RNG is reseeded from [param rng] either way, so the copy never predicts the real
+## draws. A copy keeps no undo checkpoints and starts with an empty event log.
+func simulation_copy(viewer_id: int, rng: MmRng, keeps_hidden_cards: bool = false) -> MmEngine:
+	var copy: MmEngine = MmEngine.new(null)
+	copy._state = _state.duplicate_state()
+	copy._state.event_log = []
+	if not keeps_hidden_cards:
+		copy._state.randomize_hidden_cards(viewer_id, rng)
+	copy._state.game_rng = MmRng.new(rng.next_seed())
+	copy._pregame = _pregame.copy_for(copy._state)
+	copy._turns = _turns.copy_for(copy._state)
+	copy._pregame_over = _pregame_over
+	copy._pending = _pending  # Decisions never change, so sharing one is safe.
+	copy._is_simulation = true
+	copy._decisions_before_copy = decision_count()
+	copy._ai_seed = rng.next_seed()
+	# No checkpoint yet: the first comes before the copy's first action. A cast already in
+	# progress began before the copy and cannot be rewound on it.
+	return copy
+
+
+## What an Agent for [param player_id] may use to look ahead from the decision pending now
+## (ADR 0020). Make a new one for each decision.
+func simulation_source_for(player_id: int) -> MmSimulationSource:
+	return MmSimulationSource.new(self, player_id, _ai_seed, not _is_simulation)
 
 
 ## A hash of the game state and the pending decision, equal exactly when they match.
@@ -207,6 +282,12 @@ func _replay_entry(entry: Variant) -> String:
 	if entry is Array and (entry as Array).size() == 2 and (entry as Array)[0] is String and (entry as Array)[0] == CONCEDE:
 		return concede(_state.player((entry as Array)[1] as int))
 	return submit(entry)
+
+
+## Whether [param answer] to [param answered] begins a cast or an activation.
+func _begins_action(answered: MmPendingDecision, answer: Variant) -> bool:
+	var priority: PriorityDecision = answered as PriorityDecision
+	return priority != null and not (priority.actions[answer as int] is PassAction)
 
 
 ## Runs the engine until the next decision: the pregame first, then turns.

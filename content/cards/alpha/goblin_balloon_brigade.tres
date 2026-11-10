@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_mdusi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_vlk6n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_toahk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="4_t7nop"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_rm2cu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="6_l6ype"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="7_hvx67"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="8_sm7ox"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="9_h2no4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="10_0ldpu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="11_agf80"]
+
+[sub_resource type="Resource" id="Resource_c1ms1"]
+script = ExtResource("4_t7nop")
+
+[sub_resource type="Resource" id="Resource_dok71"]
+script = ExtResource("5_rm2cu")
+
+[sub_resource type="Resource" id="Resource_rriiy"]
+script = ExtResource("6_l6ype")
+abilities = Array[ExtResource("1_mdusi")]([SubResource("Resource_c1ms1")])
+affected = SubResource("Resource_dok71")
+
+[sub_resource type="Resource" id="Resource_usmm0"]
+script = ExtResource("7_hvx67")
+continuous = SubResource("Resource_rriiy")
+
+[sub_resource type="Resource" id="Resource_1md8r"]
+script = ExtResource("8_sm7ox")
+symbols = Array[int]([3])
+
+[sub_resource type="Resource" id="Resource_0vku6"]
+script = ExtResource("9_h2no4")
+mana_cost = SubResource("Resource_1md8r")
+effects = Array[ExtResource("3_toahk")]([SubResource("Resource_usmm0")])
+
+[sub_resource type="Resource" id="Resource_34mhh"]
+script = ExtResource("8_sm7ox")
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("11_agf80")
+name = "Goblin Balloon Brigade"
+card_types = Array[int]([1])
+subtypes = Array[String](["Goblin", "Warrior"])
+mana_cost = SubResource("Resource_34mhh")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_mdusi")]([SubResource("Resource_0vku6")])

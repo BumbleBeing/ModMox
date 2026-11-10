@@ -1,6 +1,7 @@
 {
 	"dirs": [
 		"res://addons/modmox_rules/tests/",
+		"res://addons/modmox_ai/tests/",
 		"res://tests/"
 	],
 	"include_subdirs": true,

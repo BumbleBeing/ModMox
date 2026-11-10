@@ -55,7 +55,7 @@ The player in an encounter who represents the adversary.
 _Avoid_: Opponent (when this specific player is meant), enemy, foe, AI
 
 **Agent**:
-Whatever answers Pending Decisions on behalf of a player: the human through the GUI, or an AI. Usually the Hero has a Human Agent and the Villain an AI Agent, but either player can be driven by any Agent.
+Whatever answers Pending Decisions on behalf of a player: the human through the GUI, or an AI. Usually the Hero has a Human Agent and the Villain an AI Agent, but either player can be driven by any Agent. A Human Agent is no Agent at all to the Encounter Driver, which stops and waits for the GUI's answer.
 _Avoid_: Controller, input, brain
 
 **Target Requirement**:
@@ -107,7 +107,7 @@ Every Event performed in an encounter, in order. Triggers and the GUI learn what
 _Avoid_: History, game log
 
 **Player View**:
-Everything one player may legally see of the game, and nothing more. Agents and the GUI only ever read a Player View.
+Everything one player may legally see of the game, and nothing more. The GUI only ever reads a Player View. An AI Agent reads the real encounter only through its Player View and its World, and may read Simulation Copies freely.
 _Avoid_: Snapshot, visible state
 
 ## Triggered abilities
@@ -197,5 +197,39 @@ The randomness used by the rules themselves (shuffles, random discards, coin fli
 _Avoid_: RNG (unqualified)
 
 **AI RNG**:
-The randomness an AI Agent uses to choose among options, which never affects the Game RNG.
+The randomness an AI Agent uses to choose among options and to re-deal Simulation Copies, which never affects the Game RNG. Each decision gets a fresh stream from the Encounter Seed, the player and how many decisions came before, so the same decision gets the same numbers after a save and reload.
 _Avoid_: RNG (unqualified)
+
+## AI Agents
+
+**Encounter Driver**:
+What runs an encounter by asking each player's Agent for answers, stopping where a player has no Agent and a human must decide.
+_Avoid_: Game loop, match runner, controller
+
+**Simulation Copy**:
+An engine copied from a real one to look ahead on, as one player might imagine the game: the cards they cannot see are re-dealt at random, the Game RNG is reseeded, and nothing can be undone. Playing on it never changes the real encounter.
+_Avoid_: Clone, snapshot, sandbox, lookahead state
+
+**Simulation Source**:
+What an Agent is handed with each decision: its AI RNG, its World, and Simulation Copies to play on. Never the real game state.
+_Avoid_: Engine handle, oracle (unqualified)
+
+**World**:
+The game as an Agent's player might imagine it at one decision: the real game with every card they cannot see re-dealt. Inside a Simulation Copy, the copy itself.
+_Avoid_: Belief state, guess
+
+**Board Evaluator**:
+What turns a game state into one number from a player's point of view: their side's worth minus the other side's, counting life, cards in hand and permanents as they are now.
+_Avoid_: Heuristic (unqualified), fitness, score function
+
+**Combat Oracle**:
+What answers "if these attack and these block, what happens?" by running the engine's own combat on a Simulation Copy.
+_Avoid_: Combat math, damage predictor
+
+**Timing Tag**:
+When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, removal also in its controller's main phases and the other player's end step. It never decides whether a play is good.
+_Avoid_: AI hint, card flag, AILogic
+
+**AI Profile**:
+An AI Agent's temperament as a saved, moddable resource: whether it plays first, its mulligan land range, how readily it trades in combat, when its life is in danger, and its search budget.
+_Avoid_: Villain Profile, difficulty, personality file

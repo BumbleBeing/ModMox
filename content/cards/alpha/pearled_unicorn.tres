@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_8yrib"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_v6t54"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_0f22w"]
+
+[sub_resource type="Resource" id="Resource_twg7a"]
+script = ExtResource("2_v6t54")
+generic = 2
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_0f22w")
+name = "Pearled Unicorn"
+card_types = Array[int]([1])
+subtypes = Array[String](["Unicorn"])
+mana_cost = SubResource("Resource_twg7a")
+power = 2
+toughness = 2

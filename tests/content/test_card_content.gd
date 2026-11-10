@@ -560,6 +560,204 @@ func test_drudge_skeletons_regenerates_for_black_mana() -> void:
 	assert_eq(Scenario.damage_on(engine, skeleton), 0)
 
 
+func test_the_milestone_eleven_cards_have_the_right_printed_characteristics() -> void:
+	var white: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.WHITE]
+	var blue: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.BLUE]
+	var black: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.BLACK]
+	var red: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.RED]
+	var green: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.GREEN]
+	var creature: MmCardTypes.CardType = MmCardTypes.CardType.CREATURE
+	var expected: Dictionary[String, Array] = {
+		"shivan_dragon": ["Shivan Dragon", creature, red, 6, ["Dragon"], 5, 5],
+		"frozen_shade": ["Frozen Shade", creature, black, 3, ["Shade"], 0, 1],
+		"goblin_balloon_brigade": ["Goblin Balloon Brigade", creature, red, 1, ["Goblin", "Warrior"], 1, 1],
+		"uthden_troll": ["Uthden Troll", creature, red, 3, ["Troll"], 2, 2],
+		"llanowar_elves": ["Llanowar Elves", creature, green, 1, ["Elf", "Druid"], 1, 1],
+		"prodigal_sorcerer": ["Prodigal Sorcerer", creature, blue, 3, ["Human", "Wizard"], 1, 1],
+		"craw_wurm": ["Craw Wurm", creature, green, 6, ["Wurm"], 6, 4],
+		"gray_ogre": ["Gray Ogre", creature, red, 3, ["Ogre"], 2, 2],
+		"savannah_lions": ["Savannah Lions", creature, white, 1, ["Cat"], 2, 1],
+		"pearled_unicorn": ["Pearled Unicorn", creature, white, 3, ["Unicorn"], 2, 2],
+		"water_elemental": ["Water Elemental", creature, blue, 5, ["Elemental"], 5, 4],
+		"merfolk_of_the_pearl_trident": ["Merfolk of the Pearl Trident", creature, blue, 1, ["Merfolk"], 1, 1],
+		"scathe_zombies": ["Scathe Zombies", creature, black, 3, ["Zombie"], 2, 2],
+		"hurloon_minotaur": ["Hurloon Minotaur", creature, red, 3, ["Minotaur"], 2, 3],
+		"ironroot_treefolk": ["Ironroot Treefolk", creature, green, 5, ["Treefolk"], 3, 5],
+		"shatter": ["Shatter", MmCardTypes.CardType.INSTANT, red, 2, [], 0, 0],
+	}
+	for file_name: String in expected:
+		var facts: Array = expected[file_name]
+		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
+		assert_eq(printed.name, facts[0])
+		assert_eq(printed.card_types, [facts[1]], file_name)
+		assert_eq(printed.colors, facts[2], file_name)
+		assert_eq(printed.mana_value(), facts[3], file_name)
+		assert_eq(printed.subtypes, facts[4], file_name)
+		if facts[1] == creature:
+			assert_eq([printed.power, printed.toughness], [facts[5], facts[6]], file_name)
+	assert_true(MmCharacteristics.printed(_alpha("shivan_dragon")).has_ability(FlyingAbility))
+	assert_true((_alpha("llanowar_elves").abilities[0] as ActivatedAbility).is_mana_ability())
+	assert_false((_alpha("prodigal_sorcerer").abilities[0] as ActivatedAbility).is_mana_ability())
+
+
+func test_shivan_dragon_gets_plus_one_plus_zero_for_each_red_paid_until_end_of_turn() -> void:
+	var engine: MmEngine = _ready_with_lands(Scenario.free_copy(_alpha("shivan_dragon")), "mountain", 2)
+	var dragon: int = Scenario.permanent_named(engine, engine.hero().id, "Shivan Dragon")
+
+	assert_eq(Scenario.activate(engine, dragon), "")
+	Scenario.resolve_stack(engine)
+	assert_eq(Scenario.activate(engine, dragon), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(Scenario.pt(engine, dragon), [7, 5])
+	Scenario.play_until_game_turn(engine, engine.game_state().game_turn + 1)
+	assert_eq(Scenario.pt(engine, dragon), [5, 5], "Until end of turn.")
+
+
+func test_frozen_shade_pumped_three_times_survives_lightning_bolt() -> void:
+	var bolt: MmCardDefinition = Scenario.free_copy(_alpha("lightning_bolt"))
+	var engine: MmEngine = _ready_with_lands(Scenario.free_copy(_alpha("frozen_shade")), "swamp", 3, [bolt])
+	var shade: int = Scenario.permanent_named(engine, engine.hero().id, "Frozen Shade")
+
+	for _pump: int in 3:
+		assert_eq(Scenario.activate(engine, shade), "")
+		Scenario.resolve_stack(engine)
+	assert_eq(Scenario.pt(engine, shade), [3, 4])
+	Scenario.cast_and_resolve(engine, "Lightning Bolt", [MmReference.to_object(shade)])
+
+	assert_not_null(engine.game_state().object(shade), "4 toughness survives 3 damage.")
+
+
+func test_goblin_balloon_brigade_gains_flying_and_cannot_be_blocked_from_the_ground() -> void:
+	var brigade: MmCardDefinition = Scenario.free_copy(_alpha("goblin_balloon_brigade"))
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var mountain: MmCardDefinition = _alpha("mountain")
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup([brigade], [bears], [mountain]),
+		[brigade], [bears], [mountain], no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var goblin: int = Scenario.permanent_named(engine, engine.hero().id, "Goblin Balloon Brigade")
+	Scenario.play_first_land(engine)
+
+	assert_eq(Scenario.activate(engine, goblin), "")
+	Scenario.resolve_stack(engine)
+	assert_true(Scenario.now(engine, goblin).has_ability(FlyingAbility))
+	Scenario.pass_until_step(engine, MmTurn.Step.DECLARE_ATTACKERS)
+	assert_eq(engine.submit([goblin]), "")
+	Scenario.autoplay(engine, func(running: MmEngine) -> bool:
+		return running.pending_decision() is DeclareBlockersDecision or running.game_state().step == MmTurn.Step.END_OF_COMBAT)
+
+	assert_false(engine.pending_decision() is DeclareBlockersDecision, "The Bears cannot block it, so no block is asked.")
+	assert_eq(engine.villain().life, 19)
+
+
+func test_uthden_troll_regenerates_for_red_mana() -> void:
+	var bolt: MmCardDefinition = Scenario.free_copy(_alpha("lightning_bolt"))
+	var engine: MmEngine = _ready_with_lands(Scenario.free_copy(_alpha("uthden_troll")), "mountain", 1, [bolt])
+	var troll: int = Scenario.permanent_named(engine, engine.hero().id, "Uthden Troll")
+
+	assert_eq(Scenario.activate(engine, troll), "")
+	Scenario.resolve_stack(engine)
+	Scenario.cast_and_resolve(engine, "Lightning Bolt", [MmReference.to_object(troll)])
+
+	assert_not_null(engine.game_state().object(troll))
+	assert_true(engine.game_state().object(troll).is_tapped, "Regeneration taps it (CR 701.19a).")
+
+
+func test_llanowar_elves_taps_for_green_but_not_the_turn_it_enters() -> void:
+	var elves: MmCardDefinition = Scenario.free_copy(_alpha("llanowar_elves"))
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup([elves], no_cards, [elves]),
+		[elves], no_cards, [elves], no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var old_elf: int = Scenario.permanent_named(engine, engine.hero().id, "Llanowar Elves")
+
+	Scenario.cast_and_resolve(engine, "Llanowar Elves")
+	var new_elf: int = Scenario.permanents_named(engine, engine.hero().id, "Llanowar Elves").back()
+
+	assert_eq(Scenario.activate_index(engine.pending_decision() as PriorityDecision, new_elf), -1,
+		"CR 302.6: it cannot pay {T} yet.")
+	assert_eq(Scenario.activate(engine, old_elf), "")
+	assert_eq(engine.hero().mana_pool().size(), 1)
+	assert_eq(engine.hero().mana_pool()[0].type, MmMana.Type.GREEN)
+
+
+func test_prodigal_sorcerer_pings_a_player_and_a_creature() -> void:
+	var sorcerer: MmCardDefinition = Scenario.free_copy(_alpha("prodigal_sorcerer"))
+	var merfolk: MmCardDefinition = Scenario.free_copy(_alpha("merfolk_of_the_pearl_trident"))
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup([sorcerer], [merfolk]),
+		[sorcerer], [merfolk], no_cards, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var pinger: int = Scenario.permanent_named(engine, engine.hero().id, "Prodigal Sorcerer")
+	var target: int = Scenario.permanent_named(engine, engine.villain().id, "Merfolk of the Pearl Trident")
+
+	assert_eq(Scenario.activate(engine, pinger, [MmReference.to_player(engine.villain().id)]), "")
+	Scenario.resolve_stack(engine)
+	assert_eq(engine.villain().life, 19)
+	Scenario.play_until_step(engine, 5, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_eq(Scenario.activate(engine, pinger, [MmReference.to_object(target)]), "")
+	Scenario.resolve_stack(engine)
+
+	assert_null(engine.game_state().object(target))
+
+
+func test_shatter_destroys_an_artifact_and_cannot_target_a_creature() -> void:
+	var mine: MmCardDefinition = Scenario.free_copy(_alpha("howling_mine"))
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var shatter: MmCardDefinition = Scenario.free_copy(_alpha("shatter"))
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(no_cards, [mine, bears], [shatter]),
+		no_cards, [mine, bears], [shatter], no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var artifact: int = Scenario.permanent_named(engine, engine.villain().id, "Howling Mine")
+	var bear: int = Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears")
+
+	assert_ne(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Shatter"), [MmReference.to_object(bear)]), "")
+	engine.cancel_cast()
+	Scenario.cast_and_resolve(engine, "Shatter", [MmReference.to_object(artifact)])
+
+	assert_null(engine.game_state().object(artifact))
+
+
+func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:
+	for deck_name: String in ["red_green", "white_black", "blue_red"]:
+		var setup: MmPlayerSetup = load("res://content/decks/%s.tres" % deck_name) as MmPlayerSetup
+		assert_not_null(setup, deck_name)
+		assert_eq(setup.validate(), "", deck_name)
+		assert_eq(setup.deck.size(), 40, deck_name)
+		var lands: int = 0
+		for run_card: MmRunCard in setup.deck:
+			if MmCharacteristics.printed(run_card.base).has_card_type(MmCardTypes.CardType.LAND):
+				lands += 1
+		assert_eq(lands, 17, deck_name)
+
+
+## [param creature] on the Hero's battlefield since Game Turn 1, stopped in the Hero's
+## main phase once they control [param land_count] of the land [param land_file], holding
+## [param extras].
+func _ready_with_lands(creature: MmCardDefinition, land_file: String, land_count: int,
+		extras: Array[MmCardDefinition] = []) -> MmEngine:
+	var land: MmCardDefinition = _alpha(land_file)
+	var hero_extras: Array[MmCardDefinition] = [land]
+	hero_extras.append_array(extras)
+	var no_cards: Array[MmCardDefinition] = []
+	var setup: MmEncounterSetup = Scenario.combat_setup([creature], no_cards, hero_extras)
+	var game_turn: int = 1 + 2 * land_count
+	var engine: MmEngine = Scenario.find_engine(setup, func(running: MmEngine) -> bool:
+		if Scenario.play_until_step(running, 1, MmTurn.Step.PRECOMBAT_MAIN) != "" \
+				or Scenario.cast_and_resolve(running, creature.name) != "":
+			return false
+		if Scenario.play_until_step(running, game_turn, MmTurn.Step.PRECOMBAT_MAIN, true) != "":
+			return false
+		for extra: MmCardDefinition in extras:
+			if Scenario.card_in_hand(running, running.hero(), extra.name) == -1:
+				return false
+		return Scenario.permanents_named(running, running.hero().id, land.name).size() == land_count)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	return engine
+
+
 func _alpha(file_name: String) -> MmCardDefinition:
 	return load("%s/alpha/%s.tres" % [CONTENT_ROOT, file_name]) as MmCardDefinition
 

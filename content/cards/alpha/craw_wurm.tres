@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_5g0f1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_uj3s5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_cg8fk"]
+
+[sub_resource type="Resource" id="Resource_xvs6k"]
+script = ExtResource("2_uj3s5")
+generic = 4
+symbols = Array[int]([4, 4])
+
+[resource]
+script = ExtResource("3_cg8fk")
+name = "Craw Wurm"
+card_types = Array[int]([1])
+subtypes = Array[String](["Wurm"])
+mana_cost = SubResource("Resource_xvs6k")
+power = 6
+toughness = 4

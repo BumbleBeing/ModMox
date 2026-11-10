@@ -52,3 +52,24 @@ func test_a_view_shows_both_life_totals() -> void:
 	assert_eq(view.viewer_id, engine.hero().id)
 	assert_eq(view.life_totals[engine.hero().id], 20)
 	assert_eq(view.life_totals[engine.villain().id], 30)
+
+
+func test_both_players_see_each_graveyard() -> void:
+	# CR 400.2: graveyards are public.
+	var shock: MmCardDefinition = Scenario.free_shock("Shock", 3)
+	var no_creatures: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(no_creatures, no_creatures, [shock]),
+		no_creatures, no_creatures, [shock], no_creatures, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine)
+
+	Scenario.cast_and_resolve(engine, "Shock", [MmReference.to_player(engine.villain().id)])
+
+	for viewer: MmPlayer in [engine.hero(), engine.villain()]:
+		for owner: MmPlayer in [engine.hero(), engine.villain()]:
+			var graveyard: Array = engine.view_for(viewer).graveyards[owner.id]
+			var seen: Array[int] = []
+			for card: MmObjectView in graveyard:
+				seen.append(card.id)
+			assert_eq(seen, owner.graveyard.object_ids())
+		var heros: Array = engine.view_for(viewer).graveyards[engine.hero().id]
+		assert_eq((heros.back() as MmObjectView).name, "Shock")

@@ -152,40 +152,44 @@ static func autoplay(engine: MmEngine, stop: Callable, play_lands: bool = false,
 		if stop.call(engine):
 			return ""
 		var decision: MmPendingDecision = engine.pending_decision()
-		var answer: Variant
-		if decision is PriorityDecision:
-			var priority: PriorityDecision = decision as PriorityDecision
-			answer = pass_index(priority)
-			if play_lands:
-				var land: int = action_index(priority, func(action: MmAction) -> bool: return action is PlayLandAction)
-				if land != -1:
-					answer = land
-		elif decision is KeepOrMulliganDecision:
-			answer = KeepOrMulliganDecision.Choice.KEEP
-		elif decision is ChooseCardsToBottomDecision:
-			var bottom: ChooseCardsToBottomDecision = decision as ChooseCardsToBottomDecision
-			answer = bottom.candidate_ids.slice(0, bottom.count)
-		elif decision is ChooseCardsToDiscardDecision:
-			var discard: ChooseCardsToDiscardDecision = decision as ChooseCardsToDiscardDecision
-			answer = discard.candidate_ids.slice(0, discard.count)
-		elif decision is ChoosePlayOrDrawDecision:
-			answer = ChoosePlayOrDrawDecision.Choice.PLAY
-		elif decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
-			answer = []
-		elif decision is DivideCombatDamageDecision:
-			answer = all_to_first(decision as DivideCombatDamageDecision)
-		elif decision is OrderTriggersDecision:
-			answer = range((decision as OrderTriggersDecision).source_object_ids.size())
-		elif decision is ChooseTargetDecision:
-			answer = 0
-		elif decision is ChooseReplacementEffectDecision:
-			answer = 0
-		else:
+		var answer: Variant = default_answer(decision, play_lands)
+		if answer == null:
 			return "Unexpected decision: %s" % ("none" if decision == null else decision.describe())
 		var error: String = engine.submit(answer)
 		if error != "":
 			return error
 	return "Gave up after %d decisions." % limit
+
+
+## autoplay()'s answer to [param decision], or null for a decision it does not know. The
+## answer is a Variant because each decision kind takes a different shape.
+static func default_answer(decision: MmPendingDecision, play_lands: bool = false) -> Variant:
+	if decision is PriorityDecision:
+		var priority: PriorityDecision = decision as PriorityDecision
+		if play_lands:
+			var land: int = action_index(priority, func(action: MmAction) -> bool: return action is PlayLandAction)
+			if land != -1:
+				return land
+		return pass_index(priority)
+	if decision is KeepOrMulliganDecision:
+		return KeepOrMulliganDecision.Choice.KEEP
+	if decision is ChooseCardsToBottomDecision:
+		var bottom: ChooseCardsToBottomDecision = decision as ChooseCardsToBottomDecision
+		return bottom.candidate_ids.slice(0, bottom.count)
+	if decision is ChooseCardsToDiscardDecision:
+		var discard: ChooseCardsToDiscardDecision = decision as ChooseCardsToDiscardDecision
+		return discard.candidate_ids.slice(0, discard.count)
+	if decision is ChoosePlayOrDrawDecision:
+		return ChoosePlayOrDrawDecision.Choice.PLAY
+	if decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
+		return []
+	if decision is DivideCombatDamageDecision:
+		return all_to_first(decision as DivideCombatDamageDecision)
+	if decision is OrderTriggersDecision:
+		return range((decision as OrderTriggersDecision).source_object_ids.size())
+	if decision is ChooseTargetDecision or decision is ChooseReplacementEffectDecision:
+		return 0
+	return null
 
 
 ## Plays until the given Game Turn has begun and its first priority decision is pending.
