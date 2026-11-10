@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://26wwrvyvidal"
+path="res://.godot/imported/right_half.png-ce5289815c52ceef0e230d9acf324458.image"
+
+[deps]
+
+source_file="res://assets/card_frames/masks/right_half.png"
+dest_files=["res://.godot/imported/right_half.png-ce5289815c52ceef0e230d9acf324458.image"]
+
+[params]
+

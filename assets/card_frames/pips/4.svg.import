@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://kevrj1bb2rgx"
+path="res://.godot/imported/4.svg-8611d9936db2a26b3af0d9ebfb453a79.image"
+
+[deps]
+
+source_file="res://assets/card_frames/pips/4.svg"
+dest_files=["res://.godot/imported/4.svg-8611d9936db2a26b3af0d9ebfb453a79.image"]
+
+[params]
+

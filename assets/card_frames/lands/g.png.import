@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://cl5vxak03eyh3"
+path="res://.godot/imported/g.png-86c59e7d013799a684007f0a9a835121.image"
+
+[deps]
+
+source_file="res://assets/card_frames/lands/g.png"
+dest_files=["res://.godot/imported/g.png-86c59e7d013799a684007f0a9a835121.image"]
+
+[params]
+

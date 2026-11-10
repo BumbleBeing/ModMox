@@ -45,7 +45,11 @@ addons/modmox_ai/  the AI Agent (ADR 0020): depends on the engine, never the oth
 
 content/cards/   game Content: authored Card Definitions (.tres), outside the engine
 content/decks/   authored decks, saved as Player Setups (.tres)
-tests/           game-side tests, such as checks on Content
+content/art/     card art (one image per Card Definition) and its manifest, art.json
+assets/          third-party art and fonts, each folder with its credits or license
+ui/              the GUI (game-side): ui/cards/ draws Card Faces and Battlefield Faces
+tools/           developer tools: tools/art/ fetches card art, tools/card_gallery/ shows every card
+tests/           game-side tests, mirroring ui/ and tools/ (tests/ui/cards/, tests/tools/)
 ```
 
 - One class per file. The file name is the class name in `snake_case`: `MmGameState` → `mm_game_state.gd`, `ZoneChangeEvent` → `zone_change_event.gd`.
@@ -153,6 +157,19 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - `AiAgent.new()` plays at Normal, with Flat Monte Carlo. A test about one-step simulation's own reasons (`BEST_SCORE`, `SCORES_WORSE_THAN_PASS`) uses `AiDifficulty.easy()`. `rollout_count()` says how many Rollouts the last answer played.
 - The hand in an `AiScenario.ready_with()` setup holds every copy its cycled deck dealt, so count Monte Carlo candidates from `explain_detail()` rather than assuming one per card named.
 - A whole encounter takes seconds at Easy and much longer at Normal. Slow checks run at Easy by default, and only on request at other levels: the soak with `MODMOX_SOAK_DIFFICULTY`, tournaments with `MODMOX_TOURNAMENT_SEEDS` (see `test_tournament.gd`). A tournament can be split across processes with `MODMOX_TOURNAMENT_FIRST_SEED`.
+
+## Game-side code
+
+`ui/` and `tools/` follow every rule above that is not about the engine's internals, with these differences:
+
+- Classes have **no prefix** and end with their kind where they have one: `CardFace`, `FrameSpec`, `FrameBaker`, `KeywordChips`.
+- **The GUI reads only what a player may see** (ADR 0005): a Player View in an encounter, printed characteristics outside one. Both become a `CardLook`, which is all a face is drawn from, so a deck screen and the battlefield draw an unaffected card the same way (ADR 0009).
+- **Nodes, signals and `await` are fine here.** They are banned only in the engine.
+- **Keep what can be tested headless out of Nodes.** Work out frames, layouts, crops and fits in pure static functions or `RefCounted` classes, and test those. Nodes only place what they work out.
+- **Images the code composites are imported as `Image`**, not textures (set `importer="image"` in their `.import` file), so baking works headless and tests can check real pixels. Images that are only drawn import as textures, with mipmaps.
+- **Never change a loaded `Image`.** Resize or edit a `duplicate()`.
+- **Card art comes from `tools/art/fetch_art.gd`**, never by hand: it downloads the first printing's art for any card without it and records its credits in `content/art/art.json`. Set focus points with the card gallery tool.
+- **Every sub-milestone of the GUI starts with a throwaway prototype** in `prototypes/<sub-milestone>/`, which the user signs off on. Prototypes skip these conventions and tests, and are deleted when the real build lands.
 
 ## Formatting
 
