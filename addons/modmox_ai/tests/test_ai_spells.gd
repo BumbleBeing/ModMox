@@ -240,3 +240,87 @@ func test_payment_spends_pool_mana_before_tapping_lands() -> void:
 			untapped += 1
 	assert_eq(untapped, 1, "One Swamp paid for the Ritual; the Shade used only the Ritual's mana.")
 	assert_eq(engine.hero().mana_pool().size(), 0)
+
+
+# --- Spells that only add mana -----------------------------------------------------
+
+func test_mana_is_not_added_in_the_other_players_end_step_with_nothing_to_spend_it_on() -> void:
+	var engine: MmEngine = _engine_holding_a_ritual(4, Step.END, ["Black Knight"])
+	assert_not_null(engine, "No seed gave the lands and hand.")
+	if engine == null:
+		return
+	Scenario.pass_priority(engine)
+	assert_eq(engine.pending_decision().player_id, engine.hero().id, "The Hero's pass ends the Villain's turn.")
+	var agent: AiAgent = AiAgent.new()
+
+	var answer: int = AiScenario.ask(engine, agent)
+
+	assert_true(AiScenario.action_at(engine, answer) is PassAction, "The mana would empty unspent.")
+	assert_eq(agent.explain(), AiAgent.Reason.NOTHING_WORTH_DOING)
+	assert_eq(agent.rollout_count(), 0, "A spell that only adds mana for nothing is not a candidate.")
+
+
+func test_mana_is_not_added_in_its_own_upkeep_before_creatures_can_be_cast() -> void:
+	var engine: MmEngine = _engine_holding_a_ritual(5, Step.UPKEEP, ["Black Knight", "Frozen Shade", "Swamp"])
+	assert_not_null(engine, "No seed gave the lands and hand.")
+	if engine == null:
+		return
+	var agent: AiAgent = AiAgent.new()
+
+	var answer: int = AiScenario.ask(engine, agent)
+
+	assert_true(AiScenario.action_at(engine, answer) is PassAction, "It would only tap a land the main phase needs.")
+	assert_eq(agent.explain(), AiAgent.Reason.NOTHING_WORTH_DOING)
+	assert_eq(agent.rollout_count(), 0)
+
+
+func test_mana_is_added_to_cast_a_creature_the_lands_cannot_pay_for() -> void:
+	var cards: Array[MmCardDefinition] = []
+	for index: int in 10:
+		cards.append_array([AiScenario.alpha("swamp"), AiScenario.alpha("swamp"), AiScenario.alpha("dark_ritual"),
+			AiScenario.alpha("scathe_zombies")])
+	var setup: MmEncounterSetup = Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40))
+	setup.starting_player_rule = MmEncounterSetup.StartingPlayerRule.HERO_STARTS
+	var engine: MmEngine = Scenario.find_engine(setup, func(running: MmEngine) -> bool:
+		return Scenario.ready_in_main(running, 3, 2, "Dark Ritual") \
+			and Scenario.permanents_named(running, running.hero().id, "Swamp").size() == 2 \
+			and Scenario.card_in_hand(running, running.hero(), "Scathe Zombies") != -1)
+	assert_not_null(engine, "No seed gave the lands and hand.")
+	if engine == null:
+		return
+	var agent: AiAgent = AiAgent.new()
+
+	var first: int = AiScenario.ask(engine, agent)
+
+	assert_eq(AiScenario.cast_name(engine, first), "Dark Ritual", "Two Swamps and the Ritual make four mana.")
+	assert_eq(agent.explain(), AiAgent.Reason.ROLLOUT_SCORE)
+	engine.submit(first)
+	while engine.pending_decision() is PayManaDecision:
+		assert_eq(AiScenario.let_answer(engine, agent), "")
+	Scenario.resolve_stack(engine)
+	assert_eq(AiScenario.cast_name(engine, AiScenario.ask(engine, agent)), "Scathe Zombies")
+
+
+## An encounter stopped at the first decision of [param step] on [param game_turn], where
+## the Hero controls exactly two Swamps and holds Dark Ritual and every card in
+## [param also_held]. The Villain's deck is Forests and Grizzly Bears, all still in hand
+## or library apart from the lands played.
+func _engine_holding_a_ritual(game_turn: int, step: Step, also_held: Array[String]) -> MmEngine:
+	var cards: Array[MmCardDefinition] = []
+	for index: int in 8:
+		cards.append_array([AiScenario.alpha("swamp"), AiScenario.alpha("swamp"), AiScenario.alpha("dark_ritual"),
+			AiScenario.alpha("black_knight"), AiScenario.alpha("frozen_shade")])
+	var setup: MmEncounterSetup = Scenario.setup_with(cards,
+		Scenario.deck_of(AiScenario.alpha("forest"), 20, AiScenario.alpha("grizzly_bears"), 20))
+	setup.starting_player_rule = MmEncounterSetup.StartingPlayerRule.HERO_STARTS
+	return Scenario.find_engine(setup, func(running: MmEngine) -> bool:
+		if Scenario.play_until_step(running, game_turn, step, true) != "":
+			return false
+		if not running.pending_decision() is PriorityDecision:
+			return false
+		if Scenario.permanents_named(running, running.hero().id, "Swamp").size() != 2:
+			return false
+		for card_name: String in also_held + (["Dark Ritual"] as Array[String]):
+			if Scenario.card_in_hand(running, running.hero(), card_name) == -1:
+				return false
+		return true)

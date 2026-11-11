@@ -37,3 +37,20 @@ func test_both_players_see_both_mana_pools() -> void:
 func _forests_vs_forests() -> MmEngine:
 	var forests: Array[MmCardDefinition] = Scenario.copies(Scenario.basic_land("Forest"), 40)
 	return MmEngine.start(Scenario.setup_with(forests, forests.duplicate()))
+
+
+func test_both_players_see_exiled_cards_under_their_owner() -> void:
+	# CR 400.2, 406: exile is one shared zone, and public.
+	var ogre_card: MmCardDefinition = Scenario.creature("Ogre", 2, 2, [], Scenario.mana_cost(0))
+	var bear_card: MmCardDefinition = Scenario.creature("Bear", 2, 2, [], Scenario.mana_cost(0))
+	var engine: MmEngine = Scenario.combat_ready([bear_card], [ogre_card], [Scenario.exile_spell("Banish")])
+	var ogre: int = Scenario.permanent_named(engine, engine.villain().id, "Ogre")
+	Scenario.declare_attackers(engine, [])
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Banish", [MmReference.to_object(ogre)]), "")
+
+	for viewer: MmPlayer in [engine.hero(), engine.villain()]:
+		var view: MmPlayerView = engine.view_for(viewer)
+		assert_eq(view.exiles[engine.villain().id].size(), 1, "The Villain's Ogre, exiled by the Hero.")
+		assert_eq((view.exiles[engine.villain().id][0] as MmObjectView).name, "Ogre")
+		assert_eq(view.exiles[engine.hero().id].size(), 0)

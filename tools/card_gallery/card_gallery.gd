@@ -4,6 +4,7 @@ extends Control
 ## content/art/art.json. The wheel over either face scrolls rules text that overflows.
 ##
 ## Run: godot --path . res://tools/card_gallery/card_gallery.tscn
+## Escape goes back to the main menu.
 ## Screenshot and quit: add `-- --screenshot=/absolute/path.png` (and --tapped).
 
 const CARDS: String = "res://content/cards/"
@@ -28,6 +29,12 @@ func _ready() -> void:
 			await RenderingServer.frame_post_draw
 			get_viewport().get_texture().get_image().save_png(argument.trim_prefix("--screenshot="))
 			get_tree().quit()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	var key: InputEventKey = event as InputEventKey
+	if key != null and key.pressed and key.keycode == KEY_ESCAPE:
+		get_tree().change_scene_to_file("res://ui/menu/main_menu.tscn")
 
 
 func _build_controls() -> void:

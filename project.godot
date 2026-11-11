@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="ModMox"
-run/main_scene="res://tools/card_gallery/card_gallery.tscn"
+run/main_scene="res://ui/menu/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [debug]
@@ -22,6 +22,13 @@ gdscript/warnings/directory_rules={
 "res://addons/modmox_rules": 1
 }
 gdscript/warnings/untyped_declaration=2
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [editor_plugins]
 

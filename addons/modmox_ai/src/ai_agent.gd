@@ -135,7 +135,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 # --- Priority ----------------------------------------------------------------------
 
 ## Plays a land if it can; otherwise compares passing with every play worth looking at now
-## (A161, A183), by one-step simulation and then, if the AI Difficulty uses it, by Flat
+## (A161, A183), leaving out a spell that only adds mana nothing could be spent on, by
+## one-step simulation and then, if the AI Difficulty uses it, by Flat
 ## Monte Carlo (A188). CHEAP Agents use a fixed order instead.
 func _priority(decision: PriorityDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	var me: int = decision.player_id
@@ -161,6 +162,8 @@ func _priority(decision: PriorityDecision, world: MmGameState, source: MmSimulat
 			held_trick = held_trick or tag == AiTiming.Tag.COMBAT_TRICK
 			held_removal = held_removal or tag == AiTiming.Tag.REMOVAL
 			continue
+		if _only_adds_mana(AiTiming.effects_of_action(world, action)) and not _mana_unlocks_a_play(decision, index, source, rng):
+			continue
 		candidates.append(index)
 	if candidates.is_empty():
 		_reason = Reason.WAIT_FOR_COMBAT if held_trick else (Reason.OUTSIDE_WINDOW if held_removal else Reason.NOTHING_WORTH_DOING)
@@ -184,6 +187,49 @@ func _priority(decision: PriorityDecision, world: MmGameState, source: MmSimulat
 	_reason = Reason.ROLLOUT_SCORE
 	_detail = AiMonteCarlo.describe(rolled, rows)
 	return AiMonteCarlo.choose(rolled, AiMonteCarlo.totals(rows, rolled.size()), AiMonteCarlo.margin(profile, samples), rng)
+
+
+## Whether the mana from answering [param index] would let its player make a play now
+## that [param decision] does not offer: a cast or activation, in its Timing Tag's window,
+## that does more than add mana itself. Asked of the engine on a Simulation Copy, so costs,
+## timing and Modifications are all the engine's. Mana that unlocks nothing empties unspent,
+## and in a rollout it only changes which lands the CHEAP Agent has left.
+func _mana_unlocks_a_play(decision: PriorityDecision, index: int, source: MmSimulationSource, rng: MmRng) -> bool:
+	var me: int = decision.player_id
+	var copy: MmEngine = source.simulation_copy(MmRng.new(rng.next_seed()))
+	if copy.submit(index) != "":
+		return false
+	var step: MmTurn.Step = copy.game_state().step
+	AiSimulation.play_out(copy, me, profile)
+	var state: MmGameState = copy.game_state()
+	var after: PriorityDecision = copy.pending_decision() as PriorityDecision
+	if copy.has_failed() or copy.is_over() or after == null or after.player_id != me or state.step != step:
+		return false
+	var offered: Dictionary[String, bool] = {}
+	for action: MmAction in decision.actions:
+		offered[_play_key(action)] = true
+	for action: MmAction in after.actions:
+		if _play_key(action) == "" or offered.has(_play_key(action)):
+			continue
+		var ability: ActivatedAbility = AiTiming.activated_ability_of(state, action)
+		if ability != null and ability.is_mana_ability():
+			continue
+		if _only_adds_mana(AiTiming.effects_of_action(state, action)):
+			continue
+		if AiTiming.is_in_window(state, me, AiTiming.tag_of_action(state, action)):
+			return true
+	return false
+
+
+## What identifies a cast or activation between two priority decisions of one player, or
+## "" for any other action. Object IDs do not change while a card stays where it is.
+func _play_key(action: MmAction) -> String:
+	if action is CastSpellAction:
+		return "cast %d" % (action as CastSpellAction).object_id
+	if action is ActivateAbilityAction:
+		var activate: ActivateAbilityAction = action as ActivateAbilityAction
+		return "activate %d %d" % [activate.object_id, activate.ability_index]
+	return ""
 
 
 ## A CHEAP Agent's priority: in its own main phase with nothing on the stack, cast the most
@@ -525,6 +571,13 @@ func _adds_mana(effects: Array[MmEffect]) -> bool:
 		if effect is AddManaEffect:
 			return true
 	return false
+
+
+func _only_adds_mana(effects: Array[MmEffect]) -> bool:
+	for effect: MmEffect in effects:
+		if not effect is AddManaEffect:
+			return false
+	return not effects.is_empty()
 
 
 func _creatures_of(world: MmGameState, player_id: int) -> Array[MmGameObject]:

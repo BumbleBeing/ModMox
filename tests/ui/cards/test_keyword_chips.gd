@@ -25,6 +25,26 @@ func test_abilities_that_are_not_keywords_get_no_chip() -> void:
 	assert_eq(KeywordChips.chips_for(CardLook.of_definition(_alpha("prodigal_sorcerer")).abilities).size(), 0)
 
 
+func test_a_keyword_it_has_twice_gets_one_chip() -> void:
+	# Two instances of a keyword are redundant (CR 702.9b for flying), so they share a chip.
+	var abilities: Array[MmAbility] = [FlyingAbility.new(), VigilanceAbility.new(), FlyingAbility.new()]
+
+	assert_eq(_letters(KeywordChips.chips_for(abilities)), ["F", "V"])
+
+
+func test_protection_from_one_color_twice_gets_one_chip_but_two_colors_get_two() -> void:
+	var from_black: ProtectionAbility = _alpha("white_knight").abilities[1] as ProtectionAbility
+	var again: ProtectionAbility = from_black.duplicate_deep(Resource.DEEP_DUPLICATE_ALL) as ProtectionAbility
+	var from_red: ProtectionAbility = from_black.duplicate_deep(Resource.DEEP_DUPLICATE_ALL) as ProtectionAbility
+	(from_red.from as HasColorFilter).color = MmCardTypes.CardColor.RED
+
+	var chips: Array[KeywordChip] = KeywordChips.chips_for([from_black, again, from_red] as Array[MmAbility])
+
+	assert_eq(_letters(chips), ["P", "P"])
+	assert_eq(chips[0].protection_color, MmCardTypes.CardColor.BLACK)
+	assert_eq(chips[1].protection_color, MmCardTypes.CardColor.RED)
+
+
 func test_a_granted_keyword_gets_a_chip_until_it_ends() -> void:
 	# Goblin Balloon Brigade: "{R}: This creature gains flying until end of turn." Free here.
 	var brigade: MmCardDefinition = _alpha("goblin_balloon_brigade").duplicate_deep(Resource.DEEP_DUPLICATE_ALL) as MmCardDefinition

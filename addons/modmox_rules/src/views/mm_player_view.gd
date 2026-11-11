@@ -13,6 +13,9 @@ var stack: Array[MmObjectView] = []
 ## Each player's graveyard, bottom first (the last card is on top), by player ID. Public
 ## (CR 400.2).
 var graveyards: Dictionary[int, Array] = {}
+## Each player's exiled cards, in the order they got there, by owner's player ID. Exile is
+## one shared zone and public (CR 400.2, 406).
+var exiles: Dictionary[int, Array] = {}
 ## Every Emblem in the command zone, such as the Hero's Statuses. Public.
 var command: Array[MmObjectView] = []
 ## Each player's mana pool, as copies of its MmMana units. Mana pools are public.
@@ -45,7 +48,6 @@ var loss_reasons: Dictionary[int, MmPlayer.LossReason] = {}
 ## Builds [param viewing_player_id]'s view of [param state]. [param priority_holder_id]
 ## is the player currently holding priority, or MmGameState.NO_PLAYER.
 static func build(state: MmGameState, viewing_player_id: int, priority_holder_id: int) -> MmPlayerView:
-	# Later: exile, which is a public zone too (CR 400.2), once a card exiles.
 	var view: MmPlayerView = MmPlayerView.new()
 	view.viewer_id = viewing_player_id
 	for game_object: MmGameObject in state.player(viewing_player_id).hand.objects():
@@ -61,6 +63,11 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		for card: MmGameObject in player.graveyard.objects():
 			graveyard.append(MmObjectView.of(state, card))
 		view.graveyards[player.id] = graveyard
+		var exiled: Array[MmObjectView] = []
+		for card: MmGameObject in state.exile.objects():
+			if card.owner_id == player.id:
+				exiled.append(MmObjectView.of(state, card))
+		view.exiles[player.id] = exiled
 		view.hand_sizes[player.id] = player.hand.size()
 		view.library_sizes[player.id] = player.library.size()
 		view.life_totals[player.id] = player.life

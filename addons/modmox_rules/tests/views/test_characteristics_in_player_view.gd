@@ -61,3 +61,24 @@ func test_changing_a_view_never_changes_the_game() -> void:
 	var again: MmObjectView = engine.view_for(engine.hero()).hand[0]
 	assert_eq(again.subtypes, ["Forest"] as Array[String])
 	assert_eq(again.card_types, [MmCardTypes.CardType.LAND] as Array[MmCardTypes.CardType])
+
+
+func test_a_star_creature_shows_a_star_in_hand_and_its_worked_out_numbers_on_the_battlefield() -> void:
+	# Keldon Warlord: */*, the number of non-Wall creatures you control (CR 604.3).
+	var warlord: MmCardDefinition = Scenario.free_copy(load("res://content/cards/alpha/keldon_warlord.tres") as MmCardDefinition)
+	var in_hand: MmEngine = MmEngine.start(Scenario.setup_with(Scenario.copies(warlord, 40), Scenario.copies(warlord, 40)))
+	var held: MmObjectView = in_hand.view_for(in_hand.hero()).hand[0]
+	assert_true(held.is_power_variable, "A card in hand reads */* as printed.")
+	assert_true(held.is_toughness_variable)
+	var engine: MmEngine = Scenario.combat_ready([warlord], [])
+
+	var id: int = Scenario.permanent_named(engine, engine.hero().id, "Keldon Warlord")
+	var seen: MmObjectView = null
+	for permanent: MmObjectView in engine.view_for(engine.hero()).battlefield:
+		if permanent.id == id:
+			seen = permanent
+
+	assert_false(seen.is_power_variable, "On the battlefield the numbers are worked out.")
+	assert_false(seen.is_toughness_variable)
+	assert_eq([seen.power, seen.toughness], [1, 1])
+	assert_eq(CardLook.of_view(seen).power_toughness_texts(), ["1", "/", "1"] as Array[String])

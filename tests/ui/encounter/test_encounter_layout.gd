@@ -1,0 +1,330 @@
+extends GutTest
+## Every Region of the Encounter Screen is worked out from the screen's size, so the layout
+## can be checked without a window.
+
+const SIZES: Array[Vector2] = [Vector2(1920, 1080), Vector2(2560, 1080), Vector2(1920, 1440)]
+
+
+func test_no_two_regions_overlap_at_any_supported_size() -> void:
+	# 1280 × 720 is 1920 × 1080 scaled down (A205), so it lays out exactly like it.
+	for screen: Vector2 in SIZES:
+		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
+		for first: int in EncounterLayout.LEAVES.size():
+			for second: int in range(first + 1, EncounterLayout.LEAVES.size()):
+				var one: String = EncounterLayout.LEAVES[first]
+				var other: String = EncounterLayout.LEAVES[second]
+				assert_false(regions[one].intersects(regions[other]), "%s and %s overlap at %s." % [one, other, screen])
+
+
+func test_every_region_is_on_the_screen() -> void:
+	for screen: Vector2 in SIZES:
+		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
+		for region: String in regions:
+			assert_true(Rect2(Vector2.ZERO, screen).encloses(regions[region]), "%s is off the screen at %s." % [region, screen])
+
+
+func test_extra_width_goes_to_the_battlefield() -> void:
+	var normal: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
+	var wide: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(2560, 1080))
+
+	assert_eq(wide["hero_lands"].size.x - normal["hero_lands"].size.x, 640.0)
+	assert_eq(wide["sidebar"].size.x, normal["sidebar"].size.x)
+	assert_eq(wide["piles"].size.x, normal["piles"].size.x)
+	assert_eq(wide["piles"].end.x, 2560.0, "The piles stay on the right edge.")
+
+
+func test_the_rows_run_villain_hand_to_hero_hand_from_the_top() -> void:
+	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
+	var order: Array[String] = ["villain_hand", "villain_lands", "villain_nonlands", "hero_nonlands", "hero_lands", "hero_hand"]
+
+	for index: int in order.size() - 1:
+		assert_lt(regions[order[index]].end.y, regions[order[index + 1]].position.y + 0.01, order[index])
+	assert_eq(regions["hero_hand"].end.y, 1080.0)
+
+
+func test_each_players_piles_run_library_graveyard_exile_from_the_top() -> void:
+	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
+
+	for who: String in ["hero", "villain"]:
+		assert_lt(regions[who + "_library"].end.y, regions[who + "_graveyard"].position.y + 0.01, who)
+		assert_lt(regions[who + "_graveyard"].end.y, regions[who + "_exile"].position.y + 0.01, who)
+		assert_eq(regions[who + "_exile"].size, regions[who + "_library"].size, "Every pile is the same size.")
+	assert_lt(regions["villain_exile"].end.y, regions["hero_library"].position.y, "The Villain's piles end above the Hero's.")
+	assert_gt(regions["hero_library"].size.y, 150.0, "With the buttons gone from this column, the piles are bigger.")
+	assert_gt(regions["status"].position.y, regions["villain_exile"].end.y, "The status line sits between the two sets of piles.")
+	assert_lt(regions["status"].end.y, regions["hero_library"].position.y)
+	assert_almost_eq(regions["hero_exile"].end.y, 1076.0, 0.01, "The Hero's piles end at the bottom edge.")
+
+
+func test_a_players_panel_has_a_square_portrait_with_life_in_its_corner() -> void:
+	var panel_rect: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["hero_panel"]
+
+	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(panel_rect)
+
+	assert_eq(parts["portrait"].size.x, parts["portrait"].size.y)
+	assert_true(parts["portrait"].encloses(parts["life"]))
+	assert_almost_eq(parts["life"].end.x, parts["portrait"].end.x - 5.0, 0.01)
+	assert_almost_eq(parts["life"].end.y, parts["portrait"].end.y - 5.0, 0.01)
+	assert_lt(parts["name"].end.y, parts["portrait"].position.y + 0.01, "The name is above the portrait.")
+
+
+func test_the_mana_buttons_and_emblems_button_span_the_portraits_width_under_it() -> void:
+	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(Rect2(10, 10, 320, 525))
+	var portrait: Rect2 = parts["portrait"]
+
+	assert_almost_eq(parts["mana_0"].position.x, portrait.position.x, 0.01)
+	assert_almost_eq(parts["mana_5"].end.x, portrait.end.x, 0.01)
+	assert_gt(parts["mana_0"].position.y, portrait.end.y)
+	assert_almost_eq(parts["emblems"].size.x, portrait.size.x, 0.01)
+	assert_gt(parts["emblems"].position.y, parts["mana_0"].end.y)
+	for type: int in 5:
+		assert_lt(parts["mana_%d" % type].end.x, parts["mana_%d" % (type + 1)].position.x, "WUBRGC, left to right.")
+
+
+func test_all_twelve_steps_run_down_the_right_side_of_a_panel() -> void:
+	var panel_rect: Rect2 = Rect2(10, 10, 320, 525)
+
+	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(panel_rect)
+
+	for step: int in 12:
+		var button: Rect2 = parts["step_%d" % step]
+		assert_true(panel_rect.encloses(button), "Step %d is inside the panel." % step)
+		assert_almost_eq(button.end.x, panel_rect.end.x - EncounterLayout.PANEL_PAD, 0.01)
+		assert_gt(button.position.x, parts["portrait"].end.x, "Steps never cover the portrait.")
+		if step > 0:
+			assert_gt(button.position.y, parts["step_%d" % (step - 1)].end.y)
+
+
+func test_a_row_centers_its_permanents_on_one_line() -> void:
+	var row_rect: Rect2 = Rect2(352, 472, 1386, 200)
+
+	var footprints: Array[Rect2] = EncounterLayout.row([false, false, false] as Array[bool], row_rect)
+
+	var height: float = EncounterLayout.row_face_height([false, false, false] as Array[bool], row_rect)
+	assert_eq(footprints.size(), 3)
+	assert_eq(footprints[0].size, BattlefieldFace.size_for(height))
+	assert_almost_eq(footprints[0].position.x - row_rect.position.x, row_rect.end.x - footprints[2].end.x, 0.01)
+	assert_almost_eq(footprints[1].position.x - footprints[0].end.x, EncounterLayout.ROW_GAP, 0.01)
+	assert_true(row_rect.encloses(footprints[0]))
+
+
+func test_a_tapped_permanent_takes_its_sideways_footprint_and_still_fits_the_row() -> void:
+	var row_rect: Rect2 = Rect2(352, 684, 1386, 140)
+
+	var footprints: Array[Rect2] = EncounterLayout.row([false, true] as Array[bool], row_rect)
+
+	assert_eq(footprints[1].size, Vector2(footprints[0].size.y, footprints[0].size.x), "Sideways.")
+	assert_true(row_rect.encloses(footprints[1]), "A tapped face is taller than an untapped one, and still fits.")
+
+
+func test_a_crowded_row_shrinks_its_faces_to_stay_on_one_line() -> void:
+	var row_rect: Rect2 = Rect2(352, 472, 1386, 200)
+	var many: Array[bool] = []
+	for index: int in 20:
+		many.append(false)
+
+	var footprints: Array[Rect2] = EncounterLayout.row(many, row_rect)
+
+	assert_lt(EncounterLayout.row_face_height(many, row_rect), EncounterLayout.row_face_height([false] as Array[bool], row_rect))
+	assert_gt(footprints[0].position.x, row_rect.position.x - 0.01)
+	assert_lt(footprints[19].end.x, row_rect.end.x + 0.01)
+	assert_eq(footprints[0].position.y, footprints[19].position.y, "One line.")
+
+
+func test_an_empty_row_has_nothing_in_it() -> void:
+	assert_eq(EncounterLayout.row([] as Array[bool], Rect2(0, 0, 500, 200)).size(), 0)
+
+
+func test_the_hand_rests_fanned_and_overlapping() -> void:
+	var hand_rect: Rect2 = Rect2(352, 836, 1386, 244)
+	var card: Vector2 = Vector2(178, 250)
+
+	var rest: Array[Vector2] = EncounterLayout.hand_rest(7, hand_rect, card)
+
+	assert_almost_eq(rest[1].x - rest[0].x, card.x * EncounterLayout.HAND_SHOWN, 0.01, "Each card shows part of its width.")
+	assert_almost_eq(rest[0].x - hand_rect.position.x, hand_rect.end.x - (rest[6].x + card.x), 0.01, "Centered.")
+	assert_lt(rest[3].y, rest[0].y, "The middle card sits highest.")
+	assert_eq(rest[0].y, rest[6].y)
+	assert_eq(EncounterLayout.fan_angle(3, 7), 0.0)
+	assert_eq(EncounterLayout.fan_angle(0, 7), -EncounterLayout.fan_angle(6, 7))
+
+
+func test_a_big_hand_squeezes_to_fit_its_region() -> void:
+	var hand_rect: Rect2 = Rect2(352, 836, 600, 244)
+	var card: Vector2 = Vector2(178, 250)
+
+	var rest: Array[Vector2] = EncounterLayout.hand_rest(20, hand_rect, card)
+
+	assert_gt(rest[0].x, hand_rect.position.x - 0.01)
+	assert_lt(rest[19].x + card.x, hand_rect.end.x + 0.01)
+
+
+func test_the_villains_hand_is_fanned_from_the_top_edge() -> void:
+	var hand_rect: Rect2 = Rect2(352, 0, 1386, 80)
+	var card: Vector2 = Vector2(107, 150)
+
+	var places: Array[Vector2] = EncounterLayout.villain_hand(5, hand_rect, card)
+
+	assert_gt(places[2].y, places[0].y, "The middle card hangs lowest, mirroring the Hero's hand.")
+	assert_almost_eq(places[2].y + card.y, hand_rect.end.y, 0.01)
+	assert_eq(places[0].y, places[4].y)
+
+
+func test_the_hand_stays_at_rest_while_the_cursor_is_away() -> void:
+	var card: Vector2 = Vector2(178, 250)
+	var rest: Array[Vector2] = EncounterLayout.hand_rest(7, Rect2(352, 836, 1386, 244), card)
+
+	assert_eq(EncounterLayout.hand_spread(rest, card, Vector2(1000, 300)), rest)
+	assert_false(EncounterLayout.is_cursor_over_hand(rest, card, Vector2(1000, 300)))
+	assert_false(EncounterLayout.is_cursor_over_hand([] as Array[Vector2], card, Vector2(1000, 900)))
+
+
+func test_the_hand_parts_so_the_card_under_the_cursor_shows_whole() -> void:
+	var card: Vector2 = Vector2(178, 250)
+	var rest: Array[Vector2] = EncounterLayout.hand_rest(7, Rect2(352, 836, 1386, 244), card)
+	var step: float = rest[1].x - rest[0].x
+	var cursor: Vector2 = Vector2(rest[3].x + step / 2.0, 950)
+
+	var spread: Array[Vector2] = EncounterLayout.hand_spread(rest, card, cursor)
+
+	assert_almost_eq(EncounterLayout.hand_cursor_place(rest, card, cursor), 3.0, 0.001)
+	assert_almost_eq(spread[3].x, rest[3].x, 0.01, "The card under the cursor does not move sideways.")
+	assert_gt(spread[4].x - spread[3].x, card.x * 0.9, "The next card moves clear of it.")
+	assert_lt(spread[2].x, rest[2].x, "Cards to the left make a little room.")
+	assert_gt(spread[6].x, rest[6].x)
+
+
+func test_cards_near_the_cursor_rise_by_no_more_than_an_eighth_of_their_height() -> void:
+	var card: Vector2 = Vector2(178, 250)
+	var rest: Array[Vector2] = EncounterLayout.hand_rest(7, Rect2(352, 836, 1386, 244), card)
+	var cursor: Vector2 = Vector2(rest[3].x + (rest[1].x - rest[0].x) / 2.0, 950)
+
+	var spread: Array[Vector2] = EncounterLayout.hand_spread(rest, card, cursor)
+
+	assert_almost_eq(rest[3].y - spread[3].y, card.y / 8.0, 0.01, "The card under the cursor rises the most.")
+	for index: int in rest.size():
+		assert_lt(rest[index].y - spread[index].y, card.y / 8.0 + 0.01)
+	assert_gt(rest[4].y - spread[4].y, 0.0, "Its neighbor rises a little.")
+	assert_eq(spread[0].y, rest[0].y, "A card far away does not rise.")
+
+
+func test_with_no_other_permanents_the_creatures_have_the_whole_row() -> void:
+	var row_rect: Rect2 = Rect2(352, 472, 1386, 200)
+
+	var groups: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, [] as Array[bool], true)
+
+	assert_eq(groups["creatures"], row_rect)
+	assert_eq(groups["others"].size, Vector2.ZERO)
+
+
+func test_other_permanents_sit_to_the_right_of_creatures_smaller_and_set_back() -> void:
+	var row_rect: Rect2 = Rect2(352, 472, 1386, 200)
+
+	var hero: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, [false, false] as Array[bool], true)
+	var villain: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, [false, false] as Array[bool], false)
+
+	assert_almost_eq(hero["others"].position.x, hero["creatures"].end.x, 0.01, "To the creatures' right.")
+	assert_almost_eq(hero["others"].end.x, row_rect.end.x, 0.01)
+	assert_almost_eq(hero["others"].size.y, row_rect.size.y * EncounterLayout.OTHERS_SCALE, 0.01)
+	assert_almost_eq(hero["others"].end.y, row_rect.end.y, 0.01, "Set back toward the Hero's edge, which is down.")
+	assert_almost_eq(villain["others"].position.y, row_rect.position.y, 0.01, "And toward the Villain's edge, which is up.")
+	assert_lt(EncounterLayout.others_height(row_rect), EncounterLayout.creature_height(row_rect))
+	assert_true(row_rect.encloses(hero["others"]))
+	assert_true(row_rect.encloses(villain["others"]))
+
+
+func test_other_permanents_take_the_width_they_need_but_never_more_than_a_third() -> void:
+	var row_rect: Rect2 = Rect2(352, 472, 1386, 200)
+	var heights: Array[float] = [EncounterLayout.others_height(row_rect), EncounterLayout.others_height(row_rect)]
+	var many: Array[bool] = []
+	for index: int in 12:
+		many.append(false)
+
+	var two: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, [false, false] as Array[bool], true)
+	var crowd: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, many, true)
+
+	assert_almost_eq(two["others"].size.x, EncounterLayout.line_width([false, false] as Array[bool], heights), 0.01)
+	assert_almost_eq(crowd["others"].size.x, row_rect.size.x / 3.0, 0.01)
+	assert_almost_eq(crowd["creatures"].size.x, row_rect.size.x * 2.0 / 3.0, 0.01)
+
+
+func test_a_line_keeps_each_face_its_own_size_and_centers_it_from_top_to_bottom() -> void:
+	var heights: Array[float] = [180.0, 144.0, 180.0]
+
+	var footprints: Array[Rect2] = EncounterLayout.line([false, false, true] as Array[bool], heights, 200.0)
+
+	assert_eq(footprints[0].position, Vector2(EncounterLayout.LINE_PAD, 10.0))
+	assert_eq(footprints[1].size, BattlefieldFace.size_for(144.0), "A smaller face is not stretched.")
+	assert_almost_eq(footprints[1].position.y, 28.0, 0.01)
+	assert_almost_eq(footprints[1].position.x - footprints[0].end.x, EncounterLayout.ROW_GAP, 0.01)
+	assert_eq(footprints[2].size, Vector2(180.0, BattlefieldFace.size_for(180.0).x), "A tapped face stands sideways.")
+	assert_almost_eq(EncounterLayout.line_width([false, false, true] as Array[bool], heights),
+		footprints[2].end.x + EncounterLayout.LINE_PAD, 0.01)
+	assert_eq(EncounterLayout.line_width([] as Array[bool], [] as Array[float]), 0.0)
+
+
+func test_a_line_that_fits_is_centered_and_one_that_does_not_scrolls_between_its_ends() -> void:
+	assert_eq(EncounterLayout.max_scroll(600.0, 1000.0), 0.0)
+	assert_eq(EncounterLayout.line_start(600.0, 1000.0, 0.0), 200.0, "Centered.")
+	assert_eq(EncounterLayout.line_start(600.0, 1000.0, 300.0), 200.0, "A line that fits does not scroll.")
+	assert_eq(EncounterLayout.max_scroll(1500.0, 1000.0), 500.0)
+	assert_eq(EncounterLayout.line_start(1500.0, 1000.0, 0.0), 0.0)
+	assert_eq(EncounterLayout.line_start(1500.0, 1000.0, 200.0), -200.0)
+	assert_eq(EncounterLayout.line_start(1500.0, 1000.0, 9000.0), -500.0, "It stops at its right end.")
+	assert_eq(EncounterLayout.line_start(1500.0, 1000.0, -50.0), 0.0, "And at its left.")
+
+
+func test_creatures_out_of_a_combat_are_a_fifth_smaller_and_those_in_it_step_toward_the_middle() -> void:
+	assert_eq(EncounterLayout.bystander_scale(true, false), 0.8)
+	assert_eq(EncounterLayout.bystander_scale(true, true), 1.0)
+	assert_eq(EncounterLayout.bystander_scale(false, false), 1.0, "Outside combat every creature is full size.")
+	assert_eq(EncounterLayout.combat_step(true), -40.0, "The Hero's step up the screen.")
+	assert_eq(EncounterLayout.combat_step(false), 40.0)
+	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
+	assert_gt(regions["hero_nonlands"].position.y - regions["villain_nonlands"].end.y, EncounterLayout.COMBAT_STEP * 2.0 - 0.01,
+		"Both sides can step forward without meeting.")
+
+
+func test_the_controls_have_their_own_section_under_the_emblems_button() -> void:
+	var panel_rect: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["hero_panel"]
+
+	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(panel_rect)
+
+	assert_gt(parts["controls"].position.y, parts["emblems"].end.y)
+	assert_true(panel_rect.encloses(parts["controls"]))
+	assert_almost_eq(parts["controls"].size.x, parts["portrait"].size.x, 0.01)
+	assert_lt(parts["controls"].end.x, parts["step_0"].position.x, "Clear of the step buttons.")
+	var order: Array[String] = ["undo", "pass", "auto_pass"]
+	for index: int in order.size():
+		assert_true(parts["controls"].encloses(parts[order[index]]), "%s is inside the section." % order[index])
+		if index > 0:
+			assert_gt(parts[order[index]].position.y, parts[order[index - 1]].end.y, "%s is under %s." % [order[index], order[index - 1]])
+	assert_gt(parts["pass"].size.y, parts["undo"].size.y, "Pass is the taller button.")
+	assert_almost_eq(parts["auto_pass"].size.y, parts["undo"].size.y, 0.01)
+	assert_almost_eq(parts["pass"].position.y - parts["undo"].end.y, parts["auto_pass"].position.y - parts["pass"].end.y, 0.01,
+		"The three buttons are evenly spaced.")
+	assert_almost_eq(parts["undo"].position.y, parts["controls"].position.y + EncounterLayout.CONTROLS_PAD, 0.01,
+		"They fill the section from its top")
+	assert_almost_eq(parts["auto_pass"].end.y, parts["controls"].end.y - EncounterLayout.CONTROLS_PAD, 0.01, "to its bottom.")
+
+
+func test_the_heros_hand_is_cut_off_a_quarter_of_a_card_below_the_screen() -> void:
+	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
+
+	assert_almost_eq(regions["hero_hand"].size.y, EncounterLayout.HAND_CARD_HEIGHT * 0.75, 8.0)
+	assert_gt(regions["hero_hand"].size.y / EncounterLayout.HAND_CARD_HEIGHT, CardGeometry.TYPE_LINE.end.y,
+		"The type line still shows.")
+
+
+func test_the_heros_rows_sit_low_with_the_hand_and_open_a_lane_across_the_middle() -> void:
+	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
+	var lane: float = regions["hero_nonlands"].position.y - regions["villain_nonlands"].end.y
+
+	assert_almost_eq(lane, 28.0 + EncounterLayout.HAND_CARD_HEIGHT * EncounterLayout.HAND_HIDDEN, 0.01)
+	assert_gt(lane, EncounterLayout.COMBAT_STEP * 2.0, "Attackers and blockers step forward and still do not touch.")
+	assert_almost_eq(regions["villain_lands"].position.y - regions["villain_hand"].end.y, 12.0, 0.01,
+		"The Villain's rows stay up by their hand.")
+	assert_almost_eq(regions["hero_hand"].position.y - regions["hero_lands"].end.y, 12.0, 0.01,
+		"The Hero's rows stay down by theirs.")
+	assert_true(regions["battlefield"].encloses(regions["villain_lands"]))
+	assert_true(regions["battlefield"].encloses(regions["hero_lands"]))

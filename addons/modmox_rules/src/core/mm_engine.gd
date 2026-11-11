@@ -206,6 +206,13 @@ func view_for(player: MmPlayer) -> MmPlayerView:
 	return MmPlayerView.build(_state, player.id, priority_player_id)
 
 
+## The Run Card with Card Identity [param card_id], as an MmObjectView's card_id or
+## source_card_id names it, or null if there is none. For presentation only, such as finding
+## a card's art; ask only about cards a Player View has shown (ADR 0005).
+func run_card(card_id: int) -> MmRunCard:
+	return _state.run_card(card_id)
+
+
 ## The full game state. Read-only: change it only by answering decisions. An undo
 ## replaces it, so fetch it again afterwards rather than keeping it.
 func game_state() -> MmGameState:
