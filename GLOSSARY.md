@@ -61,11 +61,23 @@ The Zone Window for the stack. It is there exactly while something is on the sta
 _Avoid_: Stack region, stack panel
 
 **Glow**:
-The colored outline on everything a Pending Decision can choose: orange-red for targets, blue for mana sources, green for anything else.
+The colored outline on everything a Pending Decision can choose: orange-red for targets, blue for mana sources, green for anything else. Whatever a click answers something on always glows.
 _Avoid_: Highlight, selection, halo
 
+**Info Panel**:
+The bordered box at the bottom left of the battlefield, between the Hero's panel and the Hero's hand. It says what the Hero is being asked, what is still owed while paying, why their last answer was refused and whether priority is being held, and holds the Cancel button for a cast in progress.
+_Avoid_: Prompt bar, status line, message box
+
+**Option Menu**:
+The dropdown that opens where a card was clicked when the click could mean more than one thing, with a row for each: a permanent's abilities now, and later choices such as kicker or which half of an adventure card to cast. It shows three rows and scrolls for more.
+_Avoid_: Ability menu, context menu, popup
+
+**Pause Menu**:
+The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings and Quit to main menu.
+_Avoid_: Escape menu, options screen, system menu
+
 **Debug Decision Panel**:
-A temporary window that answers a Pending Decision by choosing from lists. It covers each decision kind only until that kind has an input of its own, and goes when none is left.
+A temporary window that answers a Pending Decision by choosing from lists. It covers each decision kind only until that kind has an input of its own, hides whenever it has nothing to offer, and goes when none is left.
 _Avoid_: Decision dialog, prompt
 
 **Card Face**:
@@ -75,3 +87,11 @@ _Avoid_: Full card, card image
 **Battlefield Face**:
 How a permanent is drawn on the battlefield: the top of its Frame (name box or crown) and a border around its art, a large power/toughness box, and a chip for each keyword it has. It shows no other text, and turns sideways and darkens when tapped.
 _Avoid_: Mini card, tile, token (a token is a rules term)
+
+**Keyword Chip**:
+The small square on a Battlefield Face that stands for one keyword the permanent has.
+_Avoid_: Badge, tag
+
+**Keyword Icon**:
+The 16 × 16 pixel picture on a Keyword Chip that identifies its keyword.
+_Avoid_: Sprite, glyph, symbol (mana symbols are a different thing)

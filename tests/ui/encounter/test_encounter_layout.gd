@@ -51,9 +51,178 @@ func test_each_players_piles_run_library_graveyard_exile_from_the_top() -> void:
 		assert_eq(regions[who + "_exile"].size, regions[who + "_library"].size, "Every pile is the same size.")
 	assert_lt(regions["villain_exile"].end.y, regions["hero_library"].position.y, "The Villain's piles end above the Hero's.")
 	assert_gt(regions["hero_library"].size.y, 150.0, "With the buttons gone from this column, the piles are bigger.")
-	assert_gt(regions["status"].position.y, regions["villain_exile"].end.y, "The status line sits between the two sets of piles.")
-	assert_lt(regions["status"].end.y, regions["hero_library"].position.y)
-	assert_almost_eq(regions["hero_exile"].end.y, 1076.0, 0.01, "The Hero's piles end at the bottom edge.")
+	assert_false(regions.has("status"), "Nothing sits between the two sets of piles any more (A294).")
+
+
+func test_the_six_piles_fill_the_right_column_with_equal_spacing() -> void:
+	for screen: Vector2 in SIZES:
+		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
+		var keys: Array[String] = [
+			"villain_library", "villain_graveyard", "villain_exile", "hero_library", "hero_graveyard", "hero_exile",
+		]
+		var gap: float = regions[keys[0]].position.y
+		assert_gt(gap, 0.0)
+		for index: int in range(1, keys.size()):
+			assert_almost_eq(regions[keys[index]].position.y - regions[keys[index - 1]].end.y, gap, 0.01, keys[index])
+		assert_almost_eq(screen.y - regions["hero_exile"].end.y, gap, 0.01, "The same space under the last pile.")
+
+
+func test_the_info_panel_sits_at_the_left_end_of_the_hands_strip() -> void:
+	for screen: Vector2 in SIZES:
+		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
+		var info: Rect2 = regions["info"]
+
+		assert_eq(info.size.x, EncounterLayout.INFO_WIDTH)
+		assert_eq(info.position.x, regions["hero_lands"].position.x, "Flush with the left of the battlefield.")
+		assert_gt(info.position.y, regions["hero_lands"].end.y, "Under the Hero's lands.")
+		assert_lt(info.end.x, regions["hero_hand"].position.x, "The hand starts to its right.")
+
+
+func test_the_hand_is_centered_on_the_battlefield_between_bounds_that_clear_the_info_panel() -> void:
+	for screen: Vector2 in SIZES:
+		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
+		var hand: Rect2 = regions["hero_hand"]
+		var field: Rect2 = regions["hero_lands"]
+
+		assert_almost_eq(hand.get_center().x, field.get_center().x, 0.01, "Centered whatever the width.")
+		assert_almost_eq(hand.position.x - field.position.x, field.end.x - hand.end.x, 0.01, "As far in on each side.")
+		assert_almost_eq(hand.position.x - regions["info"].end.x, EncounterLayout.GUTTER, 0.01)
+
+
+func test_a_hand_of_any_size_rests_inside_its_bounds() -> void:
+	var hand: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["hero_hand"]
+	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
+
+	for count: int in [1, 2, 7, 12, 25, 40]:
+		var rest: Array[Vector2] = EncounterLayout.hand_rest(count, hand, card)
+		assert_gt(rest[0].x, hand.position.x - 0.01, "%d cards start inside." % count)
+		assert_lt(rest[count - 1].x + card.x, hand.end.x + 0.01, "%d cards end inside." % count)
+		if count > 2:
+			assert_almost_eq(rest[1].x - rest[0].x, rest[count - 1].x - rest[count - 2].x, 0.01, "Evenly spread.")
+
+
+func test_parting_a_full_hand_never_pushes_a_card_past_its_bounds() -> void:
+	var hand: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["hero_hand"]
+	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
+	var rest: Array[Vector2] = EncounterLayout.hand_rest(25, hand, card)
+	var is_ever_shifted: bool = false
+
+	for index: int in rest.size():
+		var cursor: Vector2 = rest[index] + Vector2(card.x * 0.4, 40.0)
+		var free: Array[Vector2] = EncounterLayout.hand_spread(rest, card, cursor)
+		var held: Array[Vector2] = EncounterLayout.hand_spread_within(rest, card, cursor, hand)
+		for place: Vector2 in held:
+			assert_gt(place.x, hand.position.x - 0.01)
+			assert_lt(place.x + card.x, hand.end.x + 0.01)
+		is_ever_shifted = is_ever_shifted or free[rest.size() - 1].x > hand.end.x - card.x
+
+	assert_true(is_ever_shifted, "Unbounded, the last card would have left the bounds.")
+	assert_eq(EncounterLayout.hand_spread_within(rest, card, Vector2.ZERO, hand), rest, "Away from the hand it rests.")
+	assert_eq(EncounterLayout.hand_spread_within([] as Array[Vector2], card, Vector2.ZERO, hand).size(), 0)
+
+
+func test_the_card_under_the_cursor_still_shows_whole_at_the_right_end_of_a_bounded_hand() -> void:
+	var hand: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["hero_hand"]
+	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
+	var rest: Array[Vector2] = EncounterLayout.hand_rest(25, hand, card)
+	var cursor: Vector2 = rest[23] + Vector2(10.0, 40.0)
+
+	var held: Array[Vector2] = EncounterLayout.hand_spread_within(rest, card, cursor, hand)
+
+	assert_almost_eq(held[24].x, hand.end.x - card.x, 0.01, "The last card is held at the edge.")
+	assert_gt(held[24].x - held[23].x, (rest[24].x - rest[23].x) * 2.0, "The hand moved back to make the room.")
+
+
+func test_a_bounded_hand_parted_near_its_left_end_squeezes_evenly_and_hides_no_card() -> void:
+	var hand: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["hero_hand"]
+	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
+	var rest: Array[Vector2] = EncounterLayout.hand_rest(25, hand, card)
+	var cursor: Vector2 = rest[3] + Vector2(10.0, 40.0)
+
+	var free: Array[Vector2] = EncounterLayout.hand_spread(rest, card, cursor)
+	var held: Array[Vector2] = EncounterLayout.hand_spread_within(rest, card, cursor, hand)
+
+	assert_true(free[0].x < hand.position.x or free[24].x + card.x > hand.end.x, "Unbounded, a card would have left the bounds.")
+	for index: int in range(1, 25):
+		assert_gt(held[index].x, held[index - 1].x + 1.0, "Card %d is not hidden behind the one before it." % index)
+	assert_gt(held[0].x, hand.position.x - 0.01)
+	assert_almost_eq(held[24].x, hand.end.x - card.x, 0.01, "The far end is squeezed up to the bound.")
+	assert_almost_eq(held[4].x - held[3].x, free[4].x - free[3].x, 0.01, "The card under the cursor shows as whole as it would unbounded.")
+	assert_almost_eq((held[2].x - held[1].x) / (free[2].x - free[1].x), (held[1].x - held[0].x) / (free[1].x - free[0].x), 0.001,
+		"Those before it are all squeezed by the same amount.")
+	assert_almost_eq(held[20].x - held[19].x, held[10].x - held[9].x, 0.01, "And so are those after it.")
+	for index: int in 25:
+		assert_eq(held[index].y, free[index].y, "Only sideways: a card rises as it would unbounded.")
+
+
+func test_a_hand_with_room_to_part_is_not_changed_by_its_bounds() -> void:
+	var hand: Rect2 = EncounterLayout.regions(Vector2(2560, 1080))["hero_hand"]
+	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
+	var rest: Array[Vector2] = EncounterLayout.hand_rest(4, hand, card)
+	var cursor: Vector2 = rest[1] + Vector2(10.0, 40.0)
+
+	var free: Array[Vector2] = EncounterLayout.hand_spread(rest, card, cursor)
+	var held: Array[Vector2] = EncounterLayout.hand_spread_within(rest, card, cursor, hand)
+
+	for index: int in 4:
+		assert_almost_eq(held[index].x, free[index].x, 0.01, "Card %d." % index)
+	assert_eq(EncounterLayout.hand_spread_within([rest[0]] as Array[Vector2], card, rest[0] + Vector2(10, 40), hand).size(), 1,
+		"One card has nothing to part from.")
+
+
+func test_lands_of_one_name_stand_together_in_the_order_their_names_arrived() -> void:
+	assert_eq(EncounterLayout.land_order(["Mountain", "Island", "Mountain"] as Array[String]), [0, 2, 1] as Array[int],
+		"The second Mountain goes just right of the first, so it is the middle land.")
+	assert_eq(EncounterLayout.land_order(["Island", "Mountain", "Island", "Forest", "Mountain"] as Array[String]),
+		[0, 2, 1, 4, 3] as Array[int])
+	assert_eq(EncounterLayout.land_order(["Forest", "Forest"] as Array[String]), [0, 1] as Array[int])
+	assert_eq(EncounterLayout.land_order([] as Array[String]), [] as Array[int])
+
+
+func test_the_option_menu_opens_at_the_click_showing_at_most_three_rows() -> void:
+	var field: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["battlefield"]
+	var at: Vector2 = field.position + Vector2(300, 200)
+	var row: float = EncounterLayout.MENU_ROW + EncounterLayout.MENU_GAP
+
+	var two: Rect2 = EncounterLayout.menu_rect(at, 2, field)
+	var three: Rect2 = EncounterLayout.menu_rect(at, 3, field)
+	var four: Rect2 = EncounterLayout.menu_rect(at, 4, field)
+
+	assert_eq(two.position, at, "It opens where the card was clicked.")
+	assert_almost_eq(three.size.y - two.size.y, row, 0.01, "A third row makes it taller.")
+	assert_eq(four.size, three.size, "A fourth does not: it scrolls (A286).")
+	assert_eq(EncounterLayout.menu_rect(at, 9, field).size, three.size)
+	assert_eq(two.size.x, EncounterLayout.MENU_WIDTH)
+
+
+func test_the_option_menu_stays_inside_the_battlefield() -> void:
+	var field: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["battlefield"]
+
+	for at: Vector2 in [field.end, field.position, Vector2(field.end.x, field.position.y), field.end + Vector2(500, 500),
+			field.position - Vector2(500, 500)]:
+		assert_true(field.encloses(EncounterLayout.menu_rect(at, 4, field)), "Clicked at %s." % at)
+
+
+func test_a_face_past_either_end_of_a_line_or_behind_an_arrow_is_hidden() -> void:
+	assert_eq(EncounterLayout.hidden_past(-40.0, 600.0, 26.0), -1)
+	assert_eq(EncounterLayout.hidden_past(20.0, 600.0, 26.0), -1, "Behind the left arrow.")
+	assert_eq(EncounterLayout.hidden_past(26.0, 600.0, 26.0), 0)
+	assert_eq(EncounterLayout.hidden_past(300.0, 600.0, 26.0), 0)
+	assert_eq(EncounterLayout.hidden_past(574.0, 600.0, 26.0), 0)
+	assert_eq(EncounterLayout.hidden_past(580.0, 600.0, 26.0), 1, "Behind the right arrow.")
+	assert_eq(EncounterLayout.hidden_past(900.0, 600.0, 26.0), 1)
+
+
+func test_the_pause_menu_is_centered_on_the_battlefield_and_grows_with_its_buttons() -> void:
+	var field: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["battlefield"]
+
+	var four: Rect2 = EncounterLayout.pause_rect(4, field)
+	var two: Rect2 = EncounterLayout.pause_rect(2, field)
+
+	assert_almost_eq(four.get_center().x, field.get_center().x, 0.01)
+	assert_almost_eq(four.get_center().y, field.get_center().y, 0.01)
+	assert_almost_eq(four.size.y - two.size.y, EncounterLayout.PAUSE_ROW * 2.0, 0.01)
+	assert_true(field.encloses(four))
 
 
 func test_a_players_panel_has_a_square_portrait_with_life_in_its_corner() -> void:

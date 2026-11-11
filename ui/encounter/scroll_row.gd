@@ -3,7 +3,7 @@ extends Control
 ## A line of permanents that keeps its faces' size and scrolls sideways when there are too
 ## many to show (A278). An arrow appears at each end it can scroll toward: pressing one
 ## scrolls, and holding it keeps scrolling quickly. A thin bar under the line shows where it
-## is and can be dragged.
+## is and can be dragged. An arrow takes the color of a Glow hidden past its end (A292).
 
 ## The line was scrolled to [param offset] pixels, so whoever redraws it can keep its place.
 signal scrolled(offset: float)
@@ -78,6 +78,18 @@ func right_arrow() -> Button:
 	return _right
 
 
+## Colors each arrow like the Glow of something hidden past its end of the line, or plain
+## for null. The colors are Variants because "no Glow" is not a color.
+func tint_arrows(left: Variant, right: Variant) -> void:
+	_paint(_left, left)
+	_paint(_right, right)
+
+
+## The Glow color [param arrow] is painted in, or null if it is plain.
+func arrow_tint(arrow: Button) -> Variant:
+	return arrow.get_meta("tint") if arrow.has_meta("tint") else null
+
+
 func scroll_by(distance: float) -> void:
 	scroll_to(_offset + distance)
 
@@ -100,11 +112,20 @@ func _arrow(text: String, x: float, direction: float) -> Button:
 	arrow.focus_mode = Control.FOCUS_NONE
 	arrow.position = Vector2(x, 0)
 	arrow.size = Vector2(ARROW_WIDTH, size.y - BAR_HEIGHT)
-	for state: String in ["normal", "hover", "pressed"]:
-		var style: StyleBoxFlat = StyleBoxFlat.new()
-		style.bg_color = Color(0.05, 0.05, 0.07, 0.75 if state == "normal" else 0.95)
-		style.set_corner_radius_all(4)
-		arrow.add_theme_stylebox_override(state, style)
+	_paint(arrow, null)
 	arrow.button_down.connect(func() -> void: scroll_by(NUDGE * direction))
 	add_child(arrow)
 	return arrow
+
+
+func _paint(arrow: Button, tint: Variant) -> void:
+	# Setting a meta to null removes it, which is how "plain" is remembered.
+	arrow.set_meta("tint", tint)
+	for state: String in ["normal", "hover", "pressed"]:
+		var style: StyleBoxFlat = StyleBoxFlat.new()
+		if tint == null:
+			style.bg_color = Color(0.05, 0.05, 0.07, 0.75 if state == "normal" else 0.95)
+		else:
+			style.bg_color = Color(tint as Color, 0.8 if state == "normal" else 1.0)
+		style.set_corner_radius_all(4)
+		arrow.add_theme_stylebox_override(state, style)

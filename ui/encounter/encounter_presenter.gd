@@ -16,6 +16,7 @@ const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
 const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 const BUSY: String = "The Villain is thinking."
 const NOT_PRIORITY: String = "You do not have priority."
+const PAUSED: String = "The game is paused."
 
 ## The steps auto-pass stops at. Change them with toggle_stop().
 var stops: StepStops = StepStops.new()
@@ -35,6 +36,7 @@ var _events_seen: int = 0
 var _is_holding: bool = false
 ## The Hero's object last seen on top of the stack, so holding is decided once for each.
 var _own_top_seen: int = -1
+var _is_paused: bool = false
 
 
 ## An encounter from [param setup], with [param villain_agent] answering for the Villain
@@ -67,9 +69,21 @@ func is_auto_passing() -> bool:
 	return _is_auto_passing
 
 
+func is_paused() -> bool:
+	return _is_paused
+
+
+## Pauses or resumes the encounter (the Pause Menu). While paused, a thought the Villain
+## had already begun finishes on its thread but is not collected, so no snapshot is handed
+## out and the screen stays as it was; the Hero's answers are refused. Conceding and
+## leaving still work.
+func set_paused(is_on: bool) -> void:
+	_is_paused = is_on
+
+
 ## Call every frame on the main thread: once the Villain has answered, carries on.
 func poll() -> void:
-	if _task != -1 and WorkerThreadPool.is_task_completed(_task):
+	if not _is_paused and _task != -1 and WorkerThreadPool.is_task_completed(_task):
 		_collect()
 
 
@@ -83,6 +97,8 @@ func wait_until_idle() -> void:
 ## Answers the Hero's Pending Decision. Returns "" when accepted, or the reason when the
 ## answer is illegal, in which case nothing changes.
 func answer(hero_answer: Variant) -> String:
+	if _is_paused:
+		return PAUSED
 	if _task != -1:
 		return BUSY
 	if _engine.is_over() or _engine.pending_decision().player_id != HERO:
@@ -97,6 +113,8 @@ func answer(hero_answer: Variant) -> String:
 
 ## Passes priority, if the Hero has it.
 func pass_priority() -> String:
+	if _is_paused:
+		return PAUSED
 	if _task != -1:
 		return BUSY
 	var priority: PriorityDecision = null if _engine.is_over() else _engine.pending_decision() as PriorityDecision
@@ -115,12 +133,15 @@ func cancel_cast() -> String:
 	return _rewind(_engine.cancel_cast)
 
 
-## The Hero concedes (CR 104.3a).
+## The Hero concedes (CR 104.3a), paused or not. A thought the Villain has already begun
+## is waited for first, and nothing more of the encounter is played after it.
 func concede() -> String:
-	if _task != -1:
-		return BUSY
+	var was_thinking: bool = _task != -1
+	if was_thinking:
+		WorkerThreadPool.wait_for_task_completion(_task)
+		_task = -1
 	var error: String = _engine.concede(_engine.hero())
-	if error == "":
+	if error == "" or was_thinking:
 		_advance()
 	return error
 
@@ -139,6 +160,8 @@ func toggle_stop(turn_player_id: int, step: MmTurn.Step) -> void:
 
 
 func _rewind(rewind: Callable) -> String:
+	if _is_paused:
+		return PAUSED
 	if _task != -1:
 		return BUSY
 	var error: String = rewind.call()

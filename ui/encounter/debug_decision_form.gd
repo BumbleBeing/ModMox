@@ -1,9 +1,11 @@
 class_name DebugDecisionForm
 extends RefCounted
 ## What the Debug Decision Panel (game glossary) shows for one Pending Decision, and the
-## answer each way of filling it in gives. Five generic forms cover the twelve decision
-## kinds until each gets its own input (A243): pick one, pick some, pair up, put in order
-## and split a number.
+## answer each way of filling it in gives. Five generic forms cover the decision kinds that
+## have no input of their own yet (A243): pick one, pick some, pair up, put in order and
+## split a number. Paying mana and choosing a target have their own inputs and no form
+## (13c); at priority only casting and playing a land are left, until the hand takes them
+## (13e).
 
 enum Kind { PICK_ONE, PICK_SOME, PAIR_UP, ORDER, SPLIT }
 
@@ -24,34 +26,32 @@ var pair_choice_labels: Array = []
 ## SPLIT: the number to split, and for each option how much is lethal to it (NONE if none).
 var amount: int = 0
 var lethal_amounts: Array[int] = []
-## Whether the decision is a step of a cast in progress, which can be canceled (A255).
-var can_cancel: bool = false
-
 var _decision: MmPendingDecision
 ## PICK_SOME: what each option contributes to the answer (a Game Object ID).
 var _values: Array[int] = []
+## PICK_ONE at priority: the answer each option gives, since the list leaves actions out.
+var _pick_answers: Array[int] = []
 
 
-## The form for [param decision], labeled from the deciding player's [param view].
+## Whether [param decision] is of a kind this panel still answers.
+static func covers(decision: MmPendingDecision) -> bool:
+	return decision != null and not (decision is PayManaDecision) and not (decision is ChooseTargetDecision)
+
+
+## The form for [param decision], labeled from the deciding player's [param view], or null
+## for a kind that has its own input.
 static func of(decision: MmPendingDecision, view: MmPlayerView) -> DebugDecisionForm:
+	if not covers(decision):
+		return null
 	var form: DebugDecisionForm = DebugDecisionForm.new()
 	form._decision = decision
 	if decision is PriorityDecision:
 		form.title = "Priority: choose an action"
-		for action: MmAction in (decision as PriorityDecision).actions:
-			form._add(_action_label(action, view), DecisionGlow.object_of(action))
-	elif decision is PayManaDecision:
-		var pay: PayManaDecision = decision as PayManaDecision
-		form.title = "Pay mana: %s still owed" % _owed(pay)
-		form.can_cancel = true
-		for action: MmAction in pay.actions:
-			form._add(_action_label(action, view), DecisionGlow.object_of(action))
-	elif decision is ChooseTargetDecision:
-		var target: ChooseTargetDecision = decision as ChooseTargetDecision
-		form.title = "Choose a target for %s" % name_of(view, target.stack_object_id)
-		form.can_cancel = true
-		for candidate: MmReference in target.candidates:
-			form._add(_reference_label(view, candidate), candidate.id if candidate.is_object() else NONE)
+		var actions: Array[MmAction] = (decision as PriorityDecision).actions
+		for index: int in actions.size():
+			if actions[index] is CastSpellAction or actions[index] is PlayLandAction:
+				form._add(_action_label(actions[index], view), DecisionClicks.object_of(actions[index]))
+				form._pick_answers.append(index)
 	elif decision is ChooseReplacementEffectDecision:
 		form.title = "Which effect applies first?"
 		for option: ActiveReplacementEffect in (decision as ChooseReplacementEffectDecision).options:
@@ -132,9 +132,15 @@ static func name_of(view: MmPlayerView, object_id: int) -> String:
 	return "object %d" % object_id
 
 
+## Whether the form has nothing to pick from, as at priority with no spell to cast and no
+## land to play.
+func is_empty() -> bool:
+	return options.is_empty()
+
+
 ## PICK_ONE: the answer for picking option [param index].
 func answer_for_pick(index: int) -> Variant:
-	return index
+	return _pick_answers[index] if not _pick_answers.is_empty() else index
 
 
 ## PICK_SOME and ORDER: the answer for picking the options at [param indexes], in that
@@ -178,13 +184,6 @@ func _add_cards(view: MmPlayerView, ids: Array[int]) -> void:
 		_values.append(id)
 
 
-static func _owed(pay: PayManaDecision) -> String:
-	var owed: String = "{%d}" % pay.remaining_generic if pay.remaining_generic > 0 else ""
-	for symbol: MmMana.Type in pay.remaining_symbols:
-		owed += "{%s}" % MmMana.SYMBOLS[symbol]
-	return owed
-
-
 static func _reference_label(view: MmPlayerView, reference: MmReference) -> String:
 	if reference.is_player():
 		return "You" if reference.id == view.viewer_id else "The other player"
@@ -192,20 +191,8 @@ static func _reference_label(view: MmPlayerView, reference: MmReference) -> Stri
 
 
 static func _action_label(action: MmAction, view: MmPlayerView) -> String:
-	if action is PassAction:
-		return "Pass"
 	if action is PlayLandAction:
 		return "Play %s" % name_of(view, (action as PlayLandAction).object_id)
 	if action is CastSpellAction:
 		return "Cast %s" % name_of(view, (action as CastSpellAction).object_id)
-	if action is ActivateAbilityAction:
-		var activate: ActivateAbilityAction = action as ActivateAbilityAction
-		if AutoPass.is_mana_ability(action, view):
-			return "Tap %s for mana (#%d)" % [name_of(view, activate.object_id), activate.object_id]
-		return "Activate %s (ability %d)" % [name_of(view, activate.object_id), activate.ability_index + 1]
-	if action is PayWithManaAction:
-		var pool: Array = view.mana_pools.get(view.viewer_id, [])
-		var unit_index: int = (action as PayWithManaAction).unit_index
-		if unit_index < pool.size():
-			return "Spend {%s} from the pool" % MmMana.SYMBOLS[(pool[unit_index] as MmMana).type]
 	return action.describe()
