@@ -44,16 +44,23 @@ static func image(texture: Texture2D, box: Rect2) -> TextureRect:
 	return rect
 
 
-## A keyword chip of [param size] pixels at [param at].
+## A Keyword Chip of [param size] pixels at [param at]: its Keyword Icon, or its letters.
 static func chip(keyword: KeywordChip, at: Vector2, size: float) -> Panel:
 	var panel: Panel = rounded(Vector2(size, size), size * 0.25, Color(0.08, 0.08, 0.1, 0.88))
 	panel.position = at
 	panel.add_child(outline(panel.size, size * 0.25, size / 16.0, Color(1, 1, 1, 0.55)))
-	var letters: AnchoredText = AnchoredText.new()
-	letters.setup(Rect2(size * 0.08, 0.0, size * 0.84, size), [keyword.letters] as Array[String],
-			[Color.WHITE] as Array[Color], CardFonts.title(), 0.62 if keyword.letters.length() == 1 else 0.48,
-			HORIZONTAL_ALIGNMENT_CENTER, AnchoredText.Fit.SHRINK)
-	panel.add_child(letters)
+	var icon: Texture2D = KeywordChips.icon_texture(keyword)
+	if icon != null:
+		# Pixel art: a chip is a whole multiple of 16 px, so nearest keeps every pixel square.
+		var picture: TextureRect = image(icon, Rect2(Vector2.ZERO, panel.size))
+		picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		panel.add_child(picture)
+	else:
+		var letters: AnchoredText = AnchoredText.new()
+		letters.setup(Rect2(size * 0.08, 0.0, size * 0.84, size), [keyword.letters] as Array[String],
+				[Color.WHITE] as Array[Color], CardFonts.title(), 0.62 if keyword.letters.length() == 1 else 0.48,
+				HORIZONTAL_ALIGNMENT_CENTER, AnchoredText.Fit.SHRINK)
+		panel.add_child(letters)
 	if keyword.has_protection_color:
 		var dot: Panel = rounded(Vector2(size, size) * 0.38, size, color_of(keyword.protection_color))
 		dot.position = Vector2(size, size) * 0.62

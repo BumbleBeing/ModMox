@@ -62,6 +62,14 @@ const PAUSE_WIDTH: float = 420.0
 const PAUSE_HEADING: float = 94.0
 const PAUSE_ROW: float = 58.0
 
+## A line showing a block stops this far short of each creature, and its arrowhead is this
+## long and half this wide.
+const BLOCK_LINE_GAP: float = 2.0
+const ARROWHEAD: Vector2 = Vector2(14.0, 8.0)
+## A damage stepper's size, and how far down its host it sits, as a share of the height.
+const STEPPER: Vector2 = Vector2(112.0, 36.0)
+const STEPPER_DOWN: float = 0.36
+
 ## The Regions no two of which may overlap.
 const LEAVES: Array[String] = [
 	"villain_panel", "hero_panel",
@@ -392,6 +400,45 @@ static func hidden_past(middle: float, view_width: float, arrow_width: float) ->
 	if middle > view_width - arrow_width:
 		return 1
 	return 0
+
+
+## The order to draw a row of creatures in, as indexes into [param ids]: those in combat
+## first, in object ID order, then the rest as they stood. [param is_in_combat] says which
+## the engine has attacking or blocking, so nothing moves while the Hero is still choosing.
+static func combat_order(ids: Array[int], is_in_combat: Array[bool]) -> Array[int]:
+	var fighting: Array[int] = []
+	var others: Array[int] = []
+	for index: int in ids.size():
+		if is_in_combat[index]:
+			fighting.append(index)
+		else:
+			others.append(index)
+	fighting.sort_custom(func(one: int, other: int) -> bool: return ids[one] < ids[other])
+	return fighting + others
+
+
+## Where the line showing a block ends on a creature whose face is at [param face]: the
+## middle of the edge toward the lane, which is the top for the Hero's and the bottom for
+## the Villain's. A creature scrolled out of sight ([param hidden], from hidden_past()) is
+## pointed at through the scroll arrow on that side, whose middle is [param arrow_x] (A327).
+static func block_line_end(face: Rect2, is_hero: bool, hidden: int, arrow_x: float) -> Vector2:
+	var edge: float = face.position.y - BLOCK_LINE_GAP if is_hero else face.end.y + BLOCK_LINE_GAP
+	return Vector2(arrow_x if hidden != 0 else face.get_center().x, edge)
+
+
+## The three corners of the arrowhead at the attacker's end of a block line from
+## [param from] to [param to].
+static func arrowhead(from: Vector2, to: Vector2) -> PackedVector2Array:
+	var along: Vector2 = (to - from).normalized()
+	var across: Vector2 = Vector2(-along.y, along.x)
+	var back: Vector2 = to - along * ARROWHEAD.x
+	return PackedVector2Array([to + along * BLOCK_LINE_GAP, back + across * ARROWHEAD.y, back - across * ARROWHEAD.y])
+
+
+## Where a damage stepper, or the "left to assign" chip, sits on something [param host_size]
+## big: centered, over the art, clear of the name above and the power and toughness below.
+static func stepper_rect(host_size: Vector2) -> Rect2:
+	return Rect2(Vector2((host_size.x - STEPPER.x) / 2.0, floorf(host_size.y * STEPPER_DOWN)), STEPPER)
 
 
 ## The Pause Menu's window with [param button_count] buttons, centered on [param field].

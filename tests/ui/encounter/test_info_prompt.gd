@@ -73,12 +73,30 @@ func test_an_ability_whose_source_is_out_of_sight_keeps_its_own_name() -> void:
 
 
 func test_a_kind_the_panel_still_answers_is_prompted_with_its_forms_title() -> void:
-	var attackers: InfoPrompt = InfoPrompt.of(DeclareAttackersDecision.new(HERO, [1] as Array[int]), _view())
+	var discard: InfoPrompt = InfoPrompt.of(ChooseCardsToDiscardDecision.new(HERO, 2, [1] as Array[int]), _view())
 	var keep: InfoPrompt = InfoPrompt.of(KeepOrMulliganDecision.new(HERO, 0, 0), _view())
 
-	assert_eq(attackers.text, "Declare attackers (any number)")
-	assert_false(attackers.can_cancel)
+	assert_eq(discard.text, "Discard 2")
+	assert_false(discard.can_cancel)
+	assert_false(discard.offers_all_attack)
 	assert_eq(keep.text, "Keep this hand, or mulligan? (0 taken)")
+
+
+func test_the_combat_decisions_have_prompts_of_their_own() -> void:
+	var view: MmPlayerView = _view()
+	var attackers: InfoPrompt = InfoPrompt.of(DeclareAttackersDecision.new(HERO, [1] as Array[int]), view)
+	var blockers: InfoPrompt = InfoPrompt.of(DeclareBlockersDecision.new(HERO, [1] as Array[int], [7] as Array[int],
+		{1: [7]} as Dictionary[int, Array], {1: 1} as Dictionary[int, int]), view)
+	var damage: InfoPrompt = InfoPrompt.of(DivideCombatDamageDecision.new(HERO, 1, 5,
+		[MmReference.to_object(8), MmReference.to_object(9)] as Array[MmReference], [2, 3] as Array[int]), view)
+
+	assert_eq(attackers.text, "Declare attackers")
+	assert_true(attackers.offers_all_attack, "Only this one offers All attack (A311).")
+	assert_eq(blockers.text, "Declare blockers")
+	assert_false(blockers.offers_all_attack)
+	assert_eq(damage.text, "Divide 5 damage from Wand", "It names the creature whose damage it is (A325).")
+	assert_false(damage.can_cancel)
+	assert_false(damage.offers_all_attack)
 
 
 ## A view with a Wand (1) on the battlefield.

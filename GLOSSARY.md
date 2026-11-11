@@ -68,6 +68,18 @@ _Avoid_: Highlight, selection, halo
 The bordered box at the bottom left of the battlefield, between the Hero's panel and the Hero's hand. It says what the Hero is being asked, what is still owed while paying, why their last answer was refused and whether priority is being held, and holds the Cancel button for a cast in progress.
 _Avoid_: Prompt bar, status line, message box
 
+**Combat Selection**:
+The Hero's half-made answer to declaring attackers, declaring blockers or dividing combat damage: what they have clicked so far, before they confirm it. It is thrown away when the decision changes.
+_Avoid_: Pending attack, draft, staging
+
+**Block Line**:
+The line across the middle of the board from a blocker to the attacker it blocks, with an arrowhead at the attacker. Pale gold while the block is being chosen, white once it is declared.
+_Avoid_: Arrow, connector, link
+
+**Damage Stepper**:
+The "− 3 +" on a creature, or on a player's portrait, that says how much combat damage it is being given while damage is divided. The number is red once it is lethal.
+_Avoid_: Spinner, counter (a rules term), slider
+
 **Option Menu**:
 The dropdown that opens where a card was clicked when the click could mean more than one thing, with a row for each: a permanent's abilities now, and later choices such as kicker or which half of an adventure card to cast. It shows three rows and scrolls for more.
 _Avoid_: Ability menu, context menu, popup

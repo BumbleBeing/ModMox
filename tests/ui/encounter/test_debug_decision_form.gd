@@ -1,6 +1,7 @@
 extends GutTest
-## The Debug Decision Panel can answer every kind of Pending Decision: each kind becomes one
-## of five generic forms, and what is filled in becomes an answer the decision accepts.
+## The Debug Decision Panel answers every kind of Pending Decision that has no input of its
+## own yet: each becomes one of three generic forms, and what is filled in becomes an answer
+## the decision accepts.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
@@ -46,7 +47,32 @@ func test_paying_mana_and_choosing_a_target_have_no_form() -> void:
 	assert_false(DebugDecisionForm.covers(pay))
 	assert_false(DebugDecisionForm.covers(target))
 	assert_false(DebugDecisionForm.covers(null))
-	assert_true(DebugDecisionForm.covers(DeclareAttackersDecision.new(HERO, [1] as Array[int])))
+	assert_true(DebugDecisionForm.covers(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int])))
+
+
+func test_the_combat_decisions_have_no_form() -> void:
+	var view: MmPlayerView = _view()
+	var attackers: DeclareAttackersDecision = DeclareAttackersDecision.new(HERO, [1, 2] as Array[int])
+	var blockers: DeclareBlockersDecision = DeclareBlockersDecision.new(HERO, [1] as Array[int], [3] as Array[int],
+		{1: [3]} as Dictionary[int, Array], {1: 1} as Dictionary[int, int])
+	var damage: DivideCombatDamageDecision = DivideCombatDamageDecision.new(HERO, 3, 4,
+		[MmReference.to_object(1), MmReference.to_object(2)] as Array[MmReference], [2, 3] as Array[int])
+
+	for decision: MmPendingDecision in [attackers, blockers, damage]:
+		assert_false(DebugDecisionForm.covers(decision), decision.describe())
+		assert_null(DebugDecisionForm.of(decision, view), "Combat is answered on the creatures themselves (A328).")
+	assert_eq(DebugDecisionForm.Kind.size(), 3, "Pair up and split are gone with them.")
+
+
+func test_cards_to_discard_are_picked_by_number_and_named_with_their_ids() -> void:
+	var discard: ChooseCardsToDiscardDecision = ChooseCardsToDiscardDecision.new(HERO, 1, [2, 3] as Array[int])
+
+	var form: DebugDecisionForm = DebugDecisionForm.of(discard, _view())
+
+	assert_eq(form.kind, DebugDecisionForm.Kind.PICK_SOME)
+	assert_eq(form.title, "Discard 1")
+	assert_eq(form.options, ["Mountain (#2)", "Zap (#3)"] as Array[String])
+	assert_eq(form.answer_for_picks([1] as Array[int]), [3] as Array[int])
 
 
 func test_keep_or_mulligan_and_play_or_draw_are_two_choices_each() -> void:
@@ -78,19 +104,6 @@ func test_a_replacement_choice_lists_each_effect() -> void:
 	assert_eq(decision.validate(form.answer_for_pick(1)), "")
 
 
-func test_attackers_are_picked_in_any_number() -> void:
-	var decision: DeclareAttackersDecision = DeclareAttackersDecision.new(HERO, [1, 2, 3] as Array[int])
-
-	var form: DebugDecisionForm = DebugDecisionForm.of(decision, _view())
-
-	assert_eq(form.kind, DebugDecisionForm.Kind.PICK_SOME)
-	assert_eq(form.count, DebugDecisionForm.NONE, "Any number may attack.")
-	assert_eq(form.options, ["Forest (#1)", "Mountain (#2)", "Zap (#3)"] as Array[String])
-	assert_eq(form.answer_for_picks([2, 0] as Array[int]), [3, 1] as Array[int])
-	assert_eq(decision.validate(form.answer_for_picks([2, 0] as Array[int])), "")
-	assert_eq(decision.validate(form.answer_for_picks([] as Array[int])), "")
-
-
 func test_cards_to_discard_and_to_bottom_keep_the_order_picked() -> void:
 	var discard: ChooseCardsToDiscardDecision = ChooseCardsToDiscardDecision.new(HERO, 2, [1, 2, 3] as Array[int])
 	var bottom: ChooseCardsToBottomDecision = ChooseCardsToBottomDecision.new(HERO, 2, [1, 2, 3] as Array[int])
@@ -118,35 +131,6 @@ func test_triggers_are_put_in_order() -> void:
 	assert_eq(form.option_object_ids, [1, 2] as Array[int])
 	assert_eq(form.answer_for_picks([1, 0] as Array[int]), [1, 0])
 	assert_eq(decision.validate(form.answer_for_picks([1, 0] as Array[int])), "")
-
-
-func test_blockers_are_paired_with_the_attackers_each_may_block() -> void:
-	var decision: DeclareBlockersDecision = DeclareBlockersDecision.new(HERO, [1, 2] as Array[int], [3] as Array[int],
-		{1: [3], 2: []} as Dictionary[int, Array], {1: 1, 2: 1} as Dictionary[int, int])
-
-	var form: DebugDecisionForm = DebugDecisionForm.of(decision, _view())
-
-	assert_eq(form.kind, DebugDecisionForm.Kind.PAIR_UP)
-	assert_eq(form.options, ["Forest", "Mountain"] as Array[String])
-	assert_eq(form.pair_choice_ids, [[3], []])
-	assert_eq(form.pair_choice_labels, [["Zap (#3)"], []])
-	assert_eq(form.answer_for_pairs([[3], []]), [[1, 3]])
-	assert_eq(decision.validate(form.answer_for_pairs([[3], []])), "")
-	assert_eq(decision.validate(form.answer_for_pairs([[], []])), "", "Blocking with nothing is an answer too.")
-
-
-func test_combat_damage_is_split_among_its_recipients() -> void:
-	var decision: DivideCombatDamageDecision = DivideCombatDamageDecision.new(HERO, 3, 4,
-		[MmReference.to_object(1), MmReference.to_object(2)] as Array[MmReference], [2, 3] as Array[int])
-
-	var form: DebugDecisionForm = DebugDecisionForm.of(decision, _view())
-
-	assert_eq(form.kind, DebugDecisionForm.Kind.SPLIT)
-	assert_eq(form.amount, 4)
-	assert_eq(form.options, ["Forest", "Mountain"] as Array[String])
-	assert_eq(form.lethal_amounts, [2, 3] as Array[int])
-	assert_eq(decision.validate(form.answer_for_split([2, 2] as Array[int])), "")
-	assert_ne(decision.validate(form.answer_for_split([1, 1] as Array[int])), "", "Shares must add up.")
 
 
 func test_a_name_is_found_in_any_zone_the_view_shows() -> void:
