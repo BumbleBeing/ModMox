@@ -3,8 +3,8 @@ extends Control
 ## One player's panel in the sidebar: their name, a square portrait with their life total in
 ## its corner, a button for each color of mana in their pool, the Emblems button, and every
 ## step of the turn down the right side. Green steps have a stop; the step it is now has a
-## pale border on the active player's panel. While the player can be chosen as a target the
-## whole panel takes the click, behind its buttons, which keep working. The Villain's panel
+## pale border on the active player's panel. While the player can be chosen, their portrait
+## alone glows and takes the click, never the whole panel. The Villain's panel
 ## says when the Villain is thinking, under its Emblems button (A294).
 
 ## A mana button was pressed while paying: [param answer] spends one mana of that color.
@@ -40,6 +40,7 @@ var _pass: Button = null
 var _undo: Button = null
 var _auto_pass: Button = null
 var _thinking: Label = null
+var _portrait: Panel = null
 
 
 ## [param title] is the player's name as the panel shows it.
@@ -64,7 +65,6 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 	_undo = null
 	_auto_pass = null
 	_thinking = null
-	modulate = Color.WHITE
 	position = panel_rect.position
 	size = panel_rect.size
 	var view: MmPlayerView = snapshot.view
@@ -72,17 +72,16 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 	add_child(CardShapes.rounded(panel_rect.size, 8, Color("#2c323c")))
 	if view.priority_player_id == _player_id:
 		add_child(CardShapes.outline(panel_rect.size, 8, 3, NOW_COLOR))
-	if clicks.player_answers.has(_player_id):
-		# Added before the buttons, so it lies behind them and they keep their clicks.
-		var answer: int = clicks.player_answers[_player_id]
-		ClickCatcher.add(self, panel_rect.size).clicked.connect(func() -> void: player_clicked.emit(answer))
-	if clicks.players.has(_player_id):
-		BorderEffects.add_glow(self, panel_rect.size, DecisionClicks.color_of(clicks.players[_player_id]))
 
 	add_child(_label(_title, parts["name"], 22))
-	var portrait: Panel = CardShapes.rounded(parts["portrait"].size, 8, Color("#444c5a"))
-	portrait.position = parts["portrait"].position
-	add_child(portrait)
+	_portrait = CardShapes.rounded(parts["portrait"].size, 8, Color("#444c5a"))
+	_portrait.position = parts["portrait"].position
+	add_child(_portrait)
+	if clicks.players.has(_player_id):
+		BorderEffects.add_glow(_portrait, parts["portrait"].size, DecisionClicks.color_of(clicks.players[_player_id]))
+	if clicks.player_answers.has(_player_id):
+		var answer: int = clicks.player_answers[_player_id]
+		ClickCatcher.add(_portrait, parts["portrait"].size).clicked.connect(func() -> void: player_clicked.emit(answer))
 	var life_box: Panel = CardShapes.rounded(parts["life"].size, 8, Color(0.05, 0.05, 0.07, 0.9))
 	life_box.position = parts["life"].position
 	add_child(life_box)
@@ -115,6 +114,19 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 		add_child(_thinking)
 
 
+## While a combat decision is being answered the pass button confirms it instead: it reads
+## [param text] and can be pressed only when [param is_complete]. Undo is open whenever
+## there is a click to take back ([param can_undo]).
+func show_confirm(text: String, is_complete: bool, can_undo: bool) -> void:
+	if _pass == null:
+		return
+	_pass.text = text
+	_pass.disabled = not is_complete
+	_pass.add_theme_font_size_override("font_size", 17)
+	if can_undo:
+		_undo.disabled = false
+
+
 ## The pass, undo and auto-pass buttons: null on the Villain's panel.
 func pass_button() -> Button:
 	return _pass
@@ -134,9 +146,14 @@ func thinking_text() -> String:
 	return _thinking.text if _thinking != null else ""
 
 
-## What takes a click on the panel while its player can be chosen, or null.
+## The player's picture: what glows and is clicked while the player can be chosen.
+func portrait() -> Panel:
+	return _portrait
+
+
+## What takes a click on the portrait while its player can be chosen, or null.
 func click_catcher() -> ClickCatcher:
-	return ClickCatcher.of(self)
+	return ClickCatcher.of(_portrait)
 
 
 func life_text() -> String:

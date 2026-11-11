@@ -213,6 +213,62 @@ func test_a_face_past_either_end_of_a_line_or_behind_an_arrow_is_hidden() -> voi
 	assert_eq(EncounterLayout.hidden_past(900.0, 600.0, 26.0), 1)
 
 
+func test_creatures_in_combat_stand_first_in_id_order_and_the_rest_keep_their_places() -> void:
+	var ids: Array[int] = [14, 9, 30, 11, 5]
+
+	assert_eq(EncounterLayout.combat_order(ids, [false, false, true, false, true] as Array[bool]), [4, 2, 0, 1, 3] as Array[int],
+		"5 and 30 are fighting, lowest ID first; 14, 9 and 11 stay as they stood.")
+	assert_eq(EncounterLayout.combat_order(ids, [false, false, false, false, false] as Array[bool]), [0, 1, 2, 3, 4] as Array[int],
+		"With nobody in combat nothing moves.")
+	assert_eq(EncounterLayout.combat_order(ids, [true, true, true, true, true] as Array[bool]), [4, 1, 3, 0, 2] as Array[int])
+	assert_eq(EncounterLayout.combat_order([] as Array[int], [] as Array[bool]), [] as Array[int])
+
+
+func test_a_block_line_ends_on_the_edge_of_a_face_toward_the_lane() -> void:
+	var face: Rect2 = Rect2(400, 500, 200, 180)
+
+	var hero: Vector2 = EncounterLayout.block_line_end(face, true, 0, 999.0)
+	var villain: Vector2 = EncounterLayout.block_line_end(face, false, 0, 999.0)
+
+	assert_eq(hero.x, 500.0, "The middle of the face.")
+	assert_lt(hero.y, face.position.y, "Just above the Hero's creature, toward the middle of the board.")
+	assert_almost_eq(face.position.y - hero.y, EncounterLayout.BLOCK_LINE_GAP, 0.01)
+	assert_gt(villain.y, face.end.y, "Just below the Villain's.")
+
+
+func test_a_block_line_to_a_creature_out_of_sight_ends_on_the_arrow_toward_it() -> void:
+	var face: Rect2 = Rect2(2400, 500, 200, 180)
+
+	var right: Vector2 = EncounterLayout.block_line_end(face, true, 1, 1725.0)
+	var left: Vector2 = EncounterLayout.block_line_end(face, false, -1, 365.0)
+
+	assert_eq(right.x, 1725.0, "The arrow's middle, not the face that cannot be seen (A327).")
+	assert_lt(right.y, face.position.y, "At the same height as any other line's end.")
+	assert_eq(left.x, 365.0)
+
+
+func test_an_arrowhead_points_at_the_end_of_its_line() -> void:
+	var up: PackedVector2Array = EncounterLayout.arrowhead(Vector2(100, 300), Vector2(100, 200))
+
+	assert_eq(up.size(), 3)
+	assert_lt(up[0].y, 200.0 + 0.01, "The tip is at the far end,")
+	assert_almost_eq(up[1].y, 200.0 + EncounterLayout.ARROWHEAD.x, 0.01, "and the other two corners are back along the line,")
+	assert_almost_eq(absf(up[1].x - up[2].x), EncounterLayout.ARROWHEAD.y * 2.0, 0.01, "one to each side.")
+	var sideways: PackedVector2Array = EncounterLayout.arrowhead(Vector2(100, 200), Vector2(300, 200))
+	assert_gt(sideways[0].x, sideways[1].x, "It turns with the line.")
+
+
+func test_a_damage_stepper_sits_centered_over_the_art() -> void:
+	var face: Vector2 = Vector2(199, 181)
+
+	var box: Rect2 = EncounterLayout.stepper_rect(face)
+
+	assert_eq(box.size, EncounterLayout.STEPPER)
+	assert_almost_eq(box.get_center().x, face.x / 2.0, 0.01)
+	assert_gt(box.position.y, face.y * 0.2, "Under the name.")
+	assert_lt(box.end.y, face.y * 0.7, "Above the power and toughness.")
+
+
 func test_the_pause_menu_is_centered_on_the_battlefield_and_grows_with_its_buttons() -> void:
 	var field: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["battlefield"]
 

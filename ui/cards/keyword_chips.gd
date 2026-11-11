@@ -4,8 +4,10 @@ extends RefCounted
 ## run along the bottom of the art from the left toward the P/T box; when they run out of
 ## room, the last one that fits becomes "+N" for every keyword not shown.
 
-## Chips are whole multiples of this, so the user's pixel icons stay crisp.
+## Chips are whole multiples of this, so the pixel icons stay crisp.
 const PIXEL_STEP: float = 16.0
+## Keyword Icons are built by tools/sprites/build.sh, one PNG for each keyword.
+const ICON_FOLDER: String = "res://ui/sprites/keywords/"
 ## A chip is at most this much of the face's height.
 const MOST_OF_HEIGHT: float = 0.2
 const GAP: float = 0.12
@@ -21,6 +23,10 @@ static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
 		IndestructibleAbility, ProtectionAbility,
 	]
 	var letters: Array[String] = ["F", "R", "V", "H", "DT", "DF", "FS", "DS", "T", "I", "P"]
+	var icons: Array[String] = [
+		"flying", "reach", "vigilance", "haste", "deathtouch", "defender", "first_strike",
+		"double_strike", "trample", "indestructible", "protection",
+	]
 	var chips: Array[KeywordChip] = []
 	var seen: Dictionary[String, bool] = {}
 	for index: int in order.size():
@@ -29,6 +35,7 @@ static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
 				continue
 			var chip: KeywordChip = KeywordChip.new()
 			chip.letters = letters[index]
+			chip.icon = icons[index]
 			var protection: ProtectionAbility = ability as ProtectionAbility
 			if protection != null and protection.from is HasColorFilter:
 				chip.has_protection_color = true
@@ -40,6 +47,12 @@ static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
 				seen[key] = true
 				chips.append(chip)
 	return chips
+
+
+## The Keyword Icon for [param chip], or null when it has none and shows its letters.
+static func icon_texture(chip: KeywordChip) -> Texture2D:
+	var path: String = "%s%s.png" % [ICON_FOLDER, chip.icon]
+	return load(path) as Texture2D if chip.icon != "" and ResourceLoader.exists(path) else null
 
 
 ## The largest whole multiple of 16 px that still leaves room for two chips in

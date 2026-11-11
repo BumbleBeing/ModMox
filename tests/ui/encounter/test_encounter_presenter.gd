@@ -489,6 +489,8 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 		var wanted: Variant = hero.answer(twin.pending_decision(), null, twin.simulation_source_for(HERO))
 		var form: DebugDecisionForm = DebugDecisionForm.of(decision, presenter.snapshot().view)
 		var through: Variant = _click(decision, presenter.snapshot().view, wanted)
+		if through == null and CombatSelection.covers(decision):
+			through = _select(decision, wanted)
 		if through != null:
 			clicked[decision.get_script()] = true
 		elif form != null:
@@ -508,7 +510,7 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 	assert_true(presenter.snapshot().is_over(), "The encounter reached its end.")
 	assert_eq(presenter.snapshot().view.winner_id, twin.game_state().winner_id)
 	assert_true(kinds.has(DebugDecisionForm.Kind.PICK_ONE))
-	assert_true(kinds.has(DebugDecisionForm.Kind.PICK_SOME), "Attackers were declared through the form.")
+	assert_true(clicked.has(DeclareAttackersDecision), "Attackers were declared by clicking creatures.")
 	assert_true(clicked.has(PayManaDecision), "Mana was paid by clicking.")
 	assert_true(clicked.has(ChooseTargetDecision), "Targets were clicked.")
 	assert_true(clicked.has(PriorityDecision), "A permanent was clicked at priority, or the pass button pressed.")
@@ -565,19 +567,31 @@ func _fill_in(form: DebugDecisionForm, wanted: Variant) -> Variant:
 			for place: int in places:
 				order.append(place)
 			return form.answer_for_picks(order)
-		DebugDecisionForm.Kind.PAIR_UP:
-			var by_option: Array = []
-			for option: int in form.options.size():
-				by_option.append([])
-			var pairs: Array = wanted
-			for pair: Array in pairs:
-				by_option[form.option_object_ids.find(pair[0])].append(pair[1])
-			return form.answer_for_pairs(by_option)
-	var shares: Array[int] = []
-	var amounts: Array = wanted
-	for share: int in amounts:
-		shares.append(share)
-	return form.answer_for_split(shares)
+	return null
+
+
+## The answer a CombatSelection gives once the Hero has clicked their way to [param wanted].
+func _select(decision: MmPendingDecision, wanted: Variant) -> Variant:
+	var selection: CombatSelection = CombatSelection.new(decision)
+	var chosen: Array = wanted
+	if decision is DeclareAttackersDecision:
+		for attacker_id: int in chosen:
+			assert_true(selection.click(attacker_id))
+	elif decision is DeclareBlockersDecision:
+		for pair: Array in chosen:
+			if selection.picked_id() != pair[0]:
+				assert_true(selection.click(pair[0]))
+			assert_true(selection.click(pair[1]))
+	else:
+		var amounts: Array[int] = selection.amounts()
+		for index: int in amounts.size():
+			for point: int in maxi(0, amounts[index] - (chosen[index] as int)):
+				assert_true(selection.change_amount(index, -1))
+		for index: int in amounts.size():
+			for point: int in maxi(0, (chosen[index] as int) - amounts[index]):
+				assert_true(selection.change_amount(index, 1))
+	assert_true(selection.is_complete())
+	return selection.answer()
 
 
 func _remember(snapshot: EncounterSnapshot) -> void:

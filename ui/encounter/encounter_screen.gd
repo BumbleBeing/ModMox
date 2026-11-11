@@ -9,6 +9,11 @@ extends Control
 ## ClickCatcher); everything else ignores it. One answer is given at once, and several open
 ## the Option Menu. The Info Panel says what is asked, and Escape opens the Pause Menu.
 ##
+## Combat decisions are answered all at once, so their clicks build a CombatSelection kept
+## here, outside the redrawn nodes: creatures chosen to attack or block step into the lane,
+## lines join blockers to their attackers, and damage is divided with steppers on the
+## recipients. The pass button confirms it, and undo takes back one click at a time.
+##
 ## Run with a request: godot --path . -- --hero=red_green --villain=white_black --seed=7
 ## Add --screenshot=/absolute/path.png to save a picture and quit.
 
@@ -55,6 +60,11 @@ var _regions: Dictionary[String, Rect2] = {}
 var _is_paused: bool = false
 ## Each scrolling line's object IDs, by the same keys as _lines.
 var _line_ids: Dictionary[String, Array] = {}
+var _block_lines: BlockLines
+## The Hero's half-made answer to the combat decision being asked, if one is.
+var _selection: CombatSelection = CombatSelection.new()
+var _steppers: Dictionary[int, DamageStepper] = {}
+var _player_steppers: Dictionary[int, DamageStepper] = {}
 var _are_windows_placed: bool = false
 ## Each scrolling line of permanents, and how far each was scrolled, by "hero_creatures",
 ## "hero_others", "villain_creatures" or "villain_others", so a redraw keeps its place.
@@ -73,6 +83,8 @@ func _ready() -> void:
 	_board.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_board)
+	_block_lines = BlockLines.new()
+	add_child(_block_lines)
 	for player_id: int in [VILLAIN, HERO]:
 		var panel: PlayerPanel = PlayerPanel.new(player_id, "HERO" if player_id == HERO else "VILLAIN")
 		panel.mana_pressed.connect(_answer)
@@ -103,6 +115,9 @@ func _ready() -> void:
 	add_child(_debug)
 	_info = InfoPanel.new()
 	_info.cancel_pressed.connect(func() -> void: _command(_presenter.cancel_cast))
+	_info.all_attack_pressed.connect(func() -> void:
+		if not _is_paused and _selection.select_all():
+			_redraw())
 	add_child(_info)
 	_option_menu = OptionMenu.new()
 	_option_menu.chosen.connect(_answer)
@@ -145,6 +160,10 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+		click_empty_board()
+		return
 	var key: InputEventKey = event as InputEventKey
 	# A key can arrive before an encounter has begun.
 	if _presenter == null or key == null or not key.pressed or key.echo:
@@ -197,14 +216,28 @@ func set_hold_key_down(is_down: bool) -> void:
 	_info.set_hold_key_down(is_down)
 
 
-## Passes priority, as the pass button and the space bar do.
+## What a click on nothing does: a blocker that was picked up is put down, unassigned (A314).
+func click_empty_board() -> void:
+	if not _is_paused and _selection.put_down():
+		_redraw()
+
+
+## Passes priority, as the pass button and the space bar do. While a combat decision is
+## being answered it confirms the selection instead, once that is complete.
 func pass_priority() -> void:
-	_command(_presenter.pass_priority)
+	if not _selection.is_active():
+		_command(_presenter.pass_priority)
+	elif _selection.is_complete():
+		_answer(_selection.answer())
 
 
-## Undoes the Hero's last answer, as the undo button and Z do.
+## Undoes the Hero's last click of a half-made selection, and otherwise their last answer,
+## as the undo button and Z do (A320).
 func undo() -> void:
-	_command(_presenter.undo)
+	if not _is_paused and _selection.undo():
+		_redraw()
+	else:
+		_command(_presenter.undo)
 
 
 ## Leaves for [param scene], once a thinking Villain has finished.
@@ -249,6 +282,25 @@ func option_menu() -> OptionMenu:
 
 func pause_menu() -> PauseMenu:
 	return _pause_menu
+
+
+## The Hero's half-made answer to the combat decision being asked.
+func selection() -> CombatSelection:
+	return _selection
+
+
+func block_lines() -> BlockLines:
+	return _block_lines
+
+
+## The damage stepper on Game Object [param object_id], or null.
+func stepper_of(object_id: int) -> DamageStepper:
+	return _steppers.get(object_id, null) as DamageStepper
+
+
+## The damage stepper on [param player_id]'s portrait, or null.
+func player_stepper(player_id: int) -> DamageStepper:
+	return _player_steppers.get(player_id, null) as DamageStepper
 
 
 ## What takes a click on Game Object [param object_id], or null if clicking it does nothing.
@@ -304,6 +356,8 @@ func _command(command: Callable) -> void:
 
 
 func _show(snapshot: EncounterSnapshot) -> void:
+	if not _selection.is_for(snapshot.decision if CombatSelection.covers(snapshot.decision) else null):
+		_selection = CombatSelection.new(snapshot.decision)
 	_snapshot = snapshot
 	_error = ""
 	_redraw()
@@ -324,6 +378,10 @@ func _concede() -> void:
 ## and several open the Option Menu where the cursor is (A285, A286).
 func _on_object_clicked(object_id: int) -> void:
 	if _is_paused:
+		return
+	if _selection.is_clickable(object_id):
+		if _selection.click(object_id):
+			_redraw()
 		return
 	var options: Array[ClickOption] = _clicks.options_of(object_id)
 	if options.size() == 1:
@@ -356,11 +414,16 @@ func _redraw() -> void:
 	_card_backs.clear()
 	_lines.clear()
 	_line_ids.clear()
+	_steppers.clear()
+	_player_steppers.clear()
 	_pile_labels.clear()
 	_banner = null
 	var view: MmPlayerView = _snapshot.view
 	# While the Villain thinks the Hero is asked nothing, so nothing glows or takes a click.
 	var glow: DecisionClicks = DecisionClicks.of(null if _snapshot.is_over() else _snapshot.decision, view)
+	# While a blocker is picked up, the attackers it can block glow as targets (A313).
+	for attacker_id: int in _selection.target_ids():
+		glow.objects[attacker_id] = DecisionClicks.Kind.TARGET
 	_clicks = glow
 	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(size)
 	_regions = regions
@@ -379,6 +442,9 @@ func _redraw() -> void:
 
 	_panels[VILLAIN].show_snapshot(_snapshot, glow, _presenter.stops, regions["villain_panel"], false, false)
 	_panels[HERO].show_snapshot(_snapshot, glow, _presenter.stops, regions["hero_panel"], true, _presenter.is_auto_passing())
+	if _selection.is_active():
+		_panels[HERO].show_confirm(_selection.confirm_text(), _selection.is_complete(), _selection.can_undo())
+	_add_player_stepper()
 	_draw_villain_hand(view.hand_sizes.get(VILLAIN, 0), regions["villain_hand"])
 	_draw_row(_permanents(view, VILLAIN, true), regions["villain_lands"], glow)
 	_draw_nonlands(view, VILLAIN, regions["villain_nonlands"], glow)
@@ -393,8 +459,9 @@ func _redraw() -> void:
 		_fill_emblems_window(view, player_id)
 	_fill_stack_window(view)
 	_debug.show_snapshot(_snapshot)
-	_info.show_snapshot(_snapshot, _error, regions["info"])
+	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
 	_tint_arrows()
+	_show_block_lines()
 	if _snapshot.is_over():
 		_draw_banner(view)
 	_spread_hand(1.0)
@@ -467,6 +534,7 @@ func _draw_nonlands(view: MmPlayerView, player_id: int, row_rect: Rect2, glow: D
 			creatures.append(permanent)
 		else:
 			others.append(permanent)
+	creatures = _fighting_first(creatures)
 	var groups: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, _tapped(others), is_hero)
 	var creature_heights: Array[float] = []
 	for creature: MmObjectView in creatures:
@@ -494,7 +562,9 @@ func _draw_line(key: String, permanents: Array[MmObjectView], heights: Array[flo
 	var is_tapped: Array[bool] = _tapped(permanents)
 	var line: ScrollRow = ScrollRow.new(line_rect, EncounterLayout.line_width(is_tapped, heights), _line_offsets.get(key, 0.0))
 	line.scrolled.connect(func(offset: float) -> void: _line_offsets[key] = offset)
-	line.scrolled.connect(func(_offset: float) -> void: _tint_arrows())
+	line.scrolled.connect(func(_offset: float) -> void:
+		_tint_arrows()
+		_show_block_lines())
 	_line_offsets[key] = line.offset()
 	_board.add_child(line)
 	_lines[key] = line
@@ -513,7 +583,6 @@ func _draw_line(key: String, permanents: Array[MmObjectView], heights: Array[flo
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		line.content().add_child(face)
 		_remember_face(permanent.id, face, footprints[index].size, glow)
-		_add_combat_tag(face, permanent, footprints[index].size)
 
 
 func _tapped(permanents: Array[MmObjectView]) -> Array[bool]:
@@ -523,34 +592,29 @@ func _tapped(permanents: Array[MmObjectView]) -> Array[bool]:
 	return is_tapped
 
 
+## Whether [param permanent] stands forward in the lane: attacking or blocking, or chosen
+## to by the Hero and not yet confirmed.
 func _is_in_combat(permanent: MmObjectView) -> bool:
+	return _is_fighting(permanent) or _selection.is_chosen(permanent.id)
+
+
+## Whether the engine has [param permanent] attacking or blocking.
+func _is_fighting(permanent: MmObjectView) -> bool:
 	return permanent.is_attacking or not permanent.blocking_ids.is_empty()
 
 
-## Until 13c draws combat: says what a creature in combat is doing.
-func _add_combat_tag(face: Control, permanent: MmObjectView, footprint: Vector2) -> void:
-	var doing: String = ""
-	if permanent.is_attacking:
-		doing = "ATTACKING (blocked)" if permanent.is_blocked else "ATTACKING"
-	elif not permanent.blocking_ids.is_empty():
-		doing = "BLOCKING " + DebugDecisionForm.name_of(_snapshot.view, permanent.blocking_ids[0])
-	if doing != "":
-		face.add_child(_combat_tag(doing, footprint))
-
-
-func _combat_tag(text: String, footprint: Vector2) -> Label:
-	var label: Label = Label.new()
-	label.name = "CombatTag"
-	label.text = text
-	label.position = Vector2(0, footprint.y - 22)
-	label.size = Vector2(footprint.x, 22)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.clip_text = true
-	label.add_theme_font_size_override("font_size", 13)
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.7, 0.1, 0.1, 0.9)
-	label.add_theme_stylebox_override("normal", style)
-	return label
+## Creatures in combat stand to the left of the rest, in object ID order. Only those the
+## engine has in combat: while the Hero is choosing, nothing changes places under the cursor.
+func _fighting_first(creatures: Array[MmObjectView]) -> Array[MmObjectView]:
+	var ids: Array[int] = []
+	var is_fighting: Array[bool] = []
+	for creature: MmObjectView in creatures:
+		ids.append(creature.id)
+		is_fighting.append(_is_fighting(creature))
+	var ordered: Array[MmObjectView] = []
+	for index: int in EncounterLayout.combat_order(ids, is_fighting):
+		ordered.append(creatures[index])
+	return ordered
 
 
 func _remember_face(object_id: int, face: Control, face_size: Vector2, glow: DecisionClicks) -> void:
@@ -560,8 +624,89 @@ func _remember_face(object_id: int, face: Control, face_size: Vector2, glow: Dec
 		BorderEffects.add_glow(face, face_size, DecisionClicks.color_of(glow.objects[object_id]))
 	if object_id == _pointed_id:
 		BorderEffects.add_pointer(face, face_size)
-	if not glow.options_of(object_id).is_empty():
+	if not glow.options_of(object_id).is_empty() or _selection.is_clickable(object_id):
 		ClickCatcher.add(face, face_size).clicked.connect(_on_object_clicked.bind(object_id))
+	_add_combat_marks(object_id, face, face_size)
+
+
+## What combat input draws on a face: a white outline on the blocker picked up and on the
+## creature whose damage is being divided (A313, A325), how much that creature has left to
+## give, and a stepper on each creature it can give damage to.
+func _add_combat_marks(object_id: int, face: Control, face_size: Vector2) -> void:
+	var divide: DivideCombatDamageDecision = _snapshot.decision as DivideCombatDamageDecision
+	var is_source: bool = divide != null and _selection.is_active() and divide.source_id == object_id
+	if is_source or (object_id == _selection.picked_id() and _selection.is_active()):
+		BorderEffects.add_pointer(face, face_size)
+	if divide == null or not _selection.is_active():
+		return
+	if is_source:
+		face.add_child(DamageStepper.left_chip(EncounterLayout.stepper_rect(face_size), _selection.left_to_assign()))
+	for index: int in divide.recipients.size():
+		if divide.recipients[index].is_object() and divide.recipients[index].id == object_id:
+			var stepper: DamageStepper = _stepper(index, EncounterLayout.stepper_rect(face_size))
+			face.add_child(stepper)
+			_steppers[object_id] = stepper
+
+
+func _stepper(index: int, box: Rect2) -> DamageStepper:
+	var stepper: DamageStepper = DamageStepper.new(box, _selection.amounts()[index], _selection.is_lethal(index),
+			_selection.can_lower(index), _selection.can_raise(index))
+	stepper.lowered.connect(_change_amount.bind(index, -1))
+	stepper.raised.connect(_change_amount.bind(index, 1))
+	return stepper
+
+
+func _change_amount(index: int, change: int) -> void:
+	if not _is_paused and _selection.change_amount(index, change):
+		_redraw()
+
+
+## With trample the attacked player is given damage too: their stepper is on their portrait.
+func _add_player_stepper() -> void:
+	var divide: DivideCombatDamageDecision = _snapshot.decision as DivideCombatDamageDecision
+	if divide == null or not _selection.is_active() or not divide.includes_player():
+		return
+	var index: int = divide.recipients.size() - 1
+	var player_id: int = divide.recipients[index].id
+	var portrait: Panel = _panels[player_id].portrait()
+	var stepper: DamageStepper = _stepper(index, EncounterLayout.stepper_rect(portrait.size))
+	portrait.add_child(stepper)
+	_player_steppers[player_id] = stepper
+
+
+## A line from every blocker to its attacker: those the engine has blocking, and those the
+## Hero has paired so far.
+func _show_block_lines() -> void:
+	var lines: Array = []
+	if _snapshot != null:
+		for permanent: MmObjectView in _snapshot.view.battlefield:
+			for attacker_id: int in permanent.blocking_ids:
+				_add_block_line(lines, permanent.id, attacker_id, false)
+		for pair: Array in _selection.pairs():
+			_add_block_line(lines, pair[0], pair[1], true)
+	_block_lines.show_lines(lines)
+
+
+func _add_block_line(lines: Array, blocker_id: int, attacker_id: int, is_chosen: bool) -> void:
+	if _faces.has(blocker_id) and _faces.has(attacker_id):
+		lines.append([_block_line_end(blocker_id), _block_line_end(attacker_id), is_chosen])
+
+
+## Where a block line meets Game Object [param object_id], in this screen's coordinates.
+func _block_line_end(object_id: int) -> Vector2:
+	var face: Control = _faces[object_id]
+	var rect: Rect2 = Rect2(face.get_global_rect().position - global_position, _face_sizes[object_id])
+	for key: String in _lines:
+		var ids: Array = _line_ids.get(key, [])
+		if not ids.has(object_id):
+			continue
+		var line: ScrollRow = _lines[key]
+		var middle: float = face.position.x + line.content().position.x + _face_sizes[object_id].x / 2.0
+		var hidden: int = EncounterLayout.hidden_past(middle, line.size.x, ScrollRow.ARROW_WIDTH)
+		var arrow: Button = line.left_arrow() if hidden < 0 else line.right_arrow()
+		return EncounterLayout.block_line_end(rect, key.begins_with("hero"), hidden,
+				arrow.get_global_rect().get_center().x - global_position.x)
+	return rect.get_center()
 
 
 ## A glowing permanent scrolled off the end of its line colors that line's arrow, so a

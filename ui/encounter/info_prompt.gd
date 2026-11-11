@@ -8,6 +8,8 @@ var text: String = ""
 ## While paying: what is still owed. Null otherwise.
 var owed: MmManaCost = null
 var can_cancel: bool = false
+## While declaring attackers: the panel offers "All attack" (A311).
+var offers_all_attack: bool = false
 
 
 ## The prompt for [param decision] as the player whose [param view] this is reads it. A
@@ -30,6 +32,14 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> InfoPrompt:
 	elif decision is ChooseTargetDecision:
 		prompt.text = "Choose a target for %s" % stack_name(view, (decision as ChooseTargetDecision).stack_object_id)
 		prompt.can_cancel = true
+	elif decision is DeclareAttackersDecision:
+		prompt.text = "Declare attackers"
+		prompt.offers_all_attack = true
+	elif decision is DeclareBlockersDecision:
+		prompt.text = "Declare blockers"
+	elif decision is DivideCombatDamageDecision:
+		var divide: DivideCombatDamageDecision = decision as DivideCombatDamageDecision
+		prompt.text = "Divide %d damage from %s" % [divide.amount, DebugDecisionForm.name_of(view, divide.source_id)]
 	else:
 		# A kind the Debug Decision Panel still answers says what its form does.
 		prompt.text = DebugDecisionForm.of(decision, view).title
