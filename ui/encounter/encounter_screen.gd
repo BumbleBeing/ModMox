@@ -227,7 +227,7 @@ func click_empty_board() -> void:
 func pass_priority() -> void:
 	if not _selection.is_active():
 		_command(_presenter.pass_priority)
-	elif _selection.is_complete():
+	elif _selection.is_complete() and not _is_paused:
 		_answer(_selection.answer())
 
 
