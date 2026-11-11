@@ -1165,6 +1165,29 @@ func test_while_paused_damage_cannot_be_moved() -> void:
 	assert_eq(_screen.selection().amounts(), [2, 0] as Array[int])
 
 
+func test_while_paused_a_complete_selection_is_not_confirmed_and_no_error_shows() -> void:
+	_open_combat([_free_bear()])
+	_reach_division(1)
+	_screen.press_key(KEY_ESCAPE)
+
+	_screen.pass_priority()
+
+	assert_true(_presenter.snapshot().decision is DivideCombatDamageDecision)
+	assert_eq(_screen.info_panel().error_text(), "", "Paused, nothing is sent, so nothing is refused.")
+
+
+func test_an_unfinished_selection_is_not_sent_when_the_hero_passes() -> void:
+	_open_combat([_free_bear()])
+	_reach_division(1)
+	_screen.stepper_of(_permanents("Ogre")[0]).minus_button().pressed.emit()
+	assert_false(_screen.selection().is_complete())
+
+	_screen.pass_priority()
+
+	assert_true(_presenter.snapshot().decision is DivideCombatDamageDecision)
+	assert_eq(_screen.info_panel().error_text(), "", "Nothing is sent, so nothing is refused.")
+
+
 func test_a_blocker_is_picked_up_and_paired_with_the_attacker_clicked() -> void:
 	_open_combat([_free_bear()])
 	_reach_blockers(2)
