@@ -94,6 +94,45 @@ func test_pointing_at_an_option_says_which_object_it_is_about() -> void:
 	assert_eq(pointed, [5, DebugDecisionForm.NONE] as Array[int])
 
 
+func test_it_hides_when_the_hero_is_asked_nothing_it_answers() -> void:
+	var cast: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new(), CastSpellAction.new(3)] as Array[MmAction])
+	var only_pass: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new()] as Array[MmAction])
+	var pay: PayManaDecision = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 1, [] as Array[MmMana.Type])
+	var target: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 3, 0, [MmReference.to_player(HERO)] as Array[MmReference])
+
+	assert_true(_panel(cast).visible, "A spell to cast is still chosen here.")
+	assert_eq(_panel(cast).option_buttons().size(), 1)
+	assert_false(_panel(only_pass).visible, "Passing has its own button.")
+	assert_false(_panel(pay).visible)
+	assert_false(_panel(target).visible)
+	assert_false(_panel(null).visible, "The Villain is deciding.")
+	assert_true(_panel(DeclareAttackersDecision.new(HERO, [4] as Array[int])).visible)
+
+
+func test_picking_a_spell_answers_with_its_place_among_all_the_actions() -> void:
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		PassAction.new(), ActivateAbilityAction.new(9, 0), CastSpellAction.new(3),
+	] as Array[MmAction])
+	var panel: DebugDecisionPanel = _panel(decision)
+
+	panel.option_buttons()[0].pressed.emit()
+
+	assert_eq(_answers, [2])
+
+
+func test_it_hides_once_the_encounter_is_over() -> void:
+	var snapshot: EncounterSnapshot = EncounterSnapshot.new()
+	snapshot.view = MmPlayerView.new()
+	snapshot.view.is_over = true
+	snapshot.decision = DeclareAttackersDecision.new(HERO, [4] as Array[int])
+	var panel: DebugDecisionPanel = DebugDecisionPanel.new()
+	add_child_autofree(panel)
+
+	panel.show_snapshot(snapshot)
+
+	assert_false(panel.visible)
+
+
 func _panel(decision: MmPendingDecision) -> DebugDecisionPanel:
 	var snapshot: EncounterSnapshot = EncounterSnapshot.new()
 	snapshot.view = MmPlayerView.new()
@@ -102,5 +141,5 @@ func _panel(decision: MmPendingDecision) -> DebugDecisionPanel:
 	var panel: DebugDecisionPanel = DebugDecisionPanel.new()
 	add_child_autofree(panel)
 	panel.answered.connect(func(answer: Variant) -> void: _answers.append(answer))
-	panel.show_snapshot(snapshot, "")
+	panel.show_snapshot(snapshot)
 	return panel

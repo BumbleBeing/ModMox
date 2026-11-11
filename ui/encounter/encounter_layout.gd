@@ -47,16 +47,32 @@ const CONTROLS_GAP: float = 6.0
 ## Pass is this many times as tall as Undo and Auto-pass.
 const PASS_TALLER: float = 1.3
 
+## The Info Panel, at the left end of the hand's strip (A293).
+const INFO_WIDTH: float = 300.0
+const INFO_PAD: float = 6.0
+## The Option Menu: how wide it is, how tall a row is, the gap between rows, the room around
+## them, and how many rows show before it scrolls (A286).
+const MENU_WIDTH: float = 330.0
+const MENU_ROW: float = 38.0
+const MENU_GAP: float = 4.0
+const MENU_PAD: float = 5.0
+const MENU_ROWS_SHOWN: int = 3
+## The Pause Menu's window, and the height each of its buttons takes.
+const PAUSE_WIDTH: float = 420.0
+const PAUSE_HEADING: float = 94.0
+const PAUSE_ROW: float = 58.0
+
 ## The Regions no two of which may overlap.
 const LEAVES: Array[String] = [
 	"villain_panel", "hero_panel",
 	"villain_hand", "villain_lands", "villain_nonlands", "hero_nonlands", "hero_lands", "hero_hand",
-	"villain_library", "villain_graveyard", "villain_exile", "status", "hero_library", "hero_graveyard", "hero_exile",
+	"info", "villain_library", "villain_graveyard", "villain_exile", "hero_library", "hero_graveyard", "hero_exile",
 ]
 
 
-## Every Region's rectangle on a screen of [param screen] pixels. Each player's piles run
-## library, graveyard, exile from the top. Besides LEAVES it has
+## Every Region's rectangle on a screen of [param screen] pixels. The six piles fill the
+## right column with equal spacing, the Villain's above the Hero's, each running library,
+## graveyard, exile from the top (A294). Besides LEAVES it has
 ## "sidebar", "piles" and "battlefield" (both players' rows), which contain others.
 static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	var found: Dictionary[String, Rect2] = {}
@@ -76,21 +92,23 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	found["villain_nonlands"] = Rect2(left, 244.0 * scale, width, 200.0 * scale)
 	found["hero_nonlands"] = Rect2(left, (472.0 + drop) * scale, width, 200.0 * scale)
 	found["hero_lands"] = Rect2(left, (684.0 + drop) * scale, width, 140.0 * scale)
-	found["hero_hand"] = Rect2(left, (836.0 + drop) * scale, width, screen.y - (836.0 + drop) * scale)
+	var strip: Rect2 = Rect2(left, (836.0 + drop) * scale, width, screen.y - (836.0 + drop) * scale)
+	found["info"] = Rect2(strip.position.x, strip.position.y + INFO_PAD, INFO_WIDTH, strip.size.y - INFO_PAD * 2.0)
+	# The hand keeps to the middle of the battlefield between strict bounds: the Info
+	# Panel's side, and as far in from the other side, so it can never overlap the panel.
+	var inset: float = INFO_WIDTH + GUTTER
+	found["hero_hand"] = Rect2(strip.position.x + inset, strip.position.y, strip.size.x - inset * 2.0, strip.size.y)
 	found["battlefield"] = Rect2(left, 86.0 * scale, width, (744.0 + drop) * scale)
 
 	var piles_left: float = screen.x - PILES_WIDTH
 	found["piles"] = Rect2(piles_left, 0, PILES_WIDTH, screen.y)
 	var pile: Vector2 = Vector2(PILES_WIDTH, PILE_HEIGHT + PILE_LABEL)
-	# Library, graveyard, exile from the top for each player: the Villain's from the top
-	# edge, the Hero's ending at the bottom edge.
-	var names: Array[String] = ["library", "graveyard", "exile"]
-	for index: int in names.size():
-		found["villain_" + names[index]] = Rect2(Vector2(piles_left, 6.0 + (pile.y + 2.0) * index), pile)
-		found["hero_" + names[index]] = Rect2(Vector2(piles_left, screen.y - 4.0 - pile.y * (3 - index) - 2.0 * (2 - index)), pile)
-	# Between the two players' piles: who is thinking, and whether priority is being held.
-	found["status"] = Rect2(piles_left, found["villain_exile"].end.y + 8.0, PILES_WIDTH,
-			found["hero_library"].position.y - found["villain_exile"].end.y - 16.0)
+	var gap: float = (screen.y - pile.y * 6.0) / 7.0
+	var keys: Array[String] = [
+		"villain_library", "villain_graveyard", "villain_exile", "hero_library", "hero_graveyard", "hero_exile",
+	]
+	for index: int in keys.size():
+		found[keys[index]] = Rect2(Vector2(piles_left, gap + (pile.y + gap) * index), pile)
 	return found
 
 
@@ -307,6 +325,79 @@ static func hand_spread(rest: Array[Vector2], card_size: Vector2, cursor: Vector
 		moved.y -= card_size.y * HAND_RISE * clampf(1.0 - absf(away) / 1.5, 0.0, 1.0)
 		places.append(moved)
 	return places
+
+
+## As hand_spread(), but no card leaves [param bounds]. The card under the cursor still shows
+## whole: it moves in from the right end if it must, so the card after it can clear it. The
+## cards on each side of those two keep their spacing when there is room, and are squeezed
+## evenly toward their end of the bounds when there is not, so none is ever hidden behind
+## another at the edge.
+static func hand_spread_within(rest: Array[Vector2], card_size: Vector2, cursor: Vector2, bounds: Rect2) -> Array[Vector2]:
+	var places: Array[Vector2] = hand_spread(rest, card_size, cursor)
+	if places.size() < 2:
+		return places
+	var most_left: float = bounds.position.x
+	var most_right: float = maxf(most_left, bounds.end.x - card_size.x)
+	var last: int = places.size() - 1
+	var under: int = roundi(hand_cursor_place(rest, card_size, cursor))
+	var after: int = mini(under + 1, last)
+	var gap: float = places[after].x - places[under].x
+	var anchor: float = clampf(minf(places[under].x, most_right - gap), most_left, most_right)
+	var held: Array[Vector2] = places.duplicate()
+	var left_span: float = places[under].x - places[0].x
+	var left_scale: float = minf(1.0, (anchor - most_left) / left_span) if left_span > 0.0 else 1.0
+	for index: int in under + 1:
+		held[index].x = anchor - (places[under].x - places[index].x) * left_scale
+	var after_x: float = minf(anchor + gap, most_right)
+	var right_span: float = places[last].x - places[after].x
+	var right_scale: float = minf(1.0, (most_right - after_x) / right_span) if right_span > 0.0 else 1.0
+	for index: int in range(after, last + 1):
+		held[index].x = after_x + (places[index].x - places[after].x) * right_scale
+	return held
+
+
+## The order to draw lands named [param names] in, as indexes into it: lands of one name
+## stand together, so a new land goes just right of the rightmost land with its name, and a
+## land with a new name starts a group at the right end.
+static func land_order(names: Array[String]) -> Array[int]:
+	var groups: Array[String] = []
+	for land_name: String in names:
+		if not groups.has(land_name):
+			groups.append(land_name)
+	var order: Array[int] = []
+	for group: String in groups:
+		for index: int in names.size():
+			if names[index] == group:
+				order.append(index)
+	return order
+
+
+## Where an Option Menu of [param row_count] rows opens when a card is clicked at
+## [param at]: there, moved as little as keeps it inside [param field]. It shows at most
+## MENU_ROWS_SHOWN rows and scrolls for the rest.
+static func menu_rect(at: Vector2, row_count: int, field: Rect2) -> Rect2:
+	var shown: int = clampi(row_count, 1, MENU_ROWS_SHOWN)
+	var menu: Vector2 = Vector2(MENU_WIDTH, shown * MENU_ROW + (shown - 1) * MENU_GAP + MENU_PAD * 2.0)
+	return Rect2(Vector2(
+		clampf(at.x, field.position.x, field.end.x - menu.x),
+		clampf(at.y, field.position.y, field.end.y - menu.y)), menu)
+
+
+## Which end of a scrolling line a face is hidden past: -1 for the left, 1 for the right
+## and 0 if it is in view. [param middle] is the face's middle measured from the line's left
+## edge, and a face behind an arrow, [param arrow_width] wide, counts as hidden.
+static func hidden_past(middle: float, view_width: float, arrow_width: float) -> int:
+	if middle < arrow_width:
+		return -1
+	if middle > view_width - arrow_width:
+		return 1
+	return 0
+
+
+## The Pause Menu's window with [param button_count] buttons, centered on [param field].
+static func pause_rect(button_count: int, field: Rect2) -> Rect2:
+	var window: Vector2 = Vector2(PAUSE_WIDTH, PAUSE_HEADING + button_count * PAUSE_ROW + 16.0)
+	return Rect2(field.position + (field.size - window) / 2.0, window)
 
 
 static func _same_heights(count: int, height: float) -> Array[float]:

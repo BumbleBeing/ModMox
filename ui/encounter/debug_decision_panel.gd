@@ -1,13 +1,12 @@
 class_name DebugDecisionPanel
 extends ZoneWindow
 ## The Debug Decision Panel (game glossary): a temporary window that answers every kind of
-## Pending Decision through DebugDecisionForm's five generic forms. Each decision kind
-## leaves it as its own input is built (A243), and it is deleted when none is left.
+## Pending Decision that has no input of its own yet, through DebugDecisionForm's five
+## generic forms. Each decision kind leaves it as its own input is built (A243), and it is
+## deleted when none is left. It hides whenever it has nothing to offer (A290).
 
 ## The form was filled in: [param answer] is what to submit.
 signal answered(answer: Variant)
-signal cancel_requested
-signal concede_requested
 ## The cursor is over an option about Game Object [param object_id], or left it (NONE).
 signal option_pointed(object_id: int)
 
@@ -15,15 +14,11 @@ const TINT: Color = Color("#b06ad6")
 
 var _form: DebugDecisionForm = null
 var _snapshot: EncounterSnapshot = null
-var _error_shown: String = ""
 var _picked: Array[int] = []
-var _error: Label = null
 var _options: Array[Button] = []
 var _pair_choices: Array[OptionButton] = []
 var _shares: Array[SpinBox] = []
 var _submit: Button = null
-var _cancel: Button = null
-var _concede: Button = null
 
 
 func _init() -> void:
@@ -31,19 +26,14 @@ func _init() -> void:
 	show_title("Debug Decision Panel")
 
 
-## Shows the form for [param snapshot]'s decision, or what the panel is waiting for, with
-## [param error] if the last answer was rejected.
-func show_snapshot(snapshot: EncounterSnapshot, error: String) -> void:
-	_form = DebugDecisionForm.of(snapshot.decision, snapshot.view) if snapshot.decision != null else null
+## Shows the form for [param snapshot]'s decision, or hides when the Hero is asked nothing
+## this panel answers.
+func show_snapshot(snapshot: EncounterSnapshot) -> void:
+	_form = null if snapshot.is_over() else DebugDecisionForm.of(snapshot.decision, snapshot.view)
 	_snapshot = snapshot
-	_error_shown = error
 	_picked.clear()
-	_rebuild(snapshot, error)
-
-
-## The reason the last answer was rejected, as shown, or "".
-func error_text() -> String:
-	return _error.text if _error != null else ""
+	visible = _form != null and not (_form.kind == DebugDecisionForm.Kind.PICK_ONE and _form.is_empty())
+	_rebuild()
 
 
 func heading_text() -> String:
@@ -71,47 +61,19 @@ func share_box(index: int) -> SpinBox:
 	return _shares[index]
 
 
-## The cancel button, or null when the decision is not a step of a cast.
-func cancel_button() -> Button:
-	return _cancel
-
-
-func concede_button() -> Button:
-	return _concede
-
-
-func _rebuild(snapshot: EncounterSnapshot, error: String) -> void:
+func _rebuild() -> void:
 	clear()
 	_options.clear()
 	_pair_choices.clear()
 	_shares.clear()
 	_submit = null
-	_cancel = null
-	_error = null
 	var heading: Label = Label.new()
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	heading.add_theme_font_size_override("font_size", 17)
 	body().add_child(heading)
-	if error != "":
-		_error = Label.new()
-		_error.text = "Rejected: " + error
-		_error.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_error.modulate = Color(1, 0.45, 0.4)
-		body().add_child(_error)
-	if snapshot.is_over():
-		heading.text = "The encounter is over."
-	elif _form == null:
-		heading.text = "The Villain is deciding."
-	else:
+	if _form != null:
 		heading.text = _form.title
 		_build_form()
-		if _form.can_cancel:
-			_cancel = _button("Cancel cast", func() -> void: cancel_requested.emit())
-			body().add_child(_cancel)
-	body().add_child(HSeparator.new())
-	_concede = _button("Concede", func() -> void: concede_requested.emit())
-	_concede.disabled = snapshot.is_over() or snapshot.is_villain_thinking
-	body().add_child(_concede)
 
 
 func _build_form() -> void:
@@ -180,7 +142,7 @@ func _toggle_pick(index: int) -> void:
 		_picked.erase(index)
 	else:
 		_picked.append(index)
-	_rebuild(_snapshot, _error_shown)
+	_rebuild()
 
 
 func _add_option(label: String, index: int, on_press: Callable) -> Button:

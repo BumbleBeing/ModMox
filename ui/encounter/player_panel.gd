@@ -3,11 +3,15 @@ extends Control
 ## One player's panel in the sidebar: their name, a square portrait with their life total in
 ## its corner, a button for each color of mana in their pool, the Emblems button, and every
 ## step of the turn down the right side. Green steps have a stop; the step it is now has a
-## pale border on the active player's panel.
+## pale border on the active player's panel. While the player can be chosen as a target the
+## whole panel takes the click, behind its buttons, which keep working. The Villain's panel
+## says when the Villain is thinking, under its Emblems button (A294).
 
 ## A mana button was pressed while paying: [param answer] spends one mana of that color.
 signal mana_pressed(answer: int)
 signal emblems_pressed
+## The panel was clicked while its player could be chosen: [param answer] chooses them.
+signal player_clicked(answer: int)
 ## A step button was pressed: toggle the stop there on this panel's row.
 signal stop_toggled(step: MmTurn.Step)
 ## The Hero's controls, under their Emblems button.
@@ -23,6 +27,7 @@ const GOLD: Color = Color("#c9a544")
 const STOP_COLOR: Color = Color("#2f8f46")
 const PLAIN_COLOR: Color = Color("#3a414d")
 const NOW_COLOR: Color = Color("#f3e9a0")
+const THINKING: String = "The Villain is thinking…"
 
 var _player_id: int
 var _title: String
@@ -34,6 +39,7 @@ var _steps: Array[Button] = []
 var _pass: Button = null
 var _undo: Button = null
 var _auto_pass: Button = null
+var _thinking: Label = null
 
 
 ## [param title] is the player's name as the panel shows it.
@@ -46,7 +52,7 @@ func _init(player_id: int, title: String) -> void:
 ## Draws the panel in [param panel_rect] from [param snapshot]. [param is_hero] says whose
 ## mana buttons can be pressed (only the Hero's, and only while paying) and whose panel has
 ## the controls: undo, pass and auto-pass, with [param is_auto_passing] for its box.
-func show_snapshot(snapshot: EncounterSnapshot, glow: DecisionGlow, stops: StepStops, panel_rect: Rect2, is_hero: bool,
+func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: StepStops, panel_rect: Rect2, is_hero: bool,
 		is_auto_passing: bool) -> void:
 	for child: Node in get_children():
 		remove_child(child)
@@ -57,6 +63,8 @@ func show_snapshot(snapshot: EncounterSnapshot, glow: DecisionGlow, stops: StepS
 	_pass = null
 	_undo = null
 	_auto_pass = null
+	_thinking = null
+	modulate = Color.WHITE
 	position = panel_rect.position
 	size = panel_rect.size
 	var view: MmPlayerView = snapshot.view
@@ -64,8 +72,12 @@ func show_snapshot(snapshot: EncounterSnapshot, glow: DecisionGlow, stops: StepS
 	add_child(CardShapes.rounded(panel_rect.size, 8, Color("#2c323c")))
 	if view.priority_player_id == _player_id:
 		add_child(CardShapes.outline(panel_rect.size, 8, 3, NOW_COLOR))
-	if glow.players.has(_player_id):
-		BorderEffects.add_glow(self, panel_rect.size, DecisionGlow.color_of(glow.players[_player_id]))
+	if clicks.player_answers.has(_player_id):
+		# Added before the buttons, so it lies behind them and they keep their clicks.
+		var answer: int = clicks.player_answers[_player_id]
+		ClickCatcher.add(self, panel_rect.size).clicked.connect(func() -> void: player_clicked.emit(answer))
+	if clicks.players.has(_player_id):
+		BorderEffects.add_glow(self, panel_rect.size, DecisionClicks.color_of(clicks.players[_player_id]))
 
 	add_child(_label(_title, parts["name"], 22))
 	var portrait: Panel = CardShapes.rounded(parts["portrait"].size, 8, Color("#444c5a"))
@@ -83,8 +95,8 @@ func show_snapshot(snapshot: EncounterSnapshot, glow: DecisionGlow, stops: StepS
 		for unit: MmMana in pool:
 			if unit.type == type:
 				amount += 1
-		_add_mana_button(parts["mana_%d" % type], type, amount, is_hero and glow.pool_answers.has(type),
-				glow.pool_answers.get(type, -1))
+		_add_mana_button(parts["mana_%d" % type], type, amount, is_hero and clicks.pool_answers.has(type),
+				clicks.pool_answers.get(type, -1))
 
 	var emblem_count: int = 0
 	for emblem: MmObjectView in view.command:
@@ -97,6 +109,10 @@ func show_snapshot(snapshot: EncounterSnapshot, glow: DecisionGlow, stops: StepS
 				view.active_player_id == _player_id and view.step == step)
 	if is_hero:
 		_add_controls(snapshot, parts, is_auto_passing)
+	elif snapshot.is_villain_thinking:
+		_thinking = _label(THINKING, Rect2(parts["controls"].position, Vector2(parts["controls"].size.x, 34)), 16)
+		_thinking.modulate = Color(1, 0.85, 0.4)
+		add_child(_thinking)
 
 
 ## The pass, undo and auto-pass buttons: null on the Villain's panel.
@@ -110,6 +126,17 @@ func undo_button() -> Button:
 
 func auto_pass_button() -> Button:
 	return _auto_pass
+
+
+## What the panel says about its player thinking: THINKING on the Villain's while they
+## think, and "" otherwise.
+func thinking_text() -> String:
+	return _thinking.text if _thinking != null else ""
+
+
+## What takes a click on the panel while its player can be chosen, or null.
+func click_catcher() -> ClickCatcher:
+	return ClickCatcher.of(self)
 
 
 func life_text() -> String:
@@ -196,7 +223,7 @@ func _add_mana_button(box: Rect2, type: int, amount: int, can_press: bool, pay_a
 	var count: Label = _label("(%d)" % amount, Rect2(0, 30, box.size.x, 22), 14)
 	button.add_child(count)
 	if can_press:
-		BorderEffects.add_glow(button, box.size, DecisionGlow.color_of(DecisionGlow.Kind.MANA))
+		BorderEffects.add_glow(button, box.size, DecisionClicks.color_of(DecisionClicks.Kind.MANA))
 		button.pressed.connect(func() -> void: mana_pressed.emit(pay_answer))
 	add_child(button)
 	_mana.append(button)

@@ -7,47 +7,46 @@ const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
 const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 
 
-func test_priority_lists_each_action_by_what_it_does() -> void:
+func test_priority_lists_only_casting_and_playing_a_land_and_answers_with_the_actions_index() -> void:
 	var view: MmPlayerView = _view()
 	var decision: PriorityDecision = PriorityDecision.new(HERO, [
-		PassAction.new(), PlayLandAction.new(2), CastSpellAction.new(3), ActivateAbilityAction.new(1, 0),
+		PassAction.new(), ActivateAbilityAction.new(1, 0), PlayLandAction.new(2), CastSpellAction.new(3),
 	] as Array[MmAction])
 
 	var form: DebugDecisionForm = DebugDecisionForm.of(decision, view)
 
 	assert_eq(form.kind, DebugDecisionForm.Kind.PICK_ONE)
-	assert_eq(form.options, ["Pass", "Play Mountain", "Cast Zap", "Tap Forest for mana (#1)"] as Array[String])
-	assert_eq(form.option_object_ids, [DebugDecisionForm.NONE, 2, 3, 1] as Array[int])
-	assert_false(form.can_cancel)
-	assert_eq(decision.validate(form.answer_for_pick(2)), "")
-	assert_eq(form.answer_for_pick(2), 2)
+	assert_eq(form.options, ["Play Mountain", "Cast Zap"] as Array[String],
+		"Passing has its button and the Forest is clicked for mana (13c).")
+	assert_eq(form.option_object_ids, [2, 3] as Array[int])
+	assert_false(form.is_empty())
+	assert_eq(form.answer_for_pick(0), 2, "The index of playing the Mountain among all four actions.")
+	assert_eq(form.answer_for_pick(1), 3)
+	assert_eq(decision.validate(form.answer_for_pick(1)), "")
 
 
-func test_paying_mana_says_what_is_owed_and_can_be_canceled() -> void:
+func test_priority_with_nothing_to_cast_or_play_is_an_empty_form() -> void:
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		PassAction.new(), ActivateAbilityAction.new(1, 0),
+	] as Array[MmAction])
+
+	assert_true(DebugDecisionForm.of(decision, _view()).is_empty())
+
+
+func test_paying_mana_and_choosing_a_target_have_no_form() -> void:
 	var view: MmPlayerView = _view()
-	view.mana_pools[HERO] = [MmMana.new(MmMana.Type.RED, 1)]
-	var decision: PayManaDecision = PayManaDecision.new(HERO,
-		[PayWithManaAction.new(0), ActivateAbilityAction.new(1, 0)] as Array[MmAction], 2, [MmMana.Type.RED] as Array[MmMana.Type])
+	var pay: PayManaDecision = PayManaDecision.new(HERO,
+		[ActivateAbilityAction.new(1, 0)] as Array[MmAction], 2, [MmMana.Type.RED] as Array[MmMana.Type])
+	var target: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 3, 0,
+		[MmReference.to_player(HERO), MmReference.to_object(1)] as Array[MmReference])
 
-	var form: DebugDecisionForm = DebugDecisionForm.of(decision, view)
-
-	assert_eq(form.title, "Pay mana: {2}{R} still owed")
-	assert_eq(form.options, ["Spend {R} from the pool", "Tap Forest for mana (#1)"] as Array[String])
-	assert_true(form.can_cancel, "Paying is a step of a cast in progress.")
-	assert_eq(decision.validate(form.answer_for_pick(1)), "")
-
-
-func test_choosing_a_target_names_players_and_objects_and_can_be_canceled() -> void:
-	var decision: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 3, 0,
-		[MmReference.to_player(HERO), MmReference.to_player(VILLAIN), MmReference.to_object(1)] as Array[MmReference])
-
-	var form: DebugDecisionForm = DebugDecisionForm.of(decision, _view())
-
-	assert_eq(form.title, "Choose a target for Zap")
-	assert_eq(form.options, ["You", "The other player", "Forest"] as Array[String])
-	assert_eq(form.option_object_ids, [DebugDecisionForm.NONE, DebugDecisionForm.NONE, 1] as Array[int])
-	assert_true(form.can_cancel)
-	assert_eq(decision.validate(form.answer_for_pick(1)), "")
+	assert_null(DebugDecisionForm.of(pay, view), "Mana is paid by clicking sources (A253).")
+	assert_null(DebugDecisionForm.of(target, view), "A target is clicked.")
+	assert_null(DebugDecisionForm.of(null, view))
+	assert_false(DebugDecisionForm.covers(pay))
+	assert_false(DebugDecisionForm.covers(target))
+	assert_false(DebugDecisionForm.covers(null))
+	assert_true(DebugDecisionForm.covers(DeclareAttackersDecision.new(HERO, [1] as Array[int])))
 
 
 func test_keep_or_mulligan_and_play_or_draw_are_two_choices_each() -> void:

@@ -60,7 +60,6 @@ func test_commands_are_refused_while_the_villain_is_thinking() -> void:
 	assert_eq(presenter.pass_priority(), EncounterPresenter.BUSY)
 	assert_eq(presenter.undo(), EncounterPresenter.BUSY)
 	assert_eq(presenter.cancel_cast(), EncounterPresenter.BUSY)
-	assert_eq(presenter.concede(), EncounterPresenter.BUSY)
 	presenter.set_auto_passing(false)
 	presenter.toggle_stop(HERO, MmTurn.Step.UPKEEP)
 
@@ -227,6 +226,57 @@ func test_conceding_ends_the_encounter_and_cannot_be_done_twice() -> void:
 	assert_ne(presenter.concede(), "")
 	assert_eq(presenter.answer(0), EncounterPresenter.NOT_PRIORITY)
 	assert_eq(presenter.pass_priority(), EncounterPresenter.NOT_PRIORITY)
+
+
+func test_conceding_while_the_villain_thinks_waits_for_that_thought_and_plays_nothing_more() -> void:
+	var agent: SlowAgent = SlowAgent.new()
+	var presenter: EncounterPresenter = EncounterPresenter.new(Scenario.setup(Rule.VILLAIN_CHOOSES), agent)
+	presenter.start()
+	assert_true(presenter.is_villain_thinking())
+
+	assert_eq(presenter.concede(), "")
+
+	assert_false(presenter.is_villain_thinking(), "No second thought was begun.")
+	assert_true(presenter.snapshot().is_over())
+	assert_eq(presenter.snapshot().view.winner_id, VILLAIN)
+	assert_ne(agent.thread_id, -1, "The thought it was in the middle of finished first.")
+
+
+func test_while_paused_nothing_is_collected_from_the_villain_until_it_resumes() -> void:
+	var agent: SlowAgent = SlowAgent.new()
+	agent.delay_msec = 50
+	var presenter: EncounterPresenter = EncounterPresenter.new(Scenario.setup(Rule.VILLAIN_CHOOSES), agent)
+	presenter.start()
+	var during: EncounterSnapshot = presenter.snapshot()
+
+	presenter.set_paused(true)
+	OS.delay_msec(200)
+	presenter.poll()
+
+	assert_true(presenter.is_paused())
+	assert_eq(presenter.snapshot(), during, "The thought finished, but the screen was told nothing.")
+	assert_true(presenter.is_villain_thinking())
+
+	presenter.set_paused(false)
+	presenter.poll()
+
+	assert_ne(presenter.snapshot(), during, "Resuming carries on from where it was.")
+	presenter.wait_until_idle()
+
+
+func test_the_heros_answers_are_refused_while_paused_but_conceding_is_not() -> void:
+	var presenter: EncounterPresenter = _started(_land_setup(), false)
+	var before: EncounterSnapshot = presenter.snapshot()
+	presenter.set_paused(true)
+
+	assert_eq(presenter.answer(KeepOrMulliganDecision.Choice.KEEP), EncounterPresenter.PAUSED)
+	assert_eq(presenter.pass_priority(), EncounterPresenter.PAUSED)
+	assert_eq(presenter.undo(), EncounterPresenter.PAUSED)
+	assert_eq(presenter.cancel_cast(), EncounterPresenter.PAUSED)
+	assert_eq(presenter.snapshot(), before)
+
+	assert_eq(presenter.concede(), "")
+	assert_true(presenter.snapshot().is_over())
 
 
 func test_each_snapshot_carries_exactly_the_events_since_the_one_before() -> void:
@@ -413,9 +463,10 @@ func test_an_encounter_asked_for_by_arguments_is_the_one_the_form_starts() -> vo
 	assert_ne(first, _hand_names(_started(other_seed.setup())), "Another seed deals another hand.")
 
 
-func test_a_whole_encounter_can_be_played_through_the_panels_forms() -> void:
+func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_forms() -> void:
 	# An Easy AI decides for the Hero on a twin engine kept in step, and every answer it
-	# gives is put through the Debug Decision Panel's form before it is submitted.
+	# gives is put through what the Hero would use for it before it is submitted: a click
+	# on a permanent, a player or a mana button, the pass button, or the panel's form.
 	var request: EncounterRequest = _request(3)
 	var presenter: EncounterPresenter = EncounterPresenter.new(request.setup(), request.villain_agent())
 	presenter.set_auto_passing(false)
@@ -426,6 +477,7 @@ func test_a_whole_encounter_can_be_played_through_the_panels_forms() -> void:
 	var twin_driver: MmEncounterDriver = MmEncounterDriver.new(twin, {VILLAIN: request.villain_agent()} as Dictionary[int, MmAgent])
 	var hero: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
 	var kinds: Dictionary[DebugDecisionForm.Kind, bool] = {}
+	var clicked: Dictionary[Script, bool] = {}
 	var answers: int = 0
 
 	while not presenter.snapshot().is_over() and answers < 3000:
@@ -436,13 +488,19 @@ func test_a_whole_encounter_can_be_played_through_the_panels_forms() -> void:
 			break
 		var wanted: Variant = hero.answer(twin.pending_decision(), null, twin.simulation_source_for(HERO))
 		var form: DebugDecisionForm = DebugDecisionForm.of(decision, presenter.snapshot().view)
-		kinds[form.kind] = true
-		var through_form: Variant = _fill_in(form, wanted)
-		var error: String = presenter.answer(through_form)
+		var through: Variant = _click(decision, presenter.snapshot().view, wanted)
+		if through != null:
+			clicked[decision.get_script()] = true
+		elif form != null:
+			kinds[form.kind] = true
+			through = _fill_in(form, wanted)
+		var error: String = presenter.answer(through)
 		if error != "":
-			fail_test("The form's answer %s to %s was rejected: %s" % [through_form, decision.describe(), error])
+			fail_test("The answer %s to %s was rejected: %s" % [through, decision.describe(), error])
 			break
-		twin.submit(wanted)
+		# A click on a mana button spends the first unit of that color, which may be another
+		# unit than the AI named, so the twin is given what was really answered.
+		twin.submit(through)
 		presenter.wait_until_idle()
 		answers += 1
 
@@ -451,13 +509,50 @@ func test_a_whole_encounter_can_be_played_through_the_panels_forms() -> void:
 	assert_eq(presenter.snapshot().view.winner_id, twin.game_state().winner_id)
 	assert_true(kinds.has(DebugDecisionForm.Kind.PICK_ONE))
 	assert_true(kinds.has(DebugDecisionForm.Kind.PICK_SOME), "Attackers were declared through the form.")
+	assert_true(clicked.has(PayManaDecision), "Mana was paid by clicking.")
+	assert_true(clicked.has(ChooseTargetDecision), "Targets were clicked.")
+	assert_true(clicked.has(PriorityDecision), "A permanent was clicked at priority, or the pass button pressed.")
+
+
+## The answer the Hero's own input gives for [param wanted], or null when the decision, or
+## that choice of it, is still answered in the panel.
+func _click(decision: MmPendingDecision, view: MmPlayerView, wanted: Variant) -> Variant:
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+	if decision is PriorityDecision:
+		var action: MmAction = (decision as PriorityDecision).actions[wanted]
+		if action is PassAction:
+			return AutoPass.pass_index(decision as PriorityDecision)
+		return _option_answering(clicks, DecisionClicks.object_of(action), wanted) if action is ActivateAbilityAction else null
+	if decision is PayManaDecision:
+		var action: MmAction = (decision as PayManaDecision).actions[wanted]
+		if action is PayWithManaAction:
+			var pool: Array = view.mana_pools[HERO]
+			return clicks.pool_answers[(pool[(action as PayWithManaAction).unit_index] as MmMana).type]
+		return _option_answering(clicks, DecisionClicks.object_of(action), wanted)
+	if decision is ChooseTargetDecision:
+		var candidate: MmReference = (decision as ChooseTargetDecision).candidates[wanted]
+		if candidate.is_player():
+			return clicks.player_answers[candidate.id]
+		return _option_answering(clicks, candidate.id, wanted)
+	return null
+
+
+func _option_answering(clicks: DecisionClicks, object_id: int, wanted: int) -> Variant:
+	for option: ClickOption in clicks.options_of(object_id):
+		if option.answer == wanted:
+			return option.answer
+	fail_test("Clicking object %d does not offer answer %d." % [object_id, wanted])
+	return null
 
 
 ## What [param form] gives when it is filled in to say [param wanted].
 func _fill_in(form: DebugDecisionForm, wanted: Variant) -> Variant:
 	match form.kind:
 		DebugDecisionForm.Kind.PICK_ONE:
-			return form.answer_for_pick(wanted)
+			for option: int in form.options.size():
+				if form.answer_for_pick(option) == wanted:
+					return form.answer_for_pick(option)
+			return null
 		DebugDecisionForm.Kind.PICK_SOME:
 			var picks: Array[int] = []
 			var ids: Array = wanted
