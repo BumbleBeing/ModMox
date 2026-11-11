@@ -127,6 +127,23 @@ func test_a_rollout_from_the_other_players_end_step_plays_through_its_own_next_t
 	assert_eq(copy.game_state().game_turn, 6, "The Hero's whole Game Turn 5 is played.")
 
 
+func test_a_pass_that_ends_the_game_turn_is_rolled_out_no_further_than_any_other_answer() -> void:
+	var no_creatures: Array[MmCardDefinition] = []
+	var engine: MmEngine = AiScenario.ready_with(no_creatures, no_creatures)
+	assert_not_null(engine)
+	Scenario.play_until_step(engine, 3, Step.END)
+	Scenario.pass_priority(engine)
+	var villain_id: int = engine.villain().id
+	assert_eq(engine.game_state().game_turn, 3)
+	assert_eq(engine.pending_decision().player_id, villain_id, "The Villain's pass ends Game Turn 3.")
+	var passing: int = Scenario.pass_index(engine.pending_decision() as PriorityDecision)
+	var copy: MmEngine = engine.simulation_copy(villain_id, MmRng.new(1))
+
+	AiSimulation.score_rollout(copy, passing, villain_id, AiProfile.new())
+
+	assert_eq(copy.game_state().game_turn, 5, "A190: the horizon is counted from the decision, not from after the answer.")
+
+
 func test_a_rollout_stops_when_the_game_ends() -> void:
 	var no_creatures: Array[MmCardDefinition] = []
 	var engine: MmEngine = AiScenario.ready_with([AiScenario.free_alpha("craw_wurm")], no_creatures, [], [],

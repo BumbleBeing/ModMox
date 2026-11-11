@@ -11,8 +11,9 @@ const MOST_OF_HEIGHT: float = 0.2
 const GAP: float = 0.12
 
 
-## The chips for [param abilities], in the fixed keyword order (A222). Flash is left out:
-## it no longer matters once a card is on the battlefield.
+## The chips for [param abilities], in the fixed keyword order (A222), one for each keyword
+## however many times the card has it. Flash is left out: it no longer matters once a card
+## is on the battlefield.
 static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
 	var order: Array[Script] = [
 		FlyingAbility, ReachAbility, VigilanceAbility, HasteAbility, DeathtouchAbility,
@@ -21,6 +22,7 @@ static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
 	]
 	var letters: Array[String] = ["F", "R", "V", "H", "DT", "DF", "FS", "DS", "T", "I", "P"]
 	var chips: Array[KeywordChip] = []
+	var seen: Dictionary[String, bool] = {}
 	for index: int in order.size():
 		for ability: MmAbility in abilities:
 			if not is_instance_of(ability, order[index]):
@@ -31,7 +33,12 @@ static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
 			if protection != null and protection.from is HasColorFilter:
 				chip.has_protection_color = true
 				chip.protection_color = (protection.from as HasColorFilter).color
-			chips.append(chip)
+			# Two instances of a keyword are redundant, so they share a chip. Protection
+			# from two different colors is two keywords.
+			var key: String = "%s:%s" % [chip.letters, chip.protection_color if chip.has_protection_color else -1]
+			if not seen.has(key):
+				seen[key] = true
+				chips.append(chip)
 	return chips
 
 

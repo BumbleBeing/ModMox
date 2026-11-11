@@ -59,11 +59,14 @@ static func play_out(copy: MmEngine, player_id: int, profile: AiProfile) -> void
 
 
 ## Submits [param answer] on [param copy], rolls it out, and returns [param player_id]'s
-## score of the result.
+## score of the result. The horizon is counted from the decision, before the answer is
+## submitted, so a pass that ends the Game Turn is played no further than any other answer
+## (A190, A193).
 static func score_rollout(copy: MmEngine, answer: Variant, player_id: int, profile: AiProfile) -> int:
+	var last_turn: int = copy.game_state().game_turn + ROLLOUT_EXTRA_TURNS
 	if copy.submit(answer) != "":
 		return FAILED
-	roll_out(copy, player_id, profile)
+	_roll_out_through(copy, last_turn, player_id, profile)
 	if copy.has_failed():
 		return FAILED
 	return AiBoardEvaluator.score(copy.game_state(), player_id, profile)
@@ -74,12 +77,15 @@ static func score_rollout(copy: MmEngine, answer: Variant, player_id: int, profi
 ## [param profile] answers for [param player_id]; the other player gets the default AI
 ## Profile (A180, A201).
 static func roll_out(copy: MmEngine, player_id: int, profile: AiProfile) -> void:
+	_roll_out_through(copy, copy.game_state().game_turn + ROLLOUT_EXTRA_TURNS, player_id, profile)
+
+
+static func _roll_out_through(copy: MmEngine, last_turn: int, player_id: int, profile: AiProfile) -> void:
 	var agents: Dictionary[int, MmAgent] = {}
 	agents[player_id] = AiAgent.new(profile, AiAgent.Mode.CHEAP)
 	agents[1 - player_id] = AiAgent.new(AiProfile.new(), AiAgent.Mode.CHEAP)
 	var driver: MmEncounterDriver = MmEncounterDriver.new(copy, agents)
 	driver.builds_views = false
 	driver.decision_cap = ROLLOUT_DECISION_CAP
-	var last_turn: int = copy.game_state().game_turn + ROLLOUT_EXTRA_TURNS
 	driver.run_until(func(running: MmEngine) -> bool:
 		return running.game_state().game_turn > last_turn)

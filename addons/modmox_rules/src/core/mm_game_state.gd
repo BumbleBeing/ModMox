@@ -165,7 +165,12 @@ func object(id: int) -> MmGameObject:
 ## The Run Card a card came from, for presentation and rewards. Null for an object that is
 ## not a card.
 func run_card_of(game_object: MmGameObject) -> MmRunCard:
-	return _run_cards.get(game_object.card_id, null) as MmRunCard
+	return run_card(game_object.card_id)
+
+
+## The Run Card with Card Identity [param card_id], or null if there is none.
+func run_card(card_id: int) -> MmRunCard:
+	return _run_cards.get(card_id, null) as MmRunCard
 
 
 ## The current characteristics of [param game_object]. The only place, together with

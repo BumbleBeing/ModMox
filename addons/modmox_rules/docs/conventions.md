@@ -47,9 +47,11 @@ content/cards/   game Content: authored Card Definitions (.tres), outside the en
 content/decks/   authored decks, saved as Player Setups (.tres)
 content/art/     card art (one image per Card Definition) and its manifest, art.json
 assets/          third-party art and fonts, each folder with its credits or license
-ui/              the GUI (game-side): ui/cards/ draws Card Faces and Battlefield Faces
+ui/              the GUI (game-side): ui/cards/ draws Card Faces and Battlefield Faces,
+                 ui/encounter/ is the Encounter Screen and its Presenter, ui/menu/ the main menu
+docs/adr/        the game's own ADRs, numbered on from the engine's (0021 is the first)
 tools/           developer tools: tools/art/ fetches card art, tools/card_gallery/ shows every card
-tests/           game-side tests, mirroring ui/ and tools/ (tests/ui/cards/, tests/tools/)
+tests/           game-side tests, mirroring ui/ and tools/ (tests/ui/cards/, tests/ui/encounter/, tests/tools/)
 ```
 
 - One class per file. The file name is the class name in `snake_case`: `MmGameState` → `mm_game_state.gd`, `ZoneChangeEvent` → `zone_change_event.gd`.
@@ -150,6 +152,8 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 
 ## Agents in tests
 
+- In GUI tests, drive an encounter through `EncounterPresenter` with a test Agent for the Villain, and call `wait_until_idle()` after each answer. `tests/ui/encounter/support/` has `slow_agent.gd` (takes 300 ms, records its thread) and `responding_agent.gd` (answers the Hero's first spell with one of its own). To know what is hidden from the Hero, start a second engine from the same setup: the same seed deals the same cards.
+- After adding a test file, check the run printed exactly one `SCRIPT ERROR` (the one `test_static_typing` expects). A test file that fails to parse is skipped without failing the run.
 - Drive a whole encounter with `MmEncounterDriver` and test Agents from `tests/support/`: `default_answer_agent.gd` answers like `Scenario.autoplay()`, and `illegal_answer_agent.gd` never answers legally. `Scenario.default_answer()` gives autoplay's answer to any one decision.
 - In AI tests, `AiScenario.ask()` gets an Agent's answer to the pending decision without submitting it, and `AiScenario.ready_with()` sets up both battlefields, with an optional starting life for the Villain.
 - A free copy has mana value 0, so the Board Evaluator values it as a card costing nothing. Use real cards and lands when a test depends on what a card in hand is worth.
@@ -169,6 +173,11 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - **Images the code composites are imported as `Image`**, not textures (set `importer="image"` in their `.import` file), so baking works headless and tests can check real pixels. Images that are only drawn import as textures, with mipmaps.
 - **Never change a loaded `Image`.** Resize or edit a `duplicate()`.
 - **Card art comes from `tools/art/fetch_art.gd`**, never by hand: it downloads the first printing's art for any card without it and records its credits in `content/art/art.json`. Set focus points with the card gallery tool.
+- **Only the Encounter Presenter touches the engine** (ADR 0021). Nothing else in `ui/` or `tools/` may mention `MmEngine`, `MmGameState` or `MmEncounterDriver`; a test scans for them. A screen draws from the snapshot it was handed, and asks the presenter to answer, pass, undo, cancel or concede.
+- **Never read the engine while the Villain is thinking.** Its Agent runs on a worker thread that is changing the game. The presenter makes its snapshot before starting the task and refuses commands until it has finished; new presenter code must keep that order.
+- **An effect on a thing's border is a child of that thing** (`BorderEffects`): the Glow, a pointer outline, anything later. It then turns, moves and resizes with a fanned or tapped card. Never draw one beside its host from a remembered rectangle.
+- **A redraw frees what it replaces with `queue_free()`**, never `free()`, because the redraw is often running inside a signal from one of the nodes being replaced. A test that redraws waits two frames in `after_each()` so nothing is left as an orphan.
+- **Scenes that lead elsewhere take a `navigate` Callable** (and `quit`, for the menu), which a test replaces, so a test never changes the running scene.
 - **Every sub-milestone of the GUI starts with a throwaway prototype** in `prototypes/<sub-milestone>/`, which the user signs off on. Prototypes skip these conventions and tests, and are deleted when the real build lands.
 
 ## Formatting

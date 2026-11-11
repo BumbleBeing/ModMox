@@ -31,7 +31,8 @@ var toughness: int = 0
 ## Printed power and toughness, so the GUI can show when they have changed.
 var base_power: int = 0
 var base_toughness: int = 0
-## CR 604.3: shown as "*" when not worked out, as on a card.
+## CR 604.3: shown as "*" when not worked out, as on a card. Never true on the battlefield,
+## where power and toughness hold the worked-out numbers.
 var is_power_variable: bool = false
 var is_toughness_variable: bool = false
 ## Every ability it has right now, including granted ones such as "gains flying".
@@ -88,6 +89,9 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.damage_marked = game_object.damage_marked
 	view.is_summoning_sick = state.is_summoning_sick(game_object)
 	if game_object.zone() == state.battlefield:
+		# CR 604.3: a permanent's numbers are worked out, so it no longer reads "*".
+		view.is_power_variable = false
+		view.is_toughness_variable = false
 		view.is_attacking = state.combat.attackers(state).has(game_object.id)
 		view.is_blocked = view.is_attacking and state.combat.is_blocked(game_object.id)
 		view.blocking_ids = state.combat.attackers_blocked_by(state, game_object.id)

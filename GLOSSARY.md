@@ -44,6 +44,30 @@ _Avoid_: Event (an engine term for a change to the game), room, space
 What shows an encounter to the human and takes their answers.
 _Avoid_: Battle screen, game view, board
 
+**Encounter Presenter**:
+The one part of the GUI that owns the rules engine for an encounter. It runs the Villain's Agent, takes the Hero's answers, and after every change hands the Encounter Screen a snapshot of what the Hero may see and is being asked.
+_Avoid_: Controller, game manager, view model
+
+**Region**:
+One rectangle of the Encounter Screen's layout, such as a player's panel in the sidebar, a row of lands, the Hero's hand, or a library, graveyard or exile pile. No two Regions overlap. The stack is not a Region: see Stack Window.
+_Avoid_: Area, zone (a rules term), slot
+
+**Zone Window**:
+A window over the Encounter Screen that shows what is in a zone. It can be dragged and resized within the battlefield, scrolls when its contents overflow, is titled with the zone's name and its count, and reopens where it was left. All but the Stack Window can be closed.
+_Avoid_: Popup, dialog, zone viewer
+
+**Stack Window**:
+The Zone Window for the stack. It is there exactly while something is on the stack, lists what resolves first at the top, and cannot be closed.
+_Avoid_: Stack region, stack panel
+
+**Glow**:
+The colored outline on everything a Pending Decision can choose: orange-red for targets, blue for mana sources, green for anything else.
+_Avoid_: Highlight, selection, halo
+
+**Debug Decision Panel**:
+A temporary window that answers a Pending Decision by choosing from lists. It covers each decision kind only until that kind has an input of its own, and goes when none is left.
+_Avoid_: Decision dialog, prompt
+
 **Card Face**:
 A card drawn in full: its Frame, name, mana cost, type line, rules text and power/toughness. Used wherever a card is read rather than played on.
 _Avoid_: Full card, card image
