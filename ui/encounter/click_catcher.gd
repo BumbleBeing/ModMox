@@ -7,7 +7,7 @@ extends Control
 signal clicked
 
 const NAME: String = "ClickCatcher"
-const BRIGHT: Color = Color(1.28, 1.28, 1.28)
+const BRIGHT: Color = Color(1.18, 1.18, 1.18)
 
 
 ## Covers [param host], [param host_size] pixels in size.
