@@ -61,7 +61,8 @@ func test_the_shipped_difficulty_files_match_the_built_in_levels() -> void:
 		var shipped: AiDifficulty = load("res://content/ai/difficulty_%s.tres" % level) as AiDifficulty
 		var built_in: AiDifficulty = levels[level]
 		assert_not_null(shipped, level)
-		for setting: String in ["uses_monte_carlo", "one_step_samples", "rollout_candidates", "rollout_samples"]:
+		for setting: String in ["uses_monte_carlo", "one_step_samples", "rollout_candidates", "rollout_samples",
+				"judges_tricks_after_the_turn", "repeat_plan_length"]:
 			assert_eq(shipped.get(setting), built_in.get(setting), "%s %s" % [level, setting])
 
 

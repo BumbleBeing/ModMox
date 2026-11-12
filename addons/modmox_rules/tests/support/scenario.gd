@@ -1076,3 +1076,32 @@ static func prevented(engine: MmEngine) -> Array[MmEvent]:
 ## The Card Identity of the permanent [param object_id].
 static func card_of(engine: MmEngine, object_id: int) -> int:
 	return engine.game_state().object(object_id).card_id
+
+
+# --- Milestone 13d: countering spells -------------------------------------------------
+
+
+## "Target spell", or "target [filter] spell".
+static func target_spell(filter: MmFilter = null) -> TargetSpec:
+	var spec: TargetSpec = target(filter)
+	spec.among = TargetSpec.Among.SPELLS
+	return spec
+
+
+static func counter(selection: MmSelection) -> CounterEffect:
+	var effect: CounterEffect = CounterEffect.new()
+	effect.selection = selection
+	return effect
+
+
+## An instant costing {0}: "Counter target spell."
+static func free_counter(card_name: String) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target_spell()], [counter(targeted(0))])
+
+
+## The IDs of everything on the stack, top first.
+static func stack_ids(engine: MmEngine) -> Array[int]:
+	var ids: Array[int] = []
+	for item: MmGameObject in engine.game_state().stack.objects():
+		ids.push_front(item.id)
+	return ids

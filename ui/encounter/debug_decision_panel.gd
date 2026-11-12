@@ -1,7 +1,7 @@
 class_name DebugDecisionPanel
 extends ZoneWindow
 ## The Debug Decision Panel (game glossary): a temporary window that answers every kind of
-## Pending Decision that has no input of its own yet, through DebugDecisionForm's three
+## Pending Decision that has no input of its own yet, through DebugDecisionForm's two
 ## generic forms. Each decision kind leaves it as its own input is built (A243), and it is
 ## deleted when none is left. It hides whenever it has nothing to offer (A290).
 
@@ -30,7 +30,7 @@ func show_snapshot(snapshot: EncounterSnapshot) -> void:
 	_form = null if snapshot.is_over() else DebugDecisionForm.of(snapshot.decision, snapshot.view)
 	_snapshot = snapshot
 	_picked.clear()
-	visible = _form != null and not (_form.kind == DebugDecisionForm.Kind.PICK_ONE and _form.is_empty())
+	visible = _form != null
 	_rebuild()
 
 
@@ -38,12 +38,12 @@ func heading_text() -> String:
 	return (body().get_child(0) as Label).text
 
 
-## The button for each option of a PICK_ONE, PICK_SOME or ORDER form.
+## The button for each option of a form.
 func option_buttons() -> Array[Button]:
 	return _options
 
 
-## The button that submits a PICK_SOME or ORDER form, or null.
+## The button that submits a PICK_SOME form, or null.
 func submit_button() -> Button:
 	return _submit
 
@@ -66,7 +66,7 @@ func _build_form() -> void:
 		DebugDecisionForm.Kind.PICK_ONE:
 			for index: int in _form.options.size():
 				_add_option(_form.options[index], index, func() -> void: answered.emit(_form.answer_for_pick(index)))
-		DebugDecisionForm.Kind.PICK_SOME, DebugDecisionForm.Kind.ORDER:
+		DebugDecisionForm.Kind.PICK_SOME:
 			for index: int in _form.options.size():
 				var place: int = _picked.find(index)
 				var label: String = _form.options[index] if place == -1 else "[%d]  %s" % [place + 1, _form.options[index]]
@@ -74,8 +74,7 @@ func _build_form() -> void:
 				option.toggle_mode = true
 				option.set_pressed_no_signal(place != -1)
 			var wanted: String = "" if _form.count == DebugDecisionForm.NONE else " of %d" % _form.count
-			var text: String = "Submit this order" if _form.kind == DebugDecisionForm.Kind.ORDER \
-				else "Submit (%d chosen%s)" % [_picked.size(), wanted]
+			var text: String = "Submit (%d chosen%s)" % [_picked.size(), wanted]
 			_submit = _button(text, func() -> void: answered.emit(_form.answer_for_picks(_picked.duplicate())))
 			body().add_child(_submit)
 

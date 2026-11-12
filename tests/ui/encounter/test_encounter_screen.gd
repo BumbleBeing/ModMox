@@ -214,11 +214,11 @@ func test_the_stack_window_lists_what_resolves_first_at_the_top() -> void:
 	_cast_at_the_villain("Zap")
 	_cast_at_the_villain("Jolt")
 
-	var entries: Array[ZoneEntry] = _screen.stack_entries()
+	var entries: Array[StackEntry] = _screen.stack_entries()
 	assert_eq(_screen.stack_window().title_text(), "Stack (2)")
 	assert_eq(entries[0].name_text(), "Jolt", "Cast last, so it is on top and resolves first.")
 	assert_eq(entries[1].name_text(), "Zap")
-	assert_eq(entries[0].detail_text(), "Hero")
+	assert_eq(entries[0].detail_text(), "Hero → Villain")
 
 
 func test_the_stack_window_reopens_where_it_was_left() -> void:
@@ -304,7 +304,7 @@ func test_the_panels_options_answer_the_decision() -> void:
 	_presenter.wait_until_idle()
 
 	assert_true(_presenter.snapshot().decision is PriorityDecision)
-	assert_eq(_screen.debug_panel().heading_text(), "Priority: choose an action")
+	assert_false(_screen.debug_panel().visible, "At priority the hand and the board answer (13e-1).")
 	assert_eq(_screen.info_panel().error_text(), "")
 
 
@@ -506,7 +506,7 @@ func test_only_what_a_click_answers_takes_the_mouse() -> void:
 	assert_not_null(ClickCatcher.of(forest))
 	assert_null(ClickCatcher.of(bear), "A creature with nothing to activate.")
 	assert_eq(bear.mouse_filter, Control.MOUSE_FILTER_IGNORE)
-	assert_null(ClickCatcher.of(card), "Cards in hand wait for 13e.")
+	assert_null(ClickCatcher.of(card), "One click on a card in hand does nothing (A371).")
 	assert_null(_screen.player_panel(VILLAIN).click_catcher(), "Nobody is being targeted.")
 	assert_null(_screen.click_catcher(99999), "Something that is not on the screen.")
 
@@ -654,8 +654,8 @@ func test_a_permanent_with_two_abilities_opens_the_option_menu_where_it_was_clic
 	assert_true(menu.is_open())
 	assert_true(_presenter.snapshot().decision is PriorityDecision, "Nothing is answered until a row is picked.")
 	assert_eq(menu.rows().size(), 2)
-	assert_eq(menu.rows()[0].text, "{T}: Add Mana")
-	assert_eq(menu.rows()[1].text, "{T}: Deal Damage")
+	assert_eq(menu.rows()[0].text, "{T}: Add {R}.")
+	assert_eq(menu.rows()[1].text, "{T}: This artifact deals 1 damage to any target.")
 	assert_true(EncounterLayout.regions(SCREEN)["battlefield"].encloses(menu.box_rect()))
 
 	menu.rows()[1].pressed.emit()
@@ -712,7 +712,7 @@ func test_pointing_at_an_option_menu_row_shows_it_in_the_info_panel_in_place_of_
 
 	_screen.option_menu().rows()[1].mouse_entered.emit()
 
-	assert_eq(info.option_text(), "{T}: Deal Damage")
+	assert_eq(info.option_text(), "{T}: This artifact deals 1 damage to any target.")
 	assert_false(info.shows_prompt())
 
 	_screen.option_menu().rows()[1].mouse_exited.emit()
@@ -810,29 +810,18 @@ func test_the_piles_stand_in_their_evenly_spaced_regions() -> void:
 		regions["villain_graveyard"].position.y - regions["villain_library"].end.y, 0.01)
 
 
-func test_the_debug_panel_lists_only_what_has_no_input_yet_and_has_no_concede() -> void:
+func test_the_debug_panel_has_nothing_to_offer_at_priority_and_has_no_concede() -> void:
 	_open(_bear_setup())
 	_keep_and_reach_main()
-	_do(PlayLandAction, "Forest")
 	var panel: DebugDecisionPanel = _screen.debug_panel()
 
-	assert_true(panel.visible)
-	for option: Button in panel.option_buttons():
-		assert_string_starts_with(option.text, "Cast ", "The land for the turn is played, and tapping the Forest is a click.")
+	assert_false(panel.visible, "A land to play and spells to cast, all from the hand (13e-1).")
+	_do(PlayLandAction, "Forest")
+	assert_true(_presenter.snapshot().decision is PriorityDecision)
+	assert_false(panel.visible)
 	assert_false(panel.has_method("concede_button"))
 	assert_false(panel.has_method("cancel_button"))
 	assert_false(panel.has_signal("concede_requested"))
-
-
-func test_the_debug_panel_hides_at_priority_with_nothing_to_cast_or_play() -> void:
-	_open(_setup_of([Scenario.basic_land("Forest")]))
-	_keep_and_reach_main()
-	assert_true(_screen.debug_panel().visible, "A land can be played.")
-
-	_do(PlayLandAction, "Forest")
-
-	assert_true(_presenter.snapshot().decision is PriorityDecision)
-	assert_false(_screen.debug_panel().visible, "Only tapping for mana and passing are left.")
 
 
 func test_escape_opens_the_pause_menu_and_escape_again_carries_on_from_the_same_place() -> void:
@@ -1244,12 +1233,48 @@ func test_a_block_line_runs_from_the_blocker_up_to_its_attacker() -> void:
 	assert_lt(lines.get_index(), _screen.stack_window().get_index(), "Under the windows.")
 
 
-func test_a_click_on_empty_board_puts_a_picked_up_blocker_down_unassigned() -> void:
+func test_one_click_on_a_blocking_creature_takes_it_off_its_block() -> void:
 	_open_combat([_free_bear()])
 	_reach_blockers(2)
 	var bear: int = _permanents("Bear")[0]
 	_click(bear)
 	_click(_permanents("Ogre")[0])
+	assert_eq(_screen.block_lines().line_count(), 1)
+
+	_click(bear)
+
+	assert_eq(_screen.selection().pairs().size(), 0)
+	assert_eq(_screen.block_lines().line_count(), 0)
+	assert_false(BorderEffects.has_pointer(_screen.face_of(bear)), "Taken off, not picked up.")
+	assert_eq(_screen.pass_button().text, "No blocks")
+
+
+func test_a_press_on_the_board_puts_a_picked_up_blocker_down_but_a_press_on_a_card_in_hand_does_not() -> void:
+	_open_combat([_free_bear()])
+	_reach_blockers(2)
+	var bear: int = _permanents("Bear")[0]
+	_click(bear)
+	assert_eq(_screen.selection().picked_id(), bear)
+	var card: Control = _screen.face_of(_presenter.snapshot().view.hand[0].id)
+	var on_card: InputEventMouseButton = InputEventMouseButton.new()
+	on_card.button_index = MOUSE_BUTTON_LEFT
+	on_card.pressed = true
+	on_card.position = card.position + Vector2(30, 60)
+	var on_board: InputEventMouseButton = on_card.duplicate() as InputEventMouseButton
+	on_board.position = Vector2(1000, 500)
+
+	_screen._input(on_card)
+	assert_eq(_screen.selection().picked_id(), bear, "The press was the hand's.")
+	assert_true(_screen.drag_card().is_pressed())
+	_screen.cancel_drag()
+	_screen._gui_input(on_board)
+	assert_ne(_screen.selection().picked_id(), bear, "A314.")
+
+
+func test_a_click_on_empty_board_puts_a_picked_up_blocker_down_unassigned() -> void:
+	_open_combat([_free_bear()])
+	_reach_blockers(2)
+	var bear: int = _permanents("Bear")[0]
 	_click(bear)
 	assert_true(BorderEffects.has_pointer(_screen.face_of(bear)))
 

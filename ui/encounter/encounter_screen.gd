@@ -14,6 +14,25 @@ extends Control
 ## lines join blockers to their attackers, and damage is divided with steppers on the
 ## recipients. The pass button confirms it, and undo takes back one click at a time.
 ##
+## The Stack Window gives each spell and ability its own color (StackColors, kept here too)
+## and marks what the entry under the cursor is about: its source with a solid border and
+## its targets with a dashed one. A spell that can be targeted is clicked there. Triggers
+## to be put in order appear above the stack and are moved with buttons (a TriggerOrder,
+## kept here like the CombatSelection), and a choice between replacement effects is made
+## in a window of its own.
+##
+## Permanents do not jump from one redraw to the next: a FaceMotion, kept here as well,
+## remembers where each one's face was drawn, and every frame the screen places each face
+## part-way to where the last redraw put it. A permanent that has left is drawn for a
+## moment longer as a ghost, on a layer of its own that a redraw leaves alone.
+##
+## The Hero's hand is kept in their own order (a HandOrder) and its cards are dragged: a
+## card held above the hand's strip is played when it is let go, and one let go over the
+## strip is put down where the others made room. The card being held is a DragCard, kept
+## here as well. Nothing is rebuilt between picking a card up and letting it go: the card's
+## own face is lifted to a layer above the windows, and the rest of the hand is only told
+## where to go. A double-click plays a card too, and one click does nothing.
+##
 ## Run with a request: godot --path . -- --hero=red_green --villain=white_black --seed=7
 ## Add --screenshot=/absolute/path.png to save a picture and quit.
 
@@ -21,6 +40,8 @@ const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
 const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 const MENU: String = "res://ui/menu/main_menu.tscn"
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
+## How much of the way to its place a card of the hand goes in a sixtieth of a second.
+const HAND_EASE: float = 0.3
 const LOSS_REASONS: Dictionary[MmPlayer.LossReason, String] = {
 	MmPlayer.LossReason.ZERO_LIFE: "ran out of life",
 	MmPlayer.LossReason.EMPTY_LIBRARY: "drew from an empty library",
@@ -50,7 +71,18 @@ var _pointed_id: int = DebugDecisionForm.NONE
 var _hand_faces: Array[CardFace] = []
 var _hand_rest: Array[Vector2] = []
 var _card_backs: Array[Control] = []
-var _stack_entries: Array[ZoneEntry] = []
+var _stack_entries: Array[StackEntry] = []
+var _stack_items: Dictionary[int, StackItem] = {}
+## Which color each object on the stack was given, kept across redraws (A335).
+var _stack_colors: StackColors = StackColors.new()
+var _stack_arrows: StackArrows = null
+## The Hero's half-made order for the triggers being asked about, if any are.
+var _trigger_order: TriggerOrder = TriggerOrder.new()
+var _trigger_entries: Array[StackEntry] = []
+var _choice_window: ZoneWindow
+var _choice_entries: Array[ZoneEntry] = []
+## What the entry under the cursor has marked on the board.
+var _marked: Array[Control] = []
 var _banner: Control = null
 var _info: InfoPanel
 var _option_menu: OptionMenu
@@ -71,6 +103,24 @@ var _are_windows_placed: bool = false
 var _lines: Dictionary[String, ScrollRow] = {}
 var _line_offsets: Dictionary[String, float] = {}
 var _pile_labels: Dictionary[String, Label] = {}
+## Where each permanent's face is drawn on its way to its place (A356).
+var _motion: FaceMotion = FaceMotion.new()
+## Each permanent's face's place in its parent as the layout put it, by object ID.
+var _rest: Dictionary[int, Vector2] = {}
+var _ghost_layer: Control
+var _ghosts: Dictionary[int, BattlefieldFace] = {}
+## Whether the next redraw puts every face straight at its place, as the first one does: a rewind,
+## or a window of another size (A365).
+var _is_snapping: bool = false
+var _drawn_size: Vector2 = Vector2.ZERO
+## The order the Hero keeps their hand in, and the card of it they are holding (13e-1).
+var _hand_order: HandOrder = HandOrder.new()
+var _drag: DragCard = DragCard.new()
+## The Card Identity of each of _hand_faces, and how far each is turning toward.
+var _hand_cards: Array[int] = []
+var _hand_turns: Array[float] = []
+var _drag_layer: Control
+var _lifted_face: CardFace = null
 
 
 func _ready() -> void:
@@ -83,6 +133,9 @@ func _ready() -> void:
 	_board.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_board)
+	_ghost_layer = Control.new()
+	_ghost_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_ghost_layer)
 	_block_lines = BlockLines.new()
 	add_child(_block_lines)
 	for player_id: int in [VILLAIN, HERO]:
@@ -99,9 +152,13 @@ func _ready() -> void:
 		add_child(panel)
 		_panels[player_id] = panel
 	_stack_window = ZoneWindow.new("Stack", false, Color("#8a93a6"))
-	_stack_window.size = Vector2(340, 400)
+	_stack_window.size = Vector2(400, 400)
 	_stack_window.hide()
 	add_child(_stack_window)
+	_choice_window = ZoneWindow.new("Replacement", false, StackColors.PLAIN)
+	_choice_window.size = Vector2(470, 260)
+	_choice_window.hide()
+	add_child(_choice_window)
 	for player_id: int in [HERO, VILLAIN]:
 		var emblems: ZoneWindow = ZoneWindow.new("Emblems", true, PlayerPanel.GOLD)
 		emblems.size = Vector2(300, 220)
@@ -119,7 +176,11 @@ func _ready() -> void:
 		if not _is_paused and _selection.select_all():
 			_redraw())
 	add_child(_info)
+	_drag_layer = Control.new()
+	_drag_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_drag_layer)
 	_option_menu = OptionMenu.new()
+	_option_menu.closed.connect(_on_menu_closed)
 	_option_menu.chosen.connect(_answer)
 	_option_menu.pointed.connect(func(text: String) -> void: _info.show_option(text))
 	add_child(_option_menu)
@@ -135,13 +196,33 @@ func _ready() -> void:
 		request = EncounterRequest.from_arguments(OS.get_cmdline_user_args())
 	if request == null:
 		request = EncounterRequest.new()
-	begin(EncounterPresenter.new(request.setup(), request.villain_agent()))
-	for argument: String in OS.get_cmdline_user_args():
+	var presenter: EncounterPresenter = EncounterPresenter.new(request.setup(), request.villain_agent())
+	var picture: String = screenshot_path(OS.get_cmdline_user_args())
+	if picture == "":
+		use_game_pace(presenter)
+	begin(presenter)
+	if picture != "":
+		for frame: int in 4:
+			await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(picture)
+		get_tree().quit()
+
+
+## Where [param arguments] ask for a picture to be saved, or "" if they do not.
+static func screenshot_path(arguments: PackedStringArray) -> String:
+	for argument: String in arguments:
 		if argument.begins_with("--screenshot="):
-			for frame: int in 4:
-				await RenderingServer.frame_post_draw
-			get_viewport().get_texture().get_image().save_png(argument.trim_prefix("--screenshot="))
-			get_tree().quit()
+			return argument.trim_prefix("--screenshot=")
+	return ""
+
+
+## Plays at the game's pace: [param presenter] holds the Villain's answers back and faces
+## take time to move (Pacing). Without this nothing waits or moves, which is what tests and
+## screenshots want (A369). Call it before begin().
+func use_game_pace(presenter: EncounterPresenter) -> void:
+	presenter.action_wait_msec = Pacing.ACTION_MSEC
+	presenter.mana_wait_msec = Pacing.MANA_MSEC
+	_motion.seconds = Pacing.MOVE_SECONDS
 
 
 ## Shows the encounter [param presenter] runs, and starts it.
@@ -151,19 +232,52 @@ func begin(presenter: EncounterPresenter) -> void:
 	_presenter.start()
 
 
-func _process(_delta: float) -> void:
-	if _presenter == null or _is_paused:
+func _process(delta: float) -> void:
+	if _presenter == null:
+		return
+	# A move in flight finishes under the Pause Menu (A368).
+	advance_motion(delta)
+	if _is_paused:
 		return
 	set_hold_key_down(Input.is_key_pressed(KEY_CTRL))
 	_presenter.poll()
-	_spread_hand(0.3)
+	_spread_hand(EncounterLayout.ease_weight(HAND_EASE, delta))
 
 
-func _unhandled_input(event: InputEvent) -> void:
+## A press on a card of the hand is taken here, before anything under the card can have it:
+## a card that has risen under the cursor lies over the Hero's lands, and a land that can be
+## tapped would otherwise take a press on the card's top edge. Only what is drawn over the
+## hand comes first (_is_covered). While a card is pressed or held, the mouse is followed
+## wherever it goes, over windows and buttons too.
+func _input(event: InputEvent) -> void:
+	var mouse: InputEventMouse = make_input_local(event) as InputEventMouse
+	var click: InputEventMouseButton = mouse as InputEventMouseButton
+	if not _drag.is_pressed() and not _drag.is_holding():
+		if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT and not _is_covered(click.position) \
+				and press_hand(click.position, click.double_click):
+			get_viewport().set_input_as_handled()
+		return
+	if mouse is InputEventMouseMotion:
+		drag_to(mouse.position)
+	if click == null:
+		return
+	if click.button_index == MOUSE_BUTTON_LEFT and not click.pressed:
+		release_hand(click.position)
+	elif click.button_index == MOUSE_BUTTON_RIGHT and click.pressed and _drag.is_holding():
+		cancel_drag()
+		get_viewport().set_input_as_handled()
+
+
+## A press that no card of the hand, window, button or ClickCatcher took lands here, on the
+## screen itself: a click on the empty board. It cannot be taken in _unhandled_input(): this
+## Control stops the mouse, so a press never gets that far.
+func _gui_input(event: InputEvent) -> void:
 	var click: InputEventMouseButton = event as InputEventMouseButton
 	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
 		click_empty_board()
-		return
+
+
+func _unhandled_input(event: InputEvent) -> void:
 	var key: InputEventKey = event as InputEventKey
 	# A key can arrive before an encounter has begun.
 	if _presenter == null or key == null or not key.pressed or key.echo:
@@ -200,6 +314,8 @@ func set_paused(is_on: bool) -> void:
 	_presenter.set_paused(is_on)
 	_option_menu.close()
 	if is_on:
+		# A card being held goes back to the hand (A381).
+		cancel_drag()
 		_pause_menu.open(_regions["battlefield"], not _snapshot.is_over())
 	else:
 		_pause_menu.close()
@@ -223,18 +339,22 @@ func click_empty_board() -> void:
 
 
 ## Passes priority, as the pass button and the space bar do. While a combat decision is
-## being answered it confirms the selection instead, once that is complete.
+## being answered it confirms the selection instead, once that is complete, and while
+## triggers are being ordered it confirms their order.
 func pass_priority() -> void:
-	if not _selection.is_active():
+	if _trigger_order.is_active():
+		if not _is_paused:
+			_answer(_trigger_order.answer())
+	elif not _selection.is_active():
 		_command(_presenter.pass_priority)
 	elif _selection.is_complete() and not _is_paused:
 		_answer(_selection.answer())
 
 
-## Undoes the Hero's last click of a half-made selection, and otherwise their last answer,
-## as the undo button and Z do (A320).
+## Undoes the Hero's last click of a half-made selection or their last move of a trigger,
+## and otherwise their last answer, as the undo button and Z do (A320, A339).
 func undo() -> void:
-	if not _is_paused and _selection.undo():
+	if not _is_paused and (_selection.undo() or _trigger_order.undo()):
 		_redraw()
 	else:
 		_command(_presenter.undo)
@@ -244,6 +364,144 @@ func undo() -> void:
 func leave(scene: String) -> void:
 	_presenter.wait_until_idle()
 	navigate.call(scene)
+
+
+## Whether something drawn over the hand is under [param cursor]: an open window, or the
+## Option Menu. A press there is theirs, never the card's beneath.
+func _is_covered(cursor: Vector2) -> bool:
+	if _option_menu.is_open():
+		return true
+	var windows: Array[Control] = [_stack_window, _choice_window, _debug]
+	windows.append_array(_emblem_windows.values())
+	for window: Control in windows:
+		if window.visible and Rect2(window.position, window.size).has_point(cursor):
+			return true
+	return false
+
+
+## The card of the Hero's hand that [param cursor] is on, as a Card Identity, or
+## DragCard.NONE. The card nearest the cursor counts where it is drawn and also where the
+## cursor is sending it: the hand eases toward the cursor over several frames, fewer when a
+## frame is slow, and a press made on arriving must not miss the card for being early.
+func hand_card_at(cursor: Vector2) -> int:
+	if _hand_faces.is_empty():
+		return DragCard.NONE
+	var card: Vector2 = _hand_faces[0].size
+	if not EncounterLayout.is_cursor_over_hand(_hand_rest, card, cursor):
+		return DragCard.NONE
+	var index: int = roundi(EncounterLayout.hand_cursor_place(_hand_rest, card, cursor))
+	var is_on_it: bool = Rect2(_hand_faces[index].position, card).grow(8.0).has_point(cursor) \
+			or Rect2(hand_places(cursor)[index], card).grow(8.0).has_point(cursor)
+	return _hand_cards[index] if is_on_it else DragCard.NONE
+
+
+## The left button went down at [param cursor]. On a card of the hand this is the start of
+## a drag, or with [param is_double] it plays the card: at once if there is one way to, or
+## from the Option Menu, opened there, if there are several (A377). One click alone does
+## nothing (A371). A double-click on a card that cannot be played is a press like any
+## other: two tries at a drag in quick succession arrive as one, and the second must not be
+## swallowed. Returns whether a card of the hand was under the cursor.
+func press_hand(cursor: Vector2, is_double: bool) -> bool:
+	var card_id: int = DragCard.NONE if _is_paused or _snapshot == null else hand_card_at(cursor)
+	if card_id == DragCard.NONE:
+		return false
+	var options: Array[ClickOption] = _hand_options(card_id) if is_double else ([] as Array[ClickOption])
+	if options.size() > 1:
+		_option_menu.open(options, cursor, _regions["battlefield"])
+	elif options.size() == 1:
+		_answer(options[0].answer)
+	else:
+		_drag.press(card_id, cursor, cursor - _hand_faces[_hand_cards.find(card_id)].position)
+	return true
+
+
+## The mouse moved to [param cursor] with a card pressed or held. Once it has moved far
+## enough the card is picked up and follows the cursor; the hand makes room for it while it
+## is over the hand's strip, and over the panels at the left it is let go of (A371).
+func drag_to(cursor: Vector2) -> void:
+	if _drag.move(cursor):
+		_lift()
+	if not _drag.is_holding():
+		return
+	if EncounterLayout.is_over_panels(cursor, _regions):
+		cancel_drag()
+		return
+	var is_above: bool = EncounterLayout.is_above_hand(cursor, _regions)
+	var gap: int = DragCard.NONE
+	if not is_above:
+		gap = EncounterLayout.hand_gap(_hand_faces.size(), _regions["hero_hand"], _lifted_face.size, cursor)
+	if _drag.hover(is_above, gap):
+		_lay_out_hand()
+	_lifted_face.position = _drag.place()
+
+
+## The left button came up at [param cursor]. A held card let go above the hand's strip is
+## played: at once with one way to play it, from the Option Menu with several, the card
+## waiting where it was let go (A372). One that cannot be played right now goes back to its
+## place without a word (A380). Over the strip it is put down where the hand made room.
+func release_hand(cursor: Vector2) -> void:
+	drag_to(cursor)
+	if not _drag.is_holding():
+		if _drag.is_pressed():
+			_drag.drop()
+		return
+	if not _drag.is_above():
+		_put_down(_drag.gap())
+		return
+	var options: Array[ClickOption] = _hand_options(_drag.card_id())
+	if options.is_empty():
+		_put_back()
+	elif options.size() > 1:
+		_drag.wait()
+		_lay_out_hand()
+		_option_menu.open(options, cursor, _regions["battlefield"])
+	else:
+		# The answer brings a redraw of its own, accepted or refused, and a refused card
+		# must not stay held with the button up.
+		_drag.drop()
+		_answer(options[0].answer)
+
+
+## Lets go of a card that is pressed, held or waiting on the Option Menu, back to its place
+## in the hand: a right-click, the panels at the left, or the Pause Menu opening.
+func cancel_drag() -> void:
+	if _drag.is_lifted():
+		_put_back()
+	else:
+		_drag.drop()
+
+
+func drag_card() -> DragCard:
+	return _drag
+
+
+func hand_order() -> HandOrder:
+	return _hand_order
+
+
+## The face of the card being held or waiting on the Option Menu, or null.
+func lifted_face() -> CardFace:
+	return _lifted_face
+
+
+## Lets [param delta] seconds of Face Motion go by, as every frame does: faces on their way
+## are drawn further along, ghosts fade, and block lines follow their creatures.
+func advance_motion(delta: float) -> void:
+	var was_moving: bool = _motion.is_moving()
+	_motion.advance(delta)
+	if was_moving:
+		_pose_faces()
+		_show_block_lines()
+
+
+func face_motion() -> FaceMotion:
+	return _motion
+
+
+## The fading face of Game Object [param object_id], which has left the battlefield, or
+## null once it has gone.
+func ghost_of(object_id: int) -> BattlefieldFace:
+	return _ghosts.get(object_id, null) as BattlefieldFace
 
 
 ## The Control that draws Game Object [param object_id], or null if none is on screen.
@@ -260,8 +518,43 @@ func stack_window() -> ZoneWindow:
 
 
 ## What the Stack Window lists, from the top of the stack down.
-func stack_entries() -> Array[ZoneEntry]:
+func stack_entries() -> Array[StackEntry]:
 	return _stack_entries
+
+
+## The Stack Window's entry for Game Object [param object_id], or null.
+func stack_entry_of(object_id: int) -> StackEntry:
+	var ids: Array = _stack_items.keys()
+	return _stack_entries[ids.find(object_id)] if ids.has(object_id) else null
+
+
+## The arrows between the Stack Window's entries, or null while the stack is empty.
+func stack_arrows() -> StackArrows:
+	return _stack_arrows
+
+
+## The Hero's half-made order for the triggers being asked about.
+func trigger_order() -> TriggerOrder:
+	return _trigger_order
+
+
+## The triggers being ordered, as the Stack Window lists them above the stack.
+func trigger_entries() -> Array[StackEntry]:
+	return _trigger_entries
+
+
+## The window that asks which replacement effect applies first.
+func choice_window() -> ZoneWindow:
+	return _choice_window
+
+
+func choice_entries() -> Array[ZoneEntry]:
+	return _choice_entries
+
+
+## What takes a click on the choice window's entry number [param index].
+func choice_catcher(index: int) -> ClickCatcher:
+	return ClickCatcher.of(_choice_entries[index])
 
 
 func emblems_window(player_id: int) -> ZoneWindow:
@@ -358,8 +651,19 @@ func _command(command: Callable) -> void:
 func _show(snapshot: EncounterSnapshot) -> void:
 	if not _selection.is_for(snapshot.decision if CombatSelection.covers(snapshot.decision) else null):
 		_selection = CombatSelection.new(snapshot.decision)
+	var order: OrderTriggersDecision = snapshot.decision as OrderTriggersDecision
+	if not _trigger_order.is_for(order):
+		_trigger_order = TriggerOrder.new(order)
 	_snapshot = snapshot
 	_error = ""
+	_is_snapping = _is_snapping or snapshot.is_rewind
+	var hand: Array[int] = []
+	for card: MmObjectView in snapshot.view.hand:
+		hand.append(card.card_id)
+	_hand_order.update(hand, snapshot.is_rewind)
+	if not hand.has(_drag.card_id()):
+		# The card being held has left the hand (A380).
+		_drag.drop()
 	_redraw()
 
 
@@ -404,6 +708,8 @@ func _redraw() -> void:
 	if _snapshot == null:
 		return
 	_option_menu.close()
+	_clear_marks()
+	var unseen: Array[int] = _unseen_faces()
 	for child: Node in _board.get_children():
 		_board.remove_child(child)
 		child.queue_free()
@@ -411,6 +717,7 @@ func _redraw() -> void:
 	_face_sizes.clear()
 	_hand_faces.clear()
 	_hand_rest.clear()
+	_hand_cards.clear()
 	_card_backs.clear()
 	_lines.clear()
 	_line_ids.clear()
@@ -444,6 +751,8 @@ func _redraw() -> void:
 	_panels[HERO].show_snapshot(_snapshot, glow, _presenter.stops, regions["hero_panel"], true, _presenter.is_auto_passing())
 	if _selection.is_active():
 		_panels[HERO].show_confirm(_selection.confirm_text(), _selection.is_complete(), _selection.can_undo())
+	elif _trigger_order.is_active():
+		_panels[HERO].show_confirm("Confirm order", true, _trigger_order.can_undo())
 	_add_player_stepper()
 	_draw_villain_hand(view.hand_sizes.get(VILLAIN, 0), regions["villain_hand"])
 	_draw_row(_permanents(view, VILLAIN, true), regions["villain_lands"], glow)
@@ -458,8 +767,11 @@ func _redraw() -> void:
 		_draw_pile("Exile", view.exiles.get(player_id, []), who + "_exile", regions[who + "_exile"])
 		_fill_emblems_window(view, player_id)
 	_fill_stack_window(view)
+	_fill_choice_window(view)
 	_debug.show_snapshot(_snapshot)
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
+	_info.show_option(_release_text())
+	_move_faces(unseen)
 	_tint_arrows()
 	_show_block_lines()
 	if _snapshot.is_over():
@@ -472,11 +784,12 @@ func _redraw() -> void:
 func _place_windows(battlefield: Rect2) -> void:
 	if not _are_windows_placed:
 		_are_windows_placed = true
-		_stack_window.position = Vector2(battlefield.end.x - 350, battlefield.position.y + 170)
+		_stack_window.position = Vector2(battlefield.end.x - 410, battlefield.position.y + 170)
+		_choice_window.position = battlefield.get_center() - _choice_window.size / 2.0
 		_emblem_windows[HERO].position = Vector2(battlefield.position.x + 400, battlefield.end.y - 240)
 		_emblem_windows[VILLAIN].position = Vector2(battlefield.position.x + 400, battlefield.position.y + 10)
 		_debug.position = Vector2(battlefield.position.x + 6, battlefield.position.y + 110)
-	for window: ZoneWindow in [_stack_window, _emblem_windows[HERO], _emblem_windows[VILLAIN]]:
+	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN]]:
 		window.bounds = battlefield
 		window.fit()
 	_debug.bounds = Rect2(Vector2.ZERO, size)
@@ -563,6 +876,7 @@ func _draw_line(key: String, permanents: Array[MmObjectView], heights: Array[flo
 	var line: ScrollRow = ScrollRow.new(line_rect, EncounterLayout.line_width(is_tapped, heights), _line_offsets.get(key, 0.0))
 	line.scrolled.connect(func(offset: float) -> void: _line_offsets[key] = offset)
 	line.scrolled.connect(func(_offset: float) -> void:
+		_carry_faces()
 		_tint_arrows()
 		_show_block_lines())
 	_line_offsets[key] = line.offset()
@@ -694,19 +1008,108 @@ func _add_block_line(lines: Array, blocker_id: int, attacker_id: int, is_chosen:
 
 ## Where a block line meets Game Object [param object_id], in this screen's coordinates.
 func _block_line_end(object_id: int) -> Vector2:
-	var face: Control = _faces[object_id]
-	var rect: Rect2 = Rect2(face.get_global_rect().position - global_position, _face_sizes[object_id])
+	var rect: Rect2 = _drawn_rect(object_id)
 	for key: String in _lines:
 		var ids: Array = _line_ids.get(key, [])
 		if not ids.has(object_id):
 			continue
 		var line: ScrollRow = _lines[key]
-		var middle: float = face.position.x + line.content().position.x + _face_sizes[object_id].x / 2.0
-		var hidden: int = EncounterLayout.hidden_past(middle, line.size.x, ScrollRow.ARROW_WIDTH)
+		var hidden: int = _hidden_past(line, object_id)
 		var arrow: Button = line.left_arrow() if hidden < 0 else line.right_arrow()
 		return EncounterLayout.block_line_end(rect, key.begins_with("hero"), hidden,
 				arrow.get_global_rect().get_center().x - global_position.x)
 	return rect.get_center()
+
+
+## Which end of [param line] the place of Game Object [param object_id] is scrolled past:
+## -1 the left, 1 the right, 0 neither. Its place, not where it is drawn on the way there.
+func _hidden_past(line: ScrollRow, object_id: int) -> int:
+	var place: Vector2 = _rest.get(object_id, _faces[object_id].position)
+	var middle: float = place.x + line.content().position.x + _face_sizes[object_id].x / 2.0
+	return EncounterLayout.hidden_past(middle, line.size.x, ScrollRow.ARROW_WIDTH)
+
+
+## Where the permanent [param object_id] is drawn right now, in this screen's coordinates.
+func _drawn_rect(object_id: int) -> Rect2:
+	var pose: FacePose = _motion.pose_of(object_id)
+	var drawn: Vector2 = _face_sizes[object_id] * (pose.height / _motion.rest_of(object_id).height)
+	return Rect2(pose.center - drawn / 2.0, drawn)
+
+
+## The middle of [param face] at [param place] in its parent, in this screen's coordinates.
+func _center_at(face: Control, place: Vector2) -> Vector2:
+	return face.get_parent_control().global_position + place + face.size / 2.0 - global_position
+
+
+## Tells Face Motion where each face's place is now, as soon as a line is scrolled: the
+## scroll carried its faces with it, which is not a move.
+func _carry_faces() -> void:
+	for object_id: int in _rest:
+		_motion.rebase(object_id, _center_at(_faces[object_id], _rest[object_id]))
+
+
+## The permanents whose faces are scrolled out of sight, asked before a redraw: one of them
+## that has left by the end of it gets no ghost, which would appear outside its line.
+func _unseen_faces() -> Array[int]:
+	var unseen: Array[int] = []
+	for key: String in _lines:
+		for object_id: int in _line_ids.get(key, []):
+			if _rest.has(object_id) and _hidden_past(_lines[key], object_id) != 0:
+				unseen.append(object_id)
+	return unseen
+
+
+## The board has just been rebuilt with every face at its place: hands those places to Face
+## Motion and draws each face where it is on its way there (A356). [param unseen] are the
+## permanents that were out of sight before the redraw.
+func _move_faces(unseen: Array[int]) -> void:
+	var targets: Dictionary[int, FacePose] = {}
+	var looks: Dictionary[int, CardLook] = {}
+	_rest.clear()
+	for permanent: MmObjectView in _snapshot.view.battlefield:
+		var face: BattlefieldFace = _faces.get(permanent.id, null) as BattlefieldFace
+		if face == null:
+			continue
+		_rest[permanent.id] = face.position
+		targets[permanent.id] = FacePose.of(_center_at(face, face.position), face.card().size.y, 1.0 if permanent.is_tapped else 0.0)
+		looks[permanent.id] = _snapshot.look_of(permanent.id)
+	_motion.show_faces(targets, looks, _is_snapping or size != _drawn_size)
+	_is_snapping = false
+	_drawn_size = size
+	for object_id: int in unseen:
+		if not targets.has(object_id):
+			_motion.forget(object_id)
+	_pose_faces()
+
+
+## Draws each permanent's face where Face Motion has it right now, and each ghost as faint
+## as it has become. A ghost is a face on its own layer that takes no clicks (A367).
+func _pose_faces() -> void:
+	for object_id: int in _rest:
+		var face: BattlefieldFace = _faces[object_id] as BattlefieldFace
+		var pose: FacePose = _motion.pose_of(object_id)
+		var rest: FacePose = _motion.rest_of(object_id)
+		face.pivot_offset = face.size / 2.0
+		face.position = _rest[object_id] + pose.center - rest.center
+		face.scale = Vector2.ONE * (pose.height / rest.height)
+		face.modulate.a = pose.alpha
+		face.show_turn(pose.turn)
+	var fading: Array[int] = _motion.ghost_ids()
+	for object_id: int in _ghosts.keys():
+		if not fading.has(object_id):
+			_ghosts[object_id].queue_free()
+			_ghosts.erase(object_id)
+	for object_id: int in fading:
+		var pose: FacePose = _motion.ghost_pose(object_id)
+		if not _ghosts.has(object_id):
+			var ghost: BattlefieldFace = BattlefieldFace.new()
+			ghost.setup(_motion.ghost_look(object_id), pose.height)
+			ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			ghost.position = pose.center - ghost.size / 2.0
+			ghost.show_turn(pose.turn)
+			_ghost_layer.add_child(ghost)
+			_ghosts[object_id] = ghost
+		_ghosts[object_id].modulate.a = pose.alpha
 
 
 ## A glowing permanent scrolled off the end of its line colors that line's arrow, so a
@@ -721,8 +1124,7 @@ func _tint_arrows() -> void:
 			var color: Variant = BorderEffects.glow_color(_faces[object_id])
 			if color == null:
 				continue
-			var middle: float = _faces[object_id].position.x + line.content().position.x + _face_sizes[object_id].x / 2.0
-			var side: int = EncounterLayout.hidden_past(middle, line.size.x, ScrollRow.ARROW_WIDTH)
+			var side: int = _hidden_past(line, object_id)
 			if side < 0:
 				left = color
 			elif side > 0:
@@ -744,28 +1146,149 @@ func _draw_villain_hand(count: int, hand_rect: Rect2) -> void:
 
 func _draw_hand(view: MmPlayerView, hand_rect: Rect2, glow: DecisionClicks) -> void:
 	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
-	_hand_rest = EncounterLayout.hand_rest(view.hand.size(), hand_rect, card)
-	for index: int in view.hand.size():
-		var face: CardFace = CardFace.new()
-		face.setup(_snapshot.look_of(view.hand[index].id), card.y)
-		face.position = _hand_rest[index]
-		face.pivot_offset = Vector2(card.x / 2.0, card.y)
-		face.rotation = EncounterLayout.fan_angle(index, view.hand.size())
-		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var seen: Dictionary[int, MmObjectView] = {}
+	for in_hand: MmObjectView in view.hand:
+		seen[in_hand.card_id] = in_hand
+	for card_id: int in _hand_order.cards():
+		if not (_drag.is_lifted() and card_id == _drag.card_id()):
+			_hand_cards.append(card_id)
+	var gap: int = _drag.gap() if _drag.has_gap() else DragCard.NONE
+	_hand_rest = EncounterLayout.hand_row(_hand_cards.size(), gap, hand_rect, card)
+	_hand_turns = EncounterLayout.hand_row_angles(_hand_cards.size(), gap)
+	for index: int in _hand_cards.size():
+		# _spread_hand() places and turns it once the whole board is drawn.
+		var face: CardFace = _hand_face(seen[_hand_cards[index]], card)
 		_board.add_child(face)
 		_hand_faces.append(face)
-		_remember_face(view.hand[index].id, face, card, glow)
+		_remember_face(seen[_hand_cards[index]].id, face, card, glow)
+	# The card being held is drawn again where it is held, on its own layer (A380).
+	for child: Node in _drag_layer.get_children():
+		_drag_layer.remove_child(child)
+		child.queue_free()
+	_lifted_face = null
+	if not _drag.is_lifted():
+		return
+	var lifted: MmObjectView = seen[_drag.card_id()]
+	_lifted_face = _hand_face(lifted, card)
+	_lifted_face.position = _drag.place()
+	_drag_layer.add_child(_lifted_face)
+	_remember_face(lifted.id, _lifted_face, card, glow)
+	_glow_lifted_face()
+
+
+## A card of the Hero's hand, turning about the middle of its bottom edge.
+func _hand_face(seen: MmObjectView, card: Vector2) -> CardFace:
+	var face: CardFace = CardFace.new()
+	face.setup(_snapshot.look_of(seen.id), card.y)
+	face.pivot_offset = Vector2(card.x / 2.0, card.y)
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return face
+
+
+## The Hero's view of the card in hand with Card Identity [param card_id], or null.
+func _hand_view(card_id: int) -> MmObjectView:
+	for in_hand: MmObjectView in _snapshot.view.hand:
+		if in_hand.card_id == card_id:
+			return in_hand
+	return null
+
+
+## The ways the card in hand with Card Identity [param card_id] can be played right now.
+func _hand_options(card_id: int) -> Array[ClickOption]:
+	var in_hand: MmObjectView = _hand_view(card_id)
+	return _clicks.hand_options_of(in_hand.id) if in_hand != null else ([] as Array[ClickOption])
+
+
+## What the Info Panel says while a card is held where letting go would play it, or "".
+func _release_text() -> String:
+	if not _drag.is_holding() or not _drag.is_above():
+		return ""
+	var options: Array[ClickOption] = _hand_options(_drag.card_id())
+	return InfoPrompt.release_text(options[0].text) if not options.is_empty() else ""
+
+
+## A lifted card that can be played glows, brighter where letting go would play it (A375).
+func _glow_lifted_face() -> void:
+	if _hand_options(_drag.card_id()).is_empty():
+		return
+	var is_bright: bool = _drag.is_waiting() or _drag.is_above()
+	var kind: DecisionClicks.Kind = DecisionClicks.Kind.OTHER
+	BorderEffects.set_glow(_lifted_face, _lifted_face.size,
+			DecisionClicks.bright_color_of(kind) if is_bright else DecisionClicks.color_of(kind))
+
+
+## Takes the pressed card out of the hand's row and holds it. Nothing is rebuilt: its own
+## face is lifted to the layer above the windows, upright.
+func _lift() -> void:
+	var index: int = _hand_cards.find(_drag.card_id())
+	_lifted_face = _hand_faces[index]
+	# Where the rest go is worked out again as soon as the card hovers (_lay_out_hand).
+	_hand_faces.remove_at(index)
+	_hand_cards.remove_at(index)
+	_board.remove_child(_lifted_face)
+	_drag_layer.add_child(_lifted_face)
+	_lifted_face.rotation = 0.0
+	_lifted_face.z_index = 0
+
+
+## Tells the hand's row where its cards go now, for where the held card is, and shows on
+## the held card and in the Info Panel whether letting go would play it. Nothing is
+## rebuilt: the cards ease to their places.
+func _lay_out_hand() -> void:
+	var gap: int = _drag.gap() if _drag.has_gap() else DragCard.NONE
+	if not _hand_faces.is_empty():
+		_hand_rest = EncounterLayout.hand_row(_hand_faces.size(), gap, _regions["hero_hand"], _hand_faces[0].size)
+		_hand_turns = EncounterLayout.hand_row_angles(_hand_faces.size(), gap)
+	if _lifted_face != null:
+		_glow_lifted_face()
+	_info.show_option(_release_text())
+
+
+## Puts the lifted card into the hand's row at [param index] among the other cards, and
+## into the Hand Order there. Nothing is rebuilt: its face goes back into the row.
+func _put_down(index: int) -> void:
+	var card_id: int = _drag.card_id()
+	var face: CardFace = _lifted_face
+	var at: int = clampi(index, 0, _hand_faces.size())
+	_drag.drop()
+	_lifted_face = null
+	_hand_order.place(card_id, at)
+	_drag_layer.remove_child(face)
+	_board.add_child(face)
+	if not _hand_faces.is_empty():
+		var is_last: bool = at == _hand_faces.size()
+		_board.move_child(face, _hand_faces[at - 1].get_index() + 1 if is_last else _hand_faces[at].get_index())
+	_hand_faces.insert(at, face)
+	_hand_cards.insert(at, card_id)
+	if BorderEffects.glow_color(face) != null:
+		BorderEffects.set_glow(face, face.size, DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
+	_lay_out_hand()
+
+
+## Puts the lifted card back where it was in the hand.
+func _put_back() -> void:
+	_put_down(_hand_order.place_of(_drag.card_id()))
+
+
+## The Option Menu closed. A card that was waiting on it goes back to the hand; if a way to
+## play it was chosen, the answer takes it from there.
+func _on_menu_closed() -> void:
+	if _drag.is_waiting():
+		_put_back()
 
 
 ## Where the hand's cards go with the cursor at [param cursor]: parted around the card under
-## it, and never past the hand's bounds.
+## it, and never past the hand's bounds. While a card is held they keep to their places.
 func hand_places(cursor: Vector2) -> Array[Vector2]:
 	if _hand_faces.is_empty():
 		return []
+	if _drag.is_lifted():
+		return _hand_rest.duplicate()
 	return EncounterLayout.hand_spread_within(_hand_rest, _hand_faces[0].size, cursor, _regions["hero_hand"])
 
 
-## Moves the hand's cards [param weight] of the way to where the cursor parts them.
+## Moves the hand's cards [param weight] of the way to where they belong, in place and in
+## turn.
 func _spread_hand(weight: float) -> void:
 	if _hand_faces.is_empty():
 		return
@@ -773,10 +1296,11 @@ func _spread_hand(weight: float) -> void:
 	var cursor: Vector2 = get_local_mouse_position()
 	var places: Array[Vector2] = hand_places(cursor)
 	var nearest: int = -1
-	if EncounterLayout.is_cursor_over_hand(_hand_rest, card, cursor):
+	if not _drag.is_lifted() and EncounterLayout.is_cursor_over_hand(_hand_rest, card, cursor):
 		nearest = roundi(EncounterLayout.hand_cursor_place(_hand_rest, card, cursor))
 	for index: int in _hand_faces.size():
 		_hand_faces[index].position = _hand_faces[index].position.lerp(places[index], weight)
+		_hand_faces[index].rotation = lerpf(_hand_faces[index].rotation, _hand_turns[index], weight)
 		_hand_faces[index].z_index = 1 if index == nearest else 0
 
 
@@ -836,35 +1360,53 @@ func _button(text: String, on_press: Callable, font_size: int) -> Button:
 	return button
 
 
-## The Stack Window is there exactly while something is on the stack. The top of the stack,
-## which resolves first, is listed first.
+## The Stack Window is there while something is on the stack, or while triggers are being
+## put in order. The top of the stack, which resolves first, is listed first.
 func _fill_stack_window(view: MmPlayerView) -> void:
-	_stack_window.visible = not view.stack.is_empty()
+	var ids: Array[int] = []
+	for seen: MmObjectView in view.stack:
+		ids.append(seen.id)
+	_stack_colors.update(ids)
+	_stack_window.visible = not view.stack.is_empty() or _trigger_order.is_active()
 	_stack_window.show_count(view.stack.size())
 	_stack_window.clear()
 	_stack_entries.clear()
+	_stack_items.clear()
+	_trigger_entries.clear()
+	_stack_arrows = null
+	if _trigger_order.is_active():
+		_add_trigger_entries(view)
 	if view.stack.is_empty():
 		return
 	var row: HBoxContainer = HBoxContainer.new()
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_stack_window.body().add_child(row)
+	_stack_arrows = StackArrows.new()
+	row.add_child(_stack_arrows)
 	var list: VBoxContainer = VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 6)
 	row.add_child(list)
 	for index: int in range(view.stack.size() - 1, -1, -1):
-		var item: MmObjectView = view.stack[index]
-		var is_spell: bool = item.card_id != MmGameObject.NO_CARD
-		var whose: String = "Hero" if item.controller_id == HERO else "Villain"
-		var entry_name: String = item.name
-		var detail: String = whose
-		if not is_spell:
-			# An ability is named for its source. Its effect text arrives with 13d.
-			entry_name = DebugDecisionForm.name_of(view, item.source_object_id) if _is_visible_object(item.source_object_id) else item.name
-			detail = "%s · ability" % whose
-		var entry: ZoneEntry = ZoneEntry.new(_snapshot.look_of(item.id).art_key, entry_name, detail, Color("#8a93a6"))
+		var seen: MmObjectView = view.stack[index]
+		var item: StackItem = StackItem.of(seen, view)
+		var entry: StackEntry = StackEntry.new(_snapshot.look_of(seen.id).art_key, item.first_line, item.second_line,
+			_stack_colors.color_of(seen.id))
+		if not _clicks.options_of(seen.id).is_empty():
+			# A spell that can be chosen as a target is clicked here (A354).
+			entry.make_targetable().clicked.connect(_on_object_clicked.bind(seen.id))
+		entry.hovered.connect(_on_stack_entry_hovered.bind(seen.id))
 		list.add_child(entry)
 		_stack_entries.append(entry)
+		_stack_items[seen.id] = item
+	var arrows: Array = []
+	for object_id: int in _stack_items:
+		for target_id: int in _stack_items[object_id].target_stack_ids:
+			if _stack_items.has(target_id):
+				arrows.append([stack_entry_of(object_id), stack_entry_of(target_id), _stack_colors.color_of(object_id)])
+	_stack_arrows.show_arrows(arrows)
+	# The entries find their places a frame later.
+	list.sort_children.connect(_stack_arrows.queue_redraw)
 	var side: VBoxContainer = VBoxContainer.new()
 	row.add_child(side)
 	side.add_child(_small_label("resolves\nfirst"))
@@ -875,11 +1417,136 @@ func _fill_stack_window(view: MmPlayerView) -> void:
 	side.add_child(_small_label("resolves\nlast"))
 
 
-func _is_visible_object(object_id: int) -> bool:
+## The triggers being put in order, above the stack: plain and dashed, since they are not
+## on the stack yet, each with buttons to move it (A339, A345).
+func _add_trigger_entries(view: MmPlayerView) -> void:
+	var decision: OrderTriggersDecision = _snapshot.decision as OrderTriggersDecision
+	_stack_window.body().add_child(_small_label("Triggers to order: the top one resolves first"))
+	var order: Array[int] = _trigger_order.order()
+	for place: int in order.size():
+		var number: int = order[place]
+		var entry: StackEntry = StackEntry.new(_trigger_art(decision, number), _trigger_text(decision, number),
+			StackItem.player_name(decision.player_id), StackColors.PLAIN, true)
+		entry.add_move_buttons(_trigger_order.can_move(place, -1), _trigger_order.can_move(place, 1))
+		entry.moved.connect(_move_trigger.bind(place))
+		entry.hovered.connect(_on_trigger_hovered.bind(number))
+		_stack_window.body().add_child(entry)
+		_trigger_entries.append(entry)
+	if not view.stack.is_empty():
+		_stack_window.body().add_child(_small_label("On the stack"))
+
+
+## Trigger [param number]'s whole ability, in its source's words.
+func _trigger_text(decision: OrderTriggersDecision, number: int) -> String:
+	var source: MmObjectView = _seen(decision.source_object_ids[number])
+	var noun: String = AbilityText.self_noun(source.card_types, source.name) if source != null else "it"
+	return AbilityText.of_ability(decision.abilities[number], noun)
+
+
+func _trigger_art(decision: OrderTriggersDecision, number: int) -> String:
+	var look: CardLook = _snapshot.look_of(decision.source_object_ids[number])
+	return look.art_key if look != null else ""
+
+
+func _move_trigger(step: int, place: int) -> void:
+	if not _is_paused and _trigger_order.move(place, step):
+		_redraw()
+
+
+## The cursor came over a Stack Window entry, or left it: its source is marked with a solid
+## border and its targets with a dashed one, in its color, and the Info Panel shows it in
+## full (A336, A337, A342).
+func _on_stack_entry_hovered(is_over: bool, object_id: int) -> void:
+	_clear_marks()
+	_info.show_option("")
+	if not is_over or not _stack_items.has(object_id):
+		return
+	var item: StackItem = _stack_items[object_id]
+	var color: Color = _stack_colors.color_of(object_id)
+	_info.show_option(item.full_text)
+	_mark_face(item.source_object_id, color, false)
+	for target_id: int in item.target_object_ids:
+		_mark_face(target_id, color, true)
+	for player_id: int in item.target_player_ids:
+		var portrait: Control = _panels[player_id].portrait()
+		BorderEffects.add_mark(portrait, portrait.size, color, true)
+		_marked.append(portrait)
+
+
+func _on_trigger_hovered(is_over: bool, number: int) -> void:
+	_clear_marks()
+	_info.show_option("")
+	var decision: OrderTriggersDecision = _snapshot.decision as OrderTriggersDecision
+	if not is_over or decision == null:
+		return
+	_info.show_option(_trigger_text(decision, number))
+	_mark_face(decision.source_object_ids[number], Color.WHITE, false)
+
+
+func _mark_face(object_id: int, color: Color, is_dashed: bool) -> void:
+	if _faces.has(object_id):
+		BorderEffects.add_mark(_faces[object_id], _face_sizes[object_id], color, is_dashed)
+		_marked.append(_faces[object_id])
+
+
+func _clear_marks() -> void:
+	for host: Control in _marked:
+		if is_instance_valid(host):
+			BorderEffects.remove_mark(host)
+	_marked.clear()
+
+
+## The window that asks which replacement effect applies first (A340): there exactly while
+## the Hero is asked, with an entry for each effect, clicked to choose it.
+func _fill_choice_window(view: MmPlayerView) -> void:
+	var decision: ChooseReplacementEffectDecision = _snapshot.decision as ChooseReplacementEffectDecision
+	_choice_window.clear()
+	_choice_entries.clear()
+	_choice_window.visible = decision != null
+	if decision == null:
+		return
+	_choice_window.show_title(ReplacementText.title(decision, view))
+	_choice_window.move_to_front()
+	for index: int in decision.options.size():
+		var active: ActiveReplacementEffect = decision.options[index]
+		var source: MmObjectView = ReplacementText.source_of(active, view)
+		var look: CardLook = _snapshot.look_of(source.id) if source != null else null
+		var entry: ZoneEntry = ZoneEntry.new(look.art_key if look != null else "", ReplacementText.source_name(active, view),
+			ReplacementText.effect_text(active, view), StackColors.PLAIN)
+		_choice_window.body().add_child(entry)
+		var catcher: ClickCatcher = ClickCatcher.add(entry, entry.size)
+		catcher.clicked.connect(_choose_replacement.bind(index))
+		catcher.mouse_entered.connect(_on_choice_hovered.bind(true, index))
+		catcher.mouse_exited.connect(_on_choice_hovered.bind(false, index))
+		_choice_entries.append(entry)
+
+
+func _choose_replacement(index: int) -> void:
+	if not _is_paused:
+		_answer(index)
+
+
+## The cursor came over one of the choice window's entries, or left it: the card it came
+## from is marked if it is on the battlefield, and the Info Panel shows the entry in full.
+func _on_choice_hovered(is_over: bool, index: int) -> void:
+	_clear_marks()
+	_info.show_option("")
+	var decision: ChooseReplacementEffectDecision = _snapshot.decision as ChooseReplacementEffectDecision
+	if not is_over or decision == null:
+		return
+	var active: ActiveReplacementEffect = decision.options[index]
+	_info.show_option("%s — %s" % [ReplacementText.source_name(active, _snapshot.view), ReplacementText.effect_text(active, _snapshot.view)])
+	var source: MmObjectView = ReplacementText.source_of(active, _snapshot.view)
+	if source != null:
+		_mark_face(source.id, Color.WHITE, false)
+
+
+## What the view shows of Game Object [param object_id], or null.
+func _seen(object_id: int) -> MmObjectView:
 	for seen: MmObjectView in _snapshot.visible_objects():
 		if seen.id == object_id:
-			return true
-	return false
+			return seen
+	return null
 
 
 func _small_label(text: String) -> Label:

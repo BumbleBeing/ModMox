@@ -13,6 +13,9 @@ var is_villain_thinking: bool = false
 ## Whether the Hero kept priority with their own spell or ability on the stack.
 var is_holding_priority: bool = false
 var can_undo: bool = false
+## Whether this snapshot came from an undo or a canceled cast. Nothing moves on the screen
+## for one (ADR 0015, A365): an empty event list alone cannot tell it from a quiet pass.
+var is_rewind: bool = false
 ## The Event Log entries added since the previous snapshot, in order, for animations (13d).
 ## Empty after an undo, which is never animated (ADR 0015).
 var events: Array[MmEvent] = []

@@ -32,7 +32,7 @@ extends Resource
 @export var summoning_sick_percent: int = 90
 ## A decision slower than this, in milliseconds, is reported as a warning. Never changes
 ## the answer (A159).
-@export var slow_decision_warning_ms: int = 500
+@export var slow_decision_warning_ms: int = 1000
 ## This Villain's search budget, in percent of the global AI Difficulty's samples, so a
 ## boss can think harder than the rest (A195).
 @export var search_budget_percent: int = 100

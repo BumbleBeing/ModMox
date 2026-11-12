@@ -129,10 +129,11 @@ func target_ids() -> Array[int]:
 
 
 ## Clicks Game Object [param object_id]. A creature that may attack is chosen, or put back.
-## A creature that may block is picked up, or, clicked again, put down with its blocks
-## taken off (A314). An attacker is paired with the blocker picked up: a blocker that blocks
-## one attacker moves to it and is put down, and one that may block several has that
-## pairing switched and stays picked up (A323). Returns whether anything changed.
+## A creature that may block is picked up. One that already blocks, or is picked up, is
+## taken off its blocks and put down with that one click, whichever blocker is in hand. An
+## attacker is paired with the blocker picked up: a blocker that blocks one attacker is put
+## down, and one that may block several has that pairing switched and stays picked up
+## (A323). Returns whether anything changed.
 func click(object_id: int) -> bool:
 	if not is_clickable(object_id):
 		return false
@@ -145,9 +146,10 @@ func click(object_id: int) -> bool:
 		return true
 	var blocks: DeclareBlockersDecision = _decision as DeclareBlockersDecision
 	if blocks.candidate_blocker_ids.has(object_id):
-		if _picked == object_id:
+		if _picked == object_id or not blocks_of(object_id).is_empty():
 			_unassign(object_id)
-			_picked = NONE
+			if _picked == object_id:
+				_picked = NONE
 		else:
 			_picked = object_id
 		return true

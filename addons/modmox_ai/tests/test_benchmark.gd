@@ -19,6 +19,8 @@ const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const Soak := preload("res://addons/modmox_ai/tests/test_soak.gd")
 ## Monte Carlo decisions timed by default.
 const DEFAULT_MONTE_CARLO_DECISIONS: int = 6
+## The slowest a Normal priority decision may be, in milliseconds.
+const WORST_DECISION_MSEC: int = 2000
 const CARDS: String = "res://content/cards/alpha/%s.tres"
 const ALL_SEEDS: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8]
 const DEFAULT_SEEDS: Array[int] = [1, 2]
@@ -67,8 +69,11 @@ func test_benchmark_monte_carlo_decisions() -> void:
 	if full:
 		seeds.append_array([2, 3, 4])
 	var limit: int = 1000000 if full else DEFAULT_MONTE_CARLO_DECISIONS
+	# Normal without Repeat Plans shows what they cost by themselves.
+	var single: AiDifficulty = AiDifficulty.normal()
+	single.repeat_plan_length = 1
 	var levels: Dictionary[String, AiDifficulty] = {
-		"easy": AiDifficulty.easy(), "normal": AiDifficulty.normal(), "hard": AiDifficulty.hard()}
+		"easy": AiDifficulty.easy(), "single": single, "normal": AiDifficulty.normal(), "hard": AiDifficulty.hard()}
 	var msec: Dictionary[String, Array] = {}
 	var rollouts: Dictionary[String, Array] = {}
 	for level: String in levels:
@@ -95,7 +100,7 @@ func test_benchmark_monte_carlo_decisions() -> void:
 					if level == "normal":
 						normal_detail = agent.explain_detail()
 				if answers["normal"] != answers["easy"]:
-					switched.append("  turn %d %s: one-step %s, Monte Carlo %s; %s" % [engine.game_state().game_turn,
+					switched.append("  turn %d %s: Easy %s, Normal %s; %s" % [engine.game_state().game_turn,
 						MmTurn.Step.find_key(engine.game_state().step), _describe_action(engine, answers["easy"]),
 						_describe_action(engine, answers["normal"]), normal_detail])
 			assert_eq(engine.submit(answer), "")
@@ -107,8 +112,9 @@ func test_benchmark_monte_carlo_decisions() -> void:
 		var per_rollout: float = 0.0 if total_rollouts == 0 else _mean(msec[level]) * msec[level].size() / total_rollouts
 		lines.append("%-7s %10.1f %10.1f %10.1f %12.1f %14.2f" % [level, _median(msec[level]), _mean(msec[level]),
 			_max(msec[level]), _mean(rollouts[level]), per_rollout])
-	lines.append("gate: Normal's median must stay under %d ms (A187)." % AiProfile.new().slow_decision_warning_ms)
-	lines.append("Normal changed the one-step pick in %d of %d decisions:" % [switched.size(), timed])
+	lines.append("gate: Normal's median must stay under %d ms and its slowest decision under %d ms (A187)." % [
+		AiProfile.new().slow_decision_warning_ms, WORST_DECISION_MSEC])
+	lines.append("Normal answered differently from Easy in %d of %d decisions:" % [switched.size(), timed])
 	lines.append_array(switched)
 	print("\n".join(lines))
 

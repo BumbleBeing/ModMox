@@ -17,7 +17,7 @@ func test_timing_tags_come_from_each_cards_effects() -> void:
 		assert_eq(AiTiming.tag_of_effects(spell.effects), expected[file_name], file_name)
 	var abilities: Dictionary[String, Tag] = {
 		"shivan_dragon": Tag.COMBAT_TRICK, "uthden_troll": Tag.COMBAT_TRICK, "samite_healer": Tag.COMBAT_TRICK,
-		"goblin_balloon_brigade": Tag.COMBAT_TRICK, "prodigal_sorcerer": Tag.REMOVAL,
+		"goblin_balloon_brigade": Tag.EVASION, "prodigal_sorcerer": Tag.REMOVAL,
 	}
 	for file_name: String in abilities:
 		var card: MmCardDefinition = AiScenario.alpha(file_name)

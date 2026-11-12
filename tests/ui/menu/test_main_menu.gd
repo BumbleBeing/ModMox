@@ -28,6 +28,26 @@ func test_each_menu_button_leads_where_it_says() -> void:
 		assert_true(ResourceLoader.exists(scene), "%s exists." % scene)
 
 
+func test_the_deckbuilder_button_opens_the_prototype() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+
+	menu.button("Deckbuilder (prototype)").pressed.emit()
+
+	assert_eq(_went_to, [MainMenu.DECKBUILDER] as Array[String])
+	assert_true(ResourceLoader.exists(MainMenu.DECKBUILDER))
+	var screen: Node = (load(MainMenu.DECKBUILDER) as PackedScene).instantiate()
+	assert_true(screen is DeckbuilderScreen)
+	screen.free()
+
+
+func test_the_deckbuilder_flag_skips_the_menu() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(["--deckbuilder"]))
+	await wait_process_frames(2)
+
+	assert_eq(_went_to, [MainMenu.DECKBUILDER] as Array[String])
+	assert_null(menu.button("Start Encounter"), "The menu was never drawn.")
+
+
 func test_quit_game_quits() -> void:
 	var menu: MainMenu = _menu(PackedStringArray())
 

@@ -12,6 +12,12 @@ var can_cancel: bool = false
 var offers_all_attack: bool = false
 
 
+## What the panel says while a card is held where letting go would play it, from the
+## option's text: "Cast Hill Giant" becomes "Release to cast Hill Giant".
+static func release_text(option_text: String) -> String:
+	return "Release to %s%s" % [option_text.left(1).to_lower(), option_text.substr(1)]
+
+
 ## The prompt for [param decision] as the player whose [param view] this is reads it. A
 ## null decision (nobody is asking them anything) has no text.
 static func of(decision: MmPendingDecision, view: MmPlayerView) -> InfoPrompt:
@@ -40,6 +46,10 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> InfoPrompt:
 	elif decision is DivideCombatDamageDecision:
 		var divide: DivideCombatDamageDecision = decision as DivideCombatDamageDecision
 		prompt.text = "Divide %d damage from %s" % [divide.amount, DebugDecisionForm.name_of(view, divide.source_id)]
+	elif decision is OrderTriggersDecision:
+		prompt.text = "Order your triggers"
+	elif decision is ChooseReplacementEffectDecision:
+		prompt.text = "Choose which applies first"
 	else:
 		# A kind the Debug Decision Panel still answers says what its form does.
 		prompt.text = DebugDecisionForm.of(decision, view).title

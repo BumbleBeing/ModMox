@@ -57,7 +57,14 @@ static func creature_value(state: MmGameState, creature: MmGameObject) -> int:
 	var power: int = characteristics.power
 	var toughness: int = characteristics.toughness
 	var value: int = 80 + 15 * power + 10 * toughness + 5 * characteristics.mana_value()
+	# A keyword a creature has twice does nothing more than one, so each counts once.
+	var counted: Dictionary[Script, bool] = {}
 	for ability: MmAbility in characteristics.abilities:
+		var kind: Script = ability.get_script()
+		if not ability is ActivatedAbility:
+			if counted.has(kind):
+				continue
+			counted[kind] = true
 		if ability is FlyingAbility:
 			value += 10 * power
 		elif ability is DeathtouchAbility:

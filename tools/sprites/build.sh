@@ -7,7 +7,8 @@
 #   ... tools/sprites/build.sh GRID_FILE OUT_FOLDER    another icon set
 #
 # An existing .aseprite file is kept (and its PNG exported again) unless forced, so icons
-# touched up by hand are safe. The sheet lands in tools/sprites/preview/.
+# touched up by hand are safe. The sheet lands in tools/sprites/preview/. New sprites get
+# the shared palette, tools/sprites/modmox.gpl.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 : "${ASEPRITE:?Set ASEPRITE to the Aseprite binary}"
@@ -29,6 +30,7 @@ output="$("$ASEPRITE" -b \
 	--script-param grid="$(realpath "$grid")" \
 	--script-param out="$(realpath -m "$out")" \
 	--script-param preview="$(realpath -m "$preview")" \
+	--script-param palette="$(realpath tools/sprites/modmox.gpl)" \
 	--script-param force="$force" \
 	--script tools/sprites/build_sprites.lua 2>&1)" || true
 echo "$output"

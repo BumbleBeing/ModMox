@@ -9,6 +9,8 @@ extends Control
 signal chosen(answer: int)
 ## The cursor is over the row that reads [param text] in full, or left it ("").
 signal pointed(text: String)
+## The menu was open and has closed, whether or not a row was chosen.
+signal closed
 
 var _box: PanelContainer = null
 var _rows: Array[Button] = []
@@ -61,6 +63,7 @@ func close() -> void:
 	_rows.clear()
 	hide()
 	pointed.emit("")
+	closed.emit()
 
 
 func is_open() -> bool:

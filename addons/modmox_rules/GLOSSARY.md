@@ -227,7 +227,7 @@ What answers "if these attack and these block, what happens?" by running the eng
 _Avoid_: Combat math, damage predictor
 
 **Timing Tag**:
-When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, removal also in its controller's main phases and the other player's end step. It never decides whether a play is good.
+When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, evasion (a trick that only grants abilities) from the declare attackers step so it can change who blocks whom, removal also in its controller's main phases and the other player's end step, a counter only with the other player's spell or ability on top of the stack. It never decides whether a play is good.
 _Avoid_: AI hint, card flag, AILogic
 
 **AI Profile**:
@@ -235,12 +235,16 @@ An AI Agent's temperament as a saved, moddable resource: whether it plays first,
 _Avoid_: Villain Profile, difficulty, personality file
 
 **AI Difficulty**:
-A global, game-side setting for how hard the AI plays, as a saved, moddable resource. It only sets how much the AI searches: whether it uses Rollouts, how many candidates and samples. It never adds mistakes or lets the AI cheat.
+A global, game-side setting for how hard the AI plays, as a saved, moddable resource. It only sets how much the AI searches: whether it uses Rollouts, how many candidates and samples, whether a combat trick is judged after it has worn off, and how long a Repeat Plan may be. It never adds mistakes or lets the AI cheat.
 _Avoid_: Skill level, AI level, handicap
 
 **Rollout**:
 One candidate answer played out on a Simulation Copy, by heuristic Agents for both players, through the rest of the Game Turn and the whole next one, then scored by the Board Evaluator. Flat Monte Carlo compares candidates by their Rollouts on the same re-dealt worlds and keeps the one-step pick unless another clearly beats it.
 _Avoid_: Playout, simulation (unqualified), search
+
+**Repeat Plan**:
+One activated ability activated several times in a row, each after the last has resolved, compared as a single candidate answer. The Agent submits only the first activation and judges again when it next has priority.
+_Avoid_: Multi-activation, pump chain, combo
 
 **Tournament**:
 Two AI contenders, each an AI Profile and an AI Difficulty, playing many seeded encounters with the seats swapped on each seed, to measure which plays better. It is how AI settings are tuned.

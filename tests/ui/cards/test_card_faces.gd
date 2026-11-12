@@ -28,6 +28,107 @@ func test_a_tapped_battlefield_face_turns_sideways_darkens_and_keeps_its_tap_sym
 	assert_eq(face.tap_symbol().modulate.a, 0.5)
 
 
+func test_a_face_part_way_through_turning_is_part_way_darkened_about_its_middle() -> void:
+	var face: BattlefieldFace = _battlefield(_look("grizzly_bears"), 140.0)
+
+	face.show_turn(0.5)
+
+	assert_eq(face.turn(), 0.5)
+	assert_eq(face.card().rotation_degrees, 45.0)
+	assert_almost_eq(face.card().get_global_transform() * (face.card().size / 2.0), face.global_position + face.size / 2.0,
+			Vector2(0.01, 0.01), "It turns about the middle of its footprint.")
+	assert_true(face.is_darkened())
+	assert_almost_eq(face.shade_alpha(), BattlefieldFace.TAPPED_SHADE / 2.0, 0.0001)
+	assert_eq(face.tap_symbol().modulate.a, 0.25)
+	assert_almost_eq(face.tap_symbol().get_global_transform().get_rotation(), 0.0, 0.0001, "The symbol stays upright.")
+
+
+func test_a_face_turned_all_the_way_back_is_as_if_it_had_never_been_tapped() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.is_tapped = true
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+	assert_eq(face.turn(), 1.0)
+	assert_almost_eq(face.shade_alpha(), BattlefieldFace.TAPPED_SHADE, 0.0001)
+
+	face.show_turn(0.0)
+
+	assert_eq(face.card().rotation_degrees, 0.0)
+	assert_false(face.is_darkened())
+	assert_null(face.tap_symbol())
+	assert_eq(face.shade_alpha(), 0.0)
+	assert_almost_eq(face.card().get_global_transform() * (face.card().size / 2.0), face.global_position + face.size / 2.0,
+			Vector2(0.01, 0.01), "Still about the middle of its sideways footprint.")
+
+	face.show_turn(1.0)
+
+	assert_eq(face.card().rotation_degrees, 90.0)
+	assert_eq(face.tap_symbol().modulate.a, 0.5)
+
+
+func test_the_shade_covers_the_card_and_the_tap_symbol_sits_in_the_middle_of_its_art() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.is_tapped = true
+
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+
+	var shades: Array[Node] = face.card().find_children("*", "ColorRect", true, false)
+	var shade: ColorRect = shades[0] as ColorRect
+	var art: Rect2 = BattlefieldFace.art_box(140.0)
+	var symbol: TextureRect = face.tap_symbol()
+	assert_eq(shades.size(), 1)
+	assert_eq(shade.size, BattlefieldFace.size_for(140.0))
+	assert_eq(Color(shade.color, 1.0), Color.BLACK)
+	assert_eq(shade.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+	assert_almost_eq(symbol.size.x, minf(art.size.x, art.size.y) * 0.92, 0.001)
+	assert_eq(symbol.size.x, symbol.size.y)
+	assert_almost_eq(symbol.position + symbol.size / 2.0, art.get_center(), Vector2(0.001, 0.001))
+	assert_eq(symbol.pivot_offset, symbol.size / 2.0, "It turns back about its own middle.")
+	assert_true(symbol.get_parent() == shade.get_parent() and symbol.get_index() > shade.get_index(), "Over the shade.")
+
+
+func test_a_damaged_creature_shows_its_damage_on_a_chip_over_its_toughness() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.damage_marked = 2
+
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+
+	var box: Rect2 = BattlefieldFace.power_toughness_box(140.0)
+	var chip: DamageChip = face.damage_chip()
+	assert_eq(chip.amount, 2)
+	assert_almost_eq(chip.position, DamageChip.box_over(box).position, Vector2(0.001, 0.001))
+	assert_almost_eq(chip.size, DamageChip.box_over(box).size, Vector2(0.001, 0.001))
+	assert_eq(chip.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+	assert_eq(chip.get_parent(), face.card(), "It turns with the card when the creature is tapped.")
+	assert_eq(chip.get_index(), face.card().get_child_count() - 1, "And is drawn over everything else on it.")
+
+
+func test_a_creature_with_no_damage_and_a_damaged_noncreature_have_no_chip() -> void:
+	var land: CardLook = _look("forest")
+	land.damage_marked = 3
+
+	assert_null(_battlefield(_look("grizzly_bears"), 140.0).damage_chip())
+	assert_null(_battlefield(land, 140.0).damage_chip())
+
+
+func test_damage_does_not_change_the_power_and_toughness_shown() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	var texts: Array[String] = look.power_toughness_texts()
+	var colors: Array[Color] = look.power_toughness_colors()
+
+	look.damage_marked = 1
+
+	assert_eq(look.power_toughness_texts(), texts)
+	assert_eq(look.power_toughness_colors(), colors)
+
+
+func test_a_look_takes_its_damage_from_the_view_and_has_none_as_printed() -> void:
+	var view: MmObjectView = MmObjectView.new()
+	view.damage_marked = 3
+
+	assert_eq(CardLook.of_view(view).damage_marked, 3)
+	assert_eq(_look("grizzly_bears").damage_marked, 0)
+
+
 func test_a_battlefield_face_cuts_a_long_name_short_with_an_ellipsis() -> void:
 	var look: CardLook = _look("merfolk_of_the_pearl_trident")
 

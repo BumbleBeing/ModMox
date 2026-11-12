@@ -10,6 +10,12 @@ var card_id: int
 ## GUI can highlight the card while the ability is hovered (NO_CARD for an Emblem's).
 var source_object_id: int = 0
 var source_card_id: int = MmGameObject.NO_CARD
+## For an ability on the stack: the ability itself, so the GUI can say what it does, and
+## what its event was about ("that player", "that creature"); null, MmGameState.NO_PLAYER
+## and 0 for anything else. Card data, never to be changed.
+var ability: MmAbility = null
+var triggering_player_id: int = MmGameState.NO_PLAYER
+var triggering_object_id: int = 0
 var name: String
 var owner_id: int
 var controller_id: int
@@ -61,6 +67,9 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.card_id = game_object.card_id
 	view.source_object_id = game_object.source_object_id
 	view.source_card_id = game_object.source_card_id
+	view.ability = game_object.ability
+	view.triggering_player_id = game_object.triggering_player_id
+	view.triggering_object_id = game_object.triggering_object_id
 	view.name = state.characteristics_of(game_object).name
 	view.owner_id = game_object.owner_id
 	view.controller_id = game_object.controller_id

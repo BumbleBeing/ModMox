@@ -87,14 +87,70 @@ func test_at_priority_a_land_answers_with_its_mana_ability_and_cards_in_hand_do_
 
 	var clicks: DecisionClicks = DecisionClicks.of(decision, _view())
 
-	assert_eq(clicks.clickable_ids(), [LAND_ID] as Array[int], "Casting and playing a land wait for the hand (13e).")
+	assert_eq(clicks.clickable_ids(), [LAND_ID] as Array[int], "One click on a card in hand answers nothing (A371).")
 	var options: Array[ClickOption] = clicks.options_of(LAND_ID)
 	assert_eq(options.size(), 1)
 	assert_eq(options[0].answer, 3, "The index of the land's ability among the actions.")
 	assert_true(options[0].is_mana)
-	assert_eq(options[0].text, "{T}: Add Mana")
+	assert_eq(options[0].text, "{T}: Add {G}.", "As the ability is printed (A333).")
 	assert_eq(clicks.options_of(7).size(), 0)
 	assert_eq(clicks.options_of(99).size(), 0, "Something that is not offered has no answer.")
+
+
+func test_a_card_in_hand_offers_to_be_cast_or_played_apart_from_what_a_click_answers() -> void:
+	var view: MmPlayerView = _view()
+	view.hand = [_card(7, "Forest"), _card(8, "Hill Giant"), _card(9, "Zap")]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		PassAction.new(), PlayLandAction.new(7), CastSpellAction.new(8), ActivateAbilityAction.new(LAND_ID, 0),
+	] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(clicks.hand_options_of(7).size(), 1)
+	assert_eq(clicks.hand_options_of(7)[0].answer, 1, "The index of playing the Forest among the actions.")
+	assert_eq(clicks.hand_options_of(7)[0].text, "Play Forest")
+	assert_false(clicks.hand_options_of(7)[0].is_mana)
+	assert_eq(clicks.hand_options_of(8)[0].answer, 2)
+	assert_eq(clicks.hand_options_of(8)[0].text, "Cast Hill Giant")
+	assert_eq(clicks.objects[7], DecisionClicks.Kind.OTHER)
+	assert_eq(clicks.objects[8], DecisionClicks.Kind.OTHER)
+	assert_eq(clicks.hand_options_of(9).size(), 0, "A card that cannot be cast offers nothing")
+	assert_false(clicks.objects.has(9), "and does not glow.")
+	assert_eq(clicks.hand_options_of(LAND_ID).size(), 0, "A permanent's ability is not played from the hand.")
+	assert_eq(clicks.options_of(7).size(), 0)
+	assert_eq(clicks.options_of(8).size(), 0)
+
+
+func test_a_card_with_two_ways_to_be_played_offers_both_in_answer_order() -> void:
+	var view: MmPlayerView = _view()
+	view.hand = [_card(8, "Dryad Arbor")]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		CastSpellAction.new(8), PassAction.new(), PlayLandAction.new(8),
+	] as Array[MmAction])
+
+	var options: Array[ClickOption] = DecisionClicks.of(decision, view).hand_options_of(8)
+
+	assert_eq(options.size(), 2)
+	assert_eq([options[0].answer, options[1].answer], [0, 2])
+	assert_eq([options[0].text, options[1].text], ["Cast Dryad Arbor", "Play Dryad Arbor"])
+
+
+func test_nothing_is_played_from_the_hand_outside_priority() -> void:
+	var view: MmPlayerView = _view()
+	view.hand = [_card(7, "Forest")]
+
+	assert_eq(DecisionClicks.of(ChooseCardsToDiscardDecision.new(HERO, 1, [7] as Array[int]), view).hand_options_of(7).size(), 0)
+	assert_eq(DecisionClicks.of(null, view).hand_options_of(7).size(), 0)
+
+
+func test_a_held_cards_glow_is_its_color_made_lighter() -> void:
+	var plain: Color = DecisionClicks.color_of(DecisionClicks.Kind.OTHER)
+	var bright: Color = DecisionClicks.bright_color_of(DecisionClicks.Kind.OTHER)
+
+	assert_gt(bright.get_luminance(), plain.get_luminance() + 0.1)
+	assert_almost_eq(bright.r, lerpf(plain.r, 1.0, 0.55), 0.001)
+	assert_gt(bright.g, bright.r, "Still green.")
+	assert_ne(DecisionClicks.bright_color_of(DecisionClicks.Kind.MANA), bright)
 
 
 func test_a_permanent_whose_ability_is_not_offered_has_no_answer_and_no_glow() -> void:
@@ -136,7 +192,7 @@ func test_an_ability_that_is_not_a_mana_ability_glows_green_and_says_what_it_doe
 	assert_eq(clicks.objects, {6: DecisionClicks.Kind.OTHER})
 	assert_eq(clicks.options_of(6)[0].answer, 1)
 	assert_false(clicks.options_of(6)[0].is_mana)
-	assert_eq(clicks.options_of(6)[0].text, "{T}: Deal Damage")
+	assert_eq(clicks.options_of(6)[0].text, "{T}: This creature deals 1 damage to any target.")
 
 
 func test_a_permanent_with_two_abilities_has_two_answers_in_order_and_glows_green_if_either_is_not_mana() -> void:
@@ -155,7 +211,7 @@ func test_a_permanent_with_two_abilities_has_two_answers_in_order_and_glows_gree
 	assert_eq(clicks.options_of(6).size(), 2)
 	assert_eq(clicks.options_of(6)[0].answer, 1)
 	assert_eq(clicks.options_of(6)[1].answer, 2)
-	assert_eq(clicks.options_of(6)[1].text, "{T}: Deal Damage")
+	assert_eq(clicks.options_of(6)[1].text, "{T}: This creature deals 1 damage to any target.")
 	assert_eq(clicks.objects[6], DecisionClicks.Kind.OTHER, "Mana first, then another ability (A306).")
 	assert_eq(clicks.objects[7], DecisionClicks.Kind.OTHER, "The other ability first, then mana.")
 	assert_eq(clicks.objects[8], DecisionClicks.Kind.MANA, "Blue only when mana is all it offers.")
@@ -203,18 +259,6 @@ func test_a_kind_with_no_input_of_its_own_glows_but_gives_no_click_answers() -> 
 	assert_eq(divide.player_answers.size(), 0)
 
 
-func test_an_abilitys_text_is_its_costs_then_what_it_does() -> void:
-	var pump: ActivatedAbility = Scenario.regenerate_ability(Scenario.mana_cost(1, [MmMana.Type.RED]))
-	var both: ActivatedAbility = _ping()
-	both.mana_cost = Scenario.mana_cost(2)
-	var free: ActivatedAbility = Scenario.regenerate_ability(null)
-
-	assert_eq(DecisionClicks.ability_text(pump), "{1}{R}: Regenerate")
-	assert_eq(DecisionClicks.ability_text(both), "{2}, {T}: Deal Damage")
-	assert_eq(DecisionClicks.ability_text(free), "{0}: Regenerate")
-
-
-## "{T}: This deals 1 damage to any target."
 func _ping() -> ActivatedAbility:
 	var ability: ActivatedAbility = ActivatedAbility.new()
 	ability.costs = [TapCost.new()]
@@ -223,10 +267,20 @@ func _ping() -> ActivatedAbility:
 	return ability
 
 
+## A creature on the battlefield with [param abilities].
 func _permanent(id: int, abilities: Array[MmAbility]) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()
 	seen.id = id
+	seen.name = "Pinger"
+	seen.card_types = [MmCardTypes.CardType.CREATURE]
 	seen.abilities = abilities
+	return seen
+
+
+func _card(id: int, card_name: String) -> MmObjectView:
+	var seen: MmObjectView = MmObjectView.new()
+	seen.id = id
+	seen.name = card_name
 	return seen
 
 

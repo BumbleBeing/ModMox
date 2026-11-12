@@ -87,6 +87,22 @@ func test_a_click_outside_closes_it_without_choosing() -> void:
 	assert_eq(_chosen.size(), 0)
 
 
+func test_it_says_when_it_closes_but_only_if_it_was_open() -> void:
+	var menu: OptionMenu = _menu()
+	var closes: Array[int] = []
+	menu.closed.connect(func() -> void: closes.append(1))
+
+	menu.close()
+	assert_eq(closes.size(), 0, "It was not open.")
+	menu.open(_options(2), Vector2(600, 300), FIELD)
+	assert_eq(closes.size(), 0, "Opening a closed menu closes nothing.")
+	menu.close()
+	assert_eq(closes.size(), 1)
+	menu.open(_options(2), Vector2(600, 300), FIELD)
+	menu.rows()[0].pressed.emit()
+	assert_eq(closes.size(), 2, "Choosing a row closes it too.")
+
+
 func test_letting_go_of_the_button_or_moving_the_mouse_outside_does_not_close_it() -> void:
 	var menu: OptionMenu = _menu()
 	menu.open(_options(2), Vector2(600, 300), FIELD)

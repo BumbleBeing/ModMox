@@ -6,6 +6,12 @@ extends Control
 ## pale border on the active player's panel. While the player can be chosen, their portrait
 ## alone glows and takes the click, never the whole panel. The Villain's panel
 ## says when the Villain is thinking, under its Emblems button (A294).
+##
+## Unlike the board, a panel is not rebuilt from each snapshot. It is built once for its
+## size, and each snapshot only changes what it shows differently: building its thirty-odd
+## buttons took six to nine milliseconds a panel, most of it laying out the two symbols on
+## them, which are characters from a fallback font. Whatever the screen draws on the
+## portrait (a damage stepper, a Stack Mark) is cleared here on every snapshot.
 
 ## A mana button was pressed while paying: [param answer] spends one mana of that color.
 signal mana_pressed(answer: int)
@@ -28,14 +34,23 @@ const STOP_COLOR: Color = Color("#2f8f46")
 const PLAIN_COLOR: Color = Color("#3a414d")
 const NOW_COLOR: Color = Color("#f3e9a0")
 const THINKING: String = "The Villain is thinking…"
+const PASS: String = "Pass [SPACE]"
 
 var _player_id: int
 var _title: String
+var _is_hero: bool = false
+var _built_for: Vector2 = Vector2.ZERO
+var _outline: Panel = null
 var _life: Label = null
 var _emblems: Button = null
+var _has_emblems: Variant = null
 var _mana: Array[Button] = []
 var _mana_counts: Array[Label] = []
+## While paying: mana type → the answer that spends one unit of it.
+var _pay_answers: Dictionary[MmMana.Type, int] = {}
 var _steps: Array[Button] = []
+## How each step button is drawn now: 1 for a stop, plus 2 for the step it is.
+var _step_looks: Array[int] = []
 var _pass: Button = null
 var _undo: Button = null
 var _auto_pass: Button = null
@@ -50,68 +65,47 @@ func _init(player_id: int, title: String) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
-## Draws the panel in [param panel_rect] from [param snapshot]. [param is_hero] says whose
-## mana buttons can be pressed (only the Hero's, and only while paying) and whose panel has
-## the controls: undo, pass and auto-pass, with [param is_auto_passing] for its box.
+## Shows [param snapshot] in [param panel_rect]. [param is_hero] says whose mana buttons can
+## be pressed (only the Hero's, and only while paying) and whose panel has the controls:
+## undo, pass and auto-pass, with [param is_auto_passing] for its box.
 func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: StepStops, panel_rect: Rect2, is_hero: bool,
 		is_auto_passing: bool) -> void:
-	for child: Node in get_children():
-		remove_child(child)
-		child.queue_free()
-	_mana.clear()
-	_mana_counts.clear()
-	_steps.clear()
-	_pass = null
-	_undo = null
-	_auto_pass = null
-	_thinking = null
 	position = panel_rect.position
 	size = panel_rect.size
+	if panel_rect.size != _built_for or is_hero != _is_hero:
+		_build(panel_rect.size, is_hero)
 	var view: MmPlayerView = snapshot.view
-	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(Rect2(Vector2.ZERO, panel_rect.size))
-	add_child(CardShapes.rounded(panel_rect.size, 8, Color("#2c323c")))
-	if view.priority_player_id == _player_id:
-		add_child(CardShapes.outline(panel_rect.size, 8, 3, NOW_COLOR))
-
-	add_child(_label(_title, parts["name"], 22))
-	_portrait = CardShapes.rounded(parts["portrait"].size, 8, Color("#444c5a"))
-	_portrait.position = parts["portrait"].position
-	add_child(_portrait)
-	if clicks.players.has(_player_id):
-		BorderEffects.add_glow(_portrait, parts["portrait"].size, DecisionClicks.color_of(clicks.players[_player_id]))
-	if clicks.player_answers.has(_player_id):
-		var answer: int = clicks.player_answers[_player_id]
-		ClickCatcher.add(_portrait, parts["portrait"].size).clicked.connect(func() -> void: player_clicked.emit(answer))
-	var life_box: Panel = CardShapes.rounded(parts["life"].size, 8, Color(0.05, 0.05, 0.07, 0.9))
-	life_box.position = parts["life"].position
-	add_child(life_box)
-	_life = _label(str(view.life_totals.get(_player_id, 0)), parts["life"], 42)
-	add_child(_life)
+	_outline.visible = view.priority_player_id == _player_id
+	_show_portrait(clicks)
+	_set_text(_life, str(view.life_totals.get(_player_id, 0)))
 
 	var pool: Array = view.mana_pools.get(_player_id, [])
+	_pay_answers = clicks.pool_answers.duplicate() if is_hero else ({} as Dictionary[MmMana.Type, int])
 	for type: int in 6:
 		var amount: int = 0
 		for unit: MmMana in pool:
 			if unit.type == type:
 				amount += 1
-		_add_mana_button(parts["mana_%d" % type], type, amount, is_hero and clicks.pool_answers.has(type),
-				clicks.pool_answers.get(type, -1))
+		_show_mana(type, amount)
 
 	var emblem_count: int = 0
 	for emblem: MmObjectView in view.command:
 		if emblem.controller_id == _player_id:
 			emblem_count += 1
-	_add_emblems_button(parts["emblems"], emblem_count)
+	_show_emblems(emblem_count)
 
 	for step: int in STEP_NAMES.size():
-		_add_step_button(parts["step_%d" % step], step, stops.has_stop(_player_id, step),
-				view.active_player_id == _player_id and view.step == step)
+		_show_step(step, stops.has_stop(_player_id, step), view.active_player_id == _player_id and view.step == step)
 	if is_hero:
-		_add_controls(snapshot, parts, is_auto_passing)
-	elif snapshot.is_villain_thinking:
-		_thinking = _label(THINKING, Rect2(parts["controls"].position, Vector2(parts["controls"].size.x, 34)), 16)
-		_thinking.modulate = Color(1, 0.85, 0.4)
-		add_child(_thinking)
+		_undo.disabled = not snapshot.can_undo or snapshot.is_villain_thinking
+		_pass.disabled = not (snapshot.decision is PriorityDecision)
+		if _pass.text != PASS:
+			# It was the confirm button of a combat decision (show_confirm).
+			_pass.text = PASS
+			_pass.add_theme_font_size_override("font_size", 19)
+		_set_text(_auto_pass, ("☑" if is_auto_passing else "☐") + "  Auto-pass")
+	else:
+		_thinking.visible = snapshot.is_villain_thinking
 
 
 ## While a combat decision is being answered the pass button confirms it instead: it reads
@@ -143,10 +137,11 @@ func auto_pass_button() -> Button:
 ## What the panel says about its player thinking: THINKING on the Villain's while they
 ## think, and "" otherwise.
 func thinking_text() -> String:
-	return _thinking.text if _thinking != null else ""
+	return _thinking.text if _thinking != null and _thinking.visible else ""
 
 
-## The player's picture: what glows and is clicked while the player can be chosen.
+## The player's picture: what glows and is clicked while the player can be chosen. What is
+## drawn on it from outside lasts until the next snapshot is shown.
 func portrait() -> Panel:
 	return _portrait
 
@@ -182,6 +177,137 @@ func shows_stop(step: MmTurn.Step) -> bool:
 	return _steps[step].get_meta("has_stop")
 
 
+## Whether the button for [param step] has the border of the step it is now.
+func shows_now(step: MmTurn.Step) -> bool:
+	return _step_looks[step] >= 2
+
+
+## Makes everything the panel has, for a panel of [param panel_size]. What each thing shows
+## is filled in by show_snapshot().
+func _build(panel_size: Vector2, is_hero: bool) -> void:
+	for child: Node in get_children():
+		remove_child(child)
+		child.queue_free()
+	_built_for = panel_size
+	_is_hero = is_hero
+	_mana.clear()
+	_mana_counts.clear()
+	_steps.clear()
+	_step_looks.clear()
+	_has_emblems = null
+	_pass = null
+	_undo = null
+	_auto_pass = null
+	_thinking = null
+	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(Rect2(Vector2.ZERO, panel_size))
+	add_child(CardShapes.rounded(panel_size, 8, Color("#2c323c")))
+	_outline = CardShapes.outline(panel_size, 8, 3, NOW_COLOR)
+	add_child(_outline)
+	add_child(_label(_title, parts["name"], 22))
+	_portrait = CardShapes.rounded(parts["portrait"].size, 8, Color("#444c5a"))
+	_portrait.position = parts["portrait"].position
+	add_child(_portrait)
+	var life_box: Panel = CardShapes.rounded(parts["life"].size, 8, Color(0.05, 0.05, 0.07, 0.9))
+	life_box.position = parts["life"].position
+	add_child(life_box)
+	_life = _label("", parts["life"], 42)
+	add_child(_life)
+	for type: int in 6:
+		_add_mana_button(parts["mana_%d" % type], type)
+	_emblems = Button.new()
+	_emblems.focus_mode = Control.FOCUS_NONE
+	_emblems.position = parts["emblems"].position
+	_emblems.size = parts["emblems"].size
+	_emblems.add_theme_color_override("font_color", Color("#f1dc9a"))
+	_emblems.add_theme_color_override("font_hover_color", Color("#fff3c4"))
+	_emblems.add_theme_color_override("font_disabled_color", Color("#9aa1ad"))
+	_emblems.pressed.connect(func() -> void: emblems_pressed.emit())
+	add_child(_emblems)
+	for step: int in STEP_NAMES.size():
+		_add_step_button(parts["step_%d" % step], step)
+	if is_hero:
+		_add_controls(parts)
+	else:
+		_thinking = _label(THINKING, Rect2(parts["controls"].position, Vector2(parts["controls"].size.x, 34)), 16)
+		_thinking.modulate = Color(1, 0.85, 0.4)
+		add_child(_thinking)
+
+
+## The portrait glows and takes a click while its player can be chosen. Whatever else was
+## drawn on it since the last snapshot is taken off.
+func _show_portrait(clicks: DecisionClicks) -> void:
+	for child: Node in _portrait.get_children():
+		_portrait.remove_child(child)
+		child.queue_free()
+	_portrait.modulate = Color.WHITE
+	if clicks.players.has(_player_id):
+		BorderEffects.add_glow(_portrait, _portrait.size, DecisionClicks.color_of(clicks.players[_player_id]))
+	if clicks.player_answers.has(_player_id):
+		var answer: int = clicks.player_answers[_player_id]
+		ClickCatcher.add(_portrait, _portrait.size).clicked.connect(func() -> void: player_clicked.emit(answer))
+
+
+## A mana button is dim with none of its color, and glows and can be pressed while that
+## color can pay.
+func _show_mana(type: int, amount: int) -> void:
+	var button: Button = _mana[type]
+	var can_press: bool = _pay_answers.has(type)
+	button.disabled = not can_press
+	button.modulate = Color(1, 1, 1, 1.0 if amount > 0 else 0.55)
+	_set_text(_mana_counts[type], "(%d)" % amount)
+	if can_press != (BorderEffects.glow_color(button) != null):
+		if can_press:
+			BorderEffects.add_glow(button, button.size, DecisionClicks.color_of(DecisionClicks.Kind.MANA))
+		else:
+			BorderEffects.remove_glow(button)
+
+
+## Gold with Emblems to show, gray and unpressable with none.
+func _show_emblems(count: int) -> void:
+	_set_text(_emblems, "⛨  Emblems (%d)" % count)
+	_emblems.disabled = count == 0
+	if _has_emblems is bool and _has_emblems == (count > 0):
+		return
+	_has_emblems = count > 0
+	var tint: Color = GOLD if count > 0 else Color("#6b7280")
+	for state: String in ["normal", "hover", "pressed", "disabled"]:
+		var style: StyleBoxFlat = StyleBoxFlat.new()
+		style.bg_color = Color(tint, 0.45 if state == "hover" else 0.25)
+		style.border_color = tint
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(5)
+		_emblems.add_theme_stylebox_override(state, style)
+
+
+## A step with a stop is green, and the step it is now has a pale border.
+func _show_step(step: int, has_stop: bool, is_now: bool) -> void:
+	var look: int = (1 if has_stop else 0) + (2 if is_now else 0)
+	if _step_looks[step] == look:
+		return
+	_step_looks[step] = look
+	var button: Button = _steps[step]
+	button.set_meta("has_stop", has_stop)
+	for state: String in ["normal", "hover", "pressed", "disabled"]:
+		var style: StyleBoxFlat = StyleBoxFlat.new()
+		style.bg_color = STOP_COLOR if has_stop else PLAIN_COLOR
+		if state == "hover":
+			style.bg_color = style.bg_color.lightened(0.18)
+		if state == "disabled":
+			style.bg_color = Color("#2c323c")
+		style.set_corner_radius_all(5)
+		if is_now:
+			style.border_color = NOW_COLOR
+			style.set_border_width_all(3)
+		button.add_theme_stylebox_override(state, style)
+
+
+## Sets the text of [param node], a Button or a Label, only if it says something else:
+## setting it lays it out again.
+func _set_text(node: Control, text: String) -> void:
+	if node.get("text") != text:
+		node.set("text", text)
+
+
 func _label(text: String, box: Rect2, font_size: int) -> Label:
 	var label: Label = Label.new()
 	label.text = text
@@ -195,17 +321,14 @@ func _label(text: String, box: Rect2, font_size: int) -> Label:
 
 
 ## The Hero's controls, in a section of their own under the Emblems button.
-func _add_controls(snapshot: EncounterSnapshot, parts: Dictionary[String, Rect2], is_auto_passing: bool) -> void:
+func _add_controls(parts: Dictionary[String, Rect2]) -> void:
 	var section: Panel = CardShapes.rounded(parts["controls"].size, 6, Color("#22262e"))
 	section.position = parts["controls"].position
 	add_child(section)
 	# Always there: grayed out when nothing can be undone (A245).
 	_undo = _control("Undo [Z]", parts["undo"], 16, func() -> void: undo_pressed.emit())
-	_undo.disabled = not snapshot.can_undo or snapshot.is_villain_thinking
-	_pass = _control("Pass [SPACE]", parts["pass"], 19, func() -> void: pass_pressed.emit())
-	_pass.disabled = not (snapshot.decision is PriorityDecision)
-	_auto_pass = _control(("☑" if is_auto_passing else "☐") + "  Auto-pass", parts["auto_pass"], 17,
-			func() -> void: auto_pass_toggled.emit())
+	_pass = _control(PASS, parts["pass"], 19, func() -> void: pass_pressed.emit())
+	_auto_pass = _control("", parts["auto_pass"], 17, func() -> void: auto_pass_toggled.emit())
 	_auto_pass.flat = true
 	_auto_pass.tooltip_text = "Pass for me except on steps with a stop (green) where I can cast or activate something, or when the Villain puts something on the stack."
 
@@ -222,55 +345,30 @@ func _control(text: String, box: Rect2, font_size: int, on_press: Callable) -> B
 	return button
 
 
-func _add_mana_button(box: Rect2, type: int, amount: int, can_press: bool, pay_answer: int) -> void:
+func _add_mana_button(box: Rect2, type: int) -> void:
 	var button: Button = Button.new()
 	button.focus_mode = Control.FOCUS_NONE
 	button.position = box.position
 	button.size = box.size
-	button.disabled = not can_press
 	for state: String in ["normal", "hover", "pressed", "disabled"]:
 		var style: StyleBoxFlat = StyleBoxFlat.new()
 		style.bg_color = PLAIN_COLOR.lightened(0.18) if state == "hover" else PLAIN_COLOR
 		style.set_corner_radius_all(5)
 		button.add_theme_stylebox_override(state, style)
-	button.modulate = Color(1, 1, 1, 1.0 if amount > 0 else 0.55)
 	var pip: float = minf(box.size.x - 6.0, 24.0)
 	button.add_child(CardShapes.image(ManaSymbols.texture((MmMana.SYMBOLS[type] as String).to_lower()),
 			Rect2((box.size.x - pip) / 2.0, 5, pip, pip)))
-	var count: Label = _label("(%d)" % amount, Rect2(0, 30, box.size.x, 22), 14)
+	var count: Label = _label("", Rect2(0, 30, box.size.x, 22), 14)
 	button.add_child(count)
-	if can_press:
-		BorderEffects.add_glow(button, box.size, DecisionClicks.color_of(DecisionClicks.Kind.MANA))
-		button.pressed.connect(func() -> void: mana_pressed.emit(pay_answer))
+	button.pressed.connect(func() -> void:
+		if _pay_answers.has(type):
+			mana_pressed.emit(_pay_answers[type]))
 	add_child(button)
 	_mana.append(button)
 	_mana_counts.append(count)
 
 
-## Gold with Emblems to show, gray and unpressable with none.
-func _add_emblems_button(box: Rect2, count: int) -> void:
-	_emblems = Button.new()
-	_emblems.text = "⛨  Emblems (%d)" % count
-	_emblems.focus_mode = Control.FOCUS_NONE
-	_emblems.position = box.position
-	_emblems.size = box.size
-	_emblems.disabled = count == 0
-	var tint: Color = GOLD if count > 0 else Color("#6b7280")
-	for state: String in ["normal", "hover", "pressed", "disabled"]:
-		var style: StyleBoxFlat = StyleBoxFlat.new()
-		style.bg_color = Color(tint, 0.45 if state == "hover" else 0.25)
-		style.border_color = tint
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(5)
-		_emblems.add_theme_stylebox_override(state, style)
-	_emblems.add_theme_color_override("font_color", Color("#f1dc9a"))
-	_emblems.add_theme_color_override("font_hover_color", Color("#fff3c4"))
-	_emblems.add_theme_color_override("font_disabled_color", Color("#9aa1ad"))
-	_emblems.pressed.connect(func() -> void: emblems_pressed.emit())
-	add_child(_emblems)
-
-
-func _add_step_button(box: Rect2, step: int, has_stop: bool, is_now: bool) -> void:
+func _add_step_button(box: Rect2, step: int) -> void:
 	var button: Button = Button.new()
 	button.text = STEP_NAMES[step]
 	button.focus_mode = Control.FOCUS_NONE
@@ -280,20 +378,9 @@ func _add_step_button(box: Rect2, step: int, has_stop: bool, is_now: bool) -> vo
 	button.add_theme_font_size_override("font_size", 13)
 	# Untap and cleanup never hold a stop, so their buttons cannot be pressed.
 	button.disabled = not StepStops.can_hold(step)
-	button.set_meta("has_stop", has_stop)
 	button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.45))
-	for state: String in ["normal", "hover", "pressed", "disabled"]:
-		var style: StyleBoxFlat = StyleBoxFlat.new()
-		style.bg_color = STOP_COLOR if has_stop else PLAIN_COLOR
-		if state == "hover":
-			style.bg_color = style.bg_color.lightened(0.18)
-		if state == "disabled":
-			style.bg_color = Color("#2c323c")
-		style.set_corner_radius_all(5)
-		if is_now:
-			style.border_color = NOW_COLOR
-			style.set_border_width_all(3)
-		button.add_theme_stylebox_override(state, style)
 	button.pressed.connect(func() -> void: stop_toggled.emit(step))
 	add_child(button)
 	_steps.append(button)
+	# No look yet: show_snapshot() gives it its first.
+	_step_looks.append(-1)

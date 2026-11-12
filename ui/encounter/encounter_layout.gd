@@ -277,6 +277,57 @@ static func hand_rest(count: int, hand_rect: Rect2, card_size: Vector2) -> Array
 	return places
 
 
+## Where each of [param count] cards of the Hero's hand rests while a held card hovers over
+## the hand at [param gap] among them, so that they leave it a place (A375). A gap of -1 is
+## none, which is hand_rest().
+static func hand_row(count: int, gap: int, hand_rect: Rect2, card_size: Vector2) -> Array[Vector2]:
+	if gap < 0:
+		return hand_rest(count, hand_rect, card_size)
+	var places: Array[Vector2] = hand_rest(count + 1, hand_rect, card_size)
+	places.remove_at(mini(gap, count))
+	return places
+
+
+## How far each of the cards of hand_row() is turned.
+static func hand_row_angles(count: int, gap: int) -> Array[float]:
+	var angles: Array[float] = []
+	var slots: int = count + (1 if gap >= 0 else 0)
+	for slot: int in slots:
+		if gap < 0 or slot != mini(gap, count):
+			angles.append(fan_angle(slot, slots))
+	return angles
+
+
+## Where among [param others] cards of the hand a card held with the cursor at
+## [param cursor] would be put down: the nearest of the places a hand of one more has.
+static func hand_gap(others: int, hand_rect: Rect2, card_size: Vector2, cursor: Vector2) -> int:
+	var places: Array[Vector2] = hand_rest(others + 1, hand_rect, card_size)
+	var nearest: int = 0
+	for index: int in places.size():
+		if absf(places[index].x + card_size.x / 2.0 - cursor.x) < absf(places[nearest].x + card_size.x / 2.0 - cursor.x):
+			nearest = index
+	return nearest
+
+
+## Whether [param cursor] is above the strip the Hero's hand lies in, where letting go of a
+## held card plays it (A372).
+static func is_above_hand(cursor: Vector2, screen_regions: Dictionary[String, Rect2]) -> bool:
+	return cursor.y < screen_regions["hero_hand"].position.y
+
+
+## Whether [param cursor] is over the panels at the left, where a held card is let go of at
+## once (A371).
+static func is_over_panels(cursor: Vector2, screen_regions: Dictionary[String, Rect2]) -> bool:
+	return cursor.x < screen_regions["sidebar"].end.x
+
+
+## How much of the way to its place a thing goes in a frame of [param delta] seconds, when it
+## goes [param per_frame] of the way in a sixtieth of a second. A slow frame covers what the
+## frames it replaced would have, so easing does not fall behind the cursor when the game does.
+static func ease_weight(per_frame: float, delta: float) -> float:
+	return 1.0 - pow(1.0 - per_frame, delta * 60.0)
+
+
 ## Where each card back of the Villain's hand hangs, fanned from the top edge.
 static func villain_hand(count: int, hand_rect: Rect2, card_size: Vector2) -> Array[Vector2]:
 	var step: float = hand_step(count, hand_rect.size.x, card_size.x, VILLAIN_HAND_SHOWN)

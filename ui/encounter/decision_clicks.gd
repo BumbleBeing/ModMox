@@ -4,6 +4,10 @@ extends RefCounted
 ## glossary) drawn from the same map: targets orange-red, mana sources blue, everything
 ## else green. A thing with a click answer always glows. A decision kind that has no input
 ## of its own yet (A243) glows what it can choose, but gives no click answers.
+##
+## A card in hand that can be cast or played glows too, but one click on it answers
+## nothing (A371): what it offers is kept apart, in hand_options_of(), for the Drag Card and
+## a double-click.
 
 enum Kind { TARGET, MANA, OTHER }
 
@@ -24,6 +28,8 @@ var player_answers: Dictionary[int, int] = {}
 
 ## Game Object ID → the ClickOptions clicking it offers, in answer order.
 var _options: Dictionary[int, Array] = {}
+## Game Object ID of a card in hand → the ClickOptions playing it offers, in answer order.
+var _hand_options: Dictionary[int, Array] = {}
 
 
 ## The clicks and Glow for [param decision] as the player whose [param view] this is sees
@@ -41,8 +47,7 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 			if actions[index] is ActivateAbilityAction:
 				clicks._add_ability(index, actions[index] as ActivateAbilityAction, view)
 			else:
-				# Casting and playing a land get their input with the hand (13e).
-				clicks.objects[object_id] = Kind.OTHER
+				clicks._add_play(index, actions[index], view)
 	elif decision is PayManaDecision:
 		var actions: Array[MmAction] = (decision as PayManaDecision).actions
 		var pool: Array = view.mana_pools.get(view.viewer_id, [])
@@ -73,8 +78,6 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 		clicks._add_ids((decision as ChooseCardsToDiscardDecision).candidate_ids)
 	elif decision is ChooseCardsToBottomDecision:
 		clicks._add_ids((decision as ChooseCardsToBottomDecision).candidate_ids)
-	elif decision is OrderTriggersDecision:
-		clicks._add_ids((decision as OrderTriggersDecision).source_object_ids)
 	return clicks
 
 
@@ -94,19 +97,17 @@ static func color_of(kind: Kind) -> Color:
 	return COLORS[kind]
 
 
-## What [param ability] costs and does, for a row of the Option Menu, such as
-## "{1}{R}, {T}: Deal Damage". Until rules text is generated from abilities (13h), an effect
-## is named after its class.
-static func ability_text(ability: ActivatedAbility) -> String:
-	var costs: Array[String] = []
-	if ability.mana_cost != null:
-		costs.append(ability.mana_cost.describe())
-	for cost: MmCost in ability.costs:
-		costs.append("{T}" if cost is TapCost else _class_words(cost, "_cost"))
-	var effects: Array[String] = []
-	for effect: MmEffect in ability.effects:
-		effects.append(_class_words(effect, "_effect"))
-	return "%s: %s" % [", ".join(costs) if not costs.is_empty() else "{0}", ", ".join(effects)]
+## The Glow of a held card that letting go would play: its color, much lighter (A375).
+static func bright_color_of(kind: Kind) -> Color:
+	return COLORS[kind].lightened(0.55)
+
+
+## What playing the card in hand that is Game Object [param object_id] offers: nothing, one
+## way, or several for the Option Menu. Each reads "Cast Hill Giant" or "Play Forest".
+func hand_options_of(object_id: int) -> Array[ClickOption]:
+	var found: Array[ClickOption] = []
+	found.assign(_hand_options.get(object_id, []))
+	return found
 
 
 ## What clicking Game Object [param object_id] offers: nothing, one answer, or several for
@@ -134,7 +135,8 @@ func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView
 		if permanent.id == action.object_id:
 			is_permanent = true
 			if action.ability_index < permanent.abilities.size() and permanent.abilities[action.ability_index] is ActivatedAbility:
-				text = ability_text(permanent.abilities[action.ability_index] as ActivatedAbility)
+				# A row of the Option Menu reads as the ability is printed on the card.
+				text = AbilityText.of_ability(permanent.abilities[action.ability_index], AbilityText.self_noun(permanent.card_types, permanent.name))
 	if is_permanent:
 		# An ability used from another zone gets its input with that zone's viewer (13f).
 		if not _options.has(action.object_id):
@@ -142,6 +144,16 @@ func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView
 		(_options[action.object_id] as Array).append(ClickOption.new(answer, text, is_mana))
 	var is_blue: bool = is_mana and objects.get(action.object_id, Kind.MANA) == Kind.MANA
 	objects[action.object_id] = Kind.MANA if is_blue else Kind.OTHER
+
+
+## Casting a card or playing it as a land, which [param answer] does.
+func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
+	var object_id: int = object_of(action)
+	var verb: String = "Play" if action is PlayLandAction else "Cast"
+	objects[object_id] = Kind.OTHER
+	if not _hand_options.has(object_id):
+		_hand_options[object_id] = []
+	(_hand_options[object_id] as Array).append(ClickOption.new(answer, "%s %s" % [verb, DebugDecisionForm.name_of(view, object_id)]))
 
 
 func _add_ids(ids: Array[int]) -> void:
@@ -155,9 +167,3 @@ func _add_references(references: Array[MmReference], kind: Kind) -> void:
 			players[reference.id] = kind
 		else:
 			objects[reference.id] = kind
-
-
-## "deal_damage_effect.gd" → "Deal Damage".
-static func _class_words(resource: Resource, suffix: String) -> String:
-	var file: String = (resource.get_script() as Script).resource_path.get_file().get_basename()
-	return file.trim_suffix(suffix).replace("_", " ").capitalize()

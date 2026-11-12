@@ -29,15 +29,16 @@ static func candidates(options: Array[int], one_step_scores: Array[int], pick: i
 ## [param player_id]'s score of each of [param answers] in each of [param samples]
 ## re-dealt worlds, as one row per sample. Every answer in a row is played on the same
 ## world, Game RNG and CHEAP Agents' AI RNGs, so they differ only by the answer (A193).
+## [param repeats] maps an answer that is a Repeat Plan to how many times it is activated.
 static func sample_scores(source: MmSimulationSource, rng: MmRng, answers: Array[int], samples: int,
-		player_id: int, profile: AiProfile) -> Array:
+		player_id: int, profile: AiProfile, repeats: Dictionary[int, int] = {}) -> Array:
 	var rows: Array = []
 	for _sample: int in samples:
 		var world_seed: int = rng.next_seed()
 		var row: Array[int] = []
 		for answer: int in answers:
 			var copy: MmEngine = source.simulation_copy(MmRng.new(world_seed))
-			row.append(AiSimulation.score_rollout(copy, answer, player_id, profile))
+			row.append(AiSimulation.score_rollout(copy, answer, player_id, profile, repeats.get(answer, 1)))
 		rows.append(row)
 	return rows
 

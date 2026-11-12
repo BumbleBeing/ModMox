@@ -117,6 +117,35 @@ func test_ancestral_recall_makes_its_target_draw_three() -> void:
 	assert_eq(engine.hero().hand.size(), hand_before + 3)
 
 
+func test_counterspell_is_a_blue_instant_for_two_blue_mana() -> void:
+	var printed: MmCharacteristics = MmCharacteristics.printed(_alpha("counterspell"))
+
+	assert_eq(printed.name, "Counterspell")
+	assert_eq(printed.card_types, [MmCardTypes.CardType.INSTANT])
+	assert_eq(printed.colors, [MmCardTypes.CardColor.BLUE])
+	assert_eq(printed.mana_cost.generic, 0)
+	assert_eq(printed.mana_cost.symbols, [MmMana.Type.BLUE, MmMana.Type.BLUE] as Array[MmMana.Type])
+
+
+func test_counterspell_counters_a_spell_so_it_never_resolves() -> void:
+	var cards: Array[MmCardDefinition] = Scenario.cycled([_alpha("island"), _alpha("island"), _alpha("counterspell"), _alpha("ancestral_recall")])
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		func(running: MmEngine) -> bool:
+			return Scenario.ready_in_main(running, 5, 3, "Counterspell") and Scenario.card_in_hand(running, running.hero(), "Ancestral Recall") != -1)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero: MmPlayer = engine.hero()
+	assert_false(Scenario.offers_cast(engine, Scenario.card_in_hand(engine, hero, "Counterspell")), "There is no spell to target yet.")
+	Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Ancestral Recall"), [MmReference.to_player(hero.id)])
+	var recall: int = engine.view_for(hero).stack[0].id
+	var hand_before: int = hero.hand.size()
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Counterspell"), [MmReference.to_object(recall)]), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(hero.hand.size(), hand_before - 1, "Counterspell left the hand, and nothing was drawn.")
+	assert_eq(Scenario.names(engine, hero.graveyard), ["Ancestral Recall", "Counterspell"])
+
+
 func test_dark_ritual_adds_three_black_mana_when_it_resolves() -> void:
 	var engine: MmEngine = _hero_ready_to_cast(_alpha("dark_ritual"), "swamp")
 

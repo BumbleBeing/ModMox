@@ -8,6 +8,10 @@ extends RefCounted
 ## While the Villain is thinking, the worker thread is changing the game, so nothing here
 ## reads the engine until it has finished: the snapshot is made first, and commands are
 ## refused.
+##
+## Pacing (A357): the Villain's next answer is held back until the Hero has had time to read
+## what the last one did. The answer is simply not collected yet, so thinking counts toward
+## the wait and the screen never shows an old game.
 
 ## A snapshot is ready: the game changed, or the Villain began or stopped thinking.
 signal changed(snapshot: EncounterSnapshot)
@@ -23,6 +27,13 @@ var stops: StepStops = StepStops.new()
 ## Whether the Hero's own spell or ability going on the stack leaves them with priority:
 ## the screen keeps this equal to whether the hold key is down.
 var is_hold_key_down: bool = false
+## How long a snapshot that showed a Villain action, or only the Villain tapping for mana,
+## is left up before the Villain's next answer is collected (Pacing). Zero until the screen
+## sets them for a real encounter, so tests and screenshots never wait.
+var action_wait_msec: int = 0
+var mana_wait_msec: int = 0
+## The time in milliseconds. Tests hand in their own.
+var clock: Callable = Time.get_ticks_msec
 
 var _engine: MmEngine
 var _driver: MmEncounterDriver
@@ -37,6 +48,10 @@ var _is_holding: bool = false
 ## The Hero's object last seen on top of the stack, so holding is decided once for each.
 var _own_top_seen: int = -1
 var _is_paused: bool = false
+## When the latest snapshot was made, and how long the Villain's next answer waits after it.
+var _shown_at: int = 0
+var _wait: int = 0
+var _is_rewinding: bool = false
 
 
 ## An encounter from [param setup], with [param villain_agent] answering for the Villain
@@ -81,9 +96,16 @@ func set_paused(is_on: bool) -> void:
 	_is_paused = is_on
 
 
-## Call every frame on the main thread: once the Villain has answered, carries on.
+## Whether the Villain has answered and the answer has not been collected yet: it is being
+## held back by Pacing or by the Pause Menu.
+func is_villain_answer_ready() -> bool:
+	return _task != -1 and WorkerThreadPool.is_task_completed(_task)
+
+
+## Call every frame on the main thread: once the Villain has answered and the last snapshot
+## has been up for its wait, carries on. Time spent paused counts toward the wait (A368).
 func poll() -> void:
-	if not _is_paused and _task != -1 and WorkerThreadPool.is_task_completed(_task):
+	if not _is_paused and is_villain_answer_ready() and (clock.call() as int) - _shown_at >= _wait:
 		_collect()
 
 
@@ -169,7 +191,9 @@ func _rewind(rewind: Callable) -> String:
 		return error
 	_is_holding = false
 	_own_top_seen = -1
+	_is_rewinding = true
 	_advance()
+	_is_rewinding = false
 	return ""
 
 
@@ -184,10 +208,13 @@ func _collect() -> void:
 	WorkerThreadPool.wait_for_task_completion(_task)
 	_task = -1
 	_advance()
+	# Only what a Villain answer showed is waited after, and only by the next one (A359).
+	_wait = Pacing.wait_for(_snapshot.events, action_wait_msec, mana_wait_msec)
 
 
 ## Carries on until the Hero must decide, the Villain must think, or the encounter is over.
 func _advance() -> void:
+	_wait = 0
 	while not _engine.is_over():
 		var decision: MmPendingDecision = _engine.pending_decision()
 		if decision.player_id != HERO:
@@ -197,6 +224,11 @@ func _advance() -> void:
 			_snapshot.is_villain_thinking = true
 			changed.emit(_snapshot)
 			return
+		var order: OrderTriggersDecision = decision as OrderTriggersDecision
+		if order != null and TriggerOrder.are_alike(order):
+			# A344: their order changes nothing, so the Hero is not asked.
+			_engine.submit(range(order.abilities.size()))
+			continue
 		if not _passes_for_hero(decision):
 			break
 		_engine.submit(AutoPass.pass_index(decision as PriorityDecision))
@@ -233,6 +265,7 @@ func _emit() -> void:
 	made.view = _engine.view_for(_engine.hero())
 	made.can_undo = _engine.can_undo()
 	made.is_holding_priority = _is_holding
+	made.is_rewind = _is_rewinding
 	if not _engine.is_over() and _engine.pending_decision().player_id == HERO:
 		made.decision = _engine.pending_decision()
 	var entries: Array[MmEvent] = _engine.event_log()
@@ -241,6 +274,7 @@ func _emit() -> void:
 	if entries.size() > _events_seen:
 		made.events = entries.slice(_events_seen)
 	_events_seen = entries.size()
+	_shown_at = clock.call()
 	for seen: MmObjectView in made.visible_objects():
 		made.looks[seen.id] = CardLook.of_view(seen, _art_key(seen))
 	_snapshot = made

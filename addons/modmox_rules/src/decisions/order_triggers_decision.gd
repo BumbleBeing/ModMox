@@ -9,6 +9,11 @@ var source_object_ids: Array[int]
 var source_card_ids: Array[int]
 ## A short description of each trigger, for logs and debugging.
 var descriptions: Array[String]
+## Each trigger's ability, so the GUI can say what it does, and what its event was about
+## ("that player", "that creature"): MmGameState.NO_PLAYER and 0 when nothing.
+var abilities: Array[TriggeredAbility]
+var triggering_player_ids: Array[int]
+var triggering_object_ids: Array[int]
 
 
 func _init(deciding_player_id: int, triggers: Array[PendingTrigger]) -> void:
@@ -16,10 +21,16 @@ func _init(deciding_player_id: int, triggers: Array[PendingTrigger]) -> void:
 	source_object_ids = []
 	source_card_ids = []
 	descriptions = []
+	abilities = []
+	triggering_player_ids = []
+	triggering_object_ids = []
 	for pending: PendingTrigger in triggers:
 		source_object_ids.append(pending.source_object_id)
 		source_card_ids.append(pending.source_card_id)
 		descriptions.append(pending.describe())
+		abilities.append(pending.ability)
+		triggering_player_ids.append(pending.triggering_player_id)
+		triggering_object_ids.append(pending.triggering_object_id)
 
 
 func validate(answer: Variant) -> String:

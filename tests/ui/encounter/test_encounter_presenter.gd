@@ -482,6 +482,11 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 
 	while not presenter.snapshot().is_over() and answers < 3000:
 		twin_driver.run()
+		# Triggers that are all alike are ordered for the Hero (A344), so for the twin too.
+		var alike: OrderTriggersDecision = twin.pending_decision() as OrderTriggersDecision
+		if alike != null and alike.player_id == HERO and TriggerOrder.are_alike(alike):
+			twin.submit(range(alike.abilities.size()))
+			continue
 		var decision: MmPendingDecision = presenter.snapshot().decision
 		if decision.describe() != twin.pending_decision().describe():
 			fail_test("The twin fell out of step at answer %d: %s" % [answers, decision.describe()])
@@ -491,6 +496,11 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 		var through: Variant = _click(decision, presenter.snapshot().view, wanted)
 		if through == null and CombatSelection.covers(decision):
 			through = _select(decision, wanted)
+		if through == null and TriggerOrder.covers(decision):
+			through = _order(decision, wanted)
+		if through == null and decision is ChooseReplacementEffectDecision:
+			# Clicking an entry of the choice window answers with its number.
+			through = wanted
 		if through != null:
 			clicked[decision.get_script()] = true
 		elif form != null:
@@ -513,7 +523,7 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 	assert_true(clicked.has(DeclareAttackersDecision), "Attackers were declared by clicking creatures.")
 	assert_true(clicked.has(PayManaDecision), "Mana was paid by clicking.")
 	assert_true(clicked.has(ChooseTargetDecision), "Targets were clicked.")
-	assert_true(clicked.has(PriorityDecision), "A permanent was clicked at priority, or the pass button pressed.")
+	assert_true(clicked.has(PriorityDecision), "At priority a permanent was clicked, a card played from the hand, or the pass button pressed.")
 
 
 ## The answer the Hero's own input gives for [param wanted], or null when the decision, or
@@ -524,7 +534,14 @@ func _click(decision: MmPendingDecision, view: MmPlayerView, wanted: Variant) ->
 		var action: MmAction = (decision as PriorityDecision).actions[wanted]
 		if action is PassAction:
 			return AutoPass.pass_index(decision as PriorityDecision)
-		return _option_answering(clicks, DecisionClicks.object_of(action), wanted) if action is ActivateAbilityAction else null
+		if action is ActivateAbilityAction:
+			return _option_answering(clicks, DecisionClicks.object_of(action), wanted)
+		# A card is cast or played from the hand: dragged out of it, or double-clicked.
+		for option: ClickOption in clicks.hand_options_of(DecisionClicks.object_of(action)):
+			if option.answer == wanted:
+				return option.answer
+		fail_test("The hand does not offer answer %d." % wanted)
+		return null
 	if decision is PayManaDecision:
 		var action: MmAction = (decision as PayManaDecision).actions[wanted]
 		if action is PayWithManaAction:
@@ -561,13 +578,20 @@ func _fill_in(form: DebugDecisionForm, wanted: Variant) -> Variant:
 			for id: int in ids:
 				picks.append(form.option_object_ids.find(id))
 			return form.answer_for_picks(picks)
-		DebugDecisionForm.Kind.ORDER:
-			var order: Array[int] = []
-			var places: Array = wanted
-			for place: int in places:
-				order.append(place)
-			return form.answer_for_picks(order)
 	return null
+
+
+## The answer a TriggerOrder gives once the Hero has moved the triggers into the order
+## [param wanted] puts them on the stack in.
+func _order(decision: MmPendingDecision, wanted: Variant) -> Variant:
+	var order: TriggerOrder = TriggerOrder.new(decision)
+	var put_on_stack: Array = wanted
+	for place: int in put_on_stack.size():
+		# The last one put on the stack resolves first, so it belongs at the top.
+		var number: int = put_on_stack[put_on_stack.size() - 1 - place]
+		for from: int in range(order.order().find(number), place, -1):
+			assert_true(order.move(from, -1))
+	return order.answer()
 
 
 ## The answer a CombatSelection gives once the Hero has clicked their way to [param wanted].
