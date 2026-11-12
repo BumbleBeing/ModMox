@@ -25,6 +25,20 @@ func test_every_region_is_on_the_screen() -> void:
 			assert_true(Rect2(Vector2.ZERO, screen).encloses(regions[region]), "%s is off the screen at %s." % [region, screen])
 
 
+func test_the_hold_panel_is_opposite_the_info_panel_at_the_top_left_of_the_battlefield() -> void:
+	for screen: Vector2 in SIZES:
+		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
+		var hold: Rect2 = regions["hold"]
+		assert_eq(hold.position.x, regions["info"].position.x, "Under one another at %s." % screen)
+		assert_eq(hold.size.x, regions["info"].size.x)
+		assert_almost_eq(hold.position.y, EncounterLayout.INFO_PAD, 0.01, "At the top of the screen.")
+		assert_lt(hold.end.y, regions["villain_lands"].position.y, "Above the Villain's lands.")
+		assert_true(EncounterLayout.LEAVES.has("hold"), "Nothing may overlap it.")
+		# The Villain's hand keeps to the middle between it and as far in from the other side.
+		assert_almost_eq(regions["villain_hand"].position.x, regions["hero_hand"].position.x, 0.01)
+		assert_almost_eq(regions["villain_hand"].size.x, regions["hero_hand"].size.x, 0.01)
+
+
 func test_extra_width_goes_to_the_battlefield() -> void:
 	var normal: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
 	var wide: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(2560, 1080))
@@ -44,14 +58,16 @@ func test_the_rows_run_villain_hand_to_hero_hand_from_the_top() -> void:
 	assert_eq(regions["hero_hand"].end.y, 1080.0)
 
 
-func test_each_players_piles_run_library_graveyard_exile_from_the_top() -> void:
+func test_the_heros_piles_run_library_graveyard_exile_from_the_top_and_the_villains_mirror_them() -> void:
 	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
 
+	assert_lt(regions["hero_library"].end.y, regions["hero_graveyard"].position.y + 0.01)
+	assert_lt(regions["hero_graveyard"].end.y, regions["hero_exile"].position.y + 0.01)
+	assert_lt(regions["villain_exile"].end.y, regions["villain_graveyard"].position.y + 0.01)
+	assert_lt(regions["villain_graveyard"].end.y, regions["villain_library"].position.y + 0.01)
 	for who: String in ["hero", "villain"]:
-		assert_lt(regions[who + "_library"].end.y, regions[who + "_graveyard"].position.y + 0.01, who)
-		assert_lt(regions[who + "_graveyard"].end.y, regions[who + "_exile"].position.y + 0.01, who)
 		assert_eq(regions[who + "_exile"].size, regions[who + "_library"].size, "Every pile is the same size.")
-	assert_lt(regions["villain_exile"].end.y, regions["hero_library"].position.y, "The Villain's piles end above the Hero's.")
+	assert_lt(regions["villain_library"].end.y, regions["hero_library"].position.y, "The Villain's piles end above the Hero's.")
 	assert_gt(regions["hero_library"].size.y, 150.0, "With the buttons gone from this column, the piles are bigger.")
 	assert_false(regions.has("status"), "Nothing sits between the two sets of piles any more (A294).")
 
@@ -60,7 +76,7 @@ func test_the_six_piles_fill_the_right_column_with_equal_spacing() -> void:
 	for screen: Vector2 in SIZES:
 		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
 		var keys: Array[String] = [
-			"villain_library", "villain_graveyard", "villain_exile", "hero_library", "hero_graveyard", "hero_exile",
+			"villain_exile", "villain_graveyard", "villain_library", "hero_library", "hero_graveyard", "hero_exile",
 		]
 		var gap: float = regions[keys[0]].position.y
 		assert_gt(gap, 0.0)
@@ -534,18 +550,18 @@ func test_the_controls_have_their_own_section_under_the_emblems_button() -> void
 	assert_true(panel_rect.encloses(parts["controls"]))
 	assert_almost_eq(parts["controls"].size.x, parts["portrait"].size.x, 0.01)
 	assert_lt(parts["controls"].end.x, parts["step_0"].position.x, "Clear of the step buttons.")
-	var order: Array[String] = ["undo", "pass", "auto_pass"]
+	var order: Array[String] = ["undo", "pass", "yield"]
 	for index: int in order.size():
 		assert_true(parts["controls"].encloses(parts[order[index]]), "%s is inside the section." % order[index])
 		if index > 0:
 			assert_gt(parts[order[index]].position.y, parts[order[index - 1]].end.y, "%s is under %s." % [order[index], order[index - 1]])
 	assert_gt(parts["pass"].size.y, parts["undo"].size.y, "Pass is the taller button.")
-	assert_almost_eq(parts["auto_pass"].size.y, parts["undo"].size.y, 0.01)
-	assert_almost_eq(parts["pass"].position.y - parts["undo"].end.y, parts["auto_pass"].position.y - parts["pass"].end.y, 0.01,
+	assert_almost_eq(parts["yield"].size.y, parts["undo"].size.y, 0.01)
+	assert_almost_eq(parts["pass"].position.y - parts["undo"].end.y, parts["yield"].position.y - parts["pass"].end.y, 0.01,
 		"The three buttons are evenly spaced.")
 	assert_almost_eq(parts["undo"].position.y, parts["controls"].position.y + EncounterLayout.CONTROLS_PAD, 0.01,
 		"They fill the section from its top")
-	assert_almost_eq(parts["auto_pass"].end.y, parts["controls"].end.y - EncounterLayout.CONTROLS_PAD, 0.01, "to its bottom.")
+	assert_almost_eq(parts["yield"].end.y, parts["controls"].end.y - EncounterLayout.CONTROLS_PAD, 0.01, "to its bottom.")
 
 
 func test_the_heros_hand_is_cut_off_a_quarter_of_a_card_below_the_screen() -> void:
@@ -796,3 +812,13 @@ func _fan_box(count: int) -> Rect2:
 		for corner: Vector2 in _corners(cards[index], turns[index]):
 			box = box.expand(corner)
 	return box
+
+
+func test_a_pile_is_found_by_its_zone_and_its_player() -> void:
+	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
+
+	for zone_kind: MmZone.Kind in [MmZone.Kind.LIBRARY, MmZone.Kind.GRAVEYARD, MmZone.Kind.EXILE]:
+		for is_hero: bool in [true, false]:
+			assert_true(regions.has(EncounterLayout.pile_key(zone_kind, is_hero)))
+	assert_eq(EncounterLayout.pile_key(MmZone.Kind.GRAVEYARD, true), "hero_graveyard")
+	assert_eq(EncounterLayout.pile_key(MmZone.Kind.LIBRARY, false), "villain_library")

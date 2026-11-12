@@ -11,7 +11,7 @@ const LAND_ID: int = 5
 func test_no_decision_glows_nothing() -> void:
 	var glow: DecisionClicks = DecisionClicks.of(null, _view())
 
-	assert_eq(glow.objects.size(), 0)
+	assert_eq(glow.glowing_ids().size(), 0)
 	assert_eq(glow.players.size(), 0)
 	assert_eq(glow.clickable_ids().size(), 0)
 	assert_eq(glow.player_answers.size(), 0)
@@ -24,7 +24,9 @@ func test_priority_glows_what_can_be_played_green_and_mana_sources_blue() -> voi
 
 	var glow: DecisionClicks = DecisionClicks.of(decision, _view())
 
-	assert_eq(glow.objects, {7: DecisionClicks.Kind.OTHER, 8: DecisionClicks.Kind.OTHER, LAND_ID: DecisionClicks.Kind.MANA})
+	assert_eq(_kinds(glow), {7: [DecisionClicks.Kind.PLAY], 8: [DecisionClicks.Kind.PLAY], LAND_ID: [DecisionClicks.Kind.MANA]})
+	assert_ne(DecisionClicks.color_of(DecisionClicks.Kind.PLAY), DecisionClicks.color_of(DecisionClicks.Kind.ABILITY),
+		"Not the purple of an ability to activate.")
 	assert_eq(glow.players.size(), 0)
 
 
@@ -34,7 +36,7 @@ func test_targets_glow_orange_red_on_objects_and_players_alike() -> void:
 
 	var glow: DecisionClicks = DecisionClicks.of(decision, _view())
 
-	assert_eq(glow.objects, {11: DecisionClicks.Kind.TARGET})
+	assert_eq(_kinds(glow), {11: [DecisionClicks.Kind.TARGET]})
 	assert_eq(glow.players, {VILLAIN: DecisionClicks.Kind.TARGET})
 
 
@@ -47,22 +49,24 @@ func test_paying_mana_glows_sources_blue_and_maps_each_pool_color_to_its_first_u
 
 	var glow: DecisionClicks = DecisionClicks.of(decision, view)
 
-	assert_eq(glow.objects, {LAND_ID: DecisionClicks.Kind.MANA})
+	assert_eq(_kinds(glow), {LAND_ID: [DecisionClicks.Kind.MANA]})
 	assert_eq(glow.pool_answers, {MmMana.Type.RED: 0, MmMana.Type.GREEN: 1}, "The answer that spends one unit of each color.")
 
 
-func test_attackers_blockers_and_cards_to_choose_glow_green() -> void:
+func test_attackers_and_blockers_glow_gold_and_cards_to_choose_glow_green() -> void:
 	var attackers: DecisionClicks = DecisionClicks.of(DeclareAttackersDecision.new(HERO, [3, 4] as Array[int]), _view())
 	var blockers: DecisionClicks = DecisionClicks.of(DeclareBlockersDecision.new(HERO, [3] as Array[int], [9] as Array[int],
 		{3: [9]} as Dictionary[int, Array], {3: 1} as Dictionary[int, int]), _view())
 	var discard: DecisionClicks = DecisionClicks.of(ChooseCardsToDiscardDecision.new(HERO, 1, [1, 2] as Array[int]), _view())
 
-	assert_eq(attackers.objects, {3: DecisionClicks.Kind.OTHER, 4: DecisionClicks.Kind.OTHER})
-	assert_eq(blockers.objects, {3: DecisionClicks.Kind.OTHER}, "The blockers to choose, not the attackers.")
-	assert_eq(discard.objects.keys(), [1, 2])
+	assert_eq(_kinds(attackers), {3: [DecisionClicks.Kind.COMBAT], 4: [DecisionClicks.Kind.COMBAT]})
+	assert_eq(_kinds(blockers), {3: [DecisionClicks.Kind.COMBAT]}, "The blockers to choose, not the attackers.")
+	assert_ne(DecisionClicks.color_of(DecisionClicks.Kind.COMBAT), DecisionClicks.color_of(DecisionClicks.Kind.ABILITY),
+		"Not the purple of an ability to activate.")
+	assert_eq(_kinds(discard), {1: [DecisionClicks.Kind.OTHER], 2: [DecisionClicks.Kind.OTHER]})
 	assert_eq(discard.clickable_ids(), [] as Array[int], "A card to discard is chosen with a CardPicks, not a click answer.")
 	var bottom: DecisionClicks = DecisionClicks.of(ChooseCardsToBottomDecision.new(HERO, 1, [1, 2] as Array[int]), _view())
-	assert_eq(bottom.objects.size(), 0, "Cards to put on the bottom are on the overlay, which draws their Glow itself.")
+	assert_eq(bottom.glowing_ids().size(), 0, "Cards to put on the bottom are on the overlay, which draws their Glow itself.")
 
 
 func test_dividing_damage_glows_its_recipients_as_targets() -> void:
@@ -71,7 +75,7 @@ func test_dividing_damage_glows_its_recipients_as_targets() -> void:
 
 	var glow: DecisionClicks = DecisionClicks.of(decision, _view())
 
-	assert_eq(glow.objects, {9: DecisionClicks.Kind.TARGET})
+	assert_eq(_kinds(glow), {9: [DecisionClicks.Kind.TARGET]})
 	assert_eq(glow.players, {VILLAIN: DecisionClicks.Kind.TARGET})
 
 
@@ -113,10 +117,10 @@ func test_a_card_in_hand_offers_to_be_cast_or_played_apart_from_what_a_click_ans
 	assert_false(clicks.hand_options_of(7)[0].is_mana)
 	assert_eq(clicks.hand_options_of(8)[0].answer, 2)
 	assert_eq(clicks.hand_options_of(8)[0].text, "Cast Hill Giant")
-	assert_eq(clicks.objects[7], DecisionClicks.Kind.OTHER)
-	assert_eq(clicks.objects[8], DecisionClicks.Kind.OTHER)
+	assert_eq(_kinds(clicks)[7], [DecisionClicks.Kind.PLAY])
+	assert_eq(_kinds(clicks)[8], [DecisionClicks.Kind.PLAY])
 	assert_eq(clicks.hand_options_of(9).size(), 0, "A card that cannot be cast offers nothing")
-	assert_false(clicks.objects.has(9), "and does not glow.")
+	assert_false(clicks.glowing_ids().has(9), "and does not glow.")
 	assert_eq(clicks.hand_options_of(LAND_ID).size(), 0, "A permanent's ability is not played from the hand.")
 	assert_eq(clicks.options_of(7).size(), 0)
 	assert_eq(clicks.options_of(8).size(), 0)
@@ -161,7 +165,7 @@ func test_a_permanent_whose_ability_is_not_offered_has_no_answer_and_no_glow() -
 	var clicks: DecisionClicks = DecisionClicks.of(decision, _view())
 
 	assert_eq(clicks.options_of(LAND_ID).size(), 0)
-	assert_false(clicks.objects.has(LAND_ID))
+	assert_false(clicks.glowing_ids().has(LAND_ID))
 
 
 func test_an_ability_of_something_that_is_not_a_permanent_glows_but_is_not_clicked_here() -> void:
@@ -178,10 +182,10 @@ func test_an_ability_of_something_that_is_not_a_permanent_glows_but_is_not_click
 
 	assert_eq(clicks.options_of(30).size(), 0)
 	assert_eq(clicks.clickable_ids().size(), 0)
-	assert_eq(clicks.objects, {30: DecisionClicks.Kind.OTHER}, "It still glows, as something that can be done.")
+	assert_eq(_kinds(clicks), {30: [DecisionClicks.Kind.ABILITY]}, "It still glows, as something that can be done.")
 
 
-func test_an_ability_that_is_not_a_mana_ability_glows_green_and_says_what_it_does() -> void:
+func test_an_ability_that_is_not_a_mana_ability_glows_purple_and_says_what_it_does() -> void:
 	var view: MmPlayerView = _view()
 	view.battlefield.append(_permanent(6, [_ping()]))
 	var decision: PriorityDecision = PriorityDecision.new(HERO, [
@@ -190,21 +194,23 @@ func test_an_ability_that_is_not_a_mana_ability_glows_green_and_says_what_it_doe
 
 	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
 
-	assert_eq(clicks.objects, {6: DecisionClicks.Kind.OTHER})
+	assert_eq(_kinds(clicks), {6: [DecisionClicks.Kind.ABILITY]})
 	assert_eq(clicks.options_of(6)[0].answer, 1)
 	assert_false(clicks.options_of(6)[0].is_mana)
 	assert_eq(clicks.options_of(6)[0].text, "{T}: This creature deals 1 damage to any target.")
 
 
-func test_a_permanent_with_two_abilities_has_two_answers_in_order_and_glows_green_if_either_is_not_mana() -> void:
+func test_a_permanent_with_two_abilities_has_two_answers_in_order_and_glows_for_each_kind_it_offers() -> void:
 	var view: MmPlayerView = _view()
 	view.battlefield.append(_permanent(6, [Scenario.tap_for_mana(MmMana.Type.RED, 1), _ping()]))
 	view.battlefield.append(_permanent(7, [_ping(), Scenario.tap_for_mana(MmMana.Type.RED, 1)]))
 	view.battlefield.append(_permanent(8, [Scenario.tap_for_mana(MmMana.Type.RED, 1), Scenario.tap_for_mana(MmMana.Type.BLUE, 1)]))
+	view.battlefield.append(_permanent(9, [_ping(), _ping()]))
 	var decision: PriorityDecision = PriorityDecision.new(HERO, [
 		PassAction.new(), ActivateAbilityAction.new(6, 0), ActivateAbilityAction.new(6, 1),
 		ActivateAbilityAction.new(7, 0), ActivateAbilityAction.new(7, 1),
 		ActivateAbilityAction.new(8, 0), ActivateAbilityAction.new(8, 1),
+		ActivateAbilityAction.new(9, 0), ActivateAbilityAction.new(9, 1),
 	] as Array[MmAction])
 
 	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
@@ -213,9 +219,82 @@ func test_a_permanent_with_two_abilities_has_two_answers_in_order_and_glows_gree
 	assert_eq(clicks.options_of(6)[0].answer, 1)
 	assert_eq(clicks.options_of(6)[1].answer, 2)
 	assert_eq(clicks.options_of(6)[1].text, "{T}: This creature deals 1 damage to any target.")
-	assert_eq(clicks.objects[6], DecisionClicks.Kind.OTHER, "Mana first, then another ability (A306).")
-	assert_eq(clicks.objects[7], DecisionClicks.Kind.OTHER, "The other ability first, then mana.")
-	assert_eq(clicks.objects[8], DecisionClicks.Kind.MANA, "Blue only when mana is all it offers.")
+	var both: Array = [DecisionClicks.Kind.ABILITY, DecisionClicks.Kind.MANA]
+	assert_eq(_kinds(clicks)[6], both, "Mana first, then another ability: both kinds, the ability's first.")
+	assert_eq(_kinds(clicks)[7], both, "The same pair whichever the engine lists first.")
+	assert_eq(_kinds(clicks)[8], [DecisionClicks.Kind.MANA], "Blue alone when mana is all it offers.")
+	assert_eq(_kinds(clicks)[9], [DecisionClicks.Kind.ABILITY], "Each kind once, however many abilities.")
+	assert_eq(clicks.colors_of(6), [DecisionClicks.color_of(DecisionClicks.Kind.ABILITY), DecisionClicks.color_of(DecisionClicks.Kind.MANA)] as Array[Color])
+	assert_eq(clicks.colors_of(8), [DecisionClicks.color_of(DecisionClicks.Kind.MANA)] as Array[Color])
+	assert_eq(clicks.colors_of(99).size(), 0, "Nothing offered, no Glow.")
+
+
+func test_a_card_in_hand_that_can_be_cast_and_has_an_ability_glows_for_both() -> void:
+	# No card has an ability used from the hand yet, so these are built by hand.
+	var view: MmPlayerView = _view()
+	view.hand = [_in_hand(7, "Cycler", [_ping()]), _in_hand(8, "Spirit Guide", [Scenario.tap_for_mana(MmMana.Type.RED, 1)]),
+		_in_hand(9, "Only Ability", [_ping()])]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		ActivateAbilityAction.new(7, 0), PassAction.new(), CastSpellAction.new(7),
+		CastSpellAction.new(8), ActivateAbilityAction.new(8, 0), ActivateAbilityAction.new(9, 0),
+	] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(_kinds(clicks)[7], [DecisionClicks.Kind.PLAY, DecisionClicks.Kind.ABILITY], "Playing first, whatever the engine's order.")
+	assert_eq(_kinds(clicks)[8], [DecisionClicks.Kind.PLAY, DecisionClicks.Kind.MANA])
+	assert_eq(_kinds(clicks)[9], [DecisionClicks.Kind.ABILITY])
+	assert_eq(clicks.colors_of(7), [DecisionClicks.color_of(DecisionClicks.Kind.PLAY), DecisionClicks.color_of(DecisionClicks.Kind.ABILITY)] as Array[Color])
+	assert_eq(clicks.colors_of(7, true), [DecisionClicks.bright_color_of(DecisionClicks.Kind.PLAY), DecisionClicks.bright_color_of(DecisionClicks.Kind.ABILITY)] as Array[Color],
+		"Held where letting go would act, each color is made lighter.")
+
+
+func test_a_card_in_hand_offers_its_abilities_after_the_ways_to_play_it() -> void:
+	var view: MmPlayerView = _view()
+	view.hand = [_in_hand(7, "Cycler", [_ping()]), _in_hand(9, "Only Ability", [Scenario.tap_for_mana(MmMana.Type.RED, 1)])]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		ActivateAbilityAction.new(7, 0), PassAction.new(), CastSpellAction.new(7), ActivateAbilityAction.new(9, 0),
+	] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+	var options: Array[ClickOption] = clicks.hand_options_of(7)
+
+	assert_eq(options.size(), 2)
+	assert_eq([options[0].text, options[1].text], ["Cast Cycler", "{T}: This creature deals 1 damage to any target."])
+	assert_eq([options[0].answer, options[1].answer], [2, 0])
+	assert_eq(clicks.hand_options_of(9).size(), 1, "A card with only an ability is let go to use it.")
+	assert_eq(clicks.hand_options_of(9)[0].answer, 3)
+	assert_true(clicks.hand_options_of(9)[0].is_mana)
+	assert_eq(clicks.options_of(7).size(), 0, "One click on a card in hand still answers nothing (A371).")
+	assert_eq(clicks.clickable_ids().size(), 0)
+
+
+func test_a_card_in_hand_with_all_three_kinds_glows_in_two_colors() -> void:
+	var view: MmPlayerView = _view()
+	view.hand = [_in_hand(7, "Everything", [Scenario.tap_for_mana(MmMana.Type.RED, 1), _ping()])]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		ActivateAbilityAction.new(7, 0), ActivateAbilityAction.new(7, 1), CastSpellAction.new(7),
+	] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(_kinds(clicks)[7], [DecisionClicks.Kind.PLAY, DecisionClicks.Kind.ABILITY, DecisionClicks.Kind.MANA])
+	assert_eq(clicks.colors_of(7), [DecisionClicks.color_of(DecisionClicks.Kind.PLAY), DecisionClicks.color_of(DecisionClicks.Kind.ABILITY)] as Array[Color],
+		"Two colors at most: mana is the one left out.")
+	assert_eq(clicks.hand_options_of(7).size(), 3)
+
+
+func test_an_object_can_be_made_to_glow_as_one_kind_alone() -> void:
+	var view: MmPlayerView = _view()
+	view.battlefield.append(_permanent(6, [Scenario.tap_for_mana(MmMana.Type.RED, 1), _ping()]))
+	var clicks: DecisionClicks = DecisionClicks.of(PriorityDecision.new(HERO, [
+		ActivateAbilityAction.new(6, 0), ActivateAbilityAction.new(6, 1),
+	] as Array[MmAction]), view)
+
+	clicks.glow_as(6, DecisionClicks.Kind.TARGET)
+	clicks.glow_as(40, DecisionClicks.Kind.TARGET)
+
+	assert_eq(_kinds(clicks), {6: [DecisionClicks.Kind.TARGET], 40: [DecisionClicks.Kind.TARGET]})
 
 
 func test_while_paying_each_source_answers_with_its_own_step() -> void:
@@ -253,7 +332,7 @@ func test_a_kind_with_no_input_of_its_own_glows_but_gives_no_click_answers() -> 
 	var divide: DecisionClicks = DecisionClicks.of(DivideCombatDamageDecision.new(HERO, 3, 4,
 		[MmReference.to_object(9), MmReference.to_player(VILLAIN)] as Array[MmReference], [2] as Array[int]), _view())
 
-	assert_eq(attackers.objects.size(), 2)
+	assert_eq(attackers.glowing_ids().size(), 2)
 	assert_eq(attackers.clickable_ids().size(), 0)
 	assert_eq(discard.clickable_ids().size(), 0)
 	assert_eq(divide.clickable_ids().size(), 0)
@@ -273,6 +352,24 @@ func _permanent(id: int, abilities: Array[MmAbility]) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()
 	seen.id = id
 	seen.name = "Pinger"
+	seen.card_types = [MmCardTypes.CardType.CREATURE]
+	seen.abilities = abilities
+	return seen
+
+
+## Game Object ID → the kinds of Glow it has, in order.
+func _kinds(clicks: DecisionClicks) -> Dictionary:
+	var kinds: Dictionary = {}
+	for id: int in clicks.glowing_ids():
+		var found: Array = []
+		found.assign(clicks.kinds_of(id))
+		kinds[id] = found
+	return kinds
+
+
+## A card in hand with [param abilities] that can be used from there.
+func _in_hand(id: int, card_name: String, abilities: Array[MmAbility]) -> MmObjectView:
+	var seen: MmObjectView = _card(id, card_name)
 	seen.card_types = [MmCardTypes.CardType.CREATURE]
 	seen.abilities = abilities
 	return seen

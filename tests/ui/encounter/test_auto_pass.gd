@@ -60,6 +60,20 @@ func test_the_heros_own_object_on_top_does_not_stop_it() -> void:
 	assert_true(AutoPass.is_own_object_on_top(view))
 
 
+func test_a_yield_passes_priority_whatever_is_on_the_stack_or_stopped_at() -> void:
+	var view: MmPlayerView = _view(MmTurn.Step.PRECOMBAT_MAIN)
+	view.stack = [_stack_object(VILLAIN)]
+	var decision: PriorityDecision = _priority([CastSpellAction.new(SPELL_ID)])
+
+	assert_false(AutoPass.passes(decision, view, StepStops.new()), "Auto-pass stops for the Villain's spell.")
+	assert_true(AutoPass.yields(decision))
+
+
+func test_a_yield_never_chooses_attackers_or_blockers() -> void:
+	assert_false(AutoPass.yields(DeclareAttackersDecision.new(HERO, [])))
+	assert_false(AutoPass.yields(DeclareBlockersDecision.new(HERO, [], [], {}, {})))
+
+
 func test_it_never_answers_a_decision_that_is_not_priority() -> void:
 	assert_false(AutoPass.passes(DeclareAttackersDecision.new(HERO, []), _view(MmTurn.Step.UPKEEP), StepStops.new()))
 

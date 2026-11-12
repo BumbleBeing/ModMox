@@ -198,7 +198,6 @@ func test_the_stack_window_is_there_exactly_while_something_is_on_the_stack() ->
 	assert_true(_screen.stack_window().visible)
 	assert_eq(_screen.stack_window().title_text(), "Stack (1)")
 	assert_null(_screen.stack_window().close_button(), "It closes only when the stack empties.")
-	assert_true(_screen.info_panel().shows_holding())
 
 	_screen.pass_priority()
 	_presenter.wait_until_idle()
@@ -273,7 +272,7 @@ func test_what_a_decision_can_choose_glows_on_the_thing_itself() -> void:
 	_keep()
 	var zap: int = _in_hand("Zap")
 
-	assert_eq(BorderEffects.glow_color(_screen.face_of(zap)), DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
+	assert_eq(BorderEffects.glow_color(_screen.face_of(zap)), DecisionClicks.color_of(DecisionClicks.Kind.PLAY))
 	assert_eq(_screen.face_of(zap).get_node(BorderEffects.GLOW).get_parent(), _screen.face_of(zap),
 		"The Glow is a child of the card, so it turns with it.")
 
@@ -354,21 +353,39 @@ func test_only_the_heros_panel_has_the_controls() -> void:
 
 	assert_not_null(_screen.player_panel(HERO).pass_button())
 	assert_not_null(_screen.player_panel(HERO).undo_button())
-	assert_not_null(_screen.player_panel(HERO).auto_pass_button())
+	assert_not_null(_screen.player_panel(HERO).yield_button())
 	assert_null(_screen.player_panel(VILLAIN).pass_button())
 	assert_null(_screen.player_panel(VILLAIN).undo_button())
-	assert_null(_screen.player_panel(VILLAIN).auto_pass_button())
+	assert_null(_screen.player_panel(VILLAIN).yield_button())
 	assert_true(EncounterLayout.regions(SCREEN)["hero_panel"].encloses(_screen.pass_button().get_global_rect()))
 
 
-func test_the_auto_pass_box_shows_and_switches_auto_pass() -> void:
+func test_the_yield_box_shows_and_switches_the_yield() -> void:
 	_open(_bear_setup())
-	assert_eq(_screen.auto_pass_button().text, "☐  Auto-pass")
+	_presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	_presenter.wait_until_idle()
+	assert_eq(_screen.yield_button().text, "☐  Yield Turn")
+	var turn: int = _presenter.snapshot().view.game_turn
 
-	_screen.auto_pass_button().pressed.emit()
+	_screen.yield_button().pressed.emit()
+	_presenter.wait_until_idle()
 
-	assert_true(_presenter.is_auto_passing())
-	assert_eq(_screen.auto_pass_button().text, "☑  Auto-pass")
+	assert_gt(_presenter.snapshot().view.game_turn, turn, "The rest of the turn was passed.")
+	assert_false(_presenter.is_yielding(), "It ended with the turn.")
+	assert_eq(_screen.yield_button().text, "☐  Yield Turn")
+
+
+func test_the_yield_box_is_checked_while_the_yield_lasts() -> void:
+	_open(_bear_setup())
+	_presenter.is_hold_key_down = true
+
+	_screen.yield_button().pressed.emit()
+
+	assert_true(_presenter.is_yielding())
+	assert_eq(_screen.yield_button().text, "☑  Yield Turn")
+	_screen.yield_button().pressed.emit()
+	assert_false(_presenter.is_yielding())
+	assert_eq(_screen.yield_button().text, "☐  Yield Turn")
 
 
 func test_only_the_heros_mana_buttons_can_be_pressed_and_only_while_paying_with_that_color() -> void:
@@ -521,7 +538,7 @@ func test_clicking_a_permanent_activates_it_and_clicking_a_player_targets_them()
 	_do(CastSpellAction, "Wand")
 	_presenter.wait_until_idle()
 	var wand: int = _permanent("Wand")
-	assert_eq(BorderEffects.glow_color(_screen.face_of(wand)), DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
+	assert_eq(BorderEffects.glow_color(_screen.face_of(wand)), DecisionClicks.color_of(DecisionClicks.Kind.ABILITY))
 
 	_click(wand)
 
@@ -545,15 +562,16 @@ func test_clicking_a_permanent_activates_it_and_clicking_a_player_targets_them()
 	assert_null(_screen.player_panel(VILLAIN).click_catcher())
 
 
-func test_holding_the_key_while_clicking_keeps_priority_and_the_info_panel_says_so() -> void:
+func test_holding_the_key_while_clicking_keeps_priority_and_the_hold_panel_shows_while_it_is_down() -> void:
 	_open(_setup_of([_wand()]))
 	_keep_and_reach_main()
 	_do(CastSpellAction, "Wand")
 	_presenter.wait_until_idle()
-	assert_false(_screen.info_panel().shows_holding())
+	assert_false(_screen.hold_panel().visible)
 
 	_screen.set_hold_key_down(true)
-	assert_true(_screen.info_panel().shows_holding(), "As soon as the key is down, before anything is held (A304).")
+	assert_true(_screen.hold_panel().visible, "As soon as the key is down, before anything is held (A304).")
+	assert_eq(_screen.hold_panel().get_global_rect(), EncounterLayout.regions(SCREEN)["hold"])
 	_click(_permanent("Wand"))
 	_screen.player_panel(VILLAIN).click_catcher().clicked.emit()
 	_presenter.wait_until_idle()
@@ -561,7 +579,7 @@ func test_holding_the_key_while_clicking_keeps_priority_and_the_info_panel_says_
 
 	assert_eq(_presenter.snapshot().view.stack.size(), 1, "The ability waits on the stack.")
 	assert_true(_presenter.snapshot().is_holding_priority)
-	assert_true(_screen.info_panel().shows_holding(), "It stays while the hold is in force.")
+	assert_false(_screen.hold_panel().visible, "Only while the key is down, hold in force or not.")
 	assert_eq(_presenter.snapshot().view.life_totals[VILLAIN], 20)
 
 
@@ -632,8 +650,9 @@ func test_a_permanent_with_two_abilities_opens_the_option_menu_where_it_was_clic
 	_do(CastSpellAction, "Staff")
 	_presenter.wait_until_idle()
 	var staff: int = _permanent("Staff")
-	assert_eq(BorderEffects.glow_color(_screen.face_of(staff)), DecisionClicks.color_of(DecisionClicks.Kind.OTHER),
-		"Mana and another ability glow green (A306).")
+	assert_eq(BorderEffects.glow_colors(_screen.face_of(staff)),
+		[DecisionClicks.color_of(DecisionClicks.Kind.ABILITY), DecisionClicks.color_of(DecisionClicks.Kind.MANA)] as Array[Color],
+		"Mana and another ability glow purple and blue.")
 
 	_click(staff)
 
@@ -721,7 +740,6 @@ func test_the_info_panel_prompts_for_what_is_asked_in_its_own_bordered_region() 
 	assert_false(info.is_dim())
 	assert_true(info.has_border())
 	assert_eq(info.get_global_rect(), EncounterLayout.regions(SCREEN)["info"])
-	assert_false(info.shows_holding())
 	assert_eq(info.error_text(), "")
 
 
@@ -745,19 +763,19 @@ func test_a_glowing_permanent_scrolled_out_of_sight_colors_its_lines_arrow() -> 
 		_presenter.wait_until_idle()
 	assert_null(_screen.line("hero_creatures").arrow_tint(_screen.line("hero_creatures").right_arrow()), "Nothing glows yet.")
 	_pass_until(func() -> bool: return _presenter.snapshot().decision is DeclareAttackersDecision)
-	var green: Color = DecisionClicks.color_of(DecisionClicks.Kind.OTHER)
+	var gold: Color = DecisionClicks.color_of(DecisionClicks.Kind.COMBAT)
 	# Narrow enough that whole Bears are out of sight, not just the edge of one.
 	_screen.size = Vector2(1500, 1080)
 	var line: ScrollRow = _screen.line("hero_creatures")
 	line.scroll_to(0.0)
 
-	assert_eq(line.arrow_tint(line.right_arrow()), green, "A Bear that may attack is off the right end.")
+	assert_eq(line.arrow_tint(line.right_arrow()), gold, "A Bear that may attack is off the right end.")
 	assert_null(line.arrow_tint(line.left_arrow()))
 
 	line.scroll_by(9000.0)
 
 	assert_null(line.arrow_tint(line.right_arrow()), "Scrolled into view, the arrow is plain again.")
-	assert_eq(line.arrow_tint(line.left_arrow()), green, "Now one is off the left end.")
+	assert_eq(line.arrow_tint(line.left_arrow()), gold, "Now one is off the left end.")
 
 
 func test_lands_of_the_same_name_stand_together() -> void:
@@ -791,8 +809,8 @@ func test_the_piles_stand_in_their_evenly_spaced_regions() -> void:
 
 	assert_eq(_screen.pile_text("villain_library"), "Library (33)")
 	assert_false(regions.has("status"))
-	assert_almost_eq(regions["hero_library"].position.y - regions["villain_exile"].end.y,
-		regions["villain_graveyard"].position.y - regions["villain_library"].end.y, 0.01)
+	assert_almost_eq(regions["hero_library"].position.y - regions["villain_library"].end.y,
+		regions["villain_graveyard"].position.y - regions["villain_exile"].end.y, 0.01)
 
 
 func test_escape_opens_the_pause_menu_and_escape_again_carries_on_from_the_same_place() -> void:
@@ -947,10 +965,10 @@ func test_quit_asks_once_more_then_leaves_for_the_main_menu() -> void:
 	assert_false(_presenter.is_villain_thinking())
 
 
-func test_settings_is_shown_grayed_out_and_concede_too_once_the_encounter_is_over() -> void:
+func test_concede_is_shown_grayed_out_once_the_encounter_is_over() -> void:
 	_open(_bear_setup())
 	_screen.press_key(KEY_ESCAPE)
-	assert_true(_screen.pause_menu().button(PauseMenu.SETTINGS).disabled)
+	assert_false(_screen.pause_menu().button(PauseMenu.SETTINGS).disabled)
 	assert_false(_screen.pause_menu().button(PauseMenu.CONCEDE).disabled)
 	assert_false(_screen.pause_menu().button(PauseMenu.QUIT).disabled)
 	_screen.pause_menu().button(PauseMenu.CONCEDE).pressed.emit()
@@ -970,7 +988,7 @@ func test_clicking_a_creature_that_may_attack_steps_it_into_the_lane_and_again_s
 	var bears: Array[int] = _permanents("Bear")
 	var rest_y: float = _screen.face_of(bears[1]).get_global_rect().get_center().y
 	var rest_x: float = _screen.face_of(bears[1]).get_global_rect().position.x
-	assert_eq(BorderEffects.glow_color(_screen.face_of(bears[1])), DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
+	assert_eq(BorderEffects.glow_color(_screen.face_of(bears[1])), DecisionClicks.color_of(DecisionClicks.Kind.COMBAT))
 	assert_eq(_screen.info_panel().prompt_text(), "Declare attackers")
 	assert_eq(_screen.pass_button().text, "No attacks")
 	assert_false(_screen.pass_button().disabled)

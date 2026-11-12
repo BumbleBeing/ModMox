@@ -286,25 +286,25 @@ func test_the_heros_controls_follow_the_snapshot() -> void:
 	assert_eq(panel.pass_button().text, "Pass [SPACE]")
 	assert_false(panel.pass_button().disabled)
 	assert_true(panel.undo_button().disabled, "Nothing to undo.")
-	assert_eq(panel.auto_pass_button().text, "☑  Auto-pass")
-	assert_true(panel.auto_pass_button().flat)
+	assert_eq(panel.yield_button().text, "☑  Yield Turn")
+	assert_true(panel.yield_button().flat)
 
 	_snapshot.can_undo = true
 	_snapshot.decision = KeepOrMulliganDecision.new(HERO, 0, 0)
 	panel.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, true, false)
 	assert_false(panel.undo_button().disabled)
 	assert_true(panel.pass_button().disabled, "Keeping a hand is not priority.")
-	assert_eq(panel.auto_pass_button().text, "☐  Auto-pass")
+	assert_eq(panel.yield_button().text, "☐  Yield Turn")
 
 	_snapshot.is_villain_thinking = true
 	_show(panel, HERO)
 	assert_true(panel.undo_button().disabled, "Nothing is undone while the Villain thinks.")
-	for control: String in ["pass", "undo", "auto_pass"]:
-		panel.connect(control + ("_toggled" if control == "auto_pass" else "_pressed"), func() -> void: _pressed.append(control))
+	for control: String in ["pass", "undo", "yield"]:
+		panel.connect(control + ("_toggled" if control == "yield" else "_pressed"), func() -> void: _pressed.append(control))
 	panel.pass_button().pressed.emit()
 	panel.undo_button().pressed.emit()
-	panel.auto_pass_button().pressed.emit()
-	assert_eq(_pressed, ["pass", "undo", "auto_pass"])
+	panel.yield_button().pressed.emit()
+	assert_eq(_pressed, ["pass", "undo", "yield"])
 
 
 func test_the_confirm_button_is_a_pass_button_again_at_the_next_snapshot() -> void:
@@ -329,7 +329,7 @@ func test_the_villains_panel_says_when_the_villain_is_thinking_and_has_no_contro
 	var panel: PlayerPanel = _panel(VILLAIN)
 	assert_null(panel.pass_button())
 	assert_null(panel.undo_button())
-	assert_null(panel.auto_pass_button())
+	assert_null(panel.yield_button())
 	assert_eq(panel.thinking_text(), "")
 	panel.show_confirm("Attack with 2", true, true)
 

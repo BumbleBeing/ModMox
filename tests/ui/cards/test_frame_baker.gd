@@ -68,9 +68,35 @@ func test_a_battlefield_border_never_has_a_pt_box() -> void:
 	assert_same(FrameBaker.field_border(creature), FrameBaker.field_border(_spec([MmMana.Type.GREEN])))
 
 
+func test_a_colored_artifact_has_the_artifact_frames_border_around_its_colors_frame() -> void:
+	var baked: Image = FrameBaker.image(_artifact_spec())
+	var artifact: Image = FrameBaker.source("frames/a", CardGeometry.BAKE_SIZE)
+	var blue: Image = FrameBaker.source("frames/u", CardGeometry.BAKE_SIZE)
+	var edge: Vector2i = _at(Vector2(0.05, 0.3))
+	var title: Vector2i = _at(CardGeometry.TITLE.get_center())
+
+	assert_ne(artifact.get_pixelv(edge), blue.get_pixelv(edge), "The two frames differ at the edge.")
+	assert_true(baked.get_pixelv(edge).is_equal_approx(artifact.get_pixelv(edge)), "The outer border is the artifact frame's.")
+	assert_true(baked.get_pixelv(title).is_equal_approx(blue.get_pixelv(title)), "The title bar is blue.")
+
+
+func test_a_colored_artifacts_battlefield_border_has_the_artifact_frames_edge() -> void:
+	var border: Image = FrameBaker.field_border(_artifact_spec())
+	var artifact: Image = FrameBaker.source("frames/a", CardGeometry.BAKE_SIZE)
+	var edge: Vector2i = _at(Vector2(0.05, 0.3))
+
+	assert_true(border.get_pixelv(edge).is_equal_approx(artifact.get_pixelv(edge)))
+
+
 func _spec(colors: Array[MmMana.Type]) -> FrameSpec:
 	var spell: MmCardDefinition = Scenario.instant("Spell", Scenario.mana_cost(0, colors), [], [])
 	return FrameSpec.of(CardLook.of_characteristics(MmCharacteristics.printed(spell)))
+
+
+func _artifact_spec() -> FrameSpec:
+	var relic: MmCardDefinition = Scenario.artifact("Relic", [])
+	relic.mana_cost = Scenario.mana_cost(0, [MmMana.Type.BLUE])
+	return FrameSpec.of(CardLook.of_characteristics(MmCharacteristics.printed(relic)))
 
 
 func _at(fraction: Vector2) -> Vector2i:

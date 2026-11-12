@@ -9,7 +9,7 @@ The Card Definitions authored for the game and shipped with it, such as the Alph
 _Avoid_: Card database, card pool, assets
 
 **Frame**:
-The layered image a card is drawn on, worked out from its characteristics: a frame for its color category (a land's follows the colors of mana it can produce), a power/toughness box if it is a creature, and a crown if it is legendary.
+The layered image a card is drawn on, worked out from its characteristics: a frame for its color category (a land's follows the colors of mana it can produce), a power/toughness box if it is a creature, and a crown if it is legendary. A colored artifact keeps its colors' frame, box and crown inside the artifact frame's silver border.
 _Avoid_: Card background, border, template
 
 **Status**:
@@ -163,16 +163,37 @@ The card of the Hero's hand that is being held with the mouse. It follows the cu
 _Avoid_: Hand drag, dragged card, held card, grabbed card
 
 **Face Motion**:
-How permanents move on a screen that is rebuilt from every snapshot: it remembers where each one's face was last drawn, and the face eases from there to where it now belongs, in place, size and turn. A permanent that arrives fades in, and one that leaves fades out as a ghost.
+How permanents move on a screen that is rebuilt from every snapshot: it remembers where each one's face was last drawn, and the face eases from there to where it now belongs, in place, size and turn. A permanent that arrives fades in, and one that leaves fades out as a ghost, unless a Card Flight carries it.
 _Avoid_: Tween, animation system, transition
 
 **Ghost**:
-The fading face of a permanent that has left the battlefield, drawn where it was for a quarter of a second. It takes no clicks and nothing points at it.
+The fading face of a permanent that has left the battlefield, drawn where it was for a quarter of a second. It takes no clicks and nothing points at it. A permanent that flies to another zone leaves none.
+
+**Card Flight**:
+A card drawn in the air on its way from one zone to another, in place of fading out in one place and in at another. It starts where the card was drawn and lands where it now belongs, over every window, and what it lands on shows nothing of it until it arrives. A card that passes through a zone on the way makes one flight.
+
+**Flight Card**:
+The card drawn for a Card Flight. It is drawn as what the card was where it left and as what it is where it lands, one fading into the other: a Card Face becomes a Battlefield Face, and a card back turns face up. At the Stack Window, which shows an entry and no card, it flies to the entry's art and fades out, or fades in there.
 _Avoid_: Corpse, death animation, afterimage
 
 **Pacing**:
-The wait before the Villain's next answer is shown, so the Hero can read the last one: half a second after an action, about a quarter after tapping for mana, and none after a pass that showed nothing. Thinking counts toward it.
+The wait before the Villain's next answer is shown, so the Hero can read the last one: at the Fast Game Speed, half a second after an action, about a quarter after tapping for mana, and none after a pass that showed nothing. Thinking counts toward it. A step of the turn is also shown for at least a tenth of a second, again at Fast, before the game leaves it, whoever is passing.
+
+**Game Speed**:
+The setting that scales every wait, move, Card Flight and fade of an encounter together: Slow, Normal, Fast or Blazing. Normal takes one and a half times as long as Fast, Slow twice as long, and Blazing half. It is chosen in the Pause Menu's settings and kept between runs.
 _Avoid_: Delay, Villain speed, animation lock
+
+**Auto-pass**:
+The standing setting that passes priority for the Hero when there is nothing to stop for. With it on, the Hero is asked only on a step that has a stop and where they could cast, play or activate something other than a mana ability, or when the Villain's spell or ability is on top of the stack. It is on unless turned off in the Pause Menu's settings, and kept between runs.
+_Avoid_: Auto-skip, smart pass, auto-yield
+
+**Yield**:
+The Hero's instruction to pass every priority for the rest of the turn, whatever the stops say and whatever the Villain puts on the stack. Choosing attackers and blockers, and any other choice that is not priority, is still asked, and the Yield carries on afterwards. It is set with the Yield Turn box on the Hero's panel, at any moment, and ends by itself when the next turn begins.
+_Avoid_: Skip turn, pass turn, end turn, auto-pass (the standing setting)
+
+**Hold Key**:
+Control. While it is down nothing is passed for the Hero: every priority that Auto-pass or a Yield would have passed, and the one after their own spell or ability goes on the stack, is theirs instead. A priority kept this way stays theirs until they answer, even once the key is let go, and neither Auto-pass nor the Yield is turned off by it.
+_Avoid_: Stop key, full control
 
 **Damage Chip**:
 A red bead on a creature with the damage marked on it this turn, resting on the top of its power and toughness box over the toughness. The box itself keeps showing the creature's power and toughness.
@@ -187,12 +208,16 @@ The words on a card for what its abilities do. They are generated from the abili
 _Avoid_: Oracle text (the real card's), description, tooltip
 
 **Glow**:
-The colored outline on everything a Pending Decision can choose: orange-red for targets, blue for mana sources, green for anything else. Whatever a click answers something on always glows. It eases in and out rather than popping.
+The colored outline on everything a Pending Decision can choose: orange-red for targets, blue for mana sources, gold for attackers and blockers to choose, purple for abilities to activate, green for anything else (cards that can be cast or played, among others). Something that offers two kinds of thing glows in both colors, split: the first along the top and left, the second along the bottom and right. A permanent with a mana ability and another ability is purple and blue; a card in hand that can be cast and has an ability used from there is green and purple. Whatever a click answers something on always glows. It eases in and out rather than popping.
 _Avoid_: Highlight, selection, halo
 
 **Info Panel**:
-The bordered box at the bottom left of the battlefield, between the Hero's panel and the Hero's hand. It says what the Hero is being asked, what is still owed while paying, why their last answer was refused and whether priority is being held, and holds the Cancel button for a cast in progress.
+The bordered box at the bottom left of the battlefield, between the Hero's panel and the Hero's hand. It says what the Hero is being asked, what is still owed while paying and why their last answer was refused, and holds the Cancel button for a cast in progress.
 _Avoid_: Prompt bar, status line, message box
+
+**Hold Panel**:
+The box at the top left of the battlefield, opposite the Info Panel, that says "Holding Priority" in large type. It shows only while the Hold Key is down.
+_Avoid_: Hold indicator, priority badge
 
 **Combat Selection**:
 The Hero's half-made answer to declaring attackers, declaring blockers or dividing combat damage: what they have clicked so far, before they confirm it. It is thrown away when the decision changes.
@@ -211,7 +236,7 @@ The dropdown that opens where a card was clicked when the click could mean more 
 _Avoid_: Ability menu, context menu, popup
 
 **Pause Menu**:
-The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings and Quit to main menu.
+The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings and Quit to main menu. Settings is a page of its own, which holds the Game Speed and Auto-pass.
 _Avoid_: Escape menu, options screen, system menu
 
 **Opening-Hand Overlay**:

@@ -44,7 +44,7 @@ const STEP_GAP: float = 4.0
 const PANEL_PAD: float = 10.0
 const CONTROLS_PAD: float = 6.0
 const CONTROLS_GAP: float = 6.0
-## Pass is this many times as tall as Undo and Auto-pass.
+## Pass is this many times as tall as Undo and Yield Turn.
 const PASS_TALLER: float = 1.3
 
 ## The Info Panel, at the left end of the hand's strip (A293).
@@ -85,6 +85,9 @@ const PAUSE_ROW: float = 58.0
 ## A line showing a block stops this far short of each creature, and its arrowhead is this
 ## long and half this wide.
 const BLOCK_LINE_GAP: float = 2.0
+## How small a permanent that leaves while scrolled out of sight starts its flight, as a
+## share of its size: it comes out from under the arrow at that end of its line.
+const UNSEEN_FLIGHT_SCALE: float = 0.4
 const ARROWHEAD: Vector2 = Vector2(14.0, 8.0)
 ## A damage stepper's size, and how far down its host it sits, as a share of the height.
 const STEPPER: Vector2 = Vector2(112.0, 36.0)
@@ -94,13 +97,14 @@ const STEPPER_DOWN: float = 0.36
 const LEAVES: Array[String] = [
 	"villain_panel", "hero_panel",
 	"villain_hand", "villain_lands", "villain_nonlands", "hero_nonlands", "hero_lands", "hero_hand",
-	"info", "villain_library", "villain_graveyard", "villain_exile", "hero_library", "hero_graveyard", "hero_exile",
+	"info", "hold", "villain_library", "villain_graveyard", "villain_exile", "hero_library", "hero_graveyard", "hero_exile",
 ]
 
 
 ## Every Region's rectangle on a screen of [param screen] pixels. The six piles fill the
-## right column with equal spacing, the Villain's above the Hero's, each running library,
-## graveyard, exile from the top (A294). Besides LEAVES it has
+## right column with equal spacing, the Villain's above the Hero's and mirroring them: the
+## Hero's run library, graveyard, exile from the top and the Villain's exile, graveyard,
+## library, so the two libraries meet in the middle (A294). Besides LEAVES it has
 ## "sidebar", "piles" and "battlefield" (both players' rows), which contain others.
 static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	var found: Dictionary[String, Rect2] = {}
@@ -112,7 +116,11 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	found["villain_panel"] = Rect2(PANEL_PAD, PANEL_PAD, SIDEBAR_WIDTH - PANEL_PAD * 2.0, panel_height)
 	found["hero_panel"] = Rect2(PANEL_PAD, panel_height + PANEL_PAD * 2.0, SIDEBAR_WIDTH - PANEL_PAD * 2.0, panel_height)
 
-	found["villain_hand"] = Rect2(left, 0, width, 80.0 * scale)
+	# The Villain's hand keeps to the middle as the Hero's does, clear of the Hold Panel,
+	# which is opposite the Info Panel.
+	var hand_inset: float = INFO_WIDTH + GUTTER
+	found["villain_hand"] = Rect2(left + hand_inset, 0, width - hand_inset * 2.0, 80.0 * scale)
+	found["hold"] = Rect2(left, INFO_PAD, INFO_WIDTH, 80.0 * scale - INFO_PAD * 2.0)
 	# The Hero's hand sits low, cut off below its type lines. The Hero's rows sit low with
 	# it, which opens a lane across the middle for creatures in combat to step into.
 	var drop: float = HAND_CARD_HEIGHT * HAND_HIDDEN
@@ -124,8 +132,7 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	found["info"] = Rect2(strip.position.x, strip.position.y + INFO_PAD, INFO_WIDTH, strip.size.y - INFO_PAD * 2.0)
 	# The hand keeps to the middle of the battlefield between strict bounds: the Info
 	# Panel's side, and as far in from the other side, so it can never overlap the panel.
-	var inset: float = INFO_WIDTH + GUTTER
-	found["hero_hand"] = Rect2(strip.position.x + inset, strip.position.y, strip.size.x - inset * 2.0, strip.size.y)
+	found["hero_hand"] = Rect2(strip.position.x + hand_inset, strip.position.y, strip.size.x - hand_inset * 2.0, strip.size.y)
 	found["battlefield"] = Rect2(left, 86.0 * scale, width, (744.0 + drop) * scale)
 
 	var piles_left: float = screen.x - PILES_WIDTH
@@ -133,7 +140,7 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	var pile: Vector2 = Vector2(PILES_WIDTH, PILE_HEIGHT + PILE_LABEL)
 	var gap: float = (screen.y - pile.y * 6.0) / 7.0
 	var keys: Array[String] = [
-		"villain_library", "villain_graveyard", "villain_exile", "hero_library", "hero_graveyard", "hero_exile",
+		"villain_exile", "villain_graveyard", "villain_library", "hero_library", "hero_graveyard", "hero_exile",
 	]
 	for index: int in keys.size():
 		found[keys[index]] = Rect2(Vector2(piles_left, gap + (pile.y + gap) * index), pile)
@@ -144,7 +151,7 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 ## the portrait's bottom right corner), "mana_0" to "mana_5" (WUBRGC, spanning the
 ## portrait's width), "emblems", and "step_0" to "step_11" down the right side. Under the
 ## Emblems button is "controls", a section of its own filled by "undo", "pass" and
-## "auto_pass" from the top, which only the Hero's panel has.
+## "yield" from the top, which only the Hero's panel has.
 static func panel(panel_rect: Rect2) -> Dictionary[String, Rect2]:
 	var parts: Dictionary[String, Rect2] = {}
 	var left: float = panel_rect.position.x + PANEL_PAD
@@ -167,7 +174,7 @@ static func panel(panel_rect: Rect2) -> Dictionary[String, Rect2]:
 	var button: float = room / (2.0 + PASS_TALLER)
 	parts["undo"] = Rect2(inner_left, controls.position.y + CONTROLS_PAD, inside, button)
 	parts["pass"] = Rect2(inner_left, parts["undo"].end.y + CONTROLS_GAP, inside, button * PASS_TALLER)
-	parts["auto_pass"] = Rect2(inner_left, parts["pass"].end.y + CONTROLS_GAP, inside, button)
+	parts["yield"] = Rect2(inner_left, parts["pass"].end.y + CONTROLS_GAP, inside, button)
 	var step_height: float = (panel_rect.size.y - PANEL_PAD * 2.0 - STEP_GAP * 11.0) / 12.0
 	for step: int in 12:
 		parts["step_%d" % step] = Rect2(panel_rect.end.x - PANEL_PAD - STEP_WIDTH,
@@ -346,6 +353,15 @@ static func is_over_panels(cursor: Vector2, screen_regions: Dictionary[String, R
 ## frames it replaced would have, so easing does not fall behind the cursor when the game does.
 static func ease_weight(per_frame: float, delta: float) -> float:
 	return 1.0 - pow(1.0 - per_frame, delta * 60.0)
+
+
+## The Region of a player's pile for the zone of [param zone_kind] (a library, graveyard or
+## exile): "hero_graveyard", "villain_library".
+static func pile_key(zone_kind: MmZone.Kind, is_hero: bool) -> String:
+	var zone_names: Dictionary[MmZone.Kind, String] = {
+		MmZone.Kind.LIBRARY: "library", MmZone.Kind.GRAVEYARD: "graveyard", MmZone.Kind.EXILE: "exile",
+	}
+	return ("hero_" if is_hero else "villain_") + zone_names[zone_kind]
 
 
 ## Where each card back of the Villain's hand hangs, fanned from the top edge.

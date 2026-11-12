@@ -1,8 +1,8 @@
 class_name InfoPanel
 extends Control
 ## The Info Panel (game glossary): the bordered box by the Hero's hand that says what the
-## Hero is being asked, why their last answer was refused, and whether priority is being
-## held, with the Cancel button for a cast in progress. While the cursor is over a row of
+## Hero is being asked and why their last answer was refused, with the Cancel button for a
+## cast in progress. While the cursor is over a row of
 ## the Option Menu, it shows that option in full in place of everything else.
 
 signal cancel_pressed
@@ -15,15 +15,12 @@ var _back: Panel = null
 var _border: Panel = null
 var _prompt: Label = null
 var _error: Label = null
-var _hold: Label = null
 var _option: Label = null
 var _cancel: Button = null
 var _all_attack: Button = null
 var _hint: Label = null
 var _pips: Array[TextureRect] = []
 var _pip_names: Array[String] = []
-var _is_holding: bool = false
-var _is_hold_key_down: bool = false
 
 
 func _init() -> void:
@@ -44,7 +41,6 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 	size = box.size
 	var is_asked: bool = snapshot.decision != null and not snapshot.is_over()
 	var prompt: InfoPrompt = InfoPrompt.of(snapshot.decision if is_asked else null, snapshot.view)
-	_is_holding = snapshot.is_holding_priority
 	_back = CardShapes.rounded(box.size, 8, Color("#2c323c"))
 	_back.modulate.a = 1.0 if is_asked else DIM
 	add_child(_back)
@@ -63,8 +59,6 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 	add_child(_hint)
 	_error = _label(error, Rect2(12, 92, inside, 44), 13, Color(1, 0.45, 0.4))
 	add_child(_error)
-	_hold = _label("Holding Priority", Rect2(12, box.size.y - 36, 150, 28), 15, Color(1, 0.85, 0.4))
-	add_child(_hold)
 	if prompt.can_cancel:
 		_cancel = Button.new()
 		_cancel.text = "Cancel"
@@ -86,14 +80,6 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 	_option = _label("", Rect2(12, 8, inside, box.size.y - 16), 18, Color.WHITE)
 	add_child(_option)
 	_arrange()
-
-
-## Whether the hold key is down. "Holding Priority" shows while it is, to say the next
-## spell or ability will keep priority, and while a hold is in force (A304).
-func set_hold_key_down(is_down: bool) -> void:
-	if is_down != _is_hold_key_down:
-		_is_hold_key_down = is_down
-		_arrange()
 
 
 ## Shows [param text], an Option Menu row in full, in place of everything else. "" puts
@@ -128,10 +114,6 @@ func option_text() -> String:
 ## Whether the prompt, and not an option, is what shows.
 func shows_prompt() -> bool:
 	return _prompt.visible
-
-
-func shows_holding() -> bool:
-	return _hold.visible
 
 
 ## Whether the panel is dimmed because nothing is asked of the Hero.
@@ -170,7 +152,6 @@ func _arrange() -> void:
 	_option.visible = is_option
 	_prompt.visible = not is_option
 	_error.visible = not is_option and _error.text != ""
-	_hold.visible = not is_option and (_is_holding or _is_hold_key_down)
 	for pip: TextureRect in _pips:
 		pip.visible = not is_option
 	_hint.visible = not is_option and _hint.text != ""

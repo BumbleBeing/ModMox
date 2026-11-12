@@ -113,7 +113,7 @@ func test_a_mark_eases_in_and_out_and_the_glow_shows_again_at_once() -> void:
 func test_a_redraw_leaves_a_glow_that_was_showing_as_it_was_and_a_new_one_eases_in() -> void:
 	var screen: EncounterScreen = _open()
 	var bear: Control = _hand_face(screen, "Bear")
-	assert_eq(BorderEffects.glow_color(bear), DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
+	assert_eq(BorderEffects.glow_color(bear), DecisionClicks.color_of(DecisionClicks.Kind.PLAY))
 	assert_lt(_alpha(bear, BorderEffects.GLOW), 1.0, "It began to glow just now.")
 	await wait_seconds(SECONDS * 1.5)
 	assert_eq(_alpha(bear, BorderEffects.GLOW), 1.0)
@@ -134,7 +134,7 @@ func test_a_held_card_that_glows_brighter_keeps_its_glow_through_a_redraw() -> v
 	screen.drag_to(at + Vector2(0, -400))
 	await wait_seconds(SECONDS * 1.5)
 	var bright: Color = BorderEffects.glow_color(screen.lifted_face())
-	assert_eq(bright, DecisionClicks.bright_color_of(DecisionClicks.Kind.OTHER))
+	assert_eq(bright, DecisionClicks.bright_color_of(DecisionClicks.Kind.PLAY))
 
 	_presenter.toggle_stop(MmEncounterSetup.HERO_PLAYER_ID, MmTurn.Step.UPKEEP)
 
