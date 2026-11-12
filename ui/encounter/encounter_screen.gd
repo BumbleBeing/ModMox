@@ -48,6 +48,10 @@ const MENU: String = "res://ui/menu/main_menu.tscn"
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 ## How much of the way to its place a card of the hand goes in a sixtieth of a second.
 const HAND_EASE: float = 0.3
+## How much lighter the card of the hand under the cursor is drawn, and how much of the way
+## it goes to or from that in a sixtieth of a second.
+const HAND_HOVER_LIGHT: Color = ClickCatcher.BRIGHT
+const HAND_LIGHT_EASE: float = 0.4
 ## The Glow of a card of the hand chosen to be discarded (A401).
 const PICKED_GLOW: Color = Color.WHITE
 const LOSS_REASONS: Dictionary[MmPlayer.LossReason, String] = {
@@ -275,6 +279,7 @@ func _process(delta: float) -> void:
 	set_hold_key_down(Input.is_key_pressed(KEY_CTRL))
 	_presenter.poll()
 	_spread_hand(EncounterLayout.ease_weight(HAND_EASE, delta))
+	_light_hand(EncounterLayout.ease_weight(HAND_LIGHT_EASE, delta))
 
 
 ## A press on a card of the hand is taken here, before anything under the card can have it:
@@ -1413,6 +1418,30 @@ func _spread_hand(weight: float) -> void:
 		_hand_faces[index].position = _hand_faces[index].position.lerp(places[index], weight)
 		_hand_faces[index].rotation = lerpf(_hand_faces[index].rotation, _hand_turns[index], weight)
 		_hand_faces[index].z_index = 1 if index == nearest else 0
+
+
+## Moves each card of the hand [param weight] of the way to how light it belongs: a little
+## lighter under the cursor, unless it is pressed or held.
+func _light_hand(weight: float) -> void:
+	var lit: int = DragCard.NONE
+	if not _hand_faces.is_empty() and not _drag.is_lifted():
+		var rest: Array[Vector2] = _hand_rest_now()
+		var cursor: Vector2 = get_local_mouse_position()
+		if EncounterLayout.is_cursor_over_hand(rest, _hand_faces[0].size, cursor):
+			lit = _hand_cards[roundi(EncounterLayout.hand_cursor_place(rest, _hand_faces[0].size, cursor))]
+	if _drag.is_pressed() and lit == _drag.card_id():
+		lit = DragCard.NONE
+	for index: int in _hand_faces.size():
+		var is_lit: bool = _hand_cards[index] == lit
+		_ease_light(_hand_faces[index], HAND_HOVER_LIGHT if is_lit else Color.WHITE, weight)
+	if _lifted_face != null:
+		_ease_light(_lifted_face, Color.WHITE, weight)
+
+
+static func _ease_light(face: CardFace, light: Color, weight: float) -> void:
+	var alpha: float = face.modulate.a
+	face.modulate = face.modulate.lerp(light, weight)
+	face.modulate.a = alpha
 
 
 ## Where each card of the hand's row rests right now: where the row puts it, and a card
