@@ -67,3 +67,10 @@ func _quiet() -> Array[MmEvent]:
 
 func _mana() -> Array[MmEvent]:
 	return [TapEvent.new(4), ManaAddedEvent.new(1, MmMana.Type.RED, 1, 4), ManaSpentEvent.new(1, 0)]
+
+
+func test_a_snapshot_starts_a_step_when_any_of_its_events_does() -> void:
+	assert_false(Pacing.starts_step([]))
+	assert_false(Pacing.starts_step([SpellCastEvent.new(9, 1), TurnStartedEvent.new(0)]))
+	assert_true(Pacing.starts_step([StepStartedEvent.new(MmTurn.Step.UPKEEP)]))
+	assert_true(Pacing.starts_step([SpellCastEvent.new(9, 1), StepStartedEvent.new(MmTurn.Step.DRAW), LifeLostEvent.new(0, 2)]))

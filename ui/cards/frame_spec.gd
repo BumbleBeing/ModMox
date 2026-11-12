@@ -2,7 +2,8 @@ class_name FrameSpec
 extends RefCounted
 ## Which Frame a card is drawn with, worked out from its characteristics alone, so a card
 ## whose colors or types change gets the right Frame automatically (ADR 0009). It turns
-## into a stack of FrameLayers, bottom to top.
+## into a stack of FrameLayers, bottom to top. A colored artifact keeps its colors' Frame
+## inside the artifact Frame's border.
 
 ## Frame letters, in WUBRG order.
 const LETTERS: String = "wubrg"
@@ -47,7 +48,7 @@ static func of(look: CardLook) -> FrameSpec:
 ## have equal keys, so baked Frames are cached by it.
 func key() -> String:
 	var text: String = "%s%d:%s" % ["land" if is_land else "card", letters.size(), "".join(letters)]
-	if is_artifact and letters.is_empty() and not is_land:
+	if is_artifact and not is_land:
 		text += ":artifact"
 	if is_creature:
 		text += ":pt"
@@ -85,6 +86,8 @@ func layers() -> Array[FrameLayer]:
 			result.append(FrameLayer.full(right, ["pinline", "right_half"]))
 		_:
 			result.append(FrameLayer.full(folder + "/m"))
+	if has_artifact_border():
+		result.append(FrameLayer.full("frames/a", ["frame"]))
 	if is_creature:
 		result.append(FrameLayer.placed(power_toughness_image(), CardGeometry.POWER_TOUGHNESS))
 	if is_legendary:
@@ -93,6 +96,12 @@ func layers() -> Array[FrameLayer]:
 		if letters.size() == 2:
 			result.append(FrameLayer.placed("crowns/" + letters[1], CardGeometry.CROWN, ["right_half"]))
 	return result
+
+
+## Whether the artifact frame's outer border is laid over a colored frame: a colored
+## artifact that is not a land. Its P/T box and crown still follow its colors.
+func has_artifact_border() -> bool:
+	return is_artifact and not is_land and not letters.is_empty()
 
 
 ## The P/T box image: the color for one color, gold for a two-color or multicolor nonland,

@@ -19,17 +19,29 @@ const LEAVING: String = "Leaving"
 ## Gives [param host], [param host_size] pixels in size, a Glow of [param color], easing in
 ## over [param seconds].
 static func add_glow(host: Control, host_size: Vector2, color: Color, seconds: float = 0.0) -> void:
+	add_glow_of(host, host_size, [color] as Array[Color], seconds)
+
+
+## Gives [param host] a Glow of [param colors]: one color all round, or two split between
+## the top left and the bottom right, for something that offers two kinds of thing.
+static func add_glow_of(host: Control, host_size: Vector2, colors: Array[Color], seconds: float = 0.0) -> void:
 	var glow: Control = Control.new()
 	glow.name = GLOW
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glow.set_meta("color", color)
+	glow.set_meta("colors", colors.duplicate())
 	glow.set_meta("size", host_size)
-	var soft: Panel = CardShapes.outline(host_size + Vector2(14, 14), 12, 4, Color(color, 0.35))
-	soft.position = Vector2(-7, -7)
-	glow.add_child(soft)
-	var hard: Panel = CardShapes.outline(host_size + Vector2(6, 6), 9, 3, color)
-	hard.position = Vector2(-3, -3)
-	glow.add_child(hard)
+	if colors.size() > 1:
+		var soft_split: SplitOutline = SplitOutline.new(host_size, colors[0], colors[1], 7, 12, 4)
+		soft_split.modulate.a = 0.35
+		glow.add_child(soft_split)
+		glow.add_child(SplitOutline.new(host_size, colors[0], colors[1], 3, 9, 3))
+	else:
+		var soft: Panel = CardShapes.outline(host_size + Vector2(14, 14), 12, 4, Color(colors[0], 0.35))
+		soft.position = Vector2(-7, -7)
+		glow.add_child(soft)
+		var hard: Panel = CardShapes.outline(host_size + Vector2(6, 6), 9, 3, colors[0])
+		hard.position = Vector2(-3, -3)
+		glow.add_child(hard)
 	host.add_child(glow)
 	Easing.fade_in(glow, seconds)
 
@@ -37,11 +49,19 @@ static func add_glow(host: Control, host_size: Vector2, color: Color, seconds: f
 ## Gives [param host] a Glow of [param color] in place of any it has, crossfading over
 ## [param seconds]. One it has already, of that color and size, is left as it is.
 static func set_glow(host: Control, host_size: Vector2, color: Color, seconds: float = 0.0) -> void:
+	set_glow_of(host, host_size, [color] as Array[Color], seconds)
+
+
+## Gives [param host] a Glow of [param colors] in place of any it has, crossfading over
+## [param seconds]; with no colors, takes its Glow away. One it has already, of those
+## colors and size, is left as it is.
+static func set_glow_of(host: Control, host_size: Vector2, colors: Array[Color], seconds: float = 0.0) -> void:
 	var old: Node = host.get_node_or_null(GLOW)
-	if old != null and old.get_meta("color") == color and old.get_meta("size") == host_size:
+	if old != null and glow_colors(host) == colors and old.get_meta("size") == host_size:
 		return
 	remove_glow(host, seconds)
-	add_glow(host, host_size, color, seconds)
+	if not colors.is_empty():
+		add_glow_of(host, host_size, colors, seconds)
 
 
 ## Takes away [param host]'s Glow, if it has one, easing out over [param seconds].
@@ -49,11 +69,20 @@ static func remove_glow(host: Control, seconds: float = 0.0) -> void:
 	_take_away(host, GLOW, seconds)
 
 
-## The color of [param host]'s Glow, or null if it has none. The result is a Variant
-## because "no Glow" is not a color.
+## The color of [param host]'s Glow, the first of them if it has two, or null if it has
+## none. The result is a Variant because "no Glow" is not a color.
 static func glow_color(host: Control) -> Variant:
+	var colors: Array[Color] = glow_colors(host)
+	return colors[0] if not colors.is_empty() else null
+
+
+## The colors of [param host]'s Glow: none, one, or two.
+static func glow_colors(host: Control) -> Array[Color]:
+	var colors: Array[Color] = []
 	var glow: Node = host.get_node_or_null(GLOW)
-	return glow.get_meta("color") if glow != null else null
+	if glow != null:
+		colors.assign(glow.get_meta("colors"))
+	return colors
 
 
 ## Outlines [param host] in white, to say "this is the one that option means".

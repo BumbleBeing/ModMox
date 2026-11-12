@@ -67,26 +67,6 @@ func test_a_refused_answers_reason_shows_only_when_there_is_one() -> void:
 	assert_false(fine._error.visible)
 
 
-func test_holding_priority_shows_while_the_key_is_down_or_a_hold_is_in_force() -> void:
-	var decision: ChooseCardsToDiscardDecision = ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int])
-	var panel: InfoPanel = _panel(_snapshot(decision), "")
-	assert_false(panel.shows_holding())
-
-	panel.set_hold_key_down(true)
-	assert_true(panel.shows_holding(), "The game is ready to hold (A304).")
-	panel.set_hold_key_down(false)
-	assert_false(panel.shows_holding())
-
-	var held: EncounterSnapshot = _snapshot(decision)
-	held.is_holding_priority = true
-	panel.show_snapshot(held, "", BOX)
-	assert_true(panel.shows_holding(), "A hold in force shows without the key.")
-
-	panel.set_hold_key_down(true)
-	panel.show_snapshot(_snapshot(decision), "", BOX)
-	assert_true(panel.shows_holding(), "A redraw does not forget that the key is down.")
-
-
 func test_an_option_replaces_everything_and_clearing_it_puts_everything_back() -> void:
 	var decision: PayManaDecision = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 1,
 		[] as Array[MmMana.Type])
@@ -98,7 +78,6 @@ func test_an_option_replaces_everything_and_clearing_it_puts_everything_back() -
 
 	assert_eq(panel.option_text(), "{2}, {T}: Deal Damage")
 	assert_false(panel.shows_prompt())
-	assert_false(panel.shows_holding())
 	assert_false(panel._error.visible)
 	assert_false(panel.cancel_button().visible)
 	assert_false(panel._pips[0].visible)
@@ -108,7 +87,6 @@ func test_an_option_replaces_everything_and_clearing_it_puts_everything_back() -
 
 	assert_eq(panel.option_text(), "")
 	assert_true(panel.shows_prompt())
-	assert_true(panel.shows_holding())
 	assert_true(panel._error.visible)
 	assert_true(panel.cancel_button().visible)
 	assert_true(panel._pips[0].visible)

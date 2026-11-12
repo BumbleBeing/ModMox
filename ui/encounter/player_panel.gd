@@ -23,7 +23,7 @@ signal stop_toggled(step: MmTurn.Step)
 ## The Hero's controls, under their Emblems button.
 signal pass_pressed
 signal undo_pressed
-signal auto_pass_toggled
+signal yield_toggled
 
 const STEP_NAMES: Array[String] = [
 	"Untap", "Upkeep", "Draw", "Main 1", "Begin Combat", "Attackers", "Blockers", "Damage", "End Combat",
@@ -56,7 +56,7 @@ var _steps: Array[Button] = []
 var _step_looks: Array[int] = []
 var _pass: Button = null
 var _undo: Button = null
-var _auto_pass: Button = null
+var _yield: Button = null
 var _thinking: Label = null
 var _portrait: Panel = null
 
@@ -70,9 +70,9 @@ func _init(player_id: int, title: String) -> void:
 
 ## Shows [param snapshot] in [param panel_rect]. [param is_hero] says whose mana buttons can
 ## be pressed (only the Hero's, and only while paying) and whose panel has the controls:
-## undo, pass and auto-pass, with [param is_auto_passing] for its box.
+## undo, pass and Yield Turn, with [param is_yielding] for its box.
 func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: StepStops, panel_rect: Rect2, is_hero: bool,
-		is_auto_passing: bool) -> void:
+		is_yielding: bool) -> void:
 	position = panel_rect.position
 	size = panel_rect.size
 	var is_new: bool = panel_rect.size != _built_for or is_hero != _is_hero
@@ -114,7 +114,7 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 			# It was the confirm button of a combat decision (show_confirm).
 			_pass.text = PASS
 			_pass.add_theme_font_size_override("font_size", 21)
-		_set_text(_auto_pass, ("☑" if is_auto_passing else "☐") + "  Auto-pass")
+		_set_text(_yield, ("☑" if is_yielding else "☐") + "  Yield Turn")
 	else:
 		_thinking.visible = snapshot.is_villain_thinking
 
@@ -139,7 +139,7 @@ func show_undo(is_open: bool) -> void:
 		_undo.disabled = not is_open
 
 
-## The pass, undo and auto-pass buttons: null on the Villain's panel.
+## The pass, undo and Yield Turn buttons: null on the Villain's panel.
 func pass_button() -> Button:
 	return _pass
 
@@ -148,8 +148,8 @@ func undo_button() -> Button:
 	return _undo
 
 
-func auto_pass_button() -> Button:
-	return _auto_pass
+func yield_button() -> Button:
+	return _yield
 
 
 ## What the panel says about its player thinking: THINKING on the Villain's while they
@@ -215,7 +215,7 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 	_has_emblems = null
 	_pass = null
 	_undo = null
-	_auto_pass = null
+	_yield = null
 	_thinking = null
 	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(Rect2(Vector2.ZERO, panel_size))
 	add_child(CardShapes.rounded(panel_size, 8, Color("#2c323c")))
@@ -351,9 +351,8 @@ func _add_controls(parts: Dictionary[String, Rect2]) -> void:
 	# Always there: grayed out when nothing can be undone (A245).
 	_undo = _control("Undo [Z]", parts["undo"], 16, func() -> void: undo_pressed.emit())
 	_pass = _control(PASS, parts["pass"], 19, func() -> void: pass_pressed.emit())
-	_auto_pass = _control("", parts["auto_pass"], 17, func() -> void: auto_pass_toggled.emit())
-	_auto_pass.flat = true
-	_auto_pass.tooltip_text = "Pass for me except on steps with a stop (green) where I can cast or activate something, or when the Villain puts something on the stack."
+	_yield = _control("", parts["yield"], 17, func() -> void: yield_toggled.emit())
+	_yield.flat = true
 
 
 func _control(text: String, box: Rect2, font_size: int, on_press: Callable) -> Button:

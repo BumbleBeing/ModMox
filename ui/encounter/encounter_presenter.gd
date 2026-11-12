@@ -11,7 +11,9 @@ extends RefCounted
 ##
 ## Pacing (A357): the Villain's next answer is held back until the Hero has had time to read
 ## what the last one did. The answer is simply not collected yet, so thinking counts toward
-## the wait and the screen never shows an old game.
+## the wait and the screen never shows an old game. A step of the turn is shown for a least
+## time too, whoever would move the game on: the Villain's answer is held back as above, and
+## a pass made for the Hero is put off, the snapshot meanwhile asking the Hero nothing.
 
 ## A snapshot is ready: the game changed, or the Villain began or stopped thinking.
 signal changed(snapshot: EncounterSnapshot)
@@ -21,17 +23,22 @@ const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 const BUSY: String = "The Villain is thinking."
 const NOT_PRIORITY: String = "You do not have priority."
 const PAUSED: String = "The game is paused."
+const NO_TURN: int = -1
 
 ## The steps auto-pass stops at. Change them with toggle_stop().
 var stops: StepStops = StepStops.new()
-## Whether the Hero's own spell or ability going on the stack leaves them with priority:
-## the screen keeps this equal to whether the hold key is down.
+## Whether the Hold Key is down, which the screen keeps this equal to. While it is, nothing
+## is passed for the Hero: not by auto-pass, not by a Yield, and not after their own spell
+## or ability goes on the stack.
 var is_hold_key_down: bool = false
 ## How long a snapshot that showed a Villain action, or only the Villain tapping for mana,
 ## is left up before the Villain's next answer is collected (Pacing). Zero until the screen
 ## sets them for a real encounter, so tests and screenshots never wait.
 var action_wait_msec: int = 0
 var mana_wait_msec: int = 0
+## The least time a step of the turn is shown before the game leaves it (Pacing). Zero until
+## the screen sets it, as the waits above.
+var step_wait_msec: int = 0
 ## The time in milliseconds. Tests hand in their own.
 var clock: Callable = Time.get_ticks_msec
 
@@ -40,6 +47,11 @@ var _driver: MmEncounterDriver
 ## Held so the Agent outlives the driver's use of it on the worker thread.
 var _villain_agent: MmAgent
 var _is_auto_passing: bool = true
+var _is_yielding: bool = false
+## The Game Turn the Yield is for, or NO_TURN until the engine can next be read.
+var _yield_turn: int = NO_TURN
+## Whether auto-pass, a stop or the Yield changed while paused, to be looked at on resuming.
+var _is_reconsider_due: bool = false
 var _task: int = -1
 var _has_started: bool = false
 var _snapshot: EncounterSnapshot = null
@@ -52,6 +64,10 @@ var _is_paused: bool = false
 var _shown_at: int = 0
 var _wait: int = 0
 var _is_rewinding: bool = false
+## When the step now showing has been up for the step wait.
+var _step_shown_until: int = 0
+## Whether a pass for the Hero is being put off until then. The snapshot asks them nothing.
+var _is_passing_for_hero: bool = false
 
 
 ## An encounter from [param setup], with [param villain_agent] answering for the Villain
@@ -84,6 +100,11 @@ func is_auto_passing() -> bool:
 	return _is_auto_passing
 
 
+## Whether the Hero is yielding the turn (Yield, game glossary).
+func is_yielding() -> bool:
+	return _is_yielding
+
+
 func is_paused() -> bool:
 	return _is_paused
 
@@ -94,6 +115,8 @@ func is_paused() -> bool:
 ## leaving still work.
 func set_paused(is_on: bool) -> void:
 	_is_paused = is_on
+	if not is_on and _is_reconsider_due:
+		_reconsider()
 
 
 ## Whether the Villain has answered and the answer has not been collected yet: it is being
@@ -102,18 +125,35 @@ func is_villain_answer_ready() -> bool:
 	return _task != -1 and WorkerThreadPool.is_task_completed(_task)
 
 
+## Whether a step is being shown for its wait before the Hero is passed for: nobody is
+## thinking, and the Hero is asked nothing.
+func is_passing_for_hero() -> bool:
+	return _is_passing_for_hero
+
+
 ## Call every frame on the main thread: once the Villain has answered and the last snapshot
-## has been up for its wait, carries on. Time spent paused counts toward the wait (A368).
+## has been up for its wait, carries on; and makes a pass for the Hero that was put off
+## while a step was shown. Time spent paused counts toward the waits (A368).
 func poll() -> void:
-	if not _is_paused and is_villain_answer_ready() and (clock.call() as int) - _shown_at >= _wait:
+	if _is_paused:
+		return
+	var now: int = clock.call()
+	if now < _step_shown_until:
+		return
+	if _is_passing_for_hero:
+		_advance(true)
+	elif is_villain_answer_ready() and now - _shown_at >= _wait:
 		_collect()
 
 
-## Blocks until the Hero must decide or the encounter is over. For leaving the screen
-## cleanly, and for tests.
+## Blocks until the Hero must decide or the encounter is over, sitting through no wait. For
+## leaving the screen cleanly, and for tests.
 func wait_until_idle() -> void:
-	while _task != -1:
-		_collect()
+	while _task != -1 or _is_passing_for_hero:
+		if _task != -1:
+			_collect()
+		else:
+			_advance(true)
 
 
 ## Answers the Hero's Pending Decision. Returns "" when accepted, or the reason when the
@@ -123,7 +163,7 @@ func answer(hero_answer: Variant) -> String:
 		return PAUSED
 	if _task != -1:
 		return BUSY
-	if _engine.is_over() or _engine.pending_decision().player_id != HERO:
+	if _is_passing_for_hero or _engine.is_over() or _engine.pending_decision().player_id != HERO:
 		return NOT_PRIORITY
 	var error: String = _engine.submit(hero_answer)
 	if error != "":
@@ -140,7 +180,7 @@ func pass_priority() -> String:
 	if _task != -1:
 		return BUSY
 	var priority: PriorityDecision = null if _engine.is_over() else _engine.pending_decision() as PriorityDecision
-	if priority == null or priority.player_id != HERO:
+	if _is_passing_for_hero or priority == null or priority.player_id != HERO:
 		return NOT_PRIORITY
 	return answer(AutoPass.pass_index(priority))
 
@@ -168,9 +208,21 @@ func concede() -> String:
 	return error
 
 
-## Turns auto-pass on or off. Turning it on passes at once if it would pass now.
+## Turns auto-pass on or off (the Pause Menu's settings). Turning it on passes at once if it
+## would pass now.
 func set_auto_passing(is_on: bool) -> void:
 	_is_auto_passing = is_on
+	_reconsider()
+
+
+## Starts or ends a Yield: every priority of the turn is passed for the Hero, and it ends by
+## itself when the next turn begins. Starting one passes at once if the Hero has priority.
+## Asked for while the Villain thinks, it is for the turn the game is in when they are done.
+func set_yielding(is_on: bool) -> void:
+	_is_yielding = is_on
+	_yield_turn = NO_TURN
+	if is_on and _task == -1 and _snapshot != null:
+		_yield_turn = _snapshot.view.game_turn
 	_reconsider()
 
 
@@ -197,11 +249,23 @@ func _rewind(rewind: Callable) -> String:
 	return ""
 
 
-## Auto-pass or a stop changed: look at the pending decision again, unless the Villain is
-## thinking, when the new setting simply applies from the next decision.
+## Auto-pass, a stop or the Yield changed: look at the pending decision again, unless the
+## Villain is thinking, when the new setting simply applies from the next decision. Nothing
+## moves under the Pause Menu, so there it waits for the game to resume.
 func _reconsider() -> void:
-	if _has_started and _task == -1:
+	_is_reconsider_due = _is_paused
+	if _has_started and _task == -1 and not _is_paused:
 		_advance()
+
+
+## Ends the Yield if [param game_turn] is a later turn than the one it was for.
+func _keep_yield(game_turn: int) -> void:
+	if not _is_yielding:
+		return
+	if _yield_turn == NO_TURN:
+		_yield_turn = game_turn
+	elif game_turn != _yield_turn:
+		_is_yielding = false
 
 
 func _collect() -> void:
@@ -212,9 +276,13 @@ func _collect() -> void:
 	_wait = Pacing.wait_for(_snapshot.events, action_wait_msec, mana_wait_msec)
 
 
-## Carries on until the Hero must decide, the Villain must think, or the encounter is over.
-func _advance() -> void:
+## Carries on until the Hero must decide, the Villain must think, a step must be shown
+## before the Hero is passed for, or the encounter is over. [param is_passing_now] makes the
+## pass that was put off, without asking again whether to: asking changes the answer.
+func _advance(is_passing_now: bool = false) -> void:
 	_wait = 0
+	var is_pass_due: bool = is_passing_now and _is_passing_for_hero
+	_is_passing_for_hero = false
 	while not _engine.is_over():
 		var decision: MmPendingDecision = _engine.pending_decision()
 		if decision.player_id != HERO:
@@ -229,11 +297,27 @@ func _advance() -> void:
 			# A344: their order changes nothing, so the Hero is not asked.
 			_engine.submit(range(order.abilities.size()))
 			continue
-		if not _passes_for_hero(decision):
+		if is_pass_due:
+			is_pass_due = false
+		elif not _passes_for_hero(decision):
+			break
+		elif _is_step_still_showing():
+			_is_passing_for_hero = true
 			break
 		_engine.submit(AutoPass.pass_index(decision as PriorityDecision))
 	_emit()
 	changed.emit(_snapshot)
+
+
+## Whether the step the game is in has not been shown for the step wait yet: it started
+## since the last snapshot, or that snapshot has not been up long enough.
+func _is_step_still_showing() -> bool:
+	if step_wait_msec <= 0:
+		return false
+	if (clock.call() as int) < _step_shown_until:
+		return true
+	var entries: Array[MmEvent] = _engine.event_log()
+	return entries.size() > _events_seen and Pacing.starts_step(entries.slice(_events_seen))
 
 
 ## Runs on the worker thread: one answer from the Villain's Agent.
@@ -245,6 +329,7 @@ func _passes_for_hero(decision: MmPendingDecision) -> bool:
 	if not (decision is PriorityDecision):
 		return false
 	var view: MmPlayerView = _engine.view_for(_engine.hero())
+	_keep_yield(view.game_turn)
 	if not AutoPass.is_own_object_on_top(view):
 		_own_top_seen = -1
 	elif view.stack.back().id != _own_top_seen:
@@ -256,17 +341,23 @@ func _passes_for_hero(decision: MmPendingDecision) -> bool:
 			return true
 	if _is_holding:
 		return false
-	return _is_auto_passing and AutoPass.passes(decision, view, stops)
+	if not (_is_yielding and AutoPass.yields(decision)) and not (_is_auto_passing and AutoPass.passes(decision, view, stops)):
+		return false
+	# A pass is due. With the Hold Key down it is not made, and the priority is the Hero's
+	# until they answer, as it is after a spell of their own.
+	_is_holding = is_hold_key_down
+	return not _is_holding
 
 
 ## Builds the snapshot from the engine. Only ever called while no task is running.
 func _emit() -> void:
 	var made: EncounterSnapshot = EncounterSnapshot.new()
 	made.view = _engine.view_for(_engine.hero())
+	_keep_yield(made.view.game_turn)
 	made.can_undo = _engine.can_undo()
 	made.is_holding_priority = _is_holding
 	made.is_rewind = _is_rewinding
-	if not _engine.is_over() and _engine.pending_decision().player_id == HERO:
+	if not _engine.is_over() and _engine.pending_decision().player_id == HERO and not _is_passing_for_hero:
 		made.decision = _engine.pending_decision()
 	var entries: Array[MmEvent] = _engine.event_log()
 	# ADR 0015: a rewind only shortens the log, so it hands out nothing and is never
@@ -275,6 +366,8 @@ func _emit() -> void:
 		made.events = entries.slice(_events_seen)
 	_events_seen = entries.size()
 	_shown_at = clock.call()
+	if step_wait_msec > 0 and Pacing.starts_step(made.events):
+		_step_shown_until = _shown_at + step_wait_msec
 	for seen: MmObjectView in made.visible_objects():
 		made.looks[seen.id] = CardLook.of_view(seen, _art_key(seen))
 	_snapshot = made

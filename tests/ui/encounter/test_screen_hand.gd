@@ -281,7 +281,7 @@ func test_a_card_let_go_while_the_villain_thinks_goes_back_to_its_place() -> voi
 func test_held_where_letting_go_would_play_it_a_card_glows_brighter_and_the_info_panel_says_so() -> void:
 	_open(_forests_and_bears())
 	var forest: int = _card("Forest")
-	var green: Color = DecisionClicks.color_of(DecisionClicks.Kind.OTHER)
+	var green: Color = DecisionClicks.color_of(DecisionClicks.Kind.PLAY)
 	var at: Vector2 = _on(forest)
 	_screen.press_hand(at, false)
 
@@ -290,7 +290,7 @@ func test_held_where_letting_go_would_play_it_a_card_glows_brighter_and_the_info
 	assert_eq(_screen.info_panel().option_text(), "")
 
 	_screen.drag_to(FIELD)
-	assert_eq(BorderEffects.glow_color(_screen.lifted_face()), DecisionClicks.bright_color_of(DecisionClicks.Kind.OTHER))
+	assert_eq(BorderEffects.glow_color(_screen.lifted_face()), DecisionClicks.bright_color_of(DecisionClicks.Kind.PLAY))
 	assert_eq(_screen.info_panel().option_text(), "Release to play Forest")
 
 	_screen.drag_to(at)
@@ -562,6 +562,31 @@ func test_a_real_press_on_a_card_that_has_risen_over_a_land_picks_up_the_card() 
 	window.push_input(_button(MOUSE_BUTTON_LEFT, false, at))
 
 
+func test_the_card_under_the_cursor_is_the_one_drawn_there_not_the_one_whose_place_is_nearest() -> void:
+	# The hand parts around the card whose resting place is nearest the cursor, which moves
+	# that card clear of the one before it. Just inside its place the cursor is still on
+	# the card before, as drawn, and that is the card to light and to pick up.
+	var window: SubViewport = _open_in_a_viewport()
+	window.push_input(_motion(FIELD))
+	_settle_hand()
+	var cards: Array[int] = _screen.hand_order().cards()
+	var step: float = _face(cards[4]).position.x - _face(cards[3]).position.x
+	var at: Vector2 = Vector2(_face(cards[4]).position.x + step * 0.1, 980)
+	window.push_input(_motion(at))
+	_settle_hand()
+	assert_gt(_face(cards[4]).position.x, at.x, "The nearest card has moved clear of the cursor,")
+	assert_true(Rect2(_face(cards[3]).position, _face(cards[3]).size).grow(-12.0).has_point(at), "which is on the card before it.")
+
+	assert_eq(_screen.hand_card_under(at), cards[3])
+	assert_eq(_screen.hand_card_at(at), cards[3])
+	for frame: int in 60:
+		_screen._light_hand(0.3)
+	assert_gt(_face(cards[3]).modulate.r, 1.0, "The card under the cursor is lit,")
+	assert_almost_eq(_face(cards[4]).modulate.r, 1.0, 0.001, "and no other.")
+	assert_eq(_screen.hand_card_under(FIELD), DragCard.NONE)
+	window.push_input(_motion(FIELD))
+
+
 func test_a_real_press_made_before_the_hand_has_caught_up_with_the_cursor_still_picks_up_the_card() -> void:
 	# The hand eases toward the cursor over several frames, and fewer when a frame is slow.
 	# A press made on arriving, on the strip a card is about to rise into, used to miss: it
@@ -644,7 +669,7 @@ func test_a_held_card_stays_held_while_the_board_is_rebuilt_under_it() -> void:
 	assert_eq(after.rotation, 0.0)
 	assert_gt(after.get_parent().get_index(), _screen.stack_window().get_index())
 	assert_eq(after.get_parent().get_child_count(), 1)
-	assert_eq(BorderEffects.glow_color(after), DecisionClicks.bright_color_of(DecisionClicks.Kind.OTHER))
+	assert_eq(BorderEffects.glow_color(after), DecisionClicks.bright_color_of(DecisionClicks.Kind.PLAY))
 	assert_eq(_screen.info_panel().option_text(), "Release to play Forest")
 	assert_eq(_screen.face_of(_seen(forest).id), after)
 	assert_eq(_row_cards().size(), 6, "and the row is drawn without it.")
@@ -702,7 +727,7 @@ func test_a_card_with_several_ways_to_be_played_waits_where_it_was_let_go_for_th
 	assert_true(_screen.option_menu().box_rect().has_point(FIELD + Vector2(4, 4)), "It opens where the card was let go.")
 	assert_true(_screen.drag_card().is_waiting())
 	assert_eq(_screen.lifted_face().position, place, "The card stays where it was released.")
-	assert_eq(BorderEffects.glow_color(_screen.lifted_face()), DecisionClicks.bright_color_of(DecisionClicks.Kind.OTHER))
+	assert_eq(BorderEffects.glow_color(_screen.lifted_face()), DecisionClicks.bright_color_of(DecisionClicks.Kind.PLAY))
 	assert_eq(_screen.info_panel().option_text(), "", "Nothing is being held any more.")
 	assert_eq(_row_cards().size(), 6)
 	assert_eq(_permanents("Forest").size(), 0, "Nothing is played yet.")

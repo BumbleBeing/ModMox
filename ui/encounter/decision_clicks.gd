@@ -1,24 +1,35 @@
 class_name DecisionClicks
 extends RefCounted
 ## What clicking each object or player answers for a Pending Decision, and the Glow (game
-## glossary) drawn from the same map: targets orange-red, mana sources blue, everything
-## else green. A thing with a click answer always glows. Cards to discard glow too, but are
+## glossary) drawn from the same map: targets orange-red, mana sources blue, attackers and
+## blockers to choose gold, abilities to activate purple, and everything else, such as cards
+## that can be cast or played, green. A thing with a click answer always glows. Cards to discard glow too, but are
 ## chosen with a CardPicks, which a click on a card of the hand builds.
 ##
-## A card in hand that can be cast or played glows too, but one click on it answers
-## nothing (A371): what it offers is kept apart, in hand_options_of(), for the Drag Card and
-## a double-click.
+## An object that offers more than one kind of thing has each kind, and its Glow is split
+## between the colors of the first two: a permanent with a mana ability and another
+## ability is purple and blue.
+##
+## A card in hand that can be cast or played, or has an ability used from there, glows too,
+## but one click on it answers nothing (A371): what it offers is kept apart, in
+## hand_options_of(), for the Drag Card and a double-click.
 
-enum Kind { TARGET, MANA, OTHER }
+enum Kind { TARGET, MANA, COMBAT, ABILITY, PLAY, OTHER }
 
 const COLORS: Dictionary[Kind, Color] = {
 	Kind.TARGET: Color("#ff5a2a"),
 	Kind.MANA: Color("#3aa0ff"),
+	Kind.COMBAT: Color("#ffc83a"),
+	Kind.ABILITY: Color("#b77cff"),
+	Kind.PLAY: Color("#7be36a"),
 	Kind.OTHER: Color("#7be36a"),
 }
 
-## Game Object ID → the kind of Glow it has.
-var objects: Dictionary[int, Kind] = {}
+## The kinds one object can have together, in the order its Glow shows them.
+const SHARED: Array[Kind] = [Kind.PLAY, Kind.ABILITY, Kind.MANA]
+## How many colors a Glow shows at most.
+const MOST_COLORS: int = 2
+
 ## Player ID → the kind of Glow that player's panel has.
 var players: Dictionary[int, Kind] = {}
 ## While paying a cost: mana type → the answer that spends one unit of it from the pool.
@@ -30,6 +41,10 @@ var player_answers: Dictionary[int, int] = {}
 var _options: Dictionary[int, Array] = {}
 ## Game Object ID of a card in hand → the ClickOptions playing it offers, in answer order.
 var _hand_options: Dictionary[int, Array] = {}
+## Game Object ID of a card in hand → the ClickOptions its abilities offer, in answer order.
+var _hand_abilities: Dictionary[int, Array] = {}
+## Game Object ID → the kinds of Glow it has, in the order they are shown.
+var _kinds: Dictionary[int, Array] = {}
 
 
 ## The clicks and Glow for [param decision] as the player whose [param view] this is sees
@@ -66,16 +81,16 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 				clicks.players[candidates[index].id] = Kind.TARGET
 				clicks.player_answers[candidates[index].id] = index
 			else:
-				clicks.objects[candidates[index].id] = Kind.TARGET
+				clicks.glow_as(candidates[index].id, Kind.TARGET)
 				clicks._options[candidates[index].id] = [ClickOption.new(index, "Target")]
 	elif decision is DivideCombatDamageDecision:
 		clicks._add_references((decision as DivideCombatDamageDecision).recipients, Kind.TARGET)
 	elif decision is DeclareBlockersDecision:
-		clicks._add_ids((decision as DeclareBlockersDecision).candidate_blocker_ids)
+		clicks._add_ids((decision as DeclareBlockersDecision).candidate_blocker_ids, Kind.COMBAT)
 	elif decision is DeclareAttackersDecision:
-		clicks._add_ids((decision as DeclareAttackersDecision).candidate_ids)
+		clicks._add_ids((decision as DeclareAttackersDecision).candidate_ids, Kind.COMBAT)
 	elif decision is ChooseCardsToDiscardDecision:
-		clicks._add_ids((decision as ChooseCardsToDiscardDecision).candidate_ids)
+		clicks._add_ids((decision as ChooseCardsToDiscardDecision).candidate_ids, Kind.OTHER)
 	return clicks
 
 
@@ -100,11 +115,42 @@ static func bright_color_of(kind: Kind) -> Color:
 	return COLORS[kind].lightened(0.55)
 
 
-## What playing the card in hand that is Game Object [param object_id] offers: nothing, one
-## way, or several for the Option Menu. Each reads "Cast Hill Giant" or "Play Forest".
+## The kinds of Glow Game Object [param object_id] has, in the order they are shown; none
+## if it does not glow.
+func kinds_of(object_id: int) -> Array[Kind]:
+	var found: Array[Kind] = []
+	found.assign(_kinds.get(object_id, []))
+	return found
+
+
+## The colors of Game Object [param object_id]'s Glow: none, one, or two for something
+## that offers more than one kind of thing. With [param is_bright] each is the lighter
+## color of a held card.
+func colors_of(object_id: int, is_bright: bool = false) -> Array[Color]:
+	var colors: Array[Color] = []
+	for kind: Kind in kinds_of(object_id).slice(0, MOST_COLORS):
+		colors.append(bright_color_of(kind) if is_bright else color_of(kind))
+	return colors
+
+
+## Every Game Object that glows.
+func glowing_ids() -> Array[int]:
+	var ids: Array[int] = []
+	ids.assign(_kinds.keys())
+	return ids
+
+
+## Makes Game Object [param object_id] glow as [param kind] alone, whatever it glowed as.
+func glow_as(object_id: int, kind: Kind) -> void:
+	_kinds[object_id] = [kind]
+
+
+## What letting go of the card in hand that is Game Object [param object_id] offers:
+## nothing, one thing, or several for the Option Menu. The ways to play it come first, each
+## reading "Cast Hill Giant" or "Play Forest", then its abilities as they are printed.
 func hand_options_of(object_id: int) -> Array[ClickOption]:
 	var found: Array[ClickOption] = []
-	found.assign(_hand_options.get(object_id, []))
+	found.assign(_hand_options.get(object_id, []) + _hand_abilities.get(object_id, []))
 	return found
 
 
@@ -123,40 +169,62 @@ func clickable_ids() -> Array[int]:
 	return ids
 
 
-## A permanent's ability that [param answer] activates. A permanent glows blue only when
-## mana is all it offers (A306).
+## An ability that [param answer] activates: a permanent's is clicked on it, and one of a
+## card in hand is offered when the card is let go. One anywhere else glows and gets its
+## input with that zone's viewer (13f).
 func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView) -> void:
-	var is_mana: bool = AutoPass.is_mana_ability(action, view)
 	var text: String = "Ability %d" % (action.ability_index + 1)
-	var is_permanent: bool = false
-	for permanent: MmObjectView in view.battlefield:
-		if permanent.id == action.object_id:
-			is_permanent = true
-			if action.ability_index < permanent.abilities.size() and permanent.abilities[action.ability_index] is ActivatedAbility:
-				# A row of the Option Menu reads as the ability is printed on the card.
-				text = AbilityText.of_ability(permanent.abilities[action.ability_index], AbilityText.self_noun(permanent.card_types, permanent.name))
-	if is_permanent:
-		# An ability used from another zone gets its input with that zone's viewer (13f).
-		if not _options.has(action.object_id):
-			_options[action.object_id] = []
-		(_options[action.object_id] as Array).append(ClickOption.new(answer, text, is_mana))
-	var is_blue: bool = is_mana and objects.get(action.object_id, Kind.MANA) == Kind.MANA
-	objects[action.object_id] = Kind.MANA if is_blue else Kind.OTHER
+	var is_mana: bool = false
+	var permanent: MmObjectView = _find(view.battlefield, action.object_id)
+	var in_hand: MmObjectView = _find(view.hand, action.object_id)
+	var seen: MmObjectView = permanent if permanent != null else in_hand
+	if seen != null and action.ability_index < seen.abilities.size() and seen.abilities[action.ability_index] is ActivatedAbility:
+		var ability: ActivatedAbility = seen.abilities[action.ability_index]
+		is_mana = ability.is_mana_ability()
+		# A row of the Option Menu reads as the ability is printed on the card.
+		text = AbilityText.of_ability(ability, AbilityText.self_noun(seen.card_types, seen.name))
+	_add_kind(action.object_id, Kind.MANA if is_mana else Kind.ABILITY)
+	if permanent != null:
+		_append(_options, action.object_id, ClickOption.new(answer, text, is_mana))
+	elif in_hand != null:
+		_append(_hand_abilities, action.object_id, ClickOption.new(answer, text, is_mana))
 
 
 ## Casting a card or playing it as a land, which [param answer] does.
 func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
 	var object_id: int = object_of(action)
 	var verb: String = "Play" if action is PlayLandAction else "Cast"
-	objects[object_id] = Kind.OTHER
-	if not _hand_options.has(object_id):
-		_hand_options[object_id] = []
-	(_hand_options[object_id] as Array).append(ClickOption.new(answer, "%s %s" % [verb, EncounterSnapshot.name_in(view, object_id)]))
+	_add_kind(object_id, Kind.PLAY)
+	_append(_hand_options, object_id, ClickOption.new(answer, "%s %s" % [verb, EncounterSnapshot.name_in(view, object_id)]))
 
 
-func _add_ids(ids: Array[int]) -> void:
+## Gives [param object_id] the Glow of [param kind] beside any it has, kept in the order
+## of SHARED.
+func _add_kind(object_id: int, kind: Kind) -> void:
+	var kinds: Array = _kinds.get(object_id, [])
+	if kinds.has(kind):
+		return
+	kinds.append(kind)
+	kinds.sort_custom(func(a: Kind, b: Kind) -> bool: return SHARED.find(a) < SHARED.find(b))
+	_kinds[object_id] = kinds
+
+
+static func _append(options: Dictionary[int, Array], object_id: int, option: ClickOption) -> void:
+	if not options.has(object_id):
+		options[object_id] = []
+	(options[object_id] as Array).append(option)
+
+
+static func _find(zone: Array, object_id: int) -> MmObjectView:
+	for seen: MmObjectView in zone:
+		if seen.id == object_id:
+			return seen
+	return null
+
+
+func _add_ids(ids: Array[int], kind: Kind) -> void:
 	for id: int in ids:
-		objects[id] = Kind.OTHER
+		glow_as(id, kind)
 
 
 func _add_references(references: Array[MmReference], kind: Kind) -> void:
@@ -164,4 +232,4 @@ func _add_references(references: Array[MmReference], kind: Kind) -> void:
 		if reference.is_player():
 			players[reference.id] = kind
 		else:
-			objects[reference.id] = kind
+			glow_as(reference.id, kind)

@@ -22,6 +22,7 @@ var _dashes: DashedBorder = null
 var _row: HBoxContainer
 var _grip: Control = null
 var _catcher: ClickCatcher = null
+var _art: TextureRect
 
 
 ## [param art_key] is the art to show, or "" for none.
@@ -47,7 +48,8 @@ func _init(art_key: String, first_line: String, second_line: String, color: Colo
 		_stripe.custom_minimum_size = Vector2(7, 0)
 		_stripe.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_row.add_child(_stripe)
-	var picture: TextureRect = TextureRect.new()
+	_art = TextureRect.new()
+	var picture: TextureRect = _art
 	picture.texture = ArtLibrary.shared().cropped(art_key, Vector2(ART_SIZE, ART_SIZE)) if art_key != "" else null
 	picture.custom_minimum_size = Vector2(ART_SIZE, ART_SIZE)
 	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -66,6 +68,11 @@ func _init(art_key: String, first_line: String, second_line: String, color: Colo
 	lines.add_child(_detail)
 	mouse_entered.connect(func() -> void: hovered.emit(true))
 	mouse_exited.connect(func() -> void: hovered.emit(false))
+
+
+## The square at the left that shows the art: where a card put on the stack flies to.
+func art() -> TextureRect:
+	return _art
 
 
 func name_text() -> String:

@@ -17,6 +17,13 @@ static func passes(decision: MmPendingDecision, view: MmPlayerView, stops: StepS
 	return not has_plays(priority, view)
 
 
+## Whether a Yield (game glossary) passes [param decision]: every priority, whatever is on
+## the stack and whatever the stops say. Choosing attackers or blockers, and any other
+## choice that is not priority, is the Hero's to make.
+static func yields(decision: MmPendingDecision) -> bool:
+	return decision is PriorityDecision
+
+
 ## Whether [param decision] offers anything besides passing and mana abilities. Tapping a
 ## land for mana with nothing to spend it on is never a reason to stop.
 static func has_plays(decision: PriorityDecision, view: MmPlayerView) -> bool:

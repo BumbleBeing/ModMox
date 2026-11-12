@@ -28,9 +28,38 @@ func test_a_screen_moves_nothing_until_it_is_told_to_play_at_the_games_pace() ->
 
 	_screen.use_game_pace(presenter)
 
-	assert_eq(_screen.face_motion().seconds, Pacing.MOVE_SECONDS)
-	assert_eq(presenter.action_wait_msec, Pacing.ACTION_MSEC)
-	assert_eq(presenter.mana_wait_msec, Pacing.MANA_MSEC)
+	assert_almost_eq(_screen.face_motion().seconds, GameSpeed.seconds(Pacing.MOVE_SECONDS, GameSpeed.Speed.NORMAL), 0.0001)
+	assert_eq(presenter.action_wait_msec, GameSpeed.msec(Pacing.ACTION_MSEC, GameSpeed.Speed.NORMAL))
+	assert_eq(presenter.mana_wait_msec, GameSpeed.msec(Pacing.MANA_MSEC, GameSpeed.Speed.NORMAL))
+	assert_eq(presenter.step_wait_msec, GameSpeed.msec(Pacing.STEP_MSEC, GameSpeed.Speed.NORMAL))
+	assert_eq(Pacing.STEP_MSEC, 100)
+
+
+func test_the_screen_draws_a_step_shown_before_the_hero_is_passed_for() -> void:
+	_screen = EncounterScreen.new()
+	_screen.starts_itself = false
+	add_child_autofree(_screen)
+	_screen.size = SCREEN
+	var forest: MmCardDefinition = Scenario.basic_land("Forest")
+	_presenter = EncounterPresenter.new(Scenario.setup_with(Scenario.copies(forest, 40), Scenario.copies(forest, 40)), DefaultAnswerAgent.new())
+	_presenter.clock = func() -> int: return 0
+	_presenter.step_wait_msec = Pacing.STEP_MSEC
+	_screen.begin(_presenter)
+
+	for attempt: int in 200:
+		if _presenter.is_passing_for_hero() or _presenter.snapshot().is_over():
+			break
+		if _presenter.is_villain_thinking():
+			OS.delay_msec(2)
+			_presenter.clock = func() -> int: return (attempt + 1) * Pacing.STEP_MSEC
+			_presenter.poll()
+		elif _presenter.snapshot().decision != null:
+			_presenter.answer(Scenario.default_answer(_presenter.snapshot().decision))
+
+	assert_true(_presenter.is_passing_for_hero())
+	assert_null(_presenter.snapshot().decision, "The Hero is asked nothing while the step is shown,")
+	assert_eq(_screen.player_panel(MmEncounterSetup.VILLAIN_PLAYER_ID).thinking_text(), "", "and the Villain is not thinking.")
+	_presenter.wait_until_idle()
 
 
 func test_a_screenshot_is_asked_for_with_its_path() -> void:

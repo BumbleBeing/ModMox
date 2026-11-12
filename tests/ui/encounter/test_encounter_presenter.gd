@@ -444,6 +444,195 @@ func test_the_hold_is_decided_again_when_the_heros_spell_is_back_on_top() -> voi
 	assert_eq(presenter.snapshot().view.life_totals[VILLAIN], 18)
 
 
+func test_a_yield_passes_a_stop_with_something_to_do_and_ends_with_the_turn() -> void:
+	var presenter: EncounterPresenter = _started(_land_setup())
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	assert_eq(presenter.snapshot().view.step, MmTurn.Step.PRECOMBAT_MAIN, "Auto-pass stops: a land can be played.")
+	assert_false(presenter.is_yielding(), "Off until it is asked for.")
+
+	presenter.set_yielding(true)
+	presenter.wait_until_idle()
+
+	var view: MmPlayerView = presenter.snapshot().view
+	assert_false(presenter.is_yielding(), "It ended when the next turn began.")
+	assert_eq(view.game_turn, 3, "Auto-pass took the Villain's turn, and stops at the Hero's next land.")
+	assert_eq(view.step, MmTurn.Step.PRECOMBAT_MAIN)
+	for permanent: MmObjectView in view.battlefield:
+		assert_eq(permanent.controller_id, VILLAIN, "The Hero played no land on the turn that was yielded.")
+
+
+func test_a_yield_passes_with_auto_pass_off_and_the_hero_is_asked_again_next_turn() -> void:
+	var presenter: EncounterPresenter = _started(_land_setup(), false)
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	assert_eq(presenter.snapshot().view.step, MmTurn.Step.UPKEEP)
+
+	presenter.set_yielding(true)
+	presenter.wait_until_idle()
+
+	assert_eq(presenter.snapshot().view.game_turn, 2)
+	assert_eq(presenter.snapshot().view.step, MmTurn.Step.UPKEEP, "The first priority of the next turn.")
+	assert_false(presenter.is_yielding())
+	assert_true(presenter.snapshot().decision is PriorityDecision)
+
+
+func test_a_yield_passes_with_the_villains_spell_on_the_stack() -> void:
+	var zap: Array[MmCardDefinition] = Scenario.copies(Scenario.free_shock("Zap", 2), 40)
+	var presenter: EncounterPresenter = EncounterPresenter.new(Scenario.setup_with(zap, zap.duplicate()), RespondingAgent.new())
+	presenter.set_auto_passing(false)
+	presenter.start()
+	presenter.wait_until_idle()
+	_cast_first_spell_at_the_villain(presenter)
+	presenter.wait_until_idle()
+	assert_eq(presenter.snapshot().view.stack.back().controller_id, VILLAIN, "The Hero is asked about the Villain's answer.")
+	var turn: int = presenter.snapshot().view.game_turn
+
+	presenter.set_yielding(true)
+	presenter.wait_until_idle()
+
+	assert_eq(presenter.snapshot().view.stack.size(), 0, "Checking the box passed at once, and both resolved.")
+	assert_eq(presenter.snapshot().view.life_totals[VILLAIN], 18)
+	assert_eq(presenter.snapshot().view.game_turn, turn + 1, "And the rest of the turn went by.")
+
+
+func test_under_a_yield_the_hero_still_chooses_attackers_and_it_carries_on_afterwards() -> void:
+	var presenter: EncounterPresenter = _started(_bear_setup())
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	# A Bear cast on the first turn can attack on the Hero's next.
+	assert_eq(presenter.answer(_index_of(presenter.snapshot().decision as PriorityDecision, CastSpellAction)), "")
+	presenter.wait_until_idle()
+	presenter.set_yielding(true)
+	presenter.wait_until_idle()
+	var turn: int = presenter.snapshot().view.game_turn
+	assert_eq(presenter.snapshot().view.active_player_id, HERO)
+	assert_eq(presenter.snapshot().view.step, MmTurn.Step.PRECOMBAT_MAIN)
+
+	presenter.set_yielding(true)
+	presenter.wait_until_idle()
+
+	assert_true(presenter.snapshot().decision is DeclareAttackersDecision, "Choosing attackers is not priority.")
+	assert_true(presenter.is_yielding())
+	assert_eq(presenter.snapshot().view.game_turn, turn)
+
+	assert_eq(presenter.answer([] as Array[int]), "")
+	presenter.wait_until_idle()
+
+	assert_eq(presenter.snapshot().view.game_turn, turn + 2, "The second main phase was passed, Bears in hand or not.")
+	assert_false(presenter.is_yielding())
+
+
+func test_a_yield_asked_for_while_the_villain_thinks_starts_with_the_next_decision() -> void:
+	var agent: MmAgent = SlowAgent.new()
+	agent.delay_msec = 20
+	var presenter: EncounterPresenter = EncounterPresenter.new(_land_setup(), agent)
+	presenter.set_auto_passing(false)
+	presenter.start()
+	presenter.wait_until_idle()
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	assert_eq(presenter.snapshot().view.game_turn, 1)
+	assert_eq(presenter.pass_priority(), "")
+	assert_true(presenter.is_villain_thinking())
+	var during: EncounterSnapshot = presenter.snapshot()
+
+	presenter.set_yielding(true)
+
+	assert_true(presenter.is_yielding())
+	assert_eq(presenter.snapshot(), during, "Nothing read the engine mid-thought.")
+	presenter.wait_until_idle()
+	assert_eq(presenter.snapshot().view.game_turn, 2, "The rest of the turn was passed.")
+	assert_false(presenter.is_yielding())
+
+
+func test_a_yield_taken_back_stops_at_the_next_priority() -> void:
+	var presenter: EncounterPresenter = _started(_land_setup(), false)
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	presenter.set_yielding(true)
+	assert_true(presenter.is_villain_thinking(), "The upkeep was passed, and the Villain has priority.")
+
+	presenter.set_yielding(false)
+	presenter.wait_until_idle()
+
+	assert_eq(presenter.snapshot().view.game_turn, 1)
+	assert_ne(presenter.snapshot().view.step, MmTurn.Step.UPKEEP)
+	assert_true(presenter.snapshot().decision is PriorityDecision)
+
+
+func test_a_new_encounter_starts_without_a_yield() -> void:
+	assert_false(_started(_land_setup()).is_yielding())
+
+
+func test_with_the_hold_key_down_auto_pass_passes_nothing() -> void:
+	var presenter: EncounterPresenter = _started(_land_setup())
+	presenter.is_hold_key_down = true
+
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+
+	assert_eq(presenter.snapshot().view.step, MmTurn.Step.UPKEEP, "A step with no stop.")
+	assert_true(presenter.snapshot().is_holding_priority)
+	assert_true(presenter.is_auto_passing(), "It is not turned off.")
+
+
+func test_with_the_hold_key_down_a_yield_passes_nothing_and_stays_on() -> void:
+	var presenter: EncounterPresenter = _started(_land_setup(), false)
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	presenter.is_hold_key_down = true
+
+	presenter.set_yielding(true)
+	presenter.wait_until_idle()
+
+	assert_eq(presenter.snapshot().view.step, MmTurn.Step.UPKEEP)
+	assert_eq(presenter.snapshot().view.game_turn, 1)
+	assert_true(presenter.snapshot().is_holding_priority)
+	assert_true(presenter.is_yielding())
+
+
+func test_a_priority_kept_by_the_hold_key_stays_until_the_hero_answers() -> void:
+	var presenter: EncounterPresenter = _started(_land_setup(), false)
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	presenter.is_hold_key_down = true
+	presenter.set_yielding(true)
+
+	presenter.is_hold_key_down = false
+	presenter.toggle_stop(HERO, MmTurn.Step.END)
+	presenter.poll()
+	presenter.wait_until_idle()
+
+	assert_eq(presenter.snapshot().view.step, MmTurn.Step.UPKEEP, "Letting go of the key does not pass.")
+	assert_true(presenter.snapshot().is_holding_priority)
+	assert_true(presenter.is_yielding())
+
+	assert_eq(presenter.pass_priority(), "")
+	presenter.wait_until_idle()
+
+	assert_eq(presenter.snapshot().view.game_turn, 2, "The Yield carried on once the Hero answered.")
+	assert_false(presenter.snapshot().is_holding_priority)
+
+
+func test_the_hold_key_keeps_each_priority_while_it_stays_down() -> void:
+	var presenter: EncounterPresenter = _started(_land_setup())
+	# With no stop in the first main phase, auto-pass would go on to the second.
+	presenter.toggle_stop(HERO, MmTurn.Step.PRECOMBAT_MAIN)
+	presenter.is_hold_key_down = true
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	assert_eq(presenter.snapshot().view.step, MmTurn.Step.UPKEEP)
+
+	assert_eq(presenter.pass_priority(), "")
+	presenter.wait_until_idle()
+
+	assert_eq(presenter.snapshot().view.game_turn, 1)
+	assert_gt(presenter.snapshot().view.step, MmTurn.Step.UPKEEP, "The very next priority,")
+	assert_lt(presenter.snapshot().view.step, MmTurn.Step.BEGINNING_OF_COMBAT, "which auto-pass would have passed.")
+	assert_true(presenter.snapshot().is_holding_priority)
+
+
 func test_an_encounter_asked_for_by_arguments_is_the_one_the_form_starts() -> void:
 	var from_arguments: EncounterRequest = EncounterRequest.from_arguments(
 		PackedStringArray(["--hero=blue_red", "--villain=red_green", "--seed=11"]))
@@ -645,6 +834,15 @@ func _land_setup() -> MmEncounterSetup:
 ## The Hero's deck is forty free instants, "Zap": 2 damage to any target.
 func _shock_setup() -> MmEncounterSetup:
 	return Scenario.setup_with(Scenario.copies(Scenario.free_shock("Zap", 2), 40), Scenario.copies(Scenario.vanilla("Card"), 40))
+
+
+## The Hero's deck alternates Forests and free 2/2 Bears; the Villain's cards do nothing.
+func _bear_setup() -> MmEncounterSetup:
+	var bear: MmCardDefinition = Scenario.creature("Bear", 2, 2, [], Scenario.mana_cost(0))
+	var cards: Array[MmCardDefinition] = []
+	for index: int in 20:
+		cards.append_array([Scenario.basic_land("Forest"), bear])
+	return Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40))
 
 
 func _index_of(decision: PriorityDecision, action_kind: Script) -> int:

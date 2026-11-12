@@ -108,6 +108,88 @@ func test_crowns_for_colorless_cards_follow_artifact_land_or_neither() -> void:
 	assert_true(_layers(FrameSpec.of(_look(land))).has("crowns/l"))
 
 
+func test_a_colored_artifact_gets_its_colors_frame_inside_the_artifact_border() -> void:
+	var spec: FrameSpec = FrameSpec.of(_look(_artifact([MmMana.Type.BLUE])))
+
+	assert_eq(_layers(spec), ["frames/u", "frames/a through frame"])
+
+
+func test_a_colored_artifact_creatures_pt_box_follows_its_color() -> void:
+	var golem: MmCardDefinition = _artifact([MmMana.Type.BLUE])
+	golem.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	golem.power = 2
+	golem.toughness = 2
+
+	assert_eq(_layers(FrameSpec.of(_look(golem))), ["frames/u", "frames/a through frame", "pt/u"])
+
+
+func test_a_two_color_artifact_is_gold_inside_the_artifact_border_under_its_pt_box_and_crowns() -> void:
+	var golem: MmCardDefinition = _artifact([MmMana.Type.WHITE, MmMana.Type.BLUE])
+	golem.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	golem.supertypes = [MmCardTypes.Supertype.LEGENDARY]
+	golem.power = 2
+	golem.toughness = 2
+
+	assert_eq(_layers(FrameSpec.of(_look(golem))), [
+		"frames/m",
+		"frames/w through rules",
+		"frames/u through rules ∩ right_half",
+		"frames/w through pinline",
+		"frames/u through pinline ∩ right_half",
+		"frames/a through frame",
+		"pt/m",
+		"cover",
+		"crowns/w",
+		"crowns/u through right_half",
+	])
+
+
+func test_a_three_color_artifact_is_gold_inside_the_artifact_border() -> void:
+	var relic: MmCardDefinition = _artifact([MmMana.Type.BLACK, MmMana.Type.RED, MmMana.Type.GREEN])
+
+	assert_eq(_layers(FrameSpec.of(_look(relic))), ["frames/m", "frames/a through frame"])
+
+
+func test_a_legendary_colored_artifact_gets_its_colors_crown() -> void:
+	var relic: MmCardDefinition = _artifact([MmMana.Type.BLUE])
+	relic.supertypes = [MmCardTypes.Supertype.LEGENDARY]
+
+	assert_eq(_layers(FrameSpec.of(_look(relic))), ["frames/u", "frames/a through frame", "cover", "crowns/u"])
+
+
+func test_a_colored_artifact_and_a_spell_of_its_color_are_baked_apart() -> void:
+	var spell: MmCardDefinition = Scenario.sorcery("Spell", Scenario.mana_cost(0, [MmMana.Type.BLUE]), [], [])
+	var colorless: FrameSpec = FrameSpec.of(_look(Scenario.artifact("Relic", [])))
+
+	assert_eq(FrameSpec.of(_look(_artifact([MmMana.Type.BLUE]))).key(), "card1:u:artifact")
+	assert_eq(FrameSpec.of(_look(spell)).key(), "card1:u")
+	assert_eq(colorless.key(), "card0::artifact", "A colorless artifact is as it was.")
+	assert_eq(_layers(colorless), ["frames/a"])
+
+
+func test_a_modification_adding_a_color_to_an_artifact_keeps_the_artifact_border() -> void:
+	var run_card: MmRunCard = MmRunCard.new()
+	run_card.base = _alpha("ankh_of_mishra")
+	var add_blue: AddManaSymbolModification = AddManaSymbolModification.new()
+	add_blue.symbol = MmMana.Type.BLUE
+	run_card.modifications = [add_blue]
+
+	var modified: FrameSpec = FrameSpec.of(CardLook.of_characteristics(MmCharacteristics.printed(run_card.flatten())))
+
+	assert_eq(_layers(modified), ["frames/u", "frames/a through frame"])
+	assert_eq(_layers(FrameSpec.of(CardLook.of_definition(_alpha("ankh_of_mishra")))), ["frames/a"], "The base card is unchanged.")
+
+
+func test_an_artifact_land_keeps_the_land_frame() -> void:
+	var land: MmCardDefinition = _land("Vault", [MmMana.Type.BLUE])
+	land.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.LAND]
+
+	var spec: FrameSpec = FrameSpec.of(_look(land))
+
+	assert_eq(_layers(spec), ["lands/u"])
+	assert_eq(spec.key(), "land1:u")
+
+
 func test_a_modification_adding_a_second_color_turns_a_mono_frame_gold() -> void:
 	var run_card: MmRunCard = MmRunCard.new()
 	run_card.base = _alpha("savannah_lions")
@@ -139,6 +221,13 @@ func test_mana_cost_pips_come_generic_first_then_each_symbol() -> void:
 
 func _alpha(file_name: String) -> MmCardDefinition:
 	return load(ALPHA % file_name) as MmCardDefinition
+
+
+## A noncreature artifact of [param colors], from the symbols in its cost.
+func _artifact(colors: Array[MmMana.Type]) -> MmCardDefinition:
+	var relic: MmCardDefinition = Scenario.artifact("Relic", [])
+	relic.mana_cost = Scenario.mana_cost(0, colors)
+	return relic
 
 
 func _look(definition: MmCardDefinition) -> CardLook:

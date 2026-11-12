@@ -9,14 +9,18 @@ const SlowAgent := preload("res://tests/ui/encounter/support/slow_agent.gd")
 const Rule := MmEncounterSetup.StartingPlayerRule
 const ACTION: int = 500
 const MANA: int = 270
+const STEP: int = 100
 
 var _now: int = 0
 var _snapshots: Array[EncounterSnapshot] = []
+## What the clock said when each of _snapshots was handed out.
+var _times: Array[int] = []
 
 
 func before_each() -> void:
 	_now = 1000
 	_snapshots.clear()
+	_times.clear()
 
 
 func test_a_presenter_waits_for_nothing_until_it_is_told_to() -> void:
@@ -248,12 +252,181 @@ func test_canceling_a_cast_is_a_rewind_too() -> void:
 	assert_true(presenter.snapshot().is_rewind)
 
 
+func test_a_presenter_holds_no_step_until_it_is_told_to() -> void:
+	var presenter: EncounterPresenter = EncounterPresenter.new(Scenario.setup(), DefaultAnswerAgent.new())
+	presenter.clock = _clock
+	presenter.changed.connect(_remember)
+
+	assert_eq(presenter.step_wait_msec, 0)
+	presenter.start()
+	presenter.wait_until_idle()
+
+	for snapshot: EncounterSnapshot in _snapshots:
+		assert_true(snapshot.is_villain_thinking or snapshot.decision != null or snapshot.is_over(), "The Hero is passed for at once.")
+
+
+func test_a_step_the_hero_is_passed_through_is_shown_for_the_step_wait() -> void:
+	var presenter: EncounterPresenter = _stepped()
+	presenter.start()
+	_play_until(presenter, _is_held)
+	var held: EncounterSnapshot = presenter.snapshot()
+	assert_true(_is_held.call(held), "A snapshot that asks nobody: the Hero will be passed for.")
+	assert_true(Pacing.starts_step(held.events), "It shows a step starting.")
+	assert_true(presenter.is_passing_for_hero())
+
+	assert_eq(presenter.pass_priority(), EncounterPresenter.NOT_PRIORITY)
+	assert_eq(presenter.answer(0), EncounterPresenter.NOT_PRIORITY)
+	_now += STEP - 1
+	presenter.poll()
+	assert_eq(presenter.snapshot(), held, "A millisecond short, the step is still showing.")
+	_now += 1
+	presenter.poll()
+
+	assert_ne(presenter.snapshot(), held)
+	presenter.wait_until_idle()
+
+
+func test_time_spent_paused_counts_toward_the_step_wait() -> void:
+	var presenter: EncounterPresenter = _stepped()
+	presenter.start()
+	_play_until(presenter, _is_held)
+	var held: EncounterSnapshot = presenter.snapshot()
+
+	presenter.set_paused(true)
+	_now += STEP
+	presenter.poll()
+	assert_eq(presenter.snapshot(), held)
+	presenter.set_paused(false)
+	presenter.poll()
+
+	assert_ne(presenter.snapshot(), held)
+	presenter.wait_until_idle()
+
+
+func test_the_villains_answer_waits_out_a_step_that_has_just_started() -> void:
+	var presenter: EncounterPresenter = _stepped()
+	presenter.start()
+	_play_until(presenter, func(snapshot: EncounterSnapshot) -> bool:
+		return snapshot.is_villain_thinking and Pacing.starts_step(snapshot.events))
+	var shown: EncounterSnapshot = presenter.snapshot()
+	assert_true(shown.is_villain_thinking and Pacing.starts_step(shown.events))
+	assert_eq(Pacing.wait_for(shown.events, 0, 0), 0, "Nothing else would hold the answer back.")
+
+	_let_the_villain_answer(presenter)
+	_now += STEP - 1
+	presenter.poll()
+	assert_eq(presenter.snapshot(), shown)
+	_now += 1
+	presenter.poll()
+
+	assert_ne(presenter.snapshot(), shown)
+	presenter.wait_until_idle()
+
+
+func test_no_step_is_left_sooner_than_the_step_wait_after_it_was_first_shown() -> void:
+	var presenter: EncounterPresenter = _stepped()
+	presenter.start()
+
+	_play_until(presenter, func(snapshot: EncounterSnapshot) -> bool: return snapshot.view.game_turn > 3)
+
+	var steps_seen: int = 0
+	var first_shown: int = 0
+	for index: int in _snapshots.size():
+		var view: MmPlayerView = _snapshots[index].view
+		var before: MmPlayerView = _snapshots[index - 1].view if index > 0 else null
+		if before != null and before.game_turn == view.game_turn and before.step == view.step:
+			continue
+		if before != null:
+			assert_gte(_times[index] - first_shown, STEP, "Turn %d, step %d." % [before.game_turn, before.step])
+		first_shown = _times[index]
+		steps_seen += 1
+	assert_gt(steps_seen, 20, "Three turns of steps went by.")
+	presenter.wait_until_idle()
+
+
+func test_changing_a_stop_while_a_step_is_shown_does_not_cut_it_short() -> void:
+	var presenter: EncounterPresenter = _stepped()
+	presenter.start()
+	_play_until(presenter, _is_held)
+	var view: MmPlayerView = presenter.snapshot().view
+
+	presenter.toggle_stop(view.active_player_id, MmTurn.Step.UPKEEP)
+	presenter.toggle_stop(view.active_player_id, MmTurn.Step.UPKEEP)
+
+	assert_true(_is_held.call(presenter.snapshot()), "Still held: the stops are as they were.")
+	assert_eq(presenter.snapshot().view.step, view.step)
+	assert_eq(presenter.snapshot().view.game_turn, view.game_turn)
+	presenter.wait_until_idle()
+
+
+func test_waiting_until_idle_sits_through_no_step() -> void:
+	var presenter: EncounterPresenter = _stepped()
+	presenter.start()
+	_play_until(presenter, _is_held)
+
+	presenter.wait_until_idle()
+
+	assert_false(presenter.is_passing_for_hero())
+	assert_true(presenter.snapshot().decision != null or presenter.snapshot().is_over(), "The Hero is asked, with the clock standing still.")
+
+
+func test_an_undo_is_taken_while_a_step_is_shown() -> void:
+	var presenter: EncounterPresenter = _stepped()
+	presenter.start()
+	_play_until(presenter, func(snapshot: EncounterSnapshot) -> bool: return _is_held.call(snapshot) and snapshot.can_undo)
+	if not presenter.snapshot().can_undo:
+		pass_test("The Hero had nothing to undo in this game.")
+		return
+
+	assert_eq(presenter.undo(), "")
+
+	assert_true(presenter.snapshot().is_rewind)
+	presenter.wait_until_idle()
+
+
 func _clock() -> int:
 	return _now
 
 
 func _remember(snapshot: EncounterSnapshot) -> void:
 	_snapshots.append(snapshot)
+	_times.append(_now)
+
+
+## A snapshot that asks nobody anything while the encounter goes on: the Hero is about to be
+## passed for.
+func _is_held(snapshot: EncounterSnapshot) -> bool:
+	return snapshot.decision == null and not snapshot.is_villain_thinking and not snapshot.is_over()
+
+
+## A presenter that holds steps and nothing else, between two decks of lands, remembering
+## its snapshots.
+func _stepped() -> EncounterPresenter:
+	var forest: MmCardDefinition = Scenario.basic_land("Forest")
+	var presenter: EncounterPresenter = EncounterPresenter.new(
+			Scenario.setup_with(Scenario.copies(forest, 40), Scenario.copies(forest, 40)), DefaultAnswerAgent.new())
+	presenter.clock = _clock
+	presenter.step_wait_msec = STEP
+	presenter.changed.connect(_remember)
+	return presenter
+
+
+## Plays on, the Hero answering as a person would, never sooner than the step wait, until
+## the snapshot is one [param is_there] accepts or the encounter is over.
+func _play_until(presenter: EncounterPresenter, is_there: Callable) -> void:
+	for turn: int in 2000:
+		var snapshot: EncounterSnapshot = presenter.snapshot()
+		if snapshot.is_over() or is_there.call(snapshot):
+			return
+		_now += STEP
+		if snapshot.is_villain_thinking:
+			_let_the_villain_answer(presenter)
+			presenter.poll()
+		elif snapshot.decision != null:
+			presenter.answer(Scenario.default_answer(snapshot.decision))
+		else:
+			presenter.poll()
+	fail_test("The encounter never got there.")
 
 
 func _paced(setup: MmEncounterSetup, agent: MmAgent) -> EncounterPresenter:
