@@ -39,7 +39,7 @@ The starting conditions of an encounter: both decks, starting life totals, openi
 _Avoid_: Game config, match settings
 
 **Free Mulligan**:
-A mulligan that puts no cards on the bottom of the library. A player's first mulligans are free, up to the number granted in the Encounter Setup.
+A mulligan that puts no cards on the bottom of the library. A player's first mulligans are free, up to the number granted in the Encounter Setup. Free Mulligans never count toward a hand owing every card it holds: a player who has paid a mulligan for each card in their hand is not asked again, keeps it, and puts all of it on the bottom in the order they choose.
 _Avoid_: Bonus mulligan, mulligan charge
 
 **Emblem**:

@@ -77,14 +77,27 @@ func test_an_ability_whose_source_is_out_of_sight_keeps_its_own_name() -> void:
 	assert_eq(InfoPrompt.stack_name(view, 99), "this")
 
 
-func test_a_kind_the_panel_still_answers_is_prompted_with_its_forms_title() -> void:
-	var discard: InfoPrompt = InfoPrompt.of(ChooseCardsToDiscardDecision.new(HERO, 2, [1] as Array[int]), _view())
-	var keep: InfoPrompt = InfoPrompt.of(KeepOrMulliganDecision.new(HERO, 0, 0), _view())
+func test_discarding_says_how_many_cards_and_how_many_are_chosen() -> void:
+	var discard: InfoPrompt = InfoPrompt.of(ChooseCardsToDiscardDecision.new(HERO, 2, [1, 2, 3] as Array[int]), _view())
 
-	assert_eq(discard.text, "Discard 2")
+	assert_eq(discard.text, "Discard 2 cards (0 chosen)")
 	assert_false(discard.can_cancel)
 	assert_false(discard.offers_all_attack)
-	assert_eq(keep.text, "Keep this hand, or mulligan? (0 taken)")
+
+
+func test_what_the_opening_hand_overlay_answers_has_no_prompt_under_it() -> void:
+	for decision: MmPendingDecision in [ChoosePlayOrDrawDecision.new(HERO), KeepOrMulliganDecision.new(HERO, 0, 0),
+			ChooseCardsToBottomDecision.new(HERO, 1, [1, 2] as Array[int])]:
+		assert_eq(InfoPrompt.of(decision, _view()).text, "", decision.describe())
+
+
+func test_a_decision_with_no_input_says_what_the_engine_asks_and_is_an_error() -> void:
+	var unknown: MmPendingDecision = MmPendingDecision.new(HERO)
+
+	var prompt: InfoPrompt = InfoPrompt.of(unknown, _view())
+
+	assert_eq(prompt.text, unknown.describe())
+	assert_push_error("No input answers")
 
 
 func test_the_combat_decisions_have_prompts_of_their_own() -> void:

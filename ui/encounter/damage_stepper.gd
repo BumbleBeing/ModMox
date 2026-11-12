@@ -65,7 +65,7 @@ static func _label(text: String, box: Rect2, font_size: int, color: Color) -> La
 	label.size = box.size
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_font_size_override("font_size", font_size + UiText.RAISE)
 	label.add_theme_color_override("font_color", color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
@@ -78,7 +78,7 @@ func _button(text: String, at: Vector2, side: float, is_enabled: bool, on_press:
 	button.position = at
 	button.size = Vector2(side, side)
 	button.disabled = not is_enabled
-	button.add_theme_font_size_override("font_size", 20)
+	button.add_theme_font_size_override("font_size", 22)
 	button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.25))
 	for state: String in ["normal", "hover", "pressed", "disabled"]:
 		var flat: StyleBoxFlat = StyleBoxFlat.new()

@@ -163,6 +163,115 @@ func test_an_invalid_keep_or_mulligan_answer_is_rejected() -> void:
 	assert_eq(engine.fingerprint(), before)
 
 
+func test_keep_or_mulligan_says_whether_the_next_mulligan_is_free() -> void:
+	var setup: MmEncounterSetup = Scenario.setup()
+	setup.hero.free_mulligans = 1
+	var engine: MmEngine = MmEngine.start(setup)
+
+	assert_true((engine.pending_decision() as KeepOrMulliganDecision).is_next_mulligan_free)
+	_submit_all(engine, [MULLIGAN, KEEP])
+
+	assert_false((engine.pending_decision() as KeepOrMulliganDecision).is_next_mulligan_free,
+			"The one Free Mulligan has been used.")
+
+
+func test_no_mulligan_is_free_without_free_mulligans() -> void:
+	var engine: MmEngine = MmEngine.start(Scenario.setup())
+
+	assert_false((engine.pending_decision() as KeepOrMulliganDecision).is_next_mulligan_free)
+
+
+func test_each_choice_to_keep_or_mulligan_is_an_event_as_soon_as_it_is_made() -> void:
+	# CR 103.5: the choices are made in turn order, in the open, before any hand is redrawn.
+	var engine: MmEngine = MmEngine.start(Scenario.setup())
+
+	_submit_all(engine, [MULLIGAN])
+
+	var choices: Array[KeepOrMulliganEvent] = _choices(engine)
+	assert_eq(choices.size(), 1, "The Villain has not answered yet.")
+	assert_eq(choices[0].player_id, engine.hero().id)
+	assert_false(choices[0].is_keeping)
+	assert_false(_has_mulligan_event_for(engine, engine.hero().id), "The hand is not redrawn until the round ends.")
+	_submit_all(engine, [KEEP])
+	choices = _choices(engine)
+	assert_eq(choices.size(), 2)
+	assert_eq(choices[1].player_id, engine.villain().id)
+	assert_true(choices[1].is_keeping)
+	assert_eq(choices[1].cards_to_bottom, 0)
+
+
+func test_a_choice_reads_in_the_log_as_what_it_was() -> void:
+	assert_eq(KeepOrMulliganEvent.new(1, true, 2).describe(), "KEEP: player 1 (2 to the bottom)")
+	assert_eq(KeepOrMulliganEvent.new(0, false).describe(), "MULLIGAN CHOSEN: player 0")
+	assert_eq(KeepOrMulliganEvent.new(0, false).cards_to_bottom, 0)
+
+
+func test_a_choice_to_keep_says_how_many_cards_go_to_the_bottom() -> void:
+	var engine: MmEngine = MmEngine.start(Scenario.setup())
+
+	_submit_all(engine, [MULLIGAN, KEEP, MULLIGAN, KEEP])
+
+	var last: KeepOrMulliganEvent = _choices(engine).back()
+	assert_eq(last.player_id, engine.hero().id)
+	assert_true(last.is_keeping)
+	assert_eq(last.cards_to_bottom, 2)
+	assert_true(engine.pending_decision() is ChooseCardsToBottomDecision, "Said before any card is put down.")
+
+
+func test_a_hand_that_owes_every_card_is_kept_without_asking() -> void:
+	var setup: MmEncounterSetup = Scenario.setup()
+	setup.hero.opening_hand_size = 2
+	var engine: MmEngine = MmEngine.start(setup)
+
+	_submit_all(engine, [MULLIGAN, KEEP, MULLIGAN])
+
+	var bottom: ChooseCardsToBottomDecision = engine.pending_decision() as ChooseCardsToBottomDecision
+	assert_not_null(bottom, "Two mulligans from a hand of two: there is nothing left to keep or give up.")
+	assert_eq(bottom.player_id, engine.hero().id)
+	assert_eq(bottom.count, 2, "The player still chooses the order.")
+	var last: KeepOrMulliganEvent = _choices(engine).back()
+	assert_true(last.is_keeping)
+	assert_eq(last.cards_to_bottom, 2)
+	_submit_all(engine, [bottom.candidate_ids])
+	assert_true(engine.pending_decision() is PriorityDecision, "The pregame is over.")
+	assert_eq(engine.hero().hand.size(), 0)
+	assert_eq(engine.hero().mulligans_taken, 2)
+
+
+func test_free_mulligans_do_not_count_toward_keeping_without_asking() -> void:
+	var setup: MmEncounterSetup = Scenario.setup()
+	setup.hero.opening_hand_size = 1
+	setup.hero.free_mulligans = 1
+	var engine: MmEngine = MmEngine.start(setup)
+
+	_submit_all(engine, [MULLIGAN, KEEP])
+
+	var decision: KeepOrMulliganDecision = engine.pending_decision() as KeepOrMulliganDecision
+	assert_not_null(decision, "One free mulligan from a hand of one owes nothing yet.")
+	assert_eq(decision.player_id, engine.hero().id)
+
+
+func test_the_other_player_is_kept_without_asking_too() -> void:
+	var setup: MmEncounterSetup = Scenario.setup()
+	setup.villain.opening_hand_size = 1
+	var engine: MmEngine = MmEngine.start(setup)
+
+	_submit_all(engine, [KEEP, MULLIGAN])
+
+	var bottom: ChooseCardsToBottomDecision = engine.pending_decision() as ChooseCardsToBottomDecision
+	assert_not_null(bottom)
+	assert_eq(bottom.player_id, engine.villain().id)
+	assert_eq(bottom.count, 1)
+
+
+func _choices(engine: MmEngine) -> Array[KeepOrMulliganEvent]:
+	var found: Array[KeepOrMulliganEvent] = []
+	for event: MmEvent in engine.event_log():
+		if event is KeepOrMulliganEvent:
+			found.append(event as KeepOrMulliganEvent)
+	return found
+
+
 func _submit_all(engine: MmEngine, answers: Array) -> void:
 	for answer: Variant in answers:
 		var error: String = engine.submit(answer)

@@ -36,6 +36,9 @@ const NOW_COLOR: Color = Color("#f3e9a0")
 const THINKING: String = "The Villain is thinking…"
 const PASS: String = "Pass [SPACE]"
 
+## How long a Glow or the priority outline takes to ease in or out; the Encounter Screen
+## sets it.
+var glow_seconds: float = 0.0
 var _player_id: int
 var _title: String
 var _is_hero: bool = false
@@ -72,10 +75,18 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 		is_auto_passing: bool) -> void:
 	position = panel_rect.position
 	size = panel_rect.size
-	if panel_rect.size != _built_for or is_hero != _is_hero:
+	var is_new: bool = panel_rect.size != _built_for or is_hero != _is_hero
+	if is_new:
 		_build(panel_rect.size, is_hero)
 	var view: MmPlayerView = snapshot.view
-	_outline.visible = view.priority_player_id == _player_id
+	# The priority outline eases from one panel to the other; a panel just built shows it at once.
+	var has_priority: bool = view.priority_player_id == _player_id
+	if is_new:
+		_outline.visible = has_priority
+	elif has_priority:
+		Easing.appear(_outline, glow_seconds)
+	else:
+		Easing.disappear(_outline, glow_seconds)
 	_show_portrait(clicks)
 	_set_text(_life, str(view.life_totals.get(_player_id, 0)))
 
@@ -102,7 +113,7 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 		if _pass.text != PASS:
 			# It was the confirm button of a combat decision (show_confirm).
 			_pass.text = PASS
-			_pass.add_theme_font_size_override("font_size", 19)
+			_pass.add_theme_font_size_override("font_size", 21)
 		_set_text(_auto_pass, ("☑" if is_auto_passing else "☐") + "  Auto-pass")
 	else:
 		_thinking.visible = snapshot.is_villain_thinking
@@ -116,9 +127,16 @@ func show_confirm(text: String, is_complete: bool, can_undo: bool) -> void:
 		return
 	_pass.text = text
 	_pass.disabled = not is_complete
-	_pass.add_theme_font_size_override("font_size", 17)
+	_pass.add_theme_font_size_override("font_size", 19)
 	if can_undo:
 		_undo.disabled = false
+
+
+## Opens or closes the undo button, for a half-made choice whose clicks can be taken back
+## while nothing else can.
+func show_undo(is_open: bool) -> void:
+	if _undo != null:
+		_undo.disabled = not is_open
 
 
 ## The pass, undo and auto-pass buttons: null on the Villain's panel.
@@ -234,14 +252,19 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 
 
 ## The portrait glows and takes a click while its player can be chosen. Whatever else was
-## drawn on it since the last snapshot is taken off.
+## drawn on it since the last snapshot is taken off; a Glow that has not changed is kept as
+## it is, and one that has eases.
 func _show_portrait(clicks: DecisionClicks) -> void:
 	for child: Node in _portrait.get_children():
+		if child.name == BorderEffects.GLOW or String(child.name).begins_with(BorderEffects.LEAVING):
+			continue
 		_portrait.remove_child(child)
 		child.queue_free()
 	_portrait.modulate = Color.WHITE
 	if clicks.players.has(_player_id):
-		BorderEffects.add_glow(_portrait, _portrait.size, DecisionClicks.color_of(clicks.players[_player_id]))
+		BorderEffects.set_glow(_portrait, _portrait.size, DecisionClicks.color_of(clicks.players[_player_id]), glow_seconds)
+	else:
+		BorderEffects.remove_glow(_portrait, glow_seconds)
 	if clicks.player_answers.has(_player_id):
 		var answer: int = clicks.player_answers[_player_id]
 		ClickCatcher.add(_portrait, _portrait.size).clicked.connect(func() -> void: player_clicked.emit(answer))
@@ -257,9 +280,9 @@ func _show_mana(type: int, amount: int) -> void:
 	_set_text(_mana_counts[type], "(%d)" % amount)
 	if can_press != (BorderEffects.glow_color(button) != null):
 		if can_press:
-			BorderEffects.add_glow(button, button.size, DecisionClicks.color_of(DecisionClicks.Kind.MANA))
+			BorderEffects.add_glow(button, button.size, DecisionClicks.color_of(DecisionClicks.Kind.MANA), glow_seconds)
 		else:
-			BorderEffects.remove_glow(button)
+			BorderEffects.remove_glow(button, glow_seconds)
 
 
 ## Gold with Emblems to show, gray and unpressable with none.
@@ -315,7 +338,7 @@ func _label(text: String, box: Rect2, font_size: int) -> Label:
 	label.size = box.size
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_font_size_override("font_size", font_size + UiText.RAISE)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
@@ -339,7 +362,7 @@ func _control(text: String, box: Rect2, font_size: int, on_press: Callable) -> B
 	button.focus_mode = Control.FOCUS_NONE
 	button.position = box.position
 	button.size = box.size
-	button.add_theme_font_size_override("font_size", font_size)
+	button.add_theme_font_size_override("font_size", font_size + UiText.RAISE)
 	button.pressed.connect(on_press)
 	add_child(button)
 	return button
@@ -375,7 +398,7 @@ func _add_step_button(box: Rect2, step: int) -> void:
 	button.clip_text = true
 	button.position = box.position
 	button.size = box.size
-	button.add_theme_font_size_override("font_size", 13)
+	button.add_theme_font_size_override("font_size", 15)
 	# Untap and cleanup never hold a stop, so their buttons cannot be pressed.
 	button.disabled = not StepStops.can_hold(step)
 	button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.45))

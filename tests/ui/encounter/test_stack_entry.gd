@@ -32,7 +32,7 @@ func test_a_stack_object_has_its_color_on_its_border_and_its_stripe() -> void:
 	assert_eq(entry.stripe_color(), COLOR)
 	assert_false(entry.is_dashed())
 	assert_null(entry.click_catcher(), "It takes no click unless it can be chosen.")
-	assert_null(entry.up_button())
+	assert_null(entry.grip())
 
 
 func test_one_that_can_be_chosen_glows_as_a_target_and_keeps_its_stripe() -> void:
@@ -70,29 +70,32 @@ func test_a_trigger_being_ordered_is_dashed_with_no_stripe() -> void:
 	assert_eq(entry.color(), StackColors.PLAIN)
 
 
-func test_move_buttons_say_which_way_and_are_disabled_when_they_cannot_move() -> void:
+func test_an_entry_has_no_grip_until_it_is_given_one() -> void:
 	var entry: StackEntry = StackEntry.new("", "You gain 1 life.", "Hero", StackColors.PLAIN, true)
 	add_child_autofree(entry)
-	watch_signals(entry)
+	assert_null(entry.grip())
+	assert_ne(entry.mouse_default_cursor_shape, Control.CURSOR_VSIZE)
 
-	entry.add_move_buttons(false, true)
+	entry.add_grip()
 
-	assert_true(entry.up_button().disabled)
-	assert_false(entry.down_button().disabled)
-	entry.down_button().pressed.emit()
-	assert_signal_emitted_with_parameters(entry, "moved", [1])
-	entry.up_button().pressed.emit()
-	assert_signal_emitted_with_parameters(entry, "moved", [-1])
+	assert_not_null(entry.grip())
+	assert_eq(entry.grip().custom_minimum_size.x, StackEntry.GRIP_WIDTH)
+	assert_eq(entry.grip().mouse_filter, Control.MOUSE_FILTER_IGNORE, "A press on the grip is a press on the entry.")
+	assert_eq(entry.mouse_default_cursor_shape, Control.CURSOR_VSIZE, "The cursor says it moves up and down.")
 
 
-func test_move_buttons_can_be_the_other_way_round() -> void:
+func test_the_grip_is_drawn_and_an_entry_has_no_buttons() -> void:
+	# A393: the arrows the buttons carried are not in the game's font, and cost about a
+	# millisecond each time one was laid out.
 	var entry: StackEntry = StackEntry.new("", "You gain 1 life.", "Hero", StackColors.PLAIN, true)
 	add_child_autofree(entry)
+	entry.add_grip()
 
-	entry.add_move_buttons(true, false)
-
-	assert_false(entry.up_button().disabled)
-	assert_true(entry.down_button().disabled)
+	assert_eq(entry.find_children("*", "Button", true, false).size(), 0)
+	assert_eq(entry.grip().get_child_count(), 0, "Shapes, not text.")
+	assert_false(entry.has_signal("moved"))
+	assert_false(entry.has_method("add_move_buttons"))
+	assert_gt(entry.get_combined_minimum_size().x, StackEntry.ART_SIZE + StackEntry.GRIP_WIDTH)
 
 
 func _entry(first: String, second: String) -> StackEntry:

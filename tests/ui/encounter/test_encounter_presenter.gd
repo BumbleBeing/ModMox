@@ -463,10 +463,11 @@ func test_an_encounter_asked_for_by_arguments_is_the_one_the_form_starts() -> vo
 	assert_ne(first, _hand_names(_started(other_seed.setup())), "Another seed deals another hand.")
 
 
-func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_forms() -> void:
+func test_a_whole_encounter_can_be_played_through_the_heros_own_inputs() -> void:
 	# An Easy AI decides for the Hero on a twin engine kept in step, and every answer it
 	# gives is put through what the Hero would use for it before it is submitted: a click
-	# on a permanent, a player or a mana button, the pass button, or the panel's form.
+	# on a permanent, a player or a mana button, the pass button, the opening-hand overlay,
+	# or a choice of cards.
 	var request: EncounterRequest = _request(3)
 	var presenter: EncounterPresenter = EncounterPresenter.new(request.setup(), request.villain_agent())
 	presenter.set_auto_passing(false)
@@ -476,7 +477,6 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 	var twin: MmEngine = MmEngine.start(request.setup())
 	var twin_driver: MmEncounterDriver = MmEncounterDriver.new(twin, {VILLAIN: request.villain_agent()} as Dictionary[int, MmAgent])
 	var hero: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
-	var kinds: Dictionary[DebugDecisionForm.Kind, bool] = {}
 	var clicked: Dictionary[Script, bool] = {}
 	var answers: int = 0
 
@@ -492,7 +492,7 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 			fail_test("The twin fell out of step at answer %d: %s" % [answers, decision.describe()])
 			break
 		var wanted: Variant = hero.answer(twin.pending_decision(), null, twin.simulation_source_for(HERO))
-		var form: DebugDecisionForm = DebugDecisionForm.of(decision, presenter.snapshot().view)
+		assert_true(DecisionInputs.covers(decision), "An input answers %s." % decision.describe())
 		var through: Variant = _click(decision, presenter.snapshot().view, wanted)
 		if through == null and CombatSelection.covers(decision):
 			through = _select(decision, wanted)
@@ -501,11 +501,13 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 		if through == null and decision is ChooseReplacementEffectDecision:
 			# Clicking an entry of the choice window answers with its number.
 			through = wanted
+		if through == null and CardPicks.covers(decision):
+			through = _pick(decision, wanted)
+		if through == null and OpeningHand.covers(decision):
+			# A button of the overlay answers with its choice.
+			through = wanted
 		if through != null:
 			clicked[decision.get_script()] = true
-		elif form != null:
-			kinds[form.kind] = true
-			through = _fill_in(form, wanted)
 		var error: String = presenter.answer(through)
 		if error != "":
 			fail_test("The answer %s to %s was rejected: %s" % [through, decision.describe(), error])
@@ -519,7 +521,7 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 	twin_driver.run()
 	assert_true(presenter.snapshot().is_over(), "The encounter reached its end.")
 	assert_eq(presenter.snapshot().view.winner_id, twin.game_state().winner_id)
-	assert_true(kinds.has(DebugDecisionForm.Kind.PICK_ONE))
+	assert_true(clicked.has(KeepOrMulliganDecision), "The hand was kept on the overlay.")
 	assert_true(clicked.has(DeclareAttackersDecision), "Attackers were declared by clicking creatures.")
 	assert_true(clicked.has(PayManaDecision), "Mana was paid by clicking.")
 	assert_true(clicked.has(ChooseTargetDecision), "Targets were clicked.")
@@ -527,7 +529,7 @@ func test_a_whole_encounter_can_be_played_through_the_clicks_and_the_panels_form
 
 
 ## The answer the Hero's own input gives for [param wanted], or null when the decision, or
-## that choice of it, is still answered in the panel.
+## that choice of it, is answered another way.
 func _click(decision: MmPendingDecision, view: MmPlayerView, wanted: Variant) -> Variant:
 	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
 	if decision is PriorityDecision:
@@ -564,21 +566,14 @@ func _option_answering(clicks: DecisionClicks, object_id: int, wanted: int) -> V
 	return null
 
 
-## What [param form] gives when it is filled in to say [param wanted].
-func _fill_in(form: DebugDecisionForm, wanted: Variant) -> Variant:
-	match form.kind:
-		DebugDecisionForm.Kind.PICK_ONE:
-			for option: int in form.options.size():
-				if form.answer_for_pick(option) == wanted:
-					return form.answer_for_pick(option)
-			return null
-		DebugDecisionForm.Kind.PICK_SOME:
-			var picks: Array[int] = []
-			var ids: Array = wanted
-			for id: int in ids:
-				picks.append(form.option_object_ids.find(id))
-			return form.answer_for_picks(picks)
-	return null
+## The answer a CardPicks gives once the Hero has clicked the cards of [param wanted] in
+## that order.
+func _pick(decision: MmPendingDecision, wanted: Variant) -> Variant:
+	var picks: CardPicks = CardPicks.new(decision)
+	var ids: Array = wanted
+	for id: int in ids:
+		picks.pick(id)
+	return picks.answer() if picks.is_complete() else null
 
 
 ## The answer a TriggerOrder gives once the Hero has moved the triggers into the order
@@ -589,8 +584,8 @@ func _order(decision: MmPendingDecision, wanted: Variant) -> Variant:
 	for place: int in put_on_stack.size():
 		# The last one put on the stack resolves first, so it belongs at the top.
 		var number: int = put_on_stack[put_on_stack.size() - 1 - place]
-		for from: int in range(order.order().find(number), place, -1):
-			assert_true(order.move(from, -1))
+		# One drag takes it to its place, however far that is.
+		order.move_to(order.order().find(number), place)
 	return order.answer()
 
 

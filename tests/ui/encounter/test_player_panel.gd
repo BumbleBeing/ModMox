@@ -87,6 +87,30 @@ func test_it_shows_life_and_who_has_priority() -> void:
 	assert_eq(villain.life_text(), "0")
 
 
+func test_the_priority_outline_eases_from_one_panel_to_the_other_and_a_redraw_leaves_it_be() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	var villain: PlayerPanel = _panel(VILLAIN)
+	assert_eq(_outline(hero).modulate.a, 1.0, "A panel just built shows it at once.")
+	hero.glow_seconds = 0.2
+	villain.glow_seconds = 0.2
+
+	_snapshot.view.priority_player_id = VILLAIN
+	_show(hero, HERO)
+	_show(villain, VILLAIN)
+
+	assert_false(Easing.is_shown(_outline(hero)), "Gone from the Hero at once.")
+	assert_true(_outline(hero).visible, "But drawn while it fades.")
+	assert_eq(_outline(villain).modulate.a, 0.0, "The Villain's eases in.")
+	assert_true(_outline(villain).visible)
+	await wait_seconds(0.3)
+	assert_false(_outline(hero).visible)
+	assert_eq(_outline(villain).modulate.a, 1.0)
+
+	_show(villain, VILLAIN)
+
+	assert_eq(_outline(villain).modulate.a, 1.0, "Still the Villain's: left as it is.")
+
+
 func test_the_step_it_is_now_is_marked_on_the_active_players_panel_only() -> void:
 	var hero: PlayerPanel = _panel(HERO)
 	var villain: PlayerPanel = _panel(VILLAIN)
@@ -290,13 +314,13 @@ func test_the_confirm_button_is_a_pass_button_again_at_the_next_snapshot() -> vo
 	panel.show_confirm("Attack with 2", false, true)
 	assert_eq(pass_button.text, "Attack with 2")
 	assert_true(pass_button.disabled)
-	assert_eq(pass_button.get_theme_font_size("font_size"), 17)
+	assert_eq(pass_button.get_theme_font_size("font_size"), 19)
 	assert_false(panel.undo_button().disabled, "There is a click to take back.")
 	_show(panel, HERO)
 
 	assert_eq(panel.pass_button(), pass_button)
 	assert_eq(pass_button.text, "Pass [SPACE]")
-	assert_eq(pass_button.get_theme_font_size("font_size"), 19)
+	assert_eq(pass_button.get_theme_font_size("font_size"), 21)
 	assert_false(pass_button.disabled)
 	assert_true(panel.undo_button().disabled)
 

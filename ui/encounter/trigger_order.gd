@@ -1,7 +1,7 @@
 class_name TriggerOrder
 extends RefCounted
 ## The Hero's half-made answer to an order-triggers decision (A339): the triggers in a
-## list whose top resolves first, moved up and down one place at a time. Kept by the
+## list whose top resolves first, each dragged to its place. Kept by the
 ## Encounter Screen outside the nodes it redraws, as a CombatSelection is, and confirmed
 ## with the pass button.
 
@@ -52,20 +52,16 @@ func order() -> Array[int]:
 	return _order.duplicate()
 
 
-## Whether the trigger at [param place] can move [param step] places: -1 is up, 1 is down.
-func can_move(place: int, step: int) -> bool:
-	return place >= 0 and place < _order.size() and place + step >= 0 and place + step < _order.size()
-
-
-## Swaps the trigger at [param place] with the one [param step] places away. Returns
-## whether it could.
-func move(place: int, step: int) -> bool:
-	if not can_move(place, step):
+## Moves the trigger at place [param from] to place [param to], the others closing up
+## behind it and making room: one move, however far it goes (A394). Returns whether
+## anything changed; a move to where it already is, or to no place at all, is not one.
+func move_to(from: int, to: int) -> bool:
+	if from == to or from < 0 or from >= _order.size() or to < 0 or to >= _order.size():
 		return false
 	_history.append(_order.duplicate())
-	var moved: int = _order[place]
-	_order[place] = _order[place + step]
-	_order[place + step] = moved
+	var moved: int = _order[from]
+	_order.remove_at(from)
+	_order.insert(to, moved)
 	return true
 
 

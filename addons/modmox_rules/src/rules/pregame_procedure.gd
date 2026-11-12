@@ -49,9 +49,14 @@ func next_decision() -> MmPendingDecision:
 				_shuffle_and_draw_opening_hands()
 				_begin_mulligan_round()
 			Step.KEEP_OR_MULLIGAN:
-				if not _undecided.is_empty():
+				while not _undecided.is_empty():
 					var deciding: MmPlayer = _state.player(_undecided[0])
-					return KeepOrMulliganDecision.new(deciding.id, deciding.mulligans_taken, _cards_to_bottom(deciding))
+					if not _owes_whole_hand(deciding):
+						return KeepOrMulliganDecision.new(deciding.id, deciding.mulligans_taken, _cards_to_bottom(deciding),
+								deciding.mulligans_taken < deciding.free_mulligans)
+					# A hand that owes every card is kept without asking: another mulligan
+					# could leave it no smaller. Its owner still chooses the order.
+					_keep(_undecided.pop_front())
 				_step = Step.BOTTOM_CARDS
 			Step.BOTTOM_CARDS:
 				while not _to_bottom.is_empty():
@@ -83,9 +88,9 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	elif decision is KeepOrMulliganDecision:
 		var player_id: int = _undecided.pop_front()
 		if answer == KeepOrMulliganDecision.Choice.KEEP:
-			_kept[player_id] = true
-			_to_bottom.append(player_id)
+			_keep(player_id)
 		else:
+			_state.perform(KeepOrMulliganEvent.new(player_id, false))
 			_to_mulligan.append(player_id)
 	elif decision is ChooseCardsToBottomDecision:
 		var keeper: MmPlayer = _state.player(decision.player_id)
@@ -115,7 +120,7 @@ func _determine_starting_player() -> MmPendingDecision:
 		_step = Step.SHUFFLE_AND_DRAW
 		return null
 	_step = Step.AWAIT_PLAY_OR_DRAW
-	return ChoosePlayOrDrawDecision.new(chooser_id)
+	return ChoosePlayOrDrawDecision.new(chooser_id, _rule == MmEncounterSetup.StartingPlayerRule.RANDOM_CHOOSER)
 
 
 ## CR 103.2 and 103.4: shuffle each library, then each player draws an opening hand.
@@ -146,6 +151,18 @@ func _resolve_mulligans() -> void:
 			_state.perform(ZoneChangeEvent.new(card, player.library, MmZone.BOTTOM, ZoneChangeEvent.Reason.MULLIGAN))
 		_state.perform(ShuffleEvent.new(player.library))
 		_state.draw_cards(player_id, player.opening_hand_size)
+
+
+## [param player_id] keeps their hand, and joins those who may owe cards to the bottom.
+func _keep(player_id: int) -> void:
+	_state.perform(KeepOrMulliganEvent.new(player_id, true, _cards_to_bottom(_state.player(player_id))))
+	_kept[player_id] = true
+	_to_bottom.append(player_id)
+
+
+## Whether [param player] has paid a mulligan for every card in their hand.
+func _owes_whole_hand(player: MmPlayer) -> bool:
+	return player.mulligans_taken > player.free_mulligans and _cards_to_bottom(player) >= player.hand.size()
 
 
 ## London mulligan: one card per mulligan beyond the player's Free Mulligans, but never

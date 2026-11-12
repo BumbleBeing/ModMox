@@ -249,31 +249,39 @@ func test_triggers_to_order_stand_dashed_above_the_stack_with_their_whole_text()
 	assert_eq(entries[0].detail_text(), "Hero")
 	assert_true(entries[0].is_dashed())
 	assert_eq(entries[0].color(), StackColors.PLAIN)
-	assert_true(entries[0].up_button().disabled)
-	assert_false(entries[0].down_button().disabled)
-	assert_false(entries[1].up_button().disabled)
-	assert_true(entries[1].down_button().disabled)
+	for entry: StackEntry in entries:
+		assert_not_null(entry.grip(), "Each is dragged by its grip, or anywhere else on it (A393).")
+		assert_eq(entry.find_children("*", "Button", true, false).size(), 0, "No move buttons.")
+	assert_eq(_screen.trigger_list().get_parent(), _screen.stack_window().body())
+	var says: Label = _screen.stack_window().body().get_child(0) as Label
+	assert_eq(says.text, "Triggers to order: drag them, the top one resolves first")
+	assert_eq(_screen.trigger_list().get_index(), 1, "The list is under the line that says what to do.")
 	assert_eq(_screen.info_panel().prompt_text(), "Order your triggers")
 	assert_eq(_screen.pass_button().text, "Confirm order")
 	assert_false(_screen.pass_button().disabled)
-	assert_false(_screen.debug_panel().visible, "The Debug Decision Panel no longer orders triggers.")
 	assert_null(BorderEffects.glow_color(_screen.face_of(_permanent("Chime"))), "Their sources take no click, so they do not glow.")
 
 
-func test_moving_a_trigger_down_and_confirming_makes_the_new_top_one_resolve_first() -> void:
+func test_dragging_a_trigger_down_and_confirming_makes_the_new_top_one_resolve_first() -> void:
 	_reach_trigger_order()
 	_presenter.is_hold_key_down = true
+	var entries: Array[StackEntry] = _screen.trigger_entries()
 
-	_screen.trigger_entries()[0].down_button().pressed.emit()
+	_drag_trigger(0, 1)
 
+	assert_eq(_screen.trigger_order().order(), [1, 0] as Array[int])
 	assert_eq(_screen.trigger_entries()[0].name_text(), "At the beginning of your upkeep, you gain 2 life.")
+	assert_eq(_screen.trigger_entries(), [entries[1], entries[0]] as Array[StackEntry], "The same entries: nothing was rebuilt (A394).")
 	assert_true(_presenter.snapshot().decision is OrderTriggersDecision, "Nothing is answered until it is confirmed.")
 	assert_false(_screen.undo_button().disabled)
+	assert_eq(_screen.pass_button().text, "Confirm order")
+	assert_false(_screen.pass_button().disabled, "The new order can be confirmed at once.")
 
 	_screen.pass_priority()
 	_presenter.wait_until_idle()
 
 	assert_eq(_screen.trigger_entries().size(), 0)
+	assert_null(_screen.trigger_list())
 	assert_eq(_screen.stack_entries().size(), 2)
 	assert_eq(_screen.stack_entries()[0].name_text(), "You gain 2 life.", "On top, so it resolves first.")
 	assert_eq(_screen.stack_entries()[1].name_text(), "You gain 1 life.")
@@ -293,26 +301,128 @@ func test_confirming_without_a_move_keeps_the_order_shown() -> void:
 	assert_eq(_screen.stack_entries()[1].name_text(), "You gain 2 life.")
 
 
-func test_undo_takes_back_a_move_of_a_trigger_before_anything_else() -> void:
+func test_undo_takes_back_a_drag_of_a_trigger_before_anything_else_and_rebuilds_nothing() -> void:
 	_reach_trigger_order()
-	_screen.trigger_entries()[1].up_button().pressed.emit()
+	var entries: Array[StackEntry] = _screen.trigger_entries()
+	assert_true(_screen.undo_button().disabled)
+	_drag_trigger(1, 0)
 	assert_eq(_screen.trigger_order().order(), [1, 0] as Array[int])
+	assert_false(_screen.undo_button().disabled)
 
 	_screen.undo()
 
 	assert_eq(_screen.trigger_order().order(), [0, 1] as Array[int])
 	assert_true(_presenter.snapshot().decision is OrderTriggersDecision)
+	assert_eq(_screen.trigger_entries(), entries, "The entries ease back; none is made again.")
 	assert_eq(_screen.trigger_entries()[0].name_text(), "At the beginning of your upkeep, you gain 1 life.")
+	assert_true(_screen.undo_button().disabled, "One drag was one step.")
+	assert_eq(_screen.pass_button().text, "Confirm order")
+
+
+func test_a_trigger_let_go_where_it_started_or_right_clicked_is_no_move() -> void:
+	_reach_trigger_order()
+	var list: TriggerList = _screen.trigger_list()
+	var top: Vector2 = Vector2(40, 20)
+
+	list.press(0, top)
+	list.drag_to(top + Vector2(0, 10))
+	list.release()
+	assert_eq(_screen.trigger_order().order(), [0, 1] as Array[int])
+	assert_true(_screen.undo_button().disabled, "Nothing to take back.")
+
+	list.press(0, top)
+	list.drag_to(top + Vector2(0, list.entry_height() + 20.0))
+	list.cancel()
+	assert_eq(_screen.trigger_order().order(), [0, 1] as Array[int])
+	assert_false(list.is_pressed())
 
 
 func test_a_move_is_kept_when_the_same_decision_is_handed_out_again() -> void:
 	_reach_trigger_order()
-	_screen.trigger_entries()[1].up_button().pressed.emit()
+	_drag_trigger(1, 0)
 
 	_screen.player_panel(HERO).step_button(MmTurn.Step.DRAW).pressed.emit()
 
 	assert_true(_presenter.snapshot().decision is OrderTriggersDecision)
 	assert_eq(_screen.trigger_order().order(), [1, 0] as Array[int], "Setting a stop made a new snapshot, not a new decision.")
+	assert_eq(_screen.trigger_list().order(), [1, 0] as Array[int], "And the list made again shows it.")
+	assert_eq(_screen.trigger_entries()[0].name_text(), "At the beginning of your upkeep, you gain 2 life.")
+
+
+func test_a_real_press_drag_and_release_reorder_the_triggers_through_the_input_pipeline() -> void:
+	var window: SubViewport = SubViewport.new()
+	window.size = Vector2i(SCREEN)
+	add_child_autofree(window)
+	_reach_trigger_order(window)
+	await wait_process_frames(3)
+	var list: TriggerList = _screen.trigger_list()
+	var entries: Array[StackEntry] = _screen.trigger_entries()
+	var from: Vector2 = entries[0].get_global_rect().get_center()
+	var to: Vector2 = entries[1].get_global_rect().get_center() + Vector2(0, 12)
+
+	window.push_input(_mouse_motion(from))
+	window.push_input(_mouse_button(MOUSE_BUTTON_LEFT, true, from))
+	assert_true(list.is_pressed(), "The press reached the entry.")
+	assert_false(list.is_holding())
+	window.push_input(_mouse_motion(from + Vector2(2, 0)))
+	assert_false(list.is_holding(), "Not yet three pixels.")
+	window.push_input(_mouse_motion(Vector2(200, to.y)))
+	assert_true(list.is_holding(), "The mouse is followed wherever it goes, off the window too.")
+	assert_almost_eq(entries[0].position.x, 0.0, 0.01, "It moves up and down only.")
+	window.push_input(_mouse_button(MOUSE_BUTTON_LEFT, false, Vector2(200, to.y)))
+
+	assert_false(list.is_pressed())
+	assert_eq(_screen.trigger_order().order(), [1, 0] as Array[int])
+	assert_false(_screen.drag_card().is_pressed(), "No card of the hand was touched.")
+
+	# The entries ease to their new places over the next frames.
+	await wait_seconds(0.4)
+	assert_almost_eq(entries[1].get_global_rect().get_center().y, from.y, 1.0, "The other one is on top now.")
+	window.push_input(_mouse_motion(from))
+	window.push_input(_mouse_button(MOUSE_BUTTON_LEFT, true, from))
+	window.push_input(_mouse_motion(to))
+	assert_true(list.is_holding())
+	window.push_input(_mouse_button(MOUSE_BUTTON_RIGHT, true, to))
+	assert_false(list.is_pressed(), "A right-click puts it back.")
+	window.push_input(_mouse_button(MOUSE_BUTTON_LEFT, false, to))
+	assert_eq(_screen.trigger_order().order(), [1, 0] as Array[int])
+	await _leave_the_window(window)
+
+
+func test_a_real_release_counts_where_the_button_came_up_even_with_no_move_reported_there() -> void:
+	var window: SubViewport = SubViewport.new()
+	window.size = Vector2i(SCREEN)
+	add_child_autofree(window)
+	_reach_trigger_order(window)
+	await wait_process_frames(3)
+	var entries: Array[StackEntry] = _screen.trigger_entries()
+	var from: Vector2 = entries[0].get_global_rect().get_center()
+	var to: Vector2 = entries[1].get_global_rect().get_center() + Vector2(0, 12)
+
+	window.push_input(_mouse_motion(from))
+	window.push_input(_mouse_button(MOUSE_BUTTON_LEFT, true, from))
+	window.push_input(_mouse_motion(from + Vector2(0, 5)))
+	assert_true(_screen.trigger_list().is_holding())
+	window.push_input(_mouse_button(MOUSE_BUTTON_LEFT, false, to))
+
+	assert_eq(_screen.trigger_order().order(), [1, 0] as Array[int], "Events can arrive together in a slow frame; none is lost.")
+	await _leave_the_window(window)
+
+
+func test_a_real_hover_over_a_trigger_still_marks_its_source() -> void:
+	var window: SubViewport = SubViewport.new()
+	window.size = Vector2i(SCREEN)
+	add_child_autofree(window)
+	_reach_trigger_order(window)
+	await wait_process_frames(3)
+	var bell: Control = _screen.face_of(_permanent("Bell"))
+
+	window.push_input(_mouse_motion(_screen.trigger_entries()[1].get_global_rect().get_center()))
+	await wait_process_frames(2)
+
+	assert_eq(BorderEffects.mark_color(bell), Color.WHITE)
+	await _leave_the_window(window)
+	assert_null(BorderEffects.mark_color(bell), "And leaving it takes the mark off.")
 
 
 func test_hovering_a_trigger_marks_its_source_in_white_and_shows_it_in_full() -> void:
@@ -333,14 +443,15 @@ func test_hovering_a_trigger_marks_its_source_in_white_and_shows_it_in_full() ->
 	assert_eq(_screen.info_panel().option_text(), "")
 
 
-func test_while_paused_triggers_cannot_be_moved_or_confirmed() -> void:
+func test_while_paused_triggers_cannot_be_dragged_or_confirmed() -> void:
 	_reach_trigger_order()
 	_screen.press_key(KEY_ESCAPE)
 
-	_screen.trigger_entries()[0].down_button().pressed.emit()
+	_drag_trigger(0, 1)
 	_screen.pass_priority()
 
 	assert_eq(_screen.trigger_order().order(), [0, 1] as Array[int])
+	assert_eq(_screen.trigger_list().order(), [0, 1] as Array[int], "The list goes back to the order that stands.")
 	assert_true(_presenter.snapshot().decision is OrderTriggersDecision)
 	assert_eq(_screen.info_panel().error_text(), "")
 
@@ -373,7 +484,6 @@ func test_the_choice_window_is_there_only_while_the_hero_is_asked() -> void:
 	assert_eq(window.title_text(), "2 damage to Bear: which applies first?")
 	assert_true(EncounterLayout.regions(SCREEN)["battlefield"].encloses(Rect2(window.position, window.size)))
 	assert_eq(_screen.info_panel().prompt_text(), "Choose which applies first")
-	assert_false(_screen.debug_panel().visible)
 	var entries: Array[ZoneEntry] = _screen.choice_entries()
 	assert_eq(entries.size(), 2)
 	assert_eq(entries[0].name_text(), "Ward")
@@ -457,13 +567,16 @@ func test_hovering_an_entry_shows_it_in_full_and_marks_a_source_on_the_battlefie
 
 ## Opens a screen where the Hero's deck cycles through [param cards], the Villain does
 ## nothing, and the Hero has kept and reached their first main phase.
-func _open(cards: Array[MmCardDefinition]) -> void:
+func _open(cards: Array[MmCardDefinition], parent: Node = null) -> void:
 	var deck: Array[MmCardDefinition] = []
 	for index: int in 40:
 		deck.append(cards[index % cards.size()])
 	_screen = EncounterScreen.new()
 	_screen.starts_itself = false
-	add_child_autofree(_screen)
+	if parent == null:
+		add_child_autofree(_screen)
+	else:
+		parent.add_child(_screen)
 	_screen.size = SCREEN
 	_presenter = EncounterPresenter.new(Scenario.setup_with(deck, Scenario.copies(Scenario.vanilla("Card"), 40)), DefaultAnswerAgent.new())
 	_presenter.set_auto_passing(false)
@@ -479,11 +592,45 @@ func _open(cards: Array[MmCardDefinition]) -> void:
 
 ## The Hero controls a Chime and a Bell, whose upkeep triggers differ, and is asked to
 ## order them.
-func _reach_trigger_order() -> void:
-	_open([_chime("Chime", 1), _chime("Bell", 2)])
+func _reach_trigger_order(parent: Node = null) -> void:
+	_open([_chime("Chime", 1), _chime("Bell", 2)], parent)
 	_cast("Chime")
 	_cast("Bell")
 	_pass_until(func() -> bool: return _presenter.snapshot().decision is OrderTriggersDecision)
+
+
+## Drags the trigger at place [param from] and lets it go at place [param to], as the
+## mouse would: pressed on its entry, moved, and released.
+func _drag_trigger(from: int, to: int) -> void:
+	var list: TriggerList = _screen.trigger_list()
+	var height: float = list.entry_height()
+	var grabbed: Vector2 = Vector2(40, EncounterLayout.trigger_slot(from, height) + height / 2.0)
+	list.press(list.order()[from], grabbed)
+	list.drag_to(Vector2(40, EncounterLayout.trigger_slot(to, height) + height / 2.0))
+	list.release()
+
+
+## Takes the cursor off the Stack Window and lets the Stack Mark it left be freed, so the
+## test does not end with a mark taken off a face but not yet gone.
+func _leave_the_window(window: SubViewport) -> void:
+	window.push_input(_mouse_motion(Vector2(700, 300)))
+	await wait_process_frames(3)
+
+
+func _mouse_motion(at: Vector2) -> InputEventMouseMotion:
+	var motion: InputEventMouseMotion = InputEventMouseMotion.new()
+	motion.position = at
+	motion.global_position = at
+	return motion
+
+
+func _mouse_button(button: MouseButton, is_pressed: bool, at: Vector2) -> InputEventMouseButton:
+	var click: InputEventMouseButton = InputEventMouseButton.new()
+	click.button_index = button
+	click.pressed = is_pressed
+	click.position = at
+	click.global_position = at
+	return click
 
 
 ## The Hero's Bear has a Ward and an Aegis on it and is about to be dealt 2 damage.
@@ -545,7 +692,7 @@ func _do(kind: Script, card_name: String) -> void:
 		return
 	for index: int in priority.actions.size():
 		var action: MmAction = priority.actions[index]
-		if is_instance_of(action, kind) and DebugDecisionForm.name_of(snapshot.view, DecisionClicks.object_of(action)) == card_name:
+		if is_instance_of(action, kind) and EncounterSnapshot.name_in(snapshot.view, DecisionClicks.object_of(action)) == card_name:
 			assert_eq(_presenter.answer(index), "")
 			return
 	fail_test("No %s action for %s." % [kind.resource_path.get_file(), card_name])

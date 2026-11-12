@@ -74,3 +74,11 @@ func test_an_invalid_play_or_draw_answer_is_rejected_and_changes_nothing() -> vo
 	assert_eq(engine.fingerprint(), before)
 	assert_true(engine.pending_decision() is ChoosePlayOrDrawDecision)
 	assert_eq(engine.decision_log().size(), 0, "Rejected answers are not logged.")
+
+
+func test_the_decision_says_whether_the_chooser_was_picked_at_random() -> void:
+	var flipped: MmEngine = MmEngine.start(Scenario.setup(Scenario.Rule.RANDOM_CHOOSER))
+	var named: MmEngine = MmEngine.start(Scenario.setup(Scenario.Rule.HERO_CHOOSES))
+
+	assert_true((flipped.pending_decision() as ChoosePlayOrDrawDecision).is_chooser_random)
+	assert_false((named.pending_decision() as ChoosePlayOrDrawDecision).is_chooser_random)

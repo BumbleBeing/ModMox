@@ -153,22 +153,88 @@ func test_an_unknown_basic_land_is_not_added() -> void:
 	assert_eq(deck.size(), 0)
 
 
-func test_a_column_lists_colors_in_wubrg_order_then_multicolor_then_colorless_then_by_name() -> void:
+func test_a_column_keeps_its_cards_in_the_order_they_were_put_there() -> void:
+	var deck: WorkingDeck = _fixture.working_deck()
+	var tower: DeckbuilderCard = _fixture.own("ivory_tower")
+	var lions: DeckbuilderCard = _fixture.own("savannah_lions")
+	var bolt: DeckbuilderCard = _fixture.own("lightning_bolt")
+
+	deck.add(tower, 3)
+	deck.add(lions, 3)
+	deck.add(bolt, 3)
+
+	assert_eq(Fixture.names(deck.cards_in(3)), ["Ivory Tower", "Savannah Lions", "Lightning Bolt"] as Array[String],
+			"Nothing is sorted: each goes to the bottom.")
+
+
+func test_a_card_can_be_added_at_a_place_in_a_column() -> void:
+	var deck: WorkingDeck = _fixture.working_deck()
+	var tower: DeckbuilderCard = _fixture.own("ivory_tower")
+	var lions: DeckbuilderCard = _fixture.own("savannah_lions")
+	var bolt: DeckbuilderCard = _fixture.own("lightning_bolt")
+	var elves: DeckbuilderCard = _fixture.own("llanowar_elves")
+	deck.add(tower, 3)
+	deck.add(lions, 3)
+
+	deck.add(bolt, 3, 1)
+	deck.add(elves, 3, 0)
+
+	assert_eq(Fixture.names(deck.cards_in(3)), [
+		"Llanowar Elves", "Ivory Tower", "Lightning Bolt", "Savannah Lions",
+	] as Array[String])
+
+
+func test_a_card_can_be_moved_to_a_place_in_its_own_or_another_column() -> void:
+	var deck: WorkingDeck = _fixture.working_deck()
+	var tower: DeckbuilderCard = _fixture.own("ivory_tower")
+	var lions: DeckbuilderCard = _fixture.own("savannah_lions")
+	var bolt: DeckbuilderCard = _fixture.own("lightning_bolt")
+	for card: DeckbuilderCard in [tower, lions, bolt]:
+		deck.add(card, 3)
+
+	deck.move(tower, 3, 1)
+	assert_eq(Fixture.names(deck.cards_in(3)), ["Savannah Lions", "Ivory Tower", "Lightning Bolt"] as Array[String],
+			"The place is counted with the moved card taken out.")
+
+	deck.move(bolt, 3, 0)
+	assert_eq(Fixture.names(deck.cards_in(3)), ["Lightning Bolt", "Savannah Lions", "Ivory Tower"] as Array[String])
+
+	deck.move(lions, 5)
+	deck.move(tower, 5, 0)
+	assert_eq(Fixture.names(deck.cards_in(5)), ["Ivory Tower", "Savannah Lions"] as Array[String])
+	assert_eq(Fixture.names(deck.cards_in(3)), ["Lightning Bolt"] as Array[String])
+
+
+func test_sorting_orders_a_column_wubrg_then_multicolor_then_colorless_then_by_name() -> void:
 	var deck: WorkingDeck = _fixture.working_deck()
 	var gold: DeckbuilderCard = _fixture.own("grizzly_bears")
 	gold.attach(Fixture.add_symbol_mod(MmMana.Type.RED))
 	var order_added: Array[DeckbuilderCard] = [
-		_fixture.own("ivory_tower"), gold, _fixture.own("llanowar_elves"), _fixture.own("lightning_bolt"),
-		_fixture.own("black_knight"), _fixture.own("counterspell"), _fixture.own("white_knight"),
-		_fixture.own("savannah_lions"), _fixture.own("giant_growth"),
+		_fixture.own("ivory_tower"), gold, _fixture.own("hurloon_minotaur"), _fixture.own("hill_giant"),
+		_fixture.own("pearled_unicorn"), _fixture.own("giant_spider"), _fixture.own("gray_ogre"),
 	]
 	for card: DeckbuilderCard in order_added:
-		deck.add(card, 3)
+		deck.add(card, 0)
+
+	deck.sort()
 
 	assert_eq(Fixture.names(deck.cards_in(3)), [
-		"Savannah Lions", "White Knight", "Counterspell", "Black Knight", "Lightning Bolt",
-		"Giant Growth", "Llanowar Elves", "Grizzly Bears", "Ivory Tower",
+		"Pearled Unicorn", "Gray Ogre", "Hurloon Minotaur", "Grizzly Bears",
 	] as Array[String])
+	assert_eq(Fixture.names(deck.cards_in(4)), ["Hill Giant", "Giant Spider"] as Array[String])
+
+
+func test_basic_lands_are_counted_by_name() -> void:
+	var deck: WorkingDeck = _fixture.working_deck()
+	deck.add_basic_land("Forest")
+	var second: DeckbuilderCard = deck.add_basic_land("Forest")
+	deck.add_basic_land("Island")
+
+	assert_eq(deck.basic_land_count("Forest"), 2)
+	assert_eq(deck.basic_land_count("Island"), 1)
+	assert_eq(deck.basic_land_count("Swamp"), 0)
+	deck.remove(second)
+	assert_eq(deck.basic_land_count("Forest"), 1)
 
 
 func test_sorting_puts_every_card_back_in_its_own_column() -> void:

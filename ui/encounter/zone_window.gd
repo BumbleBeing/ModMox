@@ -11,6 +11,8 @@ const SMALLEST: Vector2 = Vector2(200, 120)
 
 ## Where the window may be: it is moved and shrunk to stay inside. Empty for anywhere.
 var bounds: Rect2 = Rect2()
+## How long it takes to ease in or out; the Encounter Screen sets it.
+var ease_seconds: float = 0.0
 
 var _zone_name: String
 var _title: Label
@@ -18,6 +20,11 @@ var _body: VBoxContainer
 var _close: Button = null
 var _is_dragging: bool = false
 var _is_resizing: bool = false
+## Where the cursor was pressed on the title bar or the corner, and where the window was
+## then. A drag follows the cursor from there, so a window stopped at its bounds waits for
+## the cursor to come back to where it holds it, never drifting off it.
+var _grab_cursor: Vector2 = Vector2.ZERO
+var _grab_rect: Rect2 = Rect2()
 
 
 func _init(zone_name: String, can_close: bool, tint: Color) -> void:
@@ -53,13 +60,13 @@ func _init(zone_name: String, can_close: bool, tint: Color) -> void:
 		_close.offset_right = -3
 		_close.offset_top = 3
 		_close.offset_bottom = BAR_HEIGHT - 3
-		_close.add_theme_font_size_override("font_size", 12)
+		_close.add_theme_font_size_override("font_size", 14)
 		for state: String in ["normal", "hover", "pressed"]:
 			var flat: StyleBoxFlat = StyleBoxFlat.new()
 			flat.bg_color = Color(0, 0, 0, 0.35 if state == "normal" else 0.6)
 			flat.set_corner_radius_all(3)
 			_close.add_theme_stylebox_override(state, flat)
-		_close.pressed.connect(hide)
+		_close.pressed.connect(close)
 		bar.add_child(_close)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -86,6 +93,28 @@ func _init(zone_name: String, can_close: bool, tint: Color) -> void:
 ## Where the window's contents go.
 func body() -> VBoxContainer:
 	return _body
+
+
+## Shows the window, easing in.
+func open() -> void:
+	Easing.appear(self, ease_seconds)
+
+
+## Hides the window, easing out. It is closed at once and takes no clicks while it fades.
+func close() -> void:
+	Easing.disappear(self, ease_seconds)
+
+
+## Opens or closes the window; one already so is left as it is.
+func set_open(is_wanted: bool) -> void:
+	if is_wanted:
+		open()
+	elif is_open():
+		close()
+
+
+func is_open() -> bool:
+	return Easing.is_shown(self)
 
 
 ## The close button, or null for a window that cannot be closed.
@@ -128,9 +157,17 @@ func drag_by(offset: Vector2) -> void:
 	fit()
 
 
-## Resizes the window by [param offset], as dragging its corner does.
+## Resizes the window by [param offset], as dragging its corner does. Its top left stays
+## where it is: it grows no further than its bounds and shrinks no smaller than SMALLEST.
 func resize_by(offset: Vector2) -> void:
-	size += offset
+	_resize_to(size + offset)
+
+
+func _resize_to(wanted: Vector2) -> void:
+	if bounds.size == Vector2.ZERO:
+		size = wanted.max(SMALLEST)
+		return
+	size = wanted.clamp(SMALLEST.min(bounds.size), (bounds.end - position).max(SMALLEST.min(bounds.size)))
 	fit()
 
 
@@ -138,16 +175,24 @@ func _on_bar_input(event: InputEvent) -> void:
 	var button: InputEventMouseButton = event as InputEventMouseButton
 	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
 		_is_dragging = button.pressed
+		_grab(button.global_position)
 		move_to_front()
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion != null and _is_dragging:
-		drag_by(motion.relative)
+		position = _grab_rect.position + motion.global_position - _grab_cursor
+		fit()
 
 
 func _on_grip_input(event: InputEvent) -> void:
 	var button: InputEventMouseButton = event as InputEventMouseButton
 	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
 		_is_resizing = button.pressed
+		_grab(button.global_position)
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion != null and _is_resizing:
-		resize_by(motion.relative)
+		_resize_to(_grab_rect.size + motion.global_position - _grab_cursor)
+
+
+func _grab(cursor: Vector2) -> void:
+	_grab_cursor = cursor
+	_grab_rect = Rect2(position, size)

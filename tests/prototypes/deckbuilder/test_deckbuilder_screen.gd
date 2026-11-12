@@ -66,6 +66,7 @@ func test_every_card_in_the_deck_has_its_own_face_in_its_column() -> void:
 			if face == null:
 				continue
 			assert_almost_eq(face.position.y, places.fan_offset(index), 0.01)
+			assert_almost_eq(face.position.x, places.fan_left(), 0.01)
 			assert_true(places.column(column).has_point(face.global_position + Vector2(2, 2)),
 					"%s is drawn in column %d." % [shown.look().name, column])
 
@@ -128,3 +129,30 @@ func _owned(card_name: String) -> DeckbuilderCard:
 		if card.run_card.base.name == card_name and card.mods.is_empty():
 			return card
 	return null
+
+
+func test_the_filter_bar_keeps_everything_inside_itself_whatever_the_sort_order() -> void:
+	var bar: FilterBar = _screen.filter_bar()
+	var pane: Rect2 = _screen.layout().filter_bar()
+
+	for choice: int in bar.sort_box().item_count:
+		bar.sort_box().select(choice)
+		bar.sort_box().item_selected.emit(choice)
+		await wait_process_frames(2)
+
+		assert_lte(bar.count_label().get_global_rect().end.x, pane.end.x, bar.sort_box().text)
+		assert_lte(bar.toggle("clear").get_global_rect().end.x, bar.count_label().get_global_rect().position.x + 0.5)
+
+
+func test_the_screens_own_text_is_set_in_linux_libertine_and_the_cards_keep_their_fonts() -> void:
+	var libertine: Font = DeckbuilderLook.regular()
+
+	assert_not_null(libertine)
+	assert_eq(_screen.count_label().get_theme_font("font"), libertine)
+	assert_eq(_screen.name_box().get_theme_font("font"), libertine)
+	assert_eq(_screen.sort_button().get_theme_font("font"), libertine)
+	assert_eq(_screen.filter_bar().count_label().get_theme_font("font"), libertine)
+	assert_eq(_screen.filter_bar().toggle("type:Creature").get_theme_font("font"), libertine)
+	assert_ne(CardFonts.title(), libertine)
+	assert_ne(CardFonts.body(), libertine)
+

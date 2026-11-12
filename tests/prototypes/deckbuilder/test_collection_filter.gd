@@ -60,6 +60,22 @@ func test_multicolor_and_colorless_are_filters_of_their_own() -> void:
 	assert_eq(_shown(), ["Counterspell", "Ivory Tower"] as Array[String])
 
 
+func test_multicolor_with_colors_shows_only_multicolor_cards_that_have_every_one() -> void:
+	_filter.multicolor = true
+
+	_filter.colors = [MmCardTypes.CardColor.RED]
+	assert_eq(_shown(), ["Ember Bears"] as Array[String], "Lightning Bolt is red but not multicolor.")
+
+	_filter.colors = [MmCardTypes.CardColor.WHITE]
+	assert_eq(_shown(), [] as Array[String], "No multicolor card is white.")
+
+	_filter.colors = [MmCardTypes.CardColor.RED, MmCardTypes.CardColor.GREEN]
+	assert_eq(_shown(), ["Ember Bears"] as Array[String], "It has both.")
+
+	_filter.colors = [MmCardTypes.CardColor.BLACK, MmCardTypes.CardColor.RED, MmCardTypes.CardColor.GREEN]
+	assert_eq(_shown(), [] as Array[String], "A red-green card has no black, so it is not shown.")
+
+
 func test_card_types_combine_as_any_of_these() -> void:
 	_filter.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.INSTANT]
 

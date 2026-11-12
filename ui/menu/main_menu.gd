@@ -21,7 +21,8 @@ var _buttons: Dictionary[String, Button] = {}
 
 
 func _ready() -> void:
-	if arguments.has(DECKBUILDER_FLAG):
+	# Only until the deckbuilder is left, so that its Exit lands here and not back in it.
+	if arguments.has(DECKBUILDER_FLAG) and not DeckbuilderScreen.has_left:
 		navigate.call_deferred(DECKBUILDER)
 		return
 	var asked_for: EncounterRequest = EncounterRequest.from_arguments(arguments)
@@ -44,7 +45,7 @@ func _ready() -> void:
 	title.text = "ModMox"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_override("font", CardFonts.title())
-	title.add_theme_font_size_override("font_size", 64)
+	title.add_theme_font_size_override("font_size", 66)
 	column.add_child(title)
 	_add(column, "Start Encounter", func() -> void: navigate.call(START_FORM))
 	_add(column, "Deckbuilder (prototype)", func() -> void: navigate.call(DECKBUILDER))
@@ -61,7 +62,7 @@ func _add(column: VBoxContainer, text: String, on_press: Callable) -> void:
 	var made: Button = Button.new()
 	made.text = text
 	made.custom_minimum_size = Vector2(0, 56)
-	made.add_theme_font_size_override("font_size", 22)
+	made.add_theme_font_size_override("font_size", 24)
 	made.pressed.connect(on_press)
 	column.add_child(made)
 	_buttons[text] = made

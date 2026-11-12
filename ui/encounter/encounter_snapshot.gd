@@ -23,6 +23,24 @@ var events: Array[MmEvent] = []
 var looks: Dictionary[int, CardLook] = {}
 
 
+## The name of Game Object [param object_id] wherever [param seen_by] shows it, for a prompt
+## or an Option Menu row.
+static func name_in(seen_by: MmPlayerView, object_id: int) -> String:
+	var all: Array[MmObjectView] = []
+	all.append_array(seen_by.battlefield)
+	all.append_array(seen_by.hand)
+	all.append_array(seen_by.stack)
+	all.append_array(seen_by.command)
+	for player_id: int in seen_by.graveyards:
+		all.append_array(seen_by.graveyards[player_id])
+	for player_id: int in seen_by.exiles:
+		all.append_array(seen_by.exiles[player_id])
+	for seen: MmObjectView in all:
+		if seen.id == object_id:
+			return seen.name
+	return "object %d" % object_id
+
+
 ## Whether the encounter has ended. The view says who won and why each loser lost.
 func is_over() -> bool:
 	return view.is_over

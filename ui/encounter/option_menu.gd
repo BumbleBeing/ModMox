@@ -12,6 +12,8 @@ signal pointed(text: String)
 ## The menu was open and has closed, whether or not a row was chosen.
 signal closed
 
+## How long it takes to ease in or out; the Encounter Screen sets it.
+var ease_seconds: float = 0.0
 var _box: PanelContainer = null
 var _rows: Array[Button] = []
 
@@ -50,20 +52,29 @@ func open(options: Array[ClickOption], at: Vector2, field: Rect2) -> void:
 		list.add_child(row)
 		_rows.append(row)
 	add_child(_box)
+	mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
 	show()
+	Easing.fade_in(_box, ease_seconds)
 
 
 ## Closes the menu without choosing.
 func close() -> void:
 	if _box == null:
 		return
-	remove_child(_box)
-	_box.queue_free()
+	var leaving: Control = _box
 	_box = null
 	_rows.clear()
-	hide()
+	# Deaf to the mouse at once; hidden once its box has faded, unless opened again.
+	mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
+	Easing.fade_out_and_free(leaving, ease_seconds, _hide_unless_open)
 	pointed.emit("")
 	closed.emit()
+
+
+func _hide_unless_open() -> void:
+	if not is_open():
+		hide()
+		mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
 
 
 func is_open() -> bool:
@@ -94,7 +105,7 @@ func _row(option: ClickOption) -> Button:
 	row.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	row.clip_text = true
 	row.custom_minimum_size = Vector2(0, EncounterLayout.MENU_ROW)
-	row.add_theme_font_size_override("font_size", 16)
+	row.add_theme_font_size_override("font_size", 18)
 	for state: String in ["normal", "hover", "pressed"]:
 		var flat: StyleBoxFlat = StyleBoxFlat.new()
 		flat.bg_color = PlayerPanel.PLAIN_COLOR if state == "normal" else PlayerPanel.PLAIN_COLOR.lightened(0.22)

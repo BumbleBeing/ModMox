@@ -20,6 +20,8 @@ const QUIT: String = "Quit to main menu"
 const BACK: String = "Back"
 const QUIT_NOW: String = "Quit"
 
+## How long it takes to ease in or out; the Encounter Screen sets it.
+var ease_seconds: float = 0.0
 var _field: Rect2 = Rect2()
 var _can_concede: bool = true
 var _page: Page = Page.MENU
@@ -40,15 +42,16 @@ func open(field: Rect2, can_concede: bool) -> void:
 	_field = field
 	_can_concede = can_concede
 	_show_page(Page.MENU)
-	show()
+	Easing.appear(self, ease_seconds)
 
 
+## Closes, easing out. It is closed at once and takes no clicks while it fades.
 func close() -> void:
-	hide()
+	Easing.disappear(self, ease_seconds)
 
 
 func is_open() -> bool:
-	return visible
+	return Easing.is_shown(self)
 
 
 func page() -> Page:
@@ -104,7 +107,7 @@ func _show_page(shown: Page) -> void:
 	_heading.size = Vector2(rect.size.x - 40, EncounterLayout.PAUSE_HEADING - 24)
 	_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_heading.add_theme_font_size_override("font_size", 30 if shown == Page.MENU else 21)
+	_heading.add_theme_font_size_override("font_size", 32 if shown == Page.MENU else 23)
 	_window.add_child(_heading)
 	for index: int in names.size():
 		var made: Button = _button(names[index])
@@ -122,7 +125,7 @@ func _button(text: String) -> Button:
 	var made: Button = Button.new()
 	made.text = text
 	made.focus_mode = Control.FOCUS_NONE
-	made.add_theme_font_size_override("font_size", 19)
+	made.add_theme_font_size_override("font_size", 21)
 	for state: String in ["normal", "hover", "pressed", "disabled"]:
 		var flat: StyleBoxFlat = StyleBoxFlat.new()
 		flat.bg_color = PlayerPanel.PLAIN_COLOR.lightened(0.22) if state in ["hover", "pressed"] else PlayerPanel.PLAIN_COLOR

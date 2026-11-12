@@ -4,14 +4,17 @@ extends RefCounted
 ## in it and which column each was put in. Saving writes it to the Deckbox; dropping it
 ## throws it away. Mods are not part of it.
 ##
-## A card stays in whichever column it was dropped in. Columns are never saved, so a Deck
-## reopens with every card in its own column.
+## The columns are free piles: a card stays in the column, and at the place in it, where
+## it was put, and nothing is sorted unless sort() is asked for. The piles are never saved,
+## so a Deck reopens sorted, with every card in its own column.
 
 ## The columns: mana value 0 to 5, then 6 and above, then lands.
 const COLUMN_COUNT: int = 8
 const SIX_PLUS_COLUMN: int = 6
 const LANDS_COLUMN: int = 7
 const NO_COLUMN: int = -1
+## The place in a column that is under every card already there.
+const AT_BOTTOM: int = -1
 ## A Deck is legal at this many cards or more.
 const MINIMUM_SIZE: int = 40
 
@@ -22,9 +25,8 @@ var _deckbox: Deckbox
 var _deck: Deck = null
 ## Basic land name to its Card Definition.
 var _basic_lands: Dictionary[String, MmCardDefinition] = {}
-var _cards: Array[DeckbuilderCard] = []
-## Card identity to the column the card is in.
-var _columns: Dictionary[int, int] = {}
+## One pile of cards for each column, top to bottom.
+var _piles: Array[Array] = []
 ## Basic lands take identities below zero, since the Collection never gave them one.
 var _next_basic_id: int = -1
 var _saved: String = ""
@@ -35,6 +37,8 @@ func _init(collection: Collection, deckbox: Deckbox, basic_lands: Array[MmCardDe
 	_collection = collection
 	_deckbox = deckbox
 	_deck = deck
+	for column: int in COLUMN_COUNT:
+		_piles.append([] as Array[DeckbuilderCard])
 	for land: MmCardDefinition in basic_lands:
 		_basic_lands[land.name] = land
 	if deck != null:
@@ -46,18 +50,21 @@ func _init(collection: Collection, deckbox: Deckbox, basic_lands: Array[MmCardDe
 		for land_name: String in deck.basic_lands:
 			for index: int in deck.basic_lands[land_name]:
 				add_basic_land(land_name)
+		sort()
 	_saved = _signature()
 
 
-## Puts a Collection card in [param column]. False if it is already in, is not the
-## Collection's, or the column does not exist.
-func add(card: DeckbuilderCard, column: int) -> bool:
+## Puts a Collection card in [param column], above the card now at [param place] or at the
+## bottom if that is left out. False if it is already in, is not the Collection's, or the
+## column does not exist.
+func add(card: DeckbuilderCard, column: int, place: int = AT_BOTTOM) -> bool:
 	if contains(card) or not _collection.owns(card) or not _is_column(column):
 		return false
-	_place(card, column)
+	_place(card, column, place)
 	return true
 
 
+## Puts a Collection card at the bottom of the column its mana value gives it.
 func add_to_own_column(card: DeckbuilderCard) -> bool:
 	return add(card, own_column_of(card))
 
@@ -75,11 +82,13 @@ func add_basic_land(land_name: String) -> DeckbuilderCard:
 	return card
 
 
-## Moves a card already in the Deck to [param column].
-func move(card: DeckbuilderCard, column: int) -> bool:
+## Moves a card already in the Deck to [param column], above the card at [param place] or
+## to the bottom if that is left out. The place is counted with the moved card taken out.
+func move(card: DeckbuilderCard, column: int, place: int = AT_BOTTOM) -> bool:
 	if not contains(card) or not _is_column(column):
 		return false
-	_columns[card.id] = column
+	_piles[column_of(card)].erase(card)
+	_place(card, column, place)
 	return true
 
 
@@ -87,17 +96,19 @@ func move(card: DeckbuilderCard, column: int) -> bool:
 func remove(card: DeckbuilderCard) -> bool:
 	if not contains(card):
 		return false
-	_cards.erase(card)
-	_columns.erase(card.id)
+	_piles[column_of(card)].erase(card)
 	return true
 
 
 func contains(card: DeckbuilderCard) -> bool:
-	return _cards.has(card)
+	return column_of(card) != NO_COLUMN
 
 
 func column_of(card: DeckbuilderCard) -> int:
-	return _columns.get(card.id, NO_COLUMN) if contains(card) else NO_COLUMN
+	for column: int in COLUMN_COUNT:
+		if _piles[column].has(card):
+			return column
+	return NO_COLUMN
 
 
 ## The column a card belongs in as it reads now: lands, or its mana value.
@@ -107,28 +118,39 @@ func own_column_of(card: DeckbuilderCard) -> int:
 	return mini(card.mana_value(), SIX_PLUS_COLUMN)
 
 
-## The cards in [param column]: white to green, multicolor, colorless, then by name.
+## The cards in [param column], top to bottom, in the order they were put there.
 func cards_in(column: int) -> Array[DeckbuilderCard]:
 	var result: Array[DeckbuilderCard] = []
-	for card: DeckbuilderCard in _cards:
-		if _columns[card.id] == column:
-			result.append(card)
-	result.sort_custom(func(a: DeckbuilderCard, b: DeckbuilderCard) -> bool: return a.sorts_before(b))
+	result.assign(_piles[column])
 	return result
 
 
+## Every card in the Deck, column by column.
 func cards() -> Array[DeckbuilderCard]:
-	return _cards.duplicate()
+	var result: Array[DeckbuilderCard] = []
+	for pile: Array in _piles:
+		result.append_array(pile)
+	return result
 
 
-## Puts every card back in its own column.
+## How many basic lands named [param land_name] are in the Deck.
+func basic_land_count(land_name: String) -> int:
+	return _basic_land_counts().get(land_name, 0)
+
+
+## Puts every card back in its own column, and each column in order: white to green,
+## multicolor, colorless, then by name.
 func sort() -> void:
-	for card: DeckbuilderCard in _cards:
-		_columns[card.id] = own_column_of(card)
+	var all: Array[DeckbuilderCard] = cards()
+	all.sort_custom(func(a: DeckbuilderCard, b: DeckbuilderCard) -> bool: return a.sorts_before(b))
+	for pile: Array in _piles:
+		pile.clear()
+	for card: DeckbuilderCard in all:
+		_piles[own_column_of(card)].append(card)
 
 
 func size() -> int:
-	return _cards.size()
+	return cards().size()
 
 
 func is_legal() -> bool:
@@ -162,14 +184,17 @@ func _is_column(column: int) -> bool:
 	return column >= 0 and column < COLUMN_COUNT
 
 
-func _place(card: DeckbuilderCard, column: int) -> void:
-	_cards.append(card)
-	_columns[card.id] = column
+func _place(card: DeckbuilderCard, column: int, place: int = AT_BOTTOM) -> void:
+	var pile: Array = _piles[column]
+	if place < 0 or place >= pile.size():
+		pile.append(card)
+	else:
+		pile.insert(place, card)
 
 
 func _collection_ids() -> Array[int]:
 	var ids: Array[int] = []
-	for card: DeckbuilderCard in _cards:
+	for card: DeckbuilderCard in cards():
 		if not card.is_basic_land():
 			ids.append(card.id)
 	ids.sort()
@@ -178,7 +203,7 @@ func _collection_ids() -> Array[int]:
 
 func _basic_land_counts() -> Dictionary[String, int]:
 	var counts: Dictionary[String, int] = {}
-	for card: DeckbuilderCard in _cards:
+	for card: DeckbuilderCard in cards():
 		if card.is_basic_land():
 			var land_name: String = card.run_card.base.name
 			counts[land_name] = counts.get(land_name, 0) + 1

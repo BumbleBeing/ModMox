@@ -16,6 +16,8 @@ const ACTION_MSEC: int = 500
 const MANA_MSEC: int = 270
 ## How long a face takes to move, turn or fade (Face Motion).
 const MOVE_SECONDS: float = 0.25
+## How long a Glow, Stack Mark or window takes to ease in or out.
+const EASE_SECONDS: float = 0.15
 
 
 ## How many milliseconds a snapshot that showed [param events] is left on screen before the

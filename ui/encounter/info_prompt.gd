@@ -19,7 +19,8 @@ static func release_text(option_text: String) -> String:
 
 
 ## The prompt for [param decision] as the player whose [param view] this is reads it. A
-## null decision (nobody is asking them anything) has no text.
+## null decision (nobody is asking them anything) has no text, and nor has one answered on
+## the opening-hand overlay, which says everything itself and covers the panel.
 static func of(decision: MmPendingDecision, view: MmPlayerView) -> InfoPrompt:
 	var prompt: InfoPrompt = InfoPrompt.new()
 	if decision == null:
@@ -45,14 +46,18 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> InfoPrompt:
 		prompt.text = "Declare blockers"
 	elif decision is DivideCombatDamageDecision:
 		var divide: DivideCombatDamageDecision = decision as DivideCombatDamageDecision
-		prompt.text = "Divide %d damage from %s" % [divide.amount, DebugDecisionForm.name_of(view, divide.source_id)]
+		prompt.text = "Divide %d damage from %s" % [divide.amount, EncounterSnapshot.name_in(view, divide.source_id)]
 	elif decision is OrderTriggersDecision:
 		prompt.text = "Order your triggers"
 	elif decision is ChooseReplacementEffectDecision:
 		prompt.text = "Choose which applies first"
-	else:
-		# A kind the Debug Decision Panel still answers says what its form does.
-		prompt.text = DebugDecisionForm.of(decision, view).title
+	elif CardPicks.covers(decision) and not OpeningHand.covers(decision):
+		prompt.text = CardPicks.new(decision).prompt()
+	elif not OpeningHand.covers(decision):
+		# A kind with no input of its own (DecisionInputs): say what the engine asks, so
+		# the Hero is not left looking at nothing, and say loudly that this is a bug.
+		prompt.text = decision.describe()
+		push_error("No input answers %s." % decision.describe())
 	return prompt
 
 
@@ -64,6 +69,6 @@ static func stack_name(view: MmPlayerView, stack_object_id: int) -> String:
 			continue
 		if item.card_id != MmGameObject.NO_CARD:
 			return item.name
-		var source: String = DebugDecisionForm.name_of(view, item.source_object_id)
+		var source: String = EncounterSnapshot.name_in(view, item.source_object_id)
 		return item.name if source.begins_with("object ") else "%s's ability" % source
 	return "this"

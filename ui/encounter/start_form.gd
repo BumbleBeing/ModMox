@@ -33,7 +33,7 @@ func _ready() -> void:
 	center.add_child(column)
 	var heading: Label = Label.new()
 	heading.text = "Start an encounter"
-	heading.add_theme_font_size_override("font_size", 28)
+	heading.add_theme_font_size_override("font_size", 30)
 	column.add_child(heading)
 	_hero = _choice(column, "Hero's deck", EncounterRequest.deck_names(), _request.hero_deck)
 	_villain = _choice(column, "Villain's deck", EncounterRequest.deck_names(), _request.villain_deck)
