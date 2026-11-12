@@ -66,6 +66,18 @@ func attach(mod: Mod) -> void:
 	_look = null
 
 
+## A throwaway copy of this card as it would be with [param mod] in its next Mod Slot,
+## for showing before it is applied. This card is not changed.
+func with_mod(mod: Mod) -> DeckbuilderCard:
+	var copy_card: MmRunCard = MmRunCard.new()
+	copy_card.base = run_card.base
+	copy_card.modifications = run_card.modifications.duplicate()
+	var copy: DeckbuilderCard = DeckbuilderCard.new(id, copy_card)
+	copy.mods = mods.duplicate()
+	copy.attach(mod)
+	return copy
+
+
 ## Whether this card comes before [param other] in a column: color, then name.
 func sorts_before(other: DeckbuilderCard) -> bool:
 	if color_rank() != other.color_rank():

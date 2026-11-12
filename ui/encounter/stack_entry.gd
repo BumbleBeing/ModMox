@@ -4,14 +4,14 @@ extends PanelContainer
 ## there. Art on its left and two lines, each kept to one line and cut short with an
 ## ellipsis (A338): what it is, then who controls it and what it targets. A stack object
 ## has its own color on its border and a stripe down its left side; a trigger being ordered
-## is plain with a dashed border, and has buttons to move it up and down (A339, A345).
+## is plain with a dashed border, and has a grip to drag it by (A339, A345, A393).
 
 ## The cursor came over this entry, or left it.
 signal hovered(is_over: bool)
-## One of its move buttons was pressed: -1 for up, 1 for down.
-signal moved(step: int)
 
 const ART_SIZE: float = 52.0
+const GRIP_WIDTH: float = 20.0
+const GRIP_COLOR: Color = Color(1, 1, 1, 0.55)
 
 var _name: Label
 var _detail: Label
@@ -20,8 +20,7 @@ var _style: StyleBoxFlat
 var _stripe: ColorRect = null
 var _dashes: DashedBorder = null
 var _row: HBoxContainer
-var _up: Button = null
-var _down: Button = null
+var _grip: Control = null
 var _catcher: ClickCatcher = null
 
 
@@ -120,36 +119,27 @@ func click_catcher() -> ClickCatcher:
 	return _catcher
 
 
-## Gives it buttons to move it up and down the order, each disabled when it cannot.
-func add_move_buttons(can_go_up: bool, can_go_down: bool) -> void:
-	var buttons: VBoxContainer = VBoxContainer.new()
-	_row.add_child(buttons)
-	_up = _move_button("▲", -1, can_go_up)
-	buttons.add_child(_up)
-	_down = _move_button("▼", 1, can_go_down)
-	buttons.add_child(_down)
+## Gives it a grip at its right end: six dots, drawn, that say it can be dragged (A393).
+func add_grip() -> void:
+	_grip = Control.new()
+	_grip.custom_minimum_size = Vector2(GRIP_WIDTH, 0)
+	_grip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_grip.draw.connect(_draw_grip)
+	_row.add_child(_grip)
+	mouse_default_cursor_shape = Control.CURSOR_VSIZE
 
 
-## The move buttons, or null on an entry that has none.
-func up_button() -> Button:
-	return _up
+## Its grip, or null on an entry that cannot be dragged.
+func grip() -> Control:
+	return _grip
 
 
-func down_button() -> Button:
-	return _down
-
-
-func _move_button(text: String, step: int, is_enabled: bool) -> Button:
-	var button: Button = Button.new()
-	button.text = text
-	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", 11)
-	button.custom_minimum_size = Vector2(30, 24)
-	button.disabled = not is_enabled
-	# The cursor over a button is still over the entry.
-	button.mouse_filter = Control.MOUSE_FILTER_PASS
-	button.pressed.connect(func() -> void: moved.emit(step))
-	return button
+## Two columns of three dots, drawn: no font has to be searched for a glyph.
+func _draw_grip() -> void:
+	var middle: Vector2 = _grip.size / 2.0
+	for column: int in 2:
+		for line: int in 3:
+			_grip.draw_circle(middle + Vector2(column * 7.0 - 3.5, (line - 1) * 8.0), 2.2, GRIP_COLOR)
 
 
 func _cut_label(text: String, font_size: int) -> Label:
@@ -157,6 +147,6 @@ func _cut_label(text: String, font_size: int) -> Label:
 	label.text = text
 	label.clip_text = true
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_font_size_override("font_size", font_size + UiText.RAISE)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label

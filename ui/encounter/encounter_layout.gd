@@ -48,6 +48,26 @@ const CONTROLS_GAP: float = 6.0
 const PASS_TALLER: float = 1.3
 
 ## The Info Panel, at the left end of the hand's strip (A293).
+## The opening-hand overlay (13e-2), on a screen DESIGN_HEIGHT tall: the widest a card is
+## drawn, how tall a card of two rows is, the space between cards and at the sides, where
+## the rows' middle is down the screen, and the size of a button.
+const OPENING_CARD_WIDTH: float = 250.0
+const OPENING_TWO_ROW_HEIGHT: float = 290.0
+const OPENING_GAP: float = 14.0
+## Room is left at the sides for the outermost cards, which lean outward.
+const OPENING_PAD: float = 90.0
+## The overlay's hand is fanned like the hand in play: how far apart neighbors start, of a
+## card's width, so their bottom corners overlap a little, and how much more each card is
+## turned than the one before it.
+const OPENING_STEP: float = 0.85
+const OPENING_FAN_ANGLE: float = 0.06
+const OPENING_MIDDLE: float = 0.47
+const OPENING_BUTTON: Vector2 = Vector2(230.0, 58.0)
+const OPENING_TWO_ROWS_FROM: int = 9
+## The space between two triggers being put in order in the Stack Window.
+const TRIGGER_GAP: float = 6.0
+## How far a card of the hand chosen to be discarded stands above the rest, of its height.
+const PICKED_RISE: float = 0.25
 const INFO_WIDTH: float = 300.0
 const INFO_PAD: float = 6.0
 ## The Option Menu: how wide it is, how tall a row is, the gap between rows, the room around
@@ -415,6 +435,138 @@ static func hand_spread_within(rest: Array[Vector2], card_size: Vector2, cursor:
 	return held
 
 
+## How many rows the opening-hand overlay draws a hand of [param count] cards in: one while
+## the cards stay about as tall as those in the hand's strip, then two (A413).
+static func opening_hand_rows(count: int) -> int:
+	return 2 if count >= OPENING_TWO_ROWS_FROM else 1
+
+
+## The size of each card of an opening hand of [param count] drawn in [param area].
+static func opening_hand_card(count: int, area: Rect2) -> Vector2:
+	var unit: float = area.size.y / DESIGN_HEIGHT
+	var rows: int = opening_hand_rows(count)
+	var in_row: int = _opening_hand_in_row(count)
+	var width: float = (area.size.x - OPENING_PAD * 2.0 * unit) / (1.0 + (in_row - 1) * OPENING_STEP)
+	var widest: float = (OPENING_CARD_WIDTH if rows == 1 else OPENING_TWO_ROW_HEIGHT * CardGeometry.ASPECT) * unit
+	width = minf(width, widest)
+	return Vector2(width, width / CardGeometry.ASPECT)
+
+
+## Where the cards of the opening-hand overlay go in [param area] before they are turned:
+## [param shown] of them, of a hand that was dealt [param count]. Each row is fanned along
+## an arc as the hand in play is, so its outer cards sit lower; it is centered, closes up as
+## cards are put on the bottom, and the upper row fills first. opening_hand_turns() says how
+## far each card is turned, about the middle of its bottom edge.
+static func opening_hand_cards(count: int, shown: int, area: Rect2) -> Array[Rect2]:
+	var unit: float = area.size.y / DESIGN_HEIGHT
+	var card: Vector2 = opening_hand_card(count, area)
+	var in_row: int = _opening_hand_in_row(count)
+	var top: float = _opening_hand_top(count, area)
+	var pitch: float = card.y + _opening_hand_sag(in_row, card) + OPENING_GAP * unit
+	var cards: Array[Rect2] = []
+	for index: int in shown:
+		var row: int = index / in_row
+		var in_this_row: int = mini(in_row, shown - row * in_row)
+		var width: float = card.x * (1.0 + (in_this_row - 1) * OPENING_STEP)
+		var left: float = area.get_center().x - width / 2.0
+		var away: float = _opening_hand_away(index, in_row, in_this_row)
+		cards.append(Rect2(Vector2(left + (index % in_row) * card.x * OPENING_STEP, top + row * pitch + _opening_hand_drop(away, card)), card))
+	return cards
+
+
+## How far each card of opening_hand_cards() is turned: the middle of a row upright, and
+## each card further out leaning further that way.
+static func opening_hand_turns(count: int, shown: int) -> Array[float]:
+	var in_row: int = _opening_hand_in_row(count)
+	var turns: Array[float] = []
+	for index: int in shown:
+		var in_this_row: int = mini(in_row, shown - (index / in_row) * in_row)
+		turns.append(_opening_hand_away(index, in_row, in_this_row) * OPENING_FAN_ANGLE)
+	return turns
+
+
+## How many cards a full row of an opening hand of [param count] holds.
+static func _opening_hand_in_row(count: int) -> int:
+	return ceili(maxi(count, 1) / float(opening_hand_rows(count)))
+
+
+## How many places card [param index] is from the middle of its row, which holds
+## [param in_this_row] cards of a full row's [param in_row]: negative to the left.
+static func _opening_hand_away(index: int, in_row: int, in_this_row: int) -> float:
+	return (index % in_row) - (in_this_row - 1) / 2.0
+
+
+## How much lower a card [param away] places from the middle of its row sits: the row lies
+## along the arc its cards' turns describe.
+static func _opening_hand_drop(away: float, card: Vector2) -> float:
+	return card.x * OPENING_STEP * OPENING_FAN_ANGLE / 2.0 * away * away
+
+
+## How far below an upright card's bottom edge the lowest corner of a full row of
+## [param in_row] reaches: its outermost card sits lower and leans.
+static func _opening_hand_sag(in_row: int, card: Vector2) -> float:
+	var away: float = (in_row - 1) / 2.0
+	return _opening_hand_drop(away, card) + card.x / 2.0 * sin(away * OPENING_FAN_ANGLE)
+
+
+## The parts of the opening-hand overlay around a hand of [param count] cards in
+## [param area]: "heading" and "under_heading" above the cards, "buttons" (a row as wide as
+## the area, for buttons centered in it) and "villain" below them, and "middle", the row
+## where play or draw is chosen while there are no cards yet.
+static func opening_hand(count: int, area: Rect2) -> Dictionary[String, Rect2]:
+	var unit: float = area.size.y / DESIGN_HEIGHT
+	var block: float = _opening_hand_block(count, area)
+	var top: float = _opening_hand_top(count, area)
+	var left: float = area.position.x
+	var width: float = area.size.x
+	var buttons_top: float = top + block + 44.0 * unit
+	return {
+		"heading": Rect2(left, top - 120.0 * unit, width, 50.0 * unit),
+		"under_heading": Rect2(left, top - 66.0 * unit, width, 34.0 * unit),
+		"middle": Rect2(left, top + (block - OPENING_BUTTON.y * unit) / 2.0, width, OPENING_BUTTON.y * unit),
+		"buttons": Rect2(left, buttons_top, width, OPENING_BUTTON.y * unit),
+		"villain": Rect2(left, buttons_top + (OPENING_BUTTON.y + 26.0) * unit, width, 34.0 * unit),
+	}
+
+
+## How tall the rows of an opening hand of [param count] are together, down to the lowest
+## corner of the last one.
+static func _opening_hand_block(count: int, area: Rect2) -> float:
+	var rows: int = opening_hand_rows(count)
+	var card: Vector2 = opening_hand_card(count, area)
+	var sag: float = _opening_hand_sag(_opening_hand_in_row(count), card) if count > 0 else 0.0
+	return rows * (card.y + sag) + (rows - 1) * OPENING_GAP * area.size.y / DESIGN_HEIGHT
+
+
+## Where the top row of an opening hand of [param count] begins: its rows sit a little above
+## the middle, to leave room for the buttons under them.
+static func _opening_hand_top(count: int, area: Rect2) -> float:
+	return area.position.y + area.size.y * OPENING_MIDDLE - _opening_hand_block(count, area) / 2.0
+
+
+## How far down a list of triggers being ordered the one at [param place] starts, each
+## entry [param entry_height] tall.
+static func trigger_slot(place: int, entry_height: float) -> float:
+	return place * (entry_height + TRIGGER_GAP)
+
+
+## How tall a list of [param count] triggers being ordered is.
+static func trigger_list_height(count: int, entry_height: float) -> float:
+	return maxf(0.0, count * (entry_height + TRIGGER_GAP) - TRIGGER_GAP)
+
+
+## Where the top of a held trigger is drawn with the cursor [param cursor_y] down the list,
+## grabbed [param grab] below its own top: under the cursor, but never out of the list.
+static func trigger_held_top(cursor_y: float, grab: float, count: int, entry_height: float) -> float:
+	return clampf(cursor_y - grab, 0.0, trigger_slot(maxi(count - 1, 0), entry_height))
+
+
+## Which place among [param count] triggers one held with its top at [param held_top] would
+## be put down at: the nearest.
+static func trigger_gap(held_top: float, count: int, entry_height: float) -> int:
+	return clampi(roundi(held_top / (entry_height + TRIGGER_GAP)), 0, maxi(count - 1, 0))
+
+
 ## The order to draw lands named [param names] in, as indexes into it: lands of one name
 ## stand together, so a new land goes just right of the rightmost land with its name, and a
 ## land with a new name starts a group at the right end.
@@ -453,10 +605,17 @@ static func hidden_past(middle: float, view_width: float, arrow_width: float) ->
 	return 0
 
 
+## What combat_order() is told for a creature that blocks nothing.
+const NOT_BLOCKING: int = -1
+
+
 ## The order to draw a row of creatures in, as indexes into [param ids]: those in combat
-## first, in object ID order, then the rest as they stood. [param is_in_combat] says which
-## the engine has attacking or blocking, so nothing moves while the Hero is still choosing.
-static func combat_order(ids: Array[int], is_in_combat: Array[bool]) -> Array[int]:
+## first, then the rest as they stood. [param is_in_combat] says which the engine has
+## attacking or blocking, so nothing moves while the Hero is still choosing. Attackers stand
+## in object ID order. A blocker stands in the order of the attacker it blocks, the ID in
+## [param blocked] (the lowest, if it blocks several), so no two block lines cross; blockers
+## of one attacker stand together in ID order.
+static func combat_order(ids: Array[int], is_in_combat: Array[bool], blocked: Array[int] = []) -> Array[int]:
 	var fighting: Array[int] = []
 	var others: Array[int] = []
 	for index: int in ids.size():
@@ -464,7 +623,12 @@ static func combat_order(ids: Array[int], is_in_combat: Array[bool]) -> Array[in
 			fighting.append(index)
 		else:
 			others.append(index)
-	fighting.sort_custom(func(one: int, other: int) -> bool: return ids[one] < ids[other])
+	var key: Callable = func(index: int) -> int:
+		return blocked[index] if index < blocked.size() and blocked[index] != NOT_BLOCKING else ids[index]
+	fighting.sort_custom(func(one: int, other: int) -> bool:
+		var one_key: int = key.call(one)
+		var other_key: int = key.call(other)
+		return one_key < other_key or (one_key == other_key and ids[one] < ids[other]))
 	return fighting + others
 
 

@@ -467,7 +467,7 @@ func test_a_card_under_a_window_or_the_option_menu_is_not_pressed_through_it() -
 	_open(_forests_and_bears())
 	var cards: Array[int] = _screen.hand_order().cards()
 	var at: Vector2 = _on(cards[3])
-	var covers: Array[Control] = [_screen.stack_window(), _screen.choice_window(), _screen.debug_panel(),
+	var covers: Array[Control] = [_screen.stack_window(), _screen.choice_window(),
 			_screen.emblems_window(HERO), _screen.emblems_window(MmEncounterSetup.VILLAIN_PLAYER_ID)]
 
 	for cover: Control in covers:

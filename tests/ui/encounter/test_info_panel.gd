@@ -23,7 +23,7 @@ func test_it_fills_its_box_with_a_border_and_the_prompt() -> void:
 	assert_eq(panel.size, BOX.size)
 	assert_true(panel.has_border())
 	assert_false(panel.is_dim())
-	assert_eq(panel.prompt_text(), "Discard 1")
+	assert_eq(panel.prompt_text(), "Discard 1 card (0 chosen)")
 	assert_true(panel.shows_prompt())
 	assert_eq(panel.mouse_filter, Control.MOUSE_FILTER_IGNORE, "It never takes a click meant for the board.")
 	assert_null(panel.cancel_button())

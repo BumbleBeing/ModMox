@@ -3,6 +3,8 @@ extends GutTest
 ## can be checked without a window.
 
 const SIZES: Array[Vector2] = [Vector2(1920, 1080), Vector2(2560, 1080), Vector2(1920, 1440)]
+## Everything right of the sidebar on a 1920 x 1080 screen.
+const OPENING_AREA: Rect2 = Rect2(340, 0, 1580, 1080)
 
 
 func test_no_two_regions_overlap_at_any_supported_size() -> void:
@@ -222,6 +224,19 @@ func test_creatures_in_combat_stand_first_in_id_order_and_the_rest_keep_their_pl
 		"With nobody in combat nothing moves.")
 	assert_eq(EncounterLayout.combat_order(ids, [true, true, true, true, true] as Array[bool]), [4, 1, 3, 0, 2] as Array[int])
 	assert_eq(EncounterLayout.combat_order([] as Array[int], [] as Array[bool]), [] as Array[int])
+
+
+func test_blockers_stand_in_the_order_of_the_attackers_they_block_so_no_two_lines_cross() -> void:
+	var ids: Array[int] = [5, 3, 9, 7]
+	var all_fighting: Array[bool] = [true, true, true, false]
+	var none: int = EncounterLayout.NOT_BLOCKING
+
+	assert_eq(EncounterLayout.combat_order(ids, all_fighting, [20, 30, 10, none] as Array[int]), [2, 0, 1, 3] as Array[int],
+		"Attackers stand in ID order, so 9 blocking 10 goes first, then 5 blocking 20, then 3 blocking 30.")
+	assert_eq(EncounterLayout.combat_order(ids, all_fighting, [20, 20, 10, none] as Array[int]), [2, 1, 0, 3] as Array[int],
+		"Two blocking the same attacker stand together, lowest ID first.")
+	assert_eq(EncounterLayout.combat_order(ids, all_fighting, [] as Array[int]), [1, 0, 2, 3] as Array[int],
+		"Without blocks to go by, ID order.")
 
 
 func test_a_block_line_ends_on_the_edge_of_a_face_toward_the_lane() -> void:
@@ -626,3 +641,158 @@ func test_easing_covers_in_one_slow_frame_what_the_frames_it_replaced_would_have
 	assert_eq(EncounterLayout.ease_weight(0.3, 0.0), 0.0)
 	assert_almost_eq(EncounterLayout.ease_weight(0.5, 1.0 / 120.0), 1.0 - sqrt(0.5), 0.0001, "And half a frame's worth at twice the rate.")
 	assert_lt(EncounterLayout.ease_weight(0.3, 10.0), 1.0001)
+
+
+func test_an_opening_hand_of_up_to_eight_is_one_row_and_of_nine_or_more_is_two() -> void:
+	for count: int in range(1, 9):
+		assert_eq(EncounterLayout.opening_hand_rows(count), 1)
+	for count: int in [9, 10, 12]:
+		assert_eq(EncounterLayout.opening_hand_rows(count), 2)
+	var ten: Array[Rect2] = EncounterLayout.opening_hand_cards(10, 10, OPENING_AREA)
+	assert_almost_eq(ten[2].position.x, ten[7].position.x, 0.01, "Five in the upper row, and five under them.")
+	assert_gt(ten[7].position.y, ten[2].end.y)
+	var nine: Array[Rect2] = EncounterLayout.opening_hand_cards(9, 9, OPENING_AREA)
+	assert_lt(nine[4].position.y, nine[5].position.y - nine[0].size.y, "The odd card goes in the upper row.")
+	assert_almost_eq(nine[5].position.y, nine[8].position.y, 0.01)
+
+
+func test_an_opening_hand_is_fanned_like_the_hand_in_play() -> void:
+	var cards: Array[Rect2] = EncounterLayout.opening_hand_cards(7, 7, OPENING_AREA)
+	var turns: Array[float] = EncounterLayout.opening_hand_turns(7, 7)
+
+	assert_eq(turns.size(), 7)
+	assert_eq(turns[3], 0.0, "The middle card stands upright.")
+	for index: int in 6:
+		assert_almost_eq(turns[index + 1] - turns[index], EncounterLayout.OPENING_FAN_ANGLE, 0.0001, "Each turned a little more than the last.")
+	assert_almost_eq(turns[0], -turns[6], 0.0001, "Evenly to both sides.")
+	assert_lt(turns[0], 0.0, "The left ones lean left.")
+	assert_almost_eq(cards[0].position.y, cards[6].position.y, 0.01)
+	assert_gt(cards[0].position.y, cards[1].position.y, "And the further out, the lower: they lie along an arc.")
+	assert_gt(cards[1].position.y, cards[2].position.y)
+	assert_gt(cards[2].position.y, cards[3].position.y)
+	assert_eq(EncounterLayout.opening_hand_turns(7, 0), [] as Array[float])
+	assert_eq(EncounterLayout.opening_hand_turns(7, 1), [0.0] as Array[float], "One card left stands upright.")
+
+
+func test_the_cards_of_an_opening_hand_overlap_most_at_the_bottom_corners_and_little_at_the_top() -> void:
+	for count: int in [2, 5, 7, 8, 10]:
+		var cards: Array[Rect2] = EncounterLayout.opening_hand_cards(count, count, OPENING_AREA)
+		var turns: Array[float] = EncounterLayout.opening_hand_turns(count, count)
+		var width: float = cards[0].size.x
+		assert_almost_eq(cards[1].position.x - cards[0].position.x, width * EncounterLayout.OPENING_STEP, 0.01, "%d cards" % count)
+		# The bottom right corner of one and the bottom left corner of the next cross.
+		var corner: Vector2 = _corners(cards[0], turns[0])[2]
+		var next_corner: Vector2 = _corners(cards[1], turns[1])[3]
+		assert_gt(corner.x, next_corner.x, "%d cards: the bottoms overlap" % count)
+		assert_lt(corner.x - next_corner.x, width * 0.2, "%d cards: by under a fifth of a card" % count)
+		var top: Vector2 = _corners(cards[0], turns[0])[1]
+		var next_top: Vector2 = _corners(cards[1], turns[1])[0]
+		assert_lt(top.x - next_top.x, corner.x - next_corner.x, "%d cards: the tops overlap less than the bottoms" % count)
+		assert_lt(top.x - next_top.x, width * 0.1, "%d cards: and by under a tenth, so each name can be read" % count)
+
+
+func test_a_fanned_opening_hand_stays_inside_the_area_with_every_card_the_same_size() -> void:
+	for count: int in range(1, 13):
+		var cards: Array[Rect2] = EncounterLayout.opening_hand_cards(count, count, OPENING_AREA)
+		var turns: Array[float] = EncounterLayout.opening_hand_turns(count, count)
+		assert_eq(cards.size(), count)
+		assert_eq(turns.size(), count)
+		for index: int in count:
+			assert_almost_eq(cards[index].size.x / cards[index].size.y, CardGeometry.ASPECT, 0.001)
+			assert_eq(cards[index].size, cards[0].size)
+			for corner: Vector2 in _corners(cards[index], turns[index]):
+				assert_true(OPENING_AREA.has_point(corner), "%d cards: card %d is inside, turned as it is." % [count, index])
+
+
+func test_opening_hand_cards_can_be_read() -> void:
+	assert_almost_eq(EncounterLayout.opening_hand_cards(7, 7, OPENING_AREA)[0].size.x, 229.51, 0.01, "Seven fill the width.")
+	assert_almost_eq(EncounterLayout.opening_hand_cards(5, 5, OPENING_AREA)[0].size.x, 250.0, 0.01, "Never wider than this.")
+	for count: int in range(1, 11):
+		var height: float = EncounterLayout.opening_hand_cards(count, count, OPENING_AREA)[0].size.y
+		assert_gt(height, 245.0, "%d cards are about as tall as a card in the hand's strip, or taller." % count)
+
+
+func test_an_opening_hand_row_is_centered_and_closes_up_when_cards_leave_it() -> void:
+	var all: Array[Rect2] = EncounterLayout.opening_hand_cards(7, 7, OPENING_AREA)
+	var fewer: Array[Rect2] = EncounterLayout.opening_hand_cards(7, 4, OPENING_AREA)
+	var middle: float = OPENING_AREA.get_center().x
+
+	assert_almost_eq((all[0].position.x + all[6].end.x) / 2.0, middle, 0.01)
+	assert_eq(fewer.size(), 4)
+	assert_eq(fewer[0].size, all[0].size, "The cards that stay keep their size.")
+	assert_almost_eq((fewer[0].position.x + fewer[3].end.x) / 2.0, middle, 0.01)
+	assert_almost_eq(fewer[1].position.x - fewer[0].position.x, all[1].position.x - all[0].position.x, 0.01)
+	assert_almost_eq(EncounterLayout.opening_hand_turns(7, 4)[0], -1.5 * EncounterLayout.OPENING_FAN_ANGLE, 0.0001, "And fan as four.")
+	assert_eq(EncounterLayout.opening_hand_cards(7, 0, OPENING_AREA).size(), 0)
+	var split: Array[Rect2] = EncounterLayout.opening_hand_cards(10, 7, OPENING_AREA)
+	assert_gt(split[5].position.y, split[2].end.y, "Seven of ten still fill the upper row of five first.")
+	assert_almost_eq(EncounterLayout.opening_hand_turns(10, 7)[5], -0.5 * EncounterLayout.OPENING_FAN_ANGLE, 0.0001, "The two below fan as two.")
+
+
+func test_each_row_of_an_opening_hand_is_centered_on_its_own_cards() -> void:
+	var middle: float = OPENING_AREA.get_center().x
+
+	var seven_of_ten: Array[Rect2] = EncounterLayout.opening_hand_cards(10, 7, OPENING_AREA)
+	assert_almost_eq((seven_of_ten[0].position.x + seven_of_ten[4].end.x) / 2.0, middle, 0.01, "Five above.")
+	assert_almost_eq((seven_of_ten[5].position.x + seven_of_ten[6].end.x) / 2.0, middle, 0.01, "Two below, centered as two.")
+	var nine: Array[Rect2] = EncounterLayout.opening_hand_cards(9, 9, OPENING_AREA)
+	assert_almost_eq((nine[5].position.x + nine[8].end.x) / 2.0, middle, 0.01, "Four below.")
+
+
+func test_the_rows_of_an_opening_hand_sit_a_little_above_the_middle_of_the_screen() -> void:
+	var line: float = OPENING_AREA.position.y + OPENING_AREA.size.y * EncounterLayout.OPENING_MIDDLE
+	for count: int in [1, 7, 8, 9, 10]:
+		var box: Rect2 = _fan_box(count)
+		assert_almost_eq(box.get_center().y, line, 14.0, "%d cards: what is drawn is about centered on it." % count)
+	var ten: Array[Rect2] = EncounterLayout.opening_hand_cards(10, 10, OPENING_AREA)
+	var turns: Array[float] = EncounterLayout.opening_hand_turns(10, 10)
+	var lowest_above: float = _corners(ten[0], turns[0])[3].y
+	assert_gt(ten[7].position.y, lowest_above, "The lower row starts under the lowest corner of the upper one.")
+
+
+func test_the_opening_hands_words_and_buttons_stand_clear_of_the_cards() -> void:
+	for count: int in [0, 1, 7, 8, 9, 10]:
+		var parts: Dictionary[String, Rect2] = EncounterLayout.opening_hand(count, OPENING_AREA)
+		var box: Rect2 = _fan_box(count)
+		for key: String in ["heading", "under_heading", "buttons", "villain"]:
+			assert_true(OPENING_AREA.encloses(parts[key]), "%d cards: %s is inside." % [count, key])
+			if count > 0:
+				assert_false(box.intersects(parts[key]), "%d cards: %s is clear of the cards, turned as they are." % [count, key])
+		assert_lt(parts["heading"].end.y, parts["under_heading"].end.y)
+		assert_lt(parts["buttons"].end.y, parts["villain"].position.y + 1.0)
+	var none: Dictionary[String, Rect2] = EncounterLayout.opening_hand(0, OPENING_AREA)
+	assert_gt(none["middle"].position.y, none["under_heading"].end.y, "With no cards the two choices stand in the middle.")
+	assert_lt(none["middle"].end.y, none["buttons"].position.y)
+
+
+func test_the_opening_hand_scales_with_the_screens_height() -> void:
+	var small: Rect2 = Rect2(170, 0, 790, 540)
+
+	var cards: Array[Rect2] = EncounterLayout.opening_hand_cards(7, 7, small)
+
+	assert_almost_eq(cards[0].size.x, 114.75, 0.01, "Half the screen, half the card.")
+	for corner: Vector2 in _corners(cards[6], EncounterLayout.opening_hand_turns(7, 7)[6]):
+		assert_true(small.has_point(corner))
+
+
+## The corners of a card drawn in [param rect] and turned by [param turn] about the middle
+## of its bottom edge: top left, top right, bottom right, bottom left.
+func _corners(rect: Rect2, turn: float) -> Array[Vector2]:
+	var pivot: Vector2 = rect.position + Vector2(rect.size.x / 2.0, rect.size.y)
+	var found: Array[Vector2] = []
+	for corner: Vector2 in [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]:
+		found.append(pivot + (corner - pivot).rotated(turn))
+	return found
+
+
+## The box around everything drawn of an opening hand of [param count] cards.
+func _fan_box(count: int) -> Rect2:
+	var cards: Array[Rect2] = EncounterLayout.opening_hand_cards(count, count, OPENING_AREA)
+	var turns: Array[float] = EncounterLayout.opening_hand_turns(count, count)
+	if cards.is_empty():
+		return Rect2()
+	var box: Rect2 = Rect2(_corners(cards[0], turns[0])[0], Vector2.ZERO)
+	for index: int in count:
+		for corner: Vector2 in _corners(cards[index], turns[index]):
+			box = box.expand(corner)
+	return box

@@ -179,7 +179,7 @@ A red bead on a creature with the damage marked on it this turn, resting on the 
 _Avoid_: Damage counter, wound marker, remaining toughness
 
 **Trigger Order**:
-The Hero's half-made answer when several of their triggers happen at once: the triggers in a list above the stack, the top one resolving first, moved up and down before the order is confirmed. Triggers that all read the same and have the same cause are ordered without asking.
+The Hero's half-made answer when several of their triggers happen at once: the triggers in a list above the stack, the top one resolving first, each dragged to its place before the order is confirmed. Triggers that all read the same and have the same cause are ordered without asking.
 _Avoid_: Trigger queue, stacking order
 
 **Rules Text**:
@@ -187,7 +187,7 @@ The words on a card for what its abilities do. They are generated from the abili
 _Avoid_: Oracle text (the real card's), description, tooltip
 
 **Glow**:
-The colored outline on everything a Pending Decision can choose: orange-red for targets, blue for mana sources, green for anything else. Whatever a click answers something on always glows.
+The colored outline on everything a Pending Decision can choose: orange-red for targets, blue for mana sources, green for anything else. Whatever a click answers something on always glows. It eases in and out rather than popping.
 _Avoid_: Highlight, selection, halo
 
 **Info Panel**:
@@ -214,9 +214,13 @@ _Avoid_: Ability menu, context menu, popup
 The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings and Quit to main menu.
 _Avoid_: Escape menu, options screen, system menu
 
-**Debug Decision Panel**:
-A temporary window that answers a Pending Decision by choosing from lists. It covers each decision kind only until that kind has an input of its own, hides whenever it has nothing to offer, and goes when none is left. What is left to it now: playing first or drawing, keeping or mulliganing, and choosing cards to bottom or discard, all of which go in 13e-2.
-_Avoid_: Decision dialog, prompt
+**Opening-Hand Overlay**:
+The scrim over everything right of the sidebar through the pregame, with the Hero's hand drawn large on it, fanned as it is in play; the card under the cursor comes to the front and stands upright to be read. Playing first or drawing, keeping or mulliganing, and putting cards on the bottom are all answered there, and it says who plays first and what the Villain has decided. It goes when the first turn begins.
+_Avoid_: Mulligan screen, pregame dialog, hand viewer
+
+**Card Picks**:
+The Hero's half-made choice of cards from their hand, before they confirm it: which to put on the bottom after keeping, or which to discard. The cards are given in the order picked. It is thrown away when the decision changes.
+_Avoid_: Selection (a Combat Selection is the combat one), checklist, picked cards
 
 **Card Face**:
 A card drawn in full: its Frame, name, mana cost, type line, rules text and power/toughness. Used wherever a card is read rather than played on.

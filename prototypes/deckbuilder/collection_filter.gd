@@ -1,8 +1,9 @@
 class_name CollectionFilter
 extends RefCounted
 ## What the Collection pane is showing: a search, the filters and a sort order. Filters of
-## one kind combine as "any of these"; different kinds must all hold. Rarity has a place in
-## the bar but nothing to filter until cards have one.
+## one kind combine as "any of these"; different kinds must all hold. Multicolor is the
+## exception: with it on, a card must be multicolor and have every chosen color. Rarity has
+## a place in the bar but nothing to filter until cards have one.
 
 enum SortKey { COLOR, MANA_VALUE, NAME, TYPE }
 
@@ -65,8 +66,10 @@ func _matches_color(card: DeckbuilderCard) -> bool:
 	var card_colors: Array[MmCardTypes.CardColor] = card.look().colors
 	if card_colors.is_empty():
 		return colorless
-	if multicolor and card_colors.size() > 1:
-		return true
+	if multicolor:
+		# With multicolor on, the chosen colors narrow it: the card must have every one.
+		return card_colors.size() > 1 and colors.all(
+				func(color: MmCardTypes.CardColor) -> bool: return card_colors.has(color))
 	for color: MmCardTypes.CardColor in card_colors:
 		if colors.has(color):
 			return true

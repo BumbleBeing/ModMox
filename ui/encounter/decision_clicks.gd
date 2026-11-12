@@ -2,8 +2,8 @@ class_name DecisionClicks
 extends RefCounted
 ## What clicking each object or player answers for a Pending Decision, and the Glow (game
 ## glossary) drawn from the same map: targets orange-red, mana sources blue, everything
-## else green. A thing with a click answer always glows. A decision kind that has no input
-## of its own yet (A243) glows what it can choose, but gives no click answers.
+## else green. A thing with a click answer always glows. Cards to discard glow too, but are
+## chosen with a CardPicks, which a click on a card of the hand builds.
 ##
 ## A card in hand that can be cast or played glows too, but one click on it answers
 ## nothing (A371): what it offers is kept apart, in hand_options_of(), for the Drag Card and
@@ -76,8 +76,6 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 		clicks._add_ids((decision as DeclareAttackersDecision).candidate_ids)
 	elif decision is ChooseCardsToDiscardDecision:
 		clicks._add_ids((decision as ChooseCardsToDiscardDecision).candidate_ids)
-	elif decision is ChooseCardsToBottomDecision:
-		clicks._add_ids((decision as ChooseCardsToBottomDecision).candidate_ids)
 	return clicks
 
 
@@ -153,7 +151,7 @@ func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
 	objects[object_id] = Kind.OTHER
 	if not _hand_options.has(object_id):
 		_hand_options[object_id] = []
-	(_hand_options[object_id] as Array).append(ClickOption.new(answer, "%s %s" % [verb, DebugDecisionForm.name_of(view, object_id)]))
+	(_hand_options[object_id] as Array).append(ClickOption.new(answer, "%s %s" % [verb, EncounterSnapshot.name_in(view, object_id)]))
 
 
 func _add_ids(ids: Array[int]) -> void:

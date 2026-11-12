@@ -38,6 +38,29 @@ func test_an_encounter_with_no_winner_is_a_draw() -> void:
 	assert_false(snapshot.is_draw())
 
 
+func test_a_game_object_is_named_wherever_the_view_shows_it() -> void:
+	var view: MmPlayerView = MmPlayerView.new()
+	view.battlefield = [_named(1, "Wand")]
+	view.hand = [_named(2, "Bear")]
+	view.stack = [_named(3, "Zap")]
+	view.command = [_named(4, "Boon")]
+	view.graveyards = {HERO: [_named(5, "Ash")], VILLAIN: [_named(6, "Bones")]}
+	view.exiles = {HERO: [_named(7, "Gone")], VILLAIN: [_named(8, "Lost")]}
+
+	var names: Array[String] = []
+	for id: int in range(1, 9):
+		names.append(EncounterSnapshot.name_in(view, id))
+
+	assert_eq(names, ["Wand", "Bear", "Zap", "Boon", "Ash", "Bones", "Gone", "Lost"] as Array[String])
+	assert_eq(EncounterSnapshot.name_in(view, 99), "object 99", "Something the view does not show has no name to give.")
+
+
+func _named(id: int, object_name: String) -> MmObjectView:
+	var seen: MmObjectView = _object(id)
+	seen.name = object_name
+	return seen
+
+
 func _object(id: int) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()
 	seen.id = id

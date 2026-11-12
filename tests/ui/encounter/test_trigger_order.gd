@@ -1,5 +1,5 @@
 extends GutTest
-## Ordering simultaneous triggers (A339): the Hero moves them up and down a list whose top
+## Ordering simultaneous triggers (A339): the Hero drags them into a list whose top
 ## resolves first, and the answer lists them in the order they go on the stack.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
@@ -22,52 +22,55 @@ func test_it_starts_in_the_order_given_and_answers_with_the_top_one_put_on_the_s
 	assert_eq(_decision(3).validate(order.answer()), "")
 
 
-func test_moving_one_down_swaps_it_with_the_one_below() -> void:
+func test_a_trigger_moved_down_lets_the_ones_it_passes_close_up_behind_it() -> void:
+	var order: TriggerOrder = TriggerOrder.new(_decision(4))
+
+	assert_true(order.move_to(0, 2))
+
+	assert_eq(order.order(), [1, 2, 0, 3] as Array[int])
+	assert_eq(order.answer(), [3, 0, 2, 1])
+	assert_eq(_decision(4).validate(order.answer()), "")
+
+
+func test_a_trigger_moved_up_pushes_the_ones_it_passes_down() -> void:
+	var order: TriggerOrder = TriggerOrder.new(_decision(4))
+
+	assert_true(order.move_to(3, 1))
+
+	assert_eq(order.order(), [0, 3, 1, 2] as Array[int])
+	assert_true(order.move_to(1, 0))
+	assert_eq(order.order(), [3, 0, 1, 2] as Array[int])
+	assert_true(order.move_to(0, 3))
+	assert_eq(order.order(), [0, 1, 2, 3] as Array[int])
+
+
+func test_a_move_to_where_it_is_or_to_no_place_changes_nothing() -> void:
 	var order: TriggerOrder = TriggerOrder.new(_decision(3))
 
-	assert_true(order.move(0, 1))
+	assert_false(order.move_to(1, 1))
+	assert_false(order.move_to(0, 3), "There is no fourth place.")
+	assert_false(order.move_to(3, 0), "Nor a fourth trigger.")
+	assert_false(order.move_to(-1, 1))
+	assert_false(order.move_to(1, -1))
+	assert_false(TriggerOrder.new().move_to(0, 1), "Nothing is being ordered.")
 
-	assert_eq(order.order(), [1, 0, 2] as Array[int])
-	assert_eq(order.answer(), [2, 0, 1])
-	assert_true(order.move(2, -1))
-	assert_eq(order.order(), [1, 2, 0] as Array[int])
-
-
-func test_the_top_one_cannot_go_up_nor_the_bottom_one_down() -> void:
-	var order: TriggerOrder = TriggerOrder.new(_decision(3))
-
-	assert_false(order.can_move(0, -1))
-	assert_true(order.can_move(0, 1))
-	assert_true(order.can_move(2, -1))
-	assert_false(order.can_move(2, 1))
-	assert_false(order.can_move(3, -1), "There is no fourth.")
-	assert_false(order.can_move(-1, 1))
-	assert_false(order.move(0, -1))
 	assert_eq(order.order(), [0, 1, 2] as Array[int])
-	assert_false(TriggerOrder.new().can_move(0, 1), "Nothing is being ordered.")
+	assert_false(order.can_undo(), "And is nothing to take back.")
 
 
-func test_undo_takes_back_one_move_at_a_time() -> void:
+func test_undo_takes_back_one_move_at_a_time_however_far_each_went() -> void:
 	var order: TriggerOrder = TriggerOrder.new(_decision(3))
 	assert_false(order.can_undo())
 	assert_false(order.undo())
-	order.move(0, 1)
-	order.move(1, 1)
+	order.move_to(0, 2)
+	order.move_to(1, 0)
 
 	assert_true(order.can_undo())
 	assert_true(order.undo())
 
-	assert_eq(order.order(), [1, 0, 2] as Array[int])
+	assert_eq(order.order(), [1, 2, 0] as Array[int], "The first move, two places in one step (A394).")
 	assert_true(order.undo())
 	assert_eq(order.order(), [0, 1, 2] as Array[int])
-	assert_false(order.can_undo())
-
-
-func test_a_move_that_cannot_be_made_is_not_remembered() -> void:
-	var order: TriggerOrder = TriggerOrder.new(_decision(2))
-
-	order.move(0, -1)
-
 	assert_false(order.can_undo())
 
 

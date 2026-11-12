@@ -40,6 +40,17 @@ func test_the_deckbuilder_button_opens_the_prototype() -> void:
 	screen.free()
 
 
+func test_the_deckbuilder_flag_no_longer_skips_the_menu_once_the_deckbuilder_has_been_left() -> void:
+	DeckbuilderScreen.has_left = true
+
+	var menu: MainMenu = _menu(PackedStringArray(["--deckbuilder"]))
+	await wait_process_frames(2)
+	DeckbuilderScreen.has_left = false
+
+	assert_eq(_went_to, [] as Array[String], "Exit lands on the menu and does not bounce back.")
+	assert_not_null(menu.button("Start Encounter"))
+
+
 func test_the_deckbuilder_flag_skips_the_menu() -> void:
 	var menu: MainMenu = _menu(PackedStringArray(["--deckbuilder"]))
 	await wait_process_frames(2)

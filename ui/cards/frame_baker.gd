@@ -2,8 +2,15 @@ class_name FrameBaker
 extends RefCounted
 ## Bakes a FrameSpec's layers into one image on the CPU, once per key (A210). The frame
 ## images are imported as Images, so baking works headless and tests can check real pixels.
+## A baked Frame is kept on disk (FrameCache), so later runs load it and do not bake again.
 
 const FOLDER: String = "res://assets/card_frames/"
+## The scripts that decide what a baked Frame looks like. A change to any of them, like a
+## change to a frame image, makes every kept Frame stale.
+const RECIPE: Array[String] = [
+	"res://ui/cards/frame_baker.gd", "res://ui/cards/frame_spec.gd", "res://ui/cards/frame_layer.gd",
+	"res://ui/cards/card_geometry.gd",
+]
 
 static var _sources: Dictionary[String, Image] = {}
 static var _masks: Dictionary[String, PackedByteArray] = {}
@@ -12,22 +19,73 @@ static var _textures: Dictionary[String, ImageTexture] = {}
 static var _borders: Dictionary[String, Image] = {}
 static var _border_textures: Dictionary[String, ImageTexture] = {}
 static var _source_textures: Dictionary[String, ImageTexture] = {}
+static var _stamp: String = ""
 
 
 ## The baked Frame for [param spec], at CardGeometry.BAKE_SIZE.
 static func image(spec: FrameSpec) -> Image:
 	var key: String = spec.key()
 	if not _images.has(key):
-		var size: Vector2i = CardGeometry.BAKE_SIZE
-		var canvas: Image = Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
-		for layer: FrameLayer in spec.layers():
-			var area: Rect2i = _pixels(layer.bounds, size)
-			if layer.is_cover():
-				canvas.fill_rect(area, Color.BLACK)
-				continue
-			canvas.blend_rect(_layer_image(layer, area), Rect2i(Vector2i.ZERO, size), Vector2i.ZERO)
-		_images[key] = canvas
+		var kept: Image = FrameCache.load_image(key, stamp())
+		if kept == null:
+			kept = _bake(spec)
+			FrameCache.save_image(key, stamp(), kept)
+		_images[key] = kept
 	return _images[key]
+
+
+## Names what a Frame baked now is baked from: the frame images, the scripts in RECIPE, the
+## bake size, the engine and the game's version. Frames kept under another stamp are stale.
+static func stamp() -> String:
+	if _stamp == "":
+		var parts: PackedStringArray = [
+			str(CardGeometry.BAKE_SIZE), str(Engine.get_version_info()["hash"]),
+			str(ProjectSettings.get_setting("application/config/version", "")),
+		]
+		for script: String in RECIPE:
+			parts.append((load(script) as GDScript).source_code.md5_text())
+		parts.append_array(_frame_image_times(FOLDER))
+		_stamp = "".join(parts).md5_text().substr(0, 16)
+	return _stamp
+
+
+## Drops every Frame held in memory, so the next ask loads it from disk or bakes it again.
+static func forget_baked() -> void:
+	_sources.clear()
+	_masks.clear()
+	_images.clear()
+	_textures.clear()
+	_borders.clear()
+	_border_textures.clear()
+	_source_textures.clear()
+
+
+## Composes [param spec]'s layers into one image at the bake size.
+static func _bake(spec: FrameSpec) -> Image:
+	var size: Vector2i = CardGeometry.BAKE_SIZE
+	var canvas: Image = Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
+	for layer: FrameLayer in spec.layers():
+		var area: Rect2i = _pixels(layer.bounds, size)
+		if layer.is_cover():
+			canvas.fill_rect(area, Color.BLACK)
+			continue
+		canvas.blend_rect(_layer_image(layer, area), Rect2i(Vector2i.ZERO, size), Vector2i.ZERO)
+	return canvas
+
+
+## Every file under [param folder] with when it was last changed, in a steady order. In an
+## exported game the times read as zero, and the game's version tells builds apart.
+static func _frame_image_times(folder: String) -> PackedStringArray:
+	var found: PackedStringArray = []
+	var files: PackedStringArray = DirAccess.get_files_at(folder)
+	files.sort()
+	for file: String in files:
+		found.append("%s%s@%d" % [folder, file, FileAccess.get_modified_time(folder + file)])
+	var folders: PackedStringArray = DirAccess.get_directories_at(folder)
+	folders.sort()
+	for inner: String in folders:
+		found.append_array(_frame_image_times(folder + inner + "/"))
+	return found
 
 
 ## The baked Frame for [param spec] as a texture, with mipmaps for drawing it small.

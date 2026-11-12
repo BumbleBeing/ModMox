@@ -9,7 +9,7 @@ extends HBoxContainer
 ## The filter was changed by the bar.
 signal changed
 
-const TOGGLE: float = 34.0
+const TOGGLE: float = 32.0
 const ICON: float = 24.0
 const ON_FILL: Color = Color("#343b47")
 const ON_RING: Color = Color("#e8cf8a")
@@ -55,9 +55,9 @@ func setup(filter: CollectionFilter, shown: int, owned: int) -> void:
 	_search.text = filter.search
 	_search.placeholder_text = "Search cards"
 	_search.tooltip_text = "Finds every word in a card's name, type line or Rules Text."
-	_search.custom_minimum_size = Vector2(150, 0)
+	_search.custom_minimum_size = Vector2(110, 0)
 	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_search.add_theme_font_size_override("font_size", 15)
+	_search.add_theme_font_size_override("font_size", 17)
 	_search.text_changed.connect(_on_search_changed)
 	add_child(_search)
 	_add_divider()
@@ -92,7 +92,7 @@ func setup(filter: CollectionFilter, shown: int, owned: int) -> void:
 	_count.custom_minimum_size = Vector2(74, 0)
 	_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_count.add_theme_font_size_override("font_size", 14)
+	_count.add_theme_font_size_override("font_size", 16)
 	_count.add_theme_color_override("font_color", MUTED)
 	add_child(_count)
 	_sync()
@@ -213,7 +213,7 @@ func _chip_button(text: String, toggles: bool) -> Button:
 	chip.toggle_mode = toggles
 	chip.focus_mode = Control.FOCUS_NONE
 	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	chip.add_theme_font_size_override("font_size", 14)
+	chip.add_theme_font_size_override("font_size", 16)
 	_style_as_pill(chip)
 	return chip
 
@@ -234,8 +234,8 @@ func _style_as_pill(control: Button) -> void:
 
 static func _pill(fill: Color, border: Color) -> StyleBoxFlat:
 	var style: StyleBoxFlat = _flat(fill, border, 1, 13)
-	style.content_margin_left = 9
-	style.content_margin_right = 9
+	style.content_margin_left = 7
+	style.content_margin_right = 7
 	style.content_margin_top = 3
 	style.content_margin_bottom = 3
 	return style
@@ -256,10 +256,19 @@ func _add_sort() -> void:
 	_sort = OptionButton.new()
 	_sort.focus_mode = Control.FOCUS_NONE
 	_sort.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_sort.add_theme_font_size_override("font_size", 14)
+	_sort.add_theme_font_size_override("font_size", 16)
 	for sort_key: CollectionFilter.SortKey in SORT_NAMES:
-		_sort.add_item("Sort: %s" % SORT_NAMES[sort_key], sort_key)
+		_sort.add_item(SORT_NAMES[sort_key], sort_key)
+	_sort.tooltip_text = "The order the Collection's cards are shown in."
 	_style_as_pill(_sort)
+	# As wide as its longest choice from the start, so choosing one never pushes Clear and
+	# the count off the end of the bar.
+	var longest: float = 0.0
+	for index: int in _sort.item_count:
+		_sort.select(index)
+		longest = maxf(longest, _sort.get_minimum_size().x)
+	_sort.select(0)
+	_sort.custom_minimum_size = Vector2(longest, 0)
 	_sort.item_selected.connect(_on_sort_chosen)
 	add_child(_sort)
 	_toggles["sort"] = _sort
@@ -314,7 +323,7 @@ func _symbol(image_name: String, suffix: String = "") -> Control:
 	if suffix != "":
 		var mark: Label = Label.new()
 		mark.text = suffix
-		mark.add_theme_font_size_override("font_size", 15)
+		mark.add_theme_font_size_override("font_size", 17)
 		mark.add_theme_color_override("font_outline_color", Color.BLACK)
 		mark.add_theme_constant_override("outline_size", 4)
 		mark.position = Vector2(ICON - 7.0, -9.0)

@@ -456,7 +456,7 @@ func _act(kind: Script, card_name: String) -> void:
 	var priority: PriorityDecision = snapshot.decision as PriorityDecision
 	for index: int in priority.actions.size():
 		var action: MmAction = priority.actions[index]
-		if is_instance_of(action, kind) and DebugDecisionForm.name_of(snapshot.view, DecisionClicks.object_of(action)) == card_name:
+		if is_instance_of(action, kind) and EncounterSnapshot.name_in(snapshot.view, DecisionClicks.object_of(action)) == card_name:
 			assert_eq(_presenter.answer(index), "")
 			_presenter.wait_until_idle()
 			return

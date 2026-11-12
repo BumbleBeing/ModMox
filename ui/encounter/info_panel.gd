@@ -71,7 +71,7 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 		_cancel.focus_mode = Control.FOCUS_NONE
 		_cancel.position = Vector2(box.size.x - 112, box.size.y - 40)
 		_cancel.size = Vector2(100, 32)
-		_cancel.add_theme_font_size_override("font_size", 16)
+		_cancel.add_theme_font_size_override("font_size", 18)
 		_cancel.pressed.connect(func() -> void: cancel_pressed.emit())
 		add_child(_cancel)
 	if prompt.offers_all_attack:
@@ -80,7 +80,7 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 		_all_attack.focus_mode = Control.FOCUS_NONE
 		_all_attack.position = Vector2(box.size.x - 122, box.size.y - 40)
 		_all_attack.size = Vector2(110, 32)
-		_all_attack.add_theme_font_size_override("font_size", 16)
+		_all_attack.add_theme_font_size_override("font_size", 18)
 		_all_attack.pressed.connect(func() -> void: all_attack_pressed.emit())
 		add_child(_all_attack)
 	_option = _label("", Rect2(12, 8, inside, box.size.y - 16), 18, Color.WHITE)
@@ -102,6 +102,13 @@ func show_option(text: String) -> void:
 	if _option != null:
 		_option.text = text
 		_arrange()
+
+
+## Changes what the prompt says without building the panel again, for a choice that is
+## counted as it is made ("Discard 2 cards (1 chosen)").
+func show_prompt(text: String) -> void:
+	if _prompt != null and _prompt.text != text:
+		_prompt.text = text
 
 
 func prompt_text() -> String:
@@ -177,7 +184,7 @@ func _label(text: String, box: Rect2, font_size: int, color: Color) -> Label:
 	var label: Label = Label.new()
 	# Wrapping is set before the text, or the label grows as wide as its longest line.
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_font_size_override("font_size", font_size + UiText.RAISE)
 	label.add_theme_color_override("font_color", color)
 	label.text = text
 	label.position = box.position

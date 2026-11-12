@@ -4,18 +4,26 @@ extends RefCounted
 ## Decision Panel option points at. Each one is a child of the Control it marks, so it
 ## turns, moves and resizes with it. Never draw one beside its host from a remembered
 ## rectangle: it would hang off a fanned or tapped card.
+##
+## A Glow and a mark ease in and out over the seconds they are given, and a Glow changing
+## color crossfades. Given none, as in tests and screenshots, they come and go at once. One
+## taken away is gone at once to anyone who asks; it is only drawn while it fades.
 
 const GLOW: String = "Glow"
 const POINTER: String = "Pointer"
 const MARK: String = "StackMark"
+## What an effect fading out is renamed to, so a new one can take its name meanwhile.
+const LEAVING: String = "Leaving"
 
 
-## Gives [param host], [param host_size] pixels in size, a Glow of [param color].
-static func add_glow(host: Control, host_size: Vector2, color: Color) -> void:
+## Gives [param host], [param host_size] pixels in size, a Glow of [param color], easing in
+## over [param seconds].
+static func add_glow(host: Control, host_size: Vector2, color: Color, seconds: float = 0.0) -> void:
 	var glow: Control = Control.new()
 	glow.name = GLOW
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	glow.set_meta("color", color)
+	glow.set_meta("size", host_size)
 	var soft: Panel = CardShapes.outline(host_size + Vector2(14, 14), 12, 4, Color(color, 0.35))
 	soft.position = Vector2(-7, -7)
 	glow.add_child(soft)
@@ -23,20 +31,22 @@ static func add_glow(host: Control, host_size: Vector2, color: Color) -> void:
 	hard.position = Vector2(-3, -3)
 	glow.add_child(hard)
 	host.add_child(glow)
+	Easing.fade_in(glow, seconds)
 
 
-## Gives [param host] a Glow of [param color] in place of any it has.
-static func set_glow(host: Control, host_size: Vector2, color: Color) -> void:
-	remove_glow(host)
-	add_glow(host, host_size, color)
-
-
-## Takes away [param host]'s Glow, if it has one.
-static func remove_glow(host: Control) -> void:
+## Gives [param host] a Glow of [param color] in place of any it has, crossfading over
+## [param seconds]. One it has already, of that color and size, is left as it is.
+static func set_glow(host: Control, host_size: Vector2, color: Color, seconds: float = 0.0) -> void:
 	var old: Node = host.get_node_or_null(GLOW)
-	if old != null:
-		host.remove_child(old)
-		old.queue_free()
+	if old != null and old.get_meta("color") == color and old.get_meta("size") == host_size:
+		return
+	remove_glow(host, seconds)
+	add_glow(host, host_size, color, seconds)
+
+
+## Takes away [param host]'s Glow, if it has one, easing out over [param seconds].
+static func remove_glow(host: Control, seconds: float = 0.0) -> void:
+	_take_away(host, GLOW, seconds)
 
 
 ## The color of [param host]'s Glow, or null if it has none. The result is a Variant
@@ -69,8 +79,8 @@ static func has_pointer(host: Control) -> bool:
 ## Marks [param host] as something the Stack Window entry under the cursor is about, in
 ## that entry's [param color]: solid for the source of an ability, dashed for a target
 ## (A337). The mark takes the place of the host's Glow until it is removed (A346).
-static func add_mark(host: Control, host_size: Vector2, color: Color, is_dashed: bool) -> void:
-	remove_mark(host)
+static func add_mark(host: Control, host_size: Vector2, color: Color, is_dashed: bool, seconds: float = 0.0) -> void:
+	_take_away(host, MARK, seconds)
 	var mark: Control = Control.new()
 	mark.name = MARK
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -86,17 +96,16 @@ static func add_mark(host: Control, host_size: Vector2, color: Color, is_dashed:
 		hard.position = Vector2(-3, -3)
 		mark.add_child(hard)
 	host.add_child(mark)
+	Easing.fade_in(mark, seconds)
 	var glow: Control = host.get_node_or_null(GLOW) as Control
 	if glow != null:
 		glow.hide()
 
 
-## Takes [param host]'s mark away, and shows its Glow again if it has one.
-static func remove_mark(host: Control) -> void:
-	var mark: Node = host.get_node_or_null(MARK)
-	if mark != null:
-		host.remove_child(mark)
-		mark.queue_free()
+## Takes [param host]'s mark away, easing out over [param seconds], and shows its Glow again
+## if it has one.
+static func remove_mark(host: Control, seconds: float = 0.0) -> void:
+	_take_away(host, MARK, seconds)
 	var glow: Control = host.get_node_or_null(GLOW) as Control
 	if glow != null:
 		glow.show()
@@ -117,3 +126,15 @@ static func is_mark_dashed(host: Control) -> bool:
 static func is_glow_showing(host: Control) -> bool:
 	var glow: Control = host.get_node_or_null(GLOW) as Control
 	return glow != null and glow.visible
+
+
+## Takes [param host]'s effect named [param effect_name] away: at once given no time, or
+## renamed and faded out over [param seconds], then freed. One partly in fades from where
+## it is, as quickly.
+static func _take_away(host: Control, effect_name: String, seconds: float) -> void:
+	var old: Control = host.get_node_or_null(effect_name) as Control
+	if old == null:
+		return
+	if seconds > 0.0:
+		old.name = LEAVING
+	Easing.fade_out_and_free(old, seconds)

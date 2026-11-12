@@ -2,8 +2,8 @@ class_name EncounterScreen
 extends Control
 ## The Encounter Screen (game glossary): shows an encounter to the human and takes their
 ## answers. It draws only from the snapshots its Encounter Presenter hands it (ADR 0021):
-## the Regions from EncounterLayout, the Stack Window and Emblems windows over them, and the
-## Debug Decision Panel for every decision kind that has no input of its own yet.
+## the Regions from EncounterLayout, and the Stack Window and Emblems windows over them.
+## Every kind of decision has an input of its own (DecisionInputs).
 ##
 ## A permanent or a player's panel that a click answers something on takes the mouse (a
 ## ClickCatcher); everything else ignores it. One answer is given at once, and several open
@@ -17,9 +17,9 @@ extends Control
 ## The Stack Window gives each spell and ability its own color (StackColors, kept here too)
 ## and marks what the entry under the cursor is about: its source with a solid border and
 ## its targets with a dashed one. A spell that can be targeted is clicked there. Triggers
-## to be put in order appear above the stack and are moved with buttons (a TriggerOrder,
-## kept here like the CombatSelection), and a choice between replacement effects is made
-## in a window of its own.
+## to be put in order appear above the stack and are dragged into place (a TriggerList,
+## which a redraw replaces, and a TriggerOrder, kept here like the CombatSelection), and a
+## choice between replacement effects is made in a window of its own.
 ##
 ## Permanents do not jump from one redraw to the next: a FaceMotion, kept here as well,
 ## remembers where each one's face was drawn, and every frame the screen places each face
@@ -33,6 +33,12 @@ extends Control
 ## own face is lifted to a layer above the windows, and the rest of the hand is only told
 ## where to go. A double-click plays a card too, and one click does nothing.
 ##
+## Through the pregame the opening-hand overlay covers everything right of the sidebar and
+## holds the Hero's hand: play or draw, keep or mulligan, and the cards put on the bottom
+## are answered there (an OpeningHand says what it reads, kept here). Cards to discard are
+## chosen in the hand's strip with single clicks. Both build a CardPicks, kept here like
+## the CombatSelection.
+##
 ## Run with a request: godot --path . -- --hero=red_green --villain=white_black --seed=7
 ## Add --screenshot=/absolute/path.png to save a picture and quit.
 
@@ -42,6 +48,8 @@ const MENU: String = "res://ui/menu/main_menu.tscn"
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 ## How much of the way to its place a card of the hand goes in a sixtieth of a second.
 const HAND_EASE: float = 0.3
+## The Glow of a card of the hand chosen to be discarded (A401).
+const PICKED_GLOW: Color = Color.WHITE
 const LOSS_REASONS: Dictionary[MmPlayer.LossReason, String] = {
 	MmPlayer.LossReason.ZERO_LIFE: "ran out of life",
 	MmPlayer.LossReason.EMPTY_LIBRARY: "drew from an empty library",
@@ -64,10 +72,8 @@ var _board: Control
 var _panels: Dictionary[int, PlayerPanel] = {}
 var _stack_window: ZoneWindow
 var _emblem_windows: Dictionary[int, ZoneWindow] = {}
-var _debug: DebugDecisionPanel
 var _faces: Dictionary[int, Control] = {}
 var _face_sizes: Dictionary[int, Vector2] = {}
-var _pointed_id: int = DebugDecisionForm.NONE
 var _hand_faces: Array[CardFace] = []
 var _hand_rest: Array[Vector2] = []
 var _card_backs: Array[Control] = []
@@ -78,11 +84,18 @@ var _stack_colors: StackColors = StackColors.new()
 var _stack_arrows: StackArrows = null
 ## The Hero's half-made order for the triggers being asked about, if any are.
 var _trigger_order: TriggerOrder = TriggerOrder.new()
-var _trigger_entries: Array[StackEntry] = []
+## The list they are dragged in, which a redraw replaces.
+var _trigger_list: TriggerList = null
 var _choice_window: ZoneWindow
 var _choice_entries: Array[ZoneEntry] = []
 ## What the entry under the cursor has marked on the board.
 var _marked: Array[Control] = []
+## How long a Glow or mark takes to ease in or out: none until the game's pace is set.
+var _ease_seconds: float = 0.0
+## Through a redraw, the color each object glowed before it, so a Glow that has not changed
+## is drawn at once and not eased in again; only one that changed eases.
+var _glowed_before: Dictionary[int, Color] = {}
+var _is_redrawing: bool = false
 var _banner: Control = null
 var _info: InfoPanel
 var _option_menu: OptionMenu
@@ -121,6 +134,11 @@ var _hand_cards: Array[int] = []
 var _hand_turns: Array[float] = []
 var _drag_layer: Control
 var _lifted_face: CardFace = null
+## What the pregame has said so far, and the overlay that shows it (13e-2).
+var _opening: OpeningHand = OpeningHand.new()
+var _overlay: OpeningHandOverlay
+## The Hero's half-made choice of cards to put on the bottom or to discard, if one is asked.
+var _picks: CardPicks = CardPicks.new()
 
 
 func _ready() -> void:
@@ -165,17 +183,21 @@ func _ready() -> void:
 		emblems.hide()
 		add_child(emblems)
 		_emblem_windows[player_id] = emblems
-	_debug = DebugDecisionPanel.new()
-	_debug.size = Vector2(380, 520)
-	_debug.answered.connect(_answer)
-	_debug.option_pointed.connect(_point_at)
-	add_child(_debug)
 	_info = InfoPanel.new()
 	_info.cancel_pressed.connect(func() -> void: _command(_presenter.cancel_cast))
 	_info.all_attack_pressed.connect(func() -> void:
 		if not _is_paused and _selection.select_all():
 			_redraw())
 	add_child(_info)
+	# Over the board, its windows and the Info Panel; the Emblems windows open over it, so
+	# a Status can be read while deciding whether to keep (A392).
+	_overlay = OpeningHandOverlay.new()
+	_overlay.answered.connect(_answer_overlay)
+	_overlay.card_clicked.connect(_put_on_bottom)
+	_overlay.confirmed.connect(_confirm_picks)
+	add_child(_overlay)
+	for player_id: int in [HERO, VILLAIN]:
+		move_child(_emblem_windows[player_id], _overlay.get_index())
 	_drag_layer = Control.new()
 	_drag_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_drag_layer)
@@ -223,6 +245,17 @@ func use_game_pace(presenter: EncounterPresenter) -> void:
 	presenter.action_wait_msec = Pacing.ACTION_MSEC
 	presenter.mana_wait_msec = Pacing.MANA_MSEC
 	_motion.seconds = Pacing.MOVE_SECONDS
+	set_ease_seconds(Pacing.EASE_SECONDS)
+
+
+## Lets Glows, marks and windows ease in and out over [param seconds] (Pacing.EASE_SECONDS
+## in a real encounter). Tests and screenshots leave it at none.
+func set_ease_seconds(seconds: float) -> void:
+	_ease_seconds = seconds
+	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN]]:
+		window.ease_seconds = seconds
+	_option_menu.ease_seconds = seconds
+	_pause_menu.ease_seconds = seconds
 
 
 ## Shows the encounter [param presenter] runs, and starts it.
@@ -250,6 +283,9 @@ func _process(delta: float) -> void:
 ## hand comes first (_is_covered). While a card is pressed or held, the mouse is followed
 ## wherever it goes, over windows and buttons too.
 func _input(event: InputEvent) -> void:
+	if _is_trigger_pressed():
+		_follow_trigger(event)
+		return
 	var mouse: InputEventMouse = make_input_local(event) as InputEventMouse
 	var click: InputEventMouseButton = mouse as InputEventMouseButton
 	if not _drag.is_pressed() and not _drag.is_holding():
@@ -265,6 +301,27 @@ func _input(event: InputEvent) -> void:
 		release_hand(click.position)
 	elif click.button_index == MOUSE_BUTTON_RIGHT and click.pressed and _drag.is_holding():
 		cancel_drag()
+		get_viewport().set_input_as_handled()
+
+
+## Whether a trigger being ordered is pressed or held.
+func _is_trigger_pressed() -> bool:
+	return _trigger_list != null and is_instance_valid(_trigger_list) and _trigger_list.is_pressed()
+
+
+## While a trigger is pressed or held the mouse is followed wherever it goes, as it is for
+## a card of the hand: the entry moves with it, letting go puts it down, and a right-click
+## puts it back (A394).
+func _follow_trigger(event: InputEvent) -> void:
+	var mouse: InputEventMouse = _trigger_list.make_input_local(event) as InputEventMouse
+	var click: InputEventMouseButton = mouse as InputEventMouseButton
+	if mouse is InputEventMouseMotion:
+		_trigger_list.drag_to(mouse.position)
+	elif click != null and click.button_index == MOUSE_BUTTON_LEFT and not click.pressed:
+		_trigger_list.drag_to(click.position)
+		_trigger_list.release()
+	elif click != null and click.button_index == MOUSE_BUTTON_RIGHT and click.pressed and _trigger_list.is_holding():
+		_trigger_list.cancel()
 		get_viewport().set_input_as_handled()
 
 
@@ -340,9 +397,12 @@ func click_empty_board() -> void:
 
 ## Passes priority, as the pass button and the space bar do. While a combat decision is
 ## being answered it confirms the selection instead, once that is complete, and while
-## triggers are being ordered it confirms their order.
+## triggers are being ordered it confirms their order, and while cards are being put on the
+## bottom or chosen to discard it confirms those.
 func pass_priority() -> void:
-	if _trigger_order.is_active():
+	if _picks.is_active():
+		_confirm_picks()
+	elif _trigger_order.is_active():
 		if not _is_paused:
 			_answer(_trigger_order.answer())
 	elif not _selection.is_active():
@@ -351,10 +411,17 @@ func pass_priority() -> void:
 		_answer(_selection.answer())
 
 
-## Undoes the Hero's last click of a half-made selection or their last move of a trigger,
+## Undoes the Hero's last click of a half-made selection or choice of cards, or their last move of a trigger,
 ## and otherwise their last answer, as the undo button and Z do (A320, A339).
 func undo() -> void:
-	if not _is_paused and (_selection.undo() or _trigger_order.undo()):
+	if not _is_paused and _picks.undo():
+		_show_picks_changed()
+	elif _picks.is_bottoming():
+		# Keeping is final (A406): with no card to take back there is nothing to undo.
+		return
+	elif not _is_paused and _trigger_order.undo():
+		_show_trigger_order()
+	elif not _is_paused and _selection.undo():
 		_redraw()
 	else:
 		_command(_presenter.undo)
@@ -366,15 +433,19 @@ func leave(scene: String) -> void:
 	navigate.call(scene)
 
 
-## Whether something drawn over the hand is under [param cursor]: an open window, or the
-## Option Menu. A press there is theirs, never the card's beneath.
+## Whether something drawn over the hand is under [param cursor]: an open window, the
+## Option Menu, or the opening-hand overlay. A press there is theirs, never the card's
+## beneath.
 func _is_covered(cursor: Vector2) -> bool:
 	if _option_menu.is_open():
 		return true
-	var windows: Array[Control] = [_stack_window, _choice_window, _debug]
+	var windows: Array[Control] = [_stack_window, _choice_window]
+	if _overlay.is_open():
+		windows.append(_overlay)
 	windows.append_array(_emblem_windows.values())
 	for window: Control in windows:
-		if window.visible and Rect2(window.position, window.size).has_point(cursor):
+		# A window fading out is already closed: the cursor is not over it.
+		if Easing.is_shown(window) and Rect2(window.position, window.size).has_point(cursor):
 			return true
 	return false
 
@@ -387,9 +458,10 @@ func hand_card_at(cursor: Vector2) -> int:
 	if _hand_faces.is_empty():
 		return DragCard.NONE
 	var card: Vector2 = _hand_faces[0].size
-	if not EncounterLayout.is_cursor_over_hand(_hand_rest, card, cursor):
+	var rest: Array[Vector2] = _hand_rest_now()
+	if not EncounterLayout.is_cursor_over_hand(rest, card, cursor):
 		return DragCard.NONE
-	var index: int = roundi(EncounterLayout.hand_cursor_place(_hand_rest, card, cursor))
+	var index: int = roundi(EncounterLayout.hand_cursor_place(rest, card, cursor))
 	var is_on_it: bool = Rect2(_hand_faces[index].position, card).grow(8.0).has_point(cursor) \
 			or Rect2(hand_places(cursor)[index], card).grow(8.0).has_point(cursor)
 	return _hand_cards[index] if is_on_it else DragCard.NONE
@@ -435,7 +507,8 @@ func drag_to(cursor: Vector2) -> void:
 	_lifted_face.position = _drag.place()
 
 
-## The left button came up at [param cursor]. A held card let go above the hand's strip is
+## The left button came up at [param cursor]. A card that was pressed and never picked up
+## has been clicked. A held card let go above the hand's strip is
 ## played: at once with one way to play it, from the Option Menu with several, the card
 ## waiting where it was let go (A372). One that cannot be played right now goes back to its
 ## place without a word (A380). Over the strip it is put down where the hand made room.
@@ -443,7 +516,10 @@ func release_hand(cursor: Vector2) -> void:
 	drag_to(cursor)
 	if not _drag.is_holding():
 		if _drag.is_pressed():
+			# Let go where it was pressed: a click, which chooses a card to discard (A400).
+			var clicked: int = _drag.card_id()
 			_drag.drop()
+			_click_hand(clicked)
 		return
 	if not _drag.is_above():
 		_put_down(_drag.gap())
@@ -540,7 +616,14 @@ func trigger_order() -> TriggerOrder:
 
 ## The triggers being ordered, as the Stack Window lists them above the stack.
 func trigger_entries() -> Array[StackEntry]:
-	return _trigger_entries
+	if _trigger_list == null or not is_instance_valid(_trigger_list):
+		return []
+	return _trigger_list.entries_in_order()
+
+
+## The list the triggers being ordered are dragged in, or null when none are.
+func trigger_list() -> TriggerList:
+	return _trigger_list if _trigger_list != null and is_instance_valid(_trigger_list) else null
 
 
 ## The window that asks which replacement effect applies first.
@@ -561,8 +644,17 @@ func emblems_window(player_id: int) -> ZoneWindow:
 	return _emblem_windows[player_id]
 
 
-func debug_panel() -> DebugDecisionPanel:
-	return _debug
+func opening_overlay() -> OpeningHandOverlay:
+	return _overlay
+
+
+func opening_hand() -> OpeningHand:
+	return _opening
+
+
+## The Hero's half-made choice of cards to put on the bottom or to discard.
+func card_picks() -> CardPicks:
+	return _picks
 
 
 func info_panel() -> InfoPanel:
@@ -654,6 +746,9 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	var order: OrderTriggersDecision = snapshot.decision as OrderTriggersDecision
 	if not _trigger_order.is_for(order):
 		_trigger_order = TriggerOrder.new(order)
+	if not _picks.is_for(snapshot.decision if CardPicks.covers(snapshot.decision) else null):
+		_picks = CardPicks.new(snapshot.decision)
+	_opening.read(snapshot)
 	_snapshot = snapshot
 	_error = ""
 	_is_snapping = _is_snapping or snapshot.is_rewind
@@ -669,7 +764,7 @@ func _show(snapshot: EncounterSnapshot) -> void:
 
 func _toggle_emblems(player_id: int) -> void:
 	var window: ZoneWindow = _emblem_windows[player_id]
-	window.visible = not window.visible
+	window.set_open(not window.is_open())
 	window.move_to_front()
 
 
@@ -694,14 +789,6 @@ func _on_object_clicked(object_id: int) -> void:
 		_option_menu.open(options, get_local_mouse_position(), _regions["battlefield"])
 
 
-func _point_at(object_id: int) -> void:
-	if _faces.has(_pointed_id):
-		BorderEffects.remove_pointer(_faces[_pointed_id])
-	_pointed_id = object_id
-	if _faces.has(object_id):
-		BorderEffects.add_pointer(_faces[object_id], _face_sizes[object_id])
-
-
 ## Draws everything from the latest snapshot. Reads nothing else, so it is safe while the
 ## Villain is thinking.
 func _redraw() -> void:
@@ -709,6 +796,14 @@ func _redraw() -> void:
 		return
 	_option_menu.close()
 	_clear_marks()
+	_glowed_before.clear()
+	for object_id: int in _faces:
+		if is_instance_valid(_faces[object_id]) and BorderEffects.glow_color(_faces[object_id]) != null:
+			_glowed_before[object_id] = BorderEffects.glow_color(_faces[object_id])
+	_is_redrawing = true
+	_overlay.glow_seconds = _ease_seconds
+	for panel: PlayerPanel in _panels.values():
+		panel.glow_seconds = _ease_seconds
 	var unseen: Array[int] = _unseen_faces()
 	for child: Node in _board.get_children():
 		_board.remove_child(child)
@@ -759,7 +854,9 @@ func _redraw() -> void:
 	_draw_nonlands(view, VILLAIN, regions["villain_nonlands"], glow)
 	_draw_nonlands(view, HERO, regions["hero_nonlands"], glow)
 	_draw_row(_permanents(view, HERO, true), regions["hero_lands"], glow)
-	_draw_hand(view, regions["hero_hand"], glow)
+	# Through the pregame the overlay holds the hand, and its strip is empty (A384).
+	if not _opening.is_open():
+		_draw_hand(view, regions["hero_hand"], glow)
 	for player_id: int in [VILLAIN, HERO]:
 		var who: String = "hero" if player_id == HERO else "villain"
 		_draw_library(view.library_sizes.get(player_id, 0), who + "_library", regions[who + "_library"])
@@ -768,7 +865,6 @@ func _redraw() -> void:
 		_fill_emblems_window(view, player_id)
 	_fill_stack_window(view)
 	_fill_choice_window(view)
-	_debug.show_snapshot(_snapshot)
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
 	_info.show_option(_release_text())
 	_move_faces(unseen)
@@ -776,7 +872,20 @@ func _redraw() -> void:
 	_show_block_lines()
 	if _snapshot.is_over():
 		_draw_banner(view)
+	_show_overlay()
+	_show_picks()
 	_spread_hand(1.0)
+	_is_redrawing = false
+	_glowed_before.clear()
+
+
+## How long [param object_id]'s Glow takes to become [param color] (null for none): through a
+## redraw, no time if that is how it glowed before; otherwise the usual time.
+func _glow_seconds_for(object_id: int, color: Variant) -> float:
+	if not _is_redrawing:
+		return _ease_seconds
+	var before: Variant = _glowed_before.get(object_id)
+	return 0.0 if before == color else _ease_seconds
 
 
 ## The Stack Window and Emblems windows stay inside the battlefield; each opens at its own
@@ -788,12 +897,9 @@ func _place_windows(battlefield: Rect2) -> void:
 		_choice_window.position = battlefield.get_center() - _choice_window.size / 2.0
 		_emblem_windows[HERO].position = Vector2(battlefield.position.x + 400, battlefield.end.y - 240)
 		_emblem_windows[VILLAIN].position = Vector2(battlefield.position.x + 400, battlefield.position.y + 10)
-		_debug.position = Vector2(battlefield.position.x + 6, battlefield.position.y + 110)
 	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN]]:
 		window.bounds = battlefield
 		window.fit()
-	_debug.bounds = Rect2(Vector2.ZERO, size)
-	_debug.fit()
 
 
 ## A player's lands, or their other permanents. Lands of one name stand together.
@@ -917,16 +1023,20 @@ func _is_fighting(permanent: MmObjectView) -> bool:
 	return permanent.is_attacking or not permanent.blocking_ids.is_empty()
 
 
-## Creatures in combat stand to the left of the rest, in object ID order. Only those the
-## engine has in combat: while the Hero is choosing, nothing changes places under the cursor.
+## Creatures in combat stand to the left of the rest: attackers in object ID order, and
+## blockers in the order of the attackers they block, so no two block lines cross. Only
+## those the engine has in combat: while the Hero is choosing, nothing changes places under
+## the cursor.
 func _fighting_first(creatures: Array[MmObjectView]) -> Array[MmObjectView]:
 	var ids: Array[int] = []
 	var is_fighting: Array[bool] = []
+	var blocked: Array[int] = []
 	for creature: MmObjectView in creatures:
 		ids.append(creature.id)
 		is_fighting.append(_is_fighting(creature))
+		blocked.append(creature.blocking_ids.min() if not creature.blocking_ids.is_empty() else EncounterLayout.NOT_BLOCKING)
 	var ordered: Array[MmObjectView] = []
-	for index: int in EncounterLayout.combat_order(ids, is_fighting):
+	for index: int in EncounterLayout.combat_order(ids, is_fighting, blocked):
 		ordered.append(creatures[index])
 	return ordered
 
@@ -935,9 +1045,8 @@ func _remember_face(object_id: int, face: Control, face_size: Vector2, glow: Dec
 	_faces[object_id] = face
 	_face_sizes[object_id] = face_size
 	if glow.objects.has(object_id):
-		BorderEffects.add_glow(face, face_size, DecisionClicks.color_of(glow.objects[object_id]))
-	if object_id == _pointed_id:
-		BorderEffects.add_pointer(face, face_size)
+		var color: Color = DecisionClicks.color_of(glow.objects[object_id])
+		BorderEffects.add_glow(face, face_size, color, _glow_seconds_for(object_id, color))
 	if not glow.options_of(object_id).is_empty() or _selection.is_clickable(object_id):
 		ClickCatcher.add(face, face_size).clicked.connect(_on_object_clicked.bind(object_id))
 	_add_combat_marks(object_id, face, face_size)
@@ -1213,8 +1322,8 @@ func _glow_lifted_face() -> void:
 		return
 	var is_bright: bool = _drag.is_waiting() or _drag.is_above()
 	var kind: DecisionClicks.Kind = DecisionClicks.Kind.OTHER
-	BorderEffects.set_glow(_lifted_face, _lifted_face.size,
-			DecisionClicks.bright_color_of(kind) if is_bright else DecisionClicks.color_of(kind))
+	var color: Color = DecisionClicks.bright_color_of(kind) if is_bright else DecisionClicks.color_of(kind)
+	BorderEffects.set_glow(_lifted_face, _lifted_face.size, color, _glow_seconds_for(_hand_view(_drag.card_id()).id, color))
 
 
 ## Takes the pressed card out of the hand's row and holds it. Nothing is rebuilt: its own
@@ -1261,7 +1370,7 @@ func _put_down(index: int) -> void:
 	_hand_faces.insert(at, face)
 	_hand_cards.insert(at, card_id)
 	if BorderEffects.glow_color(face) != null:
-		BorderEffects.set_glow(face, face.size, DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
+		BorderEffects.set_glow(face, face.size, DecisionClicks.color_of(DecisionClicks.Kind.OTHER), _ease_seconds)
 	_lay_out_hand()
 
 
@@ -1282,9 +1391,10 @@ func _on_menu_closed() -> void:
 func hand_places(cursor: Vector2) -> Array[Vector2]:
 	if _hand_faces.is_empty():
 		return []
+	var rest: Array[Vector2] = _hand_rest_now()
 	if _drag.is_lifted():
-		return _hand_rest.duplicate()
-	return EncounterLayout.hand_spread_within(_hand_rest, _hand_faces[0].size, cursor, _regions["hero_hand"])
+		return rest
+	return EncounterLayout.hand_spread_within(rest, _hand_faces[0].size, cursor, _regions["hero_hand"])
 
 
 ## Moves the hand's cards [param weight] of the way to where they belong, in place and in
@@ -1296,12 +1406,103 @@ func _spread_hand(weight: float) -> void:
 	var cursor: Vector2 = get_local_mouse_position()
 	var places: Array[Vector2] = hand_places(cursor)
 	var nearest: int = -1
-	if not _drag.is_lifted() and EncounterLayout.is_cursor_over_hand(_hand_rest, card, cursor):
-		nearest = roundi(EncounterLayout.hand_cursor_place(_hand_rest, card, cursor))
+	var rest: Array[Vector2] = _hand_rest_now()
+	if not _drag.is_lifted() and EncounterLayout.is_cursor_over_hand(rest, card, cursor):
+		nearest = roundi(EncounterLayout.hand_cursor_place(rest, card, cursor))
 	for index: int in _hand_faces.size():
 		_hand_faces[index].position = _hand_faces[index].position.lerp(places[index], weight)
 		_hand_faces[index].rotation = lerpf(_hand_faces[index].rotation, _hand_turns[index], weight)
 		_hand_faces[index].z_index = 1 if index == nearest else 0
+
+
+## Where each card of the hand's row rests right now: where the row puts it, and a card
+## chosen to be discarded a quarter of its height above that (A401).
+func _hand_rest_now() -> Array[Vector2]:
+	var rest: Array[Vector2] = _hand_rest.duplicate()
+	if not _picks.is_discarding() or _hand_faces.is_empty():
+		return rest
+	for index: int in mini(rest.size(), _hand_cards.size()):
+		var in_hand: MmObjectView = _hand_view(_hand_cards[index])
+		if in_hand != null and _picks.is_picked(in_hand.id):
+			rest[index].y -= _hand_faces[0].size.y * EncounterLayout.PICKED_RISE
+	return rest
+
+
+## The card of the hand with Card Identity [param card_id] was clicked: pressed and let go
+## in place. While cards are being chosen to discard that chooses it, or lets it go again;
+## otherwise one click does nothing (A371).
+func _click_hand(card_id: int) -> void:
+	var in_hand: MmObjectView = _hand_view(card_id)
+	if _is_paused or in_hand == null or not _picks.is_discarding():
+		return
+	if _picks.toggle(in_hand.id):
+		_show_picks()
+
+
+## Draws the opening-hand overlay through the pregame, and takes it away once the first
+## turn begins: over a quarter of a second when the game is paced, at once otherwise.
+func _show_overlay() -> void:
+	if not _opening.is_open():
+		_overlay.close(_motion.seconds)
+		return
+	var area: Rect2 = Rect2(_regions["sidebar"].end.x, 0, size.x - _regions["sidebar"].end.x, size.y)
+	_overlay.show_frame(_opening, _snapshot, _picks, _hand_order.cards(), area, _motion.seconds)
+	_opening.forget_new_hand()
+
+
+## Shows how far the choice of cards has come, on what is already drawn: a card chosen to
+## be discarded glows white and the rest that can be chosen green, the pass button confirms
+## the discard, and undo is open while there is a click to take back. Nothing is rebuilt
+## for a click in the hand, so a chosen card eases up to its place.
+func _show_picks() -> void:
+	if not _picks.is_active() or _snapshot.is_over():
+		return
+	if not _picks.is_discarding():
+		# Keeping is final (A406): undo takes back cards put down and nothing before them.
+		_panels[HERO].show_undo(_picks.can_undo())
+		return
+	_panels[HERO].show_undo(_picks.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
+	_panels[HERO].show_confirm("Confirm discard", _picks.is_complete(), _picks.can_undo())
+	_info.show_prompt(_picks.prompt())
+	for index: int in _hand_faces.size():
+		var in_hand: MmObjectView = _hand_view(_hand_cards[index])
+		if in_hand == null:
+			continue
+		var face: Control = _hand_faces[index]
+		if _picks.is_picked(in_hand.id):
+			BorderEffects.set_glow(face, face.size, PICKED_GLOW, _glow_seconds_for(in_hand.id, PICKED_GLOW))
+		elif _picks.can_pick(in_hand.id):
+			var color: Color = DecisionClicks.color_of(DecisionClicks.Kind.OTHER)
+			BorderEffects.set_glow(face, face.size, color, _glow_seconds_for(in_hand.id, color))
+		else:
+			BorderEffects.remove_glow(face, _glow_seconds_for(in_hand.id, null))
+
+
+## The choice of cards changed by a click or an undo. Cards put on the bottom leave the
+## overlay's row, which is drawn again; in the hand's strip nothing is rebuilt.
+func _show_picks_changed() -> void:
+	if _picks.is_bottoming():
+		_redraw()
+	else:
+		_show_picks()
+
+
+## A button of the overlay that answers outright was pressed.
+func _answer_overlay(overlay_answer: int) -> void:
+	if not _is_paused and OpeningHand.covers(_snapshot.decision) and not _picks.is_active():
+		_answer(overlay_answer)
+
+
+## A card of the overlay's row was clicked to be put on the bottom.
+func _put_on_bottom(object_id: int) -> void:
+	if not _is_paused and _picks.is_bottoming() and _picks.pick(object_id):
+		_redraw()
+
+
+## Answers with the cards chosen, once there are as many as asked for.
+func _confirm_picks() -> void:
+	if not _is_paused and _picks.is_complete():
+		_answer(_picks.answer())
 
 
 func _draw_library(count: int, key: String, pile_rect: Rect2) -> void:
@@ -1346,7 +1547,7 @@ func _draw_pile_label(text: String, key: String, pile_rect: Rect2) -> void:
 	label.position = Vector2(pile_rect.position.x, pile_rect.position.y + EncounterLayout.PILE_HEIGHT)
 	label.size = Vector2(pile_rect.size.x, EncounterLayout.PILE_LABEL)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", 16)
 	_board.add_child(label)
 	_pile_labels[key] = label
 
@@ -1355,7 +1556,7 @@ func _button(text: String, on_press: Callable, font_size: int) -> Button:
 	var button: Button = Button.new()
 	button.text = text
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", font_size)
+	button.add_theme_font_size_override("font_size", font_size + UiText.RAISE)
 	button.pressed.connect(on_press)
 	return button
 
@@ -1367,12 +1568,12 @@ func _fill_stack_window(view: MmPlayerView) -> void:
 	for seen: MmObjectView in view.stack:
 		ids.append(seen.id)
 	_stack_colors.update(ids)
-	_stack_window.visible = not view.stack.is_empty() or _trigger_order.is_active()
+	_stack_window.set_open(not view.stack.is_empty() or _trigger_order.is_active())
 	_stack_window.show_count(view.stack.size())
 	_stack_window.clear()
 	_stack_entries.clear()
 	_stack_items.clear()
-	_trigger_entries.clear()
+	_trigger_list = null
 	_stack_arrows = null
 	if _trigger_order.is_active():
 		_add_trigger_entries(view)
@@ -1418,20 +1619,19 @@ func _fill_stack_window(view: MmPlayerView) -> void:
 
 
 ## The triggers being put in order, above the stack: plain and dashed, since they are not
-## on the stack yet, each with buttons to move it (A339, A345).
+## on the stack yet, in a list they are dragged in (A339, A345, A393).
 func _add_trigger_entries(view: MmPlayerView) -> void:
 	var decision: OrderTriggersDecision = _snapshot.decision as OrderTriggersDecision
-	_stack_window.body().add_child(_small_label("Triggers to order: the top one resolves first"))
-	var order: Array[int] = _trigger_order.order()
-	for place: int in order.size():
-		var number: int = order[place]
+	_stack_window.body().add_child(_small_label("Triggers to order: drag them, the top one resolves first"))
+	var entries: Array[StackEntry] = []
+	for number: int in decision.abilities.size():
 		var entry: StackEntry = StackEntry.new(_trigger_art(decision, number), _trigger_text(decision, number),
 			StackItem.player_name(decision.player_id), StackColors.PLAIN, true)
-		entry.add_move_buttons(_trigger_order.can_move(place, -1), _trigger_order.can_move(place, 1))
-		entry.moved.connect(_move_trigger.bind(place))
 		entry.hovered.connect(_on_trigger_hovered.bind(number))
-		_stack_window.body().add_child(entry)
-		_trigger_entries.append(entry)
+		entries.append(entry)
+	_trigger_list = TriggerList.new(entries, _trigger_order.order())
+	_trigger_list.moved.connect(_move_trigger)
+	_stack_window.body().add_child(_trigger_list)
 	if not view.stack.is_empty():
 		_stack_window.body().add_child(_small_label("On the stack"))
 
@@ -1448,9 +1648,20 @@ func _trigger_art(decision: OrderTriggersDecision, number: int) -> String:
 	return look.art_key if look != null else ""
 
 
-func _move_trigger(step: int, place: int) -> void:
-	if not _is_paused and _trigger_order.move(place, step):
-		_redraw()
+## A drag put the trigger at place [param from] down at place [param to].
+func _move_trigger(from: int, to: int) -> void:
+	if not _is_paused:
+		_trigger_order.move_to(from, to)
+	_show_trigger_order()
+
+
+## Shows the order the triggers are in now, on what is already drawn: the entries ease to
+## their places, and undo is open while there is a move to take back.
+func _show_trigger_order() -> void:
+	if trigger_list() == null:
+		return
+	_trigger_list.set_order(_trigger_order.order())
+	_panels[HERO].show_undo(_trigger_order.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
 
 
 ## The cursor came over a Stack Window entry, or left it: its source is marked with a solid
@@ -1469,7 +1680,7 @@ func _on_stack_entry_hovered(is_over: bool, object_id: int) -> void:
 		_mark_face(target_id, color, true)
 	for player_id: int in item.target_player_ids:
 		var portrait: Control = _panels[player_id].portrait()
-		BorderEffects.add_mark(portrait, portrait.size, color, true)
+		BorderEffects.add_mark(portrait, portrait.size, color, true, _ease_seconds)
 		_marked.append(portrait)
 
 
@@ -1485,14 +1696,14 @@ func _on_trigger_hovered(is_over: bool, number: int) -> void:
 
 func _mark_face(object_id: int, color: Color, is_dashed: bool) -> void:
 	if _faces.has(object_id):
-		BorderEffects.add_mark(_faces[object_id], _face_sizes[object_id], color, is_dashed)
+		BorderEffects.add_mark(_faces[object_id], _face_sizes[object_id], color, is_dashed, _ease_seconds)
 		_marked.append(_faces[object_id])
 
 
 func _clear_marks() -> void:
 	for host: Control in _marked:
 		if is_instance_valid(host):
-			BorderEffects.remove_mark(host)
+			BorderEffects.remove_mark(host, _ease_seconds)
 	_marked.clear()
 
 
@@ -1502,7 +1713,7 @@ func _fill_choice_window(view: MmPlayerView) -> void:
 	var decision: ChooseReplacementEffectDecision = _snapshot.decision as ChooseReplacementEffectDecision
 	_choice_window.clear()
 	_choice_entries.clear()
-	_choice_window.visible = decision != null
+	_choice_window.set_open(decision != null)
 	if decision == null:
 		return
 	_choice_window.show_title(ReplacementText.title(decision, view))
@@ -1553,7 +1764,7 @@ func _small_label(text: String) -> Label:
 	var label: Label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_font_size_override("font_size", 13)
 	label.modulate = Color(1, 1, 1, 0.7)
 	return label
 
@@ -1590,7 +1801,7 @@ func _draw_banner(view: MmPlayerView) -> void:
 	label.size = Vector2(620, 150)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 40)
+	label.add_theme_font_size_override("font_size", 42)
 	box.add_child(label)
 	var again: Button = _button("Replay this seed", func() -> void: leave(scene_file_path), 18)
 	again.position = Vector2(90, 170)

@@ -56,12 +56,13 @@ func test_attackers_blockers_and_cards_to_choose_glow_green() -> void:
 	var blockers: DecisionClicks = DecisionClicks.of(DeclareBlockersDecision.new(HERO, [3] as Array[int], [9] as Array[int],
 		{3: [9]} as Dictionary[int, Array], {3: 1} as Dictionary[int, int]), _view())
 	var discard: DecisionClicks = DecisionClicks.of(ChooseCardsToDiscardDecision.new(HERO, 1, [1, 2] as Array[int]), _view())
-	var bottom: DecisionClicks = DecisionClicks.of(ChooseCardsToBottomDecision.new(HERO, 1, [1, 2] as Array[int]), _view())
 
 	assert_eq(attackers.objects, {3: DecisionClicks.Kind.OTHER, 4: DecisionClicks.Kind.OTHER})
 	assert_eq(blockers.objects, {3: DecisionClicks.Kind.OTHER}, "The blockers to choose, not the attackers.")
 	assert_eq(discard.objects.keys(), [1, 2])
-	assert_eq(bottom.objects.keys(), [1, 2])
+	assert_eq(discard.clickable_ids(), [] as Array[int], "A card to discard is chosen with a CardPicks, not a click answer.")
+	var bottom: DecisionClicks = DecisionClicks.of(ChooseCardsToBottomDecision.new(HERO, 1, [1, 2] as Array[int]), _view())
+	assert_eq(bottom.objects.size(), 0, "Cards to put on the bottom are on the overlay, which draws their Glow itself.")
 
 
 func test_dividing_damage_glows_its_recipients_as_targets() -> void:

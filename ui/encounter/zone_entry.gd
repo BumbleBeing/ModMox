@@ -32,13 +32,13 @@ func _init(art_key: String, entry_name: String, detail: String, tint: Color) -> 
 	_name = Label.new()
 	_name.text = entry_name
 	_name.add_theme_font_override("font", CardFonts.title())
-	_name.add_theme_font_size_override("font_size", 18)
+	_name.add_theme_font_size_override("font_size", 20)
 	_name.clip_text = true
 	lines.add_child(_name)
 	_detail = Label.new()
 	_detail.text = detail
 	_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_detail.add_theme_font_size_override("font_size", 13)
+	_detail.add_theme_font_size_override("font_size", 15)
 	_detail.modulate = Color(1, 1, 1, 0.75)
 	lines.add_child(_detail)
 

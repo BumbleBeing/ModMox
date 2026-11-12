@@ -16,4 +16,7 @@ fi
 # Refresh the import cache and global class registry so new class_names resolve.
 "$GODOT" --headless --path "$PROJECT_DIR" --import >/dev/null 2>&1 || true
 
+# Bake every card Frame afresh, so the suite tests the baking and not Frames kept on disk.
+export MODMOX_FRAME_CACHE=off
+
 exec "$GODOT" --headless --path "$PROJECT_DIR" -s res://addons/gut/gut_cmdln.gd "$@"

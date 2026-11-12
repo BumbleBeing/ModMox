@@ -177,6 +177,7 @@ func test_an_exiled_card_is_the_top_of_its_owners_exile_pile() -> void:
 
 func test_the_heros_hand_is_card_faces_and_the_villains_is_that_many_card_backs() -> void:
 	_open(_bear_setup())
+	_keep()
 
 	var view: MmPlayerView = _presenter.snapshot().view
 
@@ -284,40 +285,30 @@ func test_what_a_decision_can_choose_glows_on_the_thing_itself() -> void:
 	assert_null(BorderEffects.glow_color(_screen.face_of(_in_hand("Jolt"))), "A card in hand is not a target.")
 
 
-func test_pointing_at_a_panel_option_outlines_its_card_and_leaving_removes_it() -> void:
-	_open(_shock_setup())
-	_keep()
-	var zap: int = _in_hand("Zap")
-
-	_screen.debug_panel().option_pointed.emit(zap)
-	assert_true(BorderEffects.has_pointer(_screen.face_of(zap)))
-
-	_screen.debug_panel().option_pointed.emit(DebugDecisionForm.NONE)
-	assert_false(BorderEffects.has_pointer(_screen.face_of(zap)))
-
-
-func test_the_panels_options_answer_the_decision() -> void:
+func test_the_overlays_buttons_answer_the_pregame() -> void:
 	_open(_bear_setup())
-	assert_eq(_screen.debug_panel().heading_text(), "Keep this hand, or mulligan? (0 taken)")
+	assert_eq(_screen.opening_overlay().button_texts(), ["Keep 7", "Mulligan"] as Array[String])
 
-	_screen.debug_panel().option_buttons()[0].pressed.emit()
+	_screen.opening_overlay().button("Keep 7").pressed.emit()
 	_presenter.wait_until_idle()
 
 	assert_true(_presenter.snapshot().decision is PriorityDecision)
-	assert_false(_screen.debug_panel().visible, "At priority the hand and the board answer (13e-1).")
+	assert_false(_screen.opening_overlay().visible, "At priority the hand and the board answer (13e-1).")
 	assert_eq(_screen.info_panel().error_text(), "")
 
 
 func test_a_rejected_answer_shows_its_reason_in_the_info_panel_until_one_is_accepted() -> void:
 	_open(_bear_setup())
+	_keep_and_reach_main()
+	var prompt: String = _screen.info_panel().prompt_text()
 
-	_screen.debug_panel().answered.emit(99)
+	_screen._answer(99)
 
 	assert_ne(_screen.info_panel().error_text(), "")
-	assert_true(_presenter.snapshot().decision is KeepOrMulliganDecision, "The same decision is still asked.")
-	assert_eq(_screen.info_panel().prompt_text(), "Keep this hand, or mulligan? (0 taken)", "And still prompted for.")
+	assert_true(_presenter.snapshot().decision is PriorityDecision, "The same decision is still asked.")
+	assert_eq(_screen.info_panel().prompt_text(), prompt, "And still prompted for.")
 
-	_screen.debug_panel().option_buttons()[0].pressed.emit()
+	_do(PlayLandAction, "Forest")
 	assert_eq(_screen.info_panel().error_text(), "", "The reason goes once an answer is accepted.")
 
 
@@ -441,7 +432,6 @@ func test_the_end_of_the_encounter_is_announced_with_its_reason() -> void:
 	_screen.pause_menu().button(PauseMenu.CONCEDE).pressed.emit()
 
 	assert_eq(_screen.banner_text(), "Defeat\nThe Hero conceded.")
-	assert_false(_screen.debug_panel().visible)
 	assert_true(_screen.info_panel().is_dim(), "Nothing more is asked.")
 	assert_true(_screen.pass_button().disabled)
 
@@ -461,7 +451,6 @@ func test_it_can_redraw_while_the_villain_is_thinking() -> void:
 	assert_eq(_screen.player_panel(VILLAIN).thinking_text(), "The Villain is thinking…", "Said in the Villain's panel (A294).")
 	assert_eq(_screen.player_panel(HERO).thinking_text(), "")
 	assert_true(_screen.pass_button().disabled)
-	assert_false(_screen.debug_panel().visible, "Nothing is asked of the Hero.")
 	assert_true(_screen.info_panel().is_dim())
 	assert_eq(_screen.info_panel().prompt_text(), "")
 	_presenter.wait_until_idle()
@@ -538,7 +527,6 @@ func test_clicking_a_permanent_activates_it_and_clicking_a_player_targets_them()
 
 	assert_true(_presenter.snapshot().decision is ChooseTargetDecision, "One click, no confirmation (A285).")
 	assert_eq(_screen.info_panel().prompt_text(), "Choose a target for Wand's ability")
-	assert_false(_screen.debug_panel().visible, "Targets have no form any more (A290).")
 	assert_false(_screen.option_menu().is_open(), "One ability needs no menu.")
 	assert_not_null(_screen.player_panel(HERO).click_catcher(), "The Hero can be targeted too.")
 	var villain: PlayerPanel = _screen.player_panel(VILLAIN)
@@ -605,7 +593,6 @@ func test_mana_is_paid_by_clicking_sources_and_the_info_panel_says_what_is_owed(
 	assert_true(_presenter.snapshot().decision is PayManaDecision)
 	assert_eq(_screen.info_panel().prompt_text(), "Pay for Bear")
 	assert_eq(_screen.info_panel().owed_pip_names(), ["1", "g"] as Array[String])
-	assert_false(_screen.debug_panel().visible, "Paying has no form any more (A290).")
 	assert_eq(BorderEffects.glow_color(_screen.face_of(forests[0])), DecisionClicks.color_of(DecisionClicks.Kind.MANA))
 
 	_click(forests[0])
@@ -728,21 +715,19 @@ func test_pointing_at_an_option_menu_row_shows_it_in_the_info_panel_in_place_of_
 
 func test_the_info_panel_prompts_for_what_is_asked_in_its_own_bordered_region() -> void:
 	_open(_bear_setup())
+	_keep_and_reach_main()
 	var info: InfoPanel = _screen.info_panel()
-	assert_eq(info.prompt_text(), "Keep this hand, or mulligan? (0 taken)", "A kind the panel still answers is prompted for too.")
+	assert_eq(info.prompt_text(), "Your priority\nMain 1, your turn")
 	assert_false(info.is_dim())
 	assert_true(info.has_border())
 	assert_eq(info.get_global_rect(), EncounterLayout.regions(SCREEN)["info"])
-
-	_keep_and_reach_main()
-
-	assert_eq(info.prompt_text(), "Your priority\nMain 1, your turn")
 	assert_false(info.shows_holding())
 	assert_eq(info.error_text(), "")
 
 
 func test_the_hand_stays_centered_on_the_battlefield_clear_of_the_info_panel() -> void:
 	_open(_bear_setup())
+	_keep()
 	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(SCREEN)
 	var view: MmPlayerView = _presenter.snapshot().view
 	var left: float = _screen.face_of(view.hand[0].id).position.x
@@ -808,20 +793,6 @@ func test_the_piles_stand_in_their_evenly_spaced_regions() -> void:
 	assert_false(regions.has("status"))
 	assert_almost_eq(regions["hero_library"].position.y - regions["villain_exile"].end.y,
 		regions["villain_graveyard"].position.y - regions["villain_library"].end.y, 0.01)
-
-
-func test_the_debug_panel_has_nothing_to_offer_at_priority_and_has_no_concede() -> void:
-	_open(_bear_setup())
-	_keep_and_reach_main()
-	var panel: DebugDecisionPanel = _screen.debug_panel()
-
-	assert_false(panel.visible, "A land to play and spells to cast, all from the hand (13e-1).")
-	_do(PlayLandAction, "Forest")
-	assert_true(_presenter.snapshot().decision is PriorityDecision)
-	assert_false(panel.visible)
-	assert_false(panel.has_method("concede_button"))
-	assert_false(panel.has_method("cancel_button"))
-	assert_false(panel.has_signal("concede_requested"))
 
 
 func test_escape_opens_the_pause_menu_and_escape_again_carries_on_from_the_same_place() -> void:
@@ -894,6 +865,7 @@ func test_while_paused_a_click_does_not_open_the_option_menu() -> void:
 
 func test_parting_the_hand_on_the_screen_keeps_every_card_inside_its_bounds() -> void:
 	_open(_bear_setup())
+	_keep()
 	var hand: Rect2 = EncounterLayout.regions(SCREEN)["hero_hand"]
 	var view: MmPlayerView = _presenter.snapshot().view
 	var card: Vector2 = _screen.face_of(view.hand[0].id).size
@@ -999,7 +971,6 @@ func test_clicking_a_creature_that_may_attack_steps_it_into_the_lane_and_again_s
 	var rest_y: float = _screen.face_of(bears[1]).get_global_rect().get_center().y
 	var rest_x: float = _screen.face_of(bears[1]).get_global_rect().position.x
 	assert_eq(BorderEffects.glow_color(_screen.face_of(bears[1])), DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
-	assert_false(_screen.debug_panel().visible, "Attackers have no form any more (A328).")
 	assert_eq(_screen.info_panel().prompt_text(), "Declare attackers")
 	assert_eq(_screen.pass_button().text, "No attacks")
 	assert_false(_screen.pass_button().disabled)
@@ -1186,7 +1157,6 @@ func test_a_blocker_is_picked_up_and_paired_with_the_attacker_clicked() -> void:
 	assert_eq(info.prompt_text(), "Declare blockers")
 	assert_eq(info.hint_text(), "Click a creature, then the attacker it blocks.")
 	assert_eq(_screen.pass_button().text, "No blocks")
-	assert_false(_screen.debug_panel().visible)
 	assert_null(_screen.click_catcher(ogres[0]), "An attacker is clicked only for a blocker in hand.")
 	assert_null(BorderEffects.glow_color(_screen.face_of(ogres[0])))
 	var rest_y: float = _screen.face_of(bears[0]).get_global_rect().get_center().y
@@ -1231,6 +1201,35 @@ func test_a_block_line_runs_from_the_blocker_up_to_its_attacker() -> void:
 	assert_almost_eq(lines.line_to(0).y, attacker.end.y + EncounterLayout.BLOCK_LINE_GAP, 0.5, "to the bottom of the Villain's.")
 	assert_gt(lines.get_index(), _screen.face_of(bear).get_parent().get_index() * 0, "It is a layer of its own.")
 	assert_lt(lines.get_index(), _screen.stack_window().get_index(), "Under the windows.")
+
+
+func test_blockers_declared_crossing_swap_places_so_their_lines_do_not_cross() -> void:
+	_open_combat([_free_bear()])
+	_reach_blockers(2)
+	var attackers: Array[int] = []
+	for ogre: int in _permanents("Ogre"):
+		if _view_of(ogre).is_attacking:
+			attackers.append(ogre)
+	attackers.sort()
+	assert_eq(attackers.size(), 2, "Two Ogres attack.")
+	var bears: Array[int] = _permanents("Bear")
+	bears.sort()
+	# The lower Bear blocks the higher Ogre: in ID order the lines would cross.
+	_click(bears[0])
+	_click(attackers[1])
+	_click(bears[1])
+	_click(attackers[0])
+
+	_screen.pass_button().pressed.emit()
+	_presenter.wait_until_idle()
+
+	var lines: BlockLines = _screen.block_lines()
+	assert_eq(lines.line_count(), 2)
+	var from_left: bool = lines.line_from(0).x < lines.line_from(1).x
+	var to_left: bool = lines.line_to(0).x < lines.line_to(1).x
+	assert_eq(from_left, to_left, "The blocker on the left blocks the attacker on the left.")
+	assert_lt(_screen.face_of(bears[1]).get_global_rect().position.x, _screen.face_of(bears[0]).get_global_rect().position.x,
+		"The Bears swapped places.")
 
 
 func test_one_click_on_a_blocking_creature_takes_it_off_its_block() -> void:
@@ -1346,7 +1345,6 @@ func test_damage_is_divided_with_steppers_on_the_blockers() -> void:
 	var ogres: Array[int] = _permanents("Ogre")
 	var first: DamageStepper = _screen.stepper_of(ogres[0])
 	assert_eq(_screen.info_panel().prompt_text(), "Divide 2 damage from Bear")
-	assert_false(_screen.debug_panel().visible)
 	assert_true(BorderEffects.has_pointer(_screen.face_of(bear)), "The creature dividing has the white outline (A325).")
 	assert_eq((_screen.face_of(bear).get_node("LeftChip/Text") as Label).text, "0 left")
 	assert_eq(first.amount_text(), "2", "It starts by killing the first blocker (A318).")
@@ -1662,7 +1660,7 @@ func _do(kind: Script, card_name: String) -> void:
 	var priority: PriorityDecision = snapshot.decision as PriorityDecision
 	for index: int in priority.actions.size():
 		var action: MmAction = priority.actions[index]
-		if is_instance_of(action, kind) and DebugDecisionForm.name_of(snapshot.view, DecisionClicks.object_of(action)) == card_name:
+		if is_instance_of(action, kind) and EncounterSnapshot.name_in(snapshot.view, DecisionClicks.object_of(action)) == card_name:
 			assert_eq(_presenter.answer(index), "")
 			return
 	fail_test("No %s action for %s." % [kind.resource_path.get_file(), card_name])
