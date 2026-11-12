@@ -29,6 +29,16 @@
 		"scryfall_id": "c1662949-0d69-49a3-8c69-daf10717ed4e",
 		"set": "lea"
 	},
+	"counterspell": {
+		"artist": "Mark Poole",
+		"collector_number": "54",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "0df55e3f-14de-46ef-b6b1-616618724d9e",
+		"set": "lea"
+	},
 	"craw_wurm": {
 		"artist": "Daniel Gelon",
 		"collector_number": "190",
@@ -290,7 +300,7 @@
 		"set": "lea"
 	},
 	"samite_healer": {
-		"artist": "Tom W\u00e4nerstrand",
+		"artist": "Tom Wänerstrand",
 		"collector_number": "37",
 		"focus": [
 			0.5,

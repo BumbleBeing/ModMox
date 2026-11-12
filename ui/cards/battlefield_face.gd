@@ -3,6 +3,10 @@ extends Control
 ## How a permanent is drawn on the battlefield: the top of its Frame (name box or crown) and
 ## a border around its art, a large P/T box, and a chip for each keyword. It shows no other
 ## text, and turns sideways and darkens when tapped, with an upright tap symbol over its art.
+## A creature with damage marked on it shows a Damage Chip over its toughness.
+##
+## Its footprint is that of the card at rest, upright or sideways. show_turn() draws the
+## card part-way between the two inside that footprint, for Face Motion.
 
 ## The wheel over this face asks for its Card Face's rules text to scroll (A236).
 signal rules_scroll_requested(steps: float)
@@ -15,8 +19,10 @@ const CARD_FACE_BOX: float = 0.14
 var _look: CardLook
 var _card: Control
 var _name: AnchoredText
-var _shade: ColorRect = null
-var _tap_symbol: TextureRect = null
+var _shade: ColorRect
+var _tap_symbol: TextureRect
+var _turn: float = 0.0
+var _damage_chip: DamageChip = null
 var _chips: Array[KeywordChip] = []
 
 
@@ -92,8 +98,12 @@ func setup(look: CardLook, height: float) -> void:
 	if spec.is_creature:
 		_add_power_toughness(shape, spec, height)
 	_add_chips(shape, height, spec.is_creature)
-	if look.is_tapped:
-		_show_tapped(shape, face_size, art)
+	_add_tap_marks(shape, face_size, art)
+	if spec.is_creature and look.damage_marked > 0:
+		_damage_chip = DamageChip.make(power_toughness_box(height), look.damage_marked)
+		_card.add_child(_damage_chip)
+	_card.pivot_offset = face_size / 2.0
+	show_turn(1.0 if look.is_tapped else 0.0)
 
 
 ## The part that turns sideways when tapped.
@@ -105,13 +115,41 @@ func name_text() -> AnchoredText:
 	return _name
 
 
+## Draws the card [param turn] of the way from upright (0) to sideways (1), about the middle
+## of its footprint, darkened that much, with the tap symbol that solid and kept upright.
+func show_turn(turn: float) -> void:
+	_turn = turn
+	_card.position = (size - _card.size) / 2.0
+	_card.rotation_degrees = 90.0 * turn
+	_shade.visible = turn > 0.0
+	_shade.color.a = TAPPED_SHADE * turn
+	_tap_symbol.visible = turn > 0.0
+	_tap_symbol.modulate.a = 0.5 * turn
+	_tap_symbol.rotation_degrees = -90.0 * turn
+
+
+## How far the card is turned toward sideways, from 0 to 1.
+func turn() -> float:
+	return _turn
+
+
 func is_darkened() -> bool:
-	return _shade != null
+	return _shade.visible
+
+
+## How dark the card is drawn: none upright, TAPPED_SHADE sideways.
+func shade_alpha() -> float:
+	return _shade.color.a if _shade.visible else 0.0
 
 
 ## The upright tap symbol over a tapped face's art, or null when untapped.
 func tap_symbol() -> TextureRect:
-	return _tap_symbol
+	return _tap_symbol if _tap_symbol.visible else null
+
+
+## The chip that says how much damage is marked on this creature, or null for none.
+func damage_chip() -> DamageChip:
+	return _damage_chip
 
 
 func chip_letters() -> Array[String]:
@@ -178,12 +216,9 @@ func _add_chips(shape: Panel, height: float, is_creature: bool) -> void:
 		at.x += chip + gap
 
 
-## Turns the face sideways and darkens it, with a tap symbol at half opacity over the art,
-## turned back so it stays upright.
-func _show_tapped(shape: Panel, face_size: Vector2, art: Rect2) -> void:
-	_card.pivot_offset = face_size / 2.0
-	_card.rotation_degrees = 90.0
-	_card.position = (custom_minimum_size - face_size) / 2.0
+## The shade that darkens a tapped card and the tap symbol over its art, at half opacity
+## when fully tapped. show_turn() says how much of each is seen.
+func _add_tap_marks(shape: Panel, face_size: Vector2, art: Rect2) -> void:
 	_shade = ColorRect.new()
 	_shade.color = Color(0, 0, 0, TAPPED_SHADE)
 	_shade.size = face_size
@@ -191,9 +226,7 @@ func _show_tapped(shape: Panel, face_size: Vector2, art: Rect2) -> void:
 	shape.add_child(_shade)
 	var side: float = minf(art.size.x, art.size.y) * 0.92
 	_tap_symbol = CardShapes.image(ManaSymbols.texture("t"), Rect2(art.get_center() - Vector2(side, side) / 2.0, Vector2(side, side)))
-	_tap_symbol.modulate = Color(1, 1, 1, 0.5)
 	_tap_symbol.pivot_offset = Vector2(side, side) / 2.0
-	_tap_symbol.rotation_degrees = -90.0
 	shape.add_child(_tap_symbol)
 
 

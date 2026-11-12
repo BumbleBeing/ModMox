@@ -1,0 +1,11 @@
+# Rules text is generated from abilities
+
+A card's rules text is not authored. `AbilityText` (in `ui/cards/`) writes it from the card's abilities each time a `CardLook` is made, from printed characteristics or from a Player View, so the words can never disagree with what the card does. A Modification that rewrites an ability rewrites its text with no further work, a granted ability appears in the text of the permanent that gained it, and the same words serve everywhere a player reads an ability: Card Faces, the rows of the Option Menu, Stack Window entries, triggers being put in order, and later the inspector (13h).
+
+The wording follows current Oracle templates (A343). A permanent calls itself "this creature", "this artifact", "this land" or "this enchantment"; an instant, a sorcery or an Emblem goes by its name, as the real cards do. Keywords that stand next to each other share a line, and a basic land's text is in parentheses, since its mana ability is reminder text. A card prints whole abilities, with their costs and triggers. A stack entry shows only what an ability does (`effect_of()`), because its cost is paid and its trigger has happened.
+
+Authored text on each Card Definition was rejected. It would have been quicker to make look right, and would have matched the printed cards word for word, but it drifts: every Modification would need to edit text as well as abilities, and nothing would notice a card whose text and abilities disagreed. The price of generating is that some real wordings cannot be reached. Howling Mine reads "that player draws a card", not "an additional card", because nothing in its abilities says "additional". We accept wording that is plainly correct over wording that is identical.
+
+Something `AbilityText` has no words for is written as its class name in square brackets rather than left out, so a gap is visible on the card. A test walks every authored card and fails if any of its text has a bracket in it, so a new effect, trigger, filter or keyword cannot ship without its words.
+
+Reminder text, what a keyword means, is not generated here. It belongs to the inspector (13h), and Card Faces go on leaving it off.

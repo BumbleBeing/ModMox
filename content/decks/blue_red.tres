@@ -7,6 +7,7 @@
 [ext_resource type="Resource" path="res://content/cards/alpha/merfolk_of_the_pearl_trident.tres" id="5_xdd4r"]
 [ext_resource type="Resource" path="res://content/cards/alpha/prodigal_sorcerer.tres" id="6_8vwt2"]
 [ext_resource type="Resource" path="res://content/cards/alpha/water_elemental.tres" id="7_470tt"]
+[ext_resource type="Resource" path="res://content/cards/alpha/counterspell.tres" id="8_5g0fm"]
 [ext_resource type="Resource" path="res://content/cards/alpha/gray_ogre.tres" id="8_cl5mi"]
 [ext_resource type="Resource" path="res://content/cards/alpha/hurloon_minotaur.tres" id="9_smljg"]
 [ext_resource type="Resource" path="res://content/cards/alpha/wall_of_stone.tres" id="10_l8q47"]
@@ -121,11 +122,11 @@ base = ExtResource("7_470tt")
 
 [sub_resource type="Resource" id="Resource_ypolk"]
 script = ExtResource("1_2p5y8")
-base = ExtResource("8_cl5mi")
+base = ExtResource("8_5g0fm")
 
 [sub_resource type="Resource" id="Resource_eo2am"]
 script = ExtResource("1_2p5y8")
-base = ExtResource("8_cl5mi")
+base = ExtResource("8_5g0fm")
 
 [sub_resource type="Resource" id="Resource_a0mfs"]
 script = ExtResource("1_2p5y8")

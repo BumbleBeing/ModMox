@@ -30,21 +30,6 @@ func test_cards_are_numbered_in_the_order_picked_and_unpicked_by_picking_again()
 	assert_eq(_answers, [[3, 1]])
 
 
-func test_triggers_are_submitted_in_the_order_picked() -> void:
-	var decision: OrderTriggersDecision = OrderTriggersDecision.new(HERO, [] as Array[PendingTrigger])
-	decision.source_object_ids = [1, 2]
-	decision.source_card_ids = [1, 2]
-	decision.descriptions = ["first", "second"]
-	var panel: DebugDecisionPanel = _panel(decision)
-
-	panel.option_buttons()[1].pressed.emit()
-	panel.option_buttons()[0].pressed.emit()
-	panel.submit_button().pressed.emit()
-
-	assert_eq(_answers, [[1, 0]])
-	assert_eq(decision.validate(_answers[0]), "")
-
-
 func test_pointing_at_an_option_says_which_object_it_is_about() -> void:
 	var pointed: Array[int] = []
 	var panel: DebugDecisionPanel = _panel(ChooseCardsToDiscardDecision.new(HERO, 1, [4, 5] as Array[int]))
@@ -62,9 +47,10 @@ func test_it_hides_when_the_hero_is_asked_nothing_it_answers() -> void:
 	var pay: PayManaDecision = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 1, [] as Array[MmMana.Type])
 	var target: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 3, 0, [MmReference.to_player(HERO)] as Array[MmReference])
 
-	assert_true(_panel(cast).visible, "A spell to cast is still chosen here.")
-	assert_eq(_panel(cast).option_buttons().size(), 1)
+	assert_false(_panel(cast).visible, "A spell is cast from the hand (13e-1).")
 	assert_false(_panel(only_pass).visible, "Passing has its own button.")
+	assert_true(_panel(KeepOrMulliganDecision.new(HERO, 0, 0)).visible)
+	assert_true(_panel(ChoosePlayOrDrawDecision.new(HERO)).visible)
 	assert_false(_panel(pay).visible)
 	assert_false(_panel(target).visible)
 	assert_false(_panel(null).visible, "The Villain is deciding.")
@@ -79,15 +65,12 @@ func test_it_hides_when_the_hero_is_asked_nothing_it_answers() -> void:
 	assert_false(bare.has_method("share_box"))
 
 
-func test_picking_a_spell_answers_with_its_place_among_all_the_actions() -> void:
-	var decision: PriorityDecision = PriorityDecision.new(HERO, [
-		PassAction.new(), ActivateAbilityAction.new(9, 0), CastSpellAction.new(3),
-	] as Array[MmAction])
-	var panel: DebugDecisionPanel = _panel(decision)
+func test_picking_an_option_answers_with_its_number() -> void:
+	var panel: DebugDecisionPanel = _panel(KeepOrMulliganDecision.new(HERO, 0, 0))
 
-	panel.option_buttons()[0].pressed.emit()
+	panel.option_buttons()[1].pressed.emit()
 
-	assert_eq(_answers, [2])
+	assert_eq(_answers, [KeepOrMulliganDecision.Choice.MULLIGAN])
 
 
 func test_it_hides_once_the_encounter_is_over() -> void:

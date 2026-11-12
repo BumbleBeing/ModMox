@@ -123,6 +123,30 @@ func test_the_view_of_a_triggered_ability_names_its_source_card() -> void:
 
 
 ## "At the beginning of [whose] upkeep, you gain 1 life."
+func test_an_order_decision_says_what_each_trigger_does_and_what_triggered_it() -> void:
+	var first: MmCardDefinition = _upkeep_gain("First Chime", Whose.YOU)
+	var second: MmCardDefinition = _upkeep_gain("Second Chime", Whose.YOU)
+	var engine: MmEngine = _engine_at([first, second], [], 3, Step.UPKEEP)
+
+	var decision: OrderTriggersDecision = engine.pending_decision() as OrderTriggersDecision
+
+	assert_eq(decision.abilities.size(), 2)
+	for index: int in 2:
+		var source: MmGameObject = engine.game_state().object(decision.source_object_ids[index])
+		assert_true(engine.game_state().characteristics_of(source).abilities.has(decision.abilities[index]), "The source's own ability.")
+	assert_eq(decision.triggering_player_ids, [engine.hero().id, engine.hero().id] as Array[int], "It was the Hero's upkeep.")
+	assert_eq(decision.triggering_object_ids, [0, 0] as Array[int], "No object triggered them.")
+
+
+func test_an_order_decision_names_the_other_player_when_their_step_triggered_it() -> void:
+	var engine: MmEngine = _engine_at([_upkeep_gain("First Chime", Whose.ANY), _upkeep_gain("Second Chime", Whose.ANY)], [], 4, Step.UPKEEP)
+
+	var decision: OrderTriggersDecision = engine.pending_decision() as OrderTriggersDecision
+
+	assert_eq(decision.player_id, engine.hero().id)
+	assert_eq(decision.triggering_player_ids, [engine.villain().id, engine.villain().id] as Array[int], "It was the Villain's upkeep.")
+
+
 func _upkeep_gain(card_name: String, whose: Whose) -> MmCardDefinition:
 	return Scenario.artifact(card_name, [Scenario.triggered(Scenario.at_step(Step.UPKEEP, whose), [Scenario.gain_life(1, Scenario.you())])])
 

@@ -10,9 +10,15 @@ enum Tag {
 	## Only "until end of turn" changes, prevention or regeneration: worth something only
 	## in a fight, so considered once blockers are declared or in response to a spell.
 	COMBAT_TRICK,
+	## Only grants abilities until end of turn, such as flying: it can change who may block
+	## whom, so it is considered from the declare attackers step, and in response to a spell.
+	EVASION,
 	## Deals damage or destroys: considered in its controller's main phases, once blockers
 	## are declared, in response to a spell, and in the other player's end step.
 	REMOVAL,
+	## Counters a spell: considered only with the other player's spell or ability on top
+	## of the stack, never to counter its own.
+	COUNTER,
 }
 
 const COMBAT_STEPS: Array[MmTurn.Step] = [
@@ -26,6 +32,10 @@ static func tag_of_effects(effects: Array[MmEffect]) -> Tag:
 	if effects.is_empty():
 		return Tag.NONE
 	var is_trick: bool = true
+	var is_evasion: bool = true
+	for effect: MmEffect in effects:
+		if effect is CounterEffect:
+			return Tag.COUNTER
 	for effect: MmEffect in effects:
 		if effect is DealDamageEffect or effect is DestroyEffect:
 			return Tag.REMOVAL
@@ -33,7 +43,16 @@ static func tag_of_effects(effects: Array[MmEffect]) -> Tag:
 			and (effect as CreateContinuousEffect).duration == CreateContinuousEffect.Duration.UNTIL_END_OF_TURN
 		if not (lasts_the_turn or effect is PreventDamageEffect or effect is RegenerateEffect):
 			is_trick = false
-	return Tag.COMBAT_TRICK if is_trick else Tag.NONE
+		if not (lasts_the_turn and (effect as CreateContinuousEffect).continuous is GainAbilitiesContinuousEffect):
+			is_evasion = false
+	if not is_trick:
+		return Tag.NONE
+	return Tag.EVASION if is_evasion else Tag.COMBAT_TRICK
+
+
+## Whether [param tag] marks a play that lasts only until end of turn.
+static func is_trick(tag: Tag) -> bool:
+	return tag == Tag.COMBAT_TRICK or tag == Tag.EVASION
 
 
 ## The tag of a priority [param action], read from [param state].
@@ -76,8 +95,12 @@ static func is_in_window(state: MmGameState, player_id: int, tag: Tag) -> bool:
 		return true
 	if _opposing_object_on_top(state, player_id):
 		return true
+	if tag == Tag.COUNTER:
+		return false
 	if state.step == MmTurn.Step.DECLARE_BLOCKERS:
 		return true
+	if tag == Tag.EVASION:
+		return state.step == MmTurn.Step.DECLARE_ATTACKERS
 	if tag == Tag.REMOVAL:
 		var my_turn: bool = state.active_player_id == player_id
 		var main_phase: bool = state.step == MmTurn.Step.PRECOMBAT_MAIN or state.step == MmTurn.Step.POSTCOMBAT_MAIN
@@ -85,5 +108,19 @@ static func is_in_window(state: MmGameState, player_id: int, tag: Tag) -> bool:
 	return false
 
 
+## Whether [param action] would put an ability on top of its own earlier activation: the
+## same ability of the same permanent is the top object of the stack. Letting the first one
+## resolve loses nothing, and one answer to the permanent then wastes only one activation.
+## (Later: an ability whose first resolution would kill its own source wants to be stacked.)
+static func is_on_top_of_itself(state: MmGameState, action: MmAction) -> bool:
+	var activate: ActivateAbilityAction = action as ActivateAbilityAction
+	if activate == null or state.stack.is_empty():
+		return false
+	var top: MmGameObject = state.stack.objects().back()
+	return top.ability != null and top.source_object_id == activate.object_id \
+		and top.ability == activated_ability_of(state, action)
+
+
 static func _opposing_object_on_top(state: MmGameState, player_id: int) -> bool:
-	return not state.stack.is_empty() and state.stack.top().controller_id != player_id
+	# The top of the stack is the last object in the zone.
+	return not state.stack.is_empty() and (state.stack.objects().back() as MmGameObject).controller_id != player_id

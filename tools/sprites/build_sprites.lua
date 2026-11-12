@@ -1,19 +1,29 @@
--- Builds 16 x 16 pixel icons from a text grid. Run it through tools/sprites/build.sh.
+-- Builds pixel icons from a text grid. Run it through tools/sprites/build.sh.
 --
 -- For each icon in the grid file it makes <out>/<name>.aseprite, unless that file already
 -- exists (a hand-edited .aseprite is the source of truth, so it is only replaced when the
 -- icon is named in `force`). It then exports <out>/<name>.png from the .aseprite file and
 -- draws every icon onto one contact sheet.
 --
--- Params: grid, out, preview (all absolute paths), force ("", "all" or "name,name").
+-- A grid file holds "= name" lines, each followed by the icon's rows, one character for
+-- each pixel: . is transparent and any other is the palette color at that character's
+-- place in KEY. Lines starting with ; are comments. Two settings may come first:
+--   @ size 32         the icons' width and height (16 if left out)
+--   @ backdrop chip   draw the contact sheet's icons on a Keyword Chip
+--
+-- Params: grid, out, preview, palette (all absolute paths), force ("", "all" or
+-- "name,name"). New sprites are given the palette file's colors.
 
 local SIZE = 16
+local BACKDROP = "plain"
+-- One character for each color of tools/sprites/modmox.gpl, in its order: the neutrals,
+-- then five steps (darkest to lightest) of red, rust, earth, flesh, gold, olive, green,
+-- teal, blue, violet and rose, then the five brights.
+local KEY = "0123+56#" .. "abcde" .. "fghij" .. "klmno" .. "pqrst" .. "uvwxy" .. "ABCDE"
+	.. "FGHIJ" .. "KLMNO" .. "PQRST" .. "UVWXY" .. "zZ489" .. "!$%&*"
 local SCALES = { 1, 2, 4 }
 local PAD = 8
-local TONES = {
-	["#"] = { 255, 255, 255 },
-	["+"] = { 154, 163, 181 },
-}
+local TONES = {}
 -- The contact sheet imitates a chip as CardShapes.chip draws it, over a stand-in for art.
 local SHEET = { 96, 112, 88 }
 local PANEL = { 20, 20, 26, 0.88 }
@@ -30,7 +40,16 @@ local function read_icons(path)
 	local current = nil
 	for line in io.lines(path) do
 		line = line:gsub("%s+$", "")
-		if line:sub(1, 1) == "=" then
+		if line:sub(1, 1) == "@" then
+			local setting, value = line:match("^@%s*(%a+)%s+(%w+)")
+			if setting == "size" and tonumber(value) ~= nil then
+				SIZE = math.tointeger(tonumber(value))
+			elseif setting == "backdrop" then
+				BACKDROP = value
+			else
+				fail("bad setting line: " .. line)
+			end
+		elseif line:sub(1, 1) == "=" then
 			current = { name = line:match("^=%s*([%w_]+)"), rows = {} }
 			if current.name == nil then fail("bad name line: " .. line) end
 			icons[#icons + 1] = current
@@ -47,8 +66,11 @@ local function read_icons(path)
 			if #row ~= SIZE then
 				fail(icon.name .. " row " .. y .. " is " .. #row .. " wide, not " .. SIZE)
 			end
-			if row:find("[^%.#%+]") then
-				fail(icon.name .. " row " .. y .. " has a character that is not . # or +")
+			for x = 1, SIZE do
+				local character = row:sub(x, x)
+				if character ~= "." and TONES[character] == nil then
+					fail(icon.name .. " row " .. y .. " has '" .. character .. "', which is no palette color")
+				end
 			end
 		end
 	end
@@ -63,13 +85,21 @@ local function is_forced(name, force)
 	return false
 end
 
+local palette_path = app.params["palette"]
+if palette_path == nil then fail("needs the palette param; run tools/sprites/build.sh") end
+local shared_palette = Palette { fromFile = palette_path }
+if #shared_palette ~= #KEY then
+	fail("the palette has " .. #shared_palette .. " colors but KEY names " .. #KEY)
+end
+for index = 1, #KEY do
+	local color = shared_palette:getColor(index - 1)
+	TONES[KEY:sub(index, index)] = { color.red, color.green, color.blue }
+end
+
 local function draw_grid(icon, path)
 	local sprite = Sprite(SIZE, SIZE, ColorMode.RGB)
-	local palette = Palette(3)
-	palette:setColor(0, Color { r = 0, g = 0, b = 0, a = 0 })
-	palette:setColor(1, Color { r = TONES["#"][1], g = TONES["#"][2], b = TONES["#"][3], a = 255 })
-	palette:setColor(2, Color { r = TONES["+"][1], g = TONES["+"][2], b = TONES["+"][3], a = 255 })
-	sprite:setPalette(palette)
+	-- The shared palette, so touch-ups pick from the same colors as every other sprite.
+	sprite:setPalette(shared_palette)
 	local image = Image(SIZE, SIZE, ColorMode.RGB)
 	for y, row in ipairs(icon.rows) do
 		for x = 1, SIZE do
@@ -94,7 +124,7 @@ end
 
 -- Whether pixel (x, y) lies inside the chip's rounded square.
 local function in_chip(x, y)
-	if x < 0 or y < 0 or x >= SIZE or y >= SIZE then return false end
+	if BACKDROP ~= "chip" or x < 0 or y < 0 or x >= SIZE or y >= SIZE then return false end
 	local cx = math.max(RADIUS - 0.5, math.min(SIZE - RADIUS - 0.5, x))
 	local cy = math.max(RADIUS - 0.5, math.min(SIZE - RADIUS - 0.5, y))
 	return (x - cx) ^ 2 + (y - cy) ^ 2 <= (RADIUS - 0.5) ^ 2 + 0.5
@@ -135,8 +165,8 @@ local grid_path = app.params["grid"]
 local out_dir = app.params["out"]
 local preview_path = app.params["preview"]
 local force = app.params["force"] or ""
-if grid_path == nil or out_dir == nil or preview_path == nil then
-	fail("needs the grid, out and preview params; run tools/sprites/build.sh")
+if grid_path == nil or out_dir == nil or preview_path == nil or palette_path == nil then
+	fail("needs the grid, out, preview and palette params; run tools/sprites/build.sh")
 end
 
 local icons = read_icons(grid_path)

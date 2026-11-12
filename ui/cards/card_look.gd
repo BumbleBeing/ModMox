@@ -23,14 +23,16 @@ var base_power: int = 0
 var base_toughness: int = 0
 var is_power_variable: bool = false
 var is_toughness_variable: bool = false
+## Damage marked on a creature this turn, shown on a Damage Chip. Always 0 as printed.
+var damage_marked: int = 0
 ## Every ability it has right now, including granted ones.
 var abilities: Array[MmAbility] = []
 var is_tapped: bool = false
 ## Which art to draw: the file name of the card's Card Definition, without its extension.
 ## Art belongs to the Card Definition, so a renamed Run Card keeps its art (A229).
 var art_key: String = ""
-## The rules text to print, with reminder text in parentheses. Empty until rules text is
-## generated from abilities (A232).
+## The rules text to print, with reminder text in parentheses. Generated from the
+## abilities by AbilityText whenever a look is made from characteristics or a view (A333).
 var rules_text: String = ""
 
 
@@ -51,6 +53,7 @@ static func of_characteristics(characteristics: MmCharacteristics, card_art_key:
 	look.is_toughness_variable = characteristics.is_toughness_variable
 	look.abilities = characteristics.abilities.duplicate()
 	look.art_key = card_art_key
+	look.rules_text = AbilityText.of_card(look.abilities, look.card_types, look.supertypes, look.name)
 	return look
 
 
@@ -71,7 +74,9 @@ static func of_view(view: MmObjectView, card_art_key: String = "") -> CardLook:
 	look.is_toughness_variable = view.is_toughness_variable
 	look.abilities = view.abilities.duplicate()
 	look.is_tapped = view.is_tapped
+	look.damage_marked = view.damage_marked
 	look.art_key = card_art_key
+	look.rules_text = AbilityText.of_card(look.abilities, look.card_types, look.supertypes, look.name)
 	return look
 
 

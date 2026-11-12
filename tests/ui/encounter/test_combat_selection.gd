@@ -113,24 +113,35 @@ func test_a_blocker_cannot_be_paired_with_an_attacker_it_cannot_block() -> void:
 	assert_eq(selection.picked_id(), 1)
 
 
-func test_picking_a_blocking_creature_up_again_moves_it_or_takes_it_off() -> void:
+func test_one_click_on_a_blocking_creature_takes_it_off() -> void:
 	var decision: DeclareBlockersDecision = _blocks()
 	var selection: CombatSelection = CombatSelection.new(decision)
 	selection.click(1)
 	selection.click(22)
 
+	assert_true(selection.click(1))
+
+	assert_eq(selection.pairs().size(), 0, "It no longer blocks.")
+	assert_eq(selection.picked_id(), CombatSelection.NONE, "And it is not picked up: the next click on it starts over.")
+	assert_false(selection.is_chosen(1))
+	assert_eq(decision.validate(selection.answer()), "")
+
 	selection.click(1)
 	selection.click(20)
 
-	assert_eq(selection.pairs(), [[1, 20]], "Another attacker moves the block (A314).")
+	assert_eq(selection.pairs(), [[1, 20]], "Taken off, it can be given another attacker.")
+
+
+func test_taking_one_blocker_off_leaves_the_one_picked_up_in_hand() -> void:
+	var selection: CombatSelection = CombatSelection.new(_blocks())
+	selection.click(1)
+	selection.click(22)
+	selection.click(2)
 
 	selection.click(1)
-	assert_eq(selection.pairs(), [[1, 20]], "Picked up, it still blocks until something is clicked.")
-	selection.click(1)
 
-	assert_eq(selection.pairs().size(), 0, "The same blocker again takes it off.")
-	assert_eq(selection.picked_id(), CombatSelection.NONE)
-	assert_eq(decision.validate(selection.answer()), "")
+	assert_eq(selection.pairs().size(), 0)
+	assert_eq(selection.picked_id(), 2)
 
 
 func test_several_blockers_can_block_one_attacker_and_picking_another_blocker_swaps_hands() -> void:
@@ -149,11 +160,13 @@ func test_several_blockers_can_block_one_attacker_and_picking_another_blocker_sw
 
 
 func test_a_click_on_empty_board_puts_the_blocker_down_unassigned() -> void:
-	var selection: CombatSelection = CombatSelection.new(_blocks())
+	var twice: DeclareBlockersDecision = DeclareBlockersDecision.new(HERO, [1] as Array[int], [20, 22] as Array[int],
+		{1: [20, 22]} as Dictionary[int, Array], {1: 2} as Dictionary[int, int])
+	var selection: CombatSelection = CombatSelection.new(twice)
 	assert_false(selection.put_down(), "Nothing is picked up.")
 	selection.click(1)
 	selection.click(22)
-	selection.click(1)
+	assert_eq(selection.picked_id(), 1, "One that may block two stays picked up.")
 
 	assert_true(selection.put_down())
 

@@ -13,6 +13,8 @@ const ARROW_WIDTH: float = 26.0
 const SPEED: float = 1100.0
 const NUDGE: float = 60.0
 const BAR_HEIGHT: float = 8.0
+## How wide and how tall the triangle on an arrow is.
+const ARROWHEAD: Vector2 = Vector2(10.0, 14.0)
 
 var _content: Control
 var _left: Button
@@ -36,8 +38,8 @@ func _init(view_rect: Rect2, content_width: float, offset: float) -> void:
 	_content = Control.new()
 	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	window.add_child(_content)
-	_left = _arrow("◀", 0.0, -1.0)
-	_right = _arrow("▶", view_rect.size.x - ARROW_WIDTH, 1.0)
+	_left = _arrow(0.0, -1.0)
+	_right = _arrow(view_rect.size.x - ARROW_WIDTH, 1.0)
 	_bar = HScrollBar.new()
 	_bar.position = Vector2(ARROW_WIDTH, view_rect.size.y - BAR_HEIGHT)
 	_bar.size = Vector2(view_rect.size.x - ARROW_WIDTH * 2.0, BAR_HEIGHT)
@@ -106,12 +108,29 @@ func scroll_to(offset: float) -> void:
 		scrolled.emit(_offset)
 
 
-func _arrow(text: String, x: float, direction: float) -> Button:
+## The points of the triangle on an arrow of [param arrow_size] that points left
+## ([param direction] -1) or right (1), in the arrow's own coordinates.
+static func arrowhead(arrow_size: Vector2, direction: float) -> PackedVector2Array:
+	var middle: Vector2 = arrow_size / 2.0
+	return PackedVector2Array([
+		middle + Vector2(ARROWHEAD.x / 2.0 * direction, 0),
+		middle + Vector2(-ARROWHEAD.x / 2.0 * direction, -ARROWHEAD.y / 2.0),
+		middle + Vector2(-ARROWHEAD.x / 2.0 * direction, ARROWHEAD.y / 2.0),
+	])
+
+
+## An arrow's triangle is drawn, not written: the "◀" character is not in the game's font,
+## and laying out a character from a fallback font takes about a millisecond every time,
+## which with four lines of two arrows was a third of every redraw.
+func _arrow(x: float, direction: float) -> Button:
 	var arrow: Button = Button.new()
-	arrow.text = text
 	arrow.focus_mode = Control.FOCUS_NONE
 	arrow.position = Vector2(x, 0)
 	arrow.size = Vector2(ARROW_WIDTH, size.y - BAR_HEIGHT)
+	var head: Polygon2D = Polygon2D.new()
+	head.polygon = arrowhead(arrow.size, direction)
+	head.color = Color(0.88, 0.88, 0.88)
+	arrow.add_child(head)
 	_paint(arrow, null)
 	arrow.button_down.connect(func() -> void: scroll_by(NUDGE * direction))
 	add_child(arrow)
@@ -119,6 +138,11 @@ func _arrow(text: String, x: float, direction: float) -> Button:
 
 
 func _paint(arrow: Button, tint: Variant) -> void:
+	# Painting lays the arrow's text out again, which is slow, and the arrows are asked to
+	# be painted on every redraw: one that already has this color is left alone.
+	if arrow.has_meta("painted") and arrow_tint(arrow) == tint:
+		return
+	arrow.set_meta("painted", true)
 	# Setting a meta to null removes it, which is how "plain" is remembered.
 	arrow.set_meta("tint", tint)
 	for state: String in ["normal", "hover", "pressed"]:

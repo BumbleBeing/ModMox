@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_hiopj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_w2244"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/counter_effect.gd" id="3_m65sl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_cxmht"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="5_yncfc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="6_ghjp1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="7_2dyel"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="8_xhf0v"]
+
+[sub_resource type="Resource" id="Resource_1kety"]
+script = ExtResource("4_cxmht")
+
+[sub_resource type="Resource" id="Resource_1tt0i"]
+script = ExtResource("3_m65sl")
+selection = SubResource("Resource_1kety")
+
+[sub_resource type="Resource" id="Resource_tedy1"]
+script = ExtResource("6_ghjp1")
+among = 1
+
+[sub_resource type="Resource" id="Resource_42fud"]
+script = ExtResource("5_yncfc")
+targets = Array[ExtResource("6_ghjp1")]([SubResource("Resource_tedy1")])
+effects = Array[ExtResource("2_w2244")]([SubResource("Resource_1tt0i")])
+
+[sub_resource type="Resource" id="Resource_otvmj"]
+script = ExtResource("7_2dyel")
+symbols = Array[int]([1, 1])
+
+[resource]
+script = ExtResource("8_xhf0v")
+name = "Counterspell"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_otvmj")
+abilities = Array[ExtResource("1_hiopj")]([SubResource("Resource_42fud")])

@@ -8,30 +8,13 @@ const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
 const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 
 
-func test_priority_lists_only_casting_and_playing_a_land_and_answers_with_the_actions_index() -> void:
-	var view: MmPlayerView = _view()
+func test_priority_has_no_form_since_the_hand_took_casting_and_playing_a_land() -> void:
 	var decision: PriorityDecision = PriorityDecision.new(HERO, [
 		PassAction.new(), ActivateAbilityAction.new(1, 0), PlayLandAction.new(2), CastSpellAction.new(3),
 	] as Array[MmAction])
 
-	var form: DebugDecisionForm = DebugDecisionForm.of(decision, view)
-
-	assert_eq(form.kind, DebugDecisionForm.Kind.PICK_ONE)
-	assert_eq(form.options, ["Play Mountain", "Cast Zap"] as Array[String],
-		"Passing has its button and the Forest is clicked for mana (13c).")
-	assert_eq(form.option_object_ids, [2, 3] as Array[int])
-	assert_false(form.is_empty())
-	assert_eq(form.answer_for_pick(0), 2, "The index of playing the Mountain among all four actions.")
-	assert_eq(form.answer_for_pick(1), 3)
-	assert_eq(decision.validate(form.answer_for_pick(1)), "")
-
-
-func test_priority_with_nothing_to_cast_or_play_is_an_empty_form() -> void:
-	var decision: PriorityDecision = PriorityDecision.new(HERO, [
-		PassAction.new(), ActivateAbilityAction.new(1, 0),
-	] as Array[MmAction])
-
-	assert_true(DebugDecisionForm.of(decision, _view()).is_empty())
+	assert_false(DebugDecisionForm.covers(decision))
+	assert_null(DebugDecisionForm.of(decision, _view()))
 
 
 func test_paying_mana_and_choosing_a_target_have_no_form() -> void:
@@ -61,7 +44,7 @@ func test_the_combat_decisions_have_no_form() -> void:
 	for decision: MmPendingDecision in [attackers, blockers, damage]:
 		assert_false(DebugDecisionForm.covers(decision), decision.describe())
 		assert_null(DebugDecisionForm.of(decision, view), "Combat is answered on the creatures themselves (A328).")
-	assert_eq(DebugDecisionForm.Kind.size(), 3, "Pair up and split are gone with them.")
+	assert_eq(DebugDecisionForm.Kind.size(), 2, "Pair up and split went with them, and put in order with the stack (13d).")
 
 
 func test_cards_to_discard_are_picked_by_number_and_named_with_their_ids() -> void:
@@ -90,18 +73,14 @@ func test_keep_or_mulligan_and_play_or_draw_are_two_choices_each() -> void:
 	assert_eq(play.validate(play_form.answer_for_pick(1)), "")
 
 
-func test_a_replacement_choice_lists_each_effect() -> void:
-	var options: Array[ActiveReplacementEffect] = [
-		ActiveReplacementEffect.new(PreventDamageReplacementEffect.new(), 1, HERO, 1, 1),
-		ActiveReplacementEffect.new(RegenerationReplacementEffect.new(), 2, HERO, 1, 1),
-	]
-	var decision: ChooseReplacementEffectDecision = ChooseReplacementEffectDecision.new(HERO, null, options)
+func test_ordering_triggers_and_choosing_a_replacement_effect_have_no_form() -> void:
+	var order: OrderTriggersDecision = OrderTriggersDecision.new(HERO, [] as Array[PendingTrigger])
+	var choice: ChooseReplacementEffectDecision = ChooseReplacementEffectDecision.new(HERO, null, [] as Array[ActiveReplacementEffect])
 
-	var form: DebugDecisionForm = DebugDecisionForm.of(decision, _view())
-
-	assert_eq(form.kind, DebugDecisionForm.Kind.PICK_ONE)
-	assert_eq(form.options.size(), 2)
-	assert_eq(decision.validate(form.answer_for_pick(1)), "")
+	assert_false(DebugDecisionForm.covers(order), "Triggers are ordered in the Stack Window (13d).")
+	assert_null(DebugDecisionForm.of(order, _view()))
+	assert_false(DebugDecisionForm.covers(choice), "A replacement effect is chosen in its own window (13d).")
+	assert_null(DebugDecisionForm.of(choice, _view()))
 
 
 func test_cards_to_discard_and_to_bottom_keep_the_order_picked() -> void:
@@ -116,21 +95,6 @@ func test_cards_to_discard_and_to_bottom_keep_the_order_picked() -> void:
 	assert_ne(discard.validate(discard_form.answer_for_picks([0] as Array[int])), "", "One short is rejected with a reason.")
 	assert_eq(bottom_form.answer_for_picks([2, 1] as Array[int]), [3, 2] as Array[int], "The last one picked ends up lowest.")
 	assert_eq(bottom.validate(bottom_form.answer_for_picks([2, 1] as Array[int])), "")
-
-
-func test_triggers_are_put_in_order() -> void:
-	var decision: OrderTriggersDecision = OrderTriggersDecision.new(HERO, [] as Array[PendingTrigger])
-	decision.source_object_ids = [1, 2]
-	decision.source_card_ids = [1, 2]
-	decision.descriptions = ["Forest's trigger", "Mountain's trigger"]
-
-	var form: DebugDecisionForm = DebugDecisionForm.of(decision, _view())
-
-	assert_eq(form.kind, DebugDecisionForm.Kind.ORDER)
-	assert_eq(form.options, ["Forest's trigger", "Mountain's trigger"] as Array[String])
-	assert_eq(form.option_object_ids, [1, 2] as Array[int])
-	assert_eq(form.answer_for_picks([1, 0] as Array[int]), [1, 0])
-	assert_eq(decision.validate(form.answer_for_picks([1, 0] as Array[int])), "")
 
 
 func test_a_name_is_found_in_any_zone_the_view_shows() -> void:

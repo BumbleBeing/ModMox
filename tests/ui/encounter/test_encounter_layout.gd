@@ -553,3 +553,76 @@ func test_the_heros_rows_sit_low_with_the_hand_and_open_a_lane_across_the_middle
 		"The Hero's rows stay down by theirs.")
 	assert_true(regions["battlefield"].encloses(regions["villain_lands"]))
 	assert_true(regions["battlefield"].encloses(regions["hero_lands"]))
+
+
+func test_a_hand_with_no_gap_rests_as_it_always_does() -> void:
+	var hand: Rect2 = EncounterLayout.regions(SIZES[0])["hero_hand"]
+	var card: Vector2 = Vector2(180, 250)
+
+	assert_eq(EncounterLayout.hand_row(5, -1, hand, card), EncounterLayout.hand_rest(5, hand, card))
+	var angles: Array[float] = EncounterLayout.hand_row_angles(5, -1)
+	assert_eq(angles.size(), 5)
+	for index: int in 5:
+		assert_eq(angles[index], EncounterLayout.fan_angle(index, 5))
+
+
+func test_a_hand_leaves_a_gap_where_a_held_card_would_be_put_down() -> void:
+	var hand: Rect2 = EncounterLayout.regions(SIZES[0])["hero_hand"]
+	var card: Vector2 = Vector2(180, 250)
+	var six: Array[Vector2] = EncounterLayout.hand_rest(6, hand, card)
+
+	var middle: Array[Vector2] = EncounterLayout.hand_row(5, 2, hand, card)
+	var left: Array[Vector2] = EncounterLayout.hand_row(5, 0, hand, card)
+	var right: Array[Vector2] = EncounterLayout.hand_row(5, 5, hand, card)
+	var past: Array[Vector2] = EncounterLayout.hand_row(5, 9, hand, card)
+
+	assert_eq(middle, [six[0], six[1], six[3], six[4], six[5]] as Array[Vector2], "The third of six places is left empty.")
+	assert_eq(left, six.slice(1))
+	assert_eq(right, six.slice(0, 5))
+	assert_eq(past, right, "A gap past the end is the end.")
+	assert_eq(EncounterLayout.hand_row_angles(5, 2), [EncounterLayout.fan_angle(0, 6), EncounterLayout.fan_angle(1, 6),
+			EncounterLayout.fan_angle(3, 6), EncounterLayout.fan_angle(4, 6), EncounterLayout.fan_angle(5, 6)] as Array[float])
+	assert_eq(EncounterLayout.hand_row_angles(5, 0), [EncounterLayout.fan_angle(1, 6), EncounterLayout.fan_angle(2, 6),
+			EncounterLayout.fan_angle(3, 6), EncounterLayout.fan_angle(4, 6), EncounterLayout.fan_angle(5, 6)] as Array[float],
+			"A gap at the left end is still a gap.")
+	assert_eq(EncounterLayout.hand_row_angles(5, 9).size(), 5)
+	assert_eq(EncounterLayout.hand_row_angles(5, 9)[4], EncounterLayout.fan_angle(4, 6))
+	assert_eq(EncounterLayout.hand_row(0, 0, hand, card).size(), 0, "An empty hand has nothing to move aside.")
+
+
+func test_a_held_card_goes_down_at_the_place_nearest_the_cursor() -> void:
+	var hand: Rect2 = EncounterLayout.regions(SIZES[0])["hero_hand"]
+	var card: Vector2 = Vector2(180, 250)
+	var six: Array[Vector2] = EncounterLayout.hand_rest(6, hand, card)
+
+	for index: int in 6:
+		assert_eq(EncounterLayout.hand_gap(5, hand, card, six[index] + Vector2(card.x / 2.0, 40)), index, "Over place %d." % index)
+	var step: float = six[1].x - six[0].x
+	assert_eq(EncounterLayout.hand_gap(5, hand, card, six[2] + Vector2(card.x / 2.0 + step * 0.4, 0)), 2)
+	assert_eq(EncounterLayout.hand_gap(5, hand, card, six[2] + Vector2(card.x / 2.0 + step * 0.6, 0)), 3)
+	assert_eq(EncounterLayout.hand_gap(5, hand, card, Vector2(0, 900)), 0, "Left of the hand is its left end.")
+	assert_eq(EncounterLayout.hand_gap(5, hand, card, Vector2(5000, 900)), 5, "Right of it, its right end.")
+	assert_eq(EncounterLayout.hand_gap(0, hand, card, Vector2(900, 900)), 0, "An empty hand has one place.")
+
+
+func test_above_the_hands_strip_is_where_a_card_is_played_and_the_left_panels_are_off_limits() -> void:
+	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(SIZES[0])
+	var strip_top: float = regions["hero_hand"].position.y
+
+	assert_true(EncounterLayout.is_above_hand(Vector2(900, strip_top - 1.0), regions))
+	assert_false(EncounterLayout.is_above_hand(Vector2(900, strip_top), regions), "The strip itself is the hand.")
+	assert_false(EncounterLayout.is_above_hand(regions["info"].get_center(), regions), "The Info Panel is in the strip (A382).")
+	assert_true(EncounterLayout.is_above_hand(regions["hero_graveyard"].position, regions), "The piles are above it too (A372).")
+	assert_true(EncounterLayout.is_over_panels(Vector2(regions["sidebar"].end.x - 1.0, 500), regions))
+	assert_false(EncounterLayout.is_over_panels(Vector2(regions["sidebar"].end.x, 500), regions))
+	assert_true(EncounterLayout.is_over_panels(regions["hero_panel"].get_center(), regions))
+	assert_false(EncounterLayout.is_over_panels(regions["info"].get_center(), regions))
+
+
+func test_easing_covers_in_one_slow_frame_what_the_frames_it_replaced_would_have() -> void:
+	assert_almost_eq(EncounterLayout.ease_weight(0.3, 1.0 / 60.0), 0.3, 0.0001)
+	assert_almost_eq(EncounterLayout.ease_weight(0.3, 2.0 / 60.0), 0.51, 0.0001, "Two frames' worth: 0.3, then 0.3 of what is left.")
+	assert_almost_eq(EncounterLayout.ease_weight(0.3, 3.0 / 60.0), 0.657, 0.0001)
+	assert_eq(EncounterLayout.ease_weight(0.3, 0.0), 0.0)
+	assert_almost_eq(EncounterLayout.ease_weight(0.5, 1.0 / 120.0), 1.0 - sqrt(0.5), 0.0001, "And half a frame's worth at twice the rate.")
+	assert_lt(EncounterLayout.ease_weight(0.3, 10.0), 1.0001)

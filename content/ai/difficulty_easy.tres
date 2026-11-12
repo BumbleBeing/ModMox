@@ -5,3 +5,5 @@
 [resource]
 script = ExtResource("1_lgaj3")
 uses_monte_carlo = false
+judges_tricks_after_the_turn = false
+repeat_plan_length = 1

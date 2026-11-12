@@ -13,6 +13,11 @@ func test_no_decision_has_no_prompt() -> void:
 	assert_false(prompt.can_cancel)
 
 
+func test_a_held_card_that_letting_go_would_play_says_so() -> void:
+	assert_eq(InfoPrompt.release_text("Cast Hill Giant"), "Release to cast Hill Giant")
+	assert_eq(InfoPrompt.release_text("Play Forest"), "Release to play Forest")
+
+
 func test_priority_names_the_step_and_whose_turn_it_is() -> void:
 	var view: MmPlayerView = _view()
 	var decision: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new()] as Array[MmAction])

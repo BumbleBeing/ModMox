@@ -1,6 +1,9 @@
-; Keyword Icons, as drafted. Each is 16 rows of 16: . transparent, # white, + gray.
+; Keyword Icons, as drafted. Each is 16 rows of 16: . transparent, # white, + gray (see
+; KEY in build_sprites.lua for every other color).
 ; Keep the outer two pixels empty: the chip's outline and rounded corners live there.
 ; Once an icon's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ backdrop chip
 
 = flying
 ................
