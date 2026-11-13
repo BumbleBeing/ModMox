@@ -230,22 +230,30 @@ func clickable_ids() -> Array[int]:
 	return ids
 
 
-## An ability that [param answer] activates: a permanent's is clicked on it, and one of a
-## card in hand is offered when the card is let go. One anywhere else glows and gets its
-## input with that zone's viewer (13f).
+## An ability that [param answer] activates: a permanent's is clicked on it, an Emblem's or
+## a Potion's on its entry in its window, and one of a card in hand is offered when the card
+## is let go.
 func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView) -> void:
 	var text: String = "Ability %d" % (action.ability_index + 1)
 	var is_mana: bool = false
 	var permanent: MmObjectView = _find(view.battlefield, action.object_id)
 	var in_hand: MmObjectView = _find(view.hand, action.object_id)
-	var seen: MmObjectView = permanent if permanent != null else in_hand
+	# An Emblem or a Potion, used from its window (ADR 0032).
+	var emblem: MmObjectView = _find(view.command, action.object_id)
+	var potion: MmObjectView = _find(view.potions, action.object_id)
+	var held: MmObjectView = emblem if emblem != null else potion
+	var seen: MmObjectView = permanent if permanent != null else (in_hand if in_hand != null else held)
 	if seen != null and action.ability_index < seen.abilities.size() and seen.abilities[action.ability_index] is ActivatedAbility:
 		var ability: ActivatedAbility = seen.abilities[action.ability_index]
 		is_mana = ability.is_mana_ability()
 		# A row of the Option Menu reads as the ability is printed on the card.
-		text = AbilityText.of_ability(ability, AbilityText.self_noun(seen.card_types, seen.name))
-	_add_kind(action.object_id, Kind.MANA if is_mana else Kind.ABILITY)
-	if permanent != null:
+		var noun: String = AbilityText.self_noun(seen.card_types, seen.name)
+		if held != null:
+			noun = CardLook.noun_of(CardLook.Kind.EMBLEM if emblem != null else CardLook.Kind.POTION)
+		text = AbilityText.of_ability(ability, noun)
+	# What the Hero holds and can use now is green, as a card to play is (A537).
+	_add_kind(action.object_id, Kind.MANA if is_mana else (Kind.PLAY if held != null else Kind.ABILITY))
+	if permanent != null or held != null:
 		_append(_options, action.object_id, ClickOption.new(answer, text, is_mana))
 	elif in_hand != null:
 		_append(_hand_abilities, action.object_id, ClickOption.new(answer, text, is_mana))

@@ -121,3 +121,44 @@ func _stack_object(controller_id: int) -> MmObjectView:
 	var item: MmObjectView = MmObjectView.new()
 	item.controller_id = controller_id
 	return item
+
+
+# --- Emblems and Potions (ADR 0032, A525) ----------------------------------------------
+
+func test_an_emblems_ability_is_a_play_so_a_step_with_a_stop_stops_for_it() -> void:
+	var view: MmPlayerView = _view(MmTurn.Step.DECLARE_BLOCKERS)
+	view.command = [_held(30, (load("res://content/emblems/electromancers_boon.tres") as MmCardDefinition).abilities)]
+	var decision: PriorityDecision = _priority([ActivateAbilityAction.new(30, 0)])
+	var stops: StepStops = StepStops.new()
+	if not stops.has_stop(HERO, MmTurn.Step.DECLARE_BLOCKERS):
+		stops.toggle(HERO, MmTurn.Step.DECLARE_BLOCKERS)
+
+	assert_true(AutoPass.has_plays(decision, view))
+	assert_false(AutoPass.passes(decision, view, stops), "The Hero asked to be asked here, and has something to use.")
+	assert_true(AutoPass.passes(_priority([]), view, stops), "With nothing usable it passes.")
+
+
+func test_a_potion_is_a_play_too() -> void:
+	var view: MmPlayerView = _view(MmTurn.Step.PRECOMBAT_MAIN)
+	view.potions = [_held(31, (load("res://content/potions/big_gulp.tres") as MmCardDefinition).abilities)]
+	var decision: PriorityDecision = _priority([ActivateAbilityAction.new(31, 0)])
+
+	assert_true(AutoPass.has_plays(decision, view))
+	assert_false(AutoPass.passes(decision, view, StepStops.new()))
+
+
+func test_an_emblems_mana_ability_is_no_reason_to_stop() -> void:
+	var view: MmPlayerView = _view(MmTurn.Step.PRECOMBAT_MAIN)
+	var font: ActivatedAbility = ActivatedAbility.new()
+	font.effects = [Scenario.add_mana(MmMana.Type.RED, 1)]
+	view.command = [_held(30, [font])]
+
+	assert_true(AutoPass.passes(_priority([ActivateAbilityAction.new(30, 0)]), view, StepStops.new()))
+
+
+func _held(id: int, abilities: Array[MmAbility]) -> MmObjectView:
+	var held: MmObjectView = MmObjectView.new()
+	held.id = id
+	held.controller_id = HERO
+	held.abilities = abilities
+	return held

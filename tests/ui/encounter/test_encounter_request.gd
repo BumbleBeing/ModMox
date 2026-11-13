@@ -49,8 +49,9 @@ func test_sample_emblems_go_on_copies_and_leave_the_loaded_decks_alone() -> void
 
 	var setup: MmEncounterSetup = request.setup()
 
-	assert_eq(setup.hero.emblems.size(), 1)
-	assert_eq(setup.villain.emblems.size(), 1)
+	assert_eq(_names(setup.hero.emblems), ["Sample Boon: Howling Winds", "Diviner's Boon", "Electromancer's Boon"] as Array[String])
+	assert_eq(_names(setup.villain.emblems), ["Sample Hex: Ankh's Curse", "Electromancer's Boon"] as Array[String])
+	assert_eq(setup.hero.potions.size(), 0)
 	assert_eq(setup.hero.emblems[0].card_types.size(), 0, "An Emblem has abilities and nothing else.")
 	assert_gt(setup.hero.emblems[0].abilities.size(), 0)
 	assert_eq((load("res://content/decks/red_green.tres") as MmPlayerSetup).emblems.size(), 0)
@@ -100,3 +101,27 @@ func test_an_unknown_backdrop_is_refused_with_a_reason() -> void:
 	request.backdrop = "purple"
 
 	assert_string_contains(request.validate(), "purple")
+
+
+func test_the_potions_flag_gives_the_hero_one_big_gulp_on_a_copy() -> void:
+	var request: EncounterRequest = EncounterRequest.from_arguments(PackedStringArray(["--seed=3", "--potions"]))
+
+	var setup: MmEncounterSetup = request.setup()
+
+	assert_true(request.has_sample_potions)
+	assert_false(request.has_sample_emblems)
+	assert_eq(_names(setup.hero.potions), ["Big Gulp"] as Array[String])
+	assert_eq(setup.villain.potions.size(), 0, "Only the Hero is given Potions (A523).")
+	assert_eq((load("res://content/decks/red_green.tres") as MmPlayerSetup).potions.size(), 0)
+	assert_eq(setup.validate(), "")
+
+
+func test_a_request_without_the_flag_holds_no_potion() -> void:
+	assert_false(EncounterRequest.from_arguments(PackedStringArray(["--seed=3", "--emblems"])).has_sample_potions)
+
+
+func _names(definitions: Array[MmCardDefinition]) -> Array[String]:
+	var names: Array[String] = []
+	for definition: MmCardDefinition in definitions:
+		names.append(definition.name)
+	return names

@@ -86,6 +86,16 @@ var _board: Control
 var _panels: Dictionary[int, PlayerPanel] = {}
 var _stack_window: ZoneWindow
 var _emblem_windows: Dictionary[int, ZoneWindow] = {}
+## The Hero's Potions window (ADR 0032); only the Hero is given Potions.
+var _potions_window: ZoneWindow
+## The entry of each Emblem and Potion in its window, by Game Object ID.
+var _held_entries: Dictionary[int, ZoneEntry] = {}
+## Which of the Hero's Emblems and Potions windows closed for something used from them.
+var _held_windows: HeldWindows = HeldWindows.new()
+## While the Option Menu is open for an Emblem with several abilities: its Game Object ID
+## and the window it is in. Inspection.NOTHING otherwise.
+var _menu_held_id: int = Inspection.NOTHING
+var _menu_held_window: HeldWindows.Kind = HeldWindows.Kind.EMBLEMS
 ## The Zone Window of each graveyard, exile and library, by its pile's Region, which of
 ## them have been given a place, and which are open only to answer a target (13f).
 var _pile_windows: Dictionary[String, PileWindow] = {}
@@ -230,6 +240,7 @@ func _ready() -> void:
 		panel.mana_pressed.connect(_answer)
 		panel.player_clicked.connect(_answer)
 		panel.emblems_pressed.connect(_toggle_emblems.bind(player_id))
+		panel.potions_pressed.connect(_toggle_potions)
 		panel.stop_toggled.connect(func(step: MmTurn.Step) -> void: _presenter.toggle_stop(player_id, step))
 		panel.undo_pressed.connect(undo)
 		panel.yield_toggled.connect(toggle_yield)
@@ -253,6 +264,10 @@ func _ready() -> void:
 		emblems.hide()
 		add_child(emblems)
 		_emblem_windows[player_id] = emblems
+	_potions_window = ZoneWindow.new("Potions", true, PlayerPanel.POTION_COLOR)
+	_potions_window.size = Vector2(300, 160)
+	_potions_window.hide()
+	add_child(_potions_window)
 	for key: String in EncounterLayout.pile_keys():
 		var is_row: bool = key.ends_with("library")
 		var pile_window: PileWindow = PileWindow.new(PileWindow.Arrangement.ROW if is_row else PileWindow.Arrangement.GRID,
@@ -285,6 +300,7 @@ func _ready() -> void:
 	add_child(_overlay)
 	for player_id: int in [HERO, VILLAIN]:
 		move_child(_emblem_windows[player_id], _overlay.get_index())
+	move_child(_potions_window, _overlay.get_index())
 	_drag_layer = Control.new()
 	_drag_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_drag_layer)
@@ -296,7 +312,7 @@ func _ready() -> void:
 	add_child(_flight_layer)
 	_option_menu = OptionMenu.new()
 	_option_menu.closed.connect(_on_menu_closed)
-	_option_menu.chosen.connect(_answer)
+	_option_menu.chosen.connect(_on_menu_chosen)
 	_option_menu.pointed.connect(func(text: String) -> void: _info.show_option(text))
 	add_child(_option_menu)
 	_pause_menu = PauseMenu.new()
@@ -475,7 +491,7 @@ func _apply_speed() -> void:
 ## in a real encounter). Tests and screenshots leave it at none.
 func set_ease_seconds(seconds: float) -> void:
 	_ease_seconds = seconds
-	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN]]:
+	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
 		window.ease_seconds = seconds
 	for key: String in _pile_windows:
 		_pile_windows[key].ease_seconds = seconds
@@ -724,6 +740,7 @@ func _is_covered(cursor: Vector2) -> bool:
 	if _overlay.is_open():
 		windows.append(_overlay)
 	windows.append_array(_emblem_windows.values())
+	windows.append(_potions_window)
 	windows.append_array(_pile_windows.values())
 	for window: Control in windows:
 		# A window fading out is already closed: the cursor is not over it.
@@ -920,7 +937,7 @@ func inspectable_at(cursor: Vector2) -> int:
 func _opening_card_at(cursor: Vector2) -> int:
 	if _overlay.motion().is_moving():
 		return Inspection.NOTHING
-	for window: ZoneWindow in _emblem_windows.values():
+	for window: ZoneWindow in _held_window_list():
 		if Easing.is_shown(window) and Rect2(window.position, window.size).has_point(cursor):
 			return Inspection.NOTHING
 	var object_id: int = _overlay.card_at(cursor - _overlay.position)
@@ -936,16 +953,10 @@ func _inspectable_entries() -> Dictionary[int, Control]:
 			var entry: StackEntry = stack_entry_of(object_id)
 			if entry != null and is_instance_valid(entry):
 				entries[object_id] = entry
-	for player_id: int in _emblem_windows:
-		var window: ZoneWindow = _emblem_windows[player_id]
-		if not Easing.is_shown(window):
-			continue
-		var rows: Array[Node] = window.body().get_children()
-		var emblems: Array[MmObjectView] = _emblems_of(player_id)
-		if rows.size() != emblems.size():
-			continue
-		for index: int in rows.size():
-			entries[emblems[index].id] = rows[index] as Control
+	for object_id: int in _held_entries:
+		var held: ZoneEntry = _held_entries[object_id]
+		if is_instance_valid(held) and held.is_visible_in_tree() and Easing.is_shown(_window_of(held)):
+			entries[object_id] = held
 	for key: String in _pile_windows:
 		var pile: PileWindow = _pile_windows[key]
 		if not Easing.is_shown(pile):
@@ -956,13 +967,17 @@ func _inspectable_entries() -> Dictionary[int, Control]:
 	return entries
 
 
-## The Emblems [param player_id] controls, in the order their window lists them.
-func _emblems_of(player_id: int) -> Array[MmObjectView]:
-	var emblems: Array[MmObjectView] = []
-	for emblem: MmObjectView in _snapshot.view.command:
-		if emblem.controller_id == player_id:
-			emblems.append(emblem)
-	return emblems
+## Both Emblems windows and the Potions window.
+func _held_window_list() -> Array[ZoneWindow]:
+	return [_emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]
+
+
+## The Emblems or Potions window [param entry] is in.
+func _window_of(entry: ZoneEntry) -> ZoneWindow:
+	for window: ZoneWindow in _held_window_list():
+		if window.is_ancestor_of(entry):
+			return window
+	return null
 
 
 ## Whether a card of the hand or a trigger being ordered is held.
@@ -1169,6 +1184,18 @@ func pile_glow(key: String) -> Array[Color]:
 
 func emblems_window(player_id: int) -> ZoneWindow:
 	return _emblem_windows[player_id]
+
+
+## The Hero's Potions window.
+func potions_window() -> ZoneWindow:
+	return _potions_window
+
+
+## The entry of the Emblem or Potion with Game Object ID [param object_id] in its window,
+## or null.
+func held_entry(object_id: int) -> ZoneEntry:
+	var entry: ZoneEntry = _held_entries.get(object_id, null) as ZoneEntry
+	return entry if entry != null and is_instance_valid(entry) else null
 
 
 func opening_overlay() -> OpeningHandOverlay:
@@ -1385,6 +1412,68 @@ func _toggle_emblems(player_id: int) -> void:
 	window.move_to_front()
 
 
+func _toggle_potions() -> void:
+	_potions_window.set_open(not _potions_window.is_open())
+	_potions_window.move_to_front()
+
+
+## An Emblem or a Potion that can be used was clicked in the window [param key]: one
+## ability is activated at once, and several open the Option Menu (ADR 0032).
+func _on_held_clicked(object_id: int, window: HeldWindows.Kind) -> void:
+	if _is_paused:
+		return
+	var options: Array[ClickOption] = _clicks.options_of(object_id)
+	if options.size() == 1:
+		_use_held(window, options[0].answer, object_id)
+	elif options.size() > 1:
+		_option_menu.open(options, get_local_mouse_position(), _regions["battlefield"])
+		# After opening: the menu closes any it had open first, which forgets the last one.
+		_menu_held_id = object_id
+		_menu_held_window = window
+
+
+## A row of the Option Menu was chosen. If the menu was opened for an Emblem and the row is
+## one of that Emblem's abilities, its window closes first. The menu says it has closed
+## before it says what was chosen, so the Emblem is forgotten here and not on closing; an
+## answer that is not the Emblem's, from a menu opened since for something else, is given
+## as any other is.
+func _on_menu_chosen(hero_answer: Variant) -> void:
+	var held_id: int = _menu_held_id
+	_menu_held_id = Inspection.NOTHING
+	for option: ClickOption in _clicks.options_of(held_id) if held_id != Inspection.NOTHING else ([] as Array[ClickOption]):
+		if option.answer == hero_answer:
+			_use_held(_menu_held_window, hero_answer, held_id)
+			return
+	_answer(hero_answer)
+
+
+## Gives [param hero_answer], which uses the Emblem or Potion [param object_id]. Its window
+## closes at once, with a target to choose or without, so the board is clear, and comes
+## back if the activation is canceled or undone (A528). An answer that is refused changes
+## nothing, so the window is put back.
+func _use_held(held_window: HeldWindows.Kind, hero_answer: Variant, object_id: int) -> void:
+	var window: ZoneWindow = _held_window(held_window)
+	_held_windows.started(held_window, object_id)
+	window.close()
+	var reason: String = _presenter.answer(hero_answer)
+	if reason != "":
+		_held_windows.forget(held_window, object_id)
+		window.open()
+		_error = reason
+		_redraw()
+
+
+func _held_window(held_window: HeldWindows.Kind) -> ZoneWindow:
+	return _potions_window if held_window == HeldWindows.Kind.POTIONS else _emblem_windows[HERO]
+
+
+## Reopens a window that closed for something used from it, once that is taken back.
+func _show_held_windows() -> void:
+	_held_windows.follow(_snapshot)
+	for held_window: HeldWindows.Kind in _held_windows.to_reopen:
+		_held_window(held_window).open()
+
+
 func _concede() -> void:
 	_command(_presenter.concede)
 	set_paused(false)
@@ -1428,6 +1517,7 @@ func _redraw() -> void:
 	if _snapshot == null:
 		return
 	_option_menu.close()
+	_menu_held_id = Inspection.NOTHING
 	_clear_marks()
 	_glowed_before.clear()
 	for object_id: int in _faces:
@@ -1517,7 +1607,11 @@ func _redraw() -> void:
 		_draw_pile("Exile", view.exiles.get(player_id, []), who + "_exile", regions[who + "_exile"])
 		for zone: String in ["library", "graveyard", "exile"]:
 			_add_pile_host("%s_%s" % [who, zone], regions["%s_%s" % [who, zone]])
-		_fill_emblems_window(view, player_id)
+	_held_entries.clear()
+	for player_id: int in [VILLAIN, HERO]:
+		_fill_emblems_window(player_id)
+	_fill_potions_window()
+	_show_held_windows()
 	_fill_stack_window(view)
 	_fill_choice_window(view)
 	_show_pile_windows()
@@ -1571,7 +1665,8 @@ func _place_windows(battlefield: Rect2) -> void:
 		_choice_window.position = battlefield.get_center() - _choice_window.size / 2.0
 		_emblem_windows[HERO].position = Vector2(battlefield.position.x + 400, battlefield.end.y - 240)
 		_emblem_windows[VILLAIN].position = Vector2(battlefield.position.x + 400, battlefield.position.y + 10)
-	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN]]:
+		_potions_window.position = Vector2(battlefield.position.x + 720, battlefield.end.y - 180)
+	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
 		window.bounds = battlefield
 		window.fit()
 	for key: String in _pile_windows:
@@ -1768,7 +1863,8 @@ func _glow_colors(object_id: int, glow: DecisionClicks) -> Array[Color]:
 
 
 ## The answer the cursor asks to see the payment of: the row of the Option Menu it is over,
-## the card held, the card of the hand under it, or the permanent under it. Outside the
+## the card held, the Emblem's entry under it, the card of the hand under it, or the
+## permanent under it. Outside the
 ## menu only a thing that offers exactly one thing is previewed; one that offers several
 ## shows each when its row is pointed at. NO_PREVIEW for anything with no plan, which is
 ## everything while Auto-tap is off, and while the Hold Key is down, when the Hero will pay
@@ -1785,14 +1881,30 @@ func _hovered_answer() -> int:
 		answer = _only_answer(_hand_options(_drag.card_id()))
 	else:
 		var cursor: Vector2 = get_local_mouse_position()
-		if _is_covered(cursor):
+		var held_id: int = _held_under(cursor)
+		if held_id != Inspection.NOTHING:
+			# An Emblem's ability is paid for like a permanent's (ADR 0031).
+			answer = _only_answer(_clicks.options_of(held_id))
+		elif _is_covered(cursor):
 			return NO_PREVIEW
-		var card_id: int = hand_card_under(cursor)
-		if card_id != DragCard.NONE:
-			answer = _only_answer(_hand_options(card_id))
 		else:
-			answer = _only_answer(_clicks.options_of(_permanent_under(cursor)))
+			var card_id: int = hand_card_under(cursor)
+			if card_id != DragCard.NONE:
+				answer = _only_answer(_hand_options(card_id))
+			else:
+				answer = _only_answer(_clicks.options_of(_permanent_under(cursor)))
 	return answer if _presenter.payment_plan(answer) != null else NO_PREVIEW
+
+
+## The Emblem or Potion whose entry in an open window is under [param cursor], or
+## Inspection.NOTHING.
+func _held_under(cursor: Vector2) -> int:
+	for object_id: int in _held_entries:
+		var entry: ZoneEntry = held_entry(object_id)
+		if entry != null and entry.is_visible_in_tree() and Easing.is_shown(_window_of(entry)) \
+				and Rect2(entry.global_position - global_position, entry.size).has_point(cursor):
+			return object_id
+	return Inspection.NOTHING
 
 
 static func _only_answer(options: Array[ClickOption]) -> int:
@@ -2610,8 +2722,13 @@ func _fill_stack_window(view: MmPlayerView) -> void:
 	for index: int in range(view.stack.size() - 1, -1, -1):
 		var seen: MmObjectView = view.stack[index]
 		var item: StackItem = StackItem.of(seen, view, _snapshot.names)
-		var entry: StackEntry = StackEntry.new(_snapshot.look_of(seen.id).art_key, item.first_line, item.second_line,
+		var stack_look: CardLook = _snapshot.look_of(seen.id)
+		var is_from_potion: bool = stack_look.kind == CardLook.Kind.POTION
+		var entry: StackEntry = StackEntry.new("" if is_from_potion else stack_look.art_key, item.first_line, item.second_line,
 			_stack_colors.color_of(seen.id))
+		if is_from_potion:
+			# Its Potion is gone, but its ability still shows which it was (A531).
+			entry.show_potion(stack_look.art_key)
 		if not _clicks.options_of(seen.id).is_empty():
 			# A spell that can be chosen as a target is clicked here (A354).
 			entry.make_targetable().clicked.connect(_on_object_clicked.bind(seen.id))
@@ -2660,6 +2777,9 @@ func _add_trigger_entries(view: MmPlayerView) -> void:
 func _trigger_text(decision: OrderTriggersDecision, number: int) -> String:
 	var source: MmObjectView = _seen(decision.source_object_ids[number])
 	var noun: String = AbilityText.self_noun(source.card_types, source.name) if source != null else "it"
+	var look: CardLook = _snapshot.look_of(source.id) if source != null else null
+	if look != null and look.kind != CardLook.Kind.CARD:
+		noun = CardLook.noun_of(look.kind)
 	return AbilityText.of_ability(decision.abilities[number], noun)
 
 
@@ -2789,21 +2909,45 @@ func _small_label(text: String) -> Label:
 	return label
 
 
-func _fill_emblems_window(view: MmPlayerView, player_id: int) -> void:
+func _fill_emblems_window(player_id: int) -> void:
 	var window: ZoneWindow = _emblem_windows[player_id]
-	var view_names: PlayerNames = _snapshot.names
 	window.clear()
-	var count: int = 0
-	for emblem: MmObjectView in view.command:
-		if emblem.controller_id != player_id:
-			continue
-		count += 1
-		# Its rules text on one line, cut where the window ends; widening the window shows more.
-		var text: String = AbilityText.of_card(emblem.abilities, emblem.card_types, emblem.supertypes, emblem.name)
-		var entry: ZoneEntry = ZoneEntry.new("", emblem.name, text.replace("\n", " · "), PlayerPanel.GOLD)
-		entry.cut_detail()
+	var emblems: Array[MmObjectView] = _snapshot.emblems_of(player_id)
+	for emblem: MmObjectView in emblems:
+		var look: CardLook = _snapshot.look_of(emblem.id)
+		var has_art: bool = ArtLibrary.shared().texture(look.art_key) != null
+		var entry: ZoneEntry = ZoneEntry.new(look.art_key if has_art else "", emblem.name, "", PlayerPanel.GOLD)
+		if not has_art:
+			entry.show_no_art()
+		# Each ability on one line, cut where the window ends; widening the window shows more.
+		entry.show_lines(look.rules_lines, look.spent_ability_indexes)
 		window.body().add_child(entry)
-	window.show_title("%s Emblems (%d)" % [view_names.possessive(player_id), count])
+		_add_held_entry(emblem, entry, HeldWindows.Kind.EMBLEMS, player_id)
+	window.show_title("%s Emblems (%d)" % [_snapshot.names.possessive(player_id), emblems.size()])
+
+
+## The Hero's Potions, each with its Potion Icon, its Rarity and what it does (ADR 0032).
+func _fill_potions_window() -> void:
+	_potions_window.clear()
+	var potions: Array[MmObjectView] = _snapshot.potions_of(HERO)
+	for potion: MmObjectView in potions:
+		var look: CardLook = _snapshot.look_of(potion.id)
+		var entry: ZoneEntry = ZoneEntry.new("", potion.name, "", PlayerPanel.POTION_COLOR)
+		entry.show_picture(PotionArt.new(look.art_key, ZoneEntry.ART_SIZE, true))
+		var lines: Array[String] = ["%s · %s" % [look.held_type_line(), Inspector.RARITY_NAMES[_snapshot.rarity_of(potion.id)]]]
+		lines.append_array(look.rules_lines)
+		entry.show_lines(lines)
+		_potions_window.body().add_child(entry)
+		_add_held_entry(potion, entry, HeldWindows.Kind.POTIONS, HERO)
+	_potions_window.show_title("%s Potions (%d)" % [_snapshot.names.possessive(HERO), potions.size()])
+
+
+## Remembers [param entry] as what [param held] is drawn as, and makes it usable if a click
+## on it answers: only the Hero's, since only they are asked.
+func _add_held_entry(held: MmObjectView, entry: ZoneEntry, held_window: HeldWindows.Kind, player_id: int) -> void:
+	_held_entries[held.id] = entry
+	if player_id == HERO and HeldState.is_usable(held, _clicks):
+		entry.make_usable().clicked.connect(_on_held_clicked.bind(held.id, held_window))
 
 
 func _draw_banner(view: MmPlayerView) -> void:

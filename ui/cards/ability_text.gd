@@ -21,6 +21,10 @@ const ZONE_NAMES: Dictionary[MmZone.Kind, String] = {
 	MmZone.Kind.BATTLEFIELD: "the battlefield", MmZone.Kind.STACK: "the stack", MmZone.Kind.EXILE: "exile",
 	MmZone.Kind.COMMAND: "the command zone",
 }
+## What an Emblem and a Potion call themselves in their own text (ADR 0036). Neither is a
+## card type, so self_noun() cannot tell: whoever knows which it is passes the noun.
+const EMBLEM_NOUN: String = "this emblem"
+const POTION_NOUN: String = "this potion"
 ## What an OwnedByFilter says after its noun, which a graveyard's phrase turns into whose
 ## graveyard it is.
 const YOU_OWN: String = "you own"
@@ -64,6 +68,15 @@ static func of_card(abilities: Array[MmAbility], card_types: Array[MmCardTypes.C
 		for index: int in lines.size():
 			lines[index] = "(%s)" % lines[index]
 	return "\n".join(lines)
+
+
+## Each of [param abilities] as of_ability() prints it, one to an entry, so that one of them
+## can be drawn apart from the others, as a Spent ability is.
+static func lines_of(abilities: Array[MmAbility], noun: String) -> Array[String]:
+	var lines: Array[String] = []
+	for ability: MmAbility in abilities:
+		lines.append(of_ability(ability, noun))
+	return lines
 
 
 ## [param ability] as a card prints it, with its cost or its trigger. [param noun] is what
@@ -120,7 +133,9 @@ func _ability(ability: MmAbility) -> String:
 	if ability is ActivatedAbility:
 		var activated: ActivatedAbility = ability as ActivatedAbility
 		_targets = activated.targets
-		return "%s: %s" % [_costs(activated), _sentences(activated.effects, true)]
+		var does: String = _sentences(activated.effects, true) + _restrictions(activated)
+		# A Potion prints only what it does: using it up is what a Potion is (ADR 0036).
+		return does if _uses_up_its_source(activated) else "%s: %s" % [_costs(activated), does]
 	if ability is TriggeredAbility:
 		return _triggered(ability as TriggeredAbility)
 	if ability is CharacteristicDefiningAbility:
@@ -179,12 +194,32 @@ func _protection(from: MmFilter) -> String:
 	return _noun_phrase(from, true)
 
 
+## Whether paying for [param ability] uses its source up, as a Potion's cost does.
+static func _uses_up_its_source(ability: ActivatedAbility) -> bool:
+	for cost: MmCost in ability.costs:
+		if cost is UseUpCost:
+			return true
+	return false
+
+
+## The sentence after what [param ability] does that says when it may be activated
+## (CR 602.5), or "".
+static func _restrictions(ability: ActivatedAbility) -> String:
+	var limits: PackedStringArray = []
+	if ability.is_sorcery_speed:
+		limits.append("only as a sorcery")
+	if ability.is_once_each_game:
+		limits.append("only once each game")
+	return "" if limits.is_empty() else " Activate %s." % " and ".join(limits)
+
+
 func _costs(ability: ActivatedAbility) -> String:
 	var costs: PackedStringArray = []
 	if ability.mana_cost != null:
 		costs.append(ability.mana_cost.describe())
 	for cost: MmCost in ability.costs:
-		costs.append("{T}" if cost is TapCost else _fallback(cost, "_cost"))
+		if not cost is UseUpCost:
+			costs.append("{T}" if cost is TapCost else _fallback(cost, "_cost"))
 	return ", ".join(costs) if not costs.is_empty() else "{0}"
 
 
@@ -283,6 +318,9 @@ func _effect(effect: MmEffect) -> String:
 		return "%s deals %s damage to %s" % [_noun, _amount(damage.amount), _selection(damage.recipients)]
 	if effect is DrawCardsEffect:
 		var draw: DrawCardsEffect = effect as DrawCardsEffect
+		if draw.players is YouSelection:
+			# Oracle wording: you are told to "draw two cards", not that "you draw" them.
+			return "draw " + _cards(draw.amount)
 		return "%s %s %s" % [_selection(draw.players), _verb(draw.players, "draw"), _cards(draw.amount)]
 	if effect is GainLifeEffect:
 		var gain: GainLifeEffect = effect as GainLifeEffect

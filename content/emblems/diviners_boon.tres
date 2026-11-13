@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_1nwp7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_qepby"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_dwd63"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_sdndq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="5_acrb7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="6_bm1w5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="7_x8esm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_h87af"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="9_36ce7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="10_m2hsu"]
+
+[sub_resource type="Resource" id="Resource_y1gyr"]
+script = ExtResource("4_sdndq")
+value = 2
+
+[sub_resource type="Resource" id="Resource_f6a8d"]
+script = ExtResource("5_acrb7")
+
+[sub_resource type="Resource" id="Resource_7h0fx"]
+script = ExtResource("6_bm1w5")
+amount = SubResource("Resource_y1gyr")
+players = SubResource("Resource_f6a8d")
+
+[sub_resource type="Resource" id="Resource_7nkfn"]
+script = ExtResource("7_x8esm")
+generic = 2
+symbols = Array[int]([1])
+
+[sub_resource type="Resource" id="Resource_0x6g8"]
+script = ExtResource("8_h87af")
+mana_cost = SubResource("Resource_7nkfn")
+effects = Array[ExtResource("3_dwd63")]([SubResource("Resource_7h0fx")])
+is_once_each_game = true
+is_sorcery_speed = true
+
+[resource]
+script = ExtResource("10_m2hsu")
+name = "Diviner's Boon"
+abilities = Array[ExtResource("1_1nwp7")]([SubResource("Resource_0x6g8")])

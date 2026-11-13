@@ -475,3 +475,99 @@ func _emblem(player_id: int) -> MmObjectView:
 	var emblem: MmObjectView = MmObjectView.new()
 	emblem.controller_id = player_id
 	return emblem
+
+
+# --- Emblems and Potions buttons (ADR 0032, A526 and A537) -------------------------------
+
+func test_the_emblems_button_glows_green_while_an_emblem_can_be_activated() -> void:
+	var panel: PlayerPanel = _panel(HERO)
+	_snapshot.view.command = [_boon(30)]
+	_show(panel, HERO)
+	assert_false(panel.is_glowing(panel.emblems_button()))
+
+	panel.show_snapshot(_snapshot, _clicks_using(30), _stops, BOX, true, true)
+
+	assert_true(panel.is_glowing(panel.emblems_button()))
+	assert_eq(BorderEffects.glow_color(panel.emblems_button()), DecisionClicks.color_of(DecisionClicks.Kind.PLAY))
+	assert_eq((panel.emblems_button().get_theme_stylebox("normal") as StyleBoxFlat).border_color, PlayerPanel.GOLD,
+		"The Glow is an outline round the button; the button keeps its own color.")
+	_show(panel, HERO)
+	assert_false(panel.is_glowing(panel.emblems_button()))
+
+
+func test_the_emblems_button_goes_gray_once_every_emblem_is_used_up_but_can_still_be_pressed() -> void:
+	var panel: PlayerPanel = _panel(HERO)
+	var boon: MmObjectView = _boon(30)
+	boon.spent_ability_indexes = [0]
+	_snapshot.view.command = [boon]
+
+	_show(panel, HERO)
+
+	assert_eq((panel.emblems_button().get_theme_stylebox("normal") as StyleBoxFlat).border_color, Color("#6b7280"))
+	assert_eq(panel.emblems_button().text, "⛨  Emblems (1)")
+	assert_false(panel.emblems_button().disabled, "A used-up Emblem can still be read.")
+	_snapshot.view.command = [boon, _emblem(HERO)]
+	_show(panel, HERO)
+	assert_eq((panel.emblems_button().get_theme_stylebox("normal") as StyleBoxFlat).border_color, PlayerPanel.GOLD)
+
+
+func test_the_potions_button_counts_potions_turns_purple_and_takes_a_press() -> void:
+	var panel: PlayerPanel = _panel(HERO)
+	var potions: Button = panel.potions_button()
+	panel.potions_pressed.connect(func() -> void: _pressed.append("potions"))
+
+	_snapshot.view.potions = [_potion(40), _potion(41)]
+	_show(panel, HERO)
+
+	assert_eq(potions.text, "⚗  Potions (2)")
+	assert_false(potions.disabled)
+	assert_eq(potions.mouse_filter, Control.MOUSE_FILTER_STOP)
+	assert_eq((potions.get_theme_stylebox("normal") as StyleBoxFlat).border_color, PlayerPanel.POTION_COLOR)
+	assert_false(panel.is_glowing(potions))
+	potions.pressed.emit()
+	assert_eq(_pressed, ["potions"])
+	_snapshot.view.potions = []
+	_show(panel, HERO)
+	assert_true(potions.disabled)
+	assert_eq((potions.get_theme_stylebox("disabled") as StyleBoxFlat).border_color, PlayerPanel.NO_ITEMS_COLOR)
+
+
+func test_the_potions_button_glows_green_while_a_potion_can_be_used() -> void:
+	var panel: PlayerPanel = _panel(HERO)
+	_snapshot.view.potions = [_potion(40)]
+
+	panel.show_snapshot(_snapshot, _clicks_using(40), _stops, BOX, true, true)
+
+	assert_true(panel.is_glowing(panel.potions_button()))
+	assert_eq(BorderEffects.glow_color(panel.potions_button()), DecisionClicks.color_of(DecisionClicks.Kind.PLAY))
+
+
+func test_the_villains_emblems_button_never_glows_for_what_the_hero_can_use() -> void:
+	var villain: PlayerPanel = _panel(VILLAIN)
+	_snapshot.view.command = [_boon(30)]
+
+	villain.show_snapshot(_snapshot, _clicks_using(30), _stops, BOX, false, false)
+
+	assert_false(villain.is_glowing(villain.emblems_button()), "It counts only its own player's Emblems.")
+
+
+## The Hero's Emblem with one once-each-game ability.
+func _boon(id: int) -> MmObjectView:
+	var boon: MmObjectView = _emblem(HERO)
+	boon.id = id
+	boon.abilities = (load("res://content/emblems/electromancers_boon.tres") as MmCardDefinition).abilities
+	return boon
+
+
+func _potion(id: int) -> MmObjectView:
+	var potion: MmObjectView = _emblem(HERO)
+	potion.id = id
+	potion.potion_index = 0
+	potion.abilities = (load("res://content/potions/big_gulp.tres") as MmCardDefinition).abilities
+	return potion
+
+
+## The clicks of a priority decision that offers ability 0 of Game Object [param id].
+func _clicks_using(id: int) -> DecisionClicks:
+	return DecisionClicks.of(PriorityDecision.new(HERO, [PassAction.new(), ActivateAbilityAction.new(id, 0)] as Array[MmAction]),
+		_snapshot.view)

@@ -158,6 +158,18 @@ func outcome() -> Outcome:
 	return Outcome.HERO_WON if _state.winner_id == MmEncounterSetup.HERO_PLAYER_ID else Outcome.VILLAIN_WON
 
 
+## The Potions [param player] has used so far, each by its place in that player's list in
+## the Encounter Setup, in the order they were used (ADR 0036). For the game around the
+## engine, which deletes those Items.
+func used_potion_indexes(player: MmPlayer) -> Array[int]:
+	var used: Array[int] = []
+	for event: MmEvent in _state.event_log:
+		var potion_used: PotionUsedEvent = event as PotionUsedEvent
+		if potion_used != null and potion_used.player_id == player.id:
+			used.append(potion_used.potion_index)
+	return used
+
+
 ## Whether there is a decision that can be undone. Never in a Simulation Copy.
 func can_undo() -> bool:
 	return not _is_simulation and not is_over() and _decision_log.size() > _checkpoint_log_size

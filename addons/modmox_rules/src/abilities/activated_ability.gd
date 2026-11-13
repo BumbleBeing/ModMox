@@ -11,6 +11,12 @@ extends MmAbility
 @export var costs: Array[MmCost] = []
 @export var targets: Array[TargetSpec] = []
 @export var effects: Array[MmEffect] = []
+## "Activate only once each game" (CR 602.5b, ADR 0036): its source marks it Spent when it
+## is activated, and it is never offered again from that object.
+@export var is_once_each_game: bool = false
+## "Activate only as a sorcery" (CR 602.5d): only in its controller's main phase with an
+## empty stack.
+@export var is_sorcery_speed: bool = false
 
 
 ## CR 605.1a: it could add mana and it has no target. There are no loyalty abilities in

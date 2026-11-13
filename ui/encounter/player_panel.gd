@@ -6,7 +6,7 @@ extends Control
 ## pale Glow on the active player's panel, and the panel of the player with priority has
 ## one all round it (A477, A478). While the player can be chosen, their portrait alone
 ## glows and takes the click, never the whole panel. The Hero's panel has the Potions
-## button under the Emblems button, which takes no press yet (A491), and under that Undo
+## button under the Emblems button, which opens the Potions window, and under that Undo
 ## and Yield Turn; the Pass Button is not here but over the Info Panel (A489). The
 ## Villain's panel says when the Villain is thinking, under its Emblems button (A294).
 ##
@@ -19,6 +19,8 @@ extends Control
 ## A mana button was pressed while paying: [param answer] spends one mana of that color.
 signal mana_pressed(answer: int)
 signal emblems_pressed
+## The Hero's Potions button was pressed: open or close the Potions window.
+signal potions_pressed
 ## The panel was clicked while its player could be chosen: [param answer] chooses them.
 signal player_clicked(answer: int)
 ## A step button was pressed: toggle the stop there on this panel's row.
@@ -59,7 +61,7 @@ var _has_potions: Variant = null
 var _picture: TextureRect = null
 var _life: Label = null
 var _emblems: Button = null
-var _has_emblems: Variant = null
+var _is_emblems_gold: Variant = null
 var _mana: Array[Button] = []
 var _mana_counts: Array[Label] = []
 ## While paying: mana type → the answer that spends one unit of it.
@@ -117,17 +119,14 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 		_show_mana(type, amount)
 
 	_set_label(_name, snapshot.names.of(_player_id).to_upper())
-	var emblem_count: int = 0
-	for emblem: MmObjectView in view.command:
-		if emblem.controller_id == _player_id:
-			emblem_count += 1
-	_show_emblems(emblem_count)
+	var emblems: Array[MmObjectView] = snapshot.emblems_of(_player_id)
+	_show_emblems(emblems.size(), HeldState.emblems_look(emblems, clicks))
 
 	for step: int in STEP_NAMES.size():
 		_show_step(step, stops.has_stop(_player_id, step), view.active_player_id == _player_id and view.step == step)
 	if is_hero:
-		# Nobody holds a Potion until Potions exist (A491).
-		_show_potions(0)
+		var potions: Array[MmObjectView] = snapshot.potions_of(_player_id)
+		_show_potions(potions.size(), HeldState.potions_look(potions, clicks))
 		_undo.disabled = not snapshot.can_undo or snapshot.is_villain_thinking
 		_set_text(_yield, ("☑" if is_yielding else "☐") + "  Yield Turn")
 	else:
@@ -202,6 +201,10 @@ func life_text() -> String:
 func emblems_button() -> Button:
 	return _emblems
 
+## Whether the Emblems or the Potions button glows.
+func is_glowing(button: Button) -> bool:
+	return BorderEffects.glow_color(button) != null
+
 
 ## Makes the buttons for [param types] of mana glow, and only those, without any of them
 ## taking a press: the pool mana the Tap Preview says would be spent. Nothing is rebuilt.
@@ -247,7 +250,7 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 	_mana_counts.clear()
 	_steps.clear()
 	_step_looks.clear()
-	_has_emblems = null
+	_is_emblems_gold = null
 	_undo = null
 	_yield = null
 	_thinking = null
@@ -355,37 +358,59 @@ func _glow_mana(type: int) -> void:
 			BorderEffects.remove_glow(button, glow_seconds)
 
 
-## Gold with Emblems to show, gray and unpressable with none.
-func _show_emblems(count: int) -> void:
+## Gold while any Emblem has something left to give, and gray with none or once every one
+## is used up; unpressable only with none, since a used-up Emblem can still be read. It
+## glows green while one could be activated now (A520, A526, A537).
+func _show_emblems(count: int, look: HeldState.Look) -> void:
 	_set_text(_emblems, "⛨  Emblems (%d)" % count)
 	_emblems.disabled = count == 0
-	if _has_emblems is bool and _has_emblems == (count > 0):
+	_show_usable(_emblems, look == HeldState.Look.GLOWING)
+	var is_gold: bool = look != HeldState.Look.GRAY
+	if _is_emblems_gold is bool and _is_emblems_gold == is_gold:
 		return
-	_has_emblems = count > 0
-	var tint: Color = GOLD if count > 0 else Color("#6b7280")
+	_is_emblems_gold = is_gold
+	_tint(_emblems, GOLD if is_gold else Color("#6b7280"))
+
+
+## Purple with Potions held and gray with none, as the Emblems button is gold or gray; it
+## opens the Potions window, so it takes no press with none. It glows green while one
+## could be used now (A526, A537).
+func _show_potions(count: int, look: HeldState.Look) -> void:
+	_set_text(_potions, POTIONS_FORMAT % count)
+	_potions.disabled = count == 0
+	# With none it does not even light up under the cursor.
+	_potions.mouse_filter = Control.MOUSE_FILTER_IGNORE if count == 0 else Control.MOUSE_FILTER_STOP
+	_show_usable(_potions, look == HeldState.Look.GLOWING)
+	if _has_potions is bool and _has_potions == (count > 0):
+		return
+	_has_potions = count > 0
+	var tint: Color = POTION_COLOR if count > 0 else NO_ITEMS_COLOR
+	_potions.add_theme_color_override("font_color", Color("#dcc6f7"))
+	_potions.add_theme_color_override("font_hover_color", Color("#f0e4ff"))
+	_potions.add_theme_color_override("font_disabled_color", Color("#9aa1ad"))
+	_tint(_potions, tint)
+
+
+## Draws [param button], the Emblems or the Potions button, in [param tint]: see-through,
+## lighter under the cursor, with a thin border.
+static func _tint(button: Button, tint: Color) -> void:
 	for state: String in ["normal", "hover", "pressed", "disabled"]:
 		var style: StyleBoxFlat = StyleBoxFlat.new()
 		style.bg_color = Color(tint, 0.45 if state == "hover" else 0.25)
 		style.border_color = tint
 		style.set_border_width_all(1)
 		style.set_corner_radius_all(5)
-		_emblems.add_theme_stylebox_override(state, style)
+		button.add_theme_stylebox_override(state, style)
 
 
-## Purple with Potions to use and gray with none, as the Emblems button is gold or gray.
-func _show_potions(count: int) -> void:
-	_set_text(_potions, POTIONS_FORMAT % count)
-	if _has_potions is bool and _has_potions == (count > 0):
-		return
-	_has_potions = count > 0
-	var tint: Color = POTION_COLOR if count > 0 else NO_ITEMS_COLOR
-	_potions.add_theme_color_override("font_disabled_color", Color("#dcc6f7") if count > 0 else Color("#9aa1ad"))
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(tint, 0.25)
-	style.border_color = tint
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(5)
-	_potions.add_theme_stylebox_override("disabled", style)
+## Gives [param button] the green Glow of something that can be used now, or takes it
+## away. The Glow is an outline round the button, so it never tints what is inside.
+func _show_usable(button: Button, is_usable: bool) -> void:
+	if is_usable:
+		BorderEffects.set_glow(button, button.size, DecisionClicks.color_of(DecisionClicks.Kind.PLAY), glow_seconds)
+	else:
+		BorderEffects.remove_glow(button, glow_seconds)
+
 
 
 ## A step with a stop is green, and the step it is now glows; a step just built shows its
@@ -437,7 +462,7 @@ func _label(text: String, box: Rect2, font_size: int) -> Label:
 
 
 ## The Potions button, in the Emblems button's style. It takes no press and does not
-## light up under the cursor until a Potion can be used (A491).
+## light up under the cursor until the Hero holds a Potion.
 func _add_potions(box: Rect2) -> void:
 	_potions = Button.new()
 	_potions.focus_mode = Control.FOCUS_NONE
@@ -445,6 +470,7 @@ func _add_potions(box: Rect2) -> void:
 	_potions.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_potions.position = box.position
 	_potions.size = box.size
+	_potions.pressed.connect(func() -> void: potions_pressed.emit())
 	add_child(_potions)
 
 

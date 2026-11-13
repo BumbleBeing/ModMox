@@ -38,7 +38,8 @@ static func is_mana_ability(action: MmAction, view: MmPlayerView) -> bool:
 	var activate: ActivateAbilityAction = action as ActivateAbilityAction
 	if activate == null:
 		return false
-	for permanent: MmObjectView in view.battlefield:
+	# An Emblem's ability can be a mana ability too; any other is a play (ADR 0032, A525).
+	for permanent: MmObjectView in view.battlefield + view.command + view.potions:
 		if permanent.id == activate.object_id and activate.ability_index < permanent.abilities.size():
 			var ability: ActivatedAbility = permanent.abilities[activate.ability_index] as ActivatedAbility
 			return ability != null and ability.is_mana_ability()

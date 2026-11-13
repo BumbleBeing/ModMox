@@ -18,6 +18,9 @@ var graveyards: Dictionary[int, Array] = {}
 var exiles: Dictionary[int, Array] = {}
 ## Every Emblem in the command zone, such as the Hero's Statuses. Public.
 var command: Array[MmObjectView] = []
+## Every Potion not yet used, either player's, in the order of the command zone (ADR 0036).
+## Public, and never in command.
+var potions: Array[MmObjectView] = []
 ## Each player's mana pool, as copies of its MmMana units. Mana pools are public.
 var mana_pools: Dictionary[int, Array] = {}
 var hand_sizes: Dictionary[int, int] = {}
@@ -60,8 +63,11 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		view.battlefield.append(MmObjectView.of(state, permanent))
 	for item: MmGameObject in state.stack.objects():
 		view.stack.append(MmObjectView.of(state, item))
-	for emblem: MmGameObject in state.command.objects():
-		view.command.append(MmObjectView.of(state, emblem))
+	for command_object: MmGameObject in state.command.objects():
+		if command_object.is_potion():
+			view.potions.append(MmObjectView.of(state, command_object))
+		else:
+			view.command.append(MmObjectView.of(state, command_object))
 	for player: MmPlayer in state.players:
 		var graveyard: Array[MmObjectView] = []
 		for card: MmGameObject in player.graveyard.objects():

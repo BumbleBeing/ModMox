@@ -272,3 +272,31 @@ func test_a_keyword_is_told_from_any_other_ability() -> void:
 	assert_true(AbilityText.is_keyword(FlyingAbility.new()))
 	assert_true(AbilityText.is_keyword(ProtectionAbility.new()))
 	assert_false(AbilityText.is_keyword(ActivatedAbility.new()))
+
+
+# --- Emblems and Potions (ADR 0036) ----------------------------------------------------
+
+func test_the_authored_boons_and_potion_print_as_they_were_agreed() -> void:
+	var electromancers: MmCardDefinition = load("res://content/emblems/electromancers_boon.tres")
+	var diviners: MmCardDefinition = load("res://content/emblems/diviners_boon.tres")
+	var big_gulp: MmCardDefinition = load("res://content/potions/big_gulp.tres")
+
+	assert_eq(AbilityText.lines_of(electromancers.abilities, AbilityText.EMBLEM_NOUN),
+		["{R}: This emblem deals 3 damage to any target. Activate only once each game."] as Array[String])
+	assert_eq(AbilityText.lines_of(diviners.abilities, AbilityText.EMBLEM_NOUN),
+		["{2}{U}: Draw two cards. Activate only as a sorcery and only once each game."] as Array[String])
+	assert_eq(AbilityText.lines_of(big_gulp.abilities, AbilityText.POTION_NOUN),
+		["Target creature gets +2/+2 until end of turn."] as Array[String], "A Potion prints no cost.")
+
+
+func test_an_ability_restricted_only_to_sorcery_timing_says_so() -> void:
+	var ability: ActivatedAbility = Scenario.regenerate_ability(Scenario.mana_cost(1))
+	ability.is_sorcery_speed = true
+
+	assert_eq(AbilityText.of_ability(ability, "this creature"), "{1}: Regenerate this creature. Activate only as a sorcery.")
+
+
+func test_on_the_stack_an_emblems_ability_reads_without_its_cost_or_restrictions() -> void:
+	var electromancers: MmCardDefinition = load("res://content/emblems/electromancers_boon.tres")
+
+	assert_eq(AbilityText.effect_of(electromancers.abilities[0], AbilityText.EMBLEM_NOUN), "This emblem deals 3 damage to any target.")

@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_p0ac0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_1i3ix"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_4lpr7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_pocqd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="5_4wptj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="6_2aqmx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="7_fbsjs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_r2tmy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="9_ue8wd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_i0g3w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="11_gepge"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_fcrq6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="13_01b54"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="14_vnuk2"]
+
+[sub_resource type="Resource" id="Resource_mncjh"]
+script = ExtResource("4_pocqd")
+value = 3
+
+[sub_resource type="Resource" id="Resource_l3i38"]
+script = ExtResource("5_4wptj")
+
+[sub_resource type="Resource" id="Resource_arcua"]
+script = ExtResource("6_2aqmx")
+amount = SubResource("Resource_mncjh")
+recipients = SubResource("Resource_l3i38")
+
+[sub_resource type="Resource" id="Resource_btiv1"]
+script = ExtResource("7_fbsjs")
+symbols = Array[int]([3])
+
+[sub_resource type="Resource" id="Resource_2kehq"]
+script = ExtResource("11_gepge")
+
+[sub_resource type="Resource" id="Resource_tn7s6"]
+script = ExtResource("12_fcrq6")
+
+[sub_resource type="Resource" id="Resource_ft7e8"]
+script = ExtResource("13_01b54")
+filters = Array[ExtResource("10_i0g3w")]([SubResource("Resource_2kehq"), SubResource("Resource_tn7s6")])
+
+[sub_resource type="Resource" id="Resource_5qufp"]
+script = ExtResource("9_ue8wd")
+filter = SubResource("Resource_ft7e8")
+
+[sub_resource type="Resource" id="Resource_h8n0x"]
+script = ExtResource("8_r2tmy")
+mana_cost = SubResource("Resource_btiv1")
+targets = Array[ExtResource("9_ue8wd")]([SubResource("Resource_5qufp")])
+effects = Array[ExtResource("3_4lpr7")]([SubResource("Resource_arcua")])
+is_once_each_game = true
+
+[resource]
+script = ExtResource("14_vnuk2")
+name = "Electromancer's Boon"
+abilities = Array[ExtResource("1_p0ac0")]([SubResource("Resource_h8n0x")])

@@ -22,6 +22,8 @@ extends RefCounted
 ## A snapshot is ready: the game changed, or the Villain began or stopped thinking.
 signal changed(snapshot: EncounterSnapshot)
 
+## The art key a sample Emblem made in code carries as metadata, since it has no file.
+const ART_KEY_META: String = "art_key"
 const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
 const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 const BUSY: String = "The Villain is thinking."
@@ -93,11 +95,15 @@ var _payment_left: PaymentPlan = null
 var _plans: Dictionary[int, PaymentPlan] = {}
 ## The Original of each card seen so far, by Card Identity.
 var _originals: Dictionary[int, CardLook] = {}
+## The setup the encounter began from, which says what each Emblem and Potion was authored
+## as: the engine's views carry no file names.
+var _setup: MmEncounterSetup
 
 
 ## An encounter from [param setup], with [param villain_agent] answering for the Villain
 ## and nobody for the Hero. Nothing runs until start().
 func _init(setup: MmEncounterSetup, villain_agent: MmAgent) -> void:
+	_setup = setup
 	_engine = MmEngine.start(setup)
 	_villain_agent = villain_agent
 	_driver = MmEncounterDriver.new(_engine, {VILLAIN: villain_agent} as Dictionary[int, MmAgent])
@@ -547,7 +553,7 @@ func _emit() -> void:
 	if step_wait_msec > 0 and Pacing.starts_step(made.events):
 		_step_shown_until = _shown_at + step_wait_msec
 	for seen: MmObjectView in made.visible_objects():
-		made.looks[seen.id] = CardLook.of_view(seen, _art_key(seen))
+		_add_look(made, seen)
 		_add_original(made, seen)
 	for permanent: MmObjectView in made.view.battlefield:
 		var state: Array[StateEntry] = StateList.of(permanent, made.view, names)
@@ -555,6 +561,62 @@ func _emit() -> void:
 			made.state_lists[permanent.id] = state
 	_snapshot = made
 	_plans.clear()
+
+
+## Gives [param made] the look of [param seen]: a card's, an Emblem's, a Potion's, or that
+## of an ability, which is drawn with the art of what it came from (ADR 0033). A Potion and
+## an ability from one also get the Potion's Rarity.
+func _add_look(made: EncounterSnapshot, seen: MmObjectView) -> void:
+	var potion: MmCardDefinition = _potion_of(seen)
+	if potion != null:
+		made.looks[seen.id] = CardLook.of_held(seen, _file_name(potion), CardLook.Kind.POTION) if seen.ability == null \
+			else CardLook.of_potion_ability(seen, potion, _file_name(potion))
+		made.rarities[seen.id] = potion.rarity
+		return
+	var emblem: MmCardDefinition = _emblem_of(seen.id, made.view)
+	if emblem != null:
+		made.looks[seen.id] = CardLook.of_held(seen, _emblem_art_key(emblem), CardLook.Kind.EMBLEM)
+		return
+	var source: MmCardDefinition = _emblem_of(seen.source_object_id, made.view) if seen.ability != null else null
+	made.looks[seen.id] = CardLook.of_view(seen, _emblem_art_key(source) if source != null else _art_key(seen))
+
+
+## The Potion [param seen] is, or for an ability on the stack the Potion it came from, as it
+## was authored; null for anything else.
+func _potion_of(seen: MmObjectView) -> MmCardDefinition:
+	var index: int = seen.potion_index if seen.ability == null else seen.source_potion_index
+	if index == MmGameObject.NOT_A_POTION:
+		return null
+	return _player_setup(seen.controller_id).potions[index]
+
+
+## The Emblem with Game Object ID [param object_id] as it was authored, or null if that is
+## no Emblem. Emblems never leave, so the nth a player controls is the nth in their setup.
+func _emblem_of(object_id: int, view: MmPlayerView) -> MmCardDefinition:
+	var counts: Dictionary[int, int] = {}
+	for emblem: MmObjectView in view.command:
+		var place: int = counts.get(emblem.controller_id, 0)
+		counts[emblem.controller_id] = place + 1
+		if emblem.id == object_id:
+			return _player_setup(emblem.controller_id).emblems[place]
+	return null
+
+
+func _player_setup(player_id: int) -> MmPlayerSetup:
+	return _setup.hero if player_id == HERO else _setup.villain
+
+
+## The art of an Emblem: the picture named after its file in the Emblems' art folder, or
+## for a sample made in code, the card art it was told to borrow. "" when it has neither.
+static func _emblem_art_key(emblem: MmCardDefinition) -> String:
+	if emblem.has_meta(ART_KEY_META):
+		return str(emblem.get_meta(ART_KEY_META))
+	var file_name: String = _file_name(emblem)
+	return ArtLibrary.emblem_key(file_name) if file_name != "" else ""
+
+
+static func _file_name(definition: MmCardDefinition) -> String:
+	return definition.resource_path.get_file().get_basename()
 
 
 ## Gives [param made] the Original and the Rarity of [param seen]: those of its Card

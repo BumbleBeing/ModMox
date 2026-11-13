@@ -32,10 +32,20 @@ const GLOWS: Dictionary[MmCardDefinition.Rarity, Color] = {
 	MmCardDefinition.Rarity.POWER_NINE: Color("#9be88a"),
 }
 
+## What each Rarity is called, as on a Potion's entry in its window.
+const RARITY_NAMES: Dictionary[MmCardDefinition.Rarity, String] = {
+	MmCardDefinition.Rarity.COMMON: "Common", MmCardDefinition.Rarity.UNCOMMON: "Uncommon",
+	MmCardDefinition.Rarity.RARE: "Rare", MmCardDefinition.Rarity.MYTHIC: "Mythic",
+	MmCardDefinition.Rarity.POWER_NINE: "Power-9",
+}
+
 var _contents: VBoxContainer
 var _hint: Label
 var _face_holder: Control
 var _face: CardFace = null
+## What stands in the face's place for an Emblem or a Potion (ADR 0033).
+var _emblem_face: EmblemFace = null
+var _potion_readout: PotionReadout = null
 var _original_button: Button
 var _state_title: Label
 var _state_scroll: ScrollContainer
@@ -148,9 +158,19 @@ func shown_look() -> CardLook:
 	return _original if _is_showing_original() else _look
 
 
-## The Card Face, or null before any card is shown.
+## The Card Face, or null before any card is shown and while an Emblem or a Potion is.
 func face() -> CardFace:
 	return _face
+
+
+## The Emblem Face, or null unless an Emblem is shown.
+func emblem_face() -> EmblemFace:
+	return _emblem_face
+
+
+## The Potion Readout, or null unless a Potion is shown.
+func potion_readout() -> PotionReadout:
+	return _potion_readout
 
 
 func original_button() -> Button:
@@ -234,16 +254,35 @@ func _apply(shown: Array) -> void:
 
 ## Draws the face of the version shown, and the Reminders for that version's keywords.
 func _draw_face() -> void:
-	if _face != null:
-		_face_holder.remove_child(_face)
-		_face.queue_free()
-	var height: float = (size.x - 2.0 * PAD) / CardGeometry.ASPECT
-	_face_holder.custom_minimum_size = Vector2(size.x - 2.0 * PAD, height)
-	_face = CardFace.new()
-	_face.setup(shown_look(), height)
-	_face_holder.add_child(_face)
-	if _glow != null:
-		BorderEffects.add_glow(_face, _face.size, _glow as Color)
+	for child: Node in _face_holder.get_children():
+		_face_holder.remove_child(child)
+		child.queue_free()
+	_face = null
+	_emblem_face = null
+	_potion_readout = null
+	var width: float = size.x - 2.0 * PAD
+	var height: float = width / CardGeometry.ASPECT
+	var kind: CardLook.Kind = shown_look().kind
+	# An Emblem and a Potion have no Original, State List or Reminders (ADR 0033).
+	_original_button.visible = kind == CardLook.Kind.CARD
+	match kind:
+		CardLook.Kind.EMBLEM:
+			_emblem_face = EmblemFace.new()
+			_emblem_face.setup(shown_look(), width / (EmblemFace.DESIGN.x / EmblemFace.DESIGN.y))
+			_face_holder.custom_minimum_size = _emblem_face.size
+			_face_holder.add_child(_emblem_face)
+		CardLook.Kind.POTION:
+			_potion_readout = PotionReadout.new()
+			_potion_readout.setup(shown_look(), width, _glow)
+			_face_holder.custom_minimum_size = _potion_readout.size
+			_face_holder.add_child(_potion_readout)
+		_:
+			_face_holder.custom_minimum_size = Vector2(width, height)
+			_face = CardFace.new()
+			_face.setup(shown_look(), height)
+			_face_holder.add_child(_face)
+			if _glow != null:
+				BorderEffects.add_glow(_face, _face.size, _glow as Color)
 	_fill_reminders()
 
 
@@ -258,7 +297,8 @@ func _fill_states() -> void:
 func _fill_reminders() -> void:
 	_clear(_reminder_list)
 	_reminder_icons.clear()
-	var reminders: Array[Reminder] = Reminders.of(shown_look().abilities)
+	var reminders: Array[Reminder] = Reminders.of(shown_look().abilities) if shown_look().kind == CardLook.Kind.CARD \
+		else ([] as Array[Reminder])
 	for reminder: Reminder in reminders:
 		var row: HBoxContainer = HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)

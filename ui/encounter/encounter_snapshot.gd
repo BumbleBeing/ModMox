@@ -46,6 +46,7 @@ static func name_in(seen_by: MmPlayerView, object_id: int) -> String:
 	all.append_array(seen_by.hand)
 	all.append_array(seen_by.stack)
 	all.append_array(seen_by.command)
+	all.append_array(seen_by.potions)
 	for player_id: int in seen_by.graveyards:
 		all.append_array(seen_by.graveyards[player_id])
 	for player_id: int in seen_by.exiles:
@@ -94,6 +95,24 @@ func state_list_of(object_id: int) -> Array[StateEntry]:
 	return entries
 
 
+## The Emblems [param player_id] controls, in the order their window lists them.
+func emblems_of(player_id: int) -> Array[MmObjectView]:
+	var emblems: Array[MmObjectView] = []
+	for emblem: MmObjectView in view.command:
+		if emblem.controller_id == player_id:
+			emblems.append(emblem)
+	return emblems
+
+
+## The Potions [param player_id] holds, in the order their window lists them.
+func potions_of(player_id: int) -> Array[MmObjectView]:
+	var potions: Array[MmObjectView] = []
+	for potion: MmObjectView in view.potions:
+		if potion.controller_id == player_id:
+			potions.append(potion)
+	return potions
+
+
 ## Every Game Object the view shows, wherever it is.
 func visible_objects() -> Array[MmObjectView]:
 	var all: Array[MmObjectView] = []
@@ -101,6 +120,7 @@ func visible_objects() -> Array[MmObjectView]:
 	all.append_array(view.battlefield)
 	all.append_array(view.stack)
 	all.append_array(view.command)
+	all.append_array(view.potions)
 	for player_id: int in view.graveyards:
 		all.append_array(view.graveyards[player_id])
 	for player_id: int in view.exiles:
