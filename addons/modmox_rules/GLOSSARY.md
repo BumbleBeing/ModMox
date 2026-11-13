@@ -120,6 +120,10 @@ _Avoid_: Queued trigger, trigger instance
 Events that happen at the same moment, such as everything state-based actions do at once or all combat damage in a step. Triggers are looked for once, after the whole batch.
 _Avoid_: Transaction, group
 
+**Known Card**:
+A card in a library that a player knows the identity of, because they saw it put there: one they put on the bottom from their hand, for instance. A shuffle of that library makes every card in it unknown again. A Player View shows a library's Known Cards to the players who know them and nothing of the rest.
+_Avoid_: Revealed card, seen card, tracked card
+
 **Last-Known Information**:
 What an object was like the last time it was on the battlefield, kept after it leaves so that "dies" triggers and "its power" still have an answer.
 _Avoid_: Ghost, snapshot (in rules talk), LKI (in code)

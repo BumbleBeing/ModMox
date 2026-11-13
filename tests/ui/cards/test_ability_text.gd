@@ -4,6 +4,8 @@ extends GutTest
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const CONTENT_ROOT: String = "res://content/cards/alpha"
+## Every set's folder is under here.
+const SETS_ROOT: String = "res://content/cards"
 const CardType := MmCardTypes.CardType
 const Whose := MmTrigger.Whose
 
@@ -30,11 +32,13 @@ const PRINTED: Dictionary[String, String] = {
 	"llanowar_elves": "{T}: Add {G}.",
 	"mountain": "({T}: Add {R}.)",
 	"plains": "({T}: Add {W}.)",
+	"raise_dead": "Return target creature card from your graveyard to your hand.",
 	"prodigal_sorcerer": "{T}: This creature deals 1 damage to any target.",
 	"samite_healer": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
 	"serra_angel": "Flying, vigilance",
 	"shatter": "Destroy target artifact.",
 	"shivan_dragon": "Flying\n{R}: This creature gets +1/+0 until end of turn.",
+	"stifle": "Counter target activated or triggered ability.",
 	"swamp": "({T}: Add {B}.)",
 	"terror": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
 	"uthden_troll": "{R}: Regenerate this creature.",
@@ -49,7 +53,9 @@ func test_each_authored_card_prints_its_oracle_wording() -> void:
 
 
 func test_no_ability_of_any_authored_card_falls_back_to_a_class_name() -> void:
-	var files: PackedStringArray = DirAccess.get_files_at(CONTENT_ROOT)
+	var files: PackedStringArray = PackedStringArray()
+	for set_name: String in DirAccess.get_directories_at(SETS_ROOT):
+		files.append_array(DirAccess.get_files_at("%s/%s" % [SETS_ROOT, set_name]))
 	var checked: int = 0
 	for file: String in files:
 		if not file.ends_with(".tres"):
@@ -206,6 +212,31 @@ func test_target_spell_is_worded_with_and_without_a_filter() -> void:
 	assert_eq(AbilityText.of_ability(creatures, "Sample"), "Counter target creature spell.")
 
 
+func test_a_card_in_a_graveyard_is_worded_with_whose_graveyard_it_is_in() -> void:
+	var yours: SpellAbility = SpellAbility.new()
+	yours.targets = [Scenario.your_dead_creature()]
+	yours.effects = [Scenario.return_to_hand(Scenario.targeted(0))]
+	var any: SpellAbility = SpellAbility.new()
+	any.targets = [Scenario.target_graveyard_card()]
+	any.effects = [Scenario.return_to_hand(Scenario.targeted(0))]
+	var theirs: SpellAbility = SpellAbility.new()
+	theirs.targets = [Scenario.target_graveyard_card(Scenario.owned_by(Whose.OPPONENT))]
+	theirs.effects = [Scenario.return_to_hand(Scenario.targeted(0))]
+
+	assert_eq(AbilityText.of_ability(yours, "Sample"), "Return target creature card from your graveyard to your hand.")
+	assert_eq(AbilityText.of_ability(any, "Sample"), "Return target card from a graveyard to its owner's hand.")
+	assert_eq(AbilityText.of_ability(theirs, "Sample"), "Return target card from an opponent's graveyard to its owner's hand.")
+	assert_eq(AbilityText.things(Scenario.owned_by(Whose.YOU)), "permanents you own")
+
+
+func test_target_ability_is_worded_as_activated_or_triggered() -> void:
+	var stifle: SpellAbility = SpellAbility.new()
+	stifle.targets = [Scenario.target_ability()]
+	stifle.effects = [Scenario.counter(Scenario.targeted(0))]
+
+	assert_eq(AbilityText.of_ability(stifle, "Sample"), "Counter target activated or triggered ability.")
+
+
 func test_the_static_abilities_no_authored_card_uses_yet_are_worded() -> void:
 	var extra_land: AdditionalLandPlaysAbility = AdditionalLandPlaysAbility.new()
 	var extra_blocks: BlockAdditionalAbility = BlockAdditionalAbility.new()
@@ -228,5 +259,10 @@ func test_keywords_share_a_line_and_other_abilities_get_their_own() -> void:
 	assert_eq(AbilityText.of_card(abilities, [CardType.CREATURE], [], "Sample"), "Flying, first strike, trample\n{G}: Regenerate this creature.")
 
 
+## The look of the authored card in [param file_name], whichever set's folder it is in.
 func _look(file_name: String) -> CardLook:
-	return CardLook.of_definition(load("%s/%s.tres" % [CONTENT_ROOT, file_name]) as MmCardDefinition)
+	for set_name: String in DirAccess.get_directories_at(SETS_ROOT):
+		var path: String = "%s/%s/%s.tres" % [SETS_ROOT, set_name, file_name]
+		if ResourceLoader.exists(path):
+			return CardLook.of_definition(load(path) as MmCardDefinition)
+	return null

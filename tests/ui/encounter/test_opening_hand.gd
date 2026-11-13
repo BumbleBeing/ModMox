@@ -168,6 +168,18 @@ func test_a_mulligan_of_the_heros_brings_a_new_hand() -> void:
 	assert_false(opening.is_new_hand(), "The Villain's mulligan changes nothing the Hero holds.")
 
 
+func test_a_villain_with_a_name_is_called_by_it() -> void:
+	var opening: OpeningHand = OpeningHand.new()
+	var named: EncounterSnapshot = _snapshot(KeepOrMulliganDecision.new(HERO, 0, 0), [StartingPlayerEvent.new(VILLAIN, VILLAIN)])
+	named.names = PlayerNames.new("", "Mishra")
+	named.is_villain_thinking = true
+
+	opening.read(named)
+
+	assert_eq(opening.under_heading(), "Mishra plays first")
+	assert_eq(opening.villain_text(), "Mishra is deciding…")
+
+
 func _snapshot(decision: MmPendingDecision, events: Array = [], hand_size: int = 0, villain_hand_size: int = 7) -> EncounterSnapshot:
 	var snapshot: EncounterSnapshot = EncounterSnapshot.new()
 	snapshot.view = MmPlayerView.new()

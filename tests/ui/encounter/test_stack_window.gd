@@ -562,6 +562,63 @@ func test_hovering_an_entry_shows_it_in_full_and_marks_a_source_on_the_battlefie
 	assert_null(BorderEffects.mark_color(_screen.face_of(healer)), "The Ward is in the graveyard, so nothing is marked.")
 	assert_eq(_screen.info_panel().option_text(), "Ward — Prevent the next 2 damage that would be dealt to Bear this turn.")
 
+func test_while_an_ability_is_asked_for_ability_entries_glow_and_spell_entries_do_not() -> void:
+	_open([_wand(), Scenario.free_shock("Zap", 2), Scenario.free_stifle("Stifle")])
+	_cast("Wand")
+	_presenter.is_hold_key_down = true
+	_click(_permanent("Wand"))
+	_choose(MmReference.to_player(VILLAIN))
+	var ability: int = _presenter.snapshot().view.stack[0].id
+	_cast("Zap", MmReference.to_player(VILLAIN))
+	var zap: int = _presenter.snapshot().view.stack[1].id
+
+	_do(CastSpellAction, "Stifle")
+
+	assert_true(_presenter.snapshot().decision is ChooseTargetDecision)
+	assert_eq(_screen.stack_entry_of(ability).border_color(), TARGET)
+	assert_not_null(_screen.stack_entry_of(ability).click_catcher())
+	assert_null(_screen.stack_entry_of(zap).click_catcher(), "A spell is not an ability.")
+	assert_ne(_screen.stack_entry_of(zap).border_color(), TARGET)
+
+
+func test_clicking_a_glowing_ability_entry_chooses_it_and_an_arrow_runs_to_it() -> void:
+	_open([_wand(), Scenario.free_stifle("Stifle")])
+	_cast("Wand")
+	_presenter.is_hold_key_down = true
+	_click(_permanent("Wand"))
+	_choose(MmReference.to_player(VILLAIN))
+	var ability: int = _presenter.snapshot().view.stack[0].id
+	_do(CastSpellAction, "Stifle")
+
+	_screen.stack_entry_of(ability).click_catcher().clicked.emit()
+	_presenter.wait_until_idle()
+
+	assert_false(_presenter.snapshot().decision is ChooseTargetDecision)
+	var stifle: int = _presenter.snapshot().view.stack[1].id
+	assert_true(_screen.stack_entry_of(stifle).detail_text().begins_with("Hero → Wand"), _screen.stack_entry_of(stifle).detail_text())
+	var arrows: StackArrows = _screen.stack_arrows()
+	assert_eq(arrows.arrow_count(), 1)
+	assert_eq(arrows.arrow_color(0), _screen.stack_entry_of(stifle).color())
+	await wait_process_frames(2)
+	assert_lt(arrows.arrow_from(0).y, arrows.arrow_to(0).y, "From the Stifle on top down to the ability.")
+
+
+func test_a_countered_ability_leaves_the_stack_window_and_does_nothing() -> void:
+	_open([_wand(), Scenario.free_stifle("Stifle")])
+	_cast("Wand")
+	_presenter.is_hold_key_down = true
+	_click(_permanent("Wand"))
+	_choose(MmReference.to_player(VILLAIN))
+	_cast("Stifle", MmReference.to_object(_presenter.snapshot().view.stack[0].id))
+
+	_presenter.is_hold_key_down = false
+	_screen.pass_priority()
+	_presenter.wait_until_idle()
+
+	assert_eq(_presenter.snapshot().view.stack.size(), 0)
+	assert_false(_screen.stack_window().is_open())
+	assert_eq(_presenter.snapshot().view.life_totals[VILLAIN], 20, "The Wand never fired.")
+
 
 # --- Helpers ----------------------------------------------------------------------------
 

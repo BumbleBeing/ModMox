@@ -7,7 +7,8 @@ extends MmEvent
 ## Only ever add values at the end, so saved event histories keep their meaning.
 ## DESTROY is CR 701.8 (indestructible and regeneration care); ZERO_TOUGHNESS is CR 704.5f,
 ## which is not destruction. COUNTER is CR 701.6: a spell countered on the stack.
-enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER }
+## RETURN_TO_HAND is an effect putting a card into its owner's hand.
+enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -55,6 +56,10 @@ func apply(state: MmGameState) -> void:
 	var arriving: MmGameObject = state.create_object(leaving.card_id, leaving.owner_id, leaving.definition)
 	to_zone.insert(arriving, position)
 	new_object_id = arriving.id
+	if to_zone_kind == MmZone.Kind.LIBRARY and from_zone_kind == MmZone.Kind.HAND:
+		# Whoever held the card knows where it went, until the library is shuffled.
+		# Later: a card put there from a zone everyone sees, when a card does that.
+		arriving.make_known_to(from_owner_id)
 	if to_zone_kind == MmZone.Kind.BATTLEFIELD:
 		# CR 302.6: summoning sickness counts from when its controller began controlling it.
 		arriving.record_control_since(state.game_turn)

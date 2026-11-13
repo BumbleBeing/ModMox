@@ -20,8 +20,10 @@ var target_stack_ids: Array[int] = []
 var source_object_id: int = NONE
 
 
-## What to say about [param seen], which [param view] shows on the stack.
-static func of(seen: MmObjectView, view: MmPlayerView) -> StackItem:
+## What to say about [param seen], which [param view] shows on the stack, calling each
+## player what [param names] does; without it they go by their parts.
+static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null) -> StackItem:
+	var called: PlayerNames = names if names != null else PlayerNames.new()
 	var item: StackItem = StackItem.new()
 	item.id = seen.id
 	if seen.ability != null:
@@ -38,33 +40,35 @@ static func of(seen: MmObjectView, view: MmPlayerView) -> StackItem:
 		item.first_line = seen.name
 		var rules: String = AbilityText.of_card(seen.abilities, seen.card_types, seen.supertypes, seen.name)
 		item.full_text = seen.name if rules == "" else "%s — %s" % [seen.name, rules.replace("\n", " · ")]
-	item.second_line = player_name(seen.controller_id)
-	var names: PackedStringArray = []
+	item.second_line = called.of(seen.controller_id)
+	var target_names: PackedStringArray = []
 	for target: MmReference in seen.targets:
 		if target == null:
 			continue
 		if target.is_player():
 			item.target_player_ids.append(target.id)
-			names.append(player_name(target.id))
+			target_names.append(called.of(target.id))
 			continue
 		var on_stack: MmObjectView = _find(target.id, view.stack)
 		var permanent: MmObjectView = _find(target.id, view.battlefield)
 		if on_stack != null:
 			item.target_stack_ids.append(target.id)
-			names.append(on_stack.name)
+			target_names.append(on_stack.name)
 		elif permanent != null:
 			item.target_object_ids.append(target.id)
-			names.append(permanent.name)
-	if not names.is_empty():
-		item.second_line += " → " + ", ".join(names)
+			target_names.append(permanent.name)
+		else:
+			# A card in a graveyard: named, with nothing on the board to mark.
+			for player_id: int in view.graveyards:
+				var card: MmObjectView = _find(target.id, view.graveyards[player_id])
+				if card != null:
+					target_names.append(card.name)
+	if not target_names.is_empty():
+		item.second_line += " → " + ", ".join(target_names)
 	return item
 
 
-static func player_name(player_id: int) -> String:
-	return "Hero" if player_id == HERO else "Villain"
-
-
-static func _find(object_id: int, among: Array[MmObjectView]) -> MmObjectView:
+static func _find(object_id: int, among: Array) -> MmObjectView:
 	for seen: MmObjectView in among:
 		if seen.id == object_id:
 			return seen

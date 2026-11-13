@@ -7,14 +7,14 @@ extends RefCounted
 ## Hero confirms. The Encounter Screen keeps it outside the nodes it redraws, and makes a
 ## new one when the decision changes (A322).
 
-## Stands for "no blocker is picked up".
-const NONE: int = -1
-
 var _decision: MmPendingDecision = null
 var _attackers: Array[int] = []
 ## [blocker ID, attacker ID] pairs, in the order they were made.
 var _pairs: Array = []
-var _picked: int = NONE
+## The blockers picked up and waiting for their attacker, in the order they were clicked.
+var _picked: Array[int] = []
+## The [blocker ID, attacker ID] pairs that made the last click illegal.
+var _refused: Array = []
 var _amounts: Array[int] = []
 ## What the selection was before each change, for undo().
 var _history: Array = []
@@ -77,9 +77,15 @@ func pairs() -> Array:
 	return _pairs.duplicate(true)
 
 
-## The blocker picked up and waiting for its attacker, or NONE.
-func picked_id() -> int:
-	return _picked
+## The blockers picked up and waiting for their attacker, in the order they were clicked.
+func picked_ids() -> Array[int]:
+	return _picked.duplicate()
+
+
+## Why the last click assigned nothing: the [blocker ID, attacker ID] pairs of the group
+## picked up that are not legal blocks (A432). Empty once anything else is clicked.
+func refused() -> Array:
+	return _refused.duplicate(true)
 
 
 func amounts() -> Array[int]:
@@ -102,8 +108,8 @@ func is_chosen(object_id: int) -> bool:
 
 
 ## Whether clicking Game Object [param object_id] changes the selection: a creature that
-## may attack, a creature that may block, or, while a blocker is picked up, an attacker it
-## can block.
+## may attack, a creature that may block, or, while blockers are picked up, an attacker
+## one of them can block.
 func is_clickable(object_id: int) -> bool:
 	if _decision is DeclareAttackersDecision:
 		return (_decision as DeclareAttackersDecision).candidate_ids.has(object_id)
@@ -112,33 +118,36 @@ func is_clickable(object_id: int) -> bool:
 	return false
 
 
-## While a blocker is picked up: the attackers it can still be paired with or taken off,
-## which glow as targets (A313). A blocker at its limit offers only those it already blocks.
+## While blockers are picked up: the attackers any of them can still be paired with or
+## taken off, which glow as targets (A313, A431). A blocker at its limit offers only those
+## it already blocks.
 func target_ids() -> Array[int]:
 	var targets: Array[int] = []
 	var blocks: DeclareBlockersDecision = _decision as DeclareBlockersDecision
-	if blocks == null or _picked == NONE:
+	if blocks == null:
 		return targets
-	var already: Array[int] = blocks_of(_picked)
-	var limit: int = blocks.most_blocks_by_blocker.get(_picked, 1)
-	var blockable: Array = blocks.blockable_by_blocker.get(_picked, [])
-	for attacker_id: int in blockable:
-		if limit <= 1 or already.size() < limit or already.has(attacker_id):
-			targets.append(attacker_id)
+	for attacker_id: int in blocks.attacker_ids:
+		for blocker_id: int in _picked:
+			if _can_take(blocks, blocker_id, attacker_id):
+				targets.append(attacker_id)
+				break
 	return targets
 
 
 ## Clicks Game Object [param object_id]. A creature that may attack is chosen, or put back.
-## A creature that may block is picked up. One that already blocks, or is picked up, is
-## taken off its blocks and put down with that one click, whichever blocker is in hand. An
-## attacker is paired with the blocker picked up: a blocker that blocks one attacker is put
-## down, and one that may block several has that pairing switched and stays picked up
-## (A323). Returns whether anything changed.
+## A creature that may block is picked up, joining any already picked up (A430). One that
+## already blocks, or is picked up, is taken off its blocks and put down with that one
+## click, and the rest stay in hand (A433). An attacker is paired with what is picked up.
+## One blocker that blocks one attacker is put down, and one that may block several has
+## that pairing switched and stays picked up (A323). Several are all paired with the
+## attacker and put down, unless one of them cannot block it: then nothing is paired, they
+## stay picked up, and refused() says which (A432). Returns whether anything changed.
 func click(object_id: int) -> bool:
 	if not is_clickable(object_id):
 		return false
-	_remember()
+	_refused = []
 	if _decision is DeclareAttackersDecision:
+		_remember()
 		if _attackers.has(object_id):
 			_attackers.erase(object_id)
 		else:
@@ -146,33 +155,38 @@ func click(object_id: int) -> bool:
 		return true
 	var blocks: DeclareBlockersDecision = _decision as DeclareBlockersDecision
 	if blocks.candidate_blocker_ids.has(object_id):
-		if _picked == object_id or not blocks_of(object_id).is_empty():
+		_remember()
+		if _picked.has(object_id) or not blocks_of(object_id).is_empty():
 			_unassign(object_id)
-			if _picked == object_id:
-				_picked = NONE
+			_picked.erase(object_id)
 		else:
-			_picked = object_id
+			_picked.append(object_id)
 		return true
-	if blocks.most_blocks_by_blocker.get(_picked, 1) <= 1:
-		_unassign(_picked)
-		_pairs.append([_picked, object_id])
-		_picked = NONE
-	elif blocks_of(_picked).has(object_id):
-		var blocker_id: int = _picked
+	if _picked.size() > 1:
+		return _pair_group(blocks, object_id)
+	_remember()
+	var blocker_id: int = _picked[0]
+	if blocks.most_blocks_by_blocker.get(blocker_id, 1) <= 1:
+		_unassign(blocker_id)
+		_pairs.append([blocker_id, object_id])
+		_picked.clear()
+	elif blocks_of(blocker_id).has(object_id):
 		_pairs = _pairs.filter(func(pair: Array) -> bool: return not (pair[0] == blocker_id and pair[1] == object_id))
 	else:
-		_pairs.append([_picked, object_id])
+		_pairs.append([blocker_id, object_id])
 	return true
 
 
-## A click on empty board: the blocker picked up is put down with its blocks taken off
-## (A314). Returns whether one was picked up.
+## A click on empty board: every blocker picked up is put down with its blocks taken off
+## (A314, A434). Returns whether any was picked up.
 func put_down() -> bool:
-	if _picked == NONE:
+	if _picked.is_empty():
 		return false
+	_refused = []
 	_remember()
-	_unassign(_picked)
-	_picked = NONE
+	for blocker_id: int in _picked:
+		_unassign(blocker_id)
+	_picked.clear()
 	return true
 
 
@@ -273,7 +287,7 @@ func confirm_text() -> String:
 ## is made (A326).
 func hint() -> String:
 	if _decision is DeclareBlockersDecision and _pairs.is_empty():
-		return "Click a creature, then the attacker it blocks."
+		return "Click one or more creatures, then the attacker they block."
 	return ""
 
 
@@ -289,14 +303,40 @@ func undo() -> bool:
 	var before: Array = _history.pop_back()
 	_attackers.assign(before[0])
 	_pairs = before[1]
-	_picked = before[2]
+	_picked.assign(before[2])
+	_refused = []
 	_amounts.assign(before[3])
 	return true
 
 
 func _remember() -> void:
-	_history.append([_attackers.duplicate(), _pairs.duplicate(true), _picked, _amounts.duplicate()])
+	_history.append([_attackers.duplicate(), _pairs.duplicate(true), _picked.duplicate(), _amounts.duplicate()])
 
 
 func _unassign(blocker_id: int) -> void:
 	_pairs = _pairs.filter(func(pair: Array) -> bool: return pair[0] != blocker_id)
+
+
+## Whether [param blocker_id] can be paired with [param attacker_id] as things stand: it
+## can block it, and either has a block to spare or blocks it already.
+func _can_take(blocks: DeclareBlockersDecision, blocker_id: int, attacker_id: int) -> bool:
+	if not (blocks.blockable_by_blocker.get(blocker_id, []) as Array).has(attacker_id):
+		return false
+	var already: Array[int] = blocks_of(blocker_id)
+	return already.size() < blocks.most_blocks_by_blocker.get(blocker_id, 1) or already.has(attacker_id)
+
+
+## Pairs every blocker picked up with [param attacker_id] and puts them down, or pairs none
+## and fills _refused if any of them cannot block it (A432).
+func _pair_group(blocks: DeclareBlockersDecision, attacker_id: int) -> bool:
+	for blocker_id: int in _picked:
+		if not _can_take(blocks, blocker_id, attacker_id):
+			_refused.append([blocker_id, attacker_id])
+	if not _refused.is_empty():
+		return false
+	_remember()
+	for blocker_id: int in _picked:
+		if not blocks_of(blocker_id).has(attacker_id):
+			_pairs.append([blocker_id, attacker_id])
+	_picked.clear()
+	return true

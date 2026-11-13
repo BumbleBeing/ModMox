@@ -21,6 +21,8 @@ var is_rewind: bool = false
 var events: Array[MmEvent] = []
 ## How to draw each Game Object the view shows, by object ID.
 var looks: Dictionary[int, CardLook] = {}
+## What each player is called.
+var names: PlayerNames = PlayerNames.new()
 ## While Auto-tap is paying for the Hero, a tap at a time: the payment decision it is
 ## answering, which the Hero is not asked, and what is still to be tapped and spent.
 var paying: PayManaDecision = null
@@ -71,4 +73,9 @@ func visible_objects() -> Array[MmObjectView]:
 		all.append_array(view.graveyards[player_id])
 	for player_id: int in view.exiles:
 		all.append_array(view.exiles[player_id])
+	for player_id: int in view.libraries:
+		# A library shows only the cards its viewer knows; the others are null.
+		for known: MmObjectView in view.libraries[player_id]:
+			if known != null:
+				all.append(known)
 	return all

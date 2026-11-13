@@ -137,6 +137,8 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - Activate an ability with `Scenario.activate()`, reach a replacement choice with `Scenario.pass_to_replacement_choice()`, and answer it by its source card with `Scenario.choose_replacement_from()`.
 - Put "target spell" on a card with `Scenario.target_spell()` and counter with `Scenario.counter()` or a `Scenario.free_counter()`; `Scenario.stack_ids()` lists the stack top first. A creature spell is cast at sorcery speed, so cast it before anything else when a test needs it on the stack.
 - Anything leaving the stack is an undo barrier (ADR 0015), so a test can undo casting a counter but never the countering.
+- Put "target card in a graveyard" on a card with `Scenario.target_graveyard_card()` (`your_dead_creature()` for a creature card in its controller's) and "target activated or triggered ability" with `Scenario.target_ability()`; `free_raise()` and `free_stifle()` are the two as instants costing {0}, and `card_in_graveyard()` finds a card by name. A free raise is an instant, unlike Raise Dead, so that one can answer another.
+- A card that changes zones is a new object, so find it again after every move: `card_in_graveyard()` after it dies, the hand after it returns.
 - The engine asks which replacement effect applies first only when the effects differ: two shields with the same amount left are applied without asking, so give them different amounts.
 
 ## The AI addon
@@ -223,6 +225,11 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - **Set a `Label`'s `autowrap_mode` before its text and size**, and do not combine it with `clip_text`: a wrapped label set up in the other order grows as wide as its longest line, and a clipped one loses every line after the first.
 - **A redraw frees what it replaces with `queue_free()`**, never `free()`, because the redraw is often running inside a signal from one of the nodes being replaced. A test that redraws waits two frames in `after_each()` so nothing is left as an orphan.
 - **Scenes that lead elsewhere take a `navigate` Callable** (and `quit`, for the menu), which a test replaces, so a test never changes the running scene.
+- **A pile's window is a `PileWindow`, filled when it opens** (ADR 0032). A redraw fills only the ones that are open, and `show_cards()` rebuilds nothing unless what it shows has changed, so a closed window costs a redraw nothing. A new kind of zone to look into gets an arrangement there, never a list of faces built by the screen.
+- **Which pile windows the game opened is kept in `PileWindows`**, outside the redrawn nodes. `DecisionClicks.piles()` says which piles hold an answer and `is_only_in_piles()` whether nothing on the board answers; a new zone a decision can reach is found there (`_find_piles()`), and its window then opens, glows and closes by the same rules.
+- **A player is named through `PlayerNames`, from the snapshot** (`snapshot.names`). Never write "Hero" or "Villain" into text the player reads: use `of()` for a label, `the()` or `starting()` in a sentence, and `possessive()` for a title. A pure class that words things takes the names as its last, optional argument, so a test that does not care gets the parts.
+- **A test may show the screen a decision the engine cannot ask yet** by changing a snapshot's `decision` and emitting the presenter's `changed` with it. Use it only to test how something is drawn; nothing it leads to can be answered.
+- **Cards are found in every set's folder under `content/cards/`**, not only `alpha/`. A card that is not from Alpha goes in a folder named for its first set.
 - **Every sub-milestone of the GUI starts with a throwaway prototype** in `prototypes/<sub-milestone>/`, which the user signs off on. Prototypes skip these conventions and tests, and are deleted when the real build lands.
 
 ## Formatting

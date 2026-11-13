@@ -21,6 +21,10 @@ const ZONE_NAMES: Dictionary[MmZone.Kind, String] = {
 	MmZone.Kind.BATTLEFIELD: "the battlefield", MmZone.Kind.STACK: "the stack", MmZone.Kind.EXILE: "exile",
 	MmZone.Kind.COMMAND: "the command zone",
 }
+## What an OwnedByFilter says after its noun, which a graveyard's phrase turns into whose
+## graveyard it is.
+const YOU_OWN: String = "you own"
+const OPPONENT_OWNS: String = "an opponent owns"
 
 ## What the ability's source calls itself.
 var _noun: String
@@ -286,6 +290,9 @@ func _effect(effect: MmEffect) -> String:
 		return "destroy " + _selection((effect as DestroyEffect).selection)
 	if effect is CounterEffect:
 		return "counter " + _selection((effect as CounterEffect).selection)
+	if effect is ReturnToHandEffect:
+		var returned: MmSelection = (effect as ReturnToHandEffect).selection
+		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]
 	if effect is RegenerateEffect:
 		return "regenerate " + _selection((effect as RegenerateEffect).selection)
 	if effect is PreventDamageEffect:
@@ -377,9 +384,22 @@ func _target(index: int) -> String:
 	_named[index] = true
 	if spec.among == TargetSpec.Among.SPELLS:
 		return "target " + _spell_phrase(spec.filter)
+	if spec.among == TargetSpec.Among.ABILITIES:
+		return "target activated or triggered ability"
+	if spec.among == TargetSpec.Among.GRAVEYARD_CARDS:
+		return "target " + _graveyard_phrase(spec.filter)
 	if _is_any_target(spec.filter):
 		return "any target"
 	return "target " + _noun_phrase(spec.filter, false)
+
+
+## Whether [param selection] is a targeted card that can only be one its controller owns,
+## as in "target creature card from your graveyard", which goes back "to your hand".
+func _is_yours(selection: MmSelection) -> bool:
+	var targeted: TargetSelection = selection as TargetSelection
+	if targeted == null or targeted.target_index >= _targets.size():
+		return false
+	return (_filter_words(_targets[targeted.target_index].filter)[2] as Array).has(YOU_OWN)
 
 
 ## "Any target" is a creature or a player (there are no planeswalkers, ADR 0001).
@@ -464,6 +484,26 @@ func _spell_phrase(filter: MmFilter) -> String:
 	return phrase if after.is_empty() else phrase + " " + " ".join(after)
 
 
+## "Creature card from your graveyard", or "card from a graveyard" for no filter.
+func _graveyard_phrase(filter: MmFilter) -> String:
+	var words: Array = _filter_words(filter)
+	var parts: PackedStringArray = PackedStringArray(words[0] as Array)
+	if (words[1] as String) != "":
+		parts.append(words[1] as String)
+	parts.append("card")
+	var after: Array = (words[2] as Array).duplicate()
+	var whose: String = "a graveyard"
+	if after.has(YOU_OWN):
+		whose = "your graveyard"
+	elif after.has(OPPONENT_OWNS):
+		whose = "an opponent's graveyard"
+	after.erase(YOU_OWN)
+	after.erase(OPPONENT_OWNS)
+	parts.append("from " + whose)
+	parts.append_array(PackedStringArray(after))
+	return " ".join(parts)
+
+
 ## The words of [param filter]: its adjectives, its noun ("" for none) and what follows
 ## the noun, as [adjectives, noun, after].
 func _filter_words(filter: MmFilter) -> Array:
@@ -505,6 +545,12 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 			after.append("you don't control" if is_negated else "you control")
 		elif whose == MmTrigger.Whose.OPPONENT:
 			after.append("an opponent doesn't control" if is_negated else "an opponent controls")
+	elif filter is OwnedByFilter:
+		var owner: MmTrigger.Whose = (filter as OwnedByFilter).whose
+		if owner == MmTrigger.Whose.YOU:
+			after.append("you don't own" if is_negated else YOU_OWN)
+		elif owner == MmTrigger.Whose.OPPONENT:
+			after.append("an opponent doesn't own" if is_negated else OPPONENT_OWNS)
 	elif filter is HasAbilityFilter:
 		var kind: Script = (filter as HasAbilityFilter).ability_kind
 		var keyword: String = _keyword(kind.new() as MmAbility) if kind != null else ""

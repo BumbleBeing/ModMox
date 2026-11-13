@@ -393,6 +393,51 @@ func test_a_permanent_that_leaves_while_scrolled_out_of_sight_flies_from_the_arr
 			_screen.face_motion().rest_of(bears[0]).height, "Small as it comes out from under the arrow.")
 
 
+func test_a_card_returned_from_a_graveyard_flies_from_its_pile() -> void:
+	_check_a_raised_bear_flies_from_the_pile(false)
+
+
+func test_a_card_returned_from_a_graveyard_flies_from_its_pile_with_its_window_open_too() -> void:
+	_check_a_raised_bear_flies_from_the_pile(true)
+
+
+func _check_a_raised_bear_flies_from_the_pile(is_window_open: bool) -> void:
+	_open(_setup_of([_bear(), Scenario.free_shock("Zap", 2), Scenario.free_raise("Raise")]))
+	_cast("Bear")
+	_resolve()
+	_settle()
+	_cast("Zap")
+	_target(_permanents("Bear")[0])
+	_resolve()
+	_settle()
+	if is_window_open:
+		_screen.pile_catcher("hero_graveyard").clicked.emit()
+	var held: Array[int] = _ids_in_hand()
+
+	_cast("Raise")
+	_target(_in_graveyard("Bear"))
+	_resolve()
+
+	var returned: int = -1
+	for id: int in _ids_in_hand():
+		if not held.has(id):
+			returned = id
+	var card: FlightCard = _screen.flight_card_of(returned)
+	assert_not_null(card, "The Bear is in the air.")
+	if card != null:
+		assert_almost_eq(card.position, _pile("hero_graveyard"), NEAR, "From the pile, not from the window.")
+	assert_eq(_screen.pile_window("hero_graveyard").is_open(), is_window_open)
+	_settle()
+	assert_null(_screen.flight_card_of(returned))
+
+
+func _ids_in_hand() -> Array[int]:
+	var ids: Array[int] = []
+	for card: MmObjectView in _presenter.snapshot().view.hand:
+		ids.append(card.id)
+	return ids
+
+
 ## Opens a screen whose faces take MOVE seconds to move and whose cards take
 ## [param flight_seconds] to fly, with the Hero in their first main phase, auto-pass off.
 ## The screen does not run by itself: only _advance() lets time go by.

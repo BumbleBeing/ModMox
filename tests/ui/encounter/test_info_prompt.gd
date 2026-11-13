@@ -140,6 +140,15 @@ func _view() -> MmPlayerView:
 	return view
 
 
+func test_priority_names_a_villain_who_has_a_name() -> void:
+	var view: MmPlayerView = _view()
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new()] as Array[MmAction])
+	view.step = MmTurn.Step.DECLARE_BLOCKERS
+	view.active_player_id = VILLAIN
+
+	assert_eq(InfoPrompt.of(decision, view, null, PlayerNames.new("", "Mishra")).text, "Your priority\nBlockers, Mishra's turn")
+
+
 func _object(id: int, object_name: String, card_id: int) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()
 	seen.id = id

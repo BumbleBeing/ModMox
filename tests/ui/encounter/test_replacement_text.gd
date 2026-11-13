@@ -106,6 +106,15 @@ func test_an_effects_source_is_found_on_the_battlefield_or_by_its_card_once_it_h
 	assert_eq(ReplacementText.source_name(from_nowhere, view), "An effect")
 
 
+func test_a_player_is_called_by_the_name_they_were_given() -> void:
+	var names: PlayerNames = PlayerNames.new("Jackson", "Mishra")
+
+	assert_eq(ReplacementText.event_text(DamageEvent.new(3, MmReference.to_player(HERO), 3), _view(), names), "3 damage to Jackson")
+	var decision: ChooseReplacementEffectDecision = ChooseReplacementEffectDecision.new(HERO,
+		DamageEvent.new(3, MmReference.to_player(VILLAIN), 2), [] as Array[ActiveReplacementEffect])
+	assert_eq(ReplacementText.title(decision, _view(), names), "2 damage to Mishra: which applies first?")
+
+
 func _view() -> MmPlayerView:
 	var view: MmPlayerView = MmPlayerView.new()
 	view.viewer_id = HERO

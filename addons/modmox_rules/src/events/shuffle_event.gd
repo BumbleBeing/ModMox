@@ -1,6 +1,7 @@
 class_name ShuffleEvent
 extends MmEvent
-## A zone is randomized with the Game RNG (CR 701.24). Its objects stay the same objects.
+## A zone is randomized with the Game RNG (CR 701.24). Its objects stay the same objects,
+## and nobody knows which is which any more.
 
 var zone_kind: MmZone.Kind
 var owner_id: int
@@ -21,6 +22,7 @@ func apply(state: MmGameState) -> void:
 	card_ids_after.clear()
 	for game_object: MmGameObject in order:
 		card_ids_after.append(game_object.card_id)
+		game_object.forget_who_knows()
 
 
 func describe() -> String:

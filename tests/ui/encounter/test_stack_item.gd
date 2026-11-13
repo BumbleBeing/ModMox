@@ -114,6 +114,33 @@ func test_a_permanent_spells_full_text_is_its_rules_text_on_one_line() -> void:
 	assert_eq(item.full_text, "Serra Angel — Flying, vigilance · {1}: Regenerate this creature.")
 
 
+func test_players_are_called_by_the_names_they_were_given() -> void:
+	var view: MmPlayerView = _view()
+	var bolt: MmObjectView = _spell(20, "Lightning Bolt", VILLAIN, [MmReference.to_player(HERO)])
+	view.stack = [bolt]
+
+	var item: StackItem = StackItem.of(bolt, view, PlayerNames.new("Jackson", "Mishra"))
+
+	assert_eq(item.second_line, "Mishra → Jackson")
+	assert_eq(StackItem.of(bolt, view).second_line, "Villain → Hero", "With no names they go by their parts.")
+
+
+func test_a_target_in_a_graveyard_is_named_and_marks_nothing() -> void:
+	var view: MmPlayerView = _view()
+	var dead: MmObjectView = MmObjectView.new()
+	dead.id = 40
+	dead.name = "Scathe Zombies"
+	view.graveyards = {HERO: [dead], VILLAIN: []}
+	var raise: MmObjectView = _spell(20, "Raise Dead", HERO, [MmReference.to_object(40)])
+	view.stack = [raise]
+
+	var item: StackItem = StackItem.of(raise, view)
+
+	assert_eq(item.second_line, "Hero → Scathe Zombies")
+	assert_eq(item.target_object_ids, [] as Array[int], "It is not on the battlefield.")
+	assert_eq(item.target_stack_ids, [] as Array[int])
+
+
 func _view() -> MmPlayerView:
 	var view: MmPlayerView = MmPlayerView.new()
 	view.viewer_id = HERO

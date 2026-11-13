@@ -787,7 +787,7 @@ func _select(decision: MmPendingDecision, wanted: Variant) -> Variant:
 			assert_true(selection.click(attacker_id))
 	elif decision is DeclareBlockersDecision:
 		for pair: Array in chosen:
-			if selection.picked_id() != pair[0]:
+			if not selection.picked_ids().has(pair[0]):
 				assert_true(selection.click(pair[0]))
 			assert_true(selection.click(pair[1]))
 	else:

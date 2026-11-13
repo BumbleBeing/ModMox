@@ -314,7 +314,8 @@ func _play_key(action: MmAction) -> String:
 ## if it costs at least as much as the counter. Otherwise, in its own main phase with
 ## nothing on the stack, cast the most expensive spell that is neither a combat trick nor a
 ## source of mana, removal only with an opposing creature to aim at. (A counter cannot be
-## cast then: there is no spell to aim it at.) It never activates abilities.
+## cast then: there is no spell to aim it at.) It never activates abilities, and never
+## counters one.
 func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: int) -> int:
 	var me: int = decision.player_id
 	var counter: int = _cheap_counter(decision, world)
@@ -346,7 +347,8 @@ func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: in
 
 
 ## The cheapest counter worth casting at the other player's spell on top of the stack: one
-## that costs no more than that spell does. -1 if there is none.
+## that costs no more than that spell does. -1 if there is none. A counter that can only
+## be aimed at an ability is never cast: what an ability would do is not read from a cost.
 func _cheap_counter(decision: PriorityDecision, world: MmGameState) -> int:
 	if world.stack.is_empty():
 		return -1
@@ -358,13 +360,25 @@ func _cheap_counter(decision: PriorityDecision, world: MmGameState) -> int:
 	var best_cost: int = top_cost + 1
 	for index: int in decision.actions.size():
 		var cast: CastSpellAction = decision.actions[index] as CastSpellAction
-		if cast == null or AiTiming.tag_of_action(world, cast) != AiTiming.Tag.COUNTER:
+		if cast == null or AiTiming.tag_of_action(world, cast) != AiTiming.Tag.COUNTER or not _targets_spells(world, cast):
 			continue
 		var cost: int = world.characteristics_of(world.object(cast.object_id)).mana_value()
 		if cost < best_cost:
 			best = index
 			best_cost = cost
 	return best
+
+
+## Whether the spell [param cast] casts has a target requirement that asks for a spell.
+func _targets_spells(world: MmGameState, cast: CastSpellAction) -> bool:
+	for ability: MmAbility in world.characteristics_of(world.object(cast.object_id)).abilities:
+		var spell: SpellAbility = ability as SpellAbility
+		if spell == null:
+			continue
+		for spec: TargetSpec in spell.targets:
+			if spec.among == TargetSpec.Among.SPELLS:
+				return true
+	return false
 
 
 ## The land to play: the one making the color the hand needs most.

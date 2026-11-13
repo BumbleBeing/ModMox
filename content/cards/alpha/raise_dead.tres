@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_pfs7k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_76mpb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_hand_effect.gd" id="3_j5vs4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_bamyt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="5_tyx8t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="6_3vymo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="7_fydxy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="8_c2g1k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/owned_by_filter.gd" id="9_8mc6m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="10_43svg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="11_7s8gh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="12_52o73"]
+
+[sub_resource type="Resource" id="Resource_lmigg"]
+script = ExtResource("4_bamyt")
+
+[sub_resource type="Resource" id="Resource_p808j"]
+script = ExtResource("3_j5vs4")
+selection = SubResource("Resource_lmigg")
+
+[sub_resource type="Resource" id="Resource_4pssk"]
+script = ExtResource("8_c2g1k")
+
+[sub_resource type="Resource" id="Resource_eolmk"]
+script = ExtResource("9_8mc6m")
+
+[sub_resource type="Resource" id="Resource_x6p78"]
+script = ExtResource("10_43svg")
+filters = Array[ExtResource("7_fydxy")]([SubResource("Resource_4pssk"), SubResource("Resource_eolmk")])
+
+[sub_resource type="Resource" id="Resource_hm671"]
+script = ExtResource("6_3vymo")
+filter = SubResource("Resource_x6p78")
+among = 2
+
+[sub_resource type="Resource" id="Resource_8kxqu"]
+script = ExtResource("5_tyx8t")
+targets = Array[ExtResource("6_3vymo")]([SubResource("Resource_hm671")])
+effects = Array[ExtResource("2_76mpb")]([SubResource("Resource_p808j")])
+
+[sub_resource type="Resource" id="Resource_kkgfj"]
+script = ExtResource("11_7s8gh")
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("12_52o73")
+name = "Raise Dead"
+card_types = Array[int]([5])
+mana_cost = SubResource("Resource_kkgfj")
+abilities = Array[ExtResource("1_pfs7k")]([SubResource("Resource_8kxqu")])

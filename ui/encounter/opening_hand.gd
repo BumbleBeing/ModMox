@@ -20,6 +20,7 @@ var _starts: String = ""
 ## How many cards the Hero's hand owed when they were last asked to keep it.
 var _owed: int = 0
 var _is_villain_thinking: bool = false
+var _villain_name: String = PlayerNames.PARTS[VILLAIN]
 var _villain_mulligans: int = 0
 var _villain_kept: int = NO_HAND
 var _is_new_hand: bool = false
@@ -37,12 +38,13 @@ func read(snapshot: EncounterSnapshot) -> void:
 	_decision = snapshot.decision
 	_hand_size = snapshot.view.hand.size()
 	_is_villain_thinking = snapshot.is_villain_thinking
+	_villain_name = snapshot.names.of(VILLAIN)
 	_is_new_hand = not _has_shown_a_hand and _hand_size > 0
 	for event: MmEvent in snapshot.events:
 		var starting: StartingPlayerEvent = event as StartingPlayerEvent
 		if starting != null:
 			_starts = "You play first" if starting.starting_player_id == HERO \
-					else "The %s plays first" % StackItem.player_name(starting.starting_player_id)
+					else "%s plays first" % snapshot.names.starting(starting.starting_player_id)
 		var choice: KeepOrMulliganEvent = event as KeepOrMulliganEvent
 		if choice != null and choice.player_id == VILLAIN:
 			if choice.is_keeping:
@@ -118,7 +120,7 @@ func mulligan_text() -> String:
 
 ## What the Villain is doing or has decided, or "" before they have been asked.
 func villain_text() -> String:
-	var who: String = StackItem.player_name(VILLAIN)
+	var who: String = _villain_name
 	if _is_villain_thinking:
 		return "%s is deciding…" % who
 	if _villain_kept != NO_HAND:
