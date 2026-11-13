@@ -11,6 +11,7 @@
 [ext_resource type="Resource" path="res://content/cards/alpha/drudge_skeletons.tres" id="9_2eqnw"]
 [ext_resource type="Resource" path="res://content/cards/alpha/frozen_shade.tres" id="10_uqhjf"]
 [ext_resource type="Resource" path="res://content/cards/alpha/scathe_zombies.tres" id="11_0rnpt"]
+[ext_resource type="Resource" path="res://content/cards/alpha/raise_dead.tres" id="11_ptjr7"]
 [ext_resource type="Resource" path="res://content/cards/alpha/pearled_unicorn.tres" id="12_vfmod"]
 [ext_resource type="Resource" path="res://content/cards/alpha/serra_angel.tres" id="13_mfudt"]
 [ext_resource type="Resource" path="res://content/cards/alpha/terror.tres" id="14_crwxh"]
@@ -140,7 +141,7 @@ base = ExtResource("10_uqhjf")
 
 [sub_resource type="Resource" id="Resource_ocota"]
 script = ExtResource("1_ptjr7")
-base = ExtResource("11_0rnpt")
+base = ExtResource("11_ptjr7")
 
 [sub_resource type="Resource" id="Resource_aabnm"]
 script = ExtResource("1_ptjr7")
@@ -148,7 +149,7 @@ base = ExtResource("11_0rnpt")
 
 [sub_resource type="Resource" id="Resource_38rxq"]
 script = ExtResource("1_ptjr7")
-base = ExtResource("12_vfmod")
+base = ExtResource("11_ptjr7")
 
 [sub_resource type="Resource" id="Resource_7cl6b"]
 script = ExtResource("1_ptjr7")

@@ -5,15 +5,15 @@ extends RefCounted
 
 
 ## What the choice's window is titled: the event, and the question.
-static func title(decision: ChooseReplacementEffectDecision, view: MmPlayerView) -> String:
-	return "%s: which applies first?" % event_text(decision.event, view)
+static func title(decision: ChooseReplacementEffectDecision, view: MmPlayerView, names: PlayerNames = null) -> String:
+	return "%s: which applies first?" % event_text(decision.event, view, names)
 
 
 ## [param event] in a few words, such as "3 damage to Grizzly Bears".
-static func event_text(event: MmEvent, view: MmPlayerView) -> String:
+static func event_text(event: MmEvent, view: MmPlayerView, names: PlayerNames = null) -> String:
 	var damage: DamageEvent = event as DamageEvent
 	if damage != null:
-		return "%d %sdamage to %s" % [damage.amount, "combat " if damage.is_combat else "", _name(damage.recipient, view)]
+		return "%d %sdamage to %s" % [damage.amount, "combat " if damage.is_combat else "", _name(damage.recipient, view, names)]
 	var moved: ZoneChangeEvent = event as ZoneChangeEvent
 	if moved != null and moved.reason == ZoneChangeEvent.Reason.DESTROY:
 		return "%s would be destroyed" % _name(MmReference.to_object(moved.object_id), view)
@@ -21,11 +21,11 @@ static func event_text(event: MmEvent, view: MmPlayerView) -> String:
 
 
 ## What [param active] does, with what a shield has left.
-static func effect_text(active: ActiveReplacementEffect, view: MmPlayerView) -> String:
-	var names: PackedStringArray = []
+static func effect_text(active: ActiveReplacementEffect, view: MmPlayerView, names: PlayerNames = null) -> String:
+	var affected_names: PackedStringArray = []
 	for affected: MmReference in active.affected:
-		names.append(_name(affected, view))
-	var whom: String = " or ".join(names)
+		affected_names.append(_name(affected, view, names))
+	var whom: String = " or ".join(affected_names)
 	var prevent: PreventDamageReplacementEffect = active.effect as PreventDamageReplacementEffect
 	if prevent != null:
 		var to_whom: String = "" if whom == "" else " to " + whom
@@ -56,9 +56,9 @@ static func source_name(active: ActiveReplacementEffect, view: MmPlayerView) -> 
 	return source.name if source != null else "An effect"
 
 
-static func _name(reference: MmReference, view: MmPlayerView) -> String:
+static func _name(reference: MmReference, view: MmPlayerView, names: PlayerNames = null) -> String:
 	if reference.is_player():
-		return StackItem.player_name(reference.id)
+		return (names if names != null else PlayerNames.new()).of(reference.id)
 	for seen: MmObjectView in view.battlefield:
 		if seen.id == reference.id:
 			return seen.name

@@ -377,6 +377,54 @@ func test_a_kind_with_no_input_of_its_own_glows_but_gives_no_click_answers() -> 
 	assert_eq(divide.player_answers.size(), 0)
 
 
+func test_a_target_in_a_graveyard_marks_the_pile_it_is_in() -> void:
+	var view: MmPlayerView = _view()
+	view.graveyards = {HERO: [_card(30, "Scathe Zombies"), _card(31, "Terror")], VILLAIN: [_card(40, "Hill Giant")]}
+	var decision: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 20, 0, [MmReference.to_object(30)] as Array[MmReference])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(clicks.piles(), ["hero_graveyard"] as Array[String])
+	assert_true(clicks.is_only_in_piles(), "Every answer is a card in a pile.")
+	assert_eq(clicks.options_of(30)[0].answer, 0)
+	assert_eq(clicks.options_of(31).size(), 0, "A card there that is not a candidate.")
+
+
+func test_targets_in_both_graveyards_mark_both_piles_the_heros_first() -> void:
+	var view: MmPlayerView = _view()
+	view.graveyards = {HERO: [_card(30, "Scathe Zombies")], VILLAIN: [_card(40, "Hill Giant")]}
+	var decision: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 20, 0,
+		[MmReference.to_object(40), MmReference.to_object(30)] as Array[MmReference])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(clicks.piles(), ["hero_graveyard", "villain_graveyard"] as Array[String])
+	assert_true(clicks.is_only_in_piles())
+
+
+func test_a_choice_between_the_battlefield_and_a_graveyard_is_not_only_in_piles() -> void:
+	var view: MmPlayerView = _view()
+	view.graveyards = {HERO: [_card(30, "Scathe Zombies")], VILLAIN: []}
+	var permanent: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 20, 0,
+		[MmReference.to_object(LAND_ID), MmReference.to_object(30)] as Array[MmReference])
+	var player: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 20, 0,
+		[MmReference.to_player(VILLAIN), MmReference.to_object(30)] as Array[MmReference])
+
+	assert_eq(DecisionClicks.of(permanent, view).piles(), ["hero_graveyard"] as Array[String])
+	assert_false(DecisionClicks.of(permanent, view).is_only_in_piles())
+	assert_false(DecisionClicks.of(player, view).is_only_in_piles())
+
+
+func test_no_pile_is_marked_when_nothing_in_one_answers() -> void:
+	var view: MmPlayerView = _view()
+	view.graveyards = {HERO: [_card(30, "Scathe Zombies")], VILLAIN: []}
+	var decision: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 20, 0, [MmReference.to_object(LAND_ID)] as Array[MmReference])
+
+	assert_eq(DecisionClicks.of(decision, view).piles(), [] as Array[String])
+	assert_false(DecisionClicks.of(decision, view).is_only_in_piles())
+	assert_false(DecisionClicks.of(null, view).is_only_in_piles(), "Nothing answers at all.")
+
+
 func _ping() -> ActivatedAbility:
 	var ability: ActivatedAbility = ActivatedAbility.new()
 	ability.costs = [TapCost.new()]

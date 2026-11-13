@@ -249,7 +249,7 @@ func test_each_players_emblems_open_in_their_own_window() -> void:
 	_screen.player_panel(HERO).emblems_button().pressed.emit()
 
 	assert_true(window.visible)
-	assert_eq(window.title_text(), "Emblems (1)")
+	assert_eq(window.title_text(), "Hero's Emblems (1)")
 	assert_eq(window.body().get_child_count(), 1)
 	assert_eq((window.body().get_child(0) as ZoneEntry).name_text(), "Sample Boon: Howling Winds")
 	assert_false(_screen.emblems_window(VILLAIN).visible)
@@ -264,7 +264,7 @@ func test_the_emblems_button_cannot_be_pressed_with_no_emblems() -> void:
 
 	assert_true(_screen.player_panel(HERO).emblems_button().disabled)
 	assert_eq(_screen.player_panel(HERO).emblems_button().text, "⛨  Emblems (0)")
-	assert_eq(_screen.emblems_window(HERO).title_text(), "Emblems (0)")
+	assert_eq(_screen.emblems_window(HERO).title_text(), "Hero's Emblems (0)")
 
 
 func test_what_a_decision_can_choose_glows_on_the_thing_itself() -> void:
@@ -1126,10 +1126,10 @@ func test_while_paused_a_blocker_in_hand_and_the_damage_steppers_stay_as_they_we
 
 	_screen.click_empty_board()
 
-	assert_eq(_screen.selection().picked_id(), bear, "Paused, a click on the board puts nothing down.")
+	assert_eq(_screen.selection().picked_ids(), [bear] as Array[int], "Paused, a click on the board puts nothing down.")
 	_screen.press_key(KEY_ESCAPE)
 	_screen.click_empty_board()
-	assert_eq(_screen.selection().picked_id(), CombatSelection.NONE)
+	assert_eq(_screen.selection().picked_ids(), [] as Array[int])
 
 
 func test_while_paused_damage_cannot_be_moved() -> void:
@@ -1173,7 +1173,7 @@ func test_a_blocker_is_picked_up_and_paired_with_the_attacker_clicked() -> void:
 	var ogres: Array[int] = _permanents("Ogre")
 	var info: InfoPanel = _screen.info_panel()
 	assert_eq(info.prompt_text(), "Declare blockers")
-	assert_eq(info.hint_text(), "Click a creature, then the attacker it blocks.")
+	assert_eq(info.hint_text(), "Click one or more creatures, then the attacker they block.")
 	assert_eq(_screen.pass_button().text, "No blocks")
 	assert_null(_screen.click_catcher(ogres[0]), "An attacker is clicked only for a blocker in hand.")
 	assert_null(BorderEffects.glow_color(_screen.face_of(ogres[0])))
@@ -1199,6 +1199,63 @@ func test_a_blocker_is_picked_up_and_paired_with_the_attacker_clicked() -> void:
 	assert_eq(_screen.pass_button().text, "Confirm blocks")
 	assert_eq(info.hint_text(), "", "The hint goes once a block is made (A326).")
 	assert_true(_presenter.snapshot().decision is DeclareBlockersDecision)
+
+
+func test_blockers_clicked_one_after_another_are_all_paired_with_the_attacker_clicked() -> void:
+	_open_combat([_free_bear()])
+	_reach_blockers(2)
+	var bears: Array[int] = _permanents("Bear")
+	var ogre: int = _permanents("Ogre")[0]
+
+	_click(bears[0])
+	_click(bears[1])
+
+	assert_true(BorderEffects.has_pointer(_screen.face_of(bears[0])), "Both are picked up (A430).")
+	assert_true(BorderEffects.has_pointer(_screen.face_of(bears[1])))
+	assert_eq(_screen.block_lines().line_count(), 0)
+
+	_click(ogre)
+
+	assert_eq(_screen.selection().pairs(), [[bears[0], ogre], [bears[1], ogre]])
+	assert_false(BorderEffects.has_pointer(_screen.face_of(bears[0])), "Paired, they are put down.")
+	assert_false(BorderEffects.has_pointer(_screen.face_of(bears[1])))
+	assert_eq(_screen.block_lines().line_count(), 2)
+	assert_eq(_screen.info_panel().error_text(), "")
+
+
+func test_a_group_with_a_blocker_that_cannot_block_the_attacker_is_refused_with_an_error() -> void:
+	var spider: MmCardDefinition = Scenario.creature("Spider", 1, 3, [ReachAbility.new()], Scenario.mana_cost(0))
+	var ogre: MmCardDefinition = Scenario.creature("Ogre", 2, 2, [], Scenario.mana_cost(0))
+	var drake: MmCardDefinition = Scenario.creature("Drake", 2, 2, [FlyingAbility.new()], Scenario.mana_cost(0))
+	_open_combat([_free_bear(), spider], [ogre, drake])
+	_cast_creatures(4)
+	_pass_until(func() -> bool:
+		var blocks: DeclareBlockersDecision = _presenter.snapshot().decision as DeclareBlockersDecision
+		return blocks != null and _attacking("Ogre") != 0 and _attacking("Drake") != 0)
+	var bear: int = _permanents("Bear")[0]
+	var spider_id: int = _permanents("Spider")[0]
+	var drake_id: int = _attacking("Drake")
+	var ogre_id: int = _attacking("Ogre")
+
+	_click(bear)
+	_click(spider_id)
+
+	var target: Color = DecisionClicks.color_of(DecisionClicks.Kind.TARGET)
+	assert_eq(BorderEffects.glow_color(_screen.face_of(drake_id)), target, "The Spider can block it, so it glows (A431).")
+	assert_eq(BorderEffects.glow_color(_screen.face_of(ogre_id)), target)
+
+	_click(drake_id)
+
+	assert_eq(_screen.info_panel().error_text(), "Bear cannot block Drake.", "A432.")
+	assert_eq(_screen.selection().pairs().size(), 0, "Nothing is assigned, not even the Spider.")
+	assert_eq(_screen.selection().picked_ids(), [bear, spider_id] as Array[int], "The group stays picked up.")
+	assert_eq(_screen.block_lines().line_count(), 0)
+
+	_click(bear)
+
+	assert_eq(_screen.info_panel().error_text(), "", "The next click clears the error.")
+	_click(drake_id)
+	assert_eq(_screen.selection().pairs(), [[spider_id, drake_id]])
 
 
 func test_a_block_line_runs_from_the_blocker_up_to_its_attacker() -> void:
@@ -1271,7 +1328,7 @@ func test_a_press_on_the_board_puts_a_picked_up_blocker_down_but_a_press_on_a_ca
 	_reach_blockers(2)
 	var bear: int = _permanents("Bear")[0]
 	_click(bear)
-	assert_eq(_screen.selection().picked_id(), bear)
+	assert_eq(_screen.selection().picked_ids(), [bear] as Array[int])
 	var card: Control = _screen.face_of(_presenter.snapshot().view.hand[0].id)
 	var on_card: InputEventMouseButton = InputEventMouseButton.new()
 	on_card.button_index = MOUSE_BUTTON_LEFT
@@ -1281,11 +1338,11 @@ func test_a_press_on_the_board_puts_a_picked_up_blocker_down_but_a_press_on_a_ca
 	on_board.position = Vector2(1000, 500)
 
 	_screen._input(on_card)
-	assert_eq(_screen.selection().picked_id(), bear, "The press was the hand's.")
+	assert_eq(_screen.selection().picked_ids(), [bear] as Array[int], "The press was the hand's.")
 	assert_true(_screen.drag_card().is_pressed())
 	_screen.cancel_drag()
 	_screen._gui_input(on_board)
-	assert_ne(_screen.selection().picked_id(), bear, "A314.")
+	assert_eq(_screen.selection().picked_ids(), [] as Array[int], "A314.")
 
 
 func test_a_click_on_empty_board_puts_a_picked_up_blocker_down_unassigned() -> void:
@@ -1485,16 +1542,19 @@ func _bear_setup(cost: MmManaCost = null) -> MmEncounterSetup:
 
 ## Opens a screen where the Hero's deck cycles through [param cards] and the Villain, who
 ## fights, has free 2/2 Ogres.
-func _open_combat(cards: Array[MmCardDefinition]) -> void:
+func _open_combat(cards: Array[MmCardDefinition], villain_cards: Array[MmCardDefinition] = []) -> void:
 	var deck: Array[MmCardDefinition] = []
 	for index: int in 40:
 		deck.append(cards[index % cards.size()])
 	var ogre: MmCardDefinition = Scenario.creature("Ogre", 2, 2, [], Scenario.mana_cost(0))
+	var villain_deck: Array[MmCardDefinition] = Scenario.copies(ogre, 40)
+	for index: int in villain_deck.size() if not villain_cards.is_empty() else 0:
+		villain_deck[index] = villain_cards[index % villain_cards.size()]
 	_screen = EncounterScreen.new()
 	_screen.starts_itself = false
 	add_child_autofree(_screen)
 	_screen.size = SCREEN
-	_presenter = EncounterPresenter.new(Scenario.setup_with(deck, Scenario.copies(ogre, 40)), CombatAgent.new())
+	_presenter = EncounterPresenter.new(Scenario.setup_with(deck, villain_deck), CombatAgent.new())
 	_presenter.set_auto_passing(false)
 	_screen.begin(_presenter)
 	_presenter.wait_until_idle()
@@ -1589,6 +1649,14 @@ func _view_of(object_id: int) -> MmObjectView:
 		if seen.id == object_id:
 			return seen
 	return null
+
+
+## The first attacking creature named [param card_name], or 0.
+func _attacking(card_name: String) -> int:
+	for permanent: MmObjectView in _presenter.snapshot().view.battlefield:
+		if permanent.name == card_name and permanent.is_attacking:
+			return permanent.id
+	return 0
 
 
 func _permanents(card_name: String) -> Array[int]:

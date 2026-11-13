@@ -388,6 +388,21 @@ func test_a_panel_that_changes_sides_is_built_afresh() -> void:
 	assert_null(panel.pass_button())
 
 
+func test_a_panel_is_headed_with_its_players_name_in_capitals() -> void:
+	var panel: PlayerPanel = _panel(VILLAIN)
+	assert_eq(panel.name_text(), "VILLAIN")
+
+	_snapshot.names = PlayerNames.new("Jackson", "Mishra")
+	_snapshot.is_villain_thinking = true
+	_show(panel, VILLAIN)
+
+	assert_eq(panel.name_text(), "MISHRA")
+	assert_eq(panel.thinking_text(), "Mishra is thinking…")
+	var mine: PlayerPanel = _panel(HERO)
+	_show(mine, HERO)
+	assert_eq(mine.name_text(), "JACKSON")
+
+
 func _panel(player_id: int) -> PlayerPanel:
 	var panel: PlayerPanel = PlayerPanel.new(player_id, "HERO" if player_id == HERO else "VILLAIN")
 	add_child_autofree(panel)

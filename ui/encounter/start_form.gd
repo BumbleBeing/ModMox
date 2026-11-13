@@ -12,6 +12,8 @@ var navigate: Callable = func(scene: String) -> void: get_tree().change_scene_to
 
 var _request: EncounterRequest = EncounterRequest.new()
 var _hero: OptionButton
+var _hero_name: LineEdit
+var _villain_name: LineEdit
 var _villain: OptionButton
 var _seed: SpinBox
 var _difficulty: OptionButton
@@ -35,7 +37,9 @@ func _ready() -> void:
 	heading.text = "Start an encounter"
 	heading.add_theme_font_size_override("font_size", 30)
 	column.add_child(heading)
+	_hero_name = _name_box(column, "Hero's name", "Hero", _request.hero_name)
 	_hero = _choice(column, "Hero's deck", EncounterRequest.deck_names(), _request.hero_deck)
+	_villain_name = _name_box(column, "Villain's name", "Villain", _request.villain_name)
 	_villain = _choice(column, "Villain's deck", EncounterRequest.deck_names(), _request.villain_deck)
 	_seed = SpinBox.new()
 	_seed.max_value = 999999
@@ -65,6 +69,8 @@ func request() -> EncounterRequest:
 	filled.encounter_seed = int(_seed.value)
 	filled.difficulty = _difficulty.get_item_text(_difficulty.selected)
 	filled.has_sample_emblems = _emblems.button_pressed
+	filled.hero_name = _hero_name.text
+	filled.villain_name = _villain_name.text
 	return filled
 
 
@@ -75,6 +81,16 @@ func fill_in(wanted: EncounterRequest) -> void:
 	_seed.value = wanted.encounter_seed
 	_select(_difficulty, wanted.difficulty)
 	_emblems.button_pressed = wanted.has_sample_emblems
+	_hero_name.text = wanted.hero_name
+	_villain_name.text = wanted.villain_name
+
+
+func hero_name_box() -> LineEdit:
+	return _hero_name
+
+
+func villain_name_box() -> LineEdit:
+	return _villain_name
 
 
 func start_button() -> Button:
@@ -85,6 +101,16 @@ func start_button() -> Button:
 func start() -> void:
 	EncounterScreen.request = request()
 	navigate.call(ENCOUNTER)
+
+
+## A box for a player's name, showing [param part] while it is empty.
+func _name_box(column: VBoxContainer, text: String, part: String, given: String) -> LineEdit:
+	var box: LineEdit = LineEdit.new()
+	box.placeholder_text = part
+	box.text = given
+	box.max_length = 24
+	_row(column, text, box)
+	return box
 
 
 func _choice(column: VBoxContainer, text: String, names: Array[String], chosen: String) -> OptionButton:

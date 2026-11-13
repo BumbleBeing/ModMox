@@ -86,6 +86,13 @@ var _board: Control
 var _panels: Dictionary[int, PlayerPanel] = {}
 var _stack_window: ZoneWindow
 var _emblem_windows: Dictionary[int, ZoneWindow] = {}
+## The Zone Window of each graveyard, exile and library, by its pile's Region, which of
+## them have been given a place, and which are open only to answer a target (13f).
+var _pile_windows: Dictionary[String, PileWindow] = {}
+var _placed_piles: Array[String] = []
+var _pile_state: PileWindows = PileWindows.new()
+## What takes a click on each pile, by its Region.
+var _pile_hosts: Dictionary[String, Control] = {}
 var _faces: Dictionary[int, Control] = {}
 var _face_sizes: Dictionary[int, Vector2] = {}
 var _hand_faces: Array[CardFace] = []
@@ -222,6 +229,14 @@ func _ready() -> void:
 		emblems.hide()
 		add_child(emblems)
 		_emblem_windows[player_id] = emblems
+	for key: String in EncounterLayout.pile_keys():
+		var is_row: bool = key.ends_with("library")
+		var pile_window: PileWindow = PileWindow.new(PileWindow.Arrangement.ROW if is_row else PileWindow.Arrangement.GRID,
+			Color("#6f7f9a") if key.begins_with("hero") else Color("#9a6f6f"))
+		pile_window.card_clicked.connect(_on_object_clicked)
+		pile_window.hide()
+		add_child(pile_window)
+		_pile_windows[key] = pile_window
 	_info = InfoPanel.new()
 	_info.cancel_pressed.connect(func() -> void: _command(_presenter.cancel_cast))
 	_info.all_attack_pressed.connect(func() -> void:
@@ -270,6 +285,7 @@ func _ready() -> void:
 	if request == null:
 		request = EncounterRequest.new()
 	var presenter: EncounterPresenter = EncounterPresenter.new(request.setup(), request.villain_agent())
+	presenter.names = request.names()
 	var picture: String = screenshot_path(OS.get_cmdline_user_args())
 	if picture == "":
 		settings_path = GameSettings.PATH
@@ -378,6 +394,9 @@ func set_ease_seconds(seconds: float) -> void:
 	_ease_seconds = seconds
 	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN]]:
 		window.ease_seconds = seconds
+	for key: String in _pile_windows:
+		_pile_windows[key].ease_seconds = seconds
+		_pile_windows[key].glow_seconds = seconds
 	_option_menu.ease_seconds = seconds
 	_pause_menu.ease_seconds = seconds
 
@@ -517,9 +536,10 @@ func set_hold_key_down(is_down: bool) -> void:
 	_hold_panel.set_key_down(is_down)
 
 
-## What a click on nothing does: a blocker that was picked up is put down, unassigned (A314).
+## What a click on nothing does: the blockers picked up are put down, unassigned (A314).
 func click_empty_board() -> void:
 	if not _is_paused and _selection.put_down():
+		_error = ""
 		_redraw()
 
 
@@ -550,6 +570,7 @@ func undo() -> void:
 	elif not _is_paused and _trigger_order.undo():
 		_show_trigger_order()
 	elif not _is_paused and _selection.undo():
+		_error = ""
 		_redraw()
 	else:
 		_command(_presenter.undo)
@@ -571,6 +592,7 @@ func _is_covered(cursor: Vector2) -> bool:
 	if _overlay.is_open():
 		windows.append(_overlay)
 	windows.append_array(_emblem_windows.values())
+	windows.append_array(_pile_windows.values())
 	for window: Control in windows:
 		# A window fading out is already closed: the cursor is not over it.
 		if Easing.is_shown(window) and Rect2(window.position, window.size).has_point(cursor):
@@ -805,6 +827,22 @@ func choice_catcher(index: int) -> ClickCatcher:
 	return ClickCatcher.of(_choice_entries[index])
 
 
+## The Zone Window of the pile in Region [param key], such as "hero_graveyard".
+func pile_window(key: String) -> PileWindow:
+	return _pile_windows[key]
+
+
+## What takes a click on the pile in Region [param key].
+func pile_catcher(key: String) -> ClickCatcher:
+	return ClickCatcher.of(_pile_hosts[key])
+
+
+## The colors the pile in Region [param key] glows in: a target's, while a card in it can
+## be chosen.
+func pile_glow(key: String) -> Array[Color]:
+	return BorderEffects.glow_colors(_pile_hosts[key])
+
+
 func emblems_window(player_id: int) -> ZoneWindow:
 	return _emblem_windows[player_id]
 
@@ -938,6 +976,79 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	_aim_flights(begun)
 
 
+## A pile was clicked: its window opens, or closes if it was open.
+func _toggle_pile(key: String) -> void:
+	if _is_paused:
+		return
+	var window: PileWindow = _pile_windows[key]
+	if window.is_open():
+		window.close()
+	else:
+		_open_pile(key)
+	_pile_state.toggled(key, window.is_open(), _clicks)
+
+
+## Opens the window of the pile in Region [param key], with what the zone holds now: beside
+## its pile the first time, and where it was left after that.
+func _open_pile(key: String) -> void:
+	var window: PileWindow = _pile_windows[key]
+	if not _placed_piles.has(key):
+		window.position = EncounterLayout.pile_window_position(_regions[key], window.size, _placed_piles.size())
+		_placed_piles.append(key)
+	window.fit()
+	_fill_pile_window(key)
+	window.open()
+	window.move_to_front()
+
+
+## Shows in the window of the pile in Region [param key] what its zone holds.
+func _fill_pile_window(key: String) -> void:
+	var view: MmPlayerView = _snapshot.view
+	var player_id: int = HERO if key.begins_with("hero") else VILLAIN
+	var cards: Array = view.graveyards.get(player_id, [])
+	var zone_name: String = "Graveyard"
+	if key.ends_with("exile"):
+		cards = view.exiles.get(player_id, [])
+		zone_name = "Exile"
+	elif key.ends_with("library"):
+		cards = view.libraries.get(player_id, [])
+		zone_name = "Library"
+	_pile_windows[key].show_cards("%s %s" % [_snapshot.names.possessive(player_id), zone_name], cards, _snapshot, _clicks)
+
+
+## Opens the pile windows a target is only to be found in, closes the ones that were open
+## for a target now chosen, and shows in every open one what its zone holds now. A closed
+## window is filled when it opens, so a redraw pays nothing for it.
+func _show_pile_windows() -> void:
+	var open: Array[String] = []
+	for key: String in _pile_windows:
+		if _pile_windows[key].is_open():
+			open.append(key)
+	_pile_state.follow(_snapshot.decision, _clicks, open)
+	for key: String in _pile_state.to_close:
+		_pile_windows[key].close()
+	for key: String in _pile_state.to_open:
+		_open_pile(key)
+	for key: String in _pile_windows:
+		if _pile_windows[key].is_open():
+			_fill_pile_window(key)
+
+
+## What takes a click on the pile in Region [param key], over its card and its label, and
+## glows while a card in it can be chosen as a target.
+func _add_pile_host(key: String, pile_rect: Rect2) -> void:
+	var card: Vector2 = Vector2(EncounterLayout.PILE_HEIGHT * CardGeometry.ASPECT, EncounterLayout.PILE_HEIGHT)
+	var host: Control = Control.new()
+	host.position = pile_rect.position + Vector2((pile_rect.size.x - card.x) / 2.0, 0)
+	host.size = card
+	host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_board.add_child(host)
+	_pile_hosts[key] = host
+	if _clicks.piles().has(key):
+		BorderEffects.add_glow(host, card, DecisionClicks.color_of(DecisionClicks.Kind.TARGET), _ease_seconds)
+	ClickCatcher.add(host, card + Vector2(0, EncounterLayout.PILE_LABEL)).clicked.connect(_toggle_pile.bind(key))
+
+
 func _toggle_emblems(player_id: int) -> void:
 	var window: ZoneWindow = _emblem_windows[player_id]
 	window.set_open(not window.is_open())
@@ -956,6 +1067,10 @@ func _on_object_clicked(object_id: int) -> void:
 		return
 	if _selection.is_clickable(object_id):
 		if _selection.click(object_id):
+			_error = ""
+			_redraw()
+		elif not _selection.refused().is_empty():
+			_error = _refusal_text(_selection.refused())
 			_redraw()
 		return
 	var options: Array[ClickOption] = _clicks.options_of(object_id)
@@ -963,6 +1078,18 @@ func _on_object_clicked(object_id: int) -> void:
 		_answer(options[0].answer)
 	elif options.size() > 1:
 		_option_menu.open(options, get_local_mouse_position(), _regions["battlefield"])
+
+
+## Why a group of blockers was not assigned: which of them cannot block the attacker
+## clicked (A432).
+func _refusal_text(refused: Array) -> String:
+	var names: Dictionary[int, String] = {}
+	for seen: MmObjectView in _snapshot.visible_objects():
+		names[seen.id] = seen.name
+	var blockers: PackedStringArray = []
+	for pair: Array in refused:
+		blockers.append(names.get(pair[0], "That creature"))
+	return "%s cannot block %s." % [" and ".join(blockers), names.get(refused[0][1], "that attacker")]
 
 
 ## Draws everything from the latest snapshot. Reads nothing else, so it is safe while the
@@ -1002,6 +1129,7 @@ func _redraw() -> void:
 	_steppers.clear()
 	_player_steppers.clear()
 	_pile_labels.clear()
+	_pile_hosts.clear()
 	_banner = null
 	var view: MmPlayerView = _snapshot.view
 	# While the Villain thinks the Hero is asked nothing, so nothing glows or takes a click.
@@ -1009,7 +1137,7 @@ func _redraw() -> void:
 	if _snapshot.payment_left != null and not _snapshot.is_over():
 		# Auto-tap is paying: what it has still to tap glows until its turn comes.
 		glow = DecisionClicks.of_payment(_snapshot.payment_left)
-	# While a blocker is picked up, the attackers it can block glow as targets (A313).
+	# While blockers are picked up, the attackers any of them can block glow as targets (A313, A431).
 	for attacker_id: int in _selection.target_ids():
 		glow.glow_as(attacker_id, DecisionClicks.Kind.TARGET)
 	_clicks = glow
@@ -1048,9 +1176,12 @@ func _redraw() -> void:
 		_draw_library(view.library_sizes.get(player_id, 0), who + "_library", regions[who + "_library"])
 		_draw_pile("Graveyard", view.graveyards.get(player_id, []), who + "_graveyard", regions[who + "_graveyard"])
 		_draw_pile("Exile", view.exiles.get(player_id, []), who + "_exile", regions[who + "_exile"])
+		for zone: String in ["library", "graveyard", "exile"]:
+			_add_pile_host("%s_%s" % [who, zone], regions["%s_%s" % [who, zone]])
 		_fill_emblems_window(view, player_id)
 	_fill_stack_window(view)
 	_fill_choice_window(view)
+	_show_pile_windows()
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
 	_hold_panel.place(regions["hold"])
 	_info.show_option(_release_text())
@@ -1102,6 +1233,9 @@ func _place_windows(battlefield: Rect2) -> void:
 	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN]]:
 		window.bounds = battlefield
 		window.fit()
+	for key: String in _pile_windows:
+		_pile_windows[key].bounds = battlefield
+		_pile_windows[key].fit()
 
 
 ## A player's lands, or their other permanents. Lands of one name stand together.
@@ -1337,13 +1471,13 @@ func _permanent_under(cursor: Vector2) -> int:
 	return -1
 
 
-## What combat input draws on a face: a white outline on the blocker picked up and on the
+## What combat input draws on a face: a white outline on each blocker picked up and on the
 ## creature whose damage is being divided (A313, A325), how much that creature has left to
 ## give, and a stepper on each creature it can give damage to.
 func _add_combat_marks(object_id: int, face: Control, face_size: Vector2) -> void:
 	var divide: DivideCombatDamageDecision = _snapshot.decision as DivideCombatDamageDecision
 	var is_source: bool = divide != null and _selection.is_active() and divide.source_id == object_id
-	if is_source or (object_id == _selection.picked_id() and _selection.is_active()):
+	if is_source or (_selection.is_active() and _selection.picked_ids().has(object_id)):
 		BorderEffects.add_pointer(face, face_size)
 	if divide == null or not _selection.is_active():
 		return
@@ -2134,7 +2268,7 @@ func _fill_stack_window(view: MmPlayerView) -> void:
 	row.add_child(list)
 	for index: int in range(view.stack.size() - 1, -1, -1):
 		var seen: MmObjectView = view.stack[index]
-		var item: StackItem = StackItem.of(seen, view)
+		var item: StackItem = StackItem.of(seen, view, _snapshot.names)
 		var entry: StackEntry = StackEntry.new(_snapshot.look_of(seen.id).art_key, item.first_line, item.second_line,
 			_stack_colors.color_of(seen.id))
 		if not _clicks.options_of(seen.id).is_empty():
@@ -2171,7 +2305,7 @@ func _add_trigger_entries(view: MmPlayerView) -> void:
 	var entries: Array[StackEntry] = []
 	for number: int in decision.abilities.size():
 		var entry: StackEntry = StackEntry.new(_trigger_art(decision, number), _trigger_text(decision, number),
-			StackItem.player_name(decision.player_id), StackColors.PLAIN, true)
+			_snapshot.names.of(decision.player_id), StackColors.PLAIN, true)
 		entry.hovered.connect(_on_trigger_hovered.bind(number))
 		entries.append(entry)
 	_trigger_list = TriggerList.new(entries, _trigger_order.order())
@@ -2261,14 +2395,14 @@ func _fill_choice_window(view: MmPlayerView) -> void:
 	_choice_window.set_open(decision != null)
 	if decision == null:
 		return
-	_choice_window.show_title(ReplacementText.title(decision, view))
+	_choice_window.show_title(ReplacementText.title(decision, view, _snapshot.names))
 	_choice_window.move_to_front()
 	for index: int in decision.options.size():
 		var active: ActiveReplacementEffect = decision.options[index]
 		var source: MmObjectView = ReplacementText.source_of(active, view)
 		var look: CardLook = _snapshot.look_of(source.id) if source != null else null
 		var entry: ZoneEntry = ZoneEntry.new(look.art_key if look != null else "", ReplacementText.source_name(active, view),
-			ReplacementText.effect_text(active, view), StackColors.PLAIN)
+			ReplacementText.effect_text(active, view, _snapshot.names), StackColors.PLAIN)
 		_choice_window.body().add_child(entry)
 		var catcher: ClickCatcher = ClickCatcher.add(entry, entry.size)
 		catcher.clicked.connect(_choose_replacement.bind(index))
@@ -2291,7 +2425,7 @@ func _on_choice_hovered(is_over: bool, index: int) -> void:
 	if not is_over or decision == null:
 		return
 	var active: ActiveReplacementEffect = decision.options[index]
-	_info.show_option("%s — %s" % [ReplacementText.source_name(active, _snapshot.view), ReplacementText.effect_text(active, _snapshot.view)])
+	_info.show_option("%s — %s" % [ReplacementText.source_name(active, _snapshot.view), ReplacementText.effect_text(active, _snapshot.view, _snapshot.names)])
 	var source: MmObjectView = ReplacementText.source_of(active, _snapshot.view)
 	if source != null:
 		_mark_face(source.id, Color.WHITE, false)
@@ -2316,17 +2450,19 @@ func _small_label(text: String) -> Label:
 
 func _fill_emblems_window(view: MmPlayerView, player_id: int) -> void:
 	var window: ZoneWindow = _emblem_windows[player_id]
+	var view_names: PlayerNames = _snapshot.names
 	window.clear()
 	var count: int = 0
 	for emblem: MmObjectView in view.command:
 		if emblem.controller_id != player_id:
 			continue
 		count += 1
-		var kinds: Array[String] = []
-		for ability: MmAbility in emblem.abilities:
-			kinds.append("Triggered ability" if ability is TriggeredAbility else ("Activated ability" if ability is ActivatedAbility else "Static ability"))
-		window.body().add_child(ZoneEntry.new("", emblem.name, ", ".join(kinds), PlayerPanel.GOLD))
-	window.show_count(count)
+		# Its rules text on one line, cut where the window ends; widening the window shows more.
+		var text: String = AbilityText.of_card(emblem.abilities, emblem.card_types, emblem.supertypes, emblem.name)
+		var entry: ZoneEntry = ZoneEntry.new("", emblem.name, text.replace("\n", " · "), PlayerPanel.GOLD)
+		entry.cut_detail()
+		window.body().add_child(entry)
+	window.show_title("%s Emblems (%d)" % [view_names.possessive(player_id), count])
 
 
 func _draw_banner(view: MmPlayerView) -> void:
@@ -2334,7 +2470,7 @@ func _draw_banner(view: MmPlayerView) -> void:
 	if not _snapshot.is_draw():
 		var loser: int = VILLAIN if view.winner_id == HERO else HERO
 		var reason: String = LOSS_REASONS.get(view.loss_reasons.get(loser, MmPlayer.LossReason.NONE), "lost")
-		text = "%s\nThe %s %s." % ["Victory" if view.winner_id == HERO else "Defeat", "Villain" if loser == VILLAIN else "Hero", reason]
+		text = "%s\n%s %s." % ["Victory" if view.winner_id == HERO else "Defeat", _snapshot.names.starting(loser), reason]
 	var box: Panel = CardShapes.rounded(Vector2(620, 240), 12, Color(0.05, 0.05, 0.07, 0.95))
 	box.position = (size - box.size) / 2.0
 	box.mouse_filter = Control.MOUSE_FILTER_STOP

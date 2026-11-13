@@ -42,7 +42,7 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 	# A payment Auto-tap is making asks nothing, but says what is owed and can be canceled.
 	var is_asked: bool = (snapshot.decision != null or snapshot.paying != null) and not snapshot.is_over()
 	var prompt: InfoPrompt = InfoPrompt.of(snapshot.decision if is_asked else null, snapshot.view,
-			snapshot.paying if is_asked else null)
+			snapshot.paying if is_asked else null, snapshot.names)
 	_back = CardShapes.rounded(box.size, 8, Color("#2c323c"))
 	_back.modulate.a = 1.0 if is_asked else DIM
 	add_child(_back)

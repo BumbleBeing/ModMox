@@ -79,14 +79,14 @@ func test_all_attack_chooses_every_candidate_without_confirming() -> void:
 func test_a_blocker_is_picked_up_then_paired_with_the_attacker_clicked() -> void:
 	var decision: DeclareBlockersDecision = _blocks()
 	var selection: CombatSelection = CombatSelection.new(decision)
-	assert_eq(selection.picked_id(), CombatSelection.NONE)
+	assert_eq(selection.picked_ids(), [] as Array[int])
 	assert_eq(selection.confirm_text(), "No blocks")
-	assert_eq(selection.hint(), "Click a creature, then the attacker it blocks.")
+	assert_eq(selection.hint(), "Click one or more creatures, then the attacker they block.")
 	assert_false(selection.is_clickable(20), "An attacker is clicked only for a blocker that is picked up.")
 
 	assert_true(selection.click(1))
 
-	assert_eq(selection.picked_id(), 1)
+	assert_eq(selection.picked_ids(), [1] as Array[int])
 	assert_eq(selection.target_ids(), [20, 22] as Array[int], "Only what this blocker can block.")
 	assert_true(selection.is_clickable(22))
 	assert_false(selection.is_clickable(21))
@@ -95,7 +95,7 @@ func test_a_blocker_is_picked_up_then_paired_with_the_attacker_clicked() -> void
 	assert_true(selection.click(22))
 
 	assert_eq(selection.pairs(), [[1, 22]])
-	assert_eq(selection.picked_id(), CombatSelection.NONE, "Paired, it is put down.")
+	assert_eq(selection.picked_ids(), [] as Array[int], "Paired, it is put down.")
 	assert_true(selection.is_chosen(1))
 	assert_eq(selection.blocks_of(1), [22] as Array[int])
 	assert_eq(selection.confirm_text(), "Confirm blocks")
@@ -110,7 +110,7 @@ func test_a_blocker_cannot_be_paired_with_an_attacker_it_cannot_block() -> void:
 	assert_false(selection.click(21), "Only the Spider reaches the flyer.")
 
 	assert_eq(selection.pairs().size(), 0)
-	assert_eq(selection.picked_id(), 1)
+	assert_eq(selection.picked_ids(), [1] as Array[int])
 
 
 func test_one_click_on_a_blocking_creature_takes_it_off() -> void:
@@ -122,7 +122,7 @@ func test_one_click_on_a_blocking_creature_takes_it_off() -> void:
 	assert_true(selection.click(1))
 
 	assert_eq(selection.pairs().size(), 0, "It no longer blocks.")
-	assert_eq(selection.picked_id(), CombatSelection.NONE, "And it is not picked up: the next click on it starts over.")
+	assert_eq(selection.picked_ids(), [] as Array[int], "And it is not picked up: the next click on it starts over.")
 	assert_false(selection.is_chosen(1))
 	assert_eq(decision.validate(selection.answer()), "")
 
@@ -141,22 +141,140 @@ func test_taking_one_blocker_off_leaves_the_one_picked_up_in_hand() -> void:
 	selection.click(1)
 
 	assert_eq(selection.pairs().size(), 0)
-	assert_eq(selection.picked_id(), 2)
+	assert_eq(selection.picked_ids(), [2] as Array[int])
 
 
-func test_several_blockers_can_block_one_attacker_and_picking_another_blocker_swaps_hands() -> void:
+func test_blockers_clicked_one_after_another_are_picked_up_together_and_paired_with_one_click() -> void:
 	var decision: DeclareBlockersDecision = _blocks()
 	var selection: CombatSelection = CombatSelection.new(decision)
 
 	selection.click(1)
+	selection.click(3)
+
+	assert_eq(selection.picked_ids(), [1, 3] as Array[int], "The second joins the first (A430).")
+	assert_false(selection.is_chosen(1), "Picked up is not yet blocking.")
+	assert_eq(selection.pairs().size(), 0)
+
+	assert_true(selection.click(22))
+
+	assert_eq(selection.pairs(), [[1, 22], [3, 22]])
+	assert_eq(selection.picked_ids(), [] as Array[int], "Paired, they are all put down.")
+	assert_eq(selection.refused().size(), 0)
+	assert_eq(decision.validate(selection.answer()), "")
+
+
+func test_a_blocker_can_join_one_that_already_blocks_an_attacker() -> void:
+	var decision: DeclareBlockersDecision = _blocks()
+	var selection: CombatSelection = CombatSelection.new(decision)
 	selection.click(2)
-	assert_eq(selection.picked_id(), 2, "The second blocker is in hand now; the first was just put down.")
 	selection.click(22)
+
 	selection.click(1)
 	selection.click(22)
 
 	assert_eq(selection.pairs(), [[2, 22], [1, 22]])
 	assert_eq(decision.validate(selection.answer()), "")
+
+
+func test_a_group_glows_every_attacker_any_of_it_can_block() -> void:
+	var selection: CombatSelection = CombatSelection.new(_blocks())
+
+	selection.click(1)
+	assert_eq(selection.target_ids(), [20, 22] as Array[int])
+	selection.click(2)
+
+	assert_eq(selection.target_ids(), [20, 21, 22] as Array[int], "The Spider reaches the flyer (A431).")
+	assert_true(selection.is_clickable(21))
+
+
+func test_a_group_with_a_blocker_that_cannot_block_the_attacker_is_refused_whole() -> void:
+	var selection: CombatSelection = CombatSelection.new(_blocks())
+	selection.click(1)
+	selection.click(2)
+	selection.click(3)
+
+	assert_false(selection.click(21), "Blockers 1 and 3 cannot block the flyer (A432).")
+
+	assert_eq(selection.refused(), [[1, 21], [3, 21]], "It says which blocks were illegal.")
+	assert_eq(selection.pairs().size(), 0, "Nothing is paired, not even the Spider.")
+	assert_eq(selection.picked_ids(), [1, 2, 3] as Array[int], "The group stays picked up.")
+	assert_eq(selection.confirm_text(), "No blocks")
+
+	assert_true(selection.undo(), "The refused click was no change: undo takes back the last pick-up.")
+	assert_eq(selection.picked_ids(), [1, 2] as Array[int])
+	assert_eq(selection.refused().size(), 0)
+
+
+func test_the_refusal_is_forgotten_at_the_next_click() -> void:
+	var selection: CombatSelection = CombatSelection.new(_blocks())
+	selection.click(1)
+	selection.click(2)
+	selection.click(21)
+	assert_eq(selection.refused().size(), 1)
+
+	assert_true(selection.click(22))
+
+	assert_eq(selection.refused().size(), 0)
+	assert_eq(selection.pairs(), [[1, 22], [2, 22]])
+
+
+func test_a_group_is_refused_when_one_of_it_has_no_block_to_spare() -> void:
+	var decision: DeclareBlockersDecision = DeclareBlockersDecision.new(HERO, [1, 2] as Array[int], [20, 21, 22] as Array[int],
+		{1: [20, 21, 22], 2: [20, 21, 22]} as Dictionary[int, Array], {1: 2, 2: 1} as Dictionary[int, int])
+	var selection: CombatSelection = CombatSelection.new(decision)
+	selection.click(1)
+	selection.click(20)
+	selection.click(21)
+	selection.click(2)
+
+	assert_false(selection.click(22), "Blocker 1 already blocks its two.")
+
+	assert_eq(selection.refused(), [[1, 22]])
+	assert_eq(selection.pairs(), [[1, 20], [1, 21]])
+
+	assert_true(selection.click(21), "One it blocks already is left as it is.")
+
+	assert_eq(selection.pairs(), [[1, 20], [1, 21], [2, 21]])
+	assert_eq(decision.validate(selection.answer()), "")
+
+
+func test_clicking_one_of_the_group_puts_only_that_one_down() -> void:
+	var selection: CombatSelection = CombatSelection.new(_blocks())
+	selection.click(1)
+	selection.click(2)
+	selection.click(3)
+
+	assert_true(selection.click(2))
+
+	assert_eq(selection.picked_ids(), [1, 3] as Array[int], "The rest stay in hand (A433).")
+	assert_eq(selection.target_ids(), [20, 22] as Array[int])
+
+
+func test_a_click_on_empty_board_puts_the_whole_group_down() -> void:
+	var selection: CombatSelection = CombatSelection.new(_blocks())
+	selection.click(1)
+	selection.click(2)
+
+	assert_true(selection.put_down())
+
+	assert_eq(selection.picked_ids(), [] as Array[int], "A434.")
+	assert_eq(selection.pairs().size(), 0)
+
+
+func test_undo_takes_a_group_pairing_back_in_one_and_then_each_pick_up() -> void:
+	var selection: CombatSelection = CombatSelection.new(_blocks())
+	selection.click(1)
+	selection.click(2)
+	selection.click(22)
+
+	assert_true(selection.undo())
+
+	assert_eq(selection.pairs().size(), 0, "The whole pairing is one click (A435).")
+	assert_eq(selection.picked_ids(), [1, 2] as Array[int])
+
+	assert_true(selection.undo())
+
+	assert_eq(selection.picked_ids(), [1] as Array[int])
 
 
 func test_a_click_on_empty_board_puts_the_blocker_down_unassigned() -> void:
@@ -166,11 +284,11 @@ func test_a_click_on_empty_board_puts_the_blocker_down_unassigned() -> void:
 	assert_false(selection.put_down(), "Nothing is picked up.")
 	selection.click(1)
 	selection.click(22)
-	assert_eq(selection.picked_id(), 1, "One that may block two stays picked up.")
+	assert_eq(selection.picked_ids(), [1] as Array[int], "One that may block two stays picked up.")
 
 	assert_true(selection.put_down())
 
-	assert_eq(selection.picked_id(), CombatSelection.NONE)
+	assert_eq(selection.picked_ids(), [] as Array[int])
 	assert_eq(selection.pairs().size(), 0)
 	assert_false(CombatSelection.new(_attack()).put_down())
 
@@ -182,7 +300,7 @@ func test_a_blocker_that_may_block_two_switches_pairings_and_stops_at_its_limit(
 
 	selection.click(1)
 	selection.click(20)
-	assert_eq(selection.picked_id(), 1, "It stays picked up for its second block (A323).")
+	assert_eq(selection.picked_ids(), [1] as Array[int], "It stays picked up for its second block (A323).")
 	selection.click(22)
 
 	assert_eq(selection.pairs(), [[1, 20], [1, 22]])
@@ -314,15 +432,15 @@ func test_undo_takes_back_one_click_at_a_time_and_says_when_there_is_none() -> v
 	selection.click(2)
 
 	assert_true(selection.undo())
-	assert_eq(selection.picked_id(), CombatSelection.NONE)
+	assert_eq(selection.picked_ids(), [] as Array[int])
 	assert_eq(selection.pairs(), [[1, 22]])
 
 	assert_true(selection.undo())
-	assert_eq(selection.picked_id(), 1)
+	assert_eq(selection.picked_ids(), [1] as Array[int])
 	assert_eq(selection.pairs().size(), 0)
 
 	assert_true(selection.undo())
-	assert_eq(selection.picked_id(), CombatSelection.NONE)
+	assert_eq(selection.picked_ids(), [] as Array[int])
 	assert_false(selection.undo())
 
 

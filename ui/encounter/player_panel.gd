@@ -34,6 +34,8 @@ const STOP_COLOR: Color = Color("#2f8f46")
 const PLAIN_COLOR: Color = Color("#3a414d")
 const NOW_COLOR: Color = Color("#f3e9a0")
 const THINKING: String = "The Villain is thinking…"
+## The same for a Villain with a name of their own.
+const THINKING_FORMAT: String = "%s is thinking…"
 const PASS: String = "Pass [SPACE]"
 
 ## How long a Glow or the priority outline takes to ease in or out; the Encounter Screen
@@ -61,10 +63,11 @@ var _pass: Button = null
 var _undo: Button = null
 var _yield: Button = null
 var _thinking: Label = null
+var _name: Label = null
 var _portrait: Panel = null
 
 
-## [param title] is the player's name as the panel shows it.
+## [param title] is what the panel calls its player until a snapshot names them.
 func _init(player_id: int, title: String) -> void:
 	_player_id = player_id
 	_title = title
@@ -103,6 +106,7 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 				amount += 1
 		_show_mana(type, amount)
 
+	_set_label(_name, snapshot.names.of(_player_id).to_upper())
 	var emblem_count: int = 0
 	for emblem: MmObjectView in view.command:
 		if emblem.controller_id == _player_id:
@@ -121,6 +125,7 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 		_set_text(_yield, ("☑" if is_yielding else "☐") + "  Yield Turn")
 	else:
 		_thinking.visible = snapshot.is_villain_thinking
+		_set_label(_thinking, THINKING_FORMAT % snapshot.names.starting(_player_id))
 
 
 ## While a combat decision is being answered the pass button confirms it instead: it reads
@@ -154,6 +159,11 @@ func undo_button() -> Button:
 
 func yield_button() -> Button:
 	return _yield
+
+
+## The player's name as the panel shows it, in capitals.
+func name_text() -> String:
+	return _name.text
 
 
 ## What the panel says about its player thinking: THINKING on the Villain's while they
@@ -234,7 +244,8 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 	add_child(CardShapes.rounded(panel_size, 8, Color("#2c323c")))
 	_outline = CardShapes.outline(panel_size, 8, 3, NOW_COLOR)
 	add_child(_outline)
-	add_child(_label(_title, parts["name"], 22))
+	_name = _label(_title, parts["name"], 22)
+	add_child(_name)
 	_portrait = CardShapes.rounded(parts["portrait"].size, 8, Color("#444c5a"))
 	_portrait.position = parts["portrait"].position
 	add_child(_portrait)
@@ -426,3 +437,9 @@ func _add_step_button(box: Rect2, step: int) -> void:
 	_steps.append(button)
 	# No look yet: show_snapshot() gives it its first.
 	_step_looks.append(-1)
+
+
+## Changes a label's text only when it differs, since laying text out is not free.
+static func _set_label(label: Label, text: String) -> void:
+	if label.text != text:
+		label.text = text

@@ -146,6 +146,72 @@ func test_counterspell_counters_a_spell_so_it_never_resolves() -> void:
 	assert_eq(Scenario.names(engine, hero.graveyard), ["Ancestral Recall", "Counterspell"])
 
 
+func test_raise_dead_is_a_black_sorcery_for_one_black_mana() -> void:
+	var printed: MmCharacteristics = MmCharacteristics.printed(_alpha("raise_dead"))
+
+	assert_eq(printed.name, "Raise Dead")
+	assert_eq(printed.card_types, [MmCardTypes.CardType.SORCERY])
+	assert_eq(printed.colors, [MmCardTypes.CardColor.BLACK])
+	assert_eq(printed.mana_cost.generic, 0)
+	assert_eq(printed.mana_cost.symbols, [MmMana.Type.BLACK] as Array[MmMana.Type])
+
+
+func test_raise_dead_returns_a_creature_card_from_its_casters_graveyard() -> void:
+	var zombies: MmCardDefinition = Scenario.free_copy(_alpha("scathe_zombies"))
+	var cards: Array[MmCardDefinition] = Scenario.cycled([_alpha("swamp"), _alpha("raise_dead"), zombies, Scenario.free_destroy("Doom")])
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		func(running: MmEngine) -> bool:
+			if not Scenario.ready_in_main(running, 1, 1, "Raise Dead"):
+				return false
+			var held: Array[String] = Scenario.names(running, running.hero().hand)
+			return held.count("Scathe Zombies") == 1 and held.has("Doom"))
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero: MmPlayer = engine.hero()
+	var raise: int = Scenario.card_in_hand(engine, hero, "Raise Dead")
+	assert_false(Scenario.offers_cast(engine, raise), "There is no creature card in the graveyard yet.")
+	Scenario.cast_and_resolve(engine, "Scathe Zombies")
+	Scenario.cast_and_resolve(engine, "Doom", [MmReference.to_object(Scenario.permanent_named(engine, hero.id, "Scathe Zombies"))])
+	var dead: int = Scenario.card_in_graveyard(engine, hero, "Scathe Zombies")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Raise Dead", [MmReference.to_object(dead)]), "")
+
+	assert_eq(Scenario.names(engine, hero.hand).count("Scathe Zombies"), 1)
+	assert_eq(Scenario.names(engine, hero.graveyard), ["Doom", "Raise Dead"])
+
+
+func test_stifle_is_a_blue_instant_for_one_blue_mana() -> void:
+	var printed: MmCharacteristics = MmCharacteristics.printed(_card("scourge", "stifle"))
+
+	assert_eq(printed.name, "Stifle")
+	assert_eq(printed.card_types, [MmCardTypes.CardType.INSTANT])
+	assert_eq(printed.colors, [MmCardTypes.CardColor.BLUE])
+	assert_eq(printed.mana_cost.generic, 0)
+	assert_eq(printed.mana_cost.symbols, [MmMana.Type.BLUE] as Array[MmMana.Type])
+
+
+func test_stifle_counters_a_triggered_ability_so_it_never_resolves() -> void:
+	var greeter: MmCardDefinition = Scenario.creature("Greeter", 1, 1,
+		[Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.gain_life(5, Scenario.you())])])
+	var cards: Array[MmCardDefinition] = Scenario.cycled([_alpha("island"), _card("scourge", "stifle"), greeter])
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		func(running: MmEngine) -> bool:
+			return Scenario.ready_in_main(running, 1, 1, "Stifle") and Scenario.card_in_hand(running, running.hero(), "Greeter") != -1)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero: MmPlayer = engine.hero()
+	var stifle: int = Scenario.card_in_hand(engine, hero, "Stifle")
+	Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Greeter"))
+	assert_false(Scenario.offers_cast(engine, stifle), "A creature spell is not an ability.")
+	Scenario.pass_priority(engine)
+	Scenario.pass_priority(engine)
+	var trigger: int = engine.view_for(hero).stack[0].id
+
+	assert_eq(Scenario.cast(engine, stifle, [MmReference.to_object(trigger)]), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(hero.life, 20, "The Greeter's trigger never resolved.")
+	assert_eq(Scenario.names(engine, hero.graveyard), ["Stifle"])
+
+
 func test_dark_ritual_adds_three_black_mana_when_it_resolves() -> void:
 	var engine: MmEngine = _hero_ready_to_cast(_alpha("dark_ritual"), "swamp")
 
@@ -741,6 +807,19 @@ func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:
 		assert_eq(lands, 17, deck_name)
 
 
+func test_the_decks_hold_two_raise_dead_and_two_stifle() -> void:
+	assert_eq(_copies_in("white_black", "Raise Dead"), 2)
+	assert_eq(_copies_in("blue_red", "Stifle"), 2)
+
+
+func _copies_in(deck_name: String, card_name: String) -> int:
+	var count: int = 0
+	for run_card: MmRunCard in (load("res://content/decks/%s.tres" % deck_name) as MmPlayerSetup).deck:
+		if run_card.base.name == card_name:
+			count += 1
+	return count
+
+
 ## [param creature] on the Hero's battlefield since Game Turn 1, stopped in the Hero's
 ## main phase once they control [param land_count] of the land [param land_file], holding
 ## [param extras].
@@ -767,7 +846,12 @@ func _ready_with_lands(creature: MmCardDefinition, land_file: String, land_count
 
 
 func _alpha(file_name: String) -> MmCardDefinition:
-	return load("%s/alpha/%s.tres" % [CONTENT_ROOT, file_name]) as MmCardDefinition
+	return _card("alpha", file_name)
+
+
+## The authored card [param file_name] of the set in folder [param set_name].
+func _card(set_name: String, file_name: String) -> MmCardDefinition:
+	return load("%s/%s/%s.tres" % [CONTENT_ROOT, set_name, file_name]) as MmCardDefinition
 
 
 ## The Hero in their first main phase with one basic land of [param land_file] in play and

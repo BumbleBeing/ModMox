@@ -16,7 +16,7 @@ enum Tag {
 	## Deals damage or destroys: considered in its controller's main phases, once blockers
 	## are declared, in response to a spell, and in the other player's end step.
 	REMOVAL,
-	## Counters a spell: considered only with the other player's spell or ability on top
+	## Counters a spell or an ability: considered only with the other player's spell or ability on top
 	## of the stack, never to counter its own.
 	COUNTER,
 }

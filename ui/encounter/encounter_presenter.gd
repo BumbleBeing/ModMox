@@ -32,6 +32,8 @@ const NO_TURN: int = -1
 
 ## The steps auto-pass stops at. Change them with toggle_stop().
 var stops: StepStops = StepStops.new()
+## What each player is called, handed on in every snapshot. Set it before start().
+var names: PlayerNames = PlayerNames.new()
 ## Whether the Hold Key is down, which the screen keeps this equal to. While it is, nothing
 ## is passed for the Hero: not by auto-pass, not by a Yield, and not after their own spell
 ## or ability goes on the stack.
@@ -527,6 +529,7 @@ func _emit() -> void:
 	made.can_undo = _engine.can_undo() and not _is_paying_for_hero
 	made.is_holding_priority = _is_holding
 	made.is_rewind = _is_rewinding
+	made.names = names
 	if _is_paying_for_hero:
 		made.paying = _engine.pending_decision() as PayManaDecision
 		made.payment_left = _payment_left.copy()

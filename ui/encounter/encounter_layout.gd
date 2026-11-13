@@ -355,6 +355,22 @@ static func ease_weight(per_frame: float, delta: float) -> float:
 	return 1.0 - pow(1.0 - per_frame, delta * 60.0)
 
 
+## Where the Zone Window of the pile at [param pile] first opens: to the left of it, level
+## with it, each one [param step] windows further in and higher than the first so that
+## two never open exactly over each other. The window is then fitted inside its bounds.
+static func pile_window_position(pile: Rect2, window_size: Vector2, step: int) -> Vector2:
+	return Vector2(pile.position.x - window_size.x - GUTTER - 36.0 * step, pile.position.y - 20.0 * step)
+
+
+## The keys of every pile's Region, the Villain's first, top to bottom as they are drawn.
+static func pile_keys() -> Array[String]:
+	var keys: Array[String] = []
+	for who: String in ["villain", "hero"]:
+		for zone: String in ["library", "graveyard", "exile"]:
+			keys.append("%s_%s" % [who, zone])
+	return keys
+
+
 ## The Region of a player's pile for the zone of [param zone_kind] (a library, graveyard or
 ## exile): "hero_graveyard", "villain_library".
 static func pile_key(zone_kind: MmZone.Kind, is_hero: bool) -> String:

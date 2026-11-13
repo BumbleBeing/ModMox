@@ -11,12 +11,16 @@ var hero_deck: String = "red_green"
 var villain_deck: String = "white_black"
 var encounter_seed: int = 1
 var difficulty: String = "easy"
+## What each player is called; "" for a player who goes by their part.
+var hero_name: String = ""
+var villain_name: String = ""
 ## Gives each player one sample Emblem, so the Emblems windows have something to show.
 var has_sample_emblems: bool = false
 
 
 ## The request in [param arguments], as passed after "--" on the command line, such as
-## --hero=red_green --villain=white_black --seed=7 --difficulty=normal --emblems. Null when
+## --hero=red_green --villain=white_black --seed=7 --difficulty=normal --emblems
+## --hero-name=Jackson --villain-name=Mishra. Null when
 ## they name no deck and no seed, which means "show the start form".
 static func from_arguments(arguments: PackedStringArray) -> EncounterRequest:
 	var request: EncounterRequest = EncounterRequest.new()
@@ -33,6 +37,10 @@ static func from_arguments(arguments: PackedStringArray) -> EncounterRequest:
 			is_asked_for = true
 		elif argument.begins_with("--difficulty="):
 			request.difficulty = argument.trim_prefix("--difficulty=")
+		elif argument.begins_with("--hero-name="):
+			request.hero_name = argument.trim_prefix("--hero-name=")
+		elif argument.begins_with("--villain-name="):
+			request.villain_name = argument.trim_prefix("--villain-name=")
 		elif argument == "--emblems":
 			request.has_sample_emblems = true
 	return request if is_asked_for else null
@@ -74,6 +82,11 @@ func setup() -> MmEncounterSetup:
 		encounter.villain = encounter.villain.duplicate() as MmPlayerSetup
 		encounter.villain.emblems = [_sample_emblem("Sample Hex: Ankh's Curse", "ankh_of_mishra")] as Array[MmCardDefinition]
 	return encounter
+
+
+## What each player is called on the screen.
+func names() -> PlayerNames:
+	return PlayerNames.new(hero_name, villain_name)
 
 
 ## The Agent that plays the Villain, at this request's difficulty.

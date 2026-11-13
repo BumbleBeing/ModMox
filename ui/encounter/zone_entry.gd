@@ -43,6 +43,18 @@ func _init(art_key: String, entry_name: String, detail: String, tint: Color) -> 
 	lines.add_child(_detail)
 
 
+## Keeps the line under the name to one line, cut with an ellipsis where the entry ends.
+func cut_detail() -> void:
+	_detail.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_detail.clip_text = true
+	_detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+
+
+## Whether the line under the name is cut with an ellipsis instead of wrapping.
+func is_detail_cut() -> bool:
+	return _detail.text_overrun_behavior == TextServer.OVERRUN_TRIM_ELLIPSIS
+
+
 func name_text() -> String:
 	return _name.text
 

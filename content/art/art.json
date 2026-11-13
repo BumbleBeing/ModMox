@@ -299,6 +299,16 @@
 		"scryfall_id": "e4dc1103-7bf1-47f6-9006-d3ed9ccd7a6a",
 		"set": "lea"
 	},
+	"raise_dead": {
+		"artist": "Jeff A. Menges",
+		"collector_number": "122",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "ce07bede-2219-427c-a61a-56518751de42",
+		"set": "lea"
+	},
 	"samite_healer": {
 		"artist": "Tom Wänerstrand",
 		"collector_number": "37",
@@ -358,6 +368,16 @@
 		],
 		"scryfall_id": "fefbf149-f988-4f8b-9f53-56f5878116a6",
 		"set": "lea"
+	},
+	"stifle": {
+		"artist": "Dany Orizio",
+		"collector_number": "52",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "2d7643c0-b2db-478f-944e-b27b77bad3eb",
+		"set": "scg"
 	},
 	"swamp": {
 		"artist": "Dan Frazier",

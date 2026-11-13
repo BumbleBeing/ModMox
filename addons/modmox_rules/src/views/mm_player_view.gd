@@ -22,6 +22,10 @@ var command: Array[MmObjectView] = []
 var mana_pools: Dictionary[int, Array] = {}
 var hand_sizes: Dictionary[int, int] = {}
 var library_sizes: Dictionary[int, int] = {}
+## Each library top first, by player ID, with one entry for each card: an MmObjectView for
+## a card this view's player knows, such as one they put on the bottom, and null for any
+## other. Libraries are hidden (CR 401.2).
+var libraries: Dictionary[int, Array] = {}
 var life_totals: Dictionary[int, int] = {}
 ## The shields and other replacement effects locked to each player, by player ID (A140).
 var player_replacement_effects: Dictionary[int, Array] = {}
@@ -70,6 +74,10 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		view.exiles[player.id] = exiled
 		view.hand_sizes[player.id] = player.hand.size()
 		view.library_sizes[player.id] = player.library.size()
+		var library: Array[MmObjectView] = []
+		for card: MmGameObject in player.library.objects():
+			library.append(MmObjectView.of(state, card) if card.is_known_to(viewing_player_id) else null)
+		view.libraries[player.id] = library
 		view.life_totals[player.id] = player.life
 		view.mana_pools[player.id] = player.mana_pool()
 		var on_player: Array[ActiveReplacementEffect] = []

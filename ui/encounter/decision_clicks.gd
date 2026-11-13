@@ -41,6 +41,10 @@ var player_answers: Dictionary[int, int] = {}
 ## spend from the pool.
 var pool_marks: Array[MmMana.Type] = []
 
+## The Regions of the piles that hold a card a click answers on, the Hero's first, and how
+## many answers are not in any pile.
+var _piles: Array[String] = []
+var _answers_elsewhere: int = 0
 ## Game Object ID → the ClickOptions clicking it offers, in answer order.
 var _options: Dictionary[int, Array] = {}
 ## Game Object ID of a card in hand → the ClickOptions playing it offers, in answer order.
@@ -87,6 +91,7 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 			else:
 				clicks.glow_as(candidates[index].id, Kind.TARGET)
 				clicks._options[candidates[index].id] = [ClickOption.new(index, "Target")]
+		clicks._find_piles(candidates, view)
 	elif decision is DivideCombatDamageDecision:
 		clicks._add_references((decision as DivideCombatDamageDecision).recipients, Kind.TARGET)
 	elif decision is DeclareBlockersDecision:
@@ -98,6 +103,18 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 	return clicks
 
 
+## The Regions of the piles holding a card that a click answers on, such as
+## "hero_graveyard": each glows, and its Zone Window is where the card is clicked.
+func piles() -> Array[String]:
+	return _piles
+
+
+## Whether every answer is a card in a pile, so that nothing on the board can be clicked
+## and the windows of those piles open by themselves.
+func is_only_in_piles() -> bool:
+	return not _piles.is_empty() and _answers_elsewhere == 0
+
+
 ## What glows while Auto-tap (game glossary) is paying for the Hero, a tap at a time: the
 ## sources [param left] has still to tap, and the pool mana it has still to spend. Nothing
 ## takes a click.
@@ -107,6 +124,24 @@ static func of_payment(left: PaymentPlan) -> DecisionClicks:
 		clicks.glow_as(object_id, Kind.MANA)
 	clicks.pool_marks = left.pool_types.duplicate()
 	return clicks
+
+
+## Finds which piles [param candidates] are in. Only a graveyard can hold one so far.
+func _find_piles(candidates: Array[MmReference], view: MmPlayerView) -> void:
+	var found: Dictionary[String, bool] = {}
+	for candidate: MmReference in candidates:
+		var key: String = ""
+		for player_id: int in view.graveyards:
+			for card: MmObjectView in view.graveyards[player_id]:
+				if candidate.is_object() and card.id == candidate.id:
+					key = EncounterLayout.pile_key(MmZone.Kind.GRAVEYARD, player_id == view.viewer_id)
+		if key == "":
+			_answers_elsewhere += 1
+		else:
+			found[key] = true
+	for key: String in ["hero_graveyard", "villain_graveyard"]:
+		if found.has(key):
+			_piles.append(key)
 
 
 ## The Game Object [param action] is about, or -1 for one about none (passing, or spending

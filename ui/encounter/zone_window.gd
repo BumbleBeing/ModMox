@@ -17,6 +17,7 @@ var ease_seconds: float = 0.0
 var _zone_name: String
 var _title: Label
 var _body: VBoxContainer
+var _scroll: ScrollContainer
 var _close: Button = null
 var _is_dragging: bool = false
 var _is_resizing: bool = false
@@ -79,6 +80,7 @@ func _init(zone_name: String, can_close: bool, tint: Color) -> void:
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.add_theme_constant_override("separation", 6)
 	scroll.add_child(_body)
+	_scroll = scroll
 	var grip: ColorRect = ColorRect.new()
 	grip.color = Color(tint, 0.8)
 	grip.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -93,6 +95,11 @@ func _init(zone_name: String, can_close: bool, tint: Color) -> void:
 ## Where the window's contents go.
 func body() -> VBoxContainer:
 	return _body
+
+
+## What scrolls the window's contents when they overflow.
+func scroll() -> ScrollContainer:
+	return _scroll
 
 
 ## Shows the window, easing in.

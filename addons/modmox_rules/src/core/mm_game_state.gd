@@ -417,6 +417,8 @@ func fingerprint() -> String:
 				game_object.triggering_object_id, ",".join(target_text)])
 			if game_object.was_dealt_deathtouch_damage:
 				entries.append("deathtouch damage on %d" % game_object.id)
+			if not game_object.known_to_player_ids.is_empty():
+				entries.append("%d known to %s" % [game_object.id, game_object.known_to_player_ids])
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 

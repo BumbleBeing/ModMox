@@ -23,7 +23,8 @@ static func release_text(option_text: String) -> String:
 ## null decision (nobody is asking them anything) has no text, and nor has one answered on
 ## the opening-hand overlay, which says everything itself and covers the panel. With no
 ## decision and [param paying], the payment Auto-tap is making, it says what is being paid.
-static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaDecision = null) -> InfoPrompt:
+static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaDecision = null,
+		names: PlayerNames = null) -> InfoPrompt:
 	var prompt: InfoPrompt = InfoPrompt.new()
 	if decision == null and paying != null:
 		prompt.text = "Paying for %s" % stack_name(view, view.stack.back().id if not view.stack.is_empty() else -1)
@@ -33,7 +34,9 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 	if decision == null:
 		return prompt
 	if decision is PriorityDecision:
-		var whose: String = "your turn" if view.active_player_id == view.viewer_id else "the Villain's turn"
+		var called: PlayerNames = names if names != null else PlayerNames.new()
+		var whose: String = "your turn" if view.active_player_id == view.viewer_id \
+				else called.the_possessive(view.active_player_id) + " turn"
 		var step: String = PlayerPanel.STEP_NAMES[view.step] if view.step >= 0 else ""
 		prompt.text = "Your priority\n%s, %s" % [step, whose] if step != "" else "Your priority"
 	elif decision is PayManaDecision:

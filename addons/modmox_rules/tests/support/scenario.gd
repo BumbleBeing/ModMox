@@ -1105,3 +1105,57 @@ static func stack_ids(engine: MmEngine) -> Array[int]:
 	for item: MmGameObject in engine.game_state().stack.objects():
 		ids.push_front(item.id)
 	return ids
+
+
+# --- Milestone 13f: graveyard targets and countering abilities -------------------------
+
+
+## "Target card in a graveyard", or "target [filter] card in a graveyard".
+static func target_graveyard_card(filter: MmFilter = null) -> TargetSpec:
+	var spec: TargetSpec = target(filter)
+	spec.among = TargetSpec.Among.GRAVEYARD_CARDS
+	return spec
+
+
+## "Target activated or triggered ability".
+static func target_ability() -> TargetSpec:
+	var spec: TargetSpec = target(null)
+	spec.among = TargetSpec.Among.ABILITIES
+	return spec
+
+
+static func owned_by(whose: MmTrigger.Whose) -> OwnedByFilter:
+	var filter: OwnedByFilter = OwnedByFilter.new()
+	filter.whose = whose
+	return filter
+
+
+static func return_to_hand(selection: MmSelection) -> ReturnToHandEffect:
+	var effect: ReturnToHandEffect = ReturnToHandEffect.new()
+	effect.selection = selection
+	return effect
+
+
+## "Target creature card in your graveyard."
+static func your_dead_creature() -> TargetSpec:
+	return target_graveyard_card(all_of([of_type(MmCardTypes.CardType.CREATURE), owned_by(MmTrigger.Whose.YOU)]))
+
+
+## An instant costing {0}: "Return target creature card from your graveyard to your hand."
+## An instant, unlike Raise Dead, so that a test can answer one with another.
+static func free_raise(card_name: String) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [your_dead_creature()], [return_to_hand(targeted(0))])
+
+
+## An instant costing {0}: "Counter target activated or triggered ability."
+static func free_stifle(card_name: String) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target_ability()], [counter(targeted(0))])
+
+
+## The object ID of the first card named [param card_name] in [param player]'s graveyard,
+## or -1.
+static func card_in_graveyard(engine: MmEngine, player: MmPlayer, card_name: String) -> int:
+	for card: MmGameObject in player.graveyard.objects():
+		if engine.game_state().characteristics_of(card).name == card_name:
+			return card.id
+	return -1

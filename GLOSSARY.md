@@ -139,8 +139,16 @@ One rectangle of the Encounter Screen's layout, such as a player's panel in the 
 _Avoid_: Area, zone (a rules term), slot
 
 **Zone Window**:
-A window over the Encounter Screen that shows what is in a zone. It can be dragged and resized within the battlefield, scrolls when its contents overflow, is titled with the zone's name and its count, and reopens where it was left. All but the Stack Window can be closed.
+A window over the Encounter Screen that shows what is in a zone. It can be dragged and resized within the battlefield, scrolls when its contents overflow, is titled with the zone's name and its count, and reopens where it was left. All but the Stack Window can be closed. A player's own zone is titled with their name: "Jackson's Graveyard (5)".
 _Avoid_: Popup, dialog, zone viewer
+
+**Pile Window**:
+The Zone Window of a pile: a graveyard, an exile or a library. A click on the pile opens it and a second closes it. A graveyard or exile is a grid of Card Faces, the newest card first; a library is one row, its top card on the left, with a card back for each card the Hero does not know. A card in one that a decision can choose glows and is clicked there, and while one can be, its pile glows too. A Pile Window opened to choose a target closes once the target is chosen.
+_Avoid_: Zone viewer, graveyard viewer, pile popup
+
+**Player Name**:
+What a player of an encounter is called on the screen. A player given no name goes by their part, "Hero" or "Villain", and only then takes "the" in a sentence: "the Villain's turn", but "Mishra's turn".
+_Avoid_: Nickname, handle, display name
 
 **Stack Window**:
 The Zone Window for the stack. It is there while something is on the stack or triggers are being put in order, lists what resolves first at the top, and cannot be closed. Each entry has two lines, each cut short with an ellipsis: an ability leads with what it does and a spell with its name, then comes who controls it and what it targets.
@@ -270,3 +278,27 @@ _Avoid_: Badge, tag
 **Keyword Icon**:
 The 16 × 16 pixel picture on a Keyword Chip that identifies its keyword.
 _Avoid_: Sprite, glyph, symbol (mana symbols are a different thing)
+
+**Inspector**:
+Where a card is read in full during an encounter. It takes the sidebar's place while the cursor is over a card, and shows that card's Card Face, its State List and its Reminders. Nothing is inspected while anything is being dragged.
+_Avoid_: Card viewer, tooltip, preview (a Tap Preview is a different thing), zoom
+
+**Pinned card**:
+The card a right-click holds in the Inspector, so it stays when the cursor leaves. Another card under the cursor is shown in its place for as long as it is hovered. A second right-click on it, a right-click on empty space, a left-click anywhere outside the Inspector, Escape or the Inspector's close button lets it go.
+_Avoid_: Selected card (the deckbuilder's), locked card, focused card
+
+**Original**:
+A card as its Card Definition has it: no Mods, no Hexes and nothing an encounter has done to it. The Inspector shows it in place of the card as it is now while See Original is ticked. A token or an Emblem has none.
+_Avoid_: Base card, printed card, unmodified card
+
+**State List**:
+The Inspector's list of what is true of a permanent right now that its Card Face does not say, such as damage marked on it and each effect on it with where the effect came from. The Inspector draws whatever entries it is given, so a new kind of state adds an entry and changes nothing else.
+_Avoid_: Status list (a Status is the Hero's), buffs, modifiers
+
+**Reminder**:
+What one keyword means, in a sentence, shown in the Inspector beside its Keyword Icon. Card Faces leave Reminders off.
+_Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
+
+**Rarity**:
+How scarce a card is: Common, Uncommon, Rare, Mythic or Power-9. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green.
+_Avoid_: Tier (a part of a run), quality, grade

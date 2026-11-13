@@ -48,6 +48,9 @@ var triggering_object_id: int = 0
 ## Set once this object has left the battlefield: its characteristics as it last existed
 ## there (CR 608.2h). The object never changes after that.
 var last_known_characteristics: MmCharacteristics = null
+## For a card in a library: the players who know which card this is, in the order they
+## learned it. Empty anywhere else, where the zone itself says who may see a card.
+var known_to_player_ids: Array[int] = []
 ## Weak, because the zone already holds this object strongly; a strong reference both ways
 ## is a cycle that reference counting never frees.
 var _zone_ref: WeakRef = null
@@ -77,6 +80,7 @@ func duplicate_object() -> MmGameObject:
 	copy.triggering_player_id = triggering_player_id
 	copy.triggering_object_id = triggering_object_id
 	copy.last_known_characteristics = last_known_characteristics  # Read-only, so shared.
+	copy.known_to_player_ids = known_to_player_ids.duplicate()
 	return copy
 
 
@@ -88,6 +92,11 @@ func is_card() -> bool:
 ## The zone holding this object, or null while it is between zones.
 func zone() -> MmZone:
 	return null if _zone_ref == null else _zone_ref.get_ref() as MmZone
+
+
+## Whether [param player_id] knows which card this is while it is in a library.
+func is_known_to(player_id: int) -> bool:
+	return known_to_player_ids.has(player_id)
 
 
 ## Zone-only: records which zone now holds this object (null when removed).
@@ -136,3 +145,14 @@ func set_target(index: int, target: MmReference) -> void:
 	while targets.size() <= index:
 		targets.append(null)
 	targets[index] = target
+
+
+## Event-only: [param player_id] saw this card go into a library.
+func make_known_to(player_id: int) -> void:
+	if not known_to_player_ids.has(player_id):
+		known_to_player_ids.append(player_id)
+
+
+## Event-only: its library was shuffled, so nobody knows which card it is.
+func forget_who_knows() -> void:
+	known_to_player_ids.clear()
