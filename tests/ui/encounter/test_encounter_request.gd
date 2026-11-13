@@ -77,3 +77,26 @@ func test_the_villain_plays_at_the_requested_difficulty() -> void:
 
 	request.difficulty = "hard"
 	assert_eq((request.villain_agent() as AiAgent).difficulty.rollout_samples, 12)
+
+
+func test_a_request_has_the_plain_backdrop_unless_one_is_named() -> void:
+	assert_eq(EncounterRequest.new().backdrop, "plain")
+	assert_eq(EncounterRequest.from_arguments(PackedStringArray(["--seed=7"])).backdrop, "plain")
+
+
+func test_the_backdrop_is_named_on_the_command_line() -> void:
+	var request: EncounterRequest = EncounterRequest.from_arguments(PackedStringArray(["--seed=7", "--backdrop=red"]))
+
+	assert_eq(request.backdrop, "red")
+	assert_eq(request.validate(), "")
+
+
+func test_a_backdrop_alone_still_asks_for_the_start_form() -> void:
+	assert_null(EncounterRequest.from_arguments(PackedStringArray(["--backdrop=red"])))
+
+
+func test_an_unknown_backdrop_is_refused_with_a_reason() -> void:
+	var request: EncounterRequest = EncounterRequest.new()
+	request.backdrop = "purple"
+
+	assert_string_contains(request.validate(), "purple")

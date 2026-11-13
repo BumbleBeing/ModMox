@@ -10,6 +10,9 @@ const CARD_GALLERY: String = "res://tools/card_gallery/card_gallery.tscn"
 ## The deckbuilder is a prototype (milestone 15) until it is ported into ui/.
 const DECKBUILDER: String = "res://prototypes/deckbuilder/deckbuilder_screen.tscn"
 const DECKBUILDER_FLAG: String = "--deckbuilder"
+## The smallest the window may be made: four times a Backdrop's picture, so that its pixels
+## stay even there as they do at 1920 x 1080 (ADR 0035).
+const MIN_WINDOW: Vector2i = Vector2i(1280, 720)
 
 ## How the menu opens another scene, and how it quits. Tests replace both.
 var navigate: Callable = func(scene: String) -> void: get_tree().change_scene_to_file(scene)
@@ -21,6 +24,8 @@ var _buttons: Dictionary[String, Button] = {}
 
 
 func _ready() -> void:
+	# Here because the game always opens on this scene, whatever it goes on to.
+	get_window().min_size = MIN_WINDOW
 	# Only until the deckbuilder is left, so that its Exit lands here and not back in it.
 	if arguments.has(DECKBUILDER_FLAG) and not DeckbuilderScreen.has_left:
 		navigate.call_deferred(DECKBUILDER)

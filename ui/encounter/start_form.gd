@@ -1,6 +1,7 @@
 class_name StartForm
 extends Control
-## Chooses the encounter to play: both decks, the seed and the Villain's difficulty.
+## Chooses the encounter to play: both decks, the seed, the Villain's difficulty and the
+## Backdrop.
 ## Temporary: once runs exist, the game hands the Encounter Screen its setup (A246), and
 ## this form and its sample Emblems go.
 
@@ -17,6 +18,7 @@ var _villain_name: LineEdit
 var _villain: OptionButton
 var _seed: SpinBox
 var _difficulty: OptionButton
+var _backdrop: OptionButton
 var _emblems: CheckBox
 var _start: Button
 
@@ -46,6 +48,7 @@ func _ready() -> void:
 	_seed.value = _request.encounter_seed
 	_row(column, "Seed", _seed)
 	_difficulty = _choice(column, "Villain's difficulty", EncounterRequest.DIFFICULTIES, _request.difficulty)
+	_backdrop = _choice(column, "Backdrop", Backdrops.NAMES, _request.backdrop)
 	_emblems = CheckBox.new()
 	_emblems.text = "Sample Emblems"
 	column.add_child(_emblems)
@@ -68,6 +71,7 @@ func request() -> EncounterRequest:
 	filled.villain_deck = _villain.get_item_text(_villain.selected)
 	filled.encounter_seed = int(_seed.value)
 	filled.difficulty = _difficulty.get_item_text(_difficulty.selected)
+	filled.backdrop = _backdrop.get_item_text(_backdrop.selected)
 	filled.has_sample_emblems = _emblems.button_pressed
 	filled.hero_name = _hero_name.text
 	filled.villain_name = _villain_name.text
@@ -80,6 +84,7 @@ func fill_in(wanted: EncounterRequest) -> void:
 	_select(_villain, wanted.villain_deck)
 	_seed.value = wanted.encounter_seed
 	_select(_difficulty, wanted.difficulty)
+	_select(_backdrop, wanted.backdrop)
 	_emblems.button_pressed = wanted.has_sample_emblems
 	_hero_name.text = wanted.hero_name
 	_villain_name.text = wanted.villain_name
@@ -91,6 +96,10 @@ func hero_name_box() -> LineEdit:
 
 func villain_name_box() -> LineEdit:
 	return _villain_name
+
+
+func backdrop_choice() -> OptionButton:
+	return _backdrop
 
 
 func start_button() -> Button:

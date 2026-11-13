@@ -14,13 +14,16 @@ var difficulty: String = "easy"
 ## What each player is called; "" for a player who goes by their part.
 var hero_name: String = ""
 var villain_name: String = ""
+## The Backdrop (game glossary) behind the encounter, one of Backdrops.NAMES. Named here
+## until Stages exist, when the encounter's Stage will set it (ADR 0035).
+var backdrop: String = Backdrops.PLAIN
 ## Gives each player one sample Emblem, so the Emblems windows have something to show.
 var has_sample_emblems: bool = false
 
 
 ## The request in [param arguments], as passed after "--" on the command line, such as
 ## --hero=red_green --villain=white_black --seed=7 --difficulty=normal --emblems
-## --hero-name=Jackson --villain-name=Mishra. Null when
+## --hero-name=Jackson --villain-name=Mishra --backdrop=red. Null when
 ## they name no deck and no seed, which means "show the start form".
 static func from_arguments(arguments: PackedStringArray) -> EncounterRequest:
 	var request: EncounterRequest = EncounterRequest.new()
@@ -41,6 +44,8 @@ static func from_arguments(arguments: PackedStringArray) -> EncounterRequest:
 			request.hero_name = argument.trim_prefix("--hero-name=")
 		elif argument.begins_with("--villain-name="):
 			request.villain_name = argument.trim_prefix("--villain-name=")
+		elif argument.begins_with("--backdrop="):
+			request.backdrop = argument.trim_prefix("--backdrop=")
 		elif argument == "--emblems":
 			request.has_sample_emblems = true
 	return request if is_asked_for else null
@@ -66,6 +71,8 @@ func validate() -> String:
 			return "There is no deck named \"%s\"." % deck
 	if not DIFFICULTIES.has(difficulty):
 		return "There is no difficulty named \"%s\"." % difficulty
+	if not Backdrops.has(backdrop):
+		return "There is no backdrop named \"%s\"." % backdrop
 	return ""
 
 

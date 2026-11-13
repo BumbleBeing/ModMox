@@ -119,6 +119,44 @@ func test_the_start_form_starts_on_an_easy_villain_and_no_sample_emblems() -> vo
 	assert_eq(form.request().validate(), "")
 
 
+func test_the_start_form_offers_every_backdrop_and_starts_on_plain() -> void:
+	var form: StartForm = StartForm.new()
+	add_child_autofree(form)
+
+	var offered: Array[String] = []
+	for index: int in form.backdrop_choice().item_count:
+		offered.append(form.backdrop_choice().get_item_text(index))
+	assert_eq(offered, Backdrops.NAMES)
+	assert_eq(form.request().backdrop, "plain")
+
+
+func test_the_start_form_puts_the_chosen_backdrop_on_the_request() -> void:
+	var form: StartForm = StartForm.new()
+	form.navigate = _go
+	add_child_autofree(form)
+	var wanted: EncounterRequest = EncounterRequest.new()
+	wanted.backdrop = "green"
+	form.fill_in(wanted)
+
+	form.start_button().pressed.emit()
+
+	assert_eq(EncounterScreen.request.backdrop, "green")
+
+
+func test_the_window_is_never_smaller_than_four_times_a_backdrop() -> void:
+	_menu(PackedStringArray())
+
+	assert_eq(MainMenu.MIN_WINDOW, Vector2i(1280, 720))
+	assert_eq(get_window().min_size, MainMenu.MIN_WINDOW)
+
+
+func test_the_window_keeps_its_smallest_size_when_the_menu_is_skipped() -> void:
+	get_window().min_size = Vector2i.ZERO
+	_menu(PackedStringArray(["--seed=7"]))
+
+	assert_eq(get_window().min_size, MainMenu.MIN_WINDOW)
+
+
 func _menu(arguments: PackedStringArray) -> MainMenu:
 	var menu: MainMenu = MainMenu.new()
 	menu.navigate = _go
