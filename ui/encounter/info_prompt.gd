@@ -9,7 +9,7 @@ var text: String = ""
 ## While paying: what is still owed. Null otherwise.
 var owed: MmManaCost = null
 var can_cancel: bool = false
-## While declaring attackers: the panel offers "All attack" (A311).
+## While declaring attackers: the panel offers "Declare All" (A311).
 var offers_all_attack: bool = false
 
 

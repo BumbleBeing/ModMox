@@ -45,3 +45,4 @@ name = "Ancestral Recall"
 card_types = Array[int]([3])
 mana_cost = SubResource("Resource_2d0ho")
 abilities = Array[ExtResource("1_u3bnt")]([SubResource("Resource_71ktd")])
+rarity = 4

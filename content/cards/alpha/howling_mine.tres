@@ -63,3 +63,4 @@ name = "Howling Mine"
 card_types = Array[int]([0])
 mana_cost = SubResource("Resource_ya0fp")
 abilities = Array[ExtResource("1_17b2n")]([SubResource("Resource_ktakv")])
+rarity = 2

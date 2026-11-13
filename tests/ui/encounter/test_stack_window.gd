@@ -257,7 +257,7 @@ func test_triggers_to_order_stand_dashed_above_the_stack_with_their_whole_text()
 	assert_eq(says.text, "Triggers to order: drag them, the top one resolves first")
 	assert_eq(_screen.trigger_list().get_index(), 1, "The list is under the line that says what to do.")
 	assert_eq(_screen.info_panel().prompt_text(), "Order your triggers")
-	assert_eq(_screen.pass_button().text, "Confirm order")
+	assert_eq(_screen.pass_button().text, "Confirm order [SPACE]")
 	assert_false(_screen.pass_button().disabled)
 	assert_null(BorderEffects.glow_color(_screen.face_of(_permanent("Chime"))), "Their sources take no click, so they do not glow.")
 
@@ -274,7 +274,7 @@ func test_dragging_a_trigger_down_and_confirming_makes_the_new_top_one_resolve_f
 	assert_eq(_screen.trigger_entries(), [entries[1], entries[0]] as Array[StackEntry], "The same entries: nothing was rebuilt (A394).")
 	assert_true(_presenter.snapshot().decision is OrderTriggersDecision, "Nothing is answered until it is confirmed.")
 	assert_false(_screen.undo_button().disabled)
-	assert_eq(_screen.pass_button().text, "Confirm order")
+	assert_eq(_screen.pass_button().text, "Confirm order [SPACE]")
 	assert_false(_screen.pass_button().disabled, "The new order can be confirmed at once.")
 
 	_screen.pass_priority()
@@ -287,7 +287,7 @@ func test_dragging_a_trigger_down_and_confirming_makes_the_new_top_one_resolve_f
 	assert_eq(_screen.stack_entries()[1].name_text(), "You gain 1 life.")
 	assert_false(_screen.stack_entries()[0].is_dashed())
 	assert_ne(_screen.stack_entries()[0].color(), StackColors.PLAIN, "On the stack, each has its color.")
-	assert_ne(_screen.pass_button().text, "Confirm order")
+	assert_ne(_screen.pass_button().text, "Confirm order [SPACE]")
 
 
 func test_confirming_without_a_move_keeps_the_order_shown() -> void:
@@ -316,7 +316,7 @@ func test_undo_takes_back_a_drag_of_a_trigger_before_anything_else_and_rebuilds_
 	assert_eq(_screen.trigger_entries(), entries, "The entries ease back; none is made again.")
 	assert_eq(_screen.trigger_entries()[0].name_text(), "At the beginning of your upkeep, you gain 1 life.")
 	assert_true(_screen.undo_button().disabled, "One drag was one step.")
-	assert_eq(_screen.pass_button().text, "Confirm order")
+	assert_eq(_screen.pass_button().text, "Confirm order [SPACE]")
 
 
 func test_a_trigger_let_go_where_it_started_or_right_clicked_is_no_move() -> void:

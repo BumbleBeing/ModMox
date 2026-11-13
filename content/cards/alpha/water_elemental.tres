@@ -17,3 +17,4 @@ subtypes = Array[String](["Elemental"])
 mana_cost = SubResource("Resource_8cqu6")
 power = 5
 toughness = 4
+rarity = 1

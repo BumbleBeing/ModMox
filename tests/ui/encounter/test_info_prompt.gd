@@ -124,7 +124,7 @@ func test_the_combat_decisions_have_prompts_of_their_own() -> void:
 		[MmReference.to_object(8), MmReference.to_object(9)] as Array[MmReference], [2, 3] as Array[int]), view)
 
 	assert_eq(attackers.text, "Declare attackers")
-	assert_true(attackers.offers_all_attack, "Only this one offers All attack (A311).")
+	assert_true(attackers.offers_all_attack, "Only this one offers Declare All (A311).")
 	assert_eq(blockers.text, "Declare blockers")
 	assert_false(blockers.offers_all_attack)
 	assert_eq(damage.text, "Divide 5 damage from Wand", "It names the creature whose damage it is (A325).")

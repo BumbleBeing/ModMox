@@ -176,3 +176,54 @@ func _panel(snapshot: EncounterSnapshot, error: String) -> InfoPanel:
 	panel.cancel_pressed.connect(func() -> void: _cancels += 1)
 	panel.show_snapshot(snapshot, error, BOX)
 	return panel
+
+
+func test_the_cancel_button_names_the_key_it_is_told() -> void:
+	var decision: PayManaDecision = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 1,
+		[MmMana.Type.RED] as Array[MmMana.Type])
+	var panel: InfoPanel = _panel(_snapshot(decision), "")
+	assert_eq(panel.cancel_button().text, "Cancel [X]")
+
+	panel.show_cancel_key("BACKSPACE")
+
+	assert_eq(panel.cancel_button().text, "Cancel [BACKSPACE]")
+	panel.show_snapshot(_snapshot(decision), "", BOX)
+	assert_eq(panel.cancel_button().text, "Cancel [BACKSPACE]", "A panel filled again still names it.")
+
+
+func test_everything_stays_inside_the_shorter_panel_under_the_pass_button() -> void:
+	var box: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["info"]
+	var decision: PayManaDecision = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 1,
+		[MmMana.Type.RED] as Array[MmMana.Type])
+	var panel: InfoPanel = InfoPanel.new()
+	add_child_autofree(panel)
+
+	panel.show_snapshot(_snapshot(decision), "You cannot pay with that.", box)
+
+	var inside: Rect2 = Rect2(Vector2.ZERO, box.size)
+	assert_true(box.encloses(panel.cancel_button().get_global_rect()), "Cancel is inside the panel.")
+	assert_true(inside.encloses(panel.error_rect()), "The reason is inside it too")
+	assert_false(panel.error_rect().intersects(Rect2(panel.cancel_button().position, panel.cancel_button().size)),
+		"and beside the Cancel button, not under it.")
+
+
+func test_all_attack_reads_undeclare_all_once_told_an_attacker_is_declared_and_turns_back() -> void:
+	var events: Array[String] = []
+	var panel: InfoPanel = _panel(_snapshot(DeclareAttackersDecision.new(HERO, [1, 2] as Array[int])), "")
+	panel.all_attack_pressed.connect(func() -> void: events.append("all"))
+	panel.undeclare_all_pressed.connect(func() -> void: events.append("none"))
+	assert_eq(panel.all_attack_button().text, "Declare All")
+
+	panel.show_undeclare(true)
+
+	assert_eq(panel.all_attack_button().text, "Undeclare All")
+	assert_true(BOX.encloses(panel.all_attack_button().get_global_rect()))
+	panel.all_attack_button().pressed.emit()
+	assert_eq(events, ["none"] as Array[String])
+
+	panel.show_undeclare(false)
+
+	assert_eq(panel.all_attack_button().text, "Declare All")
+	panel.all_attack_button().pressed.emit()
+	assert_eq(events, ["none", "all"] as Array[String])
+	_panel(_snapshot(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int])), "").show_undeclare(true)

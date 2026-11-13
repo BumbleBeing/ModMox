@@ -3,7 +3,10 @@ extends Control
 ## The Pause Menu (game glossary): a fixed window over the battlefield, with the rest of the
 ## screen dimmed behind it and taking no clicks. It offers Resume, Concede, Settings and
 ## Quit to main menu. Concede and Quit each ask once more before they happen (A298, A300).
-## Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap.
+## Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap, and
+## a Controls button that opens the Controls Page (game glossary): a row for each action that has
+## a key, which waits for the next key pressed once it is clicked, with "Reset controls" under
+## them. Rows that share a key are red (ADR 0034).
 
 signal resume_pressed
 ## Conceding was confirmed.
@@ -17,13 +20,22 @@ signal auto_pass_chosen(is_on: bool)
 ## The Auto-tapping box was pressed on the settings page: it is now [param is_on].
 signal auto_tap_chosen(is_on: bool)
 
-enum Page { MENU, CONCEDE, QUIT, SETTINGS }
+## A row of the Controls Page was given another key, or every key was reset.
+signal keys_changed
+
+enum Page { MENU, CONCEDE, QUIT, SETTINGS, CONTROLS }
 
 const RESUME: String = "Resume  [ESC]"
 const CONCEDE: String = "Concede"
 const SETTINGS: String = "Settings"
 const QUIT: String = "Quit to main menu"
 const BACK: String = "Back"
+const CONTROLS: String = "Controls"
+const RESET_KEYS: String = "Reset controls"
+## What a row of the Controls Page reads while it waits for a key.
+const WAITING: String = "Press a key…"
+## Rows of the Controls Page whose actions share a key.
+const SHARED: Color = Color("#ff5c4d")
 const QUIT_NOW: String = "Quit"
 const SPEED_HEADING: String = "Game speed"
 const AUTO_PASS: String = "Auto-pass"
@@ -46,6 +58,13 @@ var _is_auto_passing: bool = true
 var _auto_pass: Button = null
 var _is_auto_tapping: bool = true
 var _auto_tap: Button = null
+## The Key Bindings the Controls Page shows and changes; the Encounter Screen gives it the
+## ones in use.
+var key_bindings: KeyBindings = KeyBindings.new()
+## The action whose row waits for a key, or KeyBindings.NOTHING.
+var _waiting: int = KeyBindings.NOTHING
+var _key_buttons: Dictionary[KeyBindings.Action, Button] = {}
+var _key_labels: Dictionary[KeyBindings.Action, Label] = {}
 
 
 func _init() -> void:
@@ -126,12 +145,45 @@ func auto_tap_button() -> Button:
 	return _auto_tap
 
 
+## Whether a row of the Controls Page waits for a key: the next key pressed is its, not the
+## game's.
+func is_waiting_for_key() -> bool:
+	return _waiting != KeyBindings.NOTHING
+
+
+## Gives [param keycode] to the row that waits for a key. Escape, which is never bound,
+## only stops the row waiting.
+func take_key(keycode: Key) -> void:
+	if not is_waiting_for_key():
+		return
+	var is_bound: bool = key_bindings.bind(_waiting as KeyBindings.Action, keycode)
+	_waiting = KeyBindings.NOTHING
+	_show_page(Page.CONTROLS)
+	if is_bound:
+		keys_changed.emit()
+
+
+## The Controls Page's button for [param action], which shows its key, or null on any other
+## page.
+func key_button(action: KeyBindings.Action) -> Button:
+	return _key_buttons.get(action)
+
+
+## Whether the Controls Page shows [param action] in red, as sharing its key.
+func shows_shared(action: KeyBindings.Action) -> bool:
+	return _key_labels.has(action) and _key_labels[action].get_theme_color("font_color") == SHARED
+
+
 func window_rect() -> Rect2:
 	return Rect2(_window.position, _window.size)
 
 
 func _show_page(shown: Page) -> void:
 	_page = shown
+	if shown != Page.CONTROLS:
+		_waiting = KeyBindings.NOTHING
+	_key_buttons.clear()
+	_key_labels.clear()
 	for child: Node in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -154,10 +206,17 @@ func _show_page(shown: Page) -> void:
 		names = [QUIT_NOW, BACK]
 	elif shown == Page.SETTINGS:
 		title = "Settings"
-		names = [BACK]
-	# The settings page has four rows above Back: a heading, the speeds, Auto-pass and
-	# Auto-tapping.
-	var rows_above: int = 4 if shown == Page.SETTINGS else 0
+		names = [CONTROLS, BACK]
+	elif shown == Page.CONTROLS:
+		title = "Controls"
+		names = [RESET_KEYS, BACK]
+	# The settings page has four rows above its buttons: a heading, the speeds, Auto-pass
+	# and Auto-tapping. The Controls Page has a row for each action.
+	var rows_above: int = 0
+	if shown == Page.SETTINGS:
+		rows_above = 4
+	elif shown == Page.CONTROLS:
+		rows_above = KeyBindings.ACTIONS.size()
 	var rect: Rect2 = EncounterLayout.pause_rect(names.size() + rows_above, _field)
 	_window = Panel.new()
 	var style: StyleBoxFlat = StyleBoxFlat.new()
@@ -189,6 +248,39 @@ func _show_page(shown: Page) -> void:
 		_add_speeds(rect.size.x)
 		_add_auto_pass(rect.size.x)
 		_add_auto_tap(rect.size.x)
+	elif shown == Page.CONTROLS:
+		_add_key_rows(rect.size.x)
+
+
+## The Controls Page's rows: each action's name, and a button showing its key that waits for
+## another when pressed. An action that shares its key is red.
+func _add_key_rows(window_width: float) -> void:
+	for index: int in KeyBindings.ACTIONS.size():
+		var action: KeyBindings.Action = KeyBindings.ACTIONS[index]
+		var top: float = EncounterLayout.PAUSE_HEADING + index * EncounterLayout.PAUSE_ROW
+		var label: Label = Label.new()
+		label.text = KeyBindings.name_of(action)
+		label.position = Vector2(40, top)
+		label.size = Vector2(180, EncounterLayout.PAUSE_ROW - 12)
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 21)
+		_window.add_child(label)
+		_key_labels[action] = label
+		var made: Button = _button(WAITING if action == _waiting else key_bindings.label_of(action))
+		made.position = Vector2(230, top)
+		made.size = Vector2(window_width - 270, EncounterLayout.PAUSE_ROW - 12)
+		made.pressed.connect(_on_key_row_pressed.bind(action))
+		_window.add_child(made)
+		_key_buttons[action] = made
+		if key_bindings.is_shared(action) and action != _waiting:
+			label.add_theme_color_override("font_color", SHARED)
+			for color: String in ["font_color", "font_hover_color", "font_pressed_color"]:
+				made.add_theme_color_override(color, SHARED)
+
+
+func _on_key_row_pressed(action: KeyBindings.Action) -> void:
+	_waiting = action
+	_show_page(Page.CONTROLS)
 
 
 ## The settings page's Game Speed: a heading, and under it a button for each speed, slowest
@@ -275,7 +367,7 @@ func _button(text: String, font_size: int = 21) -> Button:
 			flat.bg_color = Color("#262a32")
 		flat.set_corner_radius_all(6)
 		made.add_theme_stylebox_override(state, flat)
-	if not GameSpeed.NAMES.values().has(text):
+	if [RESUME, CONCEDE, SETTINGS, QUIT, BACK, QUIT_NOW, CONTROLS, RESET_KEYS].has(text):
 		made.pressed.connect(_on_pressed.bind(text))
 	return made
 
@@ -283,6 +375,15 @@ func _button(text: String, font_size: int = 21) -> Button:
 func _on_pressed(text: String) -> void:
 	if text == RESUME:
 		resume_pressed.emit()
+	elif text == BACK and _page == Page.CONTROLS:
+		_show_page(Page.SETTINGS)
+	elif text == CONTROLS:
+		_show_page(Page.CONTROLS)
+	elif text == RESET_KEYS:
+		key_bindings.reset()
+		_waiting = KeyBindings.NOTHING
+		_show_page(Page.CONTROLS)
+		keys_changed.emit()
 	elif text == BACK:
 		_show_page(Page.MENU)
 	elif text == QUIT:

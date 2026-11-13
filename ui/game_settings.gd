@@ -15,6 +15,9 @@ var game_speed: GameSpeed.Speed = GameSpeed.Speed.NORMAL
 var is_auto_passing: bool = true
 ## Auto-tap (game glossary). On unless the file says "false".
 var is_auto_tapping: bool = true
+## The Key Bindings (game glossary). A key the file does not name, or names wrongly, is
+## its action's default.
+var key_bindings: KeyBindings = KeyBindings.new()
 
 
 ## The settings kept at [param path]. The file is read line by line here, and not as a
@@ -35,6 +38,10 @@ static func load_from(path: String) -> GameSettings:
 			settings.is_auto_passing = value != "false"
 		elif parts[0].strip_edges() == AUTO_TAP_KEY:
 			settings.is_auto_tapping = value != "false"
+		else:
+			for action: KeyBindings.Action in KeyBindings.ACTIONS:
+				if parts[0].strip_edges() == KeyBindings.FILE_KEYS[action]:
+					settings.key_bindings.bind_named(action, value)
 	return settings
 
 
@@ -50,5 +57,7 @@ func save_to(path: String) -> bool:
 		SECTION, SPEED_KEY, GameSpeed.name_of(game_speed), AUTO_PASS_KEY, "true" if is_auto_passing else "false",
 		AUTO_TAP_KEY, "true" if is_auto_tapping else "false",
 	])
+	for action: KeyBindings.Action in KeyBindings.ACTIONS:
+		file.store_string("%s=\"%s\"\n" % [KeyBindings.FILE_KEYS[action], key_bindings.save_name_of(action)])
 	file.close()
 	return true

@@ -20,7 +20,7 @@ func test_at_cleanup_the_hand_glows_and_the_pass_button_waits_to_confirm_the_dis
 	_open_at_discard(2)
 
 	assert_eq(_screen.info_panel().prompt_text(), "Discard 2 cards (0 chosen)")
-	assert_eq(_screen.pass_button().text, "Confirm discard")
+	assert_eq(_screen.pass_button().text, "Confirm discard [SPACE]")
 	assert_true(_screen.pass_button().disabled)
 	assert_false(_screen.opening_overlay().visible, "The board stays in sight.")
 	for card_id: int in _screen.hand_order().cards():
@@ -127,7 +127,7 @@ func test_confirming_discards_the_chosen_cards_and_no_others() -> void:
 		discarded.append(card.card_id)
 	assert_true(discarded.has(cards[1]) and discarded.has(cards[6]))
 	assert_false(_screen.card_picks().is_active())
-	assert_eq(_screen.pass_button().text, "Pass [SPACE]")
+	assert_eq(_screen.pass_button().text, "Pass Priority [SPACE]")
 
 
 func test_space_confirms_only_once_enough_are_chosen() -> void:
@@ -228,7 +228,7 @@ func test_a_redraw_draws_the_chosen_cards_raised_and_white_again() -> void:
 
 	assert_eq(BorderEffects.glow_color(_face(cards[4])), Color.WHITE)
 	assert_almost_eq(_face(cards[4]).position.y, raised, 1.0, "A redraw puts it straight at its place.")
-	assert_eq(_screen.pass_button().text, "Confirm discard")
+	assert_eq(_screen.pass_button().text, "Confirm discard [SPACE]")
 	assert_eq(_screen.info_panel().prompt_text(), "Discard 2 cards (1 chosen)")
 	assert_false(_screen.undo_button().disabled)
 

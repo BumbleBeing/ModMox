@@ -266,3 +266,9 @@ func _look(file_name: String) -> CardLook:
 		if ResourceLoader.exists(path):
 			return CardLook.of_definition(load(path) as MmCardDefinition)
 	return null
+
+
+func test_a_keyword_is_told_from_any_other_ability() -> void:
+	assert_true(AbilityText.is_keyword(FlyingAbility.new()))
+	assert_true(AbilityText.is_keyword(ProtectionAbility.new()))
+	assert_false(AbilityText.is_keyword(ActivatedAbility.new()))

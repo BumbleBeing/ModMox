@@ -13,7 +13,7 @@ The layered image a card is drawn on, worked out from its characteristics: a fra
 _Avoid_: Card background, border, template
 
 **Status**:
-A lasting condition on the Hero's character that changes the starting conditions of encounters or adds an Emblem to them.
+A lasting condition on the Hero's character that changes the starting conditions of encounters or adds an Emblem to them. A Status is never used up; what is used up is a Potion.
 _Avoid_: Trait, perk, buff, condition
 
 **Boon**:
@@ -47,7 +47,7 @@ A Node that is an encounter with a Villain of that Rank. Every Stage ends on its
 _Avoid_: Fight, battle, boss node
 
 **Store**:
-A Node that buys and sells cards and items for gold, buying at a fraction of the price it sells at. Every Stage has one right after its Start Node and one right before its Boss Encounter.
+A Node that buys and sells cards and Items for gold, buying at a fraction of the price it sells at. Every Stage has one right after its Start Node and one right before its Boss Encounter.
 _Avoid_: Shop, merchant, vendor
 
 **Workshop**:
@@ -71,11 +71,19 @@ A Villain of Unique Rank, met only through a Chaos Node. It can turn up at any S
 _Avoid_: Mystery enemy, mini-boss, special
 
 **Spoils**:
-What the Hero wins for beating a Villain: gold, cards, Mods and items. Their quantity and quality follow the Villain's Rank and the Tier; the cards come from the Villain's own deck.
+What the Hero wins for beating a Villain: gold, cards and Items. Their quantity and quality follow the Villain's Rank and the Tier; the cards come from the Villain's own deck.
 _Avoid_: Loot, rewards, drops
 
+**Item**:
+Anything the Hero holds between encounters and can buy, sell or win other than a card: a Mod or a Potion.
+_Avoid_: Gear, equipment (an Equipment is a card), inventory object
+
+**Potion**:
+An Item that is used up when it is used. Some can be used in the middle of an encounter, where they do what a spell would, such as "gain 2 life" or "each opponent discards a card". The Hero's panel counts them on its Potions button, purple with any and gray with none, which takes no press until Potions exist. Whatever is gone for good once used is a Potion and never an Emblem: an Emblem's ability is static or triggered, or can be used once in each encounter, and the Emblem itself stays (A491 to A493).
+_Avoid_: Consumable, single-use Emblem, single-use Boon, charge
+
 **Mod**:
-An item the Hero holds (a Hex aside) and can apply to a card in their Collection to change it for the rest of the run. Applied, it becomes one of that Run Card's Modifications, the rules engine's word for the change itself. Applying one is final the moment it is confirmed, and it fills one of the card's Mod Slots. A Mod is applicable to a card that has an empty Mod Slot and that the Mod's own rule accepts.
+An Item the Hero holds (a Hex aside) and can apply to a card in their Collection to change it for the rest of the run. Applied, it becomes one of that Run Card's Modifications, the rules engine's word for the change itself. Applying one is final the moment it is confirmed, and it fills one of the card's Mod Slots. A Mod is applicable to a card that has an empty Mod Slot and that the Mod's own rule accepts.
 _Avoid_: Modification (the engine's term), upgrade, enchantment
 
 **Hex**:
@@ -204,11 +212,11 @@ What the board shows while the cursor is on something that costs mana and Auto-t
 _Avoid_: Payment preview, mana highlight, tap suggestion
 
 **Yield**:
-The Hero's instruction to pass every priority for the rest of the turn, whatever the stops say and whatever the Villain puts on the stack. Choosing attackers and blockers, and any other choice that is not priority, is still asked, and the Yield carries on afterwards. It is set with the Yield Turn box on the Hero's panel, at any moment, and ends by itself when the next turn begins.
+The Hero's instruction to pass every priority for the rest of the turn, whatever the stops say and whatever the Villain puts on the stack. Choosing attackers and blockers, and any other choice that is not priority, is still asked, and the Yield carries on afterwards. It is set with the Yield Turn box on the Hero's panel, at any moment, and ends by itself when the next turn begins. Set while the Hero is declaring attackers or blockers, it also confirms them as they stand, so one click says "no attacks, and I am done" (A494).
 _Avoid_: Skip turn, pass turn, end turn, auto-pass (the standing setting)
 
 **Hold Key**:
-Control. While it is down nothing is passed for the Hero: every priority that Auto-pass or a Yield would have passed, and the one after their own spell or ability goes on the stack, is theirs instead. A priority kept this way stays theirs until they answer, even once the key is let go, and neither Auto-pass nor the Yield is turned off by it. Nothing is paid for them either: a cast that reaches payment while it is down is paid by hand, all of it, whatever Auto-tap says.
+The key bound to holding priority in the Key Bindings: Control unless the player has chosen another. While it is down nothing is passed for the Hero: every priority that Auto-pass or a Yield would have passed, and the one after their own spell or ability goes on the stack, is theirs instead. A priority kept this way stays theirs until they answer, even once the key is let go, and neither Auto-pass nor the Yield is turned off by it. Nothing is paid for them either: a cast that reaches payment while it is down is paid by hand, all of it, whatever Auto-tap says.
 _Avoid_: Stop key, full control
 
 **Damage Chip**:
@@ -228,8 +236,24 @@ The colored outline on everything a Pending Decision can choose: orange-red for 
 _Avoid_: Highlight, selection, halo
 
 **Info Panel**:
-The bordered box at the bottom left of the battlefield, between the Hero's panel and the Hero's hand. It says what the Hero is being asked, what is still owed while paying and why their last answer was refused, and holds the Cancel button for a cast in progress.
+The bordered box at the bottom left of the battlefield, between the Hero's panel and the Hero's hand. It says what the Hero is being asked, what is still owed while paying and why their last answer was refused, and holds the Cancel button for a cast in progress, which names the key that cancels. While attackers are declared it holds "Declare All", which reads "Undeclare All" and puts every attacker back for as long as any is declared (A496). The Pass Button is directly above it.
 _Avoid_: Prompt bar, status line, message box
+
+**Pass Button**:
+The gray, shaded button over the Info Panel and as wide, which is always there. With priority it reads "Pass Priority" with the key that passes, and passes; while attackers, blockers, a division of damage, an order of triggers or cards to discard are being chosen it confirms that choice instead ("Attack with 2"); at any other time it cannot be pressed. Whatever it reads, it ends with the key that presses it: "Attack with 2 [SPACE]" (A495). It was on the Hero's panel until 13g.
+_Avoid_: Confirm button, OK button, next button
+
+**Portrait**:
+The 32 × 32 pixel picture of a player on their panel, drawn six screen pixels to each of its own with hard edges, with the life total in its corner. It is what glows and is clicked when its player can be chosen. Until Heroes and Villains have their own, the Hero's is a white wizard and the Villain's a purple demon.
+_Avoid_: Avatar, icon, face (a Card Face or Battlefield Face is a card's)
+
+**Key Binding**:
+The key that does one of the four actions that have a key: passing priority (Space), undo (Z), cancel (X) and holding priority (Control). Any single key can be bound to any of them, a modifier included; never Escape, which is the Pause Menu's, and never a combination or a mouse button. Two actions may share a key: a press of it does only the first of pass, undo and cancel bound to it, and holding priority goes with any of them. Buttons that name a key name the one bound. They are kept in the settings file.
+_Avoid_: Hotkey, shortcut, keymap, control (the key)
+
+**Controls Page**:
+The page of the Pause Menu that the Controls button on its settings page opens: a row for each Key Binding showing its key, "Reset controls" and Back. A row that is clicked reads "Press a key…" and takes the next key pressed, Escape only stopping it waiting. Rows whose actions share a key are red.
+_Avoid_: Keys page, keybind menu, input settings
 
 **Hold Panel**:
 The box at the top left of the battlefield, opposite the Info Panel, that says "Holding Priority" in large type. It shows only while the Hold Key is down.
@@ -252,7 +276,7 @@ The dropdown that opens where a card was clicked when the click could mean more 
 _Avoid_: Ability menu, context menu, popup
 
 **Pause Menu**:
-The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings and Quit to main menu. Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap.
+The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings and Quit to main menu. Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap, and the Controls button that opens the Controls Page.
 _Avoid_: Escape menu, options screen, system menu
 
 **Opening-Hand Overlay**:
@@ -280,11 +304,11 @@ The 16 × 16 pixel picture on a Keyword Chip that identifies its keyword.
 _Avoid_: Sprite, glyph, symbol (mana symbols are a different thing)
 
 **Inspector**:
-Where a card is read in full during an encounter. It takes the sidebar's place while the cursor is over a card, and shows that card's Card Face, its State List and its Reminders. Nothing is inspected while anything is being dragged.
+Where a card is read in full during an encounter, the pregame included. It takes the sidebar's place while a card is pinned, and shows that card's Card Face, its State List and its Reminders. An ability on the stack is read as the card it came from. Hovering over a card shows nothing.
 _Avoid_: Card viewer, tooltip, preview (a Tap Preview is a different thing), zoom
 
 **Pinned card**:
-The card a right-click holds in the Inspector, so it stays when the cursor leaves. Another card under the cursor is shown in its place for as long as it is hovered. A second right-click on it, a right-click on empty space, a left-click anywhere outside the Inspector, Escape or the Inspector's close button lets it go.
+The card a right-click puts in the Inspector, ringed where it is drawn. A right-click on another card pins that one instead. A second right-click on it, a right-click on empty space, a left-click anywhere outside the Inspector or Escape lets it go. Nothing is pinned while a card or a trigger is being dragged.
 _Avoid_: Selected card (the deckbuilder's), locked card, focused card
 
 **Original**:
@@ -300,5 +324,5 @@ What one keyword means, in a sentence, shown in the Inspector beside its Keyword
 _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 
 **Rarity**:
-How scarce a card is: Common, Uncommon, Rare, Mythic or Power-9. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green.
+How scarce a card is: Common, Uncommon, Rare, Mythic or Power-9. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green.
 _Avoid_: Tier (a part of a run), quality, grade

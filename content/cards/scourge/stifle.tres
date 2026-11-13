@@ -35,3 +35,4 @@ name = "Stifle"
 card_types = Array[int]([3])
 mana_cost = SubResource("Resource_xjtn2")
 abilities = Array[ExtResource("1_serq6")]([SubResource("Resource_js1dy")])
+rarity = 2

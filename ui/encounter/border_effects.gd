@@ -12,6 +12,9 @@ extends RefCounted
 const GLOW: String = "Glow"
 const POINTER: String = "Pointer"
 const MARK: String = "StackMark"
+const PIN: String = "Pin"
+## The ring round the Pinned card (ADR 0033).
+const PIN_COLOR: Color = Color("#e6e9ef")
 ## What an effect fading out is renamed to, so a new one can take its name meanwhile.
 const LEAVING: String = "Leaving"
 
@@ -103,6 +106,35 @@ static func remove_pointer(host: Control) -> void:
 
 static func has_pointer(host: Control) -> bool:
 	return host.get_node_or_null(POINTER) != null
+
+
+## Rings [param host] as the Pinned card of the Inspector (ADR 0033). The ring is part of
+## the card, so whatever lies over the card lies over its ring too. In a container, which
+## would shrink the ring to its contents, it reaches back out to the host's own edge.
+static func add_pin(host: Control, host_size: Vector2) -> void:
+	remove_pin(host)
+	var pin: Control = Control.new()
+	pin.name = PIN
+	pin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var inset: Vector2 = Vector2.ZERO
+	if host is PanelContainer:
+		var box: StyleBox = host.get_theme_stylebox("panel")
+		inset = Vector2(box.get_margin(SIDE_LEFT), box.get_margin(SIDE_TOP))
+	var ring: Panel = CardShapes.outline(host_size + Vector2(8, 8), 9, 3, PIN_COLOR)
+	ring.position = Vector2(-4, -4) - inset
+	pin.add_child(ring)
+	host.add_child(pin)
+
+
+static func remove_pin(host: Control) -> void:
+	var pin: Node = host.get_node_or_null(PIN)
+	if pin != null:
+		host.remove_child(pin)
+		pin.queue_free()
+
+
+static func has_pin(host: Control) -> bool:
+	return host.get_node_or_null(PIN) != null
 
 
 ## Marks [param host] as something the Stack Window entry under the cursor is about, in

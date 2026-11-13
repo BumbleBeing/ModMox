@@ -5,7 +5,7 @@ The rules engine that runs a single game of Magic-style cards between the player
 ## Cards
 
 **Card Definition**:
-The base design of a card: its name, costs, types, characteristics, and abilities, as authored by the game designer.
+The base design of a card: its name, costs, types, characteristics, abilities and rarity, as authored by the game designer.
 _Avoid_: Card template, prototype, blueprint
 
 **Run Card**:
@@ -43,7 +43,7 @@ A mulligan that puts no cards on the bottom of the library. A player's first mul
 _Avoid_: Bonus mulligan, mulligan charge
 
 **Emblem**:
-A Game Object in the command zone that has abilities but no other characteristics, used to give an encounter or a player rules that last the whole game.
+A Game Object in the command zone that has abilities but no other characteristics, used to give an encounter or a player rules that last the whole game. Its abilities are static or triggered, or can be activated once in a game; an Emblem is never used up and never leaves.
 _Avoid_: Encounter rule, modifier, aura (unless an actual Aura is meant)
 
 **Hero**:

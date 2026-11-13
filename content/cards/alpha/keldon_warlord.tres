@@ -56,3 +56,4 @@ card_types = Array[int]([1])
 subtypes = Array[String](["Human", "Barbarian"])
 mana_cost = SubResource("Resource_u8dui")
 abilities = Array[ExtResource("1_dg0lw")]([SubResource("Resource_pw3ny")])
+rarity = 1

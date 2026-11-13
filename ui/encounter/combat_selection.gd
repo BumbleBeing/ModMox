@@ -200,6 +200,15 @@ func select_all() -> bool:
 	return true
 
 
+## Puts every chosen attacker back, without confirming (A496).
+func clear_attackers() -> bool:
+	if not (_decision is DeclareAttackersDecision) or _attackers.is_empty():
+		return false
+	_remember()
+	_attackers.clear()
+	return true
+
+
 ## How much of the damage has not been given to anyone yet.
 func left_to_assign() -> int:
 	var divide: DivideCombatDamageDecision = _decision as DivideCombatDamageDecision

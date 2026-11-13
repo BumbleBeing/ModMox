@@ -504,3 +504,17 @@ func _divide_of(amount: int, lethal: Array, has_trample: bool) -> DivideCombatDa
 	if has_trample:
 		recipients.append(MmReference.to_player(VILLAIN))
 	return DivideCombatDamageDecision.new(HERO, 1, amount, recipients, lethal_amounts)
+
+
+func test_undeclaring_all_puts_every_attacker_back_and_one_undo_takes_it_back() -> void:
+	var selection: CombatSelection = CombatSelection.new(_attack())
+	assert_false(selection.clear_attackers(), "Nothing is declared yet.")
+	selection.click(2)
+	selection.click(3)
+
+	assert_true(selection.clear_attackers())
+
+	assert_eq(selection.answer(), [] as Array[int])
+	selection.undo()
+	assert_eq(selection.answer(), [2, 3] as Array[int], "One undo takes the whole of it back.")
+	assert_false(CombatSelection.new(_blocks()).clear_attackers(), "Only attackers have it.")

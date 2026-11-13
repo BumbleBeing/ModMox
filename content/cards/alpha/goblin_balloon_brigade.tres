@@ -49,3 +49,4 @@ mana_cost = SubResource("Resource_34mhh")
 power = 1
 toughness = 1
 abilities = Array[ExtResource("1_mdusi")]([SubResource("Resource_0vku6")])
+rarity = 1

@@ -52,3 +52,4 @@ name = "Ankh of Mishra"
 card_types = Array[int]([0])
 mana_cost = SubResource("Resource_okhxl")
 abilities = Array[ExtResource("1_8ecdq")]([SubResource("Resource_0peex")])
+rarity = 2
