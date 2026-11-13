@@ -1,10 +1,15 @@
 class_name ModPopup
 extends Control
 ## The window for applying a held Mod to the selected card. It covers the deckbuilder and
-## lists every kind of Mod the Hero holds, with how many: the ones not applicable to the
-## card are gray and take no clicks. Hovering over a Mod shows the card as it would become
-## beside the card as it is. Clicking one offers Apply and Cancel, and Apply asks once more
+## has three bordered panels of one height, a card's and a little more, each with its title
+## centered at the top. Valid Mods lists every kind of Mod the Hero holds, with how many:
+## the ones not applicable to the card are gray and take no clicks. Current is the card as
+## it is. The third is the card as it would become: "With selected Mod" until a Mod is
+## hovered over or clicked, then "With" and that Mod's name; its place is empty until then. The faces here show no Mod
+## Slots. Clicking a Mod makes Apply live and offers Cancel, and Apply asks once more
 ## before it says the Mod was applied, because applying is final.
+##
+## The window is as large as what is in it and no larger.
 ##
 ## It changes nothing itself: it reports [signal applied] and [signal closed].
 
@@ -13,15 +18,19 @@ signal closed
 
 enum State { CHOOSING, CHOSEN, CONFIRMING }
 
-const WINDOW: Vector2 = Vector2(1000, 640)
 const PAD: float = 20.0
+## The room between a panel's edge and what is in it.
+const PANEL_PAD: float = 12.0
+const NO_MOD_TITLE: String = "With selected Mod"
 const TILES_WIDTH: float = 380.0
 const FACE_HEIGHT: float = 380.0
 const DIM: Color = Color(0, 0, 0, 0.6)
-const FILL: Color = Color("#23272e")
-const BORDER: Color = Color("#4a515d")
-const MUTED: Color = Color("#9aa3af")
+const FILL: Color = DeckbuilderLook.PANE
+const BORDER: Color = DeckbuilderLook.PANE_BORDER
+const MUTED: Color = DeckbuilderLook.MUTED
 const CHOSEN_RING: Color = Color("#e8cf8a")
+## A Mod's tile: darker than the other buttons.
+const TILE: Color = Color("#33363c")
 
 var _card: DeckbuilderCard = null
 var _held_mods: HeldMods = null
@@ -35,6 +44,8 @@ var _before: CardFace = null
 var _after: CardFace = null
 var _after_place: Control = null
 var _after_caption: Label = null
+var _window: PanelContainer = null
+var _panels: Array[PanelContainer] = []
 var _footer: HBoxContainer = null
 var _buttons: Dictionary[String, Button] = {}
 var _question: Label = null
@@ -52,33 +63,34 @@ func setup(card: DeckbuilderCard, held_mods: HeldMods) -> void:
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
-	var window: Panel = Panel.new()
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(center)
+	_window = PanelContainer.new()
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = FILL
-	style.border_color = BORDER
-	style.set_border_width_all(1)
+	style.border_color = DeckbuilderLook.PANEL_EDGE
+	style.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
 	style.set_corner_radius_all(8)
 	style.shadow_color = Color(0, 0, 0, 0.5)
 	style.shadow_size = 16
-	window.add_theme_stylebox_override("panel", style)
-	window.set_anchors_preset(Control.PRESET_CENTER)
-	window.offset_left = -WINDOW.x / 2.0
-	window.offset_right = WINDOW.x / 2.0
-	window.offset_top = -WINDOW.y / 2.0
-	window.offset_bottom = WINDOW.y / 2.0
-	add_child(window)
+	style.set_content_margin_all(PAD)
+	_window.add_theme_stylebox_override("panel", style)
+	center.add_child(_window)
 	var rows: VBoxContainer = VBoxContainer.new()
 	rows.add_theme_constant_override("separation", 14)
-	rows.position = Vector2(PAD, PAD)
-	rows.size = WINDOW - 2.0 * Vector2(PAD, PAD)
-	window.add_child(rows)
-	rows.add_child(_label("Modify %s" % card.look().name, 26))
+	_window.add_child(rows)
+	var heading: Label = _label("Modify %s" % card.look().name, 26)
+	heading.name = "Heading"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_override("font", DeckbuilderLook.bold())
+	rows.add_child(heading)
 	var middle: HBoxContainer = HBoxContainer.new()
-	middle.add_theme_constant_override("separation", 24)
-	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	middle.add_theme_constant_override("separation", 16)
 	rows.add_child(middle)
-	middle.add_child(_tile_list())
-	middle.add_child(_faces())
+	_tile_list(_panel(middle, "Valid Mods"))
+	_faces(middle)
 	_footer = HBoxContainer.new()
 	_footer.add_theme_constant_override("separation", 10)
 	_footer.custom_minimum_size = Vector2(0, 40)
@@ -103,6 +115,24 @@ func previewed() -> Mod:
 ## The Mod that was clicked and is waiting for Apply, or null.
 func chosen() -> Mod:
 	return _chosen
+
+
+## The window itself, which is no larger than what is in it.
+func window() -> PanelContainer:
+	return _window
+
+
+## The three panels, left to right: Valid Mods, Current and the card with a Mod.
+func panels() -> Array[PanelContainer]:
+	return _panels
+
+
+## The title at the top of each panel, left to right.
+func panel_titles() -> Array[String]:
+	var titles: Array[String] = []
+	for panel: PanelContainer in _panels:
+		titles.append((panel.find_child("Title", true, false) as Label).text)
+	return titles
 
 
 ## The card as it is.
@@ -145,6 +175,8 @@ func choose(mod: Mod) -> void:
 
 
 func _on_apply() -> void:
+	if _state != State.CHOSEN:
+		return
 	_state = State.CONFIRMING
 	_show_state()
 
@@ -169,14 +201,34 @@ func _on_close() -> void:
 	closed.emit()
 
 
-## The held Mods, one tile for each kind.
-func _tile_list() -> Control:
+## A lighter panel with a gray border and [param title] centered at its top, added to
+## [param row]. Returns the column to fill under the title, which is a card's height.
+func _panel(row: HBoxContainer, title: String) -> VBoxContainer:
+	var panel: PanelContainer = PanelContainer.new()
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = DeckbuilderLook.COLUMN
+	style.border_color = DeckbuilderLook.PANEL_EDGE
+	style.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(PANEL_PAD)
+	style.content_margin_top = PANEL_PAD - 4.0
+	panel.add_theme_stylebox_override("panel", style)
+	row.add_child(panel)
+	_panels.append(panel)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
-	column.custom_minimum_size = Vector2(TILES_WIDTH, 0)
-	column.add_child(_label("Held Mods", 18, MUTED))
+	panel.add_child(column)
+	var heading: Label = _label(title, 18, MUTED)
+	heading.name = "Title"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(heading)
+	return column
+
+
+## The held Mods, one tile for each kind, in [param column].
+func _tile_list(column: VBoxContainer) -> void:
 	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(TILES_WIDTH, FACE_HEIGHT)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
 	var tiles: VBoxContainer = VBoxContainer.new()
@@ -192,6 +244,7 @@ func _tile_list() -> Control:
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.add_theme_font_size_override("font_size", 18)
 		button.custom_minimum_size = Vector2(0, 68)
+		_style_tile(button, false)
 		button.focus_mode = Control.FOCUS_NONE
 		button.disabled = not mod.is_applicable_to(_card)
 		if button.disabled:
@@ -201,24 +254,19 @@ func _tile_list() -> Control:
 		button.mouse_exited.connect(hover.bind(null))
 		tiles.add_child(button)
 		_tiles[mod] = button
-	return column
 
 
-## The card as it is, and beside it the place for the card as it would become.
-func _faces() -> Control:
-	var pair: HBoxContainer = HBoxContainer.new()
-	pair.add_theme_constant_override("separation", 24)
-	pair.alignment = BoxContainer.ALIGNMENT_CENTER
-	pair.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+## The card as it is, and beside it the place for the card as it would become, each in a
+## panel of its own in [param row]. Neither face shows its Mod Slots.
+func _faces(row: HBoxContainer) -> void:
 	var card_size: Vector2 = Vector2(FACE_HEIGHT * CardGeometry.ASPECT, FACE_HEIGHT)
-	var left: VBoxContainer = VBoxContainer.new()
-	left.add_child(_label("As it is", 18, MUTED))
-	_before = DeckbuilderFace.make(_card, FACE_HEIGHT)
-	left.add_child(_before)
-	pair.add_child(left)
-	var right: VBoxContainer = VBoxContainer.new()
-	_after_caption = _label("With a Mod", 18, MUTED)
-	right.add_child(_after_caption)
+	_before = DeckbuilderFace.make(_card, FACE_HEIGHT, false)
+	var before_place: Control = Control.new()
+	before_place.custom_minimum_size = card_size
+	before_place.add_child(_before)
+	_panel(row, "Current").add_child(before_place)
+	var right: VBoxContainer = _panel(row, NO_MOD_TITLE)
+	_after_caption = right.get_node("Title") as Label
 	_after_place = Panel.new()
 	var empty: StyleBoxFlat = StyleBoxFlat.new()
 	empty.bg_color = Color(0, 0, 0, 0.25)
@@ -227,16 +275,7 @@ func _faces() -> Control:
 	empty.set_corner_radius_all(roundi(card_size.x * CardGeometry.CORNER))
 	_after_place.add_theme_stylebox_override("panel", empty)
 	_after_place.custom_minimum_size = card_size
-	var hint: Label = _label("Hover over a Mod to see the card with it.", 18, MUTED)
-	hint.name = "Hint"
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.position = Vector2(24, 0)
-	hint.size = card_size - Vector2(48, 0)
-	_after_place.add_child(hint)
 	right.add_child(_after_place)
-	pair.add_child(right)
-	return pair
 
 
 ## Shows the card as [param mod] would leave it, or the empty place for null.
@@ -247,10 +286,9 @@ func _preview(mod: Mod) -> void:
 	if _after != null:
 		_after.queue_free()
 		_after = null
-	(_after_place.get_node("Hint") as Label).visible = mod == null
-	_after_caption.text = "With a Mod" if mod == null else "With %s" % mod.name
+	_after_caption.text = NO_MOD_TITLE if mod == null else "With %s" % mod.name
 	if mod != null:
-		_after = DeckbuilderFace.make(_card.with_mod(mod), FACE_HEIGHT)
+		_after = DeckbuilderFace.make(_card.with_mod(mod), FACE_HEIGHT, false)
 		_after_place.add_child(_after)
 
 
@@ -264,36 +302,49 @@ func _show_state() -> void:
 	for mod: Mod in _tiles:
 		var button: Button = _tiles[mod]
 		button.disabled = _state == State.CONFIRMING or not mod.is_applicable_to(_card)
-		if mod == _chosen:
-			var ring: StyleBoxFlat = StyleBoxFlat.new()
-			ring.bg_color = Color("#343b47")
-			ring.border_color = CHOSEN_RING
-			ring.set_border_width_all(2)
-			ring.set_corner_radius_all(4)
-			ring.set_content_margin_all(8)
-			for look: String in ["normal", "hover", "pressed", "disabled"]:
-				button.add_theme_stylebox_override(look, ring)
-		else:
-			for look: String in ["normal", "hover", "pressed", "disabled"]:
-				button.remove_theme_stylebox_override(look)
-	var spacer: Control = Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_style_tile(button, mod == _chosen)
 	match _state:
 		State.CHOOSING:
-			_footer.add_child(_label("Click a Mod to apply it. Applying is permanent.", 18, MUTED))
-			_footer.add_child(spacer)
+			_footer.add_child(_line(_label("Click a Mod to select it. Applying a Mod cannot be undone.", 18, MUTED)))
+			# Apply keeps its place, gray, until a Mod is clicked.
+			_add_button("apply", "Apply", _on_apply)
+			_buttons["apply"].disabled = true
 			_add_button("close", "Close", _on_close)
 		State.CHOSEN:
-			_footer.add_child(_label("%s will fill one of this card's Mod Slots." % _chosen.name, 18, MUTED))
-			_footer.add_child(spacer)
+			_footer.add_child(_line(_label("%s will fill one of this card's Mod Slots." % _chosen.name, 18, MUTED)))
 			_add_button("apply", "Apply", _on_apply)
 			_add_button("cancel", "Cancel", _on_cancel)
 		State.CONFIRMING:
 			_question = _label("Are you sure? Applying %s to %s cannot be undone." % [_chosen.name, _card.look().name], 18)
-			_footer.add_child(_question)
-			_footer.add_child(spacer)
+			_footer.add_child(_line(_question))
 			_add_button("yes", "Yes, apply it", _on_yes)
 			_add_button("no", "No, go back", _on_no)
+
+
+## Paints a Mod's tile: a darker gray than the other buttons, shaded as they are, and
+## ringed while it [param is_chosen].
+func _style_tile(button: Button, is_chosen: bool) -> void:
+	var fills: Dictionary[String, Color] = {
+		"normal": TILE, "hover": TILE.lightened(0.1), "pressed": TILE.darkened(0.15), "disabled": TILE.darkened(0.3),
+	}
+	for look: String in fills:
+		var style: StyleBoxFlat = StyleBoxFlat.new()
+		style.bg_color = DeckbuilderLook.BUTTON_HOVER if is_chosen else fills[look]
+		style.set_corner_radius_all(5)
+		style.set_content_margin_all(8)
+		DeckbuilderLook.shade(style)
+		if is_chosen:
+			style.border_color = CHOSEN_RING
+			style.set_border_width_all(2)
+		button.add_theme_stylebox_override(look, style)
+
+
+## [param label] made to take the footer's spare width and wrap in it, so that a long line
+## never makes the window wider.
+func _line(label: Label) -> Label:
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return label
 
 
 func _add_button(key: String, text: String, action: Callable) -> void:

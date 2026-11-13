@@ -4,13 +4,13 @@ extends RefCounted
 ## card's Mod Slots drawn on it.
 
 
-## A Card Face for [param card], [param height] tall, showing its Mod Slots if it has any,
-## unless [param shows_slots] is false.
+## A Card Face for [param card], [param height] tall, showing its Mod Slots unless
+## [param shows_slots] is false.
 static func make(card: DeckbuilderCard, height: float, shows_slots: bool = true) -> CardFace:
 	var face: CardFace = CardFace.new()
 	face.setup(card.look(), height)
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if shows_slots and card.mod_slots() > 0:
+	if shows_slots:
 		var row: ModSlotRow = ModSlotRow.new()
 		row.name = "ModSlots"
 		row.setup(card, height)

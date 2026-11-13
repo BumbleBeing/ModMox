@@ -91,15 +91,19 @@ A Potion's picture: a 16 × 16 pixel icon on a beige square with a darker circle
 _Avoid_: Potion art, potion sprite, potion card
 
 **Mod**:
-An Item the Hero holds (a Hex aside) and can apply to a card in their Collection to change it for the rest of the run. Applied, it becomes one of that Run Card's Modifications, the rules engine's word for the change itself. Applying one is final the moment it is confirmed, and it fills one of the card's Mod Slots. A Mod is applicable to a card that has an empty Mod Slot and that the Mod's own rule accepts.
+An Item the Hero holds (a Hex aside) and can apply, in the deckbuilder only, to a card to change it for the rest of the run. Applied, it becomes one of that Run Card's Modifications, the rules engine's word for the change itself. Applying one is final the moment it is confirmed, and it fills one of the card's Mod Slots. A Mod is applicable to a card that has an empty Mod Slot and that the Mod's own rule accepts, a basic land included. Its name becomes part of the card's Modded Name.
 _Avoid_: Modification (the engine's term), upgrade, enchantment
 
 **Hex**:
 A Mod that harms the card it is on. The Hero never holds or applies one: it arrives already on a card, and takes one of that card's three Mod Slots.
 _Avoid_: Curse, bad mod, downgrade
 
+**Modded Name**:
+What a card with Mods or Hexes is called: the name of each one on it, in slot order, in front of the card's own. A Grizzly Bears with the Mod Violent is Violent Grizzly Bears. A fuller set of naming rules is still to be agreed.
+_Avoid_: Prefix, title, nickname
+
 **Mod Slot**:
-One of the three places a Run Card has for Mods, Hexes included. Basic lands have none.
+One of the three places a card has for Mods, Hexes included. A basic land has them too.
 _Avoid_: Mod pip, socket, upgrade slot
 
 **Heart**:
@@ -113,15 +117,15 @@ _Avoid_: Random seed, world seed
 ## Decks
 
 **Collection**:
-Every Run Card the Hero owns in the run. It alone owns them: a Deck only points at cards in it, so one Run Card can be in several Decks and carries its Mods into each. Two copies of a card are two Run Cards. Basic lands are not in it.
+Every Run Card the Hero owns in the run. It alone owns them: a Deck only points at cards in it, so one Run Card can be in several Decks and carries its Mods into each. Two copies of a card are two Run Cards. A basic land is not in it until it takes its first Mod. A card that is sold or lost drops out of every Deck.
 _Avoid_: Card pool, inventory, library (a rules term), stash
 
 **Deck**:
-A named list of Run Cards from the Collection, each at most once, plus any number of basic lands. Its cards are never stacked or counted as copies: every one is shown and handled as its own card. It is legal at 40 cards or more. An illegal Deck can be saved but cannot be the Active Deck.
+A named list of Run Cards from the Collection, each at most once, plus any number of basic lands. Its cards are never stacked or counted as copies: every one is shown and handled as its own card. It is legal at 40 cards or more, with no maximum and no limit on copies. An illegal Deck can be saved, but an encounter cannot be started with one.
 _Avoid_: Decklist, loadout, build
 
 **Deckbox**:
-The Decks the Hero has saved in the run.
+The Decks the Hero has saved in the run, and the screen that lists them, sets the Active Deck and is the only way into the deckbuilder. It can be opened from Stage Navigation, and it opens by itself before an encounter once the Villain is revealed, with a Start button that is disabled while the Active Deck is illegal.
 _Avoid_: Deck list, deck slots, saved decks
 
 **Active Deck**:
@@ -129,7 +133,7 @@ The one Deck in the Deckbox that the Hero takes into encounters.
 _Avoid_: Current deck, equipped deck, main deck
 
 **Basic land**:
-A land the Hero never has to own: a Deck may hold any number of each type for free. It cannot take a Mod.
+A land the Hero never has to own: a Deck may hold any number of each type for free. One that takes a Mod stops being free: that copy becomes a Run Card in the Collection with a Modded Name, such as Ancient Plains, and no longer counts as a Plains.
 _Avoid_: Free land
 
 **Working Deck**:
@@ -336,7 +340,7 @@ The card a right-click puts in the Inspector, ringed where it is drawn. A right-
 _Avoid_: Selected card (the deckbuilder's), locked card, focused card
 
 **Original**:
-A card as its Card Definition has it: no Mods, no Hexes and nothing an encounter has done to it. The Inspector shows it in place of the card as it is now while See Original is ticked. A token or an Emblem has none.
+A card as its Card Definition has it: no Mods, no Hexes and nothing an encounter has done to it. The Inspector shows it in place of the card as it is now while View Original is pressed. A token or an Emblem has none.
 _Avoid_: Base card, printed card, unmodified card
 
 **State List**:

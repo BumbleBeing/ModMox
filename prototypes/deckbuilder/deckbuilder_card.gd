@@ -1,9 +1,10 @@
 class_name DeckbuilderCard
 extends RefCounted
 ## One card as the deckbuilder handles it: a Run Card, the identity that lasts the run, and
-## the Mods in its Mod Slots (ADR 0028). Every card is its own; nothing is stacked.
+## the Mods in its Mod Slots (ADR 0028). Every card is its own; nothing is stacked. Each
+## Mod's name goes in front of the card's own, in slot order (A559).
 
-## How many Mod Slots a card has, Hexes included. A basic land has none.
+## How many Mod Slots a card has, Hexes included. A basic land has them too (A558).
 const MOD_SLOTS: int = 3
 ## Where a card sorts by color: white to green, then multicolor, then colorless.
 const MULTICOLOR_RANK: int = 5
@@ -15,6 +16,7 @@ var run_card: MmRunCard = null
 var mods: Array[Mod] = []
 
 var _look: CardLook = null
+var _original_look: CardLook = null
 
 
 func _init(card_id: int, card: MmRunCard) -> void:
@@ -25,10 +27,22 @@ func _init(card_id: int, card: MmRunCard) -> void:
 ## The card as it reads now, with every Mod applied.
 func look() -> CardLook:
 	if _look == null:
-		_look = CardLook.of_characteristics(
-				MmCharacteristics.printed(run_card.flatten()),
-				run_card.base.resource_path.get_file().get_basename())
+		_look = CardLook.of_characteristics(MmCharacteristics.printed(run_card.flatten()), _art_key())
+		_look.name = _modded_name(_look.name)
+		_look.rules_text = AbilityText.of_card(_look.abilities, _look.card_types, _look.supertypes, _look.name)
 	return _look
+
+
+## The card as its Card Definition has it: no Mods and no Hexes.
+func original_look() -> CardLook:
+	if _original_look == null:
+		_original_look = CardLook.of_characteristics(MmCharacteristics.printed(run_card.base), _art_key())
+	return _original_look
+
+
+## Whether it has a Mod or a Hex, and so differs from its Original.
+func is_modified() -> bool:
+	return not mods.is_empty()
 
 
 func is_land() -> bool:
@@ -51,7 +65,7 @@ func color_rank() -> int:
 
 
 func mod_slots() -> int:
-	return 0 if is_basic_land() else MOD_SLOTS
+	return MOD_SLOTS
 
 
 func has_empty_mod_slot() -> bool:
@@ -76,6 +90,21 @@ func with_mod(mod: Mod) -> DeckbuilderCard:
 	copy.mods = mods.duplicate()
 	copy.attach(mod)
 	return copy
+
+
+func _art_key() -> String:
+	return run_card.base.resource_path.get_file().get_basename()
+
+
+## [param own_name] with the name of each Mod and Hex in front of it, in slot order. A Mod
+## with no name adds no word.
+func _modded_name(own_name: String) -> String:
+	var words: PackedStringArray = []
+	for mod: Mod in mods:
+		if mod.name != "":
+			words.append(mod.name)
+	words.append(own_name)
+	return " ".join(words)
 
 
 ## Whether this card comes before [param other] in a column: color, then name.

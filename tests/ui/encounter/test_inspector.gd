@@ -1,5 +1,5 @@
 extends GutTest
-## The Inspector (13h, ADR 0033): a card's Card Face with its Rarity's glow, See Original,
+## The Inspector (13h, ADR 0033): a card's Card Face with its Rarity's glow, View Original,
 ## its State List and its Reminders.
 
 const ALPHA: String = "res://content/cards/alpha/%s.tres"
@@ -42,7 +42,7 @@ func test_every_rarity_has_a_glow_of_its_own() -> void:
 		seen.append(Inspector.glow_of(rarity))
 
 
-func test_see_original_shows_the_original_in_the_cards_place() -> void:
+func test_view_original_shows_the_original_in_the_cards_place() -> void:
 	var pumped: CardLook = _look("grizzly_bears")
 	pumped.power = 5
 	_inspector.show_card(BEARS, pumped, _look("grizzly_bears"), null, [])
@@ -57,13 +57,13 @@ func test_see_original_shows_the_original_in_the_cards_place() -> void:
 	assert_eq(_inspector.shown_look().power, 5)
 
 
-func test_see_original_cannot_be_pressed_for_a_card_with_no_original() -> void:
+func test_view_original_cannot_be_pressed_for_a_card_with_no_original() -> void:
 	_inspector.show_card(BEARS, _look("grizzly_bears"), null, null, [])
 
 	assert_true(_inspector.original_button().disabled)
 
 
-func test_see_original_stays_for_the_same_card_and_is_let_up_for_another() -> void:
+func test_view_original_stays_for_the_same_card_and_is_let_up_for_another() -> void:
 	_inspector.show_card(BEARS, _look("grizzly_bears"), _look("grizzly_bears"), null, [])
 	_inspector.original_button().button_pressed = true
 
@@ -73,7 +73,14 @@ func test_see_original_stays_for_the_same_card_and_is_let_up_for_another() -> vo
 	assert_false(_inspector.original_button().button_pressed)
 
 
-func test_see_original_is_in_the_middle_under_the_card() -> void:
+func test_the_button_reads_view_original_and_the_keyword_section_reminders() -> void:
+	_inspector.show_card(BEARS, _look("grizzly_bears"), _look("grizzly_bears"), null, [])
+
+	assert_eq(_inspector.original_button().text, "View Original")
+	assert_eq(_inspector.reminder_title().text, "Reminders")
+
+
+func test_view_original_is_in_the_middle_under_the_card() -> void:
 	_inspector.show_card(BEARS, _look("grizzly_bears"), _look("grizzly_bears"), null, [])
 	await wait_process_frames(2)
 	var button: Button = _inspector.original_button()
@@ -151,7 +158,7 @@ func test_the_top_says_how_to_close_it_in_tiny_centered_text_and_there_is_no_clo
 	var holder: Control = hint.get_parent() as Control
 	assert_almost_eq(holder.size.y - hint.size.y, 8.0, 0.01, "And one below.")
 	assert_false(_inspector.has_signal("close_pressed"))
-	assert_eq(_inspector.find_children("*", "Button", true, false).size(), 1, "Only See Original.")
+	assert_eq(_inspector.find_children("*", "Button", true, false).size(), 1, "Only View Original.")
 
 
 func test_it_takes_the_mouse_so_nothing_under_it_is_clicked() -> void:
@@ -227,7 +234,7 @@ func test_an_emblem_is_shown_on_an_emblem_face_the_width_of_a_card_face() -> voi
 	assert_false(_inspector.original_button().visible)
 
 
-func test_a_card_shown_after_an_emblem_gets_its_card_face_and_see_original_back() -> void:
+func test_a_card_shown_after_an_emblem_gets_its_card_face_and_view_original_back() -> void:
 	_inspector.show_card(BEARS, _held_look("res://content/emblems/electromancers_boon.tres", "", CardLook.Kind.EMBLEM), null, null, [])
 
 	_inspector.show_card(ANGEL, _look("serra_angel"), _look("serra_angel"), null, [])

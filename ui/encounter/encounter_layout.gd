@@ -67,6 +67,9 @@ const OPENING_STEP: float = 0.85
 const OPENING_FAN_ANGLE: float = 0.06
 const OPENING_MIDDLE: float = 0.47
 const OPENING_BUTTON: Vector2 = Vector2(230.0, 58.0)
+## While play or draw is chosen, the space between the heading's plate and the buttons,
+## which lies across the middle of the screen (A563).
+const OPENING_CHOICE_GAP: float = 40.0
 const OPENING_TWO_ROWS_FROM: int = 9
 ## The space between two triggers being put in order in the Stack Window.
 const TRIGGER_GAP: float = 6.0
@@ -568,8 +571,7 @@ static func _opening_hand_sag(in_row: int, card: Vector2) -> float:
 
 ## The parts of the opening-hand overlay around a hand of [param count] cards in
 ## [param area]: "heading" and "under_heading" above the cards, "buttons" (a row as wide as
-## the area, for buttons centered in it) and "villain" below them, and "middle", the row
-## where play or draw is chosen while there are no cards yet.
+## the area, for buttons centered in it) and "villain" below them.
 static func opening_hand(count: int, area: Rect2) -> Dictionary[String, Rect2]:
 	var unit: float = area.size.y / DESIGN_HEIGHT
 	var block: float = _opening_hand_block(count, area)
@@ -580,9 +582,21 @@ static func opening_hand(count: int, area: Rect2) -> Dictionary[String, Rect2]:
 	return {
 		"heading": Rect2(left, top - 120.0 * unit, width, 50.0 * unit),
 		"under_heading": Rect2(left, top - 66.0 * unit, width, 34.0 * unit),
-		"middle": Rect2(left, top + (block - OPENING_BUTTON.y * unit) / 2.0, width, OPENING_BUTTON.y * unit),
 		"buttons": Rect2(left, buttons_top, width, OPENING_BUTTON.y * unit),
 		"villain": Rect2(left, buttons_top + (OPENING_BUTTON.y + 26.0) * unit, width, 34.0 * unit),
+	}
+
+
+## The parts of the opening-hand overlay while play or draw is chosen, with no cards yet:
+## "heading", a row [param plate_height] tall for the heading's plate, and "buttons" under
+## it, with the space between them centered on the middle of [param area] (A563).
+static func opening_hand_choice(area: Rect2, plate_height: float) -> Dictionary[String, Rect2]:
+	var unit: float = area.size.y / DESIGN_HEIGHT
+	var half_gap: float = OPENING_CHOICE_GAP * unit / 2.0
+	var middle: float = area.get_center().y
+	return {
+		"heading": Rect2(area.position.x, middle - half_gap - plate_height, area.size.x, plate_height),
+		"buttons": Rect2(area.position.x, middle + half_gap, area.size.x, OPENING_BUTTON.y * unit),
 	}
 
 

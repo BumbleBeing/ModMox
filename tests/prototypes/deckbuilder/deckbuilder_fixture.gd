@@ -3,6 +3,7 @@ extends RefCounted
 ## Deckbox and a Working Deck over them. Preloaded, never class_name'd.
 
 const ALPHA: String = "res://content/cards/alpha/%s.tres"
+const NoChange: GDScript = preload("res://tests/prototypes/deckbuilder/no_change_modification.gd")
 const BASIC_LANDS: Array[String] = ["plains", "island", "swamp", "mountain", "forest"]
 
 var collection: Collection = Collection.new()
@@ -32,25 +33,33 @@ func working_deck(deck: Deck = null) -> WorkingDeck:
 	return WorkingDeck.new(collection, deckbox, basic_lands(), deck)
 
 
-## A Mod that adds one mana symbol, which only a card with a mana cost accepts.
+## A Mod that adds one mana symbol, which only a card with a mana cost accepts. It has no
+## name, so it puts no word in front of the card's.
 static func add_symbol_mod(symbol: MmMana.Type, is_hex: bool = false) -> Mod:
 	var modification: AddManaSymbolModification = AddManaSymbolModification.new()
 	modification.symbol = symbol
 	var mod: Mod = Mod.new()
-	mod.name = "Add {%s}" % MmMana.SYMBOLS[symbol]
 	mod.is_hex = is_hex
 	mod.modification = modification
 	mod.needs_mana_cost = true
 	return mod
 
 
-## A Mod that renames the card, which any card accepts.
+## A Mod that renames the card, which any card accepts. It has no name of its own.
 static func rename_mod(new_name: String) -> Mod:
 	var modification: ChangeNameModification = ChangeNameModification.new()
 	modification.new_name = new_name
 	var mod: Mod = Mod.new()
-	mod.name = "Rename"
 	mod.modification = modification
+	return mod
+
+
+## A Mod named [param word] that changes nothing but the card's name, which any card accepts.
+static func word_mod(word: String, is_hex: bool = false) -> Mod:
+	var mod: Mod = Mod.new()
+	mod.name = word
+	mod.is_hex = is_hex
+	mod.modification = NoChange.new() as MmModification
 	return mod
 
 

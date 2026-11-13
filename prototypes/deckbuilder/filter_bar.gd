@@ -11,16 +11,19 @@ signal changed
 
 const TOGGLE: float = 32.0
 const ICON: float = 24.0
-const ON_FILL: Color = Color("#343b47")
+const ON_FILL: Color = DeckbuilderLook.BUTTON_PRESSED
 const ON_RING: Color = Color("#e8cf8a")
 const OFF_ALPHA: float = 0.38
-const HOVER_FILL: Color = Color("#2b313b")
-const CHIP_BORDER: Color = Color("#4a515d")
-const CHIP_TEXT: Color = Color("#aab2bd")
+const HOVER_FILL: Color = DeckbuilderLook.BUTTON_HOVER
+const OFF_FILL: Color = DeckbuilderLook.BUTTON
+## How deep the lip under a toggle or a chip is.
+const LIP: int = 3
+const CHIP_BORDER: Color = DeckbuilderLook.BUTTON_HOVER
+const CHIP_TEXT: Color = DeckbuilderLook.MUTED
 const CHIP_ON_FILL: Color = Color("#e8cf8a")
-const CHIP_ON_TEXT: Color = Color("#1a1d22")
-const MUTED: Color = Color("#9aa3af")
-const DIVIDER: Color = Color("#3a404a")
+const CHIP_ON_TEXT: Color = DeckbuilderLook.HOLLOW
+const MUTED: Color = DeckbuilderLook.MUTED
+const DIVIDER: Color = DeckbuilderLook.SUBPANEL_BORDER
 const MULTICOLOR_FILL: Color = Color("#d8b24a")
 const MULTICOLOR_EDGE: Color = Color("#8a6a1c")
 const COLOR_SYMBOLS: Array[String] = ["w", "u", "b", "r", "g"]
@@ -186,8 +189,8 @@ func _add_toggle(key: String, icon: Control, read: Callable, write: Callable) ->
 	button.custom_minimum_size = Vector2(TOGGLE, TOGGLE)
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var radius: int = roundi(TOGGLE / 2.0)
-	button.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 0, radius))
-	button.add_theme_stylebox_override("hover", _flat(HOVER_FILL, Color.TRANSPARENT, 0, radius))
+	button.add_theme_stylebox_override("normal", _shaded(_flat(OFF_FILL, Color.TRANSPARENT, 0, radius)))
+	button.add_theme_stylebox_override("hover", _shaded(_flat(HOVER_FILL, Color.TRANSPARENT, 0, radius)))
 	for state: String in ["pressed", "hover_pressed"]:
 		button.add_theme_stylebox_override(state, _flat(ON_FILL, ON_RING, 2, radius))
 	icon.position = Vector2.ONE * (TOGGLE - ICON) / 2.0
@@ -220,16 +223,22 @@ func _chip_button(text: String, toggles: bool) -> Button:
 
 ## The pill look, shared by the chips and the sort dropdown.
 func _style_as_pill(control: Button) -> void:
-	control.add_theme_stylebox_override("normal", _pill(Color.TRANSPARENT, CHIP_BORDER))
-	control.add_theme_stylebox_override("hover", _pill(HOVER_FILL, CHIP_BORDER))
+	control.add_theme_stylebox_override("normal", _shaded(_pill(OFF_FILL, CHIP_BORDER)))
+	control.add_theme_stylebox_override("hover", _shaded(_pill(HOVER_FILL, CHIP_BORDER)))
 	for state: String in ["pressed", "hover_pressed"]:
 		var lit: bool = control.toggle_mode and not control is OptionButton
-		control.add_theme_stylebox_override(state, _pill(CHIP_ON_FILL if lit else HOVER_FILL, CHIP_ON_FILL if lit else CHIP_BORDER))
+		control.add_theme_stylebox_override(state, _shaded(_pill(CHIP_ON_FILL if lit else ON_FILL, CHIP_ON_FILL if lit else CHIP_BORDER), 1))
 		control.add_theme_color_override("font_%s_color" % state, CHIP_ON_TEXT if lit else CHIP_TEXT)
-	control.add_theme_stylebox_override("disabled", _pill(Color.TRANSPARENT, DIVIDER))
+	control.add_theme_stylebox_override("disabled", _shaded(_pill(DeckbuilderLook.BUTTON_DISABLED, DIVIDER)))
 	control.add_theme_color_override("font_disabled_color", Color(CHIP_TEXT, OFF_ALPHA))
 	control.add_theme_color_override("font_color", CHIP_TEXT)
-	control.add_theme_color_override("font_hover_color", Color.WHITE)
+	control.add_theme_color_override("font_hover_color", DeckbuilderLook.TEXT)
+
+
+## [param style] shaded as a raised button is, with its lip [param lip] pixels deep.
+static func _shaded(style: StyleBoxFlat, lip: int = LIP) -> StyleBoxFlat:
+	DeckbuilderLook.shade(style, lip)
+	return style
 
 
 static func _pill(fill: Color, border: Color) -> StyleBoxFlat:

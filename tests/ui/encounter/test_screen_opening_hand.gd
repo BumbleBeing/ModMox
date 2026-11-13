@@ -608,6 +608,7 @@ func test_the_scrim_covers_the_whole_overlay_and_lets_the_mouse_through_to_it() 
 
 	var scrim: ColorRect = _overlay.scrim()
 	assert_eq(scrim.color, OpeningHandOverlay.SCRIM)
+	assert_almost_eq(scrim.color.a, 0.8, 0.001, "The Backdrop shows through dimly (A561).")
 	assert_eq(scrim.size, _overlay.size)
 	assert_eq(scrim.position, Vector2.ZERO)
 	assert_eq(scrim.mouse_filter, Control.MOUSE_FILTER_IGNORE, "The overlay itself stops the mouse.")
@@ -637,6 +638,63 @@ func test_the_words_are_centered_in_the_rows_the_layout_gives_them() -> void:
 			"The heading is the largest line.")
 
 
+func test_the_heading_is_bold_on_a_plate_that_hugs_it() -> void:
+	_open(Scenario.setup(Rule.HERO_CHOOSES))
+
+	var heading: Label = _overlay.heading_label()
+	var plate: Panel = _overlay.heading_plate()
+	var font: Font = heading.get_theme_font("font")
+	var font_size: int = heading.get_theme_font_size("font_size")
+	var words: Vector2 = Vector2(font.get_string_size("You choose", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x, font.get_height(font_size))
+	assert_eq(font, UiText.bold(), "The heading is always bold (A562).")
+	assert_ne(_overlay.under_heading_label().get_theme_font("font"), UiText.bold())
+	assert_ne(_overlay.villain_label().get_theme_font("font"), UiText.bold())
+	assert_almost_eq(plate.size, words + OpeningHandOverlay.PLATE_PAD * 2.0, Vector2(0.01, 0.01), "32 px at the sides, 12 above and below.")
+	assert_almost_eq(plate.position + plate.size / 2.0, heading.position + heading.size / 2.0, Vector2(0.01, 0.01))
+	assert_eq(OpeningHandOverlay.PLATE_PAD, Vector2(32, 12))
+	var style: StyleBoxFlat = plate.get_theme_stylebox("panel") as StyleBoxFlat
+	assert_eq(style.bg_color, OpeningHandOverlay.PLATE_COLOR)
+	assert_eq(Color(style.bg_color, 1.0), Color(0.09, 0.1, 0.13), "The dark gray of the encounter's windows.")
+	assert_eq(style.corner_radius_top_left, 10)
+	assert_eq(style.border_width_top, 0)
+	assert_eq(plate.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+	assert_gt(plate.get_index(), _overlay.scrim().get_index())
+	assert_lt(plate.get_index(), heading.get_index(), "The words are over it.")
+
+
+func test_with_no_heading_there_is_no_plate() -> void:
+	_open(Scenario.setup(Rule.VILLAIN_STARTS))
+
+	assert_eq(_overlay.heading_text(), "")
+	assert_null(_overlay.heading_plate())
+
+
+func test_a_heading_over_the_hand_has_its_plate_where_the_heading_was() -> void:
+	_open(Scenario.setup())
+
+	_press("Mulligan")
+
+	var row: Rect2 = EncounterLayout.opening_hand(7, Rect2(Vector2.ZERO, _overlay.size))["heading"]
+	var plate: Panel = _overlay.heading_plate()
+	assert_eq(_overlay.heading_text(), "Mulligans taken: 1")
+	assert_eq(_overlay.heading_label().get_theme_font("font"), UiText.bold())
+	assert_almost_eq(_overlay.heading_label().position, row.position, Vector2(0.001, 0.001))
+	assert_almost_eq(plate.position + plate.size / 2.0, row.get_center(), Vector2(0.01, 0.01))
+
+
+func test_play_or_draw_is_one_group_about_the_middle_of_the_window() -> void:
+	for screen_size: Vector2 in [SCREEN, Vector2(2560, 1440)]:
+		_open(Scenario.setup(Rule.HERO_CHOOSES))
+		_screen.size = screen_size
+		var unit: float = screen_size.y / 1080.0
+
+		var plate: Panel = _overlay.heading_plate()
+		var play: Button = _overlay.button("Play first")
+		assert_almost_eq(play.position.y - plate.get_rect().end.y, 40.0 * unit, 0.01, "Ten units apart (A563).")
+		assert_almost_eq((play.position.y + plate.get_rect().end.y) / 2.0, _overlay.size.y / 2.0, 0.01)
+		assert_almost_eq(_overlay.button("Draw first").position.y, play.position.y, 0.01)
+
+
 func test_the_buttons_stand_side_by_side_about_the_middle_and_say_what_they_do() -> void:
 	_open(Scenario.setup(Rule.HERO_CHOOSES))
 	var inside: Rect2 = Rect2(Vector2.ZERO, _overlay.size)
@@ -645,7 +703,8 @@ func test_the_buttons_stand_side_by_side_about_the_middle_and_say_what_they_do()
 
 	var play: Button = _overlay.button("Play first")
 	var draw: Button = _overlay.button("Draw first")
-	var choice_row: Rect2 = EncounterLayout.opening_hand(0, inside)["middle"]
+	var plate_height: float = _overlay.heading_plate().size.y
+	var choice_row: Rect2 = EncounterLayout.opening_hand_choice(inside, plate_height)["buttons"]
 	assert_eq(play.text, "Play first")
 	assert_eq(draw.text, "Draw first")
 	assert_almost_eq(play.size, size, Vector2(0.01, 0.01))
