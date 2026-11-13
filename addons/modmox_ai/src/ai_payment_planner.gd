@@ -1,9 +1,10 @@
 class_name AiPaymentPlanner
 extends RefCounted
 ## Chooses how to pay one step of a mana cost (A157, A169): mana already in the pool first,
-## then the source that is cheapest to lose. Colored symbols are paid before generic mana,
-## with sources making that color, so a payment the engine offered is always finished.
-## The Hero's auto-tapping can use it too, so both pay the same way.
+## then the source that is cheapest to lose: a land, then another source, then a creature.
+## Colored symbols are paid before generic mana, with sources making that color, so a
+## payment the engine offered is always finished. Auto-tap (game glossary) pays for the
+## Hero with it too, so both players pay the same way.
 
 ## Tiers, cheapest to use first.
 const _POOL_FOR_COLOR: int = 0
@@ -20,7 +21,7 @@ static func choose(state: MmGameState, decision: PayManaDecision) -> int:
 	var needed: Dictionary[int, int] = colors_needed_by_hand(state, decision.player_id)
 	var pool: Array[MmMana] = state.player(decision.player_id).mana_pool()
 	var best_index: int = 0
-	var best_rank: Array[int] = [_UNUSABLE, 0, 0]
+	var best_rank: Array[int] = [_UNUSABLE, 0, 0, 0]
 	for index: int in decision.actions.size():
 		var rank: Array[int] = _rank(state, decision, decision.actions[index], pool, needed)
 		if rank < best_rank:
@@ -53,25 +54,30 @@ static func mana_type_of(state: MmGameState, action: MmAction, pool: Array[MmMan
 	return -1
 
 
-## [tier, how much the rest of the hand needs that color, object ID], compared in order.
+## [tier, kind of source, how much the rest of the hand needs that color, object ID], compared
+## in order. A color is paid by a land before another source, and by a creature last, as
+## generic mana is: a creature left untapped can still block.
 static func _rank(state: MmGameState, decision: PayManaDecision, action: MmAction, pool: Array[MmMana],
 		needed: Dictionary[int, int]) -> Array[int]:
 	var produced: int = mana_type_of(state, action, pool)
 	var demand: int = needed.get(produced, 0)
 	var is_pool: bool = action is PayWithManaAction
+	var kind: int = _POOL if is_pool else _kind_of(state, action as ActivateAbilityAction)
 	if decision.remaining_symbols.has(produced as MmMana.Type):
-		return [_POOL_FOR_COLOR if is_pool else _SOURCE_FOR_COLOR, demand, _object_id(action)]
+		return [_POOL_FOR_COLOR if is_pool else _SOURCE_FOR_COLOR, kind, demand, _object_id(action)]
 	if not decision.remaining_symbols.is_empty() and decision.remaining_generic == 0:
-		return [_UNUSABLE, 0, 0]
-	if is_pool:
-		return [_POOL, demand, 0]
-	var source: MmGameObject = state.object((action as ActivateAbilityAction).object_id)
-	var characteristics: MmCharacteristics = state.characteristics_of(source)
+		return [_UNUSABLE, 0, 0, 0]
+	return [kind, 0, demand, _object_id(action)]
+
+
+## The tier of the source [param action] taps: a land, a creature, or anything else.
+static func _kind_of(state: MmGameState, action: ActivateAbilityAction) -> int:
+	var characteristics: MmCharacteristics = state.characteristics_of(state.object(action.object_id))
 	if characteristics.has_card_type(MmCardTypes.CardType.CREATURE):
-		return [_CREATURE, demand, source.id]
+		return _CREATURE
 	if characteristics.has_card_type(MmCardTypes.CardType.LAND):
-		return [_LAND, demand, source.id]
-	return [_OTHER_SOURCE, demand, source.id]
+		return _LAND
+	return _OTHER_SOURCE
 
 
 static func _object_id(action: MmAction) -> int:

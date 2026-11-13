@@ -2,7 +2,8 @@ class_name InfoPrompt
 extends RefCounted
 ## What the Info Panel (game glossary) says for one Pending Decision: one line asking the
 ## Hero for what is wanted, what is still owed while paying, and whether the decision is a
-## step of a cast that can be canceled.
+## step of a cast that can be canceled. While Auto-tap pays for the Hero it says what is being
+## paid for instead, with what is still owed, and the cast can still be canceled.
 
 var text: String = ""
 ## While paying: what is still owed. Null otherwise.
@@ -20,9 +21,15 @@ static func release_text(option_text: String) -> String:
 
 ## The prompt for [param decision] as the player whose [param view] this is reads it. A
 ## null decision (nobody is asking them anything) has no text, and nor has one answered on
-## the opening-hand overlay, which says everything itself and covers the panel.
-static func of(decision: MmPendingDecision, view: MmPlayerView) -> InfoPrompt:
+## the opening-hand overlay, which says everything itself and covers the panel. With no
+## decision and [param paying], the payment Auto-tap is making, it says what is being paid.
+static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaDecision = null) -> InfoPrompt:
 	var prompt: InfoPrompt = InfoPrompt.new()
+	if decision == null and paying != null:
+		prompt.text = "Paying for %s" % stack_name(view, view.stack.back().id if not view.stack.is_empty() else -1)
+		prompt.owed = _owed(paying)
+		prompt.can_cancel = true
+		return prompt
 	if decision == null:
 		return prompt
 	if decision is PriorityDecision:
@@ -32,9 +39,7 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> InfoPrompt:
 	elif decision is PayManaDecision:
 		var pay: PayManaDecision = decision as PayManaDecision
 		prompt.text = "Pay for %s" % stack_name(view, view.stack.back().id if not view.stack.is_empty() else -1)
-		prompt.owed = MmManaCost.new()
-		prompt.owed.generic = pay.remaining_generic
-		prompt.owed.symbols = pay.remaining_symbols.duplicate()
+		prompt.owed = _owed(pay)
 		prompt.can_cancel = true
 	elif decision is ChooseTargetDecision:
 		prompt.text = "Choose a target for %s" % stack_name(view, (decision as ChooseTargetDecision).stack_object_id)
@@ -59,6 +64,13 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> InfoPrompt:
 		prompt.text = decision.describe()
 		push_error("No input answers %s." % decision.describe())
 	return prompt
+
+
+static func _owed(payment: PayManaDecision) -> MmManaCost:
+	var owed: MmManaCost = MmManaCost.new()
+	owed.generic = payment.remaining_generic
+	owed.symbols = payment.remaining_symbols.duplicate()
+	return owed
 
 
 ## What the spell or ability [param stack_object_id] is called: a spell's name, or "X's

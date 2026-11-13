@@ -92,6 +92,17 @@ func test_an_option_replaces_everything_and_clearing_it_puts_everything_back() -
 	assert_true(panel._pips[0].visible)
 
 
+func test_while_auto_tap_pays_it_is_lit_and_shows_what_is_owed_and_a_cancel_button() -> void:
+	var paying: EncounterSnapshot = _snapshot(null)
+	paying.paying = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 2, [] as Array[MmMana.Type])
+	var panel: InfoPanel = _panel(paying, "")
+
+	assert_false(panel.is_dim(), "Nothing is asked, but something is happening for the Hero.")
+	assert_true(panel.prompt_text().begins_with("Paying for"))
+	assert_eq(panel.owed_pip_names(), ["2"] as Array[String])
+	assert_not_null(panel.cancel_button())
+
+
 func test_declaring_attackers_offers_all_attack_and_nothing_else_does() -> void:
 	var events: Array[String] = []
 	var panel: InfoPanel = _panel(_snapshot(DeclareAttackersDecision.new(HERO, [1, 2] as Array[int])), "")

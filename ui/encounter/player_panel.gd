@@ -51,6 +51,9 @@ var _mana: Array[Button] = []
 var _mana_counts: Array[Label] = []
 ## While paying: mana type → the answer that spends one unit of it.
 var _pay_answers: Dictionary[MmMana.Type, int] = {}
+## Mana types whose button glows without taking a press: what Auto-tap would spend, or is
+## about to (the Tap Preview).
+var _pool_marks: Array[MmMana.Type] = []
 var _steps: Array[Button] = []
 ## How each step button is drawn now: 1 for a stop, plus 2 for the step it is.
 var _step_looks: Array[int] = []
@@ -92,6 +95,7 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 
 	var pool: Array = view.mana_pools.get(_player_id, [])
 	_pay_answers = clicks.pool_answers.duplicate() if is_hero else ({} as Dictionary[MmMana.Type, int])
+	_pool_marks = clicks.pool_marks.duplicate() if is_hero else ([] as Array[MmMana.Type])
 	for type: int in 6:
 		var amount: int = 0
 		for unit: MmMana in pool:
@@ -175,6 +179,15 @@ func life_text() -> String:
 
 func emblems_button() -> Button:
 	return _emblems
+
+
+## Makes the buttons for [param types] of mana glow, and only those, without any of them
+## taking a press: the pool mana the Tap Preview says would be spent. Nothing is rebuilt.
+## The next snapshot shown puts the Glows back to what it says.
+func mark_pool(types: Array[MmMana.Type]) -> void:
+	_pool_marks = types.duplicate()
+	for type: int in _mana.size():
+		_glow_mana(type)
 
 
 ## The button for mana of [param type], in WUBRGC order.
@@ -278,8 +291,15 @@ func _show_mana(type: int, amount: int) -> void:
 	button.disabled = not can_press
 	button.modulate = Color(1, 1, 1, 1.0 if amount > 0 else 0.55)
 	_set_text(_mana_counts[type], "(%d)" % amount)
-	if can_press != (BorderEffects.glow_color(button) != null):
-		if can_press:
+	_glow_mana(type)
+
+
+## A mana button glows while its color can pay, or is marked as about to be spent.
+func _glow_mana(type: int) -> void:
+	var button: Button = _mana[type]
+	var glows: bool = _pay_answers.has(type) or _pool_marks.has(type)
+	if glows != (BorderEffects.glow_color(button) != null):
+		if glows:
 			BorderEffects.add_glow(button, button.size, DecisionClicks.color_of(DecisionClicks.Kind.MANA), glow_seconds)
 		else:
 			BorderEffects.remove_glow(button, glow_seconds)

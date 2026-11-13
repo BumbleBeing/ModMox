@@ -313,6 +313,44 @@ func test_while_paying_each_source_answers_with_its_own_step() -> void:
 	assert_eq(decision.validate(clicks.options_of(6)[0].answer), "")
 
 
+func test_the_tap_preview_keeps_blue_only_on_what_the_plan_taps() -> void:
+	var view: MmPlayerView = _view()
+	var staff: MmObjectView = _permanent(31, [_ping(), Scenario.tap_for_mana(MmMana.Type.RED, 1)])
+	var other: MmObjectView = _permanent(32, [Scenario.tap_for_mana(MmMana.Type.GREEN, 1)])
+	view.battlefield.append_array([staff, other])
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		PassAction.new(), ActivateAbilityAction.new(LAND_ID, 0), ActivateAbilityAction.new(31, 0),
+		ActivateAbilityAction.new(31, 1), ActivateAbilityAction.new(32, 0),
+	] as Array[MmAction])
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+	var blue: Color = DecisionClicks.color_of(DecisionClicks.Kind.MANA)
+	var purple: Color = DecisionClicks.color_of(DecisionClicks.Kind.ABILITY)
+	var plan: PaymentPlan = PaymentPlan.new()
+	plan.add_source(LAND_ID)
+
+	assert_eq(clicks.preview_colors_of(LAND_ID, plan), [blue] as Array[Color], "The plan taps it.")
+	assert_eq(clicks.preview_colors_of(32, plan), [] as Array[Color], "A source the plan leaves alone stops glowing.")
+	assert_eq(clicks.preview_colors_of(31, plan), [purple] as Array[Color], "Its ability is still offered; only the blue goes.")
+	plan.add_source(31)
+	assert_eq(clicks.preview_colors_of(31, plan), [purple, blue] as Array[Color])
+	assert_eq(clicks.preview_colors_of(99, plan), [] as Array[Color])
+	assert_eq(clicks.colors_of(32), [blue] as Array[Color], "Nothing about the clicks themselves changes.")
+
+
+func test_while_auto_tap_pays_what_is_left_to_tap_glows_and_nothing_takes_a_click() -> void:
+	var left: PaymentPlan = PaymentPlan.new()
+	left.add_source(LAND_ID)
+	left.add_pool(MmMana.Type.RED)
+
+	var clicks: DecisionClicks = DecisionClicks.of_payment(left)
+
+	assert_eq(clicks.kinds_of(LAND_ID), [DecisionClicks.Kind.MANA] as Array[DecisionClicks.Kind])
+	assert_true(clicks.options_of(LAND_ID).is_empty())
+	assert_true(clicks.clickable_ids().is_empty())
+	assert_eq(clicks.pool_marks, [MmMana.Type.RED] as Array[MmMana.Type])
+	assert_true(clicks.pool_answers.is_empty(), "A marked color is shown, not offered.")
+
+
 func test_while_targeting_each_candidate_answers_with_its_index_and_nothing_else_does() -> void:
 	var decision: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 20, 0,
 		[MmReference.to_player(HERO), MmReference.to_player(VILLAIN), MmReference.to_object(11)] as Array[MmReference])

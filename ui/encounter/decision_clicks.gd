@@ -37,6 +37,10 @@ var pool_answers: Dictionary[MmMana.Type, int] = {}
 ## Player ID → the answer clicking that player's panel gives.
 var player_answers: Dictionary[int, int] = {}
 
+## Mana types whose pool button glows without taking a press: what Auto-tap is about to
+## spend from the pool.
+var pool_marks: Array[MmMana.Type] = []
+
 ## Game Object ID → the ClickOptions clicking it offers, in answer order.
 var _options: Dictionary[int, Array] = {}
 ## Game Object ID of a card in hand → the ClickOptions playing it offers, in answer order.
@@ -94,6 +98,17 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 	return clicks
 
 
+## What glows while Auto-tap (game glossary) is paying for the Hero, a tap at a time: the
+## sources [param left] has still to tap, and the pool mana it has still to spend. Nothing
+## takes a click.
+static func of_payment(left: PaymentPlan) -> DecisionClicks:
+	var clicks: DecisionClicks = DecisionClicks.new()
+	for object_id: int in left.source_ids:
+		clicks.glow_as(object_id, Kind.MANA)
+	clicks.pool_marks = left.pool_types.duplicate()
+	return clicks
+
+
 ## The Game Object [param action] is about, or -1 for one about none (passing, or spending
 ## pool mana).
 static func object_of(action: MmAction) -> int:
@@ -131,6 +146,17 @@ func colors_of(object_id: int, is_bright: bool = false) -> Array[Color]:
 	for kind: Kind in kinds_of(object_id).slice(0, MOST_COLORS):
 		colors.append(bright_color_of(kind) if is_bright else color_of(kind))
 	return colors
+
+
+## The colors of Game Object [param object_id]'s Glow while the Tap Preview (game glossary)
+## shows [param plan]: as colors_of(), but blue for mana only on what the plan would tap.
+## Everything else it offers keeps its color, so a permanent with an ability stays purple.
+func preview_colors_of(object_id: int, plan: PaymentPlan) -> Array[Color]:
+	var colors: Array[Color] = []
+	for kind: Kind in kinds_of(object_id):
+		if kind != Kind.MANA or plan.taps(object_id):
+			colors.append(color_of(kind))
+	return colors.slice(0, MOST_COLORS)
 
 
 ## Every Game Object that glows.

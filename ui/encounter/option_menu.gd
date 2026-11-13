@@ -12,8 +12,12 @@ signal pointed(text: String)
 ## The menu was open and has closed, whether or not a row was chosen.
 signal closed
 
+## What pointed_answer() gives with the cursor over no row.
+const NO_ANSWER: int = -1
+
 ## How long it takes to ease in or out; the Encounter Screen sets it.
 var ease_seconds: float = 0.0
+var _pointed_answer: int = NO_ANSWER
 var _box: PanelContainer = null
 var _rows: Array[Button] = []
 
@@ -57,8 +61,15 @@ func open(options: Array[ClickOption], at: Vector2, field: Rect2) -> void:
 	Easing.fade_in(_box, ease_seconds)
 
 
+## The answer of the row the cursor is over, or NO_ANSWER: the Tap Preview shows what that
+## row would tap.
+func pointed_answer() -> int:
+	return _pointed_answer if is_open() else NO_ANSWER
+
+
 ## Closes the menu without choosing.
 func close() -> void:
+	_pointed_answer = NO_ANSWER
 	if _box == null:
 		return
 	var leaving: Control = _box
@@ -112,8 +123,13 @@ func _row(option: ClickOption) -> Button:
 		flat.set_corner_radius_all(4)
 		flat.content_margin_left = 10
 		row.add_theme_stylebox_override(state, flat)
-	row.mouse_entered.connect(func() -> void: pointed.emit(option.text))
-	row.mouse_exited.connect(func() -> void: pointed.emit(""))
+	row.mouse_entered.connect(func() -> void:
+		_pointed_answer = option.answer
+		pointed.emit(option.text))
+	row.mouse_exited.connect(func() -> void:
+		if _pointed_answer == option.answer:
+			_pointed_answer = NO_ANSWER
+		pointed.emit(""))
 	row.pressed.connect(func() -> void:
 		close()
 		chosen.emit(option.answer))

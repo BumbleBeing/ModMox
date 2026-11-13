@@ -3,7 +3,7 @@ extends Control
 ## The Pause Menu (game glossary): a fixed window over the battlefield, with the rest of the
 ## screen dimmed behind it and taking no clicks. It offers Resume, Concede, Settings and
 ## Quit to main menu. Concede and Quit each ask once more before they happen (A298, A300).
-## Settings is a page of its own, which holds the Game Speed and Auto-pass.
+## Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap.
 
 signal resume_pressed
 ## Conceding was confirmed.
@@ -14,6 +14,8 @@ signal quit_confirmed
 signal speed_chosen(speed: GameSpeed.Speed)
 ## The Auto-pass box was pressed on the settings page: it is now [param is_on].
 signal auto_pass_chosen(is_on: bool)
+## The Auto-tapping box was pressed on the settings page: it is now [param is_on].
+signal auto_tap_chosen(is_on: bool)
 
 enum Page { MENU, CONCEDE, QUIT, SETTINGS }
 
@@ -25,6 +27,7 @@ const BACK: String = "Back"
 const QUIT_NOW: String = "Quit"
 const SPEED_HEADING: String = "Game speed"
 const AUTO_PASS: String = "Auto-pass"
+const AUTO_TAP: String = "Auto-tapping"
 ## The border of the speed in use.
 const CHOSEN: Color = Color("#f2d36b")
 const SPEED_GAP: float = 6.0
@@ -41,6 +44,8 @@ var _speed: GameSpeed.Speed = GameSpeed.Speed.NORMAL
 var _speed_buttons: Dictionary[GameSpeed.Speed, Button] = {}
 var _is_auto_passing: bool = true
 var _auto_pass: Button = null
+var _is_auto_tapping: bool = true
+var _auto_tap: Button = null
 
 
 func _init() -> void:
@@ -109,6 +114,18 @@ func auto_pass_button() -> Button:
 	return _auto_pass
 
 
+## Shows Auto-tap (game glossary) as on or off in its box.
+func show_auto_tap(is_on: bool) -> void:
+	_is_auto_tapping = is_on
+	if _auto_tap != null:
+		_auto_tap.text = _box_text(is_on, AUTO_TAP)
+
+
+## The Auto-tapping box: null except on the settings page.
+func auto_tap_button() -> Button:
+	return _auto_tap
+
+
 func window_rect() -> Rect2:
 	return Rect2(_window.position, _window.size)
 
@@ -121,6 +138,7 @@ func _show_page(shown: Page) -> void:
 	_buttons.clear()
 	_speed_buttons.clear()
 	_auto_pass = null
+	_auto_tap = null
 	var dim: ColorRect = ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.6)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -137,8 +155,9 @@ func _show_page(shown: Page) -> void:
 	elif shown == Page.SETTINGS:
 		title = "Settings"
 		names = [BACK]
-	# The settings page has three rows above Back: a heading, the speeds and Auto-pass.
-	var rows_above: int = 3 if shown == Page.SETTINGS else 0
+	# The settings page has four rows above Back: a heading, the speeds, Auto-pass and
+	# Auto-tapping.
+	var rows_above: int = 4 if shown == Page.SETTINGS else 0
 	var rect: Rect2 = EncounterLayout.pause_rect(names.size() + rows_above, _field)
 	_window = Panel.new()
 	var style: StyleBoxFlat = StyleBoxFlat.new()
@@ -169,6 +188,7 @@ func _show_page(shown: Page) -> void:
 	elif shown == Page.SETTINGS:
 		_add_speeds(rect.size.x)
 		_add_auto_pass(rect.size.x)
+		_add_auto_tap(rect.size.x)
 
 
 ## The settings page's Game Speed: a heading, and under it a button for each speed, slowest
@@ -205,7 +225,25 @@ func _add_auto_pass(window_width: float) -> void:
 
 
 func _auto_pass_text() -> String:
-	return ("☑" if _is_auto_passing else "☐") + "  " + AUTO_PASS
+	return _box_text(_is_auto_passing, AUTO_PASS)
+
+
+## The settings page's Auto-tapping box, under Auto-pass.
+func _add_auto_tap(window_width: float) -> void:
+	_auto_tap = _button(_box_text(_is_auto_tapping, AUTO_TAP), 19)
+	_auto_tap.position = Vector2(60, EncounterLayout.PAUSE_HEADING + EncounterLayout.PAUSE_ROW * 3.0)
+	_auto_tap.size = Vector2(window_width - 120, EncounterLayout.PAUSE_ROW - 12)
+	_auto_tap.pressed.connect(_on_auto_tap_pressed)
+	_window.add_child(_auto_tap)
+
+
+func _on_auto_tap_pressed() -> void:
+	show_auto_tap(not _is_auto_tapping)
+	auto_tap_chosen.emit(_is_auto_tapping)
+
+
+static func _box_text(is_on: bool, text: String) -> String:
+	return ("☑" if is_on else "☐") + "  " + text
 
 
 func _on_auto_pass_pressed() -> void:

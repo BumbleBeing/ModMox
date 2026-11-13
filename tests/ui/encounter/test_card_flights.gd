@@ -138,6 +138,42 @@ func test_a_card_that_passes_through_a_zone_is_one_route() -> void:
 	assert_eq(routes[0].to_zone_kind, MmZone.Kind.BATTLEFIELD)
 
 
+func test_a_flight_launched_to_leave_later_waits_where_it_starts() -> void:
+	_flights.launch(7, FacePose.of(HERE, 250.0, 0.0), FacePose.of(THERE, 150.0, 0.0), false, false, 0.1)
+
+	_wait(0.09)
+	assert_eq(_flights.pose_of(7).center, HERE, "It has not left yet.")
+	assert_eq(_flights.along_of(7), 0.0)
+	_wait(0.01 + SECONDS / 2.0)
+	assert_almost_eq(_flights.pose_of(7).center, Vector2(200, 400), Vector2(0.5, 0.5), "Half-way at half its own time.")
+	assert_false(_flights.has_landed(7))
+	_wait(SECONDS / 2.0)
+	assert_true(_flights.has_landed(7))
+
+
+func test_cards_a_player_draws_together_are_numbered_in_the_order_drawn() -> void:
+	var presenter: EncounterPresenter = _at_main([Scenario.free_draw("Insight", 3)])
+	var events: Array[MmEvent] = []
+	presenter.changed.connect(func(snapshot: EncounterSnapshot) -> void: events.append_array(snapshot.events))
+
+	_act(presenter, CastSpellAction)
+	var target: ChooseTargetDecision = presenter.snapshot().decision as ChooseTargetDecision
+	for index: int in target.candidates.size():
+		if not target.candidates[index].is_object() and target.candidates[index].id == HERO:
+			presenter.answer(index)
+			break
+	presenter.wait_until_idle()
+
+	var turns: Array[int] = []
+	for route: CardFlights.Route in CardFlights.routes(events):
+		if route.from_zone_kind == MmZone.Kind.LIBRARY:
+			assert_eq(route.to_zone_kind, MmZone.Kind.HAND)
+			turns.append(route.drawn_after)
+		else:
+			assert_eq(route.drawn_after, 0, "The spell itself waits for nothing.")
+	assert_eq(turns, [0, 1, 2] as Array[int])
+
+
 func test_events_that_move_no_card_make_no_route() -> void:
 	var presenter: EncounterPresenter = _at_main([Scenario.basic_land("Forest")])
 

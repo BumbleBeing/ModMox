@@ -23,6 +23,14 @@ const MOVE_SECONDS: float = 0.25
 ## How long a card takes to fly from one zone to another (Card Flights): longer than a
 ## move, since it goes further, and over before the Villain's next action.
 const FLIGHT_SECONDS: float = 0.35
+## How long after one card of several a player draws together leaves the library the next
+## one does.
+const DRAW_GAP_SECONDS: float = 0.15
+## How long a card of the opening-hand overlay takes to fly the full distance, such as from
+## the library to the far end of the row (a shorter trip is quicker), and how long after
+## one card of a new hand leaves the library the next one does.
+const DEAL_SECONDS: float = 0.3
+const DEAL_GAP_SECONDS: float = 0.06
 ## How long a Glow, Stack Mark or window takes to ease in or out.
 const EASE_SECONDS: float = 0.15
 

@@ -8,7 +8,7 @@ extends RefCounted
 static func kinds() -> Dictionary[Script, String]:
 	return {
 		PriorityDecision: "the hand, permanents and the pass button (DecisionClicks)",
-		PayManaDecision: "mana sources and the pool (DecisionClicks)",
+		PayManaDecision: "mana sources and the pool (DecisionClicks), unless Auto-tap pays (ADR 0031)",
 		ChooseTargetDecision: "what can be targeted (DecisionClicks)",
 		DeclareAttackersDecision: "the Hero's creatures (CombatSelection)",
 		DeclareBlockersDecision: "the Hero's creatures and the attackers (CombatSelection)",

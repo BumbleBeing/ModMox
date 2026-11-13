@@ -242,6 +242,38 @@ func test_payment_spends_pool_mana_before_tapping_lands() -> void:
 	assert_eq(engine.hero().mana_pool().size(), 0)
 
 
+func test_payment_taps_a_land_before_a_creature_for_a_colored_symbol() -> void:
+	var twin: MmCardDefinition = Scenario.creature("Twin Bear", 2, 2, [], Scenario.mana_cost(0, [MmMana.Type.GREEN, MmMana.Type.GREEN]))
+	var forest: MmCardDefinition = AiScenario.alpha("forest")
+	var cards: Array[MmCardDefinition] = []
+	for index: int in 10:
+		cards.append_array([forest, forest, AiScenario.free_alpha("llanowar_elves"), twin])
+	# The Elves come between the two Forests, so going by age alone would tap them second.
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		func(running: MmEngine) -> bool:
+			if not Scenario.ready_in_main(running, 1, 1, "Llanowar Elves"):
+				return false
+			if Scenario.cast_and_resolve(running, "Llanowar Elves") != "":
+				return false
+			return Scenario.ready_in_main(running, 3, 3, "Twin Bear") \
+				and Scenario.permanents_named(running, running.hero().id, "Forest").size() == 2)
+	assert_not_null(engine, "No seed gave the lands and hand.")
+	if engine == null:
+		return
+	var elves: int = Scenario.permanent_named(engine, engine.hero().id, "Llanowar Elves")
+	var forests: Array[int] = Scenario.permanents_named(engine, engine.hero().id, "Forest")
+	assert_between(elves, forests.min() as int, forests.max() as int, "The Elves are older than one Forest.")
+	var agent: AiAgent = AiAgent.new()
+	engine.submit(Scenario.cast_index(engine.pending_decision() as PriorityDecision, Scenario.card_in_hand(engine, engine.hero(), "Twin Bear")))
+
+	while engine.pending_decision() is PayManaDecision:
+		assert_eq(AiScenario.let_answer(engine, agent), "")
+
+	assert_false(engine.game_state().object(elves).is_tapped, "A creature is the last thing tapped, for a color too.")
+	for land: int in forests:
+		assert_true(engine.game_state().object(land).is_tapped)
+
+
 # --- Spells that only add mana -----------------------------------------------------
 
 func test_mana_is_not_added_in_the_other_players_end_step_with_nothing_to_spend_it_on() -> void:

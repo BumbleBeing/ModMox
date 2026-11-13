@@ -575,19 +575,10 @@ func test_a_real_cursor_lights_the_card_it_is_on_stands_it_upright_and_lets_it_g
 	assert_eq(_overlay.hovered_id(), OpeningHandOverlay.NONE, "Nor in the sidebar.")
 
 
-func test_a_new_hand_fades_in_and_the_overlay_fades_out_when_the_game_is_paced() -> void:
+func test_the_overlay_fades_out_when_the_game_is_paced() -> void:
 	_open(Scenario.setup(), DefaultAnswerAgent.new(), null, 0.05)
-	assert_eq(_overlay.row().modulate.a, 0.0, "The first hand fades in.")
-	await wait_seconds(0.15)
-	assert_eq(_overlay.row().modulate.a, 1.0)
-
 	_press("Mulligan")
-	assert_eq(_overlay.row().modulate.a, 0.0, "So does each new one (A409).")
-	_screen._redraw()
-	assert_eq(_overlay.row().modulate.a, 1.0, "A redraw of the same hand does not fade it again.")
-
 	_press("Keep 6")
-	assert_eq(_overlay.row().modulate.a, 1.0, "Keeping deals nothing.")
 	_click_card(_overlay.shown_ids()[0])
 	_press("Confirm")
 	assert_true(_overlay.visible, "It fades out (A410).")
@@ -676,28 +667,39 @@ func test_the_buttons_stand_side_by_side_about_the_middle_and_say_what_they_do()
 	assert_almost_eq(confirm.get_rect().get_center(), keep_row.get_center(), Vector2(0.01, 0.01), "Alone, it is in the middle.")
 
 
-func test_keep_is_shaded_blue_and_mulligan_burnt_orange_lighter_at_the_top_and_brighter_under_the_cursor() -> void:
+func test_every_button_is_shaded_in_its_own_color_and_confirm_is_gray_until_enough_cards_are_down() -> void:
 	_open(Scenario.setup(Rule.VILLAIN_STARTS))
-
-	for pair: Array in [["Keep 7", OpeningHandOverlay.KEEP_COLOR], ["Mulligan", OpeningHandOverlay.MULLIGAN_COLOR]]:
-		var shaded: Button = _overlay.button(pair[0])
-		var normal: Gradient = _shading(shaded, "normal")
-		assert_true(normal.sample(0.5).is_equal_approx(pair[1] as Color), pair[0])
-		assert_gt(normal.sample(0.0).get_luminance(), normal.sample(1.0).get_luminance(), "%s: lit from above." % pair[0])
-		assert_gt(_shading(shaded, "hover").sample(0.5).get_luminance(), normal.sample(0.5).get_luminance(), pair[0])
-		assert_lt(_shading(shaded, "pressed").sample(0.5).get_luminance(), normal.sample(0.5).get_luminance(), pair[0])
+	_is_shaded("Keep 7", OpeningHandOverlay.KEEP_COLOR)
+	_is_shaded("Mulligan", OpeningHandOverlay.MULLIGAN_COLOR)
 	assert_gt(OpeningHandOverlay.KEEP_COLOR.b, OpeningHandOverlay.KEEP_COLOR.r, "Blue.")
 	assert_gt(OpeningHandOverlay.MULLIGAN_COLOR.r, OpeningHandOverlay.MULLIGAN_COLOR.g, "Orange.")
 	assert_gt(OpeningHandOverlay.MULLIGAN_COLOR.g, OpeningHandOverlay.MULLIGAN_COLOR.b, "Orange.")
 
+	_press("Mulligan")
+	_press("Keep 6")
+	_is_shaded("Confirm", OpeningHandOverlay.CONFIRM_COLOR)
+	assert_gt(OpeningHandOverlay.CONFIRM_COLOR.g, OpeningHandOverlay.CONFIRM_COLOR.r, "Green.")
+	assert_gt(OpeningHandOverlay.CONFIRM_COLOR.g, OpeningHandOverlay.CONFIRM_COLOR.b, "Green.")
+	var confirm: Button = _overlay.button("Confirm")
+	assert_true(confirm.disabled, "A card is still owed,")
+	assert_eq(confirm.get_theme_stylebox("disabled"), ButtonShading.box(ButtonShading.DISABLED, roundi(confirm.size.y)), "so it is gray.")
+
 	_open(Scenario.setup(Rule.HERO_CHOOSES))
-	assert_false(_overlay.button("Play first").has_theme_stylebox_override("normal"), "Play and draw stay plain.")
+	_is_shaded("Play first", OpeningHandOverlay.CHOICE_COLOR)
+	_is_shaded("Draw first", OpeningHandOverlay.CHOICE_COLOR)
 
 
-func _shading(shaded: Button, state: String) -> Gradient:
-	var box: StyleBoxTexture = shaded.get_theme_stylebox(state) as StyleBoxTexture
-	assert_not_null(box, "%s: %s" % [shaded.text, state])
-	return (box.texture as GradientTexture2D).gradient if box != null else Gradient.new()
+## The button reading [param text] is drawn in [param color], and is no larger or smaller
+## under the cursor or held down.
+func _is_shaded(text: String, color: Color) -> void:
+	var shaded: Button = _overlay.button(text)
+	var height: int = roundi(shaded.size.y)
+	var size_before: Vector2 = shaded.size
+	assert_eq(shaded.get_theme_stylebox("normal"), ButtonShading.box(color, height), text)
+	assert_eq(shaded.get_theme_stylebox("hover"), ButtonShading.box(ButtonShading.hover_color(color), height), text)
+	assert_eq(shaded.get_theme_stylebox("pressed"), ButtonShading.box(ButtonShading.pressed_color(color), height), text)
+	assert_eq(shaded.size, size_before, "%s keeps the size the layout gave it." % text)
+	assert_eq(shaded.scale, Vector2.ONE)
 
 
 func test_on_a_taller_screen_the_words_and_buttons_are_larger_in_step() -> void:
@@ -782,7 +784,7 @@ func test_an_overlay_shown_again_while_it_fades_out_is_whole_and_stays() -> void
 	var again: OpeningHand = OpeningHand.new()
 	again.read(asked)
 
-	_overlay.show_frame(again, asked, CardPicks.new(), _screen.hand_order().cards(), area, 0.0)
+	_overlay.show_frame(again, asked, CardPicks.new(), _screen.hand_order().cards(), area)
 
 	assert_true(_overlay.is_open())
 	assert_false(_overlay.is_closing())

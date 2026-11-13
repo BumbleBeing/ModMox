@@ -51,6 +51,21 @@ func test_paying_names_what_is_paid_for_and_what_is_still_owed_and_can_be_cancel
 	assert_eq(InfoPrompt.of(decision, view).text, "Pay for this", "Whatever the stack shows, it still prompts.")
 
 
+func test_while_auto_tap_pays_it_says_what_for_and_what_is_owed_and_can_be_canceled() -> void:
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Zap", 5)]
+	var paying: PayManaDecision = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 2,
+		[MmMana.Type.RED] as Array[MmMana.Type])
+
+	var prompt: InfoPrompt = InfoPrompt.of(null, view, paying)
+
+	assert_eq(prompt.text, "Paying for Zap")
+	assert_eq(prompt.owed.generic, 2)
+	assert_eq(prompt.owed.symbols, [MmMana.Type.RED] as Array[MmMana.Type])
+	assert_true(prompt.can_cancel, "Canceling is the one thing the Hero can do meanwhile.")
+	assert_eq(InfoPrompt.of(null, view).text, "", "With nothing being paid, nothing is said.")
+
+
 func test_targeting_names_the_spell_or_the_abilitys_source() -> void:
 	var view: MmPlayerView = _view()
 	var ability: MmObjectView = _object(21, "ability", MmGameObject.NO_CARD)

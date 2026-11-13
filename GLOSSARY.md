@@ -170,7 +170,7 @@ _Avoid_: Tween, animation system, transition
 The fading face of a permanent that has left the battlefield, drawn where it was for a quarter of a second. It takes no clicks and nothing points at it. A permanent that flies to another zone leaves none.
 
 **Card Flight**:
-A card drawn in the air on its way from one zone to another, in place of fading out in one place and in at another. It starts where the card was drawn and lands where it now belongs, over every window, and what it lands on shows nothing of it until it arrives. A card that passes through a zone on the way makes one flight.
+A card drawn in the air on its way from one zone to another, in place of fading out in one place and in at another. It starts where the card was drawn and lands where it now belongs, over every window, and what it lands on shows nothing of it until it arrives. A card that passes through a zone on the way makes one flight. Cards a player draws together fly one after another, and each joins the hand when it lands.
 
 **Flight Card**:
 The card drawn for a Card Flight. It is drawn as what the card was where it left and as what it is where it lands, one fading into the other: a Card Face becomes a Battlefield Face, and a card back turns face up. At the Stack Window, which shows an entry and no card, it flies to the entry's art and fades out, or fades in there.
@@ -187,12 +187,20 @@ _Avoid_: Delay, Villain speed, animation lock
 The standing setting that passes priority for the Hero when there is nothing to stop for. With it on, the Hero is asked only on a step that has a stop and where they could cast, play or activate something other than a mana ability, or when the Villain's spell or ability is on top of the stack. It is on unless turned off in the Pause Menu's settings, and kept between runs.
 _Avoid_: Auto-skip, smart pass, auto-yield
 
+**Auto-tap**:
+The standing setting that pays the Hero's mana costs for them. When a spell or ability reaches payment the game taps the sources and spends the pool mana itself, choosing as the Villain does and showing each tap for a moment, and the Hero is not asked. Mana already in the pool is spent first, so tapping lands by hand before casting chooses them. It is on unless turned off with the Auto-tapping box in the Pause Menu's settings, and a cast that reaches payment with the Hold Key down is paid by hand.
+_Avoid_: Auto-pay, smart tap, auto-mana
+
+**Tap Preview**:
+What the board shows while the cursor is on something that costs mana and Auto-tap would pay for it: only the sources that would be tapped keep their blue Glow, and the pool mana that would be spent glows on its button. It shows for a card of the hand under the cursor or held, a permanent's ability, and the row of the Option Menu the cursor is on.
+_Avoid_: Payment preview, mana highlight, tap suggestion
+
 **Yield**:
 The Hero's instruction to pass every priority for the rest of the turn, whatever the stops say and whatever the Villain puts on the stack. Choosing attackers and blockers, and any other choice that is not priority, is still asked, and the Yield carries on afterwards. It is set with the Yield Turn box on the Hero's panel, at any moment, and ends by itself when the next turn begins.
 _Avoid_: Skip turn, pass turn, end turn, auto-pass (the standing setting)
 
 **Hold Key**:
-Control. While it is down nothing is passed for the Hero: every priority that Auto-pass or a Yield would have passed, and the one after their own spell or ability goes on the stack, is theirs instead. A priority kept this way stays theirs until they answer, even once the key is let go, and neither Auto-pass nor the Yield is turned off by it.
+Control. While it is down nothing is passed for the Hero: every priority that Auto-pass or a Yield would have passed, and the one after their own spell or ability goes on the stack, is theirs instead. A priority kept this way stays theirs until they answer, even once the key is let go, and neither Auto-pass nor the Yield is turned off by it. Nothing is paid for them either: a cast that reaches payment while it is down is paid by hand, all of it, whatever Auto-tap says.
 _Avoid_: Stop key, full control
 
 **Damage Chip**:
@@ -236,11 +244,11 @@ The dropdown that opens where a card was clicked when the click could mean more 
 _Avoid_: Ability menu, context menu, popup
 
 **Pause Menu**:
-The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings and Quit to main menu. Settings is a page of its own, which holds the Game Speed and Auto-pass.
+The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings and Quit to main menu. Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap.
 _Avoid_: Escape menu, options screen, system menu
 
 **Opening-Hand Overlay**:
-The scrim over everything right of the sidebar through the pregame, with the Hero's hand drawn large on it, fanned as it is in play; the card under the cursor comes to the front and stands upright to be read. Playing first or drawing, keeping or mulliganing, and putting cards on the bottom are all answered there, and it says who plays first and what the Villain has decided. It goes when the first turn begins.
+The scrim over everything right of the sidebar through the pregame, with the Hero's hand drawn large on it, fanned as it is in play; the card under the cursor comes to the front and stands upright to be read. Playing first or drawing, keeping or mulliganing, and putting cards on the bottom are all answered there, and it says who plays first and what the Villain has decided. A new hand is dealt onto it from the library a card at a time, and a card put on the bottom, or a hand that is mulliganed, flies back there. When the first turn begins the hand flies down to its strip and the overlay goes.
 _Avoid_: Mulligan screen, pregame dialog, hand viewer
 
 **Card Picks**:
