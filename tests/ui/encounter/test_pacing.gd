@@ -3,7 +3,7 @@ extends GutTest
 ## snapshot showed (A358, A363).
 
 const ACTION: int = 500
-const MANA: int = 202
+const MANA: int = 200
 
 
 func test_a_snapshot_that_showed_nothing_waits_for_nothing() -> void:
@@ -52,7 +52,7 @@ func test_the_waits_are_whatever_is_handed_in() -> void:
 
 
 func test_the_next_land_is_tapped_as_the_last_one_finishes_turning() -> void:
-	assert_eq(Pacing.MANA_MSEC, 202, "Three quarters of the 270 it was first.")
+	assert_eq(Pacing.MANA_MSEC, 200, "Cut from the 270 it was first.")
 	assert_gt(float(Pacing.MANA_MSEC), Pacing.MOVE_SECONDS * 1000.0 * 0.75, "A land is most of the way round.")
 	assert_lt(Pacing.MANA_MSEC, Pacing.ACTION_MSEC)
 

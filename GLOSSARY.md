@@ -142,6 +142,10 @@ _Avoid_: Battle screen, game view, board
 The one picture behind an Encounter Screen, set by the encounter's Stage: 320 × 180 pixels, drawn six screen pixels to each of its own with hard edges, never tiled, and dimmed by the game so the board reads over it. There is one for each color and a plain one with no picture. Until Stages exist the encounter's request names it, and until each has its own art a placeholder is drawn in its place.
 _Avoid_: Background (the plain slate behind a screen), wallpaper, scene, biome
 
+**Zone Plate**:
+A rounded, mostly see-through gray rectangle behind a row of the battlefield or a pile, which shows where the zone is and sets it off from the Backdrop. Each player's lands and their other permanents have one each, and so has each library, graveyard and exile. The hands have none.
+_Avoid_: Panel (a player's panel is in the sidebar), slot, tray, zone box
+
 **Encounter Presenter**:
 The one part of the GUI that owns the rules engine for an encounter. It runs the Villain's Agent, takes the Hero's answers, and after every change hands the Encounter Screen a snapshot of what the Hero may see and is being asked.
 _Avoid_: Controller, game manager, view model

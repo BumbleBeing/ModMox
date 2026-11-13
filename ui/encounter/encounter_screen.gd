@@ -203,6 +203,8 @@ var _pin_host: Control = null
 var _backdrop_name: String = Backdrops.PLAIN
 var _backdrop: Control = null
 var _backdrop_dimmer: ColorRect = null
+## The plates behind the rows and piles, over the Backdrop and under the board.
+var _zone_plates: ZonePlates
 
 
 func _ready() -> void:
@@ -211,6 +213,9 @@ func _ready() -> void:
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
+	_zone_plates = ZonePlates.new()
+	_zone_plates.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_zone_plates)
 	_board = Control.new()
 	_board.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -357,6 +362,11 @@ func backdrop_name() -> String:
 ## What draws the Backdrop, or null for the plain one.
 func backdrop() -> Control:
 	return _backdrop
+
+
+## What draws the Zone Plates behind the rows and piles.
+func zone_plates() -> ZonePlates:
+	return _zone_plates
 
 
 ## The layer that dims the Backdrop, or null for the plain one.
@@ -1243,6 +1253,12 @@ func yield_button() -> Button:
 	return _panels[HERO].yield_button()
 
 
+## The end-of-encounter banner, or null while the encounter goes on. It is not on the
+## board, so that no block line is drawn across it, and a redraw replaces it.
+func banner() -> Control:
+	return _banner
+
+
 ## The words on the end-of-encounter banner, or "" while the encounter goes on.
 func banner_text() -> String:
 	return (_banner.get_meta("text") as String) if _banner != null else ""
@@ -1444,6 +1460,9 @@ func _redraw() -> void:
 	_player_steppers.clear()
 	_pile_labels.clear()
 	_pile_hosts.clear()
+	if _banner != null:
+		remove_child(_banner)
+		_banner.queue_free()
 	_banner = null
 	var view: MmPlayerView = _snapshot.view
 	# While the Villain thinks the Hero is asked nothing, so nothing glows or takes a click.
@@ -1458,6 +1477,9 @@ func _redraw() -> void:
 	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(size)
 	_regions = regions
 	_place_windows(regions["battlefield"])
+	var plates: Array[Rect2] = []
+	plates.assign(EncounterLayout.zone_plates(regions).values())
+	_zone_plates.place(plates)
 
 	var sidebar: ColorRect = ColorRect.new()
 	sidebar.color = Color("#22262e")
@@ -2794,7 +2816,9 @@ func _draw_banner(view: MmPlayerView) -> void:
 	box.position = (size - box.size) / 2.0
 	box.mouse_filter = Control.MOUSE_FILTER_STOP
 	box.set_meta("text", text)
-	_board.add_child(box)
+	# Over the block lines, which lie over the board, and under the panels and every window.
+	add_child(box)
+	move_child(box, _block_lines.get_index() + 1)
 	_banner = box
 	var label: Label = Label.new()
 	label.text = text
