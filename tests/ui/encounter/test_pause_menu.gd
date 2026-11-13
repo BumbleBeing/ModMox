@@ -188,6 +188,31 @@ func test_the_settings_page_has_an_auto_pass_box_under_the_speeds() -> void:
 	assert_eq(menu.page(), PauseMenu.Page.SETTINGS, "The page stays up.")
 
 
+func test_the_settings_page_has_an_auto_tapping_box_under_auto_pass() -> void:
+	var menu: PauseMenu = _menu()
+	var chosen: Array[bool] = []
+	menu.auto_tap_chosen.connect(func(is_on: bool) -> void: chosen.append(is_on))
+	menu.open(FIELD, true)
+	assert_null(menu.auto_tap_button(), "It is on the settings page only.")
+
+	menu.button(PauseMenu.SETTINGS).pressed.emit()
+
+	var box: Button = menu.auto_tap_button()
+	assert_eq(box.text, "☑  Auto-tapping", "On until it is told otherwise.")
+	assert_gt(box.position.y, menu.auto_pass_button().position.y + menu.auto_pass_button().size.y - 1.0)
+	assert_lt(box.position.y + box.size.y, menu.button(PauseMenu.BACK).position.y + 1.0)
+	assert_true(Rect2(Vector2.ZERO, menu.window_rect().size).encloses(Rect2(box.position, box.size)))
+
+	box.pressed.emit()
+
+	assert_eq(chosen, [false] as Array[bool])
+	assert_eq(menu.auto_tap_button().text, "☐  Auto-tapping")
+	assert_eq(menu.auto_pass_button().text, "☑  Auto-pass", "Each box is its own.")
+	assert_eq(menu.page(), PauseMenu.Page.SETTINGS, "The page stays up.")
+	menu.show_auto_tap(true)
+	assert_eq(menu.auto_tap_button().text, "☑  Auto-tapping")
+
+
 func test_the_auto_pass_box_shows_what_it_is_told() -> void:
 	var menu: PauseMenu = _menu()
 	menu.show_auto_pass(false)

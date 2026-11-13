@@ -8,10 +8,13 @@ const PATH: String = "user://settings.cfg"
 const SECTION: String = "game"
 const SPEED_KEY: String = "speed"
 const AUTO_PASS_KEY: String = "auto_pass"
+const AUTO_TAP_KEY: String = "auto_tap"
 
 var game_speed: GameSpeed.Speed = GameSpeed.Speed.NORMAL
 ## Auto-pass (game glossary). On unless the file says "false".
 var is_auto_passing: bool = true
+## Auto-tap (game glossary). On unless the file says "false".
+var is_auto_tapping: bool = true
 
 
 ## The settings kept at [param path]. The file is read line by line here, and not as a
@@ -30,6 +33,8 @@ static func load_from(path: String) -> GameSettings:
 			settings.game_speed = GameSpeed.named(value)
 		elif parts[0].strip_edges() == AUTO_PASS_KEY:
 			settings.is_auto_passing = value != "false"
+		elif parts[0].strip_edges() == AUTO_TAP_KEY:
+			settings.is_auto_tapping = value != "false"
 	return settings
 
 
@@ -41,8 +46,9 @@ func save_to(path: String) -> bool:
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return false
-	file.store_string("[%s]\n%s=\"%s\"\n%s=%s\n" % [
+	file.store_string("[%s]\n%s=\"%s\"\n%s=%s\n%s=%s\n" % [
 		SECTION, SPEED_KEY, GameSpeed.name_of(game_speed), AUTO_PASS_KEY, "true" if is_auto_passing else "false",
+		AUTO_TAP_KEY, "true" if is_auto_tapping else "false",
 	])
 	file.close()
 	return true

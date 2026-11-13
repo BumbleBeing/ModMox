@@ -196,6 +196,42 @@ func test_mana_buttons_show_the_pool_and_can_be_pressed_only_while_that_color_pa
 	assert_eq(_pressed, [4])
 
 
+func test_pool_mana_about_to_be_spent_glows_without_taking_a_press() -> void:
+	var panel: PlayerPanel = _panel(HERO)
+	var red: Button = panel.mana_button(MmMana.Type.RED)
+	var green: Button = panel.mana_button(MmMana.Type.GREEN)
+	panel.mana_pressed.connect(func(answer: int) -> void: _pressed.append(answer))
+	_snapshot.view.mana_pools[HERO] = [MmMana.new(MmMana.Type.RED, 0), MmMana.new(MmMana.Type.GREEN, 0)]
+	_show(panel, HERO)
+
+	panel.mark_pool([MmMana.Type.RED] as Array[MmMana.Type])
+
+	assert_eq(BorderEffects.glow_color(red), DecisionClicks.color_of(DecisionClicks.Kind.MANA), "The Tap Preview marks it.")
+	assert_null(BorderEffects.glow_color(green))
+	assert_true(red.disabled, "It is shown, not offered.")
+	red.pressed.emit()
+	assert_eq(_pressed, [])
+	var glow: Node = red.get_node(BorderEffects.GLOW)
+	panel.mark_pool([MmMana.Type.RED, MmMana.Type.GREEN] as Array[MmMana.Type])
+	assert_eq(red.get_node(BorderEffects.GLOW), glow, "A button that still glows keeps its Glow.")
+	assert_not_null(BorderEffects.glow_color(green))
+
+	panel.mark_pool([] as Array[MmMana.Type])
+	assert_null(BorderEffects.glow_color(red))
+	assert_null(BorderEffects.glow_color(green))
+
+	panel.mark_pool([MmMana.Type.RED] as Array[MmMana.Type])
+	_show(panel, HERO)
+	assert_null(BorderEffects.glow_color(red), "The next snapshot says what glows.")
+	var paying: DecisionClicks = DecisionClicks.of_payment(_plan([], [MmMana.Type.GREEN]))
+	panel.show_snapshot(_snapshot, paying, _stops, BOX, true, true)
+	assert_not_null(BorderEffects.glow_color(green), "What Auto-tap has still to spend glows while it pays.")
+	assert_true(green.disabled)
+	var villain: PlayerPanel = _panel(VILLAIN)
+	villain.show_snapshot(_snapshot, paying, _stops, BOX, false, false)
+	assert_null(BorderEffects.glow_color(villain.mana_button(MmMana.Type.GREEN)), "Only the Hero's pool is marked.")
+
+
 func test_the_villains_mana_buttons_are_never_pressed() -> void:
 	var paying: DecisionClicks = DecisionClicks.new()
 	paying.pool_answers[MmMana.Type.RED] = 4
@@ -357,6 +393,13 @@ func _panel(player_id: int) -> PlayerPanel:
 	add_child_autofree(panel)
 	_show(panel, player_id)
 	return panel
+
+
+func _plan(source_ids: Array[int], pool_types: Array[MmMana.Type]) -> PaymentPlan:
+	var plan: PaymentPlan = PaymentPlan.new()
+	plan.source_ids = source_ids
+	plan.pool_types = pool_types
+	return plan
 
 
 func _show(panel: PlayerPanel, player_id: int) -> void:

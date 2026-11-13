@@ -245,7 +245,10 @@ func test_the_heros_draw_turns_face_up_on_its_way_from_the_library_and_the_villa
 	var back: FlightCard = _screen.flight_card_of(villains[0])
 	assert_true(back.is_face_down())
 	assert_almost_eq(back.position, _pile("villain_library"), NEAR)
+	var villain_hand: int = _presenter.snapshot().view.hand_sizes[VILLAIN]
+	assert_eq(_screen.villain_card_back_count(), villain_hand - 1, "The Villain's hand grows when the card lands.")
 	_settle()
+	assert_eq(_screen.villain_card_back_count(), villain_hand)
 	assert_almost_eq(back.position, EncounterLayout.regions(SCREEN)["villain_hand"].get_center(), NEAR)
 
 	var held: Array[int] = _hand_ids()
@@ -260,10 +263,69 @@ func test_the_heros_draw_turns_face_up_on_its_way_from_the_library_and_the_villa
 	assert_almost_eq(card.position, _pile("hero_library"), NEAR)
 	assert_false(card.leaving_face() is CardFace, "A back as it leaves the library,")
 	assert_true(card.landing_face() is CardFace, "and its face as it reaches the hand.")
-	assert_eq(_screen.face_of(drawn).modulate.a, 0.0, "The hand has made room for it and shows nothing there yet.")
+	assert_null(_screen.face_of(drawn), "It is not in the hand until it lands.")
 	_settle()
 	assert_almost_eq(card.position, _middle(_screen.face_of(drawn)), NEAR)
 	assert_eq(_screen.face_of(drawn).modulate.a, 1.0)
+
+
+func test_cards_drawn_together_leave_the_library_one_at_a_time() -> void:
+	_open(_setup_of([Scenario.free_draw("Insight", 3)]))
+	_screen.card_flights().gap_seconds = 0.1
+	_settle()
+	var held: Array[int] = _hand_ids()
+	_presenter.is_hold_key_down = true
+	_cast("Insight")
+	var target: ChooseTargetDecision = _presenter.snapshot().decision as ChooseTargetDecision
+	for index: int in target.candidates.size():
+		if not target.candidates[index].is_object() and target.candidates[index].id == HERO:
+			_presenter.answer(index)
+			break
+	_presenter.wait_until_idle()
+	_presenter.is_hold_key_down = false
+	await wait_process_frames(2)
+	_settle()
+	held.erase(_presenter.snapshot().view.stack[0].id)
+
+	_resolve()
+
+	var drawn: Array[int] = []
+	for object_id: int in _hand_ids():
+		if not held.has(object_id) and _screen.card_flights().is_flying(object_id):
+			drawn.append(object_id)
+	drawn.sort()
+	assert_eq(drawn.size(), 3)
+	var library: Vector2 = _pile("hero_library")
+	_advance(0.05)
+	assert_gt(_screen.flight_card_of(drawn[0]).position.distance_to(library), 2.0, "The first has left,")
+	assert_almost_eq(_screen.flight_card_of(drawn[1]).position, library, NEAR, "the second has not,")
+	assert_almost_eq(_screen.flight_card_of(drawn[2]).position, library, NEAR, "nor the third.")
+	_advance(0.1)
+	assert_gt(_screen.flight_card_of(drawn[1]).position.distance_to(library), 2.0, "Then the second,")
+	assert_almost_eq(_screen.flight_card_of(drawn[2]).position, library, NEAR)
+	_advance(0.1)
+	assert_gt(_screen.flight_card_of(drawn[2]).position.distance_to(library), 2.0, "then the third.")
+	var other: int = -1
+	for object_id: int in _hand_ids():
+		if not drawn.has(object_id):
+			other = object_id
+	var other_at: Vector2 = _screen.face_of(other).position
+	for object_id: int in drawn:
+		assert_null(_screen.face_of(object_id), "None is in the hand while it is in the air.")
+	_advance(0.2)
+	assert_not_null(_screen.face_of(drawn[0]), "The first joins the hand as it lands,")
+	assert_eq(_screen.face_of(drawn[0]).modulate.a, 1.0)
+	assert_null(_screen.face_of(drawn[1]), "and the second is still on its way.")
+	assert_eq(_screen.face_of(other).position, other_at, "The hand does not jump to make room: it eases from where it was.")
+	_advance(0.1)
+	assert_not_null(_screen.face_of(drawn[1]))
+	assert_null(_screen.face_of(drawn[2]))
+	var last: FlightCard = _screen.flight_card_of(drawn[2])
+	_advance(FLIGHT * 1.5)
+	assert_almost_eq(last.position, _middle(_screen.face_of(drawn[2])), NEAR, "Each lands on the place it takes.")
+	for object_id: int in drawn:
+		assert_eq(_screen.face_of(object_id).modulate.a, 1.0, "Each is in the hand once it lands.")
+	assert_eq(_screen.card_flights().ids(), [] as Array[int])
 
 
 func test_a_discarded_card_flies_from_the_hand_to_the_graveyard() -> void:

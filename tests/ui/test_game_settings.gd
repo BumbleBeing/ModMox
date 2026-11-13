@@ -61,6 +61,30 @@ func test_auto_pass_turned_off_is_read_back_with_the_speed() -> void:
 	assert_eq(read.game_speed, GameSpeed.Speed.SLOW)
 
 
+func test_auto_tap_is_on_with_no_file_and_is_read_back_when_turned_off() -> void:
+	assert_true(GameSettings.load_from(PATH).is_auto_tapping)
+	var settings: GameSettings = GameSettings.new()
+	settings.is_auto_tapping = false
+
+	assert_true(settings.save_to(PATH))
+	var read: GameSettings = GameSettings.load_from(PATH)
+
+	assert_false(read.is_auto_tapping)
+	assert_true(read.is_auto_passing, "Each setting is kept on its own.")
+	settings.is_auto_tapping = true
+	settings.is_auto_passing = false
+	settings.save_to(PATH)
+	assert_true(GameSettings.load_from(PATH).is_auto_tapping)
+
+
+func test_a_file_from_before_auto_tap_was_kept_gives_it_on() -> void:
+	var file: FileAccess = FileAccess.open(PATH, FileAccess.WRITE)
+	file.store_string("[game]\nspeed=\"fast\"\nauto_pass=false\n")
+	file.close()
+
+	assert_true(GameSettings.load_from(PATH).is_auto_tapping)
+
+
 func test_a_file_from_before_auto_pass_was_kept_gives_it_on() -> void:
 	var file: FileAccess = FileAccess.open(PATH, FileAccess.WRITE)
 	file.store_string("[game]\nspeed=\"Fast\"\n")

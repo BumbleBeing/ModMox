@@ -35,6 +35,8 @@ func test_a_speed_scales_every_wait_move_flight_and_fade_of_a_paced_screen() -> 
 	assert_almost_eq(_screen.face_motion().seconds, Pacing.MOVE_SECONDS / 2.0, 0.0001)
 	assert_almost_eq(_screen.card_flights().seconds, Pacing.FLIGHT_SECONDS / 2.0, 0.0001)
 	assert_almost_eq(_screen.pause_menu().ease_seconds, Pacing.EASE_SECONDS / 2.0, 0.0001)
+	assert_almost_eq(_screen.opening_overlay().motion().seconds, Pacing.DEAL_SECONDS / 2.0, 0.0001)
+	assert_almost_eq(_screen.opening_overlay().motion().gap_seconds, Pacing.DEAL_GAP_SECONDS / 2.0, 0.0001)
 
 	_screen.set_game_speed(GameSpeed.Speed.SLOW)
 	assert_eq(_presenter.action_wait_msec, 1000)
@@ -57,6 +59,7 @@ func test_a_screen_that_is_not_paced_waits_for_nothing_at_any_speed() -> void:
 	assert_eq(_presenter.action_wait_msec, 0)
 	assert_eq(_screen.face_motion().seconds, 0.0)
 	assert_eq(_screen.card_flights().seconds, 0.0)
+	assert_eq(_screen.opening_overlay().motion().seconds, 0.0, "No card of the opening hand is dealt: each is at its place.")
 
 
 func test_a_speed_chosen_in_the_pause_menu_is_applied_to_the_running_encounter_at_once() -> void:
@@ -136,6 +139,47 @@ func test_turning_auto_pass_on_in_the_pause_menu_passes_nothing_until_the_game_r
 	_screen.set_paused(false)
 	_presenter.wait_until_idle()
 	assert_eq(_presenter.snapshot().view.step, MmTurn.Step.PRECOMBAT_MAIN)
+
+
+func test_auto_tapping_is_turned_off_and_on_in_the_pause_menu_and_saved() -> void:
+	_make()
+	_screen.settings_path = PATH
+	_screen.load_settings()
+	_screen.use_settings(_presenter)
+	_begin()
+	assert_true(_presenter.is_auto_tapping(), "On unless the player turned it off.")
+	_screen.set_paused(true)
+	_screen.pause_menu().button(PauseMenu.SETTINGS).pressed.emit()
+	assert_eq(_screen.pause_menu().auto_tap_button().text, "☑  Auto-tapping")
+
+	_screen.pause_menu().auto_tap_button().pressed.emit()
+
+	assert_false(_presenter.is_auto_tapping())
+	assert_false(GameSettings.load_from(PATH).is_auto_tapping)
+	assert_true(GameSettings.load_from(PATH).is_auto_passing, "Saving one setting keeps the others.")
+	_screen.pause_menu().auto_tap_button().pressed.emit()
+	assert_true(_presenter.is_auto_tapping())
+	assert_true(GameSettings.load_from(PATH).is_auto_tapping)
+	_screen.set_paused(false)
+
+
+func test_the_pause_menu_shows_the_presenters_own_auto_tap_and_a_saved_one_reaches_the_presenter() -> void:
+	var settings: GameSettings = GameSettings.new()
+	settings.is_auto_tapping = false
+	settings.save_to(PATH)
+	_make()
+	assert_false(_presenter.is_auto_tapping(), "A presenter pays nothing until it is told to.")
+	_presenter.set_auto_tapping(true)
+	_screen.settings_path = PATH
+	_screen.load_settings()
+	_screen.use_settings(_presenter)
+	_begin()
+
+	assert_false(_presenter.is_auto_tapping(), "The saved choice reached it.")
+	_screen.set_paused(true)
+	_screen.pause_menu().button(PauseMenu.SETTINGS).pressed.emit()
+	assert_eq(_screen.pause_menu().auto_tap_button().text, "☐  Auto-tapping")
+	_screen.set_paused(false)
 
 
 func test_saving_one_setting_keeps_the_other() -> void:

@@ -129,6 +129,27 @@ func test_pointing_at_a_row_says_its_text_and_leaving_or_closing_says_nothing() 
 	assert_eq(_pointed, ["Option 2", "", "Option 1", ""] as Array[String])
 
 
+func test_it_says_which_answer_the_cursor_is_over() -> void:
+	var menu: OptionMenu = _menu()
+	var options: Array[ClickOption] = _options(2)
+	assert_eq(menu.pointed_answer(), OptionMenu.NO_ANSWER)
+	menu.open(options, Vector2(600, 300), FIELD)
+	assert_eq(menu.pointed_answer(), OptionMenu.NO_ANSWER, "Open, with the cursor on no row.")
+
+	menu.rows()[1].mouse_entered.emit()
+	assert_eq(menu.pointed_answer(), options[1].answer)
+	# Godot tells the row entered before the row left.
+	menu.rows()[0].mouse_entered.emit()
+	menu.rows()[1].mouse_exited.emit()
+	assert_eq(menu.pointed_answer(), options[0].answer)
+	menu.rows()[0].mouse_exited.emit()
+	assert_eq(menu.pointed_answer(), OptionMenu.NO_ANSWER)
+
+	menu.rows()[0].mouse_entered.emit()
+	menu.close()
+	assert_eq(menu.pointed_answer(), OptionMenu.NO_ANSWER, "A closed menu points at nothing.")
+
+
 func test_opening_again_replaces_the_rows() -> void:
 	var menu: OptionMenu = _menu()
 	menu.open(_options(3), Vector2(600, 300), FIELD)

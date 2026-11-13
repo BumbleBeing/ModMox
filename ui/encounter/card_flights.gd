@@ -18,6 +18,9 @@ const FADE_SHARE: float = 0.25
 
 ## How long a flight takes. Zero means no card flies.
 var seconds: float = 0.0
+## How long after one card of several a player draws together leaves the library the next
+## one does.
+var gap_seconds: float = 0.0
 
 var _clock: float = 0.0
 var _flights: Dictionary[int, Flight] = {}
@@ -25,7 +28,8 @@ var _flights: Dictionary[int, Flight] = {}
 
 ## Each card's way through [param events]: from the zone it first left to the zone it ended
 ## in. A card that passed through a zone on the way, as a spell that resolved at once
-## passed through the stack, has one route.
+## passed through the stack, has one route. The cards a player drew are numbered in the
+## order drawn, so that they can leave the library one at a time.
 static func routes(events: Array[MmEvent]) -> Array[Route]:
 	var found: Array[Route] = []
 	for event: MmEvent in events:
@@ -46,6 +50,11 @@ static func routes(events: Array[MmEvent]) -> Array[Route]:
 		route.object_id = change.new_object_id
 		route.to_zone_kind = change.to_zone_kind
 		route.to_owner_id = change.to_owner_id
+	var drawn: Dictionary[int, int] = {}
+	for route: Route in found:
+		if route.from_zone_kind == MmZone.Kind.LIBRARY and route.to_zone_kind == MmZone.Kind.HAND:
+			route.drawn_after = drawn.get(route.to_owner_id, 0)
+			drawn[route.to_owner_id] = route.drawn_after + 1
 	return found
 
 
@@ -56,12 +65,14 @@ func advance(delta: float) -> void:
 
 ## Puts the card that lands as Game Object [param object_id] in the air, from [param from]
 ## to [param to]. With [param fades_in] it appears from nothing where it starts, and with
-## [param fades_out] it disappears where it lands.
-func launch(object_id: int, from: FacePose, to: FacePose, fades_in: bool = false, fades_out: bool = false) -> void:
+## [param fades_out] it disappears where it lands. It waits where it starts for
+## [param wait_seconds] before it leaves.
+func launch(object_id: int, from: FacePose, to: FacePose, fades_in: bool = false, fades_out: bool = false,
+		wait_seconds: float = 0.0) -> void:
 	var flight: Flight = Flight.new()
 	flight.from = from
 	flight.to = to
-	flight.started = _clock
+	flight.started = _clock + wait_seconds
 	flight.fades_in = fades_in
 	flight.fades_out = fades_out
 	_flights[object_id] = flight
@@ -145,6 +156,9 @@ class Route:
 	## the screen when it puts the card in the air.
 	var leaving_kind: int = 0
 	var leaving_look: CardLook = null
+	## How many cards the same player drew before this one in the same events; 0 for a
+	## card that was not drawn.
+	var drawn_after: int = 0
 
 
 ## One card in the air.

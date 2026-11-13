@@ -21,6 +21,10 @@ var is_rewind: bool = false
 var events: Array[MmEvent] = []
 ## How to draw each Game Object the view shows, by object ID.
 var looks: Dictionary[int, CardLook] = {}
+## While Auto-tap is paying for the Hero, a tap at a time: the payment decision it is
+## answering, which the Hero is not asked, and what is still to be tapped and spent.
+var paying: PayManaDecision = null
+var payment_left: PaymentPlan = null
 
 
 ## The name of Game Object [param object_id] wherever [param seen_by] shows it, for a prompt
