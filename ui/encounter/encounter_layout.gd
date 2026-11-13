@@ -97,6 +97,9 @@ const ARROWHEAD: Vector2 = Vector2(14.0, 8.0)
 const STEPPER: Vector2 = Vector2(112.0, 36.0)
 const STEPPER_DOWN: float = 0.36
 
+## How far a pile's Zone Plate reaches past its card and label, sideways and up and down.
+const PLATE_PAD: Vector2 = Vector2(12.0, 4.0)
+
 ## The Regions no two of which may overlap.
 const LEAVES: Array[String] = [
 	"villain_panel", "hero_panel",
@@ -152,6 +155,22 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	]
 	for index: int in keys.size():
 		found[keys[index]] = Rect2(Vector2(piles_left, gap + (pile.y + gap) * index), pile)
+	return found
+
+
+## Where the Zone Plate (game glossary) behind each row and pile goes, from
+## [param regions]: a row's is its Region, and a pile's is round its card and label, PLATE_PAD
+## clear of them. The hands have none. In the order they are drawn.
+static func zone_plates(regions: Dictionary[String, Rect2]) -> Dictionary[String, Rect2]:
+	var found: Dictionary[String, Rect2] = {}
+	for row: String in ["villain_lands", "villain_nonlands", "hero_nonlands", "hero_lands"]:
+		found[row] = regions[row]
+	var card_width: float = PILE_HEIGHT * CardGeometry.ASPECT
+	for pile: String in ["villain_exile", "villain_graveyard", "villain_library", "hero_library", "hero_graveyard", "hero_exile"]:
+		var pile_rect: Rect2 = regions[pile]
+		found[pile] = Rect2(
+			pile_rect.get_center().x - card_width / 2.0 - PLATE_PAD.x, pile_rect.position.y - PLATE_PAD.y,
+			card_width + PLATE_PAD.x * 2.0, pile_rect.size.y + PLATE_PAD.y * 2.0)
 	return found
 
 

@@ -963,6 +963,38 @@ func test_quit_asks_once_more_then_leaves_for_the_main_menu() -> void:
 	assert_false(_presenter.is_villain_thinking())
 
 
+func test_the_banner_is_drawn_over_the_block_lines_and_under_the_windows() -> void:
+	_open(_bear_setup())
+	_keep()
+
+	_presenter.concede()
+
+	var banner: Control = _screen.banner()
+	assert_not_null(banner)
+	assert_eq(banner.get_parent(), _screen)
+	assert_gt(banner.get_index(), _screen.block_lines().get_index(), "A block line never crosses it.")
+	assert_lt(banner.get_index(), _screen.stack_window().get_index(), "A window can still be put over it.")
+	assert_lt(banner.get_index(), _screen.pause_menu().get_index())
+
+
+func test_a_redraw_after_the_end_leaves_one_banner() -> void:
+	_open(_bear_setup())
+	_keep()
+	_presenter.concede()
+	var first: Control = _screen.banner()
+
+	_screen.size = SCREEN + Vector2(10, 0)
+	_screen.size = SCREEN
+
+	assert_true(first.is_queued_for_deletion())
+	assert_false(_screen.banner().is_queued_for_deletion())
+	var banners: int = 0
+	for child: Node in _screen.get_children():
+		if child.has_meta("text") and not child.is_queued_for_deletion():
+			banners += 1
+	assert_eq(banners, 1)
+
+
 func test_concede_is_shown_grayed_out_once_the_encounter_is_over() -> void:
 	_open(_bear_setup())
 	_screen.press_key(KEY_ESCAPE)

@@ -849,3 +849,42 @@ func test_the_pass_button_is_over_the_info_panel_and_as_wide() -> void:
 		assert_almost_eq(info.position.y - button.end.y, EncounterLayout.PASS_GAP, 0.01, "Directly above it.")
 		assert_gt(button.position.y, regions["hero_lands"].end.y, "Clear of the Hero's lands.")
 		assert_almost_eq(info.end.y, screen.y - EncounterLayout.INFO_PAD, 0.01, "The Info Panel still ends where it did.")
+
+
+func test_every_row_and_pile_has_a_zone_plate_and_no_hand_has_one() -> void:
+	var plates: Dictionary[String, Rect2] = EncounterLayout.zone_plates(EncounterLayout.regions(Vector2(1920, 1080)))
+
+	var wanted: Array[String] = [
+		"villain_lands", "villain_nonlands", "hero_nonlands", "hero_lands",
+		"villain_exile", "villain_graveyard", "villain_library", "hero_library", "hero_graveyard", "hero_exile",
+	]
+	assert_eq(plates.keys(), wanted)
+
+
+func test_a_rows_plate_is_its_region_and_a_piles_plate_is_round_its_card_and_label() -> void:
+	for screen: Vector2 in SIZES:
+		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
+		var plates: Dictionary[String, Rect2] = EncounterLayout.zone_plates(regions)
+		var card_width: float = EncounterLayout.PILE_HEIGHT * CardGeometry.ASPECT
+
+		for row: String in ["villain_lands", "villain_nonlands", "hero_nonlands", "hero_lands"]:
+			assert_eq(plates[row], regions[row], row)
+		for pile: String in ["villain_exile", "villain_graveyard", "villain_library", "hero_library", "hero_graveyard", "hero_exile"]:
+			var plate: Rect2 = plates[pile]
+			assert_almost_eq(plate.get_center().x, regions[pile].get_center().x, 0.01, "Centered on the pile.")
+			assert_almost_eq(plate.size.x, card_width + EncounterLayout.PLATE_PAD.x * 2.0, 0.01)
+			assert_almost_eq(plate.size.y, regions[pile].size.y + EncounterLayout.PLATE_PAD.y * 2.0, 0.01)
+			assert_true(regions["piles"].encloses(plate), "%s stays in the pile column at %s." % [pile, screen])
+
+
+func test_no_two_zone_plates_overlap_and_none_reaches_a_hand() -> void:
+	for screen: Vector2 in SIZES:
+		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
+		var plates: Dictionary[String, Rect2] = EncounterLayout.zone_plates(regions)
+		var keys: Array = plates.keys()
+
+		for first: int in keys.size():
+			for second: int in range(first + 1, keys.size()):
+				assert_false(plates[keys[first]].intersects(plates[keys[second]]), "%s and %s at %s." % [keys[first], keys[second], screen])
+			for hand: String in ["villain_hand", "hero_hand"]:
+				assert_false(plates[keys[first]].intersects(regions[hand]), "%s and the %s." % [keys[first], hand])

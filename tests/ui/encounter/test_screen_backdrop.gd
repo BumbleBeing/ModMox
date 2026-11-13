@@ -105,3 +105,29 @@ func _open() -> void:
 	if _presenter.snapshot().decision is ChoosePlayOrDrawDecision:
 		_presenter.answer(ChoosePlayOrDrawDecision.Choice.PLAY)
 		_presenter.wait_until_idle()
+
+
+func test_a_zone_plate_is_drawn_behind_every_row_and_pile() -> void:
+	_open()
+
+	var plates: ZonePlates = _screen.zone_plates()
+
+	assert_eq(plates.rects(), EncounterLayout.zone_plates(EncounterLayout.regions(SCREEN)).values())
+	assert_eq(plates.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+	assert_eq(plates.get_index(), 1, "Just over the slate, under the board.")
+	assert_lt(ZonePlates.COLOR.a, 0.25, "Mostly see-through.")
+	assert_almost_eq(ZonePlates.COLOR.r, ZonePlates.COLOR.b, 0.1, "Gray.")
+	assert_gt(ZonePlates.RADIUS, 0)
+
+
+func test_the_zone_plates_lie_over_the_dimmed_backdrop_and_outlast_a_redraw() -> void:
+	_open()
+	var plates: ZonePlates = _screen.zone_plates()
+
+	_screen.show_backdrop("white")
+	_presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	_presenter.wait_until_idle()
+
+	assert_same(_screen.zone_plates(), plates)
+	assert_eq(plates.get_index(), _screen.backdrop_dimmer().get_index() + 1)
+	assert_eq(_screen.backdrop().get_index(), 1)
