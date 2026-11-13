@@ -191,3 +191,56 @@ func test_with_no_time_another_card_is_shown_at_once() -> void:
 
 func _look(card: String) -> CardLook:
 	return CardLook.of_definition(load(ALPHA % card) as MmCardDefinition)
+
+
+# --- An Emblem and a Potion (ADR 0033, A532 and A533) -------------------------------------
+
+func test_a_potion_is_shown_as_its_icon_enlarged_with_its_rarity_glow_and_no_card_face() -> void:
+	var common: Color = Inspector.glow_of(MmCardDefinition.Rarity.COMMON)
+
+	_inspector.show_card(BEARS, _held_look("res://content/potions/big_gulp.tres", "big_gulp", CardLook.Kind.POTION), null, common, [])
+
+	var view: PotionReadout = _inspector.potion_readout()
+	assert_null(_inspector.face())
+	assert_null(_inspector.emblem_face())
+	assert_eq(view.name_text(), "Big Gulp")
+	assert_eq(view.type_line_text(), "Potion")
+	assert_eq(view.rules_text(), "Target creature gets +2/+2 until end of turn.")
+	assert_false(view.art().is_small(), "The large art: the circle fills the icon's grid.")
+	assert_eq(view.art().key(), "big_gulp")
+	assert_eq(fmod(view.art().icon_rect().size.x, PotionArt.CELLS), 0.0, "A whole number of pixels to each art pixel.")
+	assert_eq(view.glow_color(), common)
+	assert_false(_inspector.original_button().visible, "A Potion has no Original.")
+	assert_eq(_inspector.reminder_keywords().size(), 0)
+
+
+func test_an_emblem_is_shown_on_an_emblem_face_the_width_of_a_card_face() -> void:
+	_inspector.show_card(BEARS, _held_look("res://content/emblems/electromancers_boon.tres", "emblems/electromancers_boon", CardLook.Kind.EMBLEM), null, null, [])
+
+	var face: EmblemFace = _inspector.emblem_face()
+	assert_null(_inspector.face())
+	assert_null(_inspector.potion_readout())
+	assert_almost_eq(face.size.x, EncounterLayout.SIDEBAR_WIDTH - 2.0 * Inspector.PAD, 0.01)
+	assert_eq(face.name_text(), "Electromancer's Boon")
+	assert_eq(face.type_line_text(), "Emblem")
+	assert_eq(face.rules_text(), "{R}: This emblem deals 3 damage to any target. Activate only once each game.")
+	assert_false(_inspector.original_button().visible)
+
+
+func test_a_card_shown_after_an_emblem_gets_its_card_face_and_see_original_back() -> void:
+	_inspector.show_card(BEARS, _held_look("res://content/emblems/electromancers_boon.tres", "", CardLook.Kind.EMBLEM), null, null, [])
+
+	_inspector.show_card(ANGEL, _look("serra_angel"), _look("serra_angel"), null, [])
+
+	assert_null(_inspector.emblem_face())
+	assert_eq(_inspector.face().title_text().shown_text(), "Serra Angel")
+	assert_true(_inspector.original_button().visible)
+
+
+## The look of the Emblem or Potion authored at [param path], as a view would show it.
+func _held_look(path: String, art_key: String, kind: CardLook.Kind) -> CardLook:
+	var definition: MmCardDefinition = load(path)
+	var seen: MmObjectView = MmObjectView.new()
+	seen.name = definition.name
+	seen.abilities = definition.abilities
+	return CardLook.of_held(seen, art_key, kind)

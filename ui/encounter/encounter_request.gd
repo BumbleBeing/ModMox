@@ -5,6 +5,8 @@ extends RefCounted
 ## game around the encounter will hand it over instead.
 
 const DECKS: String = "res://content/decks/"
+const EMBLEMS: String = "res://content/emblems/"
+const POTIONS: String = "res://content/potions/"
 const DIFFICULTIES: Array[String] = ["easy", "normal", "hard"]
 
 var hero_deck: String = "red_green"
@@ -17,12 +19,16 @@ var villain_name: String = ""
 ## The Backdrop (game glossary) behind the encounter, one of Backdrops.NAMES. Named here
 ## until Stages exist, when the encounter's Stage will set it (ADR 0035).
 var backdrop: String = Backdrops.PLAIN
-## Gives each player one sample Emblem, so the Emblems windows have something to show.
+## Gives each player sample Emblems, so the Emblems windows have something to show and to
+## activate: the Hero Howling Winds and both Boons, the Villain Ankh's Curse and
+## Electromancer's Boon (A527).
 var has_sample_emblems: bool = false
+## Gives the Hero one Big Gulp, until something holds Items between encounters (A523).
+var has_sample_potions: bool = false
 
 
 ## The request in [param arguments], as passed after "--" on the command line, such as
-## --hero=red_green --villain=white_black --seed=7 --difficulty=normal --emblems
+## --hero=red_green --villain=white_black --seed=7 --difficulty=normal --emblems --potions
 ## --hero-name=Jackson --villain-name=Mishra --backdrop=red. Null when
 ## they name no deck and no seed, which means "show the start form".
 static func from_arguments(arguments: PackedStringArray) -> EncounterRequest:
@@ -48,6 +54,8 @@ static func from_arguments(arguments: PackedStringArray) -> EncounterRequest:
 			request.backdrop = argument.trim_prefix("--backdrop=")
 		elif argument == "--emblems":
 			request.has_sample_emblems = true
+		elif argument == "--potions":
+			request.has_sample_potions = true
 	return request if is_asked_for else null
 
 
@@ -83,11 +91,16 @@ func setup() -> MmEncounterSetup:
 	encounter.hero = load(DECKS + hero_deck + ".tres") as MmPlayerSetup
 	encounter.villain = load(DECKS + villain_deck + ".tres") as MmPlayerSetup
 	encounter.encounter_seed = encounter_seed
-	if has_sample_emblems:
+	if has_sample_emblems or has_sample_potions:
 		encounter.hero = encounter.hero.duplicate() as MmPlayerSetup
-		encounter.hero.emblems = [_sample_emblem("Sample Boon: Howling Winds", "howling_mine")] as Array[MmCardDefinition]
 		encounter.villain = encounter.villain.duplicate() as MmPlayerSetup
-		encounter.villain.emblems = [_sample_emblem("Sample Hex: Ankh's Curse", "ankh_of_mishra")] as Array[MmCardDefinition]
+	if has_sample_emblems:
+		encounter.hero.emblems = [_sample_emblem("Sample Boon: Howling Winds", "howling_mine"),
+			_emblem("diviners_boon"), _emblem("electromancers_boon")] as Array[MmCardDefinition]
+		encounter.villain.emblems = [_sample_emblem("Sample Hex: Ankh's Curse", "ankh_of_mishra"),
+			_emblem("electromancers_boon")] as Array[MmCardDefinition]
+	if has_sample_potions:
+		encounter.hero.potions = [load(POTIONS + "big_gulp.tres") as MmCardDefinition] as Array[MmCardDefinition]
 	return encounter
 
 
@@ -108,4 +121,10 @@ static func _sample_emblem(emblem_name: String, card: String) -> MmCardDefinitio
 	var emblem: MmCardDefinition = MmCardDefinition.new()
 	emblem.name = emblem_name
 	emblem.abilities = source.abilities.duplicate()
+	# It has no file of its own, so it says which card's art and credit it borrows.
+	emblem.set_meta(EncounterPresenter.ART_KEY_META, card)
 	return emblem
+
+
+static func _emblem(file_name: String) -> MmCardDefinition:
+	return load(EMBLEMS + file_name + ".tres") as MmCardDefinition

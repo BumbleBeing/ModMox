@@ -283,7 +283,7 @@ func test_an_emblem_shows_its_rules_text_on_one_line_cut_with_an_ellipsis() -> v
 
 	var window: ZoneWindow = _screen.emblems_window(HERO)
 	var entry: ZoneEntry = window.body().get_child(0) as ZoneEntry
-	assert_eq(window.title_text(), "Jackson's Emblems (1)")
+	assert_eq(window.title_text(), "Jackson's Emblems (3)")
 	assert_eq(entry.name_text(), "Sample Boon: Howling Winds")
 	assert_true(entry.detail_text().begins_with("At the beginning of each player's draw step"), entry.detail_text())
 	assert_false(AbilityText.has_fallback(entry.detail_text()))

@@ -49,3 +49,13 @@ func test_tall_art_in_a_wide_box_crops_its_height() -> void:
 
 	assert_eq(crop.size, Vector2(1.0, 0.25))
 	assert_almost_eq(crop.position.y, 0.075, 0.0001)
+
+
+func test_an_emblems_art_is_looked_up_in_its_own_folder_and_manifest() -> void:
+	var library: ArtLibrary = ArtLibrary.new()
+
+	assert_eq(ArtLibrary.emblem_key("diviners_boon"), "emblems/diviners_boon")
+	assert_null(library.texture(ArtLibrary.emblem_key("no_such_emblem")), "None yet: the user supplies it.")
+	assert_eq(library.artist(ArtLibrary.emblem_key("no_such_emblem")), "")
+	for key: String in library.entries:
+		assert_false(key.begins_with(ArtLibrary.EMBLEMS) and not FileAccess.file_exists(ArtLibrary.EMBLEM_MANIFEST))

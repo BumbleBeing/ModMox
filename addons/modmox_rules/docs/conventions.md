@@ -45,7 +45,10 @@ addons/modmox_ai/  the AI Agent (ADR 0020): depends on the engine, never the oth
 
 content/cards/   game Content: authored Card Definitions (.tres), outside the engine
 content/decks/   authored decks, saved as Player Setups (.tres)
-content/art/     card art (one image per Card Definition) and its manifest, art.json
+content/art/     card art (one image per Card Definition) and its manifest, art.json;
+                 content/art/emblems/ holds Emblem art and a manifest of its own
+content/emblems/ authored Emblems (.tres): Card Definitions with abilities and nothing else
+content/potions/ authored Potions (.tres): a name, a rarity and one activated ability
 assets/          third-party art and fonts, each folder with its credits or license
 ui/              the GUI (game-side): ui/cards/ draws Card Faces and Battlefield Faces,
                  ui/encounter/ is the Encounter Screen and its Presenter, ui/menu/ the main menu
@@ -136,6 +139,8 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - Set up a combat with `Scenario.combat_ready()`: free creatures cast on the first two turns, stopped at the Hero's attackers decision. Cast a card that has a cost for free in a scenario with `Scenario.free_copy()`. A free copy is colorless, because color comes from the mana cost, so a test that needs a colored source pays real mana or uses a Filter on something else, such as a subtype.
 - Activate an ability with `Scenario.activate()`, reach a replacement choice with `Scenario.pass_to_replacement_choice()`, and answer it by its source card with `Scenario.choose_replacement_from()`.
 - Put "target spell" on a card with `Scenario.target_spell()` and counter with `Scenario.counter()` or a `Scenario.free_counter()`; `Scenario.stack_ids()` lists the stack top first. A creature spell is cast at sorcery speed, so cast it before anything else when a test needs it on the stack.
+- Everything a player may activate from is listed by `ManaPayment.sorted_sources_of()`. A new place abilities work from goes there, never in a second loop beside it.
+- Give a player an Emblem with `Scenario.emblem()` and set `is_once_each_game` or `is_sorcery_speed` on its `ActivatedAbility`; a Potion is the same with a `UseUpCost`, listed in the setup's `potions`. Find either by its view (`view.command`, `view.potions`), never by its place in the command zone.
 - Anything leaving the stack is an undo barrier (ADR 0015), so a test can undo casting a counter but never the countering.
 - Put "target card in a graveyard" on a card with `Scenario.target_graveyard_card()` (`your_dead_creature()` for a creature card in its controller's) and "target activated or triggered ability" with `Scenario.target_ability()`; `free_raise()` and `free_stifle()` are the two as instants costing {0}, and `card_in_graveyard()` finds a card by name. A free raise is an instant, unlike Raise Dead, so that one can answer another.
 - A card that changes zones is a new object, so find it again after every move: `card_in_graveyard()` after it dies, the hand after it returns.
@@ -185,6 +190,11 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - **Something drawn on a face for a moment is a child of that face and is taken off again**, as a Stack Mark is. Whatever marks a player's portrait must be cleared at the start of a redraw, because the portrait is not redrawn.
 - **Pixel icons come from `tools/sprites/build.sh`**: each set is a text grid (`tools/sprites/keyword_icons.txt`) that the script turns into an `.aseprite` file and a PNG for each icon, and a contact sheet in `tools/sprites/preview/`. Once an `.aseprite` file is edited by hand it is the source of truth; the script keeps it and only exports its PNG again, unless told `--force`.
 - **Card art comes from `tools/art/fetch_art.gd`**, never by hand: it downloads the first printing's art for any card without it and records its credits in `content/art/art.json`. Set focus points with the card gallery tool.
+- **A Potion Icon is a pixel icon like any other** (ADR 0033): a 16 × 16 grid in `tools/sprites/potion_icons.txt`, built into `ui/sprites/potions/<the Potion's file name>.png`. Emblem art is put in `content/art/emblems/` by hand, named after the Emblem's file, with its artist and focus point in the manifest there; `ArtLibrary` reads both folders.
+- **What an Emblem or a Potion was authored as is found by the presenter, in the setup** (ADR 0032): the engine's views carry no file names. A sample Emblem made in code names the card art it borrows in its `art_key` metadata. Anything that draws one reads `CardLook.kind`, `rules_lines` and `spent_ability_indexes`, and never works the text out again.
+- **A usable entry of a window is made so with `ZoneEntry.make_usable()`**, which gives it the green border and a `ClickCatcher`; the Emblems and Potions buttons glow through `HeldState`. `PotionArt` draws a Potion Icon everywhere, small or large.
+- **"Emblem" and "Potion" are type lines the GUI writes**, never card types (ADR 0036). Game-side code tells them apart by the Player View's list (`command` or `potions`) and, once the presenter has made it, by `CardLook.kind`. `potion_index` and `source_potion_index` are read for one thing only: to find which Potion in the setup an object or a stack ability is.
+- **Never name anything `Window`, `Node`, `Control` or any other built-in class, an enum included.** It fails to compile, and only when the file is next loaded. The windows of Held things are `HeldWindows.Kind`.
 - **Only the Encounter Presenter touches the engine** (ADR 0021). Nothing else in `ui/` or `tools/` may mention `MmEngine`, `MmGameState` or `MmEncounterDriver`; a test scans for them. A screen draws from the snapshot it was handed, and asks the presenter to answer, pass, undo, cancel or concede.
 - **Never read the engine while the Villain is thinking.** Its Agent runs on a worker thread that is changing the game. The presenter makes its snapshot before starting the task and refuses commands until it has finished; new presenter code must keep that order.
 - **An effect on a thing's border is a child of that thing** (`BorderEffects`): the Glow, a pointer outline, anything later. It then turns, moves and resizes with a fanned or tapped card. Never draw one beside its host from a remembered rectangle.

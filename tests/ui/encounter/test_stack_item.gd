@@ -63,7 +63,18 @@ func test_an_emblems_ability_finds_its_source_in_the_command_zone() -> void:
 	var item: StackItem = StackItem.of(ping, view)
 
 	assert_eq(item.source_object_id, 30)
-	assert_eq(item.first_line, "Storm Emblem deals 1 damage to any target.", "An Emblem is no kind of permanent, so it goes by its name.")
+	assert_eq(item.first_line, "This emblem deals 1 damage to any target.", "An Emblem calls itself \"this emblem\" (ADR 0036).")
+
+
+func test_a_potions_ability_is_read_though_its_potion_is_gone() -> void:
+	var view: MmPlayerView = _view()
+	var gulp: MmObjectView = _ability(21, "Big Gulp", 30, HERO, [MmReference.to_player(HERO)])
+	gulp.source_potion_index = 0
+
+	var item: StackItem = StackItem.of(gulp, view)
+
+	assert_eq(item.source_object_id, StackItem.NONE, "Nothing is left to mark on the board.")
+	assert_eq(item.first_line, "This potion deals 1 damage to any target.")
 
 
 func test_with_no_targets_the_second_line_is_just_the_controller() -> void:

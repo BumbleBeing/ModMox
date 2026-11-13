@@ -249,8 +249,8 @@ func test_each_players_emblems_open_in_their_own_window() -> void:
 	_screen.player_panel(HERO).emblems_button().pressed.emit()
 
 	assert_true(window.visible)
-	assert_eq(window.title_text(), "Hero's Emblems (1)")
-	assert_eq(window.body().get_child_count(), 1)
+	assert_eq(window.title_text(), "Hero's Emblems (3)")
+	assert_eq(window.body().get_child_count(), 3, "Howling Winds and both Boons (A527).")
 	assert_eq((window.body().get_child(0) as ZoneEntry).name_text(), "Sample Boon: Howling Winds")
 	assert_false(_screen.emblems_window(VILLAIN).visible)
 	assert_eq((_screen.emblems_window(VILLAIN).body().get_child(0) as ZoneEntry).name_text(), "Sample Hex: Ankh's Curse")

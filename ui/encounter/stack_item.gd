@@ -33,7 +33,12 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 		var noun: String = source_name
 		if source != null:
 			item.source_object_id = source.id
-			noun = AbilityText.self_noun(source.card_types, source.name)
+			# An Emblem has no card type to name itself by (ADR 0036).
+			noun = CardLook.noun_of(CardLook.Kind.EMBLEM) if _find(seen.source_object_id, view.command) != null \
+				else AbilityText.self_noun(source.card_types, source.name)
+		elif seen.source_potion_index != MmGameObject.NOT_A_POTION:
+			# Its Potion was used up to pay for it, so nothing is left to find.
+			noun = CardLook.noun_of(CardLook.Kind.POTION)
 		item.first_line = AbilityText.effect_of(seen.ability, noun)
 		item.full_text = "%s ability — %s" % [_possessive(source_name), item.first_line]
 	else:

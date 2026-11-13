@@ -15,6 +15,9 @@ const NO_MAXIMUM_HAND_SIZE: int = -1
 ## Emblems this player starts with, from Statuses or a Villain's rules (ADR 0011). Each is a
 ## Card Definition with abilities and nothing else.
 @export var emblems: Array[MmCardDefinition] = []
+## Potions this player holds (ADR 0036). Each is a Card Definition with a name, a rarity
+## and one activated ability whose cost uses the Potion up.
+@export var potions: Array[MmCardDefinition] = []
 
 
 ## Returns why this setup is unusable, or "" if it is valid.
@@ -28,6 +31,9 @@ func validate() -> String:
 	for index: int in emblems.size():
 		if emblems[index] == null:
 			return "Emblem %d has no Card Definition." % index
+	for index: int in potions.size():
+		if potions[index] == null:
+			return "Potion %d has no Card Definition." % index
 	for index: int in deck.size():
 		if deck[index] == null or deck[index].base == null:
 			return "Deck entry %d has no Card Definition." % index

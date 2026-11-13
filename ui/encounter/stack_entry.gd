@@ -13,6 +13,7 @@ const ART_SIZE: float = 52.0
 const GRIP_WIDTH: float = 20.0
 const GRIP_COLOR: Color = Color(1, 1, 1, 0.55)
 
+var _potion_art: PotionArt = null
 var _name: Label
 var _detail: Label
 var _color: Color
@@ -68,6 +69,18 @@ func _init(art_key: String, first_line: String, second_line: String, color: Colo
 	lines.add_child(_detail)
 	mouse_entered.connect(func() -> void: hovered.emit(true))
 	mouse_exited.connect(func() -> void: hovered.emit(false))
+
+
+## Shows the art of the Potion authored in the file named [param key] where the art is: its
+## ability is on the stack, and the Potion itself is gone (ADR 0032, A531).
+func show_potion(key: String) -> void:
+	_potion_art = PotionArt.new(key, ART_SIZE, true)
+	_art.add_child(_potion_art)
+
+
+## The Potion's art, or null for anything that did not come from a Potion.
+func potion_art() -> PotionArt:
+	return _potion_art
 
 
 ## The square at the left that shows the art: where a card put on the stack flies to.

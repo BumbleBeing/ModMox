@@ -30,13 +30,13 @@ static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost) -> 
 		available.append(unit.type)
 	# Later: costs other than {T} on mana abilities, which could let one source pay twice.
 	var choices_per_source: Array = []
-	for permanent: MmGameObject in sorted_permanents_of(state, player_id):
+	for source: MmGameObject in sorted_sources_of(state, player_id):
 		var choices: Array = []
-		var abilities: Array[MmAbility] = state.characteristics_of(permanent).abilities
+		var abilities: Array[MmAbility] = state.characteristics_of(source).abilities
 		for index: int in abilities.size():
 			var ability: ActivatedAbility = abilities[index] as ActivatedAbility
-			if ability != null and ability.is_mana_ability() and ability.can_pay_costs(state, permanent):
-				choices.append(mana_made_by(state, ability, MmEffectContext.new(player_id, permanent.id)))
+			if ability != null and pays_while_paying(state, source, ability, index):
+				choices.append(mana_made_by(state, ability, MmEffectContext.new(player_id, source.id)))
 		if not choices.is_empty():
 			choices_per_source.append(choices)
 	return _covers_with_choices(available, choices_per_source, 0, cost)
@@ -51,6 +51,27 @@ static func mana_made_by(state: MmGameState, ability: ActivatedAbility, context:
 			for _index: int in add_mana.amount.evaluate(state, context):
 				made.append(add_mana.mana_type)
 	return made
+
+
+## Whether [param ability], number [param ability_index] of [param source], is a mana
+## ability that could be activated in the middle of paying a cost (CR 605.3a): its costs
+## can be paid, and no Activation Restriction forbids it. "Only as a sorcery" always does
+## there, since something is on the stack (CR 602.5d).
+static func pays_while_paying(state: MmGameState, source: MmGameObject, ability: ActivatedAbility, ability_index: int) -> bool:
+	if not ability.is_mana_ability() or not ability.can_pay_costs(state, source):
+		return false
+	return not ability.is_sorcery_speed and not (ability.is_once_each_game and source.is_ability_spent(ability_index))
+
+
+## Everything [param player_id] controls whose abilities work where it is (CR 113.6): their
+## permanents in ID order, then their Emblems and Potions in ID order (ADR 0036).
+static func sorted_sources_of(state: MmGameState, player_id: int) -> Array[MmGameObject]:
+	var held: Array[MmGameObject] = []
+	for command_object: MmGameObject in state.command.objects():
+		if command_object.controller_id == player_id:
+			held.append(command_object)
+	held.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return sorted_permanents_of(state, player_id) + held
 
 
 ## The permanents [param player_id] controls, in ID order.

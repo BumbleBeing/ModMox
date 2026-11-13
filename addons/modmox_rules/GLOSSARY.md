@@ -35,7 +35,7 @@ One complete game of Magic between the Hero and exactly one Villain. Run Cards c
 _Avoid_: Match, battle, duel
 
 **Encounter Setup**:
-The starting conditions of an encounter: both decks, starting life totals, opening hand sizes, free mulligans, who goes first, and the encounter seed.
+The starting conditions of an encounter: both decks, each player's Emblems and Potions, starting life totals, opening hand sizes, free mulligans, who goes first, and the encounter seed.
 _Avoid_: Game config, match settings
 
 **Free Mulligan**:
@@ -43,8 +43,20 @@ A mulligan that puts no cards on the bottom of the library. A player's first mul
 _Avoid_: Bonus mulligan, mulligan charge
 
 **Emblem**:
-A Game Object in the command zone that has abilities but no other characteristics, used to give an encounter or a player rules that last the whole game. Its abilities are static or triggered, or can be activated once in a game; an Emblem is never used up and never leaves.
+A Game Object in the command zone that has abilities but no other characteristics, used to give an encounter or a player rules that last the whole game. Its abilities are static, triggered or activated, and an activated one may be limited to once each game; an Emblem is never used up and never leaves. "Emblem" is not a card type.
 _Avoid_: Encounter rule, modifier, aura (unless an actual Aura is meant)
+
+**Potion**:
+A Game Object in the command zone with one activated ability whose cost uses the Potion up, removing it from the game. A player's Potions are listed in the Encounter Setup apart from their Emblems, and the engine can say afterward which were used. It is not a card, cannot be targeted, and "Potion" is not a card type.
+_Avoid_: Consumable, single-use Emblem, item (the game's word)
+
+**Activation Restriction**:
+A rule on an activated ability about when it may be activated, apart from its costs: only once each game, or only as a sorcery (CR 602.5). Checked wherever the engine decides which abilities to offer.
+_Avoid_: Limit cost, charge, cooldown
+
+**Spent**:
+Said of a once-each-game ability that has been activated this game, whether or not it resolved. The source's Game Object keeps the mark, and its Object View shows it.
+_Avoid_: Used up (a Potion is used up; an Emblem never is), exhausted, tapped
 
 **Hero**:
 The player in an encounter who represents the human's character.

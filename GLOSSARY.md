@@ -79,8 +79,16 @@ Anything the Hero holds between encounters and can buy, sell or win other than a
 _Avoid_: Gear, equipment (an Equipment is a card), inventory object
 
 **Potion**:
-An Item that is used up when it is used. Some can be used in the middle of an encounter, where they do what a spell would, such as "gain 2 life" or "each opponent discards a card". The Hero's panel counts them on its Potions button, purple with any and gray with none, which takes no press until Potions exist. Whatever is gone for good once used is a Potion and never an Emblem: an Emblem's ability is static or triggered, or can be used once in each encounter, and the Emblem itself stays (A491 to A493).
+An Item that is used up when it is used. Some can be used in the middle of an encounter, where they do what a spell would, such as "gain 2 life" or "each opponent discards a card". A Potion has no mana cost, and has a Rarity and a Potion Icon. The Hero's panel counts them on its Potions button, which glows while one could be used, is purple with any and gray with none, and opens the Potions window, where a click on a Potion uses it. Whatever is gone for good once used is a Potion and never an Emblem: an Emblem's ability is static or triggered, or can be activated, sometimes only once each game, and the Emblem itself stays (A491 to A493). The only Potion so far is a mock, Big Gulp: "Target creature gets +2/+2 until end of turn."
 _Avoid_: Consumable, single-use Emblem, single-use Boon, charge
+
+**Held**:
+Said of what a player has in an encounter that is not a card: their Emblems and their Potions. The code that treats the two alike is named for it (`HeldState`, `HeldWindows`, a "held entry"). The engine has no word for the pair: there they are objects in the command zone.
+_Avoid_: Command object, non-card, Item (only a Potion is one); and "held card", which is a Drag Card
+
+**Potion Icon**:
+A Potion's picture: a 16 × 16 pixel icon on a beige square with a darker circle behind it, shown on its entry in the Potions window, on its ability's entry in the Stack Window, and enlarged in the Inspector. A Potion without one shows a plain bottle.
+_Avoid_: Potion art, potion sprite, potion card
 
 **Mod**:
 An Item the Hero holds (a Hex aside) and can apply to a card in their Collection to change it for the rest of the run. Applied, it becomes one of that Run Card's Modifications, the rules engine's word for the change itself. Applying one is final the moment it is confirmed, and it fills one of the card's Mod Slots. A Mod is applicable to a card that has an empty Mod Slot and that the Mod's own rule accepts.
@@ -207,8 +215,12 @@ The wait before the Villain's next answer is shown, so the Hero can read the las
 The setting that scales every wait, move, Card Flight and fade of an encounter together: Slow, Normal, Fast or Blazing. Normal takes one and a half times as long as Fast, Slow twice as long, and Blazing half. It is chosen in the Pause Menu's settings and kept between runs.
 _Avoid_: Delay, Villain speed, animation lock
 
+**Potions window**:
+The Zone Window that lists the Potions the Hero holds, each with its Potion Icon, its Rarity and what it does. The Potions button opens and closes it, and a click on a Potion that glows uses it. Like the Hero's Emblems window, it closes at the click that uses something from it and comes back if that is canceled or undone.
+_Avoid_: Inventory, item window, potion menu
+
 **Auto-pass**:
-The standing setting that passes priority for the Hero when there is nothing to stop for. With it on, the Hero is asked only on a step that has a stop and where they could cast, play or activate something other than a mana ability, or when the Villain's spell or ability is on top of the stack. It is on unless turned off in the Pause Menu's settings, and kept between runs.
+The standing setting that passes priority for the Hero when there is nothing to stop for. With it on, the Hero is asked only on a step that has a stop and where they could cast, play or activate something other than a mana ability, an Emblem's ability and a Potion included, or when the Villain's spell or ability is on top of the stack. It is on unless turned off in the Pause Menu's settings, and kept between runs.
 _Avoid_: Auto-skip, smart pass, auto-yield
 
 **Auto-tap**:
@@ -299,6 +311,10 @@ _Avoid_: Selection (a Combat Selection is the combat one), checklist, picked car
 A card drawn in full: its Frame, name, mana cost, type line, rules text and power/toughness. Used wherever a card is read rather than played on.
 _Avoid_: Full card, card image
 
+**Emblem Face**:
+An Emblem drawn in full, in the Inspector: its art in a border of its own, its name, a type line that reads "Emblem", its rules text with any spent ability gray and marked "(used)", and the artist's credit. It is the size of a Card Face and has no Rarity glow.
+_Avoid_: Emblem card, Boon card, Status card
+
 **Battlefield Face**:
 How a permanent is drawn on the battlefield: the top of its Frame (name box or crown) and a border around its art, a large power/toughness box, and a chip for each keyword it has. It shows no other text, and turns sideways and darkens when tapped.
 _Avoid_: Mini card, tile, token (a token is a rules term)
@@ -312,7 +328,7 @@ The 16 × 16 pixel picture on a Keyword Chip that identifies its keyword.
 _Avoid_: Sprite, glyph, symbol (mana symbols are a different thing)
 
 **Inspector**:
-Where a card is read in full during an encounter, the pregame included. It takes the sidebar's place while a card is pinned, and shows that card's Card Face, its State List and its Reminders. An ability on the stack is read as the card it came from. Hovering over a card shows nothing.
+Where a card is read in full during an encounter, the pregame included. It takes the sidebar's place while a card is pinned, and shows that card's Card Face, its State List and its Reminders. An ability on the stack is read as the card it came from. A pinned Emblem is shown on its Emblem Face, and a pinned Potion as its Potion Icon enlarged, with its name, the type line "Potion" and its rules text. Hovering over a card shows nothing.
 _Avoid_: Card viewer, tooltip, preview (a Tap Preview is a different thing), zoom
 
 **Pinned card**:
@@ -332,5 +348,5 @@ What one keyword means, in a sentence, shown in the Inspector beside its Keyword
 _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 
 **Rarity**:
-How scarce a card is: Common, Uncommon, Rare, Mythic or Power-9. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green.
+How scarce a card or a Potion is: Common, Uncommon, Rare, Mythic or Power-9. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green.
 _Avoid_: Tier (a part of a run), quality, grade

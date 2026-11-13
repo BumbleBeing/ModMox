@@ -7,6 +7,11 @@ extends RefCounted
 
 const FOLDER: String = "res://content/art/"
 const MANIFEST: String = "res://content/art/art.json"
+## Emblem art is put there by hand, named after the Emblem's file, with a manifest of its
+## own holding each picture's artist and focus point (ADR 0033). An Emblem's key is its file
+## name after EMBLEMS, "emblems/diviners_boon", so the same code finds its image.
+const EMBLEMS: String = "emblems/"
+const EMBLEM_MANIFEST: String = "res://content/art/emblems/art.json"
 const MIDDLE: Vector2 = Vector2(0.5, 0.5)
 
 ## Card file name → {"set", "collector_number", "artist", "scryfall_id", "focus": [x, y]}.
@@ -23,11 +28,10 @@ static func shared() -> ArtLibrary:
 
 
 func _init() -> void:
-	if FileAccess.file_exists(MANIFEST):
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
-		# Variant: parsed JSON is open-ended until checked.
-		if parsed is Dictionary:
-			entries = parsed
+	entries = _read(MANIFEST)
+	var emblems: Dictionary = _read(EMBLEM_MANIFEST)
+	for key: String in emblems:
+		entries[EMBLEMS + key] = emblems[key]
 
 
 ## The art for [param key], or null when the card has none (a Card Face then shows its name
@@ -40,6 +44,11 @@ func texture(key: String) -> Texture2D:
 ## Whether [param key]'s image is in content/art/, imported or not.
 func has_image(key: String) -> bool:
 	return key != "" and FileAccess.file_exists(FOLDER + key + ".jpg")
+
+
+## The art key of the Emblem authored in the file named [param file_name].
+static func emblem_key(file_name: String) -> String:
+	return EMBLEMS + file_name
 
 
 func artist(key: String) -> String:
@@ -77,8 +86,13 @@ func set_focus(key: String, point: Vector2) -> void:
 
 
 func save() -> void:
+	# Emblem art has its own manifest, kept by hand.
+	var cards: Dictionary = {}
+	for key: String in entries:
+		if not key.begins_with(EMBLEMS):
+			cards[key] = entries[key]
 	var file: FileAccess = FileAccess.open(MANIFEST, FileAccess.WRITE)
-	file.store_string(JSON.stringify(entries, "\t", true) + "\n")
+	file.store_string(JSON.stringify(cards, "\t", true) + "\n")
 
 
 ## The part of an image of [param art_size] (in UV, 0 to 1) that covers a box of
@@ -90,3 +104,12 @@ static func crop(art_size: Vector2, box_size: Vector2, point: Vector2) -> Rect2:
 	var scale: Vector2 = Vector2(box_aspect / art_aspect, 1.0) if art_aspect > box_aspect else Vector2(1.0, art_aspect / box_aspect)
 	var corner: Vector2 = (point - scale / 2.0).clamp(Vector2.ZERO, Vector2.ONE - scale)
 	return Rect2(corner, scale)
+
+
+## The manifest at [param path] as a Dictionary; empty if there is none or it is not one.
+static func _read(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	# Variant: parsed JSON is open-ended until checked.
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return parsed as Dictionary if parsed is Dictionary else {}

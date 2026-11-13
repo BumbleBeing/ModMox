@@ -168,21 +168,61 @@ func test_a_permanent_whose_ability_is_not_offered_has_no_answer_and_no_glow() -
 	assert_false(clicks.glowing_ids().has(LAND_ID))
 
 
-func test_an_ability_of_something_that_is_not_a_permanent_glows_but_is_not_clicked_here() -> void:
-	# An Emblem's ability, or one that works from a graveyard: clicked in its own zone's
-	# window when that is built (13f, milestone 14), never on the battlefield.
+func test_an_emblems_ability_is_answered_by_a_click_and_glows_green() -> void:
+	# ADR 0032, A537: clicked on its entry in the Emblems window, and green as a card to
+	# play is, not the purple of a permanent's ability.
 	var view: MmPlayerView = _view()
-	var emblem: MmObjectView = _permanent(30, [_ping()])
-	view.command = [emblem]
+	view.command = [_held(30, "Storm", [_ping()])]
 	var decision: PriorityDecision = PriorityDecision.new(HERO, [
 		PassAction.new(), ActivateAbilityAction.new(30, 0),
 	] as Array[MmAction])
 
 	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
 
+	assert_eq(clicks.options_of(30).size(), 1)
+	assert_eq(clicks.options_of(30)[0].answer, 1)
+	assert_eq(clicks.options_of(30)[0].text, "{T}: This emblem deals 1 damage to any target.")
+	assert_eq(_kinds(clicks), {30: [DecisionClicks.Kind.PLAY]})
+
+
+func test_an_emblem_with_several_usable_abilities_offers_each() -> void:
+	var view: MmPlayerView = _view()
+	view.command = [_held(30, "Storm", [_ping(), FlyingAbility.new(), Scenario.regenerate_ability(Scenario.mana_cost(0))])]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		PassAction.new(), ActivateAbilityAction.new(30, 0), ActivateAbilityAction.new(30, 2),
+	] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(clicks.options_of(30).size(), 2, "The Option Menu's rows.")
+	assert_eq(clicks.options_of(30)[1].answer, 2)
+	assert_eq(clicks.options_of(30)[1].text, "{0}: Regenerate this emblem.")
+
+
+func test_a_potion_is_answered_by_a_click_glows_green_and_reads_without_a_cost() -> void:
+	var view: MmPlayerView = _view()
+	var potion: MmObjectView = _held(31, "Big Gulp", (load("res://content/potions/big_gulp.tres") as MmCardDefinition).abilities)
+	potion.potion_index = 0
+	view.potions = [potion]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		PassAction.new(), ActivateAbilityAction.new(31, 0),
+	] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(clicks.options_of(31).size(), 1)
+	assert_eq(clicks.options_of(31)[0].text, "Target creature gets +2/+2 until end of turn.")
+	assert_eq(_kinds(clicks), {31: [DecisionClicks.Kind.PLAY]})
+
+
+func test_an_emblem_or_potion_that_cannot_be_used_offers_nothing() -> void:
+	var view: MmPlayerView = _view()
+	view.command = [_held(30, "Storm", [_ping()])]
+
+	var clicks: DecisionClicks = DecisionClicks.of(PriorityDecision.new(HERO, [PassAction.new()] as Array[MmAction]), view)
+
 	assert_eq(clicks.options_of(30).size(), 0)
-	assert_eq(clicks.clickable_ids().size(), 0)
-	assert_eq(_kinds(clicks), {30: [DecisionClicks.Kind.ABILITY]}, "It still glows, as something that can be done.")
+	assert_eq(clicks.glowing_ids().size(), 0)
 
 
 func test_an_ability_that_is_not_a_mana_ability_glows_purple_and_says_what_it_does() -> void:
@@ -457,6 +497,13 @@ func _kinds(clicks: DecisionClicks) -> Dictionary:
 func _in_hand(id: int, card_name: String, abilities: Array[MmAbility]) -> MmObjectView:
 	var seen: MmObjectView = _card(id, card_name)
 	seen.card_types = [MmCardTypes.CardType.CREATURE]
+	seen.abilities = abilities
+	return seen
+
+
+## An Emblem or a Potion: abilities and no card type.
+func _held(id: int, held_name: String, abilities: Array[MmAbility]) -> MmObjectView:
+	var seen: MmObjectView = _card(id, held_name)
 	seen.abilities = abilities
 	return seen
 

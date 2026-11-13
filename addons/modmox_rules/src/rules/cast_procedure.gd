@@ -10,8 +10,10 @@ enum Stage { CHOOSE_TARGETS, PAY_MANA, DONE, STUCK }
 var _state: MmGameState
 var _player_id: int
 var _stack_object_id: int
-## The permanent whose ability is being activated, or 0 for a spell.
+## The permanent, Emblem or Potion whose ability is being activated, or 0 for a spell, and
+## the ability's place among its abilities.
 var _source_object_id: int = 0
+var _ability_index: int = 0
 var _ability: MmAbility
 var _target_specs: Array[TargetSpec] = []
 var _next_target: int = 0
@@ -45,6 +47,7 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	procedure._ability = ability
 	procedure._target_specs = ability.targets
 	procedure._source_object_id = source.id
+	procedure._ability_index = ability_index
 	if ability.mana_cost != null:
 		# CR 602.2b: an activation's mana is paid like a spell's (CR 601.2g-h).
 		procedure._remaining_generic = ability.mana_cost.generic
@@ -74,6 +77,7 @@ func copy_for(state: MmGameState) -> CastProcedure:
 	var copy: CastProcedure = CastProcedure.new(state, _player_id)
 	copy._stack_object_id = _stack_object_id
 	copy._source_object_id = _source_object_id
+	copy._ability_index = _ability_index
 	copy._ability = _ability
 	copy._target_specs = _target_specs
 	copy._next_target = _next_target
@@ -139,18 +143,18 @@ func _payment_options() -> Array[MmAction]:
 	for unit_index: int in pool.size():
 		if ManaPayment.symbol_paid_by(pool[unit_index].type, _remaining_symbols, _remaining_generic) != ManaPayment.CANNOT_PAY:
 			options.append(PayWithManaAction.new(unit_index))
-	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, _player_id):
-		var abilities: Array[MmAbility] = _state.characteristics_of(permanent).abilities
+	for source: MmGameObject in ManaPayment.sorted_sources_of(_state, _player_id):
+		var abilities: Array[MmAbility] = _state.characteristics_of(source).abilities
 		for ability_index: int in abilities.size():
 			var ability: ActivatedAbility = abilities[ability_index] as ActivatedAbility
-			if ability == null or not ability.is_mana_ability() or not ability.can_pay_costs(_state, permanent):
+			if ability == null or not ManaPayment.pays_while_paying(_state, source, ability, ability_index):
 				continue
 			if ability.mana_cost != null:
 				continue  # Later: mana abilities with mana in their cost.
-			var context: MmEffectContext = MmEffectContext.new(_player_id, permanent.id)
+			var context: MmEffectContext = MmEffectContext.new(_player_id, source.id)
 			for type: MmMana.Type in ManaPayment.mana_made_by(_state, ability, context):
 				if ManaPayment.symbol_paid_by(type, _remaining_symbols, _remaining_generic) != ManaPayment.CANNOT_PAY:
-					options.append(ActivateAbilityAction.new(permanent.id, ability_index))
+					options.append(ActivateAbilityAction.new(source.id, ability_index))
 					break
 	return options
 
@@ -173,6 +177,8 @@ func _pay_with_mana_ability(action: ActivateAbilityAction) -> void:
 	var source: MmGameObject = _state.object(action.object_id)
 	var ability: ActivatedAbility = _state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
 	var pool_size_before: int = _state.player(_player_id).mana_pool().size()
+	if ability.is_once_each_game:
+		_state.perform(AbilitySpentEvent.new(source.id, action.ability_index))  # CR 602.5b
 	ability.pay_costs(_state, source)
 	ability.resolve_effects(_state, MmEffectContext.new(source.controller_id, source.id))
 	var unit_index: int = pool_size_before
@@ -189,6 +195,10 @@ func _pay_with_mana_ability(action: ActivateAbilityAction) -> void:
 func _finish() -> void:
 	var activated: ActivatedAbility = _ability as ActivatedAbility
 	if activated != null:
+		if activated.is_once_each_game:
+			# CR 602.5b: it has been activated, whatever becomes of it on the stack. Marked
+			# before the costs are paid, since a cost may remove the source.
+			_state.perform(AbilitySpentEvent.new(_source_object_id, _ability_index))
 		activated.pay_costs(_state, _state.object(_source_object_id))
 	else:
 		# CR 601.2i: the spell is now cast, which "whenever a player casts" triggers wait for.

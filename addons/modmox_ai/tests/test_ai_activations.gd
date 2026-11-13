@@ -340,3 +340,68 @@ func _let_agents_finish_combat(engine: MmEngine) -> void:
 	var driver: MmEncounterDriver = MmEncounterDriver.new(engine, agents)
 	driver.run_until(func(running: MmEngine) -> bool:
 		return not AiTiming.COMBAT_STEPS.has(running.game_state().step))
+
+
+# --- Emblems (ADR 0036) --------------------------------------------------------------
+
+func test_an_emblem_ability_is_activated_at_the_other_player_for_lethal() -> void:
+	for difficulty: AiDifficulty in [AiDifficulty.easy(), AiDifficulty.normal()]:
+		var engine: MmEngine = _with_electromancers_boon(3)
+		assert_not_null(engine)
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		var play: MmAction = AiScenario.action_at(engine, AiScenario.ask(engine, agent))
+
+		assert_true(play is ActivateAbilityAction, "3 damage wins the game.")
+		assert_eq((play as ActivateAbilityAction).object_id, engine.view_for(engine.hero()).command[0].id)
+		assert_eq(AiScenario.let_answer(engine, agent), "")
+		var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+		assert_true(target.is_player() and target.id == engine.villain().id)
+
+
+func test_a_spent_emblem_ability_is_not_asked_for_again() -> void:
+	var engine: MmEngine = _with_electromancers_boon(20)
+	assert_not_null(engine)
+	var emblem: int = engine.view_for(engine.hero()).command[0].id
+	assert_eq(Scenario.activate(engine, emblem, [MmReference.to_player(engine.villain().id)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var play: MmAction = AiScenario.action_at(engine, AiScenario.ask(engine, AiAgent.new()))
+
+	assert_true(play is PassAction, "Nothing else to do, and the Simulation Copy knows it is spent.")
+
+
+## The Hero in their second main phase with "{0}: This emblem deals 3 damage to any target.
+## Activate only once each game." and nothing else, against a Villain at
+## [param villain_life].
+func _with_electromancers_boon(villain_life: int) -> MmEngine:
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.mana_cost = Scenario.mana_cost(0)
+	ability.targets = [Scenario.any_target()]
+	ability.effects = [Scenario.deal_damage(3, Scenario.targeted(0))]
+	ability.is_once_each_game = true
+	var setup: MmEncounterSetup = Scenario.combat_setup([], [])
+	setup.hero.emblems = [Scenario.emblem("Electromancer's Boon", [ability])]
+	setup.villain.starting_life = villain_life
+	return Scenario.permanents_ready_with(setup, [], [], [], [], 3, Step.PRECOMBAT_MAIN)
+
+
+func test_the_authored_electromancers_boon_is_paid_for_and_aimed_for_lethal() -> void:
+	var setup: MmEncounterSetup = Scenario.setup_with(
+		Scenario.cycled([Scenario.mana_land("Mountain", MmMana.Type.RED, 1)]), Scenario.cycled([]))
+	setup.hero.emblems = [load("res://content/emblems/electromancers_boon.tres")] as Array[MmCardDefinition]
+	setup.villain.starting_life = 3
+	var engine: MmEngine = MmEngine.start(setup)
+	Scenario.play_until_step(engine, 1, Step.PRECOMBAT_MAIN)
+	var agent: AiAgent = AiAgent.new()
+	assert_true(AiScenario.action_at(engine, AiScenario.ask(engine, agent)) is PlayLandAction, "It needs {R} first.")
+	assert_eq(AiScenario.let_answer(engine, agent), "")
+
+	for decision: int in 6:
+		if engine.is_over():
+			break
+		assert_eq(AiScenario.let_answer(engine, agent), "")
+
+	assert_true(engine.is_over(), "It activated the Boon at the Villain, paid {R} and won.")
+	assert_eq(engine.outcome(), MmEngine.Outcome.HERO_WON)
+	assert_eq(Scenario.events_of(engine, AbilitySpentEvent).size(), 1)

@@ -269,8 +269,9 @@ func _current_step() -> MmTurn.Step:
 
 
 ## The actions [param player_id] may take while holding priority, in a deterministic order
-## (ADR 0012): Pass, then land plays, then spells, then abilities, each by object ID and
-## abilities by their order on the object.
+## (ADR 0012): Pass, then land plays, then spells, then abilities of permanents, then
+## abilities of Emblems and Potions (ADR 0036), each by object ID and abilities by their
+## order on the object.
 func _legal_actions(player_id: int) -> Array[MmAction]:
 	var actions: Array[MmAction] = [PassAction.new()]
 	var player: MmPlayer = _state.player(player_id)
@@ -282,12 +283,13 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 	for card: MmGameObject in hand:
 		if _may_cast(player, card):
 			actions.append(CastSpellAction.new(card.id))
-	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, player_id):
-		var abilities: Array[MmAbility] = _state.characteristics_of(permanent).abilities
+	# CR 113.6: an Emblem's abilities work from the command zone, and so does a Potion's.
+	for source: MmGameObject in ManaPayment.sorted_sources_of(_state, player_id):
+		var abilities: Array[MmAbility] = _state.characteristics_of(source).abilities
 		for index: int in abilities.size():
 			var ability: ActivatedAbility = abilities[index] as ActivatedAbility
-			if ability != null and _may_activate(player, permanent, ability):
-				actions.append(ActivateAbilityAction.new(permanent.id, index))
+			if ability != null and _may_activate(player, source, ability, index):
+				actions.append(ActivateAbilityAction.new(source.id, index))
 	return actions
 
 
@@ -337,16 +339,21 @@ func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 
 
 ## Mana abilities whenever their cost can be paid; other abilities also need a legal
-## target for every requirement, and enough mana for any mana in their cost.
-func _may_activate(player: MmPlayer, permanent: MmGameObject, ability: ActivatedAbility) -> bool:
-	if not ability.can_pay_costs(_state, permanent):
+## target for every requirement, and enough mana for any mana in their cost. An Activation
+## Restriction can forbid either kind (CR 602.5).
+func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbility, ability_index: int) -> bool:
+	if ability.is_once_each_game and source.is_ability_spent(ability_index):
+		return false  # CR 602.5b
+	if ability.is_sorcery_speed and not _sorcery_timing(player):
+		return false  # CR 602.5d
+	if not ability.can_pay_costs(_state, source):
 		return false
 	if ability.mana_cost != null:
 		if ability.is_mana_ability():
 			return false  # Later: mana abilities with mana in their cost, such as "{1}: Add {R}".
 		if not ManaPayment.can_afford(_state, player.id, ability.mana_cost):
 			return false
-	return ability.is_mana_ability() or _every_requirement_has_a_target(ability.targets, player.id, permanent.id)
+	return ability.is_mana_ability() or _every_requirement_has_a_target(ability.targets, player.id, source.id)
 
 
 func _every_requirement_has_a_target(specs: Array[TargetSpec], player_id: int, source_id: int) -> bool:
@@ -371,6 +378,8 @@ func _activate(action: ActivateAbilityAction, player_id: int) -> void:
 	var source: MmGameObject = _state.object(action.object_id)
 	var ability: ActivatedAbility = _state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
 	if ability.is_mana_ability():
+		if ability.is_once_each_game:
+			_state.perform(AbilitySpentEvent.new(source.id, action.ability_index))
 		ability.pay_costs(_state, source)
 		ability.resolve_effects(_state, MmEffectContext.new(source.controller_id, source.id))
 		_passes_in_succession = 0

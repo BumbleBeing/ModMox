@@ -252,6 +252,29 @@ func test_a_real_cursor_resting_on_a_card_brings_the_preview_and_leaving_takes_i
 	assert_eq(_glowing_lands().size(), 3)
 
 
+func test_the_cursor_on_an_emblem_that_costs_mana_previews_its_payment() -> void:
+	var setup: MmEncounterSetup = _forests_and(_bear(2))
+	var ability: ActivatedAbility = Scenario.regenerate_ability(Scenario.mana_cost(1))
+	ability.effects = [Scenario.gain_life(1, Scenario.you())]
+	setup.hero.emblems = [Scenario.emblem("Font", [ability])] as Array[MmCardDefinition]
+	_open(setup, 3)
+	var font: int = _presenter.snapshot().emblems_of(HERO)[0].id
+	_screen.emblems_window(HERO).open()
+	await wait_process_frames(2)
+	var answer: int = -1
+	var priority: PriorityDecision = _presenter.snapshot().decision as PriorityDecision
+	for index: int in priority.actions.size():
+		if DecisionClicks.object_of(priority.actions[index]) == font:
+			answer = index
+
+	_point(_screen.held_entry(font).get_global_rect().get_center())
+
+	assert_eq(_screen.previewed_answer(), answer, "An Emblem's cost is previewed like a permanent's (ADR 0031).")
+	assert_eq(_presenter.payment_plan(answer).source_ids.size(), 1)
+	assert_eq(_glowing_lands().size(), 1, "Only the land it would tap keeps its blue Glow.")
+
+
+
 ## Opens the screen in a viewport of its own, with Auto-tap on, and plays until the Hero
 ## has priority with at least [param lands] untapped lands, a spell to cast and an empty
 ## stack. The screen's own _process is off, so a test says when the cursor is looked at.

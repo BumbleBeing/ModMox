@@ -62,7 +62,7 @@ func _init(setup: MmEncounterSetup) -> void:
 	# CR 103.2: each deck becomes its owner's library, in deck order until shuffled.
 	# This is the game's starting state rather than a change, so it is not an event.
 	for player: MmPlayer in players:
-		var player_setup: MmPlayerSetup = setup.hero if player.id == MmEncounterSetup.HERO_PLAYER_ID else setup.villain
+		var player_setup: MmPlayerSetup = _setup_of(setup, player)
 		for run_card: MmRunCard in player_setup.deck:
 			var card_id: int = _next_card_id
 			_next_card_id += 1
@@ -71,9 +71,17 @@ func _init(setup: MmEncounterSetup) -> void:
 	# ADR 0011 and CR 114: each player's Emblems start in the command zone. An Emblem is not
 	# a card, so it has no Card Identity.
 	for player: MmPlayer in players:
-		var player_setup: MmPlayerSetup = setup.hero if player.id == MmEncounterSetup.HERO_PLAYER_ID else setup.villain
+		var player_setup: MmPlayerSetup = _setup_of(setup, player)
 		for emblem: MmCardDefinition in player_setup.emblems:
 			command.insert(create_object(MmGameObject.NO_CARD, player.id, emblem), MmZone.BOTTOM)
+	# ADR 0036: Potions start there too, after every Emblem, each knowing its place in its
+	# owner's list.
+	for player: MmPlayer in players:
+		var player_setup: MmPlayerSetup = _setup_of(setup, player)
+		for index: int in player_setup.potions.size():
+			var potion: MmGameObject = create_object(MmGameObject.NO_CARD, player.id, player_setup.potions[index])
+			potion.potion_index = index
+			command.insert(potion, MmZone.BOTTOM)
 
 
 ## An independent copy of this state: changing one never affects the other. Used for undo
@@ -417,10 +425,21 @@ func fingerprint() -> String:
 				game_object.triggering_object_id, ",".join(target_text)])
 			if game_object.was_dealt_deathtouch_damage:
 				entries.append("deathtouch damage on %d" % game_object.id)
+			if not game_object.spent_ability_indexes.is_empty():
+				entries.append("%d spent %s" % [game_object.id, game_object.spent_ability_indexes])
+			if game_object.source_potion_index != MmGameObject.NOT_A_POTION:
+				entries.append("%d from potion %d" % [game_object.id, game_object.source_potion_index])
+			if game_object.is_potion():
+				entries.append("%d potion %d" % [game_object.id, game_object.potion_index])
 			if not game_object.known_to_player_ids.is_empty():
 				entries.append("%d known to %s" % [game_object.id, game_object.known_to_player_ids])
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
+
+
+## [param player]'s part of [param setup].
+static func _setup_of(setup: MmEncounterSetup, player: MmPlayer) -> MmPlayerSetup:
+	return setup.hero if player.id == MmEncounterSetup.HERO_PLAYER_ID else setup.villain
 
 
 ## Gives [param places] the cards they hold, shuffled among them.

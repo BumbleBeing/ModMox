@@ -7,6 +7,8 @@ extends RefCounted
 
 ## Card Identity of an object that is not a card, such as an ability on the stack.
 const NO_CARD: int = -1
+## The potion_index of anything that is not a Potion.
+const NOT_A_POTION: int = -1
 
 ## This object's identity. Every stored, logged or answered reference uses it.
 var id: int
@@ -41,6 +43,9 @@ var source_name: String = ""
 ## For an ability on the stack: its source's Card Identity, so the GUI can find the card
 ## even after it changed zones; NO_CARD for an Emblem's ability.
 var source_card_id: int = NO_CARD
+## For an ability on the stack whose source is a Potion: that Potion's potion_index, since
+## the Potion itself is gone once its cost is paid (ADR 0036). NOT_A_POTION otherwise.
+var source_potion_index: int = NOT_A_POTION
 ## For a triggered ability on the stack: what its event was about ("that player", "that
 ## creature"); MmGameState.NO_PLAYER and 0 when nothing.
 var triggering_player_id: int = -1
@@ -51,6 +56,12 @@ var last_known_characteristics: MmCharacteristics = null
 ## For a card in a library: the players who know which card this is, in the order they
 ## learned it. Empty anywhere else, where the zone itself says who may see a card.
 var known_to_player_ids: Array[int] = []
+## For a Potion (ADR 0036): its place in its owner's list of Potions in the Encounter Setup,
+## which is how the game knows which Item it was. NOT_A_POTION for anything else.
+var potion_index: int = NOT_A_POTION
+## The once-each-game abilities of this object that have been activated (Spent), by their
+## place among its abilities, in the order they were activated (CR 602.5b).
+var spent_ability_indexes: Array[int] = []
 ## Weak, because the zone already holds this object strongly; a strong reference both ways
 ## is a cycle that reference counting never frees.
 var _zone_ref: WeakRef = null
@@ -77,16 +88,29 @@ func duplicate_object() -> MmGameObject:
 	copy.source_object_id = source_object_id
 	copy.source_name = source_name
 	copy.source_card_id = source_card_id
+	copy.source_potion_index = source_potion_index
 	copy.triggering_player_id = triggering_player_id
 	copy.triggering_object_id = triggering_object_id
 	copy.last_known_characteristics = last_known_characteristics  # Read-only, so shared.
 	copy.known_to_player_ids = known_to_player_ids.duplicate()
+	copy.potion_index = potion_index
+	copy.spent_ability_indexes = spent_ability_indexes.duplicate()
 	return copy
 
 
 ## Whether this object is a card (as opposed to an ability on the stack).
 func is_card() -> bool:
 	return card_id != NO_CARD
+
+
+## Whether this object is a Potion (ADR 0036).
+func is_potion() -> bool:
+	return potion_index != NOT_A_POTION
+
+
+## Whether the once-each-game ability at [param ability_index] has been activated.
+func is_ability_spent(ability_index: int) -> bool:
+	return spent_ability_indexes.has(ability_index)
 
 
 ## The zone holding this object, or null while it is between zones.
@@ -156,3 +180,9 @@ func make_known_to(player_id: int) -> void:
 ## Event-only: its library was shuffled, so nobody knows which card it is.
 func forget_who_knows() -> void:
 	known_to_player_ids.clear()
+
+
+## Event-only: the once-each-game ability at [param ability_index] was activated.
+func mark_ability_spent(ability_index: int) -> void:
+	if not spent_ability_indexes.has(ability_index):
+		spent_ability_indexes.append(ability_index)

@@ -247,7 +247,10 @@ func test_an_emblem_is_inspected_from_its_window_with_no_original() -> void:
 	var inspector: Inspector = _screen.inspector()
 	assert_eq(inspector.shown_look().name, "Boon")
 	assert_true(inspector.original_button().disabled)
-	assert_null(BorderEffects.glow_color(inspector.face()))
+	assert_false(inspector.original_button().visible, "An Emblem has no Original to see (ADR 0033).")
+	assert_null(inspector.face(), "It is drawn on an Emblem Face, not a Card Face.")
+	assert_eq(inspector.emblem_face().name_text(), "Boon")
+	assert_eq(inspector.emblem_face().type_line_text(), "Emblem")
 
 
 func test_an_ability_on_the_stack_is_read_as_the_card_it_came_from() -> void:

@@ -10,6 +10,9 @@ var card_id: int
 ## GUI can highlight the card while the ability is hovered (NO_CARD for an Emblem's).
 var source_object_id: int = 0
 var source_card_id: int = MmGameObject.NO_CARD
+## For an ability on the stack that came from a Potion: that Potion's place in its
+## controller's list in the Encounter Setup, so the GUI can still show which Potion it was.
+var source_potion_index: int = MmGameObject.NOT_A_POTION
 ## For an ability on the stack: the ability itself, so the GUI can say what it does, and
 ## what its event was about ("that player", "that creature"); null, MmGameState.NO_PLAYER
 ## and 0 for anything else. Card data, never to be changed.
@@ -51,6 +54,12 @@ var continuous_effects: Array[ActiveContinuousEffect] = []
 ## Identity (A140). Protection's prevention shows as the ability instead.
 var replacement_effects: Array[ActiveReplacementEffect] = []
 var damage_marked: int = 0
+## Its once-each-game abilities that have been activated, by their place in abilities, so
+## the GUI can gray them (ADR 0036). Public, like the object.
+var spent_ability_indexes: Array[int] = []
+## For a Potion: its place in its owner's list of Potions in the Encounter Setup;
+## MmGameObject.NOT_A_POTION for anything else.
+var potion_index: int = MmGameObject.NOT_A_POTION
 ## CR 302.6: a creature that cannot attack or pay {T} yet.
 var is_summoning_sick: bool = false
 var is_attacking: bool = false
@@ -67,6 +76,7 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.card_id = game_object.card_id
 	view.source_object_id = game_object.source_object_id
 	view.source_card_id = game_object.source_card_id
+	view.source_potion_index = game_object.source_potion_index
 	view.ability = game_object.ability
 	view.triggering_player_id = game_object.triggering_player_id
 	view.triggering_object_id = game_object.triggering_object_id
@@ -96,6 +106,8 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 		if active.is_locked_to(MmReference.to_object(game_object.id)):
 			view.replacement_effects.append(active)
 	view.damage_marked = game_object.damage_marked
+	view.spent_ability_indexes = game_object.spent_ability_indexes.duplicate()
+	view.potion_index = game_object.potion_index
 	view.is_summoning_sick = state.is_summoning_sick(game_object)
 	if game_object.zone() == state.battlefield:
 		# CR 604.3: a permanent's numbers are worked out, so it no longer reads "*".

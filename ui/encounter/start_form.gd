@@ -20,6 +20,7 @@ var _seed: SpinBox
 var _difficulty: OptionButton
 var _backdrop: OptionButton
 var _emblems: CheckBox
+var _potions: CheckBox
 var _start: Button
 
 
@@ -52,6 +53,9 @@ func _ready() -> void:
 	_emblems = CheckBox.new()
 	_emblems.text = "Sample Emblems"
 	column.add_child(_emblems)
+	_potions = CheckBox.new()
+	_potions.text = "Sample Potion"
+	column.add_child(_potions)
 	_start = Button.new()
 	_start.text = "Start"
 	_start.pressed.connect(start)
@@ -73,6 +77,7 @@ func request() -> EncounterRequest:
 	filled.difficulty = _difficulty.get_item_text(_difficulty.selected)
 	filled.backdrop = _backdrop.get_item_text(_backdrop.selected)
 	filled.has_sample_emblems = _emblems.button_pressed
+	filled.has_sample_potions = _potions.button_pressed
 	filled.hero_name = _hero_name.text
 	filled.villain_name = _villain_name.text
 	return filled
@@ -86,6 +91,7 @@ func fill_in(wanted: EncounterRequest) -> void:
 	_select(_difficulty, wanted.difficulty)
 	_select(_backdrop, wanted.backdrop)
 	_emblems.button_pressed = wanted.has_sample_emblems
+	_potions.button_pressed = wanted.has_sample_potions
 	_hero_name.text = wanted.hero_name
 	_villain_name.text = wanted.villain_name
 

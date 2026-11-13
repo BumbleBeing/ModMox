@@ -9,6 +9,11 @@ extends RefCounted
 const RAISED: Color = Color("#1f7a2a")
 const LOWERED: Color = Color("#b3261e")
 
+## What kind of thing this is the look of. An Emblem and a Potion are not cards and have no
+## card type (ADR 0036): whoever makes the look says which it is, with of_held().
+enum Kind { CARD, EMBLEM, POTION }
+
+var kind: Kind = Kind.CARD
 var name: String = ""
 ## In WUBRG order; empty means colorless.
 var colors: Array[MmCardTypes.CardColor] = []
@@ -35,6 +40,11 @@ var art_key: String = ""
 ## is made from characteristics or a view (A333). Only a basic land's is in parentheses:
 ## what a keyword means is a Reminder, listed by the Inspector (ADR 0033).
 var rules_text: String = ""
+
+## For an Emblem or a Potion: its abilities' text, one to an entry in the order of
+## abilities, and which of them are Spent (ADR 0036), so each can be drawn apart.
+var rules_lines: Array[String] = []
+var spent_ability_indexes: Array[int] = []
 
 
 ## The look of a card outside any encounter, from its printed characteristics.
@@ -79,6 +89,57 @@ static func of_view(view: MmObjectView, card_art_key: String = "") -> CardLook:
 	look.art_key = card_art_key
 	look.rules_text = AbilityText.of_card(look.abilities, look.card_types, look.supertypes, look.name)
 	return look
+
+
+## The look of an Emblem or a Potion as a Player View shows it: [param held_kind] says
+## which, and its text calls it "this emblem" or "this potion". Also the look of a Potion's
+## ability on the stack, which keeps the Potion's art once the Potion is gone.
+static func of_held(view: MmObjectView, held_art_key: String, held_kind: Kind) -> CardLook:
+	var look: CardLook = of_view(view, held_art_key)
+	look.kind = held_kind
+	look.rules_lines = AbilityText.lines_of(look.abilities, noun_of(held_kind))
+	look.rules_text = "\n".join(look.rules_lines)
+	look.spent_ability_indexes = view.spent_ability_indexes.duplicate()
+	return look
+
+
+## The look of [param potion]'s ability on the stack, [param view]: the Potion itself is
+## gone by then, so its name and what it does come from what it was authored as (ADR 0033).
+static func of_potion_ability(view: MmObjectView, potion: MmCardDefinition, held_art_key: String) -> CardLook:
+	var look: CardLook = of_held(view, held_art_key, Kind.POTION)
+	look.name = potion.name
+	look.abilities = potion.abilities.duplicate()
+	look.rules_lines = AbilityText.lines_of(look.abilities, noun_of(Kind.POTION))
+	look.rules_text = "\n".join(look.rules_lines)
+	return look
+
+
+## What a thing of [param held_kind] calls itself in its own text, or "" for a card, which
+## AbilityText.self_noun() names from its types.
+static func noun_of(held_kind: Kind) -> String:
+	match held_kind:
+		Kind.EMBLEM:
+			return AbilityText.EMBLEM_NOUN
+		Kind.POTION:
+			return AbilityText.POTION_NOUN
+	return ""
+
+
+## The type line the GUI writes for an Emblem or a Potion, neither of which is a card type
+## (ADR 0033, A536); "" for a card, whose type line comes from its types.
+func held_type_line() -> String:
+	match kind:
+		Kind.EMBLEM:
+			return "Emblem"
+		Kind.POTION:
+			return "Potion"
+	return ""
+
+
+## Whether the ability at [param ability_index] is a once-each-game ability that has been
+## activated.
+func is_ability_spent(ability_index: int) -> bool:
+	return spent_ability_indexes.has(ability_index)
 
 
 ## The look of [param definition] as printed, keyed to its file's art.

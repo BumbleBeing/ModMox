@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_1tfn1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_fdv67"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/use_up_cost.gd" id="3_3g2fd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_lruec"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="5_n0c8e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_s5tqm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="7_0jglt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="8_a5pie"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="9_eng2b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="10_tjccq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_r05ab"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="12_ddhnh"]
+
+[sub_resource type="Resource" id="Resource_l5wj1"]
+script = ExtResource("3_3g2fd")
+
+[sub_resource type="Resource" id="Resource_g0kio"]
+script = ExtResource("5_n0c8e")
+
+[sub_resource type="Resource" id="Resource_k70lm"]
+script = ExtResource("6_s5tqm")
+value = 2
+
+[sub_resource type="Resource" id="Resource_i341a"]
+script = ExtResource("6_s5tqm")
+value = 2
+
+[sub_resource type="Resource" id="Resource_keyyh"]
+script = ExtResource("7_0jglt")
+power = SubResource("Resource_k70lm")
+toughness = SubResource("Resource_i341a")
+affected = SubResource("Resource_g0kio")
+
+[sub_resource type="Resource" id="Resource_i8y1s"]
+script = ExtResource("8_a5pie")
+continuous = SubResource("Resource_keyyh")
+
+[sub_resource type="Resource" id="Resource_3ffs1"]
+script = ExtResource("11_r05ab")
+
+[sub_resource type="Resource" id="Resource_v483q"]
+script = ExtResource("10_tjccq")
+filter = SubResource("Resource_3ffs1")
+
+[sub_resource type="Resource" id="Resource_idnxf"]
+script = ExtResource("9_eng2b")
+costs = Array[ExtResource("2_fdv67")]([SubResource("Resource_l5wj1")])
+targets = Array[ExtResource("10_tjccq")]([SubResource("Resource_v483q")])
+effects = Array[ExtResource("4_lruec")]([SubResource("Resource_i8y1s")])
+
+[resource]
+script = ExtResource("12_ddhnh")
+name = "Big Gulp"
+abilities = Array[ExtResource("1_1tfn1")]([SubResource("Resource_idnxf")])
