@@ -198,10 +198,16 @@ var _inspected: int = Inspection.NOTHING
 ## What the Pinned card's ring is on, or null.
 var _pin_host: Control = null
 
+## The Backdrop behind everything and the layer that dims it, built once and kept outside
+## everything a redraw replaces; both null for the plain Backdrop (ADR 0035).
+var _backdrop_name: String = Backdrops.PLAIN
+var _backdrop: Control = null
+var _backdrop_dimmer: ColorRect = null
+
 
 func _ready() -> void:
 	var background: ColorRect = ColorRect.new()
-	background.color = Color("#1a1d22")
+	background.color = Backdrops.SLATE
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
@@ -305,6 +311,7 @@ func _ready() -> void:
 		request = EncounterRequest.from_arguments(OS.get_cmdline_user_args())
 	if request == null:
 		request = EncounterRequest.new()
+	show_backdrop(request.backdrop)
 	var presenter: EncounterPresenter = EncounterPresenter.new(request.setup(), request.villain_agent())
 	presenter.names = request.names()
 	var picture: String = screenshot_path(OS.get_cmdline_user_args())
@@ -319,6 +326,42 @@ func _ready() -> void:
 			await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(picture)
 		get_tree().quit()
+
+
+## Draws the Backdrop named [param backdrop] behind everything, under its dim layer, in
+## place of any shown before. Both are built here once and no redraw touches them; the
+## plain Backdrop is the slate alone, with nothing over it (ADR 0035).
+func show_backdrop(backdrop: String) -> void:
+	for old: Control in [_backdrop, _backdrop_dimmer]:
+		if old != null:
+			remove_child(old)
+			old.queue_free()
+	_backdrop_name = backdrop if Backdrops.has(backdrop) else Backdrops.PLAIN
+	_backdrop = Backdrops.make(_backdrop_name)
+	_backdrop_dimmer = null
+	if _backdrop == null:
+		return
+	_backdrop_dimmer = Backdrops.dimmer()
+	# Just over the slate, which is the first child.
+	for layer: Control in [_backdrop_dimmer, _backdrop]:
+		add_child(layer)
+		move_child(layer, 1)
+		layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+
+## The name of the Backdrop shown.
+func backdrop_name() -> String:
+	return _backdrop_name
+
+
+## What draws the Backdrop, or null for the plain one.
+func backdrop() -> Control:
+	return _backdrop
+
+
+## The layer that dims the Backdrop, or null for the plain one.
+func backdrop_dimmer() -> ColorRect:
+	return _backdrop_dimmer
 
 
 ## Where [param arguments] ask for a picture to be saved, or "" if they do not.

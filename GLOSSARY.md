@@ -31,7 +31,7 @@ One of a run's five steps of difficulty, each offering one Stage of every color.
 _Avoid_: Level, act, round
 
 **Stage**:
-One section of a run, of one color at one Tier and ending in a Boss, which sets the backdrop of its encounters. There are 25 in all.
+One section of a run, of one color at one Tier and ending in a Boss, which sets the Backdrop of its encounters. There are 25 in all.
 _Avoid_: Level, act, world, biome
 
 **Node**:
@@ -137,6 +137,10 @@ _Avoid_: Trophy room, deck archive, history
 **Encounter Screen**:
 What shows an encounter to the human and takes their answers.
 _Avoid_: Battle screen, game view, board
+
+**Backdrop**:
+The one picture behind an Encounter Screen, set by the encounter's Stage: 320 × 180 pixels, drawn six screen pixels to each of its own with hard edges, never tiled, and dimmed by the game so the board reads over it. There is one for each color and a plain one with no picture. Until Stages exist the encounter's request names it, and until each has its own art a placeholder is drawn in its place.
+_Avoid_: Background (the plain slate behind a screen), wallpaper, scene, biome
 
 **Encounter Presenter**:
 The one part of the GUI that owns the rules engine for an encounter. It runs the Villain's Agent, takes the Hero's answers, and after every change hands the Encounter Screen a snapshot of what the Hero may see and is being asked.

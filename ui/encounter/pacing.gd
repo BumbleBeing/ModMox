@@ -13,9 +13,10 @@ extends RefCounted
 
 ## Between two Villain actions.
 const ACTION_MSEC: int = 500
-## After the Villain taps for mana: longer than a move, so each land finishes turning
-## before the next one starts.
-const MANA_MSEC: int = 270
+## Between two taps for mana, the Villain's or Auto-tap's for the Hero: a little shorter
+## than a move, so the next land starts turning as the last one finishes. It was 270, longer
+## than a move, and the user asked for a quarter less.
+const MANA_MSEC: int = 202
 ## The least time a step of the turn is shown before the game leaves it.
 const STEP_MSEC: int = 100
 ## How long a face takes to move, turn or fade (Face Motion).
