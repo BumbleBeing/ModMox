@@ -21,3 +21,4 @@ subtypes = Array[String](["Wall"])
 mana_cost = SubResource("Resource_xcg7s")
 toughness = 8
 abilities = Array[ExtResource("1_g2c6k")]([SubResource("Resource_vyny2")])
+rarity = 1

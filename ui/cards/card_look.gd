@@ -31,8 +31,9 @@ var is_tapped: bool = false
 ## Which art to draw: the file name of the card's Card Definition, without its extension.
 ## Art belongs to the Card Definition, so a renamed Run Card keeps its art (A229).
 var art_key: String = ""
-## The rules text to print, with reminder text in parentheses. Generated from the
-## abilities by AbilityText whenever a look is made from characteristics or a view (A333).
+## The rules text to print, generated from the abilities by AbilityText whenever a look
+## is made from characteristics or a view (A333). Only a basic land's is in parentheses:
+## what a keyword means is a Reminder, listed by the Inspector (ADR 0033).
 var rules_text: String = ""
 
 
@@ -113,8 +114,8 @@ func type_line() -> String:
 	return line
 
 
-## Rules text as a Card Face prints it: reminder text is left off (it has its own section in
-## the inspector), except on a basic land, whose reminder text is all it has.
+## Rules text as a Card Face prints it: anything in parentheses is left off, except on a
+## basic land, whose parenthesized line is all it has.
 func printed_rules_text() -> String:
 	if supertypes.has(MmCardTypes.Supertype.BASIC):
 		return rules_text

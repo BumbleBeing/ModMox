@@ -1,11 +1,14 @@
 class_name PlayerPanel
 extends Control
-## One player's panel in the sidebar: their name, a square portrait with their life total in
+## One player's panel in the sidebar: their name, their Portrait with their life total in
 ## its corner, a button for each color of mana in their pool, the Emblems button, and every
 ## step of the turn down the right side. Green steps have a stop; the step it is now has a
-## pale border on the active player's panel. While the player can be chosen, their portrait
-## alone glows and takes the click, never the whole panel. The Villain's panel
-## says when the Villain is thinking, under its Emblems button (A294).
+## pale Glow on the active player's panel, and the panel of the player with priority has
+## one all round it (A477, A478). While the player can be chosen, their portrait alone
+## glows and takes the click, never the whole panel. The Hero's panel has the Potions
+## button under the Emblems button, which takes no press yet (A491), and under that Undo
+## and Yield Turn; the Pass Button is not here but over the Info Panel (A489). The
+## Villain's panel says when the Villain is thinking, under its Emblems button (A294).
 ##
 ## Unlike the board, a panel is not rebuilt from each snapshot. It is built once for its
 ## size, and each snapshot only changes what it shows differently: building its thirty-odd
@@ -20,8 +23,7 @@ signal emblems_pressed
 signal player_clicked(answer: int)
 ## A step button was pressed: toggle the stop there on this panel's row.
 signal stop_toggled(step: MmTurn.Step)
-## The Hero's controls, under their Emblems button.
-signal pass_pressed
+## The Hero's controls, under their Potions button.
 signal undo_pressed
 signal yield_toggled
 
@@ -36,16 +38,25 @@ const NOW_COLOR: Color = Color("#f3e9a0")
 const THINKING: String = "The Villain is thinking…"
 ## The same for a Villain with a name of their own.
 const THINKING_FORMAT: String = "%s is thinking…"
-const PASS: String = "Pass [SPACE]"
+const UNDO_FORMAT: String = "Undo [%s]"
+const POTIONS_FORMAT: String = "⚗  Potions (%d)"
+const POTION_COLOR: Color = Color("#9a63d8")
+const NO_ITEMS_COLOR: Color = Color("#6b7280")
 
-## How long a Glow or the priority outline takes to ease in or out; the Encounter Screen
-## sets it.
+## How long a Glow takes to ease in or out, the priority Glow among them; the Encounter
+## Screen sets it.
 var glow_seconds: float = 0.0
 var _player_id: int
 var _title: String
 var _is_hero: bool = false
 var _built_for: Vector2 = Vector2.ZERO
-var _outline: Panel = null
+## What holds the priority Glow, which is shown and hidden as a whole.
+var _priority: Control = null
+## The key that undoes, as the Undo button names it.
+var _undo_key: String = "Z"
+var _potions: Button = null
+var _has_potions: Variant = null
+var _picture: TextureRect = null
 var _life: Label = null
 var _emblems: Button = null
 var _has_emblems: Variant = null
@@ -59,7 +70,6 @@ var _pool_marks: Array[MmMana.Type] = []
 var _steps: Array[Button] = []
 ## How each step button is drawn now: 1 for a stop, plus 2 for the step it is.
 var _step_looks: Array[int] = []
-var _pass: Button = null
 var _undo: Button = null
 var _yield: Button = null
 var _thinking: Label = null
@@ -75,8 +85,8 @@ func _init(player_id: int, title: String) -> void:
 
 
 ## Shows [param snapshot] in [param panel_rect]. [param is_hero] says whose mana buttons can
-## be pressed (only the Hero's, and only while paying) and whose panel has the controls:
-## undo, pass and Yield Turn, with [param is_yielding] for its box.
+## be pressed (only the Hero's, and only while paying) and whose panel has the Potions
+## button and the controls: undo and Yield Turn, with [param is_yielding] for its box.
 func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: StepStops, panel_rect: Rect2, is_hero: bool,
 		is_yielding: bool) -> void:
 	position = panel_rect.position
@@ -85,14 +95,14 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 	if is_new:
 		_build(panel_rect.size, is_hero)
 	var view: MmPlayerView = snapshot.view
-	# The priority outline eases from one panel to the other; a panel just built shows it at once.
+	# The priority Glow eases from one panel to the other; a panel just built shows it at once.
 	var has_priority: bool = view.priority_player_id == _player_id
 	if is_new:
-		_outline.visible = has_priority
+		_priority.visible = has_priority
 	elif has_priority:
-		Easing.appear(_outline, glow_seconds)
+		Easing.appear(_priority, glow_seconds)
 	else:
-		Easing.disappear(_outline, glow_seconds)
+		Easing.disappear(_priority, glow_seconds)
 	_show_portrait(clicks)
 	_set_text(_life, str(view.life_totals.get(_player_id, 0)))
 
@@ -116,29 +126,13 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 	for step: int in STEP_NAMES.size():
 		_show_step(step, stops.has_stop(_player_id, step), view.active_player_id == _player_id and view.step == step)
 	if is_hero:
+		# Nobody holds a Potion until Potions exist (A491).
+		_show_potions(0)
 		_undo.disabled = not snapshot.can_undo or snapshot.is_villain_thinking
-		_pass.disabled = not (snapshot.decision is PriorityDecision)
-		if _pass.text != PASS:
-			# It was the confirm button of a combat decision (show_confirm).
-			_pass.text = PASS
-			_pass.add_theme_font_size_override("font_size", 21)
 		_set_text(_yield, ("☑" if is_yielding else "☐") + "  Yield Turn")
 	else:
 		_thinking.visible = snapshot.is_villain_thinking
 		_set_label(_thinking, THINKING_FORMAT % snapshot.names.starting(_player_id))
-
-
-## While a combat decision is being answered the pass button confirms it instead: it reads
-## [param text] and can be pressed only when [param is_complete]. Undo is open whenever
-## there is a click to take back ([param can_undo]).
-func show_confirm(text: String, is_complete: bool, can_undo: bool) -> void:
-	if _pass == null:
-		return
-	_pass.text = text
-	_pass.disabled = not is_complete
-	_pass.add_theme_font_size_override("font_size", 19)
-	if can_undo:
-		_undo.disabled = false
 
 
 ## Opens or closes the undo button, for a half-made choice whose clicks can be taken back
@@ -148,13 +142,31 @@ func show_undo(is_open: bool) -> void:
 		_undo.disabled = not is_open
 
 
-## The pass, undo and Yield Turn buttons: null on the Villain's panel.
-func pass_button() -> Button:
-	return _pass
+## Names [param key_label] on the Undo button as the key that undoes: "Undo [Z]".
+func show_undo_key(key_label: String) -> void:
+	_undo_key = key_label
+	if _undo != null:
+		_set_text(_undo, UNDO_FORMAT % key_label)
 
 
+## The undo and Yield Turn buttons: null on the Villain's panel.
 func undo_button() -> Button:
 	return _undo
+
+
+## The Potions button: null on the Villain's panel.
+func potions_button() -> Button:
+	return _potions
+
+
+## What holds the Glow that says the panel's player has priority: shown while they have it.
+func priority_glow() -> Control:
+	return _priority
+
+
+## The Portrait the panel shows, or null for a player who has none.
+func portrait_texture() -> Texture2D:
+	return _picture.texture if _picture != null else null
 
 
 func yield_button() -> Button:
@@ -218,7 +230,7 @@ func shows_stop(step: MmTurn.Step) -> bool:
 	return _steps[step].get_meta("has_stop")
 
 
-## Whether the button for [param step] has the border of the step it is now.
+## Whether the button for [param step] has the Glow of the step it is now.
 func shows_now(step: MmTurn.Step) -> bool:
 	return _step_looks[step] >= 2
 
@@ -236,20 +248,23 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 	_steps.clear()
 	_step_looks.clear()
 	_has_emblems = null
-	_pass = null
 	_undo = null
 	_yield = null
 	_thinking = null
+	_potions = null
+	_has_potions = null
+	_picture = null
 	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(Rect2(Vector2.ZERO, panel_size))
 	add_child(CardShapes.rounded(panel_size, 8, Color("#2c323c")))
-	_outline = CardShapes.outline(panel_size, 8, 3, NOW_COLOR)
-	add_child(_outline)
+	_priority = Control.new()
+	_priority.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_priority.size = panel_size
+	BorderEffects.add_glow(_priority, panel_size, NOW_COLOR)
+	add_child(_priority)
 	_name = _label(_title, parts["name"], 22)
 	add_child(_name)
-	_portrait = CardShapes.rounded(parts["portrait"].size, 8, Color("#444c5a"))
-	_portrait.position = parts["portrait"].position
-	add_child(_portrait)
-	var life_box: Panel = CardShapes.rounded(parts["life"].size, 8, Color(0.05, 0.05, 0.07, 0.9))
+	_add_portrait(parts["portrait"])
+	var life_box: Panel = CardShapes.rounded(parts["life"].size, 8, Color(0.05, 0.05, 0.07, 0.6))
 	life_box.position = parts["life"].position
 	add_child(life_box)
 	_life = _label("", parts["life"], 42)
@@ -268,11 +283,35 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 	for step: int in STEP_NAMES.size():
 		_add_step_button(parts["step_%d" % step], step)
 	if is_hero:
+		_add_potions(parts["potions"])
 		_add_controls(parts)
 	else:
-		_thinking = _label(THINKING, Rect2(parts["controls"].position, Vector2(parts["controls"].size.x, 34)), 16)
+		_thinking = _label(THINKING, Rect2(parts["potions"].position, Vector2(parts["potions"].size.x, 34)), 16)
 		_thinking.modulate = Color(1, 0.85, 0.4)
 		add_child(_thinking)
+
+
+## A player's Portrait is drawn pixel for pixel, six screen pixels to each of its own, and
+## what glows and is clicked lies over it and draws nothing. A player with no Portrait has
+## a plain gray square.
+func _add_portrait(box: Rect2) -> void:
+	var texture: Texture2D = PlayerPortraits.texture_of(_player_id)
+	if texture == null:
+		_portrait = CardShapes.rounded(box.size, 8, Color("#444c5a"))
+	else:
+		_picture = CardShapes.image(texture, box)
+		_picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_picture.stretch_mode = TextureRect.STRETCH_SCALE
+		add_child(_picture)
+		var edge: Panel = CardShapes.outline(box.size, 0, 2, Color("#14161a"))
+		edge.position = box.position
+		add_child(edge)
+		_portrait = Panel.new()
+		_portrait.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_portrait.size = box.size
+	_portrait.position = box.position
+	add_child(_portrait)
 
 
 ## The portrait glows and takes a click while its player can be chosen. Whatever else was
@@ -333,11 +372,30 @@ func _show_emblems(count: int) -> void:
 		_emblems.add_theme_stylebox_override(state, style)
 
 
-## A step with a stop is green, and the step it is now has a pale border.
+## Purple with Potions to use and gray with none, as the Emblems button is gold or gray.
+func _show_potions(count: int) -> void:
+	_set_text(_potions, POTIONS_FORMAT % count)
+	if _has_potions is bool and _has_potions == (count > 0):
+		return
+	_has_potions = count > 0
+	var tint: Color = POTION_COLOR if count > 0 else NO_ITEMS_COLOR
+	_potions.add_theme_color_override("font_disabled_color", Color("#dcc6f7") if count > 0 else Color("#9aa1ad"))
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = Color(tint, 0.25)
+	style.border_color = tint
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(5)
+	_potions.add_theme_stylebox_override("disabled", style)
+
+
+## A step with a stop is green, and the step it is now glows; a step just built shows its
+## Glow at once.
 func _show_step(step: int, has_stop: bool, is_now: bool) -> void:
 	var look: int = (1 if has_stop else 0) + (2 if is_now else 0)
 	if _step_looks[step] == look:
 		return
+	var seconds: float = 0.0 if _step_looks[step] == -1 else glow_seconds
+	var was_now: bool = _step_looks[step] >= 2
 	_step_looks[step] = look
 	var button: Button = _steps[step]
 	button.set_meta("has_stop", has_stop)
@@ -349,10 +407,14 @@ func _show_step(step: int, has_stop: bool, is_now: bool) -> void:
 		if state == "disabled":
 			style.bg_color = Color("#2c323c")
 		style.set_corner_radius_all(5)
-		if is_now:
-			style.border_color = NOW_COLOR
-			style.set_border_width_all(3)
+		# "Begin Combat" fits the column only with thin margins.
+		style.content_margin_left = 2
+		style.content_margin_right = 2
 		button.add_theme_stylebox_override(state, style)
+	if is_now and not was_now:
+		BorderEffects.add_glow(button, button.size, NOW_COLOR, seconds)
+	elif was_now and not is_now:
+		BorderEffects.remove_glow(button, seconds)
 
 
 ## Sets the text of [param node], a Button or a Label, only if it says something else:
@@ -374,14 +436,25 @@ func _label(text: String, box: Rect2, font_size: int) -> Label:
 	return label
 
 
-## The Hero's controls, in a section of their own under the Emblems button.
+## The Potions button, in the Emblems button's style. It takes no press and does not
+## light up under the cursor until a Potion can be used (A491).
+func _add_potions(box: Rect2) -> void:
+	_potions = Button.new()
+	_potions.focus_mode = Control.FOCUS_NONE
+	_potions.disabled = true
+	_potions.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_potions.position = box.position
+	_potions.size = box.size
+	add_child(_potions)
+
+
+## The Hero's controls, in a section of their own under the Potions button.
 func _add_controls(parts: Dictionary[String, Rect2]) -> void:
 	var section: Panel = CardShapes.rounded(parts["controls"].size, 6, Color("#22262e"))
 	section.position = parts["controls"].position
 	add_child(section)
 	# Always there: grayed out when nothing can be undone (A245).
-	_undo = _control("Undo [Z]", parts["undo"], 16, func() -> void: undo_pressed.emit())
-	_pass = _control(PASS, parts["pass"], 19, func() -> void: pass_pressed.emit())
+	_undo = _control(UNDO_FORMAT % _undo_key, parts["undo"], 16, func() -> void: undo_pressed.emit())
 	_yield = _control("", parts["yield"], 17, func() -> void: yield_toggled.emit())
 	_yield.flat = true
 
@@ -428,7 +501,7 @@ func _add_step_button(box: Rect2, step: int) -> void:
 	button.clip_text = true
 	button.position = box.position
 	button.size = box.size
-	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_font_size_override("font_size", 14)
 	# Untap and cleanup never hold a stop, so their buttons cannot be pressed.
 	button.disabled = not StepStops.can_hold(step)
 	button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.45))

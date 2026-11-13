@@ -3,6 +3,7 @@ extends GutTest
 ## conceding or quitting.
 
 const FIELD: Rect2 = Rect2(352, 86, 1386, 806)
+const PASS: KeyBindings.Action = KeyBindings.Action.PASS
 
 var _events: Array[String] = []
 
@@ -242,4 +243,102 @@ func _menu() -> PauseMenu:
 	menu.resume_pressed.connect(func() -> void: _events.append("resume"))
 	menu.concede_confirmed.connect(func() -> void: _events.append("concede"))
 	menu.quit_confirmed.connect(func() -> void: _events.append("quit"))
+	return menu
+
+
+func test_the_settings_page_has_a_keys_button_that_opens_the_controls_page() -> void:
+	var menu: PauseMenu = _menu()
+	menu.open(FIELD, true)
+	menu.button(PauseMenu.SETTINGS).pressed.emit()
+	assert_null(menu.key_button(PASS), "The rows are on the Controls Page only.")
+	assert_lt(menu.button(PauseMenu.CONTROLS).position.y, menu.button(PauseMenu.BACK).position.y)
+	assert_gt(menu.button(PauseMenu.CONTROLS).position.y, menu.auto_tap_button().position.y)
+	assert_eq(menu.window_rect(), EncounterLayout.pause_rect(6, FIELD))
+
+	menu.button(PauseMenu.CONTROLS).pressed.emit()
+
+	assert_eq(menu.page(), PauseMenu.Page.CONTROLS)
+	assert_eq(menu.heading_text(), "Controls")
+	assert_eq(menu.key_button(PASS).text, "SPACE")
+	assert_eq(menu.key_button(KeyBindings.Action.UNDO).text, "Z")
+	assert_eq(menu.key_button(KeyBindings.Action.CANCEL).text, "X")
+	assert_eq(menu.key_button(KeyBindings.Action.HOLD).text, "CTRL")
+	assert_eq(menu.window_rect(), EncounterLayout.pause_rect(6, FIELD), "Four rows, Reset controls and Back.")
+
+	menu.button(PauseMenu.BACK).pressed.emit()
+
+	assert_eq(menu.page(), PauseMenu.Page.SETTINGS, "Back leads to the settings, not the first page.")
+
+
+func test_a_row_that_is_clicked_waits_for_a_key_and_takes_the_next_one() -> void:
+	var menu: PauseMenu = _controls_page()
+	assert_false(menu.is_waiting_for_key())
+
+	menu.key_button(PASS).pressed.emit()
+
+	assert_true(menu.is_waiting_for_key())
+	assert_eq(menu.key_button(PASS).text, PauseMenu.WAITING)
+	assert_eq(menu.key_button(KeyBindings.Action.UNDO).text, "Z", "Only that row waits.")
+
+	menu.take_key(KEY_ENTER)
+
+	assert_false(menu.is_waiting_for_key())
+	assert_eq(menu.key_button(PASS).text, "ENTER")
+	assert_eq(menu.key_bindings.key_of(PASS), KEY_ENTER)
+	assert_eq(_events, ["keys"] as Array[String])
+	assert_eq(menu.page(), PauseMenu.Page.CONTROLS)
+
+
+func test_escape_stops_a_row_waiting_and_leaves_its_key() -> void:
+	var menu: PauseMenu = _controls_page()
+	menu.key_button(PASS).pressed.emit()
+
+	menu.take_key(KEY_ESCAPE)
+
+	assert_false(menu.is_waiting_for_key())
+	assert_eq(menu.key_button(PASS).text, "SPACE")
+	assert_eq(_events, [] as Array[String], "Nothing changed.")
+	assert_true(menu.is_open(), "The menu stays open.")
+	menu.take_key(KEY_ENTER)
+	assert_eq(menu.key_bindings.key_of(PASS), KEY_SPACE, "A key that no row waits for binds nothing.")
+
+
+func test_rows_that_share_a_key_are_red_and_reset_keys_puts_the_defaults_back() -> void:
+	var menu: PauseMenu = _controls_page()
+	assert_false(menu.shows_shared(PASS))
+
+	menu.key_button(KeyBindings.Action.UNDO).pressed.emit()
+	menu.take_key(KEY_SPACE)
+
+	assert_true(menu.shows_shared(PASS))
+	assert_true(menu.shows_shared(KeyBindings.Action.UNDO))
+	assert_false(menu.shows_shared(KeyBindings.Action.CANCEL))
+	assert_eq(menu.key_button(PASS).get_theme_color("font_color"), PauseMenu.SHARED)
+	_events.clear()
+
+	menu.button(PauseMenu.RESET_KEYS).pressed.emit()
+
+	assert_eq(menu.key_button(KeyBindings.Action.UNDO).text, "Z")
+	assert_false(menu.shows_shared(PASS))
+	assert_eq(_events, ["keys"] as Array[String])
+
+
+func test_leaving_the_controls_page_stops_a_row_waiting() -> void:
+	var menu: PauseMenu = _controls_page()
+	menu.key_button(PASS).pressed.emit()
+
+	menu.button(PauseMenu.BACK).pressed.emit()
+
+	assert_false(menu.is_waiting_for_key())
+	menu.key_button(PASS)
+	menu.open(FIELD, true)
+	assert_false(menu.is_waiting_for_key())
+
+
+func _controls_page() -> PauseMenu:
+	var menu: PauseMenu = _menu()
+	menu.keys_changed.connect(func() -> void: _events.append("keys"))
+	menu.open(FIELD, true)
+	menu.button(PauseMenu.SETTINGS).pressed.emit()
+	menu.button(PauseMenu.CONTROLS).pressed.emit()
 	return menu

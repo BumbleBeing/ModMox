@@ -7,9 +7,17 @@ extends Control
 
 signal cancel_pressed
 signal all_attack_pressed
+## "Undeclare All" was pressed: the same button, while an attacker is declared (A496).
+signal undeclare_all_pressed
 
 const BORDER: Color = Color("#8a93a6")
 const DIM: float = 0.45
+
+const CANCEL_FORMAT: String = "Cancel [%s]"
+const ALL_ATTACK: String = "Declare All"
+const UNDECLARE_ALL: String = "Undeclare All"
+## The room the Cancel or "Declare All" button takes at the panel's bottom right.
+const BUTTON_ROOM: float = 142.0
 
 var _back: Panel = null
 var _border: Panel = null
@@ -17,6 +25,8 @@ var _prompt: Label = null
 var _error: Label = null
 var _option: Label = null
 var _cancel: Button = null
+## The key that cancels, as the Cancel button names it.
+var _cancel_key: String = "X"
 var _all_attack: Button = null
 var _hint: Label = null
 var _pips: Array[TextureRect] = []
@@ -59,25 +69,33 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 		_pips.append(pip)
 	_hint = _label(hint if is_asked else "", Rect2(12, 38, inside, 44), 13, Color(1, 1, 1, 0.65))
 	add_child(_hint)
-	_error = _label(error, Rect2(12, 92, inside, 44), 13, Color(1, 0.45, 0.4))
+	# The reason sits along the bottom, beside the Cancel or "Declare All" button if there
+	# is one: the panel is too short for a row of its own (A489).
+	var beside: float = BUTTON_ROOM if prompt.can_cancel or prompt.offers_all_attack else 0.0
+	_error = _label(error, Rect2(12, box.size.y - 50, inside - beside, 44), 13, Color(1, 0.45, 0.4))
+	_error.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	add_child(_error)
 	if prompt.can_cancel:
 		_cancel = Button.new()
-		_cancel.text = "Cancel"
+		_cancel.text = CANCEL_FORMAT % _cancel_key
 		_cancel.focus_mode = Control.FOCUS_NONE
-		_cancel.position = Vector2(box.size.x - 112, box.size.y - 40)
-		_cancel.size = Vector2(100, 32)
+		_cancel.position = Vector2(box.size.x - BUTTON_ROOM, box.size.y - 40)
+		_cancel.size = Vector2(BUTTON_ROOM - 12, 32)
 		_cancel.add_theme_font_size_override("font_size", 18)
 		_cancel.pressed.connect(func() -> void: cancel_pressed.emit())
 		add_child(_cancel)
 	if prompt.offers_all_attack:
 		_all_attack = Button.new()
-		_all_attack.text = "All attack"
+		_all_attack.text = ALL_ATTACK
 		_all_attack.focus_mode = Control.FOCUS_NONE
-		_all_attack.position = Vector2(box.size.x - 122, box.size.y - 40)
-		_all_attack.size = Vector2(110, 32)
+		_all_attack.position = Vector2(box.size.x - BUTTON_ROOM, box.size.y - 40)
+		_all_attack.size = Vector2(BUTTON_ROOM - 12, 32)
 		_all_attack.add_theme_font_size_override("font_size", 18)
-		_all_attack.pressed.connect(func() -> void: all_attack_pressed.emit())
+		_all_attack.pressed.connect(func() -> void:
+			if _all_attack.text == UNDECLARE_ALL:
+				undeclare_all_pressed.emit()
+			else:
+				all_attack_pressed.emit())
 		add_child(_all_attack)
 	_option = _label("", Rect2(12, 8, inside, box.size.y - 16), 18, Color.WHITE)
 	add_child(_option)
@@ -137,7 +155,14 @@ func hint_text() -> String:
 	return _hint.text
 
 
-## The "All attack" button, or null when attackers are not being declared.
+## While [param is_on], which is while any attacker is declared, the "Declare All" button
+## reads "Undeclare All" and puts them all back instead (A496).
+func show_undeclare(is_on: bool) -> void:
+	if _all_attack != null:
+		_all_attack.text = UNDECLARE_ALL if is_on else ALL_ATTACK
+
+
+## The "Declare All" button, or null when attackers are not being declared.
 func all_attack_button() -> Button:
 	return _all_attack
 
@@ -145,6 +170,17 @@ func all_attack_button() -> Button:
 ## The Cancel button, or null when the decision is not a step of a cast.
 func cancel_button() -> Button:
 	return _cancel
+
+
+## Names [param key_label] on the Cancel button as the key that cancels: "Cancel [X]".
+func show_cancel_key(key_label: String) -> void:
+	_cancel_key = key_label
+	if _cancel != null:
+		_cancel.text = CANCEL_FORMAT % key_label
+
+
+func error_rect() -> Rect2:
+	return Rect2(_error.position, _error.size)
 
 
 func _arrange() -> void:

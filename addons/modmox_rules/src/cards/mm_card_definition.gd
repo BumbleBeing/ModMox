@@ -7,6 +7,10 @@ extends Resource
 ## runtime (ADR 0004). Rules code never reads these fields directly; it asks
 ## MmGameState.characteristics_of() instead (ADR 0009).
 
+## How scarce the card is (ADR 0033 of the game). No rule reads it: it is part of the card's
+## design, for the screens that show and offer cards.
+enum Rarity { COMMON, UNCOMMON, RARE, MYTHIC, POWER_NINE }
+
 @export var name: String = ""
 @export var card_types: Array[MmCardTypes.CardType] = []
 @export var supertypes: Array[MmCardTypes.Supertype] = []
@@ -22,3 +26,4 @@ extends Resource
 ## Only the abilities written on the card. Abilities granted by rules, such as a basic
 ## land's mana ability, are added by the characteristics query.
 @export var abilities: Array[MmAbility] = []
+@export var rarity: Rarity = Rarity.COMMON

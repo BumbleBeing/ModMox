@@ -55,3 +55,4 @@ name = "Ivory Tower"
 card_types = Array[int]([0])
 mana_cost = SubResource("Resource_48i8t")
 abilities = Array[ExtResource("1_e15su")]([SubResource("Resource_rrlxk")])
+rarity = 2

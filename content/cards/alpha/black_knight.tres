@@ -30,3 +30,4 @@ mana_cost = SubResource("Resource_u7tdt")
 power = 2
 toughness = 2
 abilities = Array[ExtResource("1_vlibd")]([SubResource("Resource_wp38j"), SubResource("Resource_dfcsx")])
+rarity = 1

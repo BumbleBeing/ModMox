@@ -91,6 +91,8 @@ var _payment_left: PaymentPlan = null
 ## Answer to the latest snapshot's decision → what paying for it would take, or null, for
 ## each one asked about so far.
 var _plans: Dictionary[int, PaymentPlan] = {}
+## The Original of each card seen so far, by Card Identity.
+var _originals: Dictionary[int, CardLook] = {}
 
 
 ## An encounter from [param setup], with [param villain_agent] answering for the Villain
@@ -546,8 +548,27 @@ func _emit() -> void:
 		_step_shown_until = _shown_at + step_wait_msec
 	for seen: MmObjectView in made.visible_objects():
 		made.looks[seen.id] = CardLook.of_view(seen, _art_key(seen))
+		_add_original(made, seen)
+	for permanent: MmObjectView in made.view.battlefield:
+		var state: Array[StateEntry] = StateList.of(permanent, made.view, names)
+		if not state.is_empty():
+			made.state_lists[permanent.id] = state
 	_snapshot = made
 	_plans.clear()
+
+
+## Gives [param made] the Original and the Rarity of [param seen]: those of its Card
+## Definition, or for an ability, of the card it came from (ADR 0033). The look is made
+## once for each card and kept, since a Card Definition never changes.
+func _add_original(made: EncounterSnapshot, seen: MmObjectView) -> void:
+	var card_id: int = seen.card_id if seen.card_id != MmGameObject.NO_CARD else seen.source_card_id
+	var run_card: MmRunCard = _engine.run_card(card_id)
+	if run_card == null or run_card.base == null:
+		return
+	if not _originals.has(card_id):
+		_originals[card_id] = CardLook.of_characteristics(MmCharacteristics.printed(run_card.base), _art_key(seen))
+	made.originals[seen.id] = _originals[card_id]
+	made.rarities[seen.id] = run_card.base.rarity
 
 
 ## The art of the card [param seen] is, or for an ability, of the card it came from.

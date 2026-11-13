@@ -97,7 +97,8 @@ func test_a_filter_hides_the_cards_it_rules_out_and_packs_the_rest_from_the_firs
 	for card: DeckbuilderCard in _sample.collection.cards():
 		assert_eq(_screen.collection_face(card) != null, shown.has(card), card.look().name)
 	assert_eq(_screen.collection_face(shown[0]).position, Vector2.ZERO)
-	assert_eq(_screen.filter_bar().count_label().text, "%d of 111" % shown.size())
+	# Counted, not written down: the Collection grows with every card added to Content.
+	assert_eq(_screen.filter_bar().count_label().text, "%d of %d" % [shown.size(), _sample.collection.cards().size()])
 
 
 func test_searching_keeps_the_same_bar_and_faces() -> void:
@@ -120,7 +121,7 @@ func test_clearing_the_filter_shows_every_card_again() -> void:
 
 	for card: DeckbuilderCard in _sample.collection.cards():
 		assert_not_null(_screen.collection_face(card))
-	assert_eq(_screen.filter_bar().count_label().text, "111 cards")
+	assert_eq(_screen.filter_bar().count_label().text, "%d cards" % _sample.collection.cards().size())
 
 
 ## A card in the Collection whose base card is named [param card_name], with no Mods.

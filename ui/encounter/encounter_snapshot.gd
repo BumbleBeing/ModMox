@@ -21,6 +21,15 @@ var is_rewind: bool = false
 var events: Array[MmEvent] = []
 ## How to draw each Game Object the view shows, by object ID.
 var looks: Dictionary[int, CardLook] = {}
+## The Original of each Game Object that is a card, by object ID: the look of its Card
+## Definition, with no Mods and nothing the encounter has done to it (ADR 0033). An ability
+## on the stack has its source's. A token or an Emblem has none.
+var originals: Dictionary[int, CardLook] = {}
+## The Rarity of each Game Object that has an Original, by object ID.
+var rarities: Dictionary[int, MmCardDefinition.Rarity] = {}
+## The State List of each permanent that has anything in one, by object ID, as an
+## Array[StateEntry].
+var state_lists: Dictionary[int, Array] = {}
 ## What each player is called.
 var names: PlayerNames = PlayerNames.new()
 ## While Auto-tap is paying for the Hero, a tap at a time: the payment decision it is
@@ -60,6 +69,29 @@ func is_draw() -> bool:
 ## The look of Game Object [param object_id], or null if the view does not show it.
 func look_of(object_id: int) -> CardLook:
 	return looks.get(object_id, null) as CardLook
+
+
+## The Original of Game Object [param object_id], or null if it has none.
+func original_of(object_id: int) -> CardLook:
+	return originals.get(object_id, null) as CardLook
+
+
+## Whether Game Object [param object_id] has a Rarity: whether it is a card.
+func has_rarity(object_id: int) -> bool:
+	return rarities.has(object_id)
+
+
+## The Rarity of Game Object [param object_id]. Ask has_rarity() first.
+func rarity_of(object_id: int) -> MmCardDefinition.Rarity:
+	return rarities.get(object_id, MmCardDefinition.Rarity.COMMON) as MmCardDefinition.Rarity
+
+
+## The State List of the permanent [param object_id]: empty for one with nothing to say,
+## and for anything that is not a permanent.
+func state_list_of(object_id: int) -> Array[StateEntry]:
+	var entries: Array[StateEntry] = []
+	entries.assign(state_lists.get(object_id, []) as Array)
+	return entries
 
 
 ## Every Game Object the view shows, wherever it is.

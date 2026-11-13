@@ -546,19 +546,20 @@ func test_the_controls_have_their_own_section_under_the_emblems_button() -> void
 
 	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(panel_rect)
 
-	assert_gt(parts["controls"].position.y, parts["emblems"].end.y)
+	assert_gt(parts["potions"].position.y, parts["emblems"].end.y, "The Potions button is under the Emblems button")
+	assert_eq(parts["potions"].size, parts["emblems"].size, "and the same size.")
+	assert_gt(parts["controls"].position.y, parts["potions"].end.y)
+	assert_almost_eq(parts["controls"].end.y, panel_rect.end.y - EncounterLayout.PANEL_PAD, 0.01, "The section fills what is left of the panel.")
+	assert_false(parts.has("pass"), "The Pass Button is not in the panel (A489).")
 	assert_true(panel_rect.encloses(parts["controls"]))
 	assert_almost_eq(parts["controls"].size.x, parts["portrait"].size.x, 0.01)
 	assert_lt(parts["controls"].end.x, parts["step_0"].position.x, "Clear of the step buttons.")
-	var order: Array[String] = ["undo", "pass", "yield"]
+	var order: Array[String] = ["undo", "yield"]
 	for index: int in order.size():
 		assert_true(parts["controls"].encloses(parts[order[index]]), "%s is inside the section." % order[index])
 		if index > 0:
 			assert_gt(parts[order[index]].position.y, parts[order[index - 1]].end.y, "%s is under %s." % [order[index], order[index - 1]])
-	assert_gt(parts["pass"].size.y, parts["undo"].size.y, "Pass is the taller button.")
-	assert_almost_eq(parts["yield"].size.y, parts["undo"].size.y, 0.01)
-	assert_almost_eq(parts["pass"].position.y - parts["undo"].end.y, parts["yield"].position.y - parts["pass"].end.y, 0.01,
-		"The three buttons are evenly spaced.")
+	assert_almost_eq(parts["yield"].size.y, parts["undo"].size.y, 0.01, "The two share it evenly.")
 	assert_almost_eq(parts["undo"].position.y, parts["controls"].position.y + EncounterLayout.CONTROLS_PAD, 0.01,
 		"They fill the section from its top")
 	assert_almost_eq(parts["yield"].end.y, parts["controls"].end.y - EncounterLayout.CONTROLS_PAD, 0.01, "to its bottom.")
@@ -822,3 +823,29 @@ func test_a_pile_is_found_by_its_zone_and_its_player() -> void:
 			assert_true(regions.has(EncounterLayout.pile_key(zone_kind, is_hero)))
 	assert_eq(EncounterLayout.pile_key(MmZone.Kind.GRAVEYARD, true), "hero_graveyard")
 	assert_eq(EncounterLayout.pile_key(MmZone.Kind.LIBRARY, false), "villain_library")
+
+
+func test_the_portrait_is_six_times_a_portraits_pixels_and_the_step_column_is_narrower() -> void:
+	var panel_rect: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["hero_panel"]
+
+	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(panel_rect)
+
+	assert_eq(parts["portrait"].size, Vector2(192, 192), "32 pixels drawn six times over (A483).")
+	assert_eq(parts["life"].size, Vector2(69, 50))
+	for step: int in 12:
+		assert_eq(parts["step_%d" % step].size.x, 98.0)
+		assert_true(panel_rect.encloses(parts["step_%d" % step]))
+
+
+func test_the_pass_button_is_over_the_info_panel_and_as_wide() -> void:
+	for screen: Vector2 in SIZES:
+		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
+		var button: Rect2 = regions["pass"]
+		var info: Rect2 = regions["info"]
+
+		assert_eq(button.position.x, info.position.x, "The same left edge at %s." % screen)
+		assert_eq(button.size.x, info.size.x)
+		assert_eq(button.size.y, EncounterLayout.PASS_HEIGHT)
+		assert_almost_eq(info.position.y - button.end.y, EncounterLayout.PASS_GAP, 0.01, "Directly above it.")
+		assert_gt(button.position.y, regions["hero_lands"].end.y, "Clear of the Hero's lands.")
+		assert_almost_eq(info.end.y, screen.y - EncounterLayout.INFO_PAD, 0.01, "The Info Panel still ends where it did.")

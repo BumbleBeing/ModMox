@@ -38,14 +38,18 @@ const LINE_PAD: float = 8.0
 ## those in it step this far toward the middle of the board (A279).
 const BYSTANDER_SCALE: float = 0.8
 const COMBAT_STEP: float = 40.0
-## The step buttons' column in a player's panel.
-const STEP_WIDTH: float = 112.0
+## The step buttons' column in a player's panel: as narrow as still fits "Begin Combat",
+## which leaves the portrait 192 pixels, six times a 32-pixel Portrait (A483).
+const STEP_WIDTH: float = 98.0
 const STEP_GAP: float = 4.0
 const PANEL_PAD: float = 10.0
 const CONTROLS_PAD: float = 6.0
 const CONTROLS_GAP: float = 6.0
-## Pass is this many times as tall as Undo and Yield Turn.
-const PASS_TALLER: float = 1.3
+## A panel's life total, in the corner of the portrait.
+const LIFE_SIZE: Vector2 = Vector2(69.0, 50.0)
+## The Pass Button, over the Info Panel, and the space between them (A489).
+const PASS_HEIGHT: float = 46.0
+const PASS_GAP: float = 8.0
 
 ## The Info Panel, at the left end of the hand's strip (A293).
 ## The opening-hand overlay (13e-2), on a screen DESIGN_HEIGHT tall: the widest a card is
@@ -97,7 +101,7 @@ const STEPPER_DOWN: float = 0.36
 const LEAVES: Array[String] = [
 	"villain_panel", "hero_panel",
 	"villain_hand", "villain_lands", "villain_nonlands", "hero_nonlands", "hero_lands", "hero_hand",
-	"info", "hold", "villain_library", "villain_graveyard", "villain_exile", "hero_library", "hero_graveyard", "hero_exile",
+	"pass", "info", "hold", "villain_library", "villain_graveyard", "villain_exile", "hero_library", "hero_graveyard", "hero_exile",
 ]
 
 
@@ -129,7 +133,11 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	found["hero_nonlands"] = Rect2(left, (472.0 + drop) * scale, width, 200.0 * scale)
 	found["hero_lands"] = Rect2(left, (684.0 + drop) * scale, width, 140.0 * scale)
 	var strip: Rect2 = Rect2(left, (836.0 + drop) * scale, width, screen.y - (836.0 + drop) * scale)
-	found["info"] = Rect2(strip.position.x, strip.position.y + INFO_PAD, INFO_WIDTH, strip.size.y - INFO_PAD * 2.0)
+	# The Pass Button takes the top of the Info Panel's place in the strip, and the Info
+	# Panel what is left under it, so nothing on the battlefield moves for it (A489).
+	found["pass"] = Rect2(strip.position.x, strip.position.y + INFO_PAD, INFO_WIDTH, PASS_HEIGHT)
+	var info_top: float = found["pass"].end.y + PASS_GAP
+	found["info"] = Rect2(strip.position.x, info_top, INFO_WIDTH, strip.end.y - INFO_PAD - info_top)
 	# The hand keeps to the middle of the battlefield between strict bounds: the Info
 	# Panel's side, and as far in from the other side, so it can never overlap the panel.
 	found["hero_hand"] = Rect2(strip.position.x + hand_inset, strip.position.y, strip.size.x - hand_inset * 2.0, strip.size.y)
@@ -149,9 +157,10 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 
 ## The parts of a player's panel of [param panel]: "name", "portrait" (square), "life" (in
 ## the portrait's bottom right corner), "mana_0" to "mana_5" (WUBRGC, spanning the
-## portrait's width), "emblems", and "step_0" to "step_11" down the right side. Under the
-## Emblems button is "controls", a section of its own filled by "undo", "pass" and
-## "yield" from the top, which only the Hero's panel has.
+## portrait's width), "emblems", "potions" under it, and "step_0" to "step_11" down the
+## right side. Under the Potions button is "controls", a section of its own that fills
+## the rest of the panel and is shared evenly by "undo" and "yield" from the top. Only the
+## Hero's panel has the Potions button and the controls.
 static func panel(panel_rect: Rect2) -> Dictionary[String, Rect2]:
 	var parts: Dictionary[String, Rect2] = {}
 	var left: float = panel_rect.position.x + PANEL_PAD
@@ -159,22 +168,19 @@ static func panel(panel_rect: Rect2) -> Dictionary[String, Rect2]:
 	parts["name"] = Rect2(left, panel_rect.position.y + 6, column, 30)
 	var portrait: Rect2 = Rect2(left, panel_rect.position.y + 40, column, column)
 	parts["portrait"] = portrait
-	var life: Vector2 = Vector2(86, 62)
-	parts["life"] = Rect2(portrait.end - life - Vector2(5, 5), life)
+	parts["life"] = Rect2(portrait.end - LIFE_SIZE - Vector2(5, 5), LIFE_SIZE)
 	var mana_width: float = (column - STEP_GAP * 5.0) / 6.0
 	for type: int in 6:
 		parts["mana_%d" % type] = Rect2(left + (mana_width + STEP_GAP) * type, portrait.end.y + 8, mana_width, 54)
 	parts["emblems"] = Rect2(left, portrait.end.y + 70, column, 36)
-	var controls: Rect2 = Rect2(left, parts["emblems"].end.y + 10, column, panel_rect.end.y - PANEL_PAD - parts["emblems"].end.y - 10)
+	parts["potions"] = Rect2(left, parts["emblems"].end.y + 8, column, 36)
+	var controls: Rect2 = Rect2(left, parts["potions"].end.y + 10, column, panel_rect.end.y - PANEL_PAD - parts["potions"].end.y - 10)
 	parts["controls"] = controls
 	var inside: float = column - CONTROLS_PAD * 2.0
 	var inner_left: float = left + CONTROLS_PAD
-	# The three buttons share the whole section, evenly spaced, Pass the tallest.
-	var room: float = controls.size.y - CONTROLS_PAD * 2.0 - CONTROLS_GAP * 2.0
-	var button: float = room / (2.0 + PASS_TALLER)
+	var button: float = (controls.size.y - CONTROLS_PAD * 2.0 - CONTROLS_GAP) / 2.0
 	parts["undo"] = Rect2(inner_left, controls.position.y + CONTROLS_PAD, inside, button)
-	parts["pass"] = Rect2(inner_left, parts["undo"].end.y + CONTROLS_GAP, inside, button * PASS_TALLER)
-	parts["yield"] = Rect2(inner_left, parts["pass"].end.y + CONTROLS_GAP, inside, button)
+	parts["yield"] = Rect2(inner_left, parts["undo"].end.y + CONTROLS_GAP, inside, button)
 	var step_height: float = (panel_rect.size.y - PANEL_PAD * 2.0 - STEP_GAP * 11.0) / 12.0
 	for step: int in 12:
 		parts["step_%d" % step] = Rect2(panel_rect.end.x - PANEL_PAD - STEP_WIDTH,

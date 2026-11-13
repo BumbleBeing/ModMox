@@ -8,4 +8,4 @@ Authored text on each Card Definition was rejected. It would have been quicker t
 
 Something `AbilityText` has no words for is written as its class name in square brackets rather than left out, so a gap is visible on the card. A test walks every authored card and fails if any of its text has a bracket in it, so a new effect, trigger, filter or keyword cannot ship without its words.
 
-Reminder text, what a keyword means, is not generated here. It belongs to the inspector (13h), and Card Faces go on leaving it off.
+Reminder text, what a keyword means, is not generated here. Card Faces go on leaving it off, and the Inspector lists a Reminder for each keyword from a table of its own, `Reminders` (13h, ADR 0033).

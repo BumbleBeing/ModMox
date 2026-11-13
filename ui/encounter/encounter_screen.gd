@@ -122,6 +122,8 @@ var _info: InfoPanel
 var _hold_panel: HoldPanel
 var _option_menu: OptionMenu
 var _pause_menu: PauseMenu
+## Over the Info Panel: passes priority, or confirms a choice being made (A489).
+var _pass_button: PassButton
 var _clicks: DecisionClicks = DecisionClicks.new()
 var _regions: Dictionary[String, Rect2] = {}
 var _is_paused: bool = false
@@ -187,6 +189,14 @@ var _picks: CardPicks = CardPicks.new()
 ## The answer whose payment the Tap Preview (game glossary) shows, or NO_PREVIEW. Kept
 ## outside the redrawn nodes, so a redraw draws the preview again.
 var _previewed: int = NO_PREVIEW
+## The Inspector, which lies over the sidebar while a card is pinned, and which card that
+## is: kept here, outside everything a redraw replaces (ADR 0033).
+var _inspector: Inspector
+var _inspection: Inspection = Inspection.new()
+## The card the Inspector was last told to show.
+var _inspected: int = Inspection.NOTHING
+## What the Pinned card's ring is on, or null.
+var _pin_host: Control = null
 
 
 func _ready() -> void:
@@ -210,11 +220,14 @@ func _ready() -> void:
 		panel.player_clicked.connect(_answer)
 		panel.emblems_pressed.connect(_toggle_emblems.bind(player_id))
 		panel.stop_toggled.connect(func(step: MmTurn.Step) -> void: _presenter.toggle_stop(player_id, step))
-		panel.pass_pressed.connect(pass_priority)
 		panel.undo_pressed.connect(undo)
 		panel.yield_toggled.connect(toggle_yield)
 		add_child(panel)
 		_panels[player_id] = panel
+	# Over the player panels and under every window.
+	_inspector = Inspector.new()
+	_inspector.hide()
+	add_child(_inspector)
 	_stack_window = ZoneWindow.new("Stack", false, Color("#8a93a6"))
 	_stack_window.size = Vector2(400, 400)
 	_stack_window.hide()
@@ -242,7 +255,13 @@ func _ready() -> void:
 	_info.all_attack_pressed.connect(func() -> void:
 		if not _is_paused and _selection.select_all():
 			_redraw())
+	_info.undeclare_all_pressed.connect(func() -> void:
+		if not _is_paused and _selection.clear_attackers():
+			_redraw())
 	add_child(_info)
+	_pass_button = PassButton.new()
+	_pass_button.pressed.connect(pass_priority)
+	add_child(_pass_button)
 	_hold_panel = HoldPanel.new()
 	add_child(_hold_panel)
 	# Over the board, its windows and the Info Panel; the Emblems windows open over it, so
@@ -276,6 +295,8 @@ func _ready() -> void:
 	_pause_menu.speed_chosen.connect(set_game_speed)
 	_pause_menu.auto_pass_chosen.connect(set_auto_passing)
 	_pause_menu.auto_tap_chosen.connect(set_auto_tapping)
+	_pause_menu.keys_changed.connect(_on_keys_changed)
+	_pause_menu.key_bindings = _settings.key_bindings
 	add_child(_pause_menu)
 	resized.connect(_redraw)
 	if not starts_itself:
@@ -322,6 +343,7 @@ func use_game_pace(presenter: EncounterPresenter) -> void:
 func load_settings() -> void:
 	_settings = GameSettings.load_from(settings_path)
 	_speed = _settings.game_speed
+	_pause_menu.key_bindings = _settings.key_bindings
 	_pause_menu.show_game_speed(_speed)
 	_apply_speed()
 
@@ -351,12 +373,20 @@ func set_auto_tapping(is_on: bool) -> void:
 	_settings.save_to(settings_path)
 
 
-## Starts a Yield, or ends the one in force (the Yield Turn box).
+## Starts a Yield, or ends the one in force (the Yield Turn box). One started while the
+## Hero is declaring attackers or blockers also confirms them as they stand, as the Pass
+## Button would: the Hero who yields is done with the turn, and a second click to say "no
+## attacks" would be one too many (A494).
 func toggle_yield() -> void:
 	if _is_paused:
 		return
-	_presenter.set_yielding(not _presenter.is_yielding())
-	_redraw()
+	var is_starting: bool = not _presenter.is_yielding()
+	_presenter.set_yielding(is_starting)
+	var is_declaring: bool = _snapshot.decision is DeclareAttackersDecision or _snapshot.decision is DeclareBlockersDecision
+	if is_starting and is_declaring and _selection.is_active() and _selection.is_complete():
+		_answer(_selection.answer())
+	else:
+		_redraw()
 
 
 func game_speed() -> GameSpeed.Speed:
@@ -415,7 +445,7 @@ func _process(delta: float) -> void:
 	advance_motion(delta)
 	if _is_paused:
 		return
-	set_hold_key_down(Input.is_key_pressed(KEY_CTRL))
+	set_hold_key_down(Input.is_key_pressed(hold_key()))
 	_presenter.poll()
 	_spread_hand(EncounterLayout.ease_weight(HAND_EASE, delta))
 	_light_hand(EncounterLayout.ease_weight(HAND_LIGHT_EASE, delta))
@@ -428,6 +458,7 @@ func _process(delta: float) -> void:
 ## hand comes first (_is_covered). While a card is pressed or held, the mouse is followed
 ## wherever it goes, over windows and buttons too.
 func _input(event: InputEvent) -> void:
+	_pin_with(event)
 	if _is_trigger_pressed():
 		_follow_trigger(event)
 		return
@@ -493,17 +524,65 @@ func _exit_tree() -> void:
 		_presenter.wait_until_idle()
 
 
-## Does what pressing [param keycode] does: Escape opens and closes the Pause Menu, and
-## while it is closed Space passes and Z undoes. Later: these keys become rebindable (13g).
+## Does what pressing [param keycode] does. While a row of the Controls Page waits for a key,
+## the key is that row's, Escape only stopping the wait. Otherwise Escape lets the Pinned
+## card go if there is one, and if not opens and closes the Pause Menu; and while the menu
+## is closed any other key does what the Key Bindings say: it passes, undoes, or cancels
+## as the Info Panel's Cancel button does when that is showing (ADR 0034).
 func press_key(keycode: Key) -> void:
-	if keycode == KEY_ESCAPE:
+	if _is_paused and _pause_menu.is_waiting_for_key():
+		_pause_menu.take_key(keycode)
+	elif keycode == KEY_ESCAPE and not _is_paused and _inspection.pinned() != Inspection.NOTHING:
+		# Escape lets the Pinned card go before it opens the Pause Menu (A459).
+		let_pinned_go()
+	elif keycode == KEY_ESCAPE:
 		set_paused(not _is_paused)
 	elif _is_paused:
 		return
-	elif keycode == KEY_SPACE:
-		pass_priority()
-	elif keycode == KEY_Z:
-		undo()
+	else:
+		match _settings.key_bindings.pressed_action(keycode):
+			KeyBindings.Action.PASS:
+				pass_priority()
+			KeyBindings.Action.UNDO:
+				undo()
+			KeyBindings.Action.CANCEL:
+				if _info.cancel_button() != null:
+					_command(_presenter.cancel_cast)
+
+
+## The Hold Key (game glossary): whichever key holding priority is bound to.
+func hold_key() -> Key:
+	return _settings.key_bindings.key_of(KeyBindings.Action.HOLD)
+
+
+## The Key Bindings in use.
+func key_bindings() -> KeyBindings:
+	return _settings.key_bindings
+
+
+## A key was bound on the Controls Page, or every key reset: the bindings are kept and the
+## buttons that name a key name the new one.
+func _on_keys_changed() -> void:
+	_settings.save_to(settings_path)
+	_show_key_labels()
+
+
+## The Pass Button, the Undo button and the Cancel button each name the key that does
+## what they do.
+func _show_key_labels() -> void:
+	var keys: KeyBindings = _settings.key_bindings
+	_pass_button.show_key(keys.label_of(KeyBindings.Action.PASS))
+	_panels[HERO].show_undo_key(keys.label_of(KeyBindings.Action.UNDO))
+	_info.show_cancel_key(keys.label_of(KeyBindings.Action.CANCEL))
+
+
+## While a choice is being made the Pass Button confirms it: it reads [param text] and can
+## be pressed only when [param is_complete]. Undo is open whenever there is a click to take
+## back ([param can_undo]).
+func _show_confirm(text: String, is_complete: bool, can_undo: bool) -> void:
+	_pass_button.show_confirm(text, is_complete)
+	if can_undo:
+		_panels[HERO].show_undo(true)
 
 
 ## Opens or closes the Pause Menu. While it is open nothing on the board can be done and the
@@ -529,7 +608,7 @@ func is_paused() -> bool:
 	return _is_paused
 
 
-## Whether the Hold Key (Ctrl) is down: nothing is passed for the Hero while it is, and the
+## Whether the Hold Key is down: nothing is passed for the Hero while it is, and the
 ## Hold Panel says so.
 func set_hold_key_down(is_down: bool) -> void:
 	_presenter.is_hold_key_down = is_down
@@ -729,6 +808,198 @@ func lifted_face() -> CardFace:
 	return _lifted_face
 
 
+## The Inspector, which lies over the sidebar while a card is pinned (ADR 0033).
+func inspector() -> Inspector:
+	return _inspector
+
+
+## Which card is pinned, and so shown in the Inspector.
+func inspection() -> Inspection:
+	return _inspection
+
+
+## A right-click at [param cursor]: on a card it pins that card, and on the Pinned card or
+## on nothing it lets the Pinned card go. On the Inspector itself it does nothing, and
+## while a card or a trigger is held it puts that down and pins nothing.
+func right_click_at(cursor: Vector2) -> void:
+	if _snapshot == null or _is_paused or _is_over_inspector(cursor):
+		return
+	_inspection.set_dragging(_is_dragging())
+	_inspection.right_click(inspectable_at(cursor))
+	_show_inspected(false)
+
+
+## Lets the Pinned card go.
+func let_pinned_go() -> void:
+	_inspection.let_go()
+	_show_inspected(false)
+
+
+## The card drawn at [param cursor] that a right-click there pins, as a Game Object ID, or
+## Inspection.NOTHING. An entry of an open window comes first, since windows lie over
+## everything; then, through the pregame, a card of the opening hand, and otherwise a card
+## of the Hero's hand and then a permanent. A card the Hero may not see is never there: the
+## Villain's hand and a library's unknown cards are drawn as backs with no Game Object.
+## Worked out from where things are drawn, as _hovered_answer() is.
+func inspectable_at(cursor: Vector2) -> int:
+	var at: Vector2 = get_global_transform() * cursor
+	var entries: Dictionary[int, Control] = _inspectable_entries()
+	for object_id: int in entries:
+		if entries[object_id].is_visible_in_tree() and entries[object_id].get_global_rect().has_point(at):
+			return object_id
+	if _overlay.is_open() and not _overlay.is_closing():
+		return _opening_card_at(cursor)
+	if _is_covered(cursor):
+		return Inspection.NOTHING
+	var in_hand: MmObjectView = _hand_view(hand_card_under(cursor)) if not _hand_faces.is_empty() else null
+	if in_hand != null:
+		return in_hand.id
+	for object_id: int in _faces:
+		var face: Control = _faces[object_id]
+		if _snapshot.looks.has(object_id) and is_instance_valid(face) and face.is_visible_in_tree() \
+				and Rect2(Vector2.ZERO, _face_sizes[object_id]).has_point(face.get_global_transform().affine_inverse() * at):
+			return object_id
+	return Inspection.NOTHING
+
+
+## The card of the opening hand drawn at [param cursor], or Inspection.NOTHING: none while
+## cards are in the air, when they may be face down, and none under an Emblems window.
+func _opening_card_at(cursor: Vector2) -> int:
+	if _overlay.motion().is_moving():
+		return Inspection.NOTHING
+	for window: ZoneWindow in _emblem_windows.values():
+		if Easing.is_shown(window) and Rect2(window.position, window.size).has_point(cursor):
+			return Inspection.NOTHING
+	var object_id: int = _overlay.card_at(cursor - _overlay.position)
+	return object_id if object_id != OpeningHandOverlay.NONE and _snapshot.looks.has(object_id) else Inspection.NOTHING
+
+
+## Every card shown in an open window, by Game Object ID: the stack's entries, each Emblem
+## and the face-up cards of the piles.
+func _inspectable_entries() -> Dictionary[int, Control]:
+	var entries: Dictionary[int, Control] = {}
+	if Easing.is_shown(_stack_window):
+		for object_id: int in _stack_items:
+			var entry: StackEntry = stack_entry_of(object_id)
+			if entry != null and is_instance_valid(entry):
+				entries[object_id] = entry
+	for player_id: int in _emblem_windows:
+		var window: ZoneWindow = _emblem_windows[player_id]
+		if not Easing.is_shown(window):
+			continue
+		var rows: Array[Node] = window.body().get_children()
+		var emblems: Array[MmObjectView] = _emblems_of(player_id)
+		if rows.size() != emblems.size():
+			continue
+		for index: int in rows.size():
+			entries[emblems[index].id] = rows[index] as Control
+	for key: String in _pile_windows:
+		var pile: PileWindow = _pile_windows[key]
+		if not Easing.is_shown(pile):
+			continue
+		for object_id: int in pile.entries():
+			if object_id != PileWindow.UNKNOWN and pile.face_of(object_id) != null:
+				entries[object_id] = pile.face_of(object_id)
+	return entries
+
+
+## The Emblems [param player_id] controls, in the order their window lists them.
+func _emblems_of(player_id: int) -> Array[MmObjectView]:
+	var emblems: Array[MmObjectView] = []
+	for emblem: MmObjectView in _snapshot.view.command:
+		if emblem.controller_id == player_id:
+			emblems.append(emblem)
+	return emblems
+
+
+## Whether a card of the hand or a trigger being ordered is held.
+func _is_dragging() -> bool:
+	return _drag.is_holding() or (_is_trigger_pressed() and _trigger_list.is_holding())
+
+
+func _is_over_inspector(cursor: Vector2) -> bool:
+	return Easing.is_shown(_inspector) and Rect2(_inspector.position, _inspector.size).has_point(cursor)
+
+
+## A press of a mouse button, before anything else has it: a right-click pins or lets go,
+## and a left-click anywhere but on the Inspector lets the Pinned card go and then does
+## whatever it does (A459, A461).
+func _pin_with(event: InputEvent) -> void:
+	var click: InputEventMouseButton = make_input_local(event) as InputEventMouseButton
+	if click == null or not click.pressed or _snapshot == null or _is_paused:
+		return
+	if click.button_index == MOUSE_BUTTON_RIGHT:
+		right_click_at(click.position)
+	elif click.button_index == MOUSE_BUTTON_LEFT and not _is_over_inspector(click.position) \
+			and _inspection.pinned() != Inspection.NOTHING:
+		let_pinned_go()
+
+
+## After a redraw: cards that are gone are forgotten, the Inspector is where the sidebar
+## is, and what it shows is drawn again from the new snapshot.
+func _redraw_inspector() -> void:
+	var seen_ids: Array[int] = []
+	seen_ids.assign(_snapshot.looks.keys())
+	_inspection.keep_only(seen_ids)
+	_inspector.position = _regions["sidebar"].position
+	_inspector.size = _regions["sidebar"].size
+	_show_inspected(true)
+
+
+## Shows the Pinned card, if it or the snapshot has changed, and puts the ring on it. An ability on the stack is read as the card it came from: as
+## that card is now if it can still be seen, and otherwise as its Original.
+func _show_inspected(is_new_snapshot: bool) -> void:
+	var shown: int = _inspection.shown()
+	_show_pin()
+	if shown == _inspected and not is_new_snapshot:
+		return
+	_inspected = shown
+	if shown == Inspection.NOTHING:
+		Easing.disappear(_inspector, _ease_seconds)
+		return
+	var subject: int = shown
+	var look: CardLook = _snapshot.look_of(shown)
+	var seen: MmObjectView = _seen(shown)
+	if seen != null and seen.ability != null:
+		if _snapshot.looks.has(seen.source_object_id):
+			subject = seen.source_object_id
+			look = _snapshot.look_of(subject)
+		elif _snapshot.original_of(shown) != null:
+			look = _snapshot.original_of(shown)
+	var glow: Variant = Inspector.glow_of(_snapshot.rarity_of(shown)) if _snapshot.has_rarity(shown) else null
+	_inspector.show_card(shown, look, _snapshot.original_of(shown), glow, _snapshot.state_list_of(subject),
+		_ease_seconds if Easing.is_shown(_inspector) else 0.0)
+	Easing.appear(_inspector, _ease_seconds)
+
+
+## Puts the ring on whatever the Pinned card is drawn as, and takes it off what it was on.
+func _show_pin() -> void:
+	var host: Control = _pin_host_now()
+	if _pin_host != null and is_instance_valid(_pin_host) and _pin_host != host:
+		BorderEffects.remove_pin(_pin_host)
+	_pin_host = host
+	if host != null and not BorderEffects.has_pin(host):
+		BorderEffects.add_pin(host, _face_sizes[_inspection.pinned()] if _faces.get(_inspection.pinned()) == host else host.size)
+
+
+## What the Pinned card is drawn as right now, or null: an entry of a window, a card of the
+## opening hand, a card of the hand, or a permanent's face.
+func _pin_host_now() -> Control:
+	var pinned: int = _inspection.pinned()
+	if pinned == Inspection.NOTHING or _snapshot == null:
+		return null
+	var entries: Dictionary[int, Control] = _inspectable_entries()
+	if entries.has(pinned):
+		return entries[pinned]
+	if _overlay.is_open():
+		return _overlay.face_of(pinned)
+	var seen: MmObjectView = _seen(pinned)
+	if seen != null and _snapshot.view.hand.has(seen) and _hand_cards.has(seen.card_id):
+		return _hand_faces[_hand_cards.find(seen.card_id)]
+	var face: Control = _faces.get(pinned, null) as Control
+	return face if face != null and is_instance_valid(face) else null
+
+
 ## Lets [param delta] seconds of Face Motion and Card Flights go by, as every frame does:
 ## faces on their way are drawn further along, ghosts fade, block lines follow their
 ## creatures, and cards in the air fly on.
@@ -918,7 +1189,7 @@ func pile_text(key: String) -> String:
 
 ## The Hero's controls live in their player panel, under the Emblems button.
 func pass_button() -> Button:
-	return _panels[HERO].pass_button()
+	return _pass_button
 
 
 func undo_button() -> Button:
@@ -1158,10 +1429,13 @@ func _redraw() -> void:
 
 	_panels[VILLAIN].show_snapshot(_snapshot, glow, _presenter.stops, regions["villain_panel"], false, false)
 	_panels[HERO].show_snapshot(_snapshot, glow, _presenter.stops, regions["hero_panel"], true, _presenter.is_yielding())
+	_pass_button.place(regions["pass"])
+	_pass_button.show_pass(_snapshot.decision is PriorityDecision)
+	_show_key_labels()
 	if _selection.is_active():
-		_panels[HERO].show_confirm(_selection.confirm_text(), _selection.is_complete(), _selection.can_undo())
+		_show_confirm(_selection.confirm_text(), _selection.is_complete(), _selection.can_undo())
 	elif _trigger_order.is_active():
-		_panels[HERO].show_confirm("Confirm order", true, _trigger_order.can_undo())
+		_show_confirm("Confirm order", true, _trigger_order.can_undo())
 	_add_player_stepper()
 	_draw_villain_hand(view.hand_sizes.get(VILLAIN, 0) - _drawing_count(VILLAIN), regions["villain_hand"])
 	_draw_row(_permanents(view, VILLAIN, true), regions["villain_lands"], glow)
@@ -1183,6 +1457,7 @@ func _redraw() -> void:
 	_fill_choice_window(view)
 	_show_pile_windows()
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
+	_info.show_undeclare(not _selection.attacker_ids().is_empty())
 	_hold_panel.place(regions["hold"])
 	_info.show_option(_release_text())
 	_move_faces(unseen)
@@ -1203,6 +1478,7 @@ func _redraw() -> void:
 		_panels[HERO].mark_pool(_preview_plan().pool_types)
 	_is_redrawing = false
 	_glowed_before.clear()
+	_redraw_inspector()
 
 
 ## How long [param object_id]'s Glow takes to become [param color] (null for none, or the
@@ -2125,7 +2401,7 @@ func _show_picks() -> void:
 		_panels[HERO].show_undo(_picks.can_undo())
 		return
 	_panels[HERO].show_undo(_picks.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
-	_panels[HERO].show_confirm("Confirm discard", _picks.is_complete(), _picks.can_undo())
+	_show_confirm("Confirm discard", _picks.is_complete(), _picks.can_undo())
 	_info.show_prompt(_picks.prompt())
 	for index: int in _hand_faces.size():
 		var in_hand: MmObjectView = _hand_view(_hand_cards[index])

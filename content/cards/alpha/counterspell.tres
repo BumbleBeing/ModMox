@@ -35,3 +35,4 @@ name = "Counterspell"
 card_types = Array[int]([3])
 mana_cost = SubResource("Resource_otvmj")
 abilities = Array[ExtResource("1_hiopj")]([SubResource("Resource_42fud")])
+rarity = 1

@@ -87,7 +87,70 @@ func test_it_shows_life_and_who_has_priority() -> void:
 	assert_eq(villain.life_text(), "0")
 
 
-func test_the_priority_outline_eases_from_one_panel_to_the_other_and_a_redraw_leaves_it_be() -> void:
+func test_the_priority_glow_is_a_pale_glow_round_the_whole_panel() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+
+	assert_eq(BorderEffects.glow_color(hero.priority_glow()), PlayerPanel.NOW_COLOR)
+	assert_eq(hero.priority_glow().size, BOX.size, "Round the panel, not the portrait (A478).")
+	assert_null(BorderEffects.glow_color(hero.portrait()), "The portrait glows only when its player can be chosen.")
+
+
+func test_a_step_with_a_stop_that_is_the_step_it_is_now_is_green_and_glows() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+
+	assert_true(hero.shows_stop(MAIN))
+	assert_eq((hero.step_button(MAIN).get_theme_stylebox("normal") as StyleBoxFlat).bg_color, PlayerPanel.STOP_COLOR)
+	assert_eq(BorderEffects.glow_color(hero.step_button(MAIN)), PlayerPanel.NOW_COLOR)
+
+
+func test_the_hero_is_the_white_wizard_and_the_villain_the_purple_demon_drawn_pixel_for_pixel() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	var villain: PlayerPanel = _panel(VILLAIN)
+
+	assert_eq(hero.portrait_texture().resource_path, "res://ui/sprites/portraits/white_wizard.png")
+	assert_eq(villain.portrait_texture().resource_path, "res://ui/sprites/portraits/purple_demon.png")
+	var picture: TextureRect = hero.portrait().get_parent().get_children().filter(func(child: Node) -> bool: return child is TextureRect and (child as TextureRect).texture == hero.portrait_texture())[0]
+	assert_eq(picture.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_eq(picture.size, hero.portrait().size)
+	assert_eq(picture.position, hero.portrait().position, "What glows and is clicked lies over the picture.")
+
+
+func test_a_player_with_no_portrait_has_a_plain_square() -> void:
+	var panel: PlayerPanel = PlayerPanel.new(77, "STRANGER")
+	add_child_autofree(panel)
+	panel.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, false, false)
+
+	assert_null(panel.portrait_texture())
+	assert_not_null(panel.portrait())
+
+
+func test_the_heros_panel_has_a_potions_button_that_is_gray_with_none_and_takes_no_press() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(Rect2(Vector2.ZERO, BOX.size))
+
+	var potions: Button = hero.potions_button()
+
+	assert_eq(potions.text, "⚗  Potions (0)")
+	assert_eq(Rect2(potions.position, potions.size), parts["potions"], "Between the Emblems button and the controls.")
+	assert_true(potions.disabled)
+	assert_eq(potions.mouse_filter, Control.MOUSE_FILTER_IGNORE, "It does not light up under the cursor (A491).")
+	assert_eq((potions.get_theme_stylebox("disabled") as StyleBoxFlat).border_color, PlayerPanel.NO_ITEMS_COLOR)
+	assert_null(_panel(VILLAIN).potions_button(), "Only the Hero's panel has one.")
+
+
+func test_the_undo_button_names_the_key_it_is_told() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	assert_eq(hero.undo_button().text, "Undo [Z]")
+
+	hero.show_undo_key("BACKSPACE")
+
+	assert_eq(hero.undo_button().text, "Undo [BACKSPACE]")
+	hero.show_snapshot(_snapshot, DecisionClicks.new(), _stops, Rect2(40, 20, 300, 480), true, true)
+	assert_eq(hero.undo_button().text, "Undo [BACKSPACE]", "A panel built afresh still names it.")
+	_panel(VILLAIN).show_undo_key("Q")
+
+
+func test_the_priority_glow_eases_from_one_panel_to_the_other_and_a_redraw_leaves_it_be() -> void:
 	var hero: PlayerPanel = _panel(HERO)
 	var villain: PlayerPanel = _panel(VILLAIN)
 	assert_eq(_outline(hero).modulate.a, 1.0, "A panel just built shows it at once.")
@@ -118,9 +181,10 @@ func test_the_step_it_is_now_is_marked_on_the_active_players_panel_only() -> voi
 	assert_true(hero.shows_now(MAIN))
 	assert_false(hero.shows_now(UPKEEP))
 	assert_false(villain.shows_now(MAIN))
-	assert_eq((hero.step_button(MAIN).get_theme_stylebox("normal") as StyleBoxFlat).border_color, PlayerPanel.NOW_COLOR)
-	assert_eq((hero.step_button(MAIN).get_theme_stylebox("normal") as StyleBoxFlat).border_width_left, 3)
-	assert_eq((hero.step_button(UPKEEP).get_theme_stylebox("normal") as StyleBoxFlat).border_width_left, 0)
+	assert_eq(BorderEffects.glow_color(hero.step_button(MAIN)), PlayerPanel.NOW_COLOR, "It glows (A477).")
+	assert_null(BorderEffects.glow_color(hero.step_button(UPKEEP)))
+	assert_null(BorderEffects.glow_color(villain.step_button(MAIN)), "Not on the other player's row.")
+	assert_eq((hero.step_button(MAIN).get_theme_stylebox("normal") as StyleBoxFlat).border_width_left, 0, "No border any more.")
 
 	_snapshot.view.step = UPKEEP
 	_snapshot.view.active_player_id = VILLAIN
@@ -128,8 +192,9 @@ func test_the_step_it_is_now_is_marked_on_the_active_players_panel_only() -> voi
 	_show(villain, VILLAIN)
 
 	assert_false(hero.shows_now(MAIN), "The mark moved off the step it was")
-	assert_eq((hero.step_button(MAIN).get_theme_stylebox("normal") as StyleBoxFlat).border_width_left, 0)
+	assert_null(BorderEffects.glow_color(hero.step_button(MAIN)))
 	assert_true(villain.shows_now(UPKEEP), "and onto the Villain's upkeep.")
+	assert_eq(BorderEffects.glow_color(villain.step_button(UPKEEP)), PlayerPanel.NOW_COLOR)
 	assert_false(hero.shows_now(UPKEEP))
 
 
@@ -319,8 +384,6 @@ func test_what_was_drawn_on_the_portrait_from_outside_is_cleared_by_the_next_sna
 
 func test_the_heros_controls_follow_the_snapshot() -> void:
 	var panel: PlayerPanel = _panel(HERO)
-	assert_eq(panel.pass_button().text, "Pass [SPACE]")
-	assert_false(panel.pass_button().disabled)
 	assert_true(panel.undo_button().disabled, "Nothing to undo.")
 	assert_eq(panel.yield_button().text, "☑  Yield Turn")
 	assert_true(panel.yield_button().flat)
@@ -329,45 +392,27 @@ func test_the_heros_controls_follow_the_snapshot() -> void:
 	_snapshot.decision = KeepOrMulliganDecision.new(HERO, 0, 0)
 	panel.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, true, false)
 	assert_false(panel.undo_button().disabled)
-	assert_true(panel.pass_button().disabled, "Keeping a hand is not priority.")
 	assert_eq(panel.yield_button().text, "☐  Yield Turn")
 
 	_snapshot.is_villain_thinking = true
 	_show(panel, HERO)
 	assert_true(panel.undo_button().disabled, "Nothing is undone while the Villain thinks.")
-	for control: String in ["pass", "undo", "yield"]:
+	for control: String in ["undo", "yield"]:
 		panel.connect(control + ("_toggled" if control == "yield" else "_pressed"), func() -> void: _pressed.append(control))
-	panel.pass_button().pressed.emit()
 	panel.undo_button().pressed.emit()
 	panel.yield_button().pressed.emit()
-	assert_eq(_pressed, ["pass", "undo", "yield"])
-
-
-func test_the_confirm_button_is_a_pass_button_again_at_the_next_snapshot() -> void:
-	var panel: PlayerPanel = _panel(HERO)
-	var pass_button: Button = panel.pass_button()
-
-	panel.show_confirm("Attack with 2", false, true)
-	assert_eq(pass_button.text, "Attack with 2")
-	assert_true(pass_button.disabled)
-	assert_eq(pass_button.get_theme_font_size("font_size"), 19)
-	assert_false(panel.undo_button().disabled, "There is a click to take back.")
-	_show(panel, HERO)
-
-	assert_eq(panel.pass_button(), pass_button)
-	assert_eq(pass_button.text, "Pass [SPACE]")
-	assert_eq(pass_button.get_theme_font_size("font_size"), 21)
-	assert_false(pass_button.disabled)
-	assert_true(panel.undo_button().disabled)
+	assert_eq(_pressed, ["undo", "yield"])
+	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(Rect2(Vector2.ZERO, BOX.size))
+	assert_eq(Rect2(panel.undo_button().position, panel.undo_button().size), parts["undo"])
+	assert_gt(panel.yield_button().position.y, panel.undo_button().position.y, "Undo is over Yield Turn.")
+	assert_false(panel.has_signal("pass_pressed"), "The Pass Button is over the Info Panel now (A489).")
 
 
 func test_the_villains_panel_says_when_the_villain_is_thinking_and_has_no_controls() -> void:
 	var panel: PlayerPanel = _panel(VILLAIN)
-	assert_null(panel.pass_button())
 	assert_null(panel.undo_button())
 	assert_null(panel.yield_button())
 	assert_eq(panel.thinking_text(), "")
-	panel.show_confirm("Attack with 2", true, true)
 
 	_snapshot.is_villain_thinking = true
 	_show(panel, VILLAIN)
@@ -385,7 +430,7 @@ func test_a_panel_that_changes_sides_is_built_afresh() -> void:
 	panel.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, false, false)
 
 	assert_ne(panel.step_button(UPKEEP), step)
-	assert_null(panel.pass_button())
+	assert_null(panel.undo_button())
 
 
 func test_a_panel_is_headed_with_its_players_name_in_capitals() -> void:
@@ -421,9 +466,9 @@ func _show(panel: PlayerPanel, player_id: int) -> void:
 	panel.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, player_id == HERO, player_id == HERO)
 
 
-## The border that says the panel's player has priority.
+## The Glow that says the panel's player has priority.
 func _outline(panel: PlayerPanel) -> Control:
-	return panel.get_child(1) as Control
+	return panel.priority_glow()
 
 
 func _emblem(player_id: int) -> MmObjectView:

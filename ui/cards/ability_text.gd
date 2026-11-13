@@ -139,6 +139,12 @@ func _ability(ability: MmAbility) -> String:
 	return _fallback(ability, "_ability")
 
 
+## Whether [param ability] is a keyword, protection included: an ability a sentence names
+## in lower case and without quotation marks.
+static func is_keyword(ability: MmAbility) -> bool:
+	return _keyword(ability) != "" or ability is ProtectionAbility
+
+
 ## The name of a keyword ability that needs no other words, or "".
 static func _keyword(ability: MmAbility) -> String:
 	if ability is FlyingAbility:
