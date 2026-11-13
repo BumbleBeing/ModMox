@@ -11,30 +11,36 @@ extends Control
 ## adds a Collection card to its own column or takes a card out of the Deck. Nothing is
 ## rebuilt for any of this: faces are kept and moved.
 ##
+## The inspector and the windows ease as the encounter's do (Easing, Pacing.EASE_SECONDS): a
+## change of card eases the old one out and the new one in, and the Mod pop-up and the
+## unsaved-changes prompt fade in and out.
+##
 ## Movement is eased, never snapped: a held card glides to the cursor and, dropped on a
 ## column, on to its place there, the cards of a column slide to make room, the card under
 ## the cursor gains a glowing border, and the column a held card would drop into lights up.
 ##
 ## A right-click selects a card, which holds it in the inspector; a second right-click on
-## it, one on empty space, or Escape lets it go. The inspector shows the card under the
-## cursor, and falls back to the selected one. Every card that can take Mods shows its
-## Mod Slots on its face.
+## it, one on empty space, or Escape lets it go. While a card is selected the inspector
+## shows only that card; with none selected it shows the card under the cursor. Every card shows its Mod Slots on its face,
+## a basic land too.
 ##
-## Modify opens the Mod pop-up over the screen for the selected card. A Mod applied there
-## is used up and changes the card at once, wherever it shows; it has nothing to do with
-## saving.
+## Apply a Mod, in the inspector, opens the Mod pop-up over the screen for the selected
+## card. A Mod applied there is used up and changes the card at once, wherever it shows; it
+## has nothing to do with saving. A basic land's first Mod makes it a card of the
+## Collection's, which then shows in the Collection too (A558).
 ##
 ## The name box renames the Working Deck. Save writes it to the Deckbox, legal or not, and
 ## stays on the screen; it refuses only a name that is empty or taken. Exit goes back to
 ## the main menu, asking first if there are unsaved changes.
 ##
-## Steps 2 to 7 of the prototype.
-## Add --screenshot=/absolute/path.png to save a picture and quit.
+## Steps 2 to 8 of the prototype.
+## Add --screenshot=/absolute/path.png to save a picture and quit, and --select="Card Name"
+## to have that Deck card selected in it, with --mods to open the Mod pop-up for it.
 
-const BACKGROUND: Color = Color("#1a1d22")
-const PANE: Color = Color("#23272e")
-const PANE_BORDER: Color = Color("#3a404a")
-const MUTED: Color = Color("#9aa3af")
+const BACKGROUND: Color = DeckbuilderLook.BENCH
+const PANE: Color = DeckbuilderLook.PANE
+const PANE_BORDER: Color = DeckbuilderLook.PANE_BORDER
+const MUTED: Color = DeckbuilderLook.MUTED
 const ILLEGAL: Color = Color("#e5484d")
 ## A Collection card that is already in the Deck is drawn this faint.
 const IN_DECK_DIM: float = 0.5
@@ -57,10 +63,15 @@ enum ExitAnswer { SAVE_AND_EXIT, EXIT_WITHOUT_SAVING, KEEP_BUILDING }
 ## How long a notice shows, and how long it takes to fade at the end, in seconds.
 const NOTICE_TIME: float = 3.0
 const NOTICE_FADE: float = 0.5
+## The deckbuilder eases half again as slowly as the encounter does.
+const EASE_STRETCH: float = 1.5
+## How solid the white plate behind a basic land button's name and count is.
+const LAND_PLATE_ALPHA: float = 0.25
 const COLUMN_TITLES: Array[String] = ["0", "1", "2", "3", "4", "5", "6+", "Lands"]
-## Each basic land's button color, in the order the buttons stand.
+## Each basic land's button color, in the order the buttons stand. The Plains' is dark
+## enough for the white plate behind its name to show on it.
 const LAND_COLORS: Dictionary[String, Color] = {
-	"Plains": Color("#e6dfbd"), "Island": Color("#2f6fb5"), "Swamp": Color("#544a5e"),
+	"Plains": Color("#b3a97c"), "Island": Color("#2f6fb5"), "Swamp": Color("#544a5e"),
 	"Mountain": Color("#b8452f"), "Forest": Color("#2f7d4a"),
 }
 
@@ -68,6 +79,10 @@ const LAND_COLORS: Dictionary[String, Color] = {
 ## menu's --deckbuilder shortcut works only until then, so that Exit does not bounce back.
 static var has_left: bool = false
 
+## How long the inspector takes to change cards and a window to ease in or out, in seconds:
+## the encounter's Pacing.EASE_SECONDS, stretched, when the screen starts itself, and none in tests and
+## pictures, where everything comes and goes at once (as Easing has it).
+var ease_seconds: float = 0.0
 ## Whether the screen makes its own sample run when it is ready. Tests hand it one.
 var starts_itself: bool = true
 ## How the screen opens another scene. Tests replace it.
@@ -87,8 +102,7 @@ var _hovered_card: DeckbuilderCard = null
 var _inspector_pane: Panel = null
 var _inspector_shown: DeckbuilderCard = null
 var _inspector_slots: int = -1
-var _inspector_face: CardFace = null
-var _modify_button: Button = null
+var _inspector: DeckbuilderInspector = null
 ## The Mod pop-up while it is open, or null.
 var _mod_popup: ModPopup = null
 var _save_button: Button = null
@@ -107,6 +121,8 @@ var _column_counts: Array[Label] = []
 var _land_buttons: Dictionary[String, Button] = {}
 var _sort_button: Button = null
 var _zoom_slider: HSlider = null
+## The gray plate Zoom and the two sliders stand on.
+var _zoom_panel: PanelContainer = null
 var _deck_zoom_slider: HSlider = null
 ## How large the columns' cards are drawn, and the zoom their faces were last built at.
 var _deck_zoom: float = 1.0
@@ -154,12 +170,31 @@ func _ready() -> void:
 	if not starts_itself:
 		return
 	begin(DeckbuilderSample.make())
+	_select_named(OS.get_cmdline_user_args())
 	var picture: String = EncounterScreen.screenshot_path(OS.get_cmdline_user_args())
+	if picture == "":
+		ease_seconds = Pacing.EASE_SECONDS * EASE_STRETCH
 	if picture != "":
 		for frame: int in 4:
 			await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(picture)
 		get_tree().quit()
+
+
+## Selects the Deck card named by --select= among [param arguments], if there is one, so
+## that a picture can show the inspector at work.
+func _select_named(arguments: PackedStringArray) -> void:
+	for argument: String in arguments:
+		if not argument.begins_with("--select="):
+			continue
+		for card: DeckbuilderCard in _working_deck.cards():
+			if card.look().name == argument.trim_prefix("--select="):
+				_selected = card
+				_show_selection()
+				_show_inspector()
+				if arguments.has("--mods"):
+					open_mod_popup()
+				return
 
 
 ## Opens the deckbuilder on [param sample]'s saved Deck.
@@ -221,19 +256,24 @@ func selected() -> DeckbuilderCard:
 	return _selected
 
 
-## The card the inspector is showing: the one under the cursor, or else the selected one.
+## The card the inspector is showing: the selected one, or with none selected the one
+## under the cursor. A selected card holds the inspector, whatever the cursor is over.
 func inspected() -> DeckbuilderCard:
-	return _hovered_card if _hovered_card != null else _selected
+	return _selected if _selected != null else _hovered_card
+
+
+func inspector() -> DeckbuilderInspector:
+	return _inspector
 
 
 ## The Card Face in the inspector, or null when it shows no card.
 func inspector_face() -> CardFace:
-	return _inspector_face
+	return _inspector.face()
 
 
-## The inspector's Modify button, or null when it shows no card.
-func modify_button() -> Button:
-	return _modify_button
+## The inspector's Apply a Mod button, or null when it shows no card.
+func apply_mod_button() -> Button:
+	return _inspector.apply_button() if inspected() != null else null
 
 
 ## The Mod pop-up while it is open, or null.
@@ -287,10 +327,11 @@ func exit() -> void:
 			["Save and exit", "Exit without saving", "Keep building"] as Array[String])
 	_exit_prompt.chosen.connect(_on_exit_answer)
 	add_child(_exit_prompt)
+	Easing.fade_in(_exit_prompt, ease_seconds)
 
 
 func _on_exit_answer(answer: int) -> void:
-	_exit_prompt.queue_free()
+	Easing.fade_out_and_free(_exit_prompt, ease_seconds)
 	_exit_prompt = null
 	if answer == ExitAnswer.KEEP_BUILDING:
 		return
@@ -313,7 +354,7 @@ func _show_save() -> void:
 
 func _show_notice(text: String, is_refusal: bool) -> void:
 	_notice.text = text
-	_notice.add_theme_color_override("font_color", ILLEGAL if is_refusal else Color.WHITE)
+	_notice.add_theme_color_override("font_color", ILLEGAL if is_refusal else DeckbuilderLook.TEXT)
 	_notice.visible = true
 	_notice.modulate.a = 1.0
 	_notice_left = NOTICE_TIME
@@ -332,27 +373,36 @@ func open_mod_popup() -> void:
 	_mod_popup.applied.connect(_on_mod_applied)
 	_mod_popup.closed.connect(close_mod_popup)
 	add_child(_mod_popup)
+	Easing.fade_in(_mod_popup, ease_seconds)
 
 
 func close_mod_popup() -> void:
 	if _mod_popup == null:
 		return
-	_mod_popup.queue_free()
+	# It is gone at once to anyone who asks and to the mouse, and only drawn while it fades.
+	Easing.fade_out_and_free(_mod_popup, ease_seconds)
 	_mod_popup = null
 
 
 ## A held Mod goes on the selected card for good. Its faces are made again, since the card
-## reads differently now, and it stays in the column it was in.
+## reads differently now, and it stays in the column it was in. A basic land that took its
+## first Mod has a new identity from the Collection, and a face there from now on.
 func _on_mod_applied(mod: Mod) -> void:
 	var card: DeckbuilderCard = _selected
+	var old_id: int = card.id
 	close_mod_popup()
-	if not _sample.held_mods.apply(mod, card):
+	if not _sample.held_mods.apply(mod, card, _sample.collection):
 		return
+	if card.id != old_id:
+		for faces: Dictionary in [_column_faces, _flyers, _fan_places]:
+			if faces.has(old_id):
+				faces[card.id] = faces[old_id]
+				faces.erase(old_id)
 	if _collection_faces.has(card.id):
 		_forget(_collection_faces[card.id])
 		_collection_faces[card.id].queue_free()
-		_collection_faces[card.id] = _new_face(card, _collection_built_height)
-		_collection_grid.add_child(_collection_faces[card.id])
+	_collection_faces[card.id] = _new_face(card, _collection_built_height)
+	_collection_grid.add_child(_collection_faces[card.id])
 	if _column_faces.has(card.id):
 		var old: CardFace = _column_faces[card.id]
 		var fresh: CardFace = _new_face(card, old.size.y)
@@ -362,7 +412,9 @@ func _on_mod_applied(mod: Mod) -> void:
 		old.get_parent().remove_child(old)
 		old.queue_free()
 		_column_faces[card.id] = fresh
+	_lay_out_collection(false)
 	_show_deck()
+	_show_selection()
 	_filter_bar.show_count(_filter.apply(_sample.collection.cards()).size(), _sample.collection.cards().size())
 
 
@@ -407,6 +459,15 @@ func deck_scroll() -> ScrollContainer:
 
 
 ## The number on the button that adds the basic land named [param land].
+func zoom_panel() -> PanelContainer:
+	return _zoom_panel
+
+
+## The pale plate behind a basic land button's name and count.
+func land_name_plate(land: String) -> Panel:
+	return _land_buttons[land].get_node("NamePlate") as Panel
+
+
 func land_count_label(land: String) -> Label:
 	return _land_counts.get(land, null) as Label
 
@@ -630,8 +691,9 @@ func _process(delta: float) -> void:
 		var lit: float = lerpf(_column_lit[column], 1.0 if column == _drop_column else 0.0, _eased(GLOW_RATE, delta))
 		_column_lit[column] = lit
 		var style: StyleBoxFlat = _column_panes[column].get_theme_stylebox("panel") as StyleBoxFlat
-		style.border_color = PANE_BORDER.lerp(DROP_BORDER, lit)
-		style.set_border_width_all(2 if lit > 0.02 else 1)
+		# A column's edge is gray, and turns to the drop color while a held card is over it.
+		style.border_color = DeckbuilderLook.PANEL_EDGE.lerp(DROP_BORDER, lit)
+		style.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
 
 
 ## Sends [param face], which is on the screen and not in any pane, gliding to [param card]'s
@@ -823,7 +885,7 @@ func _new_face(card: DeckbuilderCard, height: float, shows_slots: bool = true) -
 
 func _show_count() -> void:
 	_count_label.text = "%d / %d cards" % [_working_deck.size(), WorkingDeck.MINIMUM_SIZE]
-	_count_label.add_theme_color_override("font_color", Color.WHITE if _working_deck.is_legal() else ILLEGAL)
+	_count_label.add_theme_color_override("font_color", DeckbuilderLook.TEXT if _working_deck.is_legal() else ILLEGAL)
 	for land: String in _land_counts:
 		_land_counts[land].text = str(_working_deck.basic_land_count(land))
 
@@ -873,8 +935,7 @@ func _redraw() -> void:
 	_inspector_pane = null
 	_inspector_shown = null
 	_inspector_slots = -1
-	_inspector_face = null
-	_modify_button = null
+	_inspector = null
 	_glowing.clear()
 	_fan_places.clear()
 	_flyers.clear()
@@ -897,6 +958,9 @@ func _redraw() -> void:
 	var places: DeckbuilderLayout = layout()
 	_draw_top_bar(places.top_bar())
 	_inspector_pane = _pane(places.inspector())
+	_inspector = DeckbuilderInspector.new()
+	_inspector.apply_pressed.connect(open_mod_popup)
+	_fill(_inspector_pane, _inspector)
 	_draw_filter_bar(places.filter_bar())
 	_draw_collection(places)
 	_draw_deck(places)
@@ -959,19 +1023,32 @@ func _draw_top_bar(place: Rect2) -> void:
 		row.add_child(button)
 		_land_buttons[land] = button
 	row.add_child(_spacer())
-	row.add_child(_label("Zoom", 17, MUTED))
-	row.add_child(_label("Collection", 17))
+	_zoom_panel = PanelContainer.new()
+	var plate_style: StyleBoxFlat = StyleBoxFlat.new()
+	plate_style.bg_color = DeckbuilderLook.BAR_PANEL
+	plate_style.border_color = DeckbuilderLook.BUTTON_EDGE
+	plate_style.set_border_width_all(1)
+	plate_style.set_corner_radius_all(8)
+	plate_style.content_margin_left = 12.0
+	plate_style.content_margin_right = 12.0
+	_zoom_panel.add_theme_stylebox_override("panel", plate_style)
+	row.add_child(_zoom_panel)
+	var zoom: HBoxContainer = HBoxContainer.new()
+	zoom.add_theme_constant_override("separation", 10)
+	_zoom_panel.add_child(zoom)
+	zoom.add_child(_label("Zoom", 17, MUTED))
+	zoom.add_child(_label("Collection", 17))
 	_zoom_slider = _slider(DeckbuilderLayout.COLLECTION_CARD_SMALLEST, DeckbuilderLayout.COLLECTION_CARD_LARGEST,
 			1.0, _collection_card_height, "How large the Collection's cards are drawn.")
 	_zoom_slider.value_changed.connect(_on_zoom_changed)
 	_zoom_slider.drag_ended.connect(_on_zoom_let_go)
-	row.add_child(_zoom_slider)
-	row.add_child(_label("Deck", 17))
+	zoom.add_child(_zoom_slider)
+	zoom.add_child(_label("Deck", 17))
 	_deck_zoom_slider = _slider(DeckbuilderLayout.DECK_ZOOM_SMALLEST, DeckbuilderLayout.DECK_ZOOM_LARGEST,
 			0.01, _deck_zoom, "How large the Deck's cards are drawn. Larger, the columns scroll sideways.")
 	_deck_zoom_slider.value_changed.connect(_on_deck_zoom_changed)
 	_deck_zoom_slider.drag_ended.connect(_on_deck_zoom_let_go)
-	row.add_child(_deck_zoom_slider)
+	zoom.add_child(_deck_zoom_slider)
 	_sort_button = _button("Sort")
 	_sort_button.tooltip_text = "Put every card back in its own column."
 	_make_live(_sort_button)
@@ -993,7 +1070,7 @@ func _draw_top_bar(place: Rect2) -> void:
 	_notice.z_index = 5
 	_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var plate: StyleBoxFlat = StyleBoxFlat.new()
-	plate.bg_color = Color("#14171b")
+	plate.bg_color = DeckbuilderLook.HOLLOW
 	plate.border_color = PANE_BORDER
 	plate.set_border_width_all(1)
 	plate.set_corner_radius_all(6)
@@ -1043,91 +1120,31 @@ func _on_sort_pressed() -> void:
 	_show_deck()
 
 
-## Shows the card under the cursor, or else the selected one, in the inspector: its face,
-## its Mod Slots, Modify and what its abilities mean. Redrawn only when the card or its
-## Mods change.
+## Shows the selected card, or with none selected the one under the cursor, in the inspector. Redrawn only
+## when the card or its Mods change.
 func _show_inspector() -> void:
 	var card: DeckbuilderCard = inspected()
 	var slots: int = -1 if card == null else card.mods.size()
-	var is_drawn: bool = _inspector_pane.get_child_count() > 0
-	if is_drawn and card == _inspector_shown and slots == _inspector_slots:
-		_show_modify()
-		return
-	_inspector_shown = card
-	_inspector_slots = slots
-	_inspector_face = null
-	_modify_button = null
-	for child: Node in _inspector_pane.get_children():
-		_inspector_pane.remove_child(child)
-		child.queue_free()
-	var column: VBoxContainer = VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
-	_fill(_inspector_pane, column)
-	if card == null:
-		var hint: Label = _label("Hover over a card to read it here. Right-click one to keep it here.", 18, MUTED)
-		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		column.add_child(hint)
-		return
-	# The Mod Slots are listed under the face, so the face itself goes without the bubbles.
-	_inspector_face = _new_face(card, layout().inspector_card_height(), false)
-	column.add_child(_inspector_face)
-	if card.mod_slots() == 0:
-		column.add_child(_label("A basic land has no Mod Slots.", 17, MUTED))
-	else:
-		column.add_child(_label("Mod Slots", 18, MUTED))
-	var states: Array[ModSlotRow.Slot] = ModSlotRow.slots_of(card)
-	for slot: int in states.size():
-		var mod: Mod = card.mods[slot] if states[slot] != ModSlotRow.Slot.EMPTY else null
-		var line: HBoxContainer = HBoxContainer.new()
-		line.add_theme_constant_override("separation", 8)
-		var chip: Panel = Panel.new()
-		var dot: StyleBoxFlat = StyleBoxFlat.new()
-		dot.bg_color = ModSlotRow.HOLLOW if mod == null else ModSlotRow.color_of(states[slot])
-		dot.border_color = ModSlotRow.RIM
-		dot.set_border_width_all(2)
-		dot.set_corner_radius_all(8)
-		chip.add_theme_stylebox_override("panel", dot)
-		chip.custom_minimum_size = Vector2(16, 16)
-		chip.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		line.add_child(chip)
-		var text: String = "Empty" if mod == null else "%s%s: %s" % [mod.name, " (Hex)" if mod.is_hex else "", mod.description]
-		var words: Label = _label(text, 17, MUTED if mod == null else Color.WHITE)
-		words.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		line.add_child(words)
-		column.add_child(line)
-	_modify_button = _button("Modify")
-	_make_live(_modify_button)
-	_modify_button.pressed.connect(open_mod_popup)
-	column.add_child(_modify_button)
-	_show_modify()
-	column.add_child(_label("What its abilities mean", 18, MUTED))
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	column.add_child(scroll)
-	var reminder: Label = Label.new()
-	reminder.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	reminder.text = card.look().rules_text
-	reminder.add_theme_font_size_override("font_size", 17)
-	reminder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(reminder)
+	if card != _inspector_shown or slots != _inspector_slots or (card != null and _inspector.face() == null):
+		_inspector_shown = card
+		_inspector_slots = slots
+		_inspector.show_card(card, layout().inspector_card_height(), ease_seconds)
+	_show_apply()
 
 
-## Modify is for the selected card, and only while it has an empty Mod Slot.
-func _show_modify() -> void:
-	if _modify_button == null:
-		return
+## Apply a Mod is for the selected card, while it has an empty Mod Slot and a held Mod fits it.
+func _show_apply() -> void:
 	var card: DeckbuilderCard = _inspector_shown
+	if card == null:
+		return
 	var why_not: String = ""
 	if card != _selected:
 		why_not = "Right-click the card to select it first."
-	elif card.mod_slots() == 0:
-		why_not = "A basic land cannot take Mods."
 	elif not card.has_empty_mod_slot():
 		why_not = "All three Mod Slots are filled."
-	_modify_button.disabled = why_not != ""
-	_modify_button.tooltip_text = why_not
+	elif not _sample.held_mods.has_applicable(card):
+		why_not = "You hold no Mod that fits this card."
+	_inspector.set_apply(why_not)
 
 
 func _draw_filter_bar(place: Rect2) -> void:
@@ -1211,6 +1228,7 @@ func _draw_column(places: DeckbuilderLayout, column: int, floor_under: Control) 
 	var fan: Control = Control.new()
 	fan.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(fan)
+	(pane.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = DeckbuilderLook.COLUMN
 	_column_panes.append(pane)
 	_column_lit.append(0.0)
 	_column_scrolls.append(scroll)
@@ -1272,8 +1290,8 @@ func _pane(place: Rect2, parent: Control = null) -> Panel:
 	var pane: Panel = Panel.new()
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = PANE
-	style.border_color = PANE_BORDER
-	style.set_border_width_all(1)
+	style.border_color = DeckbuilderLook.PANEL_EDGE
+	style.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
 	style.set_corner_radius_all(6)
 	pane.add_theme_stylebox_override("panel", style)
 	pane.position = place.position
@@ -1290,7 +1308,7 @@ func _fill(pane: Panel, content: Control, pad: float = DeckbuilderLayout.PAD) ->
 	pane.add_child(content)
 
 
-func _label(text: String, font_size: int, color: Color = Color.WHITE) -> Label:
+func _label(text: String, font_size: int, color: Color = DeckbuilderLook.TEXT) -> Label:
 	var label: Label = Label.new()
 	label.text = text
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1320,9 +1338,32 @@ func _color(button: Button, color: Color) -> void:
 		style.content_margin_left = 12
 		style.content_margin_right = 44
 		button.add_theme_stylebox_override(state, style)
-	var ink: Color = Color("#1a1d22") if color.get_luminance() > 0.6 else Color.WHITE
+	# The button's own lettering is hidden: its name is written again on a pale plate that
+	# also holds its count, so
+	# that it reads against any land's color. Every one is lettered in the same near-black.
 	for state: String in ["font_color", "font_hover_color", "font_pressed_color"]:
-		button.add_theme_color_override(state, ink)
+		button.add_theme_color_override(state, Color.TRANSPARENT)
+	var plate: Panel = Panel.new()
+	plate.name = "NamePlate"
+	var pale: StyleBoxFlat = StyleBoxFlat.new()
+	pale.bg_color = Color(1, 1, 1, LAND_PLATE_ALPHA)
+	pale.set_corner_radius_all(5)
+	plate.add_theme_stylebox_override("panel", pale)
+	plate.anchor_right = 1.0
+	plate.anchor_bottom = 1.0
+	plate.offset_left = 6.0
+	plate.offset_top = 6.0
+	plate.offset_right = -6.0
+	plate.offset_bottom = -9.0
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(plate)
+	var lettering: Label = _label(button.text, 20, Color("#1a1d22"))
+	lettering.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lettering.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# The count's pill is on the plate too, at its right; the name is centered in the rest.
+	lettering.offset_right = -36.0
+	lettering.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.add_child(lettering)
 	var shine: Panel = Panel.new()
 	var gloss: StyleBoxFlat = StyleBoxFlat.new()
 	gloss.bg_color = Color(1, 1, 1, 0.16)

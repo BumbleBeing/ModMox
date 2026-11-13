@@ -17,6 +17,7 @@ func accepts(definition: MmCardDefinition) -> bool:
 	return not needs_mana_cost or definition.mana_cost != null
 
 
-## Applicable means the card has an empty Mod Slot and this Mod's rule accepts it.
+## Applicable means the card has an empty Mod Slot and this Mod's rule accepts it. The same
+## rule holds for every card, a basic land included.
 func is_applicable_to(card: DeckbuilderCard) -> bool:
 	return card.has_empty_mod_slot() and accepts(card.run_card.flatten())

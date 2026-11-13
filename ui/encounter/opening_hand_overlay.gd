@@ -2,7 +2,8 @@ class_name OpeningHandOverlay
 extends Control
 ## The opening-hand overlay (game glossary): a scrim over everything right of the sidebar
 ## through the pregame, with the Hero's hand drawn large on it, a heading above and buttons
-## below (13e-2). It draws what an OpeningHand says and reports what is pressed; the
+## below (13e-2). The heading is bold, on a dark rounded plate that hugs it; a frame with no
+## heading has no plate. It draws what an OpeningHand says and reports what is pressed; the
 ## Encounter Screen answers. Its contents are rebuilt on every redraw.
 ##
 ## The hand is fanned as it is in play: each card turned a little more than the last, their
@@ -32,7 +33,13 @@ signal confirmed
 ## The overlay has gone: it finished fading out, or was taken away at once.
 signal closed
 
-const SCRIM: Color = Color(0.03, 0.04, 0.06, 0.88)
+const SCRIM: Color = Color(0.03, 0.04, 0.06, 0.8)
+## The plate behind the heading: the dark gray of the encounter's windows, the space it
+## leaves around the words and how round its corners are, on a screen DESIGN_HEIGHT tall.
+const PLATE_COLOR: Color = Color(0.09, 0.1, 0.13, 0.98)
+const PLATE_PAD: Vector2 = Vector2(32, 12)
+const PLATE_RADIUS: float = 10.0
+const HEADING_SIZE: float = 34.0
 const VILLAIN_COLOR: Color = Color(1, 0.86, 0.55)
 ## Keep is shaded blue and Mulligan burnt orange, playing first or drawing a blue-gray, and
 ## Confirm green (ButtonShading).
@@ -58,6 +65,7 @@ var glow_seconds: float = 0.0
 var _glowed_before: Dictionary[int, Color] = {}
 var _is_drawing: bool = false
 var _heading: Label = null
+var _heading_plate: Panel = null
 var _under_heading: Label = null
 var _villain: Label = null
 var _buttons: Dictionary[String, Button] = {}
@@ -190,12 +198,23 @@ func show_frame(opening: OpeningHand, snapshot: EncounterSnapshot, picks: CardPi
 	_pose_cards()
 
 	var parts: Dictionary[String, Rect2] = EncounterLayout.opening_hand(dealt, inside)
-	_heading = _label(opening.heading(), parts["heading"], 34.0 * unit, Color.WHITE)
+	var heading_size: int = int(HEADING_SIZE * unit) + UiText.RAISE
+	var plate_size: Vector2 = Vector2(UiText.bold().get_string_size(opening.heading(), HORIZONTAL_ALIGNMENT_LEFT, -1, heading_size).x,
+			UiText.bold().get_height(heading_size)) + PLATE_PAD * unit * 2.0
+	# A563: while play or draw is chosen the heading and the buttons are one group.
+	var choice: Dictionary[String, Rect2] = EncounterLayout.opening_hand_choice(inside, plate_size.y)
+	var heading_row: Rect2 = choice["heading"] if opening.frame() == OpeningHand.Frame.PLAY_OR_DRAW else parts["heading"]
+	if not opening.heading().is_empty():
+		_heading_plate = CardShapes.rounded(plate_size, PLATE_RADIUS * unit, PLATE_COLOR)
+		_heading_plate.position = heading_row.get_center() - plate_size / 2.0
+		add_child(_heading_plate)
+	_heading = _label(opening.heading(), heading_row, HEADING_SIZE * unit, Color.WHITE)
+	_heading.add_theme_font_override("font", UiText.bold())
 	_under_heading = _label(opening.under_heading(), parts["under_heading"], 21.0 * unit, Color(1, 1, 1, 0.7))
 	_villain = _label(opening.villain_text(), parts["villain"], 21.0 * unit, VILLAIN_COLOR)
 	match opening.frame():
 		OpeningHand.Frame.PLAY_OR_DRAW:
-			_add_pair(parts["middle"], unit, "Play first", ChoosePlayOrDrawDecision.Choice.PLAY, "Draw first", ChoosePlayOrDrawDecision.Choice.DRAW)
+			_add_pair(choice["buttons"], unit, "Play first", ChoosePlayOrDrawDecision.Choice.PLAY, "Draw first", ChoosePlayOrDrawDecision.Choice.DRAW)
 			ButtonShading.apply(_buttons["Play first"], CHOICE_COLOR)
 			ButtonShading.apply(_buttons["Draw first"], CHOICE_COLOR)
 		OpeningHand.Frame.KEEP_OR_MULLIGAN:
@@ -276,6 +295,11 @@ func scrim() -> ColorRect:
 
 func heading_label() -> Label:
 	return _heading
+
+
+## The plate behind the heading, or null while there is no heading.
+func heading_plate() -> Panel:
+	return _heading_plate
 
 
 func under_heading_label() -> Label:
@@ -618,6 +642,7 @@ func _clear() -> void:
 	_can_go_down.clear()
 	mouse_default_cursor_shape = Control.CURSOR_ARROW
 	_heading = null
+	_heading_plate = null
 	_under_heading = null
 	_villain = null
 	_row = null

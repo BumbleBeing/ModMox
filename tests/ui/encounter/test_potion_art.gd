@@ -1,7 +1,7 @@
 extends GutTest
 ## A Potion Icon is always drawn on beige with a darker circle behind it, in the icon's own
-## pixels (ADR 0033, A538): filling the icon's grid in the Inspector, and one art pixel
-## wider all round and one lower in the small art.
+## pixels (ADR 0033, A538). The circle fills the icon's grid, so it never reaches past the
+## square, whatever the square is put in.
 
 
 func test_big_gulp_has_an_icon_of_its_own_on_the_sixteen_grid() -> void:
@@ -23,21 +23,20 @@ func test_the_large_art_has_a_margin_and_its_circle_fills_the_icons_grid() -> vo
 	assert_eq(art.icon_texture(), PotionArt.icon_of("big_gulp"))
 
 
-func test_the_small_art_fills_the_square_with_a_circle_one_wider_and_one_lower() -> void:
+func test_the_small_art_fills_the_square_and_its_circle_stays_inside_it() -> void:
 	var art: PotionArt = autofree(PotionArt.new("big_gulp", 64, true))
 
 	assert_eq(art.icon_rect(), Rect2(0, 0, 64, 64))
-	assert_eq(art.circle_rect(), Rect2(-4, 0, 72, 72), "An art pixel is 4 px here.")
-	assert_true(art.clip_contents, "The beige square cuts off what falls outside.")
+	assert_eq(art.circle_rect(), Rect2(0, 0, 64, 64), "A row may be taller than the square.")
 
 
 func test_the_circle_is_drawn_in_art_pixels_and_is_round() -> void:
-	var image: Image = PotionArt.circle_image(1)
+	var image: Image = PotionArt.circle_image()
 
-	assert_eq(image.get_size(), Vector2i(18, 18))
+	assert_eq(image.get_size(), Vector2i(16, 16))
 	assert_eq(image.get_pixel(0, 0).a, 0.0, "The corners are clear.")
-	assert_eq(image.get_pixel(9, 0), PotionArt.CIRCLE)
-	assert_eq(image.get_pixel(9, 9), PotionArt.CIRCLE)
-	for y: int in 18:
-		for x: int in 18:
-			assert_eq(image.get_pixel(x, y), image.get_pixel(17 - x, 17 - y))
+	assert_eq(image.get_pixel(8, 0), PotionArt.CIRCLE)
+	assert_eq(image.get_pixel(8, 8), PotionArt.CIRCLE)
+	for y: int in 16:
+		for x: int in 16:
+			assert_eq(image.get_pixel(x, y), image.get_pixel(15 - x, 15 - y))

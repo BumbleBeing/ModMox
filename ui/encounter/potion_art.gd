@@ -2,10 +2,9 @@ class_name PotionArt
 extends Control
 ## A Potion Icon as it is always drawn (ADR 0033, A538): on a beige square with a darker
 ## circle behind it, the circle in the icon's own pixels so that its edge steps as the
-## icon's does. Large, in the Inspector, the icon has a margin of one art pixel and the
-## circle fills the icon's grid; small, on an entry of the Potions window or the Stack
-## Window, the icon fills the square and the circle is one art pixel wider all round and
-## one lower, cut off by the square.
+## icon's does. The circle always fills the icon's grid. Large, in the Inspector, the icon
+## has a margin of one art pixel; small, on an entry of the Potions window or the Stack
+## Window, the icon fills the square, and so does the circle, which never reaches past it.
 
 const FOLDER: String = "res://ui/sprites/potions/"
 ## The icon of a Potion that has none of its own.
@@ -31,14 +30,13 @@ static func has_icon(key: String) -> bool:
 	return key != "" and ResourceLoader.exists(FOLDER + key + ".png")
 
 
-## The circle as an image, [param grow] art pixels wider all round than the icon's grid.
-static func circle_image(grow: int) -> Image:
-	var cells: int = CELLS + 2 * grow
-	var middle: float = (cells - 1) / 2.0
-	var image: Image = Image.create(cells, cells, false, Image.FORMAT_RGBA8)
-	for y: int in cells:
-		for x: int in cells:
-			if Vector2(x - middle, y - middle).length() <= cells / 2.0:
+## The circle as an image, as wide as the icon's grid.
+static func circle_image() -> Image:
+	var middle: float = (CELLS - 1) / 2.0
+	var image: Image = Image.create(CELLS, CELLS, false, Image.FORMAT_RGBA8)
+	for y: int in CELLS:
+		for x: int in CELLS:
+			if Vector2(x - middle, y - middle).length() <= CELLS / 2.0:
 				image.set_pixel(x, y, CIRCLE)
 	return image
 
@@ -59,11 +57,9 @@ func _init(key: String, side: float, is_small: bool) -> void:
 	add_child(square)
 	var art_pixel: float = side / CELLS if is_small else side / (CELLS + 2)
 	var icon_rect: Rect2 = Rect2(Vector2.ZERO, size) if is_small else Rect2(Vector2(art_pixel, art_pixel), Vector2(CELLS, CELLS) * art_pixel)
-	var grow: int = 1 if is_small else 0
-	var down: int = 1 if is_small else 0
-	_circle = _picture(ImageTexture.create_from_image(circle_image(grow)))
-	_circle.position = icon_rect.position + Vector2(-grow, down - grow) * art_pixel
-	_circle.size = Vector2(CELLS + 2 * grow, CELLS + 2 * grow) * art_pixel
+	_circle = _picture(ImageTexture.create_from_image(circle_image()))
+	_circle.position = icon_rect.position
+	_circle.size = icon_rect.size
 	add_child(_circle)
 	_icon = _picture(icon_of(key))
 	_icon.position = icon_rect.position
@@ -86,7 +82,7 @@ func icon_rect() -> Rect2:
 	return Rect2(_icon.position, _icon.size)
 
 
-## Where the darker circle is drawn in the square; it may reach past the square's edge.
+## Where the darker circle is drawn in the square: where the icon is.
 func circle_rect() -> Rect2:
 	return Rect2(_circle.position, _circle.size)
 

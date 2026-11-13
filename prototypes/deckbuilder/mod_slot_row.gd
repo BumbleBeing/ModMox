@@ -2,7 +2,7 @@ class_name ModSlotRow
 extends Control
 ## A card's Mod Slots drawn on its face in the deckbuilder: a row of bubbles in the black
 ## border under the frame, each empty or filled by a green chip for a Mod or a red one for
-## a Hex, in the order they were earned. A basic land has no Mod Slots and so no row.
+## a Hex, in the order they were earned. A basic land has them like any card (A558).
 
 enum Slot { EMPTY, MOD, HEX }
 
@@ -24,7 +24,7 @@ var _slots: Array[Slot] = []
 var _diameter: float = 0.0
 
 
-## What fills each of [param card]'s Mod Slots, in order. Empty for a basic land.
+## What fills each of [param card]'s Mod Slots, in order.
 static func slots_of(card: DeckbuilderCard) -> Array[Slot]:
 	var result: Array[Slot] = []
 	for index: int in card.mod_slots():
@@ -57,20 +57,24 @@ func slots() -> Array[Slot]:
 func _draw() -> void:
 	var radius: float = _diameter / 2.0
 	for index: int in _slots.size():
-		var middle: Vector2 = Vector2(radius + index * _diameter * (1.0 + GAP), radius)
-		draw_circle(middle, radius, RIM, true, -1.0, true)
-		# The hollow is lit from the upper left like the chips, so its near wall is in
-		# shadow and its floor catches a little light toward the lower right.
-		draw_circle(middle, radius * 0.84, HOLLOW.darkened(0.5), true, -1.0, true)
-		draw_circle(middle + Vector2(0.1, 0.12) * radius, radius * 0.68, HOLLOW.lightened(0.1), true, -1.0, true)
-		if _slots[index] != Slot.EMPTY:
-			_draw_chip(middle, radius * 0.7, color_of(_slots[index]))
+		draw_bubble(self, Vector2(radius + index * _diameter * (1.0 + GAP), radius), radius, _slots[index])
 
 
-## A chip lit from the upper left: a dark edge, the color, a paler patch and a small glint.
-func _draw_chip(middle: Vector2, radius: float, color: Color) -> void:
-	var toward_light: Vector2 = Vector2(-0.22, -0.26) * radius
-	draw_circle(middle, radius, color.darkened(0.45), true, -1.0, true)
-	draw_circle(middle + toward_light * 0.35, radius * 0.86, color, true, -1.0, true)
-	draw_circle(middle + toward_light, radius * 0.55, color.lightened(0.3), true, -1.0, true)
-	draw_circle(middle + toward_light * 1.7, radius * 0.2, Color(1, 1, 1, 0.85), true, -1.0, true)
+## Draws one Mod Slot on [param canvas], from inside its _draw(): a rimmed hollow lit from
+## the upper left, with a chip in it unless [param slot] is empty.
+static func draw_bubble(canvas: CanvasItem, middle: Vector2, radius: float, slot: Slot) -> void:
+	canvas.draw_circle(middle, radius, RIM, true, -1.0, true)
+	# The hollow is lit from the upper left like the chips, so its near wall is in
+	# shadow and its floor catches a little light toward the lower right.
+	canvas.draw_circle(middle, radius * 0.84, HOLLOW.darkened(0.5), true, -1.0, true)
+	canvas.draw_circle(middle + Vector2(0.1, 0.12) * radius, radius * 0.68, HOLLOW.lightened(0.1), true, -1.0, true)
+	if slot == Slot.EMPTY:
+		return
+	# A chip lit from the upper left: a dark edge, the color, a paler patch and a small glint.
+	var color: Color = color_of(slot)
+	var chip: float = radius * 0.7
+	var toward_light: Vector2 = Vector2(-0.22, -0.26) * chip
+	canvas.draw_circle(middle, chip, color.darkened(0.45), true, -1.0, true)
+	canvas.draw_circle(middle + toward_light * 0.35, chip * 0.86, color, true, -1.0, true)
+	canvas.draw_circle(middle + toward_light, chip * 0.55, color.lightened(0.3), true, -1.0, true)
+	canvas.draw_circle(middle + toward_light * 1.7, chip * 0.2, Color(1, 1, 1, 0.85), true, -1.0, true)

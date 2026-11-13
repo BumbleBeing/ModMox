@@ -777,9 +777,23 @@ func test_the_opening_hands_words_and_buttons_stand_clear_of_the_cards() -> void
 				assert_false(box.intersects(parts[key]), "%d cards: %s is clear of the cards, turned as they are." % [count, key])
 		assert_lt(parts["heading"].end.y, parts["under_heading"].end.y)
 		assert_lt(parts["buttons"].end.y, parts["villain"].position.y + 1.0)
-	var none: Dictionary[String, Rect2] = EncounterLayout.opening_hand(0, OPENING_AREA)
-	assert_gt(none["middle"].position.y, none["under_heading"].end.y, "With no cards the two choices stand in the middle.")
-	assert_lt(none["middle"].end.y, none["buttons"].position.y)
+
+
+func test_play_or_draw_has_its_heading_and_buttons_either_side_of_the_middle() -> void:
+	var parts: Dictionary[String, Rect2] = EncounterLayout.opening_hand_choice(OPENING_AREA, 68.0)
+	var middle: float = OPENING_AREA.get_center().y
+
+	assert_eq(EncounterLayout.OPENING_CHOICE_GAP, 40.0)
+	assert_almost_eq(parts["heading"].size.y, 68.0, 0.001)
+	assert_almost_eq(parts["heading"].end.y, middle - 20.0, 0.001)
+	assert_almost_eq(parts["buttons"].position.y, middle + 20.0, 0.001)
+	assert_almost_eq(parts["buttons"].size.y, EncounterLayout.OPENING_BUTTON.y, 0.001)
+	for key: String in parts:
+		assert_eq(parts[key].position.x, OPENING_AREA.position.x, key)
+		assert_eq(parts[key].size.x, OPENING_AREA.size.x, key)
+	var tall: Rect2 = Rect2(0, 0, 2000, 2160)
+	var doubled: Dictionary[String, Rect2] = EncounterLayout.opening_hand_choice(tall, 136.0)
+	assert_almost_eq(doubled["buttons"].position.y - doubled["heading"].end.y, 80.0, 0.001, "The gap grows with the screen.")
 
 
 func test_the_opening_hand_scales_with_the_screens_height() -> void:

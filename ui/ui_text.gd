@@ -6,3 +6,8 @@ extends RefCounted
 
 ## How many points a size chosen for the old font is raised by.
 const RAISE: int = 2
+
+
+## The bold face, for a line that must stand out, such as the opening-hand overlay's heading.
+static func bold() -> Font:
+	return load("res://assets/fonts/linux_libertine/linlibertine-bold.ttf") as Font

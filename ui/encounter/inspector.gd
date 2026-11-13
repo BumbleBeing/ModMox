@@ -1,13 +1,13 @@
 class_name Inspector
 extends Panel
 ## The Inspector (13h, ADR 0033): where a card is read in full during an encounter. It lies
-## over the sidebar while a card is pinned and shows that card's Card Face with its Rarity's glow, See Original under
+## over the sidebar while a card is pinned and shows that card's Card Face with its Rarity's glow, View Original under
 ## it, its State List and its Reminders, each list in a scrolling section of its own that
 ## is no taller than what is in it. It draws what it is handed and asks for nothing: the
 ## Encounter Screen says which card, from its Inspection.
 ##
 ## Built once and filled, never rebuilt: a change of card eases the old one out and the new
-## one in, and the same card changed, by a new snapshot or by See Original, is redrawn at
+## one in, and the same card changed, by a new snapshot or by View Original, is redrawn at
 ## once.
 
 const PAD: float = 16.0
@@ -94,7 +94,7 @@ func _init() -> void:
 	_face_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_contents.add_child(_face_holder)
 	_original_button = Button.new()
-	_original_button.text = "See Original"
+	_original_button.text = "View Original"
 	_original_button.toggle_mode = true
 	_original_button.focus_mode = Control.FOCUS_NONE
 	_original_button.custom_minimum_size = Vector2(150, 34)
@@ -107,7 +107,7 @@ func _init() -> void:
 	_state_scroll = _scroll()
 	_contents.add_child(_state_scroll)
 	_state_list = _list(_state_scroll)
-	_reminder_title = _label("Keywords", 15, MUTED)
+	_reminder_title = _label("Reminders", 15, MUTED)
 	_contents.add_child(_reminder_title)
 	_reminder_scroll = _scroll()
 	_contents.add_child(_reminder_scroll)
@@ -122,7 +122,7 @@ static func glow_of(rarity: MmCardDefinition.Rarity) -> Color:
 
 ## Shows the card [param key], a Game Object ID: its [param look] now, its [param original]
 ## (null if it has none), the color its face glows in (null for none) and its State List.
-## See Original stays as it is while the same card is shown
+## View Original stays as it is while the same card is shown
 ## and is let up for another. Another card takes [param seconds] to change to, the one
 ## showing easing out and then the new one in; the same card, changed, is redrawn at once.
 func show_card(key: int, look: CardLook, original: CardLook, glow: Variant, states: Array[StateEntry],
@@ -188,6 +188,11 @@ func state_scroll() -> ScrollContainer:
 
 func reminder_scroll() -> ScrollContainer:
 	return _reminder_scroll
+
+
+## The title over the Reminders.
+func reminder_title() -> Label:
+	return _reminder_title
 
 
 ## Everything that fades when one card gives way to another.

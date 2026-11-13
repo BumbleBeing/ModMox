@@ -1,8 +1,9 @@
 class_name DeckbuilderSample
 extends RefCounted
 ## The made-up run the prototype opens on: three copies of every Content card, a few
-## made-up Mods built from the two Modifications the engine has, cards that arrive Hexed
-## or full, and one saved Deck. Nothing here is saved to disk.
+## made-up Mods that each add a mana symbol, cards that arrive Hexed or full, and one saved
+## Deck. A Mod's name is the word it puts in front of the card's (A559). None of these Mods
+## fits a land, so no basic land can be modified here (A560). Nothing is saved to disk.
 
 const CARDS: String = "res://content/cards/alpha/"
 const COPIES: int = 3
@@ -61,7 +62,7 @@ func _arrives_with(card_name: String, copy: int) -> Array[Mod]:
 			mods.append(_add_symbol("Burden", MmMana.Type.COLORLESS, true))
 		"Lightning Bolt":
 			mods.append(_add_symbol("Ember", MmMana.Type.RED))
-			mods.append(_rename("Ember Bolt"))
+			mods.append(_add_symbol("Moss", MmMana.Type.GREEN))
 			mods.append(_add_symbol("Burden", MmMana.Type.COLORLESS, true))
 		"Grizzly Bears":
 			mods.append(_add_symbol("Ember", MmMana.Type.RED))
@@ -72,8 +73,7 @@ func _hold_mods() -> void:
 	var ember: Mod = _add_symbol("Ember", MmMana.Type.RED)
 	var moss: Mod = _add_symbol("Moss", MmMana.Type.GREEN)
 	var tide: Mod = _add_symbol("Tide", MmMana.Type.BLUE)
-	var title: Mod = _rename("Mox-Touched")
-	for mod: Mod in [ember, ember, moss, tide, title]:
+	for mod: Mod in [ember, ember, moss, tide]:
 		held_mods.add(mod)
 
 
@@ -102,14 +102,4 @@ static func _add_symbol(mod_name: String, symbol: MmMana.Type, is_hex: bool = fa
 	mod.is_hex = is_hex
 	mod.modification = modification
 	mod.needs_mana_cost = true
-	return mod
-
-
-static func _rename(new_name: String) -> Mod:
-	var modification: ChangeNameModification = ChangeNameModification.new()
-	modification.new_name = new_name
-	var mod: Mod = Mod.new()
-	mod.name = "New Name"
-	mod.description = "This card is named %s." % new_name
-	mod.modification = modification
 	return mod

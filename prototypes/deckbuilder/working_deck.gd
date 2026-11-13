@@ -92,7 +92,7 @@ func move(card: DeckbuilderCard, column: int, place: int = AT_BOTTOM) -> bool:
 	return true
 
 
-## Takes a card out. A Collection card stays owned; a basic land is gone.
+## Takes a card out. A Collection card stays owned; a free basic land is gone.
 func remove(card: DeckbuilderCard) -> bool:
 	if not contains(card):
 		return false
@@ -133,7 +133,8 @@ func cards() -> Array[DeckbuilderCard]:
 	return result
 
 
-## How many basic lands named [param land_name] are in the Deck.
+## How many free basic lands named [param land_name] are in the Deck. One that has taken a
+## Mod is a Collection card with a name of its own, and is not counted (A558).
 func basic_land_count(land_name: String) -> int:
 	return _basic_land_counts().get(land_name, 0)
 
@@ -195,7 +196,7 @@ func _place(card: DeckbuilderCard, column: int, place: int = AT_BOTTOM) -> void:
 func _collection_ids() -> Array[int]:
 	var ids: Array[int] = []
 	for card: DeckbuilderCard in cards():
-		if not card.is_basic_land():
+		if _collection.owns(card):
 			ids.append(card.id)
 	ids.sort()
 	return ids
@@ -204,7 +205,7 @@ func _collection_ids() -> Array[int]:
 func _basic_land_counts() -> Dictionary[String, int]:
 	var counts: Dictionary[String, int] = {}
 	for card: DeckbuilderCard in cards():
-		if card.is_basic_land():
+		if not _collection.owns(card):
 			var land_name: String = card.run_card.base.name
 			counts[land_name] = counts.get(land_name, 0) + 1
 	return counts

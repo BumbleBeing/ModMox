@@ -9,9 +9,9 @@ signal chosen(index: int)
 const WINDOW: Vector2 = Vector2(640, 220)
 const PAD: float = 24.0
 const DIM: Color = Color(0, 0, 0, 0.6)
-const FILL: Color = Color("#23272e")
-const BORDER: Color = Color("#4a515d")
-const MUTED: Color = Color("#9aa3af")
+const FILL: Color = DeckbuilderLook.PANE
+const BORDER: Color = DeckbuilderLook.PANE_BORDER
+const MUTED: Color = DeckbuilderLook.MUTED
 
 var _buttons: Array[Button] = []
 var _message: Label = null
