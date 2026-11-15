@@ -24,6 +24,8 @@ const ROW: Color = Color("#452212")
 const ROW_BORDER: Color = Color("#1f0e07")
 const COUNT_PLATE: Color = DeckbuilderLook.BAR_PANEL
 const ILLEGAL: Color = Color("#e5484d")
+## How much a Deck's row or a button lightens under the cursor.
+const HOVER_LIGHTEN: float = 0.10
 
 const PANE_SIZE: Vector2 = Vector2(1040, 920)
 const PANE_RADIUS: int = 16
@@ -127,10 +129,48 @@ func row_pips(index: int) -> Array[String]:
 	return pips
 
 
-## Selects the Deck in row [param index], as a click on it does.
+## Selects the Deck in row [param index], as a click on it does; a click on the Deck
+## already selected lets it go.
 func click_row(index: int) -> void:
-	_selected = _run.deckbox.decks()[index]
+	var deck: Deck = _run.deckbox.decks()[index]
+	_selected = null if deck == _selected else deck
 	_refresh()
+
+
+## Lightens row [param index] while the cursor is over it, and puts it back after.
+func hover_row(index: int, is_over: bool) -> void:
+	if index >= _rows.size():
+		return
+	var row: PanelContainer = _rows[index]
+	if row.is_queued_for_deletion() or not row.is_inside_tree():
+		return
+	row.add_theme_stylebox_override("panel", _row_plate(row.get_meta("deck") as Deck, is_over))
+
+
+## Lights the row the cursor is on once new rows are laid out: a row made under a still
+## cursor hears of no entering until it moves.
+func _light_row_under_cursor() -> void:
+	if not is_inside_tree() or _confirm != null:
+		return
+	var cursor: Vector2 = get_global_mouse_position()
+	for index: int in _rows.size():
+		if _rows[index].get_global_rect().has_point(cursor):
+			hover_row(index, true)
+
+
+func row_plate(index: int) -> StyleBox:
+	return _rows[index].get_theme_stylebox("panel")
+
+
+## The top tone of a Deck's row, lit while the cursor is over it.
+static func row_top(is_lit: bool) -> Color:
+	var top: Color = ROW.lightened(0.12)
+	return top.lightened(HOVER_LIGHTEN) if is_lit else top
+
+
+static func _row_bottom(is_lit: bool) -> Color:
+	var bottom: Color = ROW.darkened(0.3)
+	return bottom.lightened(HOVER_LIGHTEN) if is_lit else bottom
 
 
 func is_confirming_delete() -> bool:
@@ -302,7 +342,7 @@ func _add_button(parent: Control, text: String, on_press: Callable) -> Button:
 	made.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var fill: Color = DeckbuilderLook.BUTTON
 	made.add_theme_stylebox_override("normal", DitherShading.button_plate(fill, false, BUTTON_HEIGHT))
-	made.add_theme_stylebox_override("hover", DitherShading.button_plate(DeckbuilderLook.BUTTON_HOVER, false, BUTTON_HEIGHT))
+	made.add_theme_stylebox_override("hover", DitherShading.button_plate(fill.lightened(HOVER_LIGHTEN), false, BUTTON_HEIGHT))
 	made.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
 	made.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
 	made.add_theme_stylebox_override("disabled", DitherShading.button_plate(DeckbuilderLook.BUTTON_DISABLED, false, BUTTON_HEIGHT))
@@ -323,6 +363,7 @@ func _refresh() -> void:
 		var row: PanelContainer = _row(decks[index], index)
 		_list.add_child(row)
 		_rows.append(row)
+	_light_row_under_cursor.call_deferred()
 	var has_selection: bool = _selected != null
 	for text: String in SELECTION_BUTTONS:
 		_buttons[text].disabled = not has_selection
@@ -334,17 +375,15 @@ func _refresh() -> void:
 
 
 func _row(deck: Deck, index: int) -> PanelContainer:
-	var is_selected: bool = deck == _selected
 	var row: PanelContainer = PanelContainer.new()
-	var face: StyleBoxTexture = DitherShading.plate(ROW.lightened(0.12), ROW.darkened(0.3),
-			DeckbuilderLook.BRASS if is_selected else ROW_BORDER, 6, 3 if is_selected else 1, 0, ROW_HEIGHT)
-	face.content_margin_left = 16
-	face.content_margin_right = 20
-	row.add_theme_stylebox_override("panel", face)
+	row.set_meta("deck", deck)
+	row.add_theme_stylebox_override("panel", _row_plate(deck, false))
 	row.custom_minimum_size = Vector2(0, ROW_HEIGHT)
 	row.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	row.mouse_filter = Control.MOUSE_FILTER_STOP
 	row.gui_input.connect(_on_row_input.bind(index))
+	row.mouse_entered.connect(hover_row.bind(index, true))
+	row.mouse_exited.connect(hover_row.bind(index, false))
 
 	var line: HBoxContainer = HBoxContainer.new()
 	line.add_theme_constant_override("separation", 16)
@@ -369,6 +408,17 @@ func _row(deck: Deck, index: int) -> PanelContainer:
 	line.add_child(name_label)
 	line.add_child(_tally(deck, row))
 	return row
+
+
+## A row's Dither-Shaded face: brass-edged when its Deck is selected, lightened when
+## [param is_lit].
+func _row_plate(deck: Deck, is_lit: bool) -> StyleBoxTexture:
+	var is_selected: bool = deck == _selected
+	var face: StyleBoxTexture = DitherShading.plate(row_top(is_lit), _row_bottom(is_lit),
+			DeckbuilderLook.BRASS if is_selected else ROW_BORDER, 6, 3 if is_selected else 1, 0, ROW_HEIGHT)
+	face.content_margin_left = 16
+	face.content_margin_right = 20
+	return face
 
 
 ## The Deck's colors as pips, then its card count, red under the legal size, on a shaded

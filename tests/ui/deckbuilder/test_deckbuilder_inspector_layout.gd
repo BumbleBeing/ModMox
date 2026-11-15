@@ -143,6 +143,17 @@ func test_what_is_on_a_backing_stands_three_units_in_from_its_edges() -> void:
 	assert_almost_eq(text.position.y - backing.position.y, InspectorParts.INSET, 0.5, "From the top.")
 
 
+func test_the_panels_and_buttons_are_dither_shaded() -> void:
+	_inspector.show_card(_fixture.own("serra_angel", [_winged()]), FACE_HEIGHT)
+	await wait_process_frames(3)
+
+	for panel: PanelContainer in _inspector.panels():
+		_assert_dithered_panel(panel)
+	_assert_dithered_button(_inspector.original_button())
+	_assert_dithered_button(_inspector.reminders_button())
+	_assert_dithered_button(_inspector.apply_button())
+
+
 func _winged() -> Mod:
 	var mod: Mod = Mod.new()
 	mod.name = "Winged"
@@ -207,3 +218,25 @@ func _assert_backed(panel: PanelContainer, palette: InspectorParts.Palette) -> v
 		"From under the title.")
 	for side: float in [inner.position.x - outer.position.x, outer.end.x - inner.end.x, outer.end.y - inner.end.y]:
 		assert_between(side, 2.0, 7.0, "A thin edge of the panel shows around it.")
+
+
+## Checks that [param panel] is Dither Shaded for its own height, and what is in it is not.
+func _assert_dithered_panel(panel: PanelContainer) -> void:
+	var face: StyleBoxTexture = panel.get_theme_stylebox("panel") as StyleBoxTexture
+	assert_not_null(face, "%s is Dither Shaded." % _title(panel).text)
+	if face == null:
+		return
+	assert_eq(face.texture.get_height(), int(panel.size.y), "Painted for its own height.")
+	assert_eq(panel.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	var column: CanvasItem = panel.get_child(0) as CanvasItem
+	assert_ne(column.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, "What is in it is drawn as before.")
+
+
+## Checks that [param button] is Dither Shaded in every state, for its own height.
+func _assert_dithered_button(button: Button) -> void:
+	for state: String in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+		var face: StyleBoxTexture = button.get_theme_stylebox(state) as StyleBoxTexture
+		assert_not_null(face, "%s: %s is Dither Shaded." % [button.text, state])
+		if face != null:
+			assert_eq(face.texture.get_height(), int(button.size.y), "%s: %s" % [button.text, state])
+	assert_eq(button.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)

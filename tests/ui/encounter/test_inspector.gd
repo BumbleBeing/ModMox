@@ -244,6 +244,37 @@ func test_an_entrys_sentence_stands_in_from_its_plates_sides_and_bottom() -> voi
 	assert_almost_eq(title.get_global_rect().get_center().x, outer.get_center().x, 1.0, "The title is still centered.")
 
 
+func test_the_panels_and_buttons_are_dither_shaded_and_follow_a_panels_height() -> void:
+	_inspector.show_card(ANGEL, _look("serra_angel"), _look("serra_angel"), null, [])
+	await wait_process_frames(3)
+
+	for panel: PanelContainer in _inspector.panels():
+		_assert_dithered_panel(panel)
+	_assert_dithered_button(_inspector.original_button())
+	_assert_dithered_button(_inspector.reminders_button())
+	_inspector.reminders_button().button_pressed = true
+	await wait_process_frames(3)
+	_assert_dithered_panel(_inspector.panels()[0])
+	assert_null(_inspector.panels()[0].find_child("Backing", true, false).get_theme_stylebox("panel") as StyleBoxTexture,
+		"A backing is content, and stays flat.")
+
+
+func test_the_inspectors_own_background_is_dither_shaded_for_its_height() -> void:
+	_inspector.show_card(BEARS, _look("grizzly_bears"), null, null, [])
+	await wait_process_frames(3)
+
+	var face: StyleBoxTexture = _inspector.get_theme_stylebox("panel") as StyleBoxTexture
+	assert_not_null(face, "Dither Shaded (A598).")
+	if face == null:
+		return
+	assert_eq(face.texture.get_height(), int(_inspector.size.y))
+	assert_eq(_inspector.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_ne(_inspector.contents().texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, "What is on it is drawn as before.")
+	_inspector.size = Vector2(EncounterLayout.SIDEBAR_WIDTH, 900)
+	await wait_process_frames(2)
+	assert_eq((_inspector.get_theme_stylebox("panel") as StyleBoxTexture).texture.get_height(), 900, "Painted again for a new height.")
+
+
 func test_the_titles_are_centered() -> void:
 	_inspector.show_card(BEARS, _look("grizzly_bears"), null, null, [])
 	await wait_process_frames(3)
@@ -477,6 +508,28 @@ func test_a_card_shown_after_an_emblem_gets_its_card_face_and_both_panels_back()
 
 
 # --- helpers ----------------------------------------------------------------------------
+
+## Checks that [param panel] is Dither Shaded for its own height, and what is in it is not.
+func _assert_dithered_panel(panel: PanelContainer) -> void:
+	var face: StyleBoxTexture = panel.get_theme_stylebox("panel") as StyleBoxTexture
+	assert_not_null(face, "%s is Dither Shaded." % _title(panel).text)
+	if face == null:
+		return
+	assert_eq(face.texture.get_height(), int(panel.size.y), "Painted for its own height.")
+	assert_eq(panel.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	var column: CanvasItem = panel.get_child(0) as CanvasItem
+	assert_ne(column.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, "What is in it is drawn as before.")
+
+
+## Checks that [param button] is Dither Shaded in every state, for its own height.
+func _assert_dithered_button(button: Button) -> void:
+	for state: String in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+		var face: StyleBoxTexture = button.get_theme_stylebox(state) as StyleBoxTexture
+		assert_not_null(face, "%s: %s is Dither Shaded." % [button.text, state])
+		if face != null:
+			assert_eq(face.texture.get_height(), int(button.size.y), "%s: %s" % [button.text, state])
+	assert_eq(button.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+
 
 ## Checks that [param panel]'s content stands on a backing like a State Information entry's
 ## plate, from under its title to its bottom, with a thin edge of the panel around it.

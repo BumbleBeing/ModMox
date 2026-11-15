@@ -91,9 +91,9 @@ func _init() -> void:
 	# As wide as the face and centered, so the face sits in the middle of the inspector.
 	_face_holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_body.add_child(_face_holder)
-	_original_button = InspectorParts.toggle("View Original", BODY_SIZE + 1)
+	_original_button = InspectorParts.toggle("View Original", BODY_SIZE + 1, DeckbuilderLook.inspector_palette())
 	_original_button.toggled.connect(func(_is_on: bool) -> void: _draw_face())
-	_reminders_button = InspectorParts.toggle("Reminders", BODY_SIZE + 1)
+	_reminders_button = InspectorParts.toggle("Reminders", BODY_SIZE + 1, DeckbuilderLook.inspector_palette())
 	_reminders_button.tooltip_text = "Show what this card's keywords mean."
 	_reminders_button.toggled.connect(func(_is_on: bool) -> void: _show_panels())
 	_button_row = HBoxContainer.new()
@@ -142,6 +142,7 @@ func _init() -> void:
 	_apply_button.focus_mode = Control.FOCUS_NONE
 	_apply_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_apply_button.add_theme_font_size_override("font_size", BODY_SIZE + 2)
+	InspectorParts.shade_button(_apply_button, DeckbuilderLook.inspector_palette())
 	_apply_button.pressed.connect(func() -> void: apply_pressed.emit())
 
 	_reminder_panel = _panel("Reminders")

@@ -98,6 +98,7 @@ func _init() -> void:
 	_contents.offset_bottom = -PAD
 	_contents.add_theme_constant_override("separation", GAP)
 	add_child(_contents)
+	InspectorParts.shade_background(self, _contents, BACKGROUND, BACKGROUND, 0, 0)
 	# In place of a close button: any click off the Inspector lets the card go (A473).
 	_hint = Label.new()
 	_hint.text = HINT
@@ -116,9 +117,9 @@ func _init() -> void:
 	_face_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_contents.add_child(_face_holder)
 
-	_original_button = InspectorParts.toggle("View Original", BUTTON_SIZE)
+	_original_button = InspectorParts.toggle("View Original", BUTTON_SIZE, palette())
 	_original_button.toggled.connect(func(_is_on: bool) -> void: _draw_face())
-	_reminders_button = InspectorParts.toggle("Reminders", BUTTON_SIZE)
+	_reminders_button = InspectorParts.toggle("Reminders", BUTTON_SIZE, palette())
 	_reminders_button.tooltip_text = "Show what its keywords mean."
 	_reminders_button.toggled.connect(func(_is_on: bool) -> void: _show_panels())
 	_button_row = HBoxContainer.new()

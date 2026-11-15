@@ -17,6 +17,10 @@ const TITLE_GAP_SHARE: float = 1.0 / 20.0
 const EDGE: float = 4.0
 ## How far what stands on a backing or an entry's plate is kept from its edges: three units.
 const INSET: float = 12.0
+## How tall an Inspector's buttons are, so their Dither Shading is painted for it: ten units.
+const BUTTON_HEIGHT: int = 40
+## How much lighter a button is under the mouse, as the Deckbox's are.
+const HOVER_LIGHTEN: float = 0.10
 const FONT_FOLDER: String = "res://assets/fonts/linux_libertine/linlibertine-%s.ttf"
 
 
@@ -75,15 +79,30 @@ static func theme(palette: Palette, font_size: int) -> Theme:
 	return made
 
 
-## A toggle button reading [param text] that takes no focus, so Space still does what it does.
-static func toggle(text: String, font_size: int) -> Button:
+## A toggle button reading [param text] that takes no focus, so Space still does what it
+## does, Dither Shaded in [param palette]'s colors.
+static func toggle(text: String, font_size: int, palette: Palette) -> Button:
 	var button: Button = Button.new()
 	button.text = text
 	button.toggle_mode = true
 	button.focus_mode = Control.FOCUS_NONE
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", font_size)
+	shade_button(button, palette)
 	return button
+
+
+## Gives [param button] Dither Shading in every state, as the Deckbox's buttons have
+## (A596), and makes it BUTTON_HEIGHT tall so the shading is painted for it.
+static func shade_button(button: Button, palette: Palette) -> void:
+	button.custom_minimum_size.y = BUTTON_HEIGHT
+	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var fill: Color = palette.button
+	button.add_theme_stylebox_override("normal", DitherShading.button_plate(fill, false, BUTTON_HEIGHT))
+	button.add_theme_stylebox_override("hover", DitherShading.button_plate(fill.lightened(HOVER_LIGHTEN), false, BUTTON_HEIGHT))
+	button.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
+	button.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
+	button.add_theme_stylebox_override("disabled", DitherShading.button_plate(palette.button_disabled, false, BUTTON_HEIGHT))
 
 
 ## A bordered panel with [param title] centered at its top and a body under it, filled
@@ -103,9 +122,14 @@ static func panel(title: String, palette: Palette, title_size: int, is_backed: b
 	made.add_theme_stylebox_override("panel", style)
 	made.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	made.clip_contents = true
+	# Dither Shaded for its own height, painted again whenever that changes (A596).
+	made.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	made.resized.connect(func() -> void: _shade_panel(made, palette))
 	var column: VBoxContainer = VBoxContainer.new()
 	column.name = "Column"
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# What is in the panel is drawn as it would be anywhere else.
+	column.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	made.add_child(column)
 	var heading: Label = label(title, title_size, palette.muted)
 	heading.name = "Title"
@@ -283,6 +307,37 @@ static func clear(holder: Node) -> void:
 	for child: Node in holder.get_children():
 		holder.remove_child(child)
 		child.queue_free()
+
+
+## Gives [param back], an Inspector's outermost background, Dither Shading from [param fill]
+## (A598), edged in [param edge] [param edge_width] pixels wide and rounded by [param radius],
+## and paints it again whenever its height changes. [param content], on it, is drawn as before.
+static func shade_background(back: Control, content: CanvasItem, fill: Color, edge: Color, edge_width: int,
+		radius: int) -> void:
+	back.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	content.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var paint: Callable = func() -> void:
+		var height: int = int(back.size.y)
+		var current: StyleBoxTexture = back.get_theme_stylebox("panel") as StyleBoxTexture
+		if height <= 0 or (current != null and current.texture.get_height() == height):
+			return
+		back.add_theme_stylebox_override("panel", DitherShading.plate(fill.lightened(0.06), fill.darkened(0.3),
+			edge, radius, edge_width, 0, height))
+	back.resized.connect(paint)
+	paint.call()
+
+
+## Paints [param made]'s Dither Shading for its height, unless it already has it.
+static func _shade_panel(made: PanelContainer, palette: Palette) -> void:
+	var height: int = int(made.size.y)
+	var current: StyleBoxTexture = made.get_theme_stylebox("panel") as StyleBoxTexture
+	if height <= 0 or (current != null and current.texture.get_height() == height):
+		return
+	var face: StyleBoxTexture = DitherShading.plate(palette.panel.lightened(0.06), palette.panel.darkened(0.3),
+		palette.edge, 6, palette.edge_width, 0, height)
+	face.set_content_margin_all(EDGE)
+	face.content_margin_top = 4
+	made.add_theme_stylebox_override("panel", face)
 
 
 ## A button's face, lit from above: its fill, a dark lip underneath and a soft shadow. A

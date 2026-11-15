@@ -215,3 +215,52 @@ func test_a_real_click_on_a_row_selects_it() -> void:
 		viewport.push_input(click)
 	await wait_process_frames(1)
 	assert_eq(_screen.selected(), _run.deckbox.decks()[1])
+
+
+func test_clicking_the_selected_deck_again_unselects_it() -> void:
+	await _open()
+	_screen.click_row(0)
+	assert_eq(_screen.selected(), _run.deckbox.active())
+	_screen.click_row(0)
+	assert_null(_screen.selected())
+	for text: String in DeckboxScreen.SELECTION_BUTTONS:
+		assert_true(_screen.button(text).disabled, text)
+
+
+## The brightness of the middle of [param plate]'s top block.
+func _top_light(plate: StyleBox) -> float:
+	var image: Image = (plate as StyleBoxTexture).texture.get_image()
+	return image.get_pixel(image.get_width() / 2, 8).get_luminance()
+
+
+func test_a_row_under_the_cursor_is_lightened_and_goes_back_after() -> void:
+	await _open()
+	var plain: float = _top_light(_screen.row_plate(0))
+	_screen.hover_row(0, true)
+	var lit: float = _top_light(_screen.row_plate(0))
+	assert_gt(lit, plain)
+	_screen.hover_row(0, false)
+	assert_almost_eq(_top_light(_screen.row_plate(0)), plain, 0.001)
+
+
+func test_a_row_is_lightened_by_ten_percent() -> void:
+	assert_eq(DeckboxScreen.HOVER_LIGHTEN, 0.10)
+	assert_eq(DeckboxScreen.row_top(true), DeckboxScreen.row_top(false).lightened(0.10))
+
+
+func test_a_buttons_hover_face_is_lightened_by_ten_percent() -> void:
+	await _open()
+	var made: Button = _screen.button("Start")
+	assert_gt(_top_light(made.get_theme_stylebox("hover")), _top_light(made.get_theme_stylebox("normal")))
+	var normal: StyleBoxTexture = DitherShading.button_plate(DeckbuilderLook.BUTTON, false, DeckboxScreen.BUTTON_HEIGHT)
+	var hover: StyleBoxTexture = DitherShading.button_plate(DeckbuilderLook.BUTTON.lightened(0.10), false, DeckboxScreen.BUTTON_HEIGHT)
+	assert_almost_eq(_top_light(made.get_theme_stylebox("normal")), _top_light(normal), 0.001)
+	assert_almost_eq(_top_light(made.get_theme_stylebox("hover")), _top_light(hover), 0.001)
+
+
+func test_a_selected_row_under_the_cursor_keeps_its_brass_edge() -> void:
+	await _open()
+	_screen.click_row(0)
+	_screen.hover_row(0, true)
+	var image: Image = (_screen.row_plate(0) as StyleBoxTexture).texture.get_image()
+	assert_eq(image.get_pixel(image.get_width() / 2, 0), DeckbuilderLook.BRASS)

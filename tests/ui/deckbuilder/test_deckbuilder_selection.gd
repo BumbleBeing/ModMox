@@ -25,6 +25,18 @@ func after_each() -> void:
 	await wait_process_frames(2)
 
 
+func test_the_pane_behind_the_inspector_is_dither_shaded_for_its_height() -> void:
+	var pane: Panel = _screen.inspector_pane()
+	var face: StyleBoxTexture = pane.get_theme_stylebox("panel") as StyleBoxTexture
+
+	assert_not_null(face, "Dither Shaded (A598).")
+	if face == null:
+		return
+	assert_eq(face.texture.get_height(), int(pane.size.y))
+	assert_eq(pane.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_ne(_screen.inspector().texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, "What is on it is drawn as before.")
+
+
 func test_nothing_is_selected_at_first_and_the_inspector_says_how_to_use_it() -> void:
 	assert_null(_screen.selected())
 	assert_null(_screen.inspected())

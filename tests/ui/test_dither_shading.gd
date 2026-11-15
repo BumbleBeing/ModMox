@@ -6,6 +6,12 @@ const BOTTOM: Color = Color("#201008")
 const EDGE: Color = Color("#000000")
 
 
+## Whether two colors match once stored in eight bits a channel.
+func _near(seen: Color, wanted: Color) -> bool:
+	return absf(seen.r - wanted.r) < 2.0 / 255.0 and absf(seen.g - wanted.g) < 2.0 / 255.0 \
+			and absf(seen.b - wanted.b) < 2.0 / 255.0 and is_equal_approx(seen.a, wanted.a)
+
+
 func _image(height: int, lip: int = 0) -> Image:
 	return DitherShading.plate(TOP, BOTTOM, EDGE, 6, 1, lip, height).texture.get_image()
 
@@ -18,8 +24,8 @@ func test_a_plate_is_painted_for_the_height_it_is_given() -> void:
 func test_it_runs_from_the_top_tone_down_to_the_bottom_tone() -> void:
 	var image: Image = _image(72)
 	var middle: int = image.get_width() / 2
-	assert_eq(image.get_pixel(middle, 2), TOP)
-	assert_eq(image.get_pixel(middle, 69), BOTTOM)
+	assert_true(_near(image.get_pixel(middle, 2), TOP))
+	assert_true(_near(image.get_pixel(middle, 69), BOTTOM))
 
 
 func test_its_tones_are_only_the_bands() -> void:
@@ -31,7 +37,7 @@ func test_its_tones_are_only_the_bands() -> void:
 		var seen: Color = image.get_pixel(image.get_width() / 2, y)
 		var is_band: bool = false
 		for color: Color in bands:
-			is_band = is_band or seen.is_equal_approx(color)
+			is_band = is_band or _near(seen, color)
 		assert_true(is_band, "row %d" % y)
 
 

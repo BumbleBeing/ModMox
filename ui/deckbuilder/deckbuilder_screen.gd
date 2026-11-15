@@ -271,6 +271,11 @@ func inspector() -> DeckbuilderInspector:
 	return _inspector
 
 
+## The pane the inspector stands on.
+func inspector_pane() -> Panel:
+	return _inspector_pane
+
+
 ## The Card Face in the inspector, or null when it shows no card.
 func inspector_face() -> CardFace:
 	return _inspector.face()
@@ -972,6 +977,8 @@ func _redraw() -> void:
 	_inspector = DeckbuilderInspector.new()
 	_inspector.apply_pressed.connect(open_mod_popup)
 	_fill(_inspector_pane, _inspector)
+	InspectorParts.shade_background(_inspector_pane, _inspector, PANE, DeckbuilderLook.PANEL_EDGE,
+		DeckbuilderLook.PANEL_EDGE_WIDTH, 6)
 	_draw_filter_bar(places.filter_bar())
 	_draw_collection(places)
 	_draw_deck(places)
