@@ -313,7 +313,7 @@ func _play_key(action: MmAction) -> String:
 ## A CHEAP Agent's priority: with the other player's spell on top of the stack, counter it
 ## if it costs at least as much as the counter. Otherwise, in its own main phase with
 ## nothing on the stack, cast the most expensive spell that is neither a combat trick nor a
-## source of mana, removal only with an opposing creature to aim at. (A counter cannot be
+## source of mana, removal only with something of the other player's to aim at. (A counter cannot be
 ## cast then: there is no spell to aim it at.) It never activates abilities, and never
 ## counters one.
 func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: int) -> int:
@@ -336,7 +336,7 @@ func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: in
 		var tag: AiTiming.Tag = AiTiming.tag_of_effects(effects)
 		if AiTiming.is_trick(tag) or _adds_mana(effects):
 			continue
-		if tag == AiTiming.Tag.REMOVAL and _creatures_of(world, 1 - me).is_empty():
+		if tag == AiTiming.Tag.REMOVAL and not _has_something_to_remove(world, cast, me):
 			continue
 		var cost: int = world.characteristics_of(world.object(cast.object_id)).mana_value()
 		if cost > best_cost:
@@ -344,6 +344,21 @@ func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: in
 			best_cost = cost
 	_reason = Reason.NOTHING_WORTH_DOING if best == passing else Reason.BEST_SCORE
 	return best
+
+
+## Whether removal cast by [param me] has something of the other player's to aim at: a
+## permanent its first target requirement accepts, so that it is never left with only its
+## own. Removal that targets nothing needs only an opposing creature.
+func _has_something_to_remove(world: MmGameState, cast: CastSpellAction, me: int) -> bool:
+	for ability: MmAbility in world.characteristics_of(world.object(cast.object_id)).abilities:
+		var spell: SpellAbility = ability as SpellAbility
+		if spell == null or spell.targets.is_empty():
+			continue
+		for found: MmReference in spell.targets[0].legal_targets(world, MmEffectContext.new(me, cast.object_id)):
+			if found.is_object() and world.object(found.id).controller_id != me:
+				return true
+		return false
+	return not _creatures_of(world, 1 - me).is_empty()
 
 
 ## The cheapest counter worth casting at the other player's spell on top of the stack: one

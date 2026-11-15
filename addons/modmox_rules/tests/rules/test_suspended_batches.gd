@@ -28,6 +28,21 @@ func test_the_affected_player_chooses_in_the_middle_of_another_players_spell() -
 	assert_eq(engine.pending_decision().player_id, engine.hero().id, "CR 117.3b")
 
 
+func test_a_player_may_concede_while_a_replacement_choice_is_pending() -> void:
+	# CR 104.3a: a player may concede at any time. What the batch still had to do never happens.
+	var setup: MmEncounterSetup = _two_attackers_setup()
+	var engine: MmEngine = _two_attackers_against_shields(setup)
+
+	assert_eq(engine.concede(engine.hero()), "")
+
+	assert_eq(engine.outcome(), MmEngine.Outcome.VILLAIN_WON)
+	assert_false(engine.game_state().is_batch_suspended())
+	assert_null(engine.pending_decision())
+	assert_eq(engine.hero().life, 20, "The damage that was waiting is never dealt.")
+	var replayed: MmEngine = MmEngine.replay(setup, engine.decision_log())
+	assert_eq(replayed.fingerprint(), engine.fingerprint())
+
+
 func test_a_suspended_batch_is_copied_with_the_state() -> void:
 	var engine: MmEngine = _main_ready([], [], _shield_cards_and_shock())
 	var villain: MmReference = MmReference.to_player(engine.villain().id)

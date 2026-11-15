@@ -946,6 +946,25 @@ func test_concede_asks_once_more_and_back_returns_to_the_menu() -> void:
 	assert_false(menu.is_open())
 
 
+func test_leaving_while_the_villain_thinks_does_not_play_the_villains_turn_out() -> void:
+	_screen = EncounterScreen.new()
+	_screen.starts_itself = false
+	add_child_autofree(_screen)
+	_screen.size = SCREEN
+	var agent: SlowAgent = SlowAgent.new()
+	agent.delay_msec = 50
+	_presenter = EncounterPresenter.new(Scenario.setup(Rule.VILLAIN_CHOOSES), agent)
+	_screen.begin(_presenter)
+	_screen.navigate = func(scene: String) -> void: _went_to.append(scene)
+	assert_true(_presenter.is_villain_thinking())
+
+	_screen.leave(EncounterScreen.MENU)
+
+	assert_eq(_went_to, [EncounterScreen.MENU] as Array[String])
+	assert_false(_presenter.is_villain_thinking())
+	assert_eq(agent.answer_count, 1, "Only the thought already begun is waited for.")
+
+
 func test_quit_asks_once_more_then_leaves_for_the_main_menu() -> void:
 	_open(_bear_setup())
 	_screen.navigate = func(scene: String) -> void: _went_to.append(scene)
@@ -1989,3 +2008,50 @@ func test_all_attack_becomes_undeclare_all_while_any_attacker_is_declared() -> v
 	assert_eq(_screen.info_panel().all_attack_button().text, "Declare All", "Put back one at a time, it turns back too.")
 	_screen.press_key(KEY_Z)
 	assert_eq(_screen.info_panel().all_attack_button().text, "Undeclare All", "And follows an undo.")
+
+
+func _banner_buttons() -> Array[String]:
+	var texts: Array[String] = []
+	for child: Node in _screen.banner().get_children():
+		if child is Button:
+			texts.append((child as Button).text)
+	return texts
+
+
+func _banner_button(text: String) -> Button:
+	for child: Node in _screen.banner().get_children():
+		if child is Button and (child as Button).text == text:
+			return child as Button
+	return null
+
+
+func test_outside_a_run_the_banner_offers_a_replay_and_the_start_form() -> void:
+	_open(_bear_setup())
+	_presenter.concede()
+	assert_eq(_banner_buttons(), ["Replay this seed", "Start form"] as Array[String])
+
+
+func test_in_a_run_a_loss_costs_a_heart_and_continue_returns_to_the_deckbox() -> void:
+	RunFlow.start(Run.debug(2))
+	_open(_bear_setup())
+	_screen.is_in_run = true
+	_screen.navigate = func(scene: String) -> void: _went_to.append(scene)
+	_presenter.concede()
+	assert_eq(_banner_buttons(), ["Continue"] as Array[String])
+	_banner_button("Continue").pressed.emit()
+	assert_eq(_went_to, [RunFlow.DECKBOX] as Array[String])
+	assert_eq(RunFlow.run.hearts, Run.STARTING_HEARTS - 1)
+	RunFlow.clear()
+
+
+func test_in_a_run_losing_the_last_heart_continues_to_the_main_menu() -> void:
+	var run: Run = Run.debug(2)
+	RunFlow.start(run)
+	run.hearts = 1
+	_open(_bear_setup())
+	_screen.is_in_run = true
+	_screen.navigate = func(scene: String) -> void: _went_to.append(scene)
+	_presenter.concede()
+	_banner_button("Continue").pressed.emit()
+	assert_eq(_went_to, [RunFlow.MENU] as Array[String])
+	assert_null(RunFlow.run)

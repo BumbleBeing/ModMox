@@ -1,0 +1,51 @@
+extends GutTest
+## A Symbol Label: a line of interface text whose {X} symbols are drawn from the mana
+## symbol images, as a Card Face's rules text draws them.
+
+
+func test_a_braced_symbol_is_drawn_as_its_image_and_never_as_text() -> void:
+	var label: SymbolLabel = _label("{2}{U}, {T}: Draw a card.")
+
+	assert_eq(label.symbols(), ["2", "u", "t"] as Array[String])
+	assert_eq(label.get_parsed_text(), "  ,  : Draw a card.", "An image stands as a space in the parsed text.")
+	assert_eq(label.written(), "{2}{U}, {T}: Draw a card.", "What was written is kept as written.")
+
+
+func test_text_with_no_symbols_is_written_as_it_is() -> void:
+	var label: SymbolLabel = _label("Flying")
+
+	assert_eq(label.symbols(), [] as Array[String])
+	assert_eq(label.get_parsed_text(), "Flying")
+
+
+func test_a_symbol_with_no_image_stays_as_text() -> void:
+	var label: SymbolLabel = _label("{Q}: Untap.")
+
+	assert_eq(label.symbols(), [] as Array[String])
+	assert_eq(label.get_parsed_text(), "{Q}: Untap.")
+
+
+func test_writing_again_replaces_what_was_written() -> void:
+	var label: SymbolLabel = _label("{R}")
+
+	label.write("{G}{G}")
+
+	assert_eq(label.symbols(), ["g", "g"] as Array[String])
+
+
+func test_text_in_a_color_draws_its_symbols_too() -> void:
+	var label: SymbolLabel = SymbolLabel.new()
+	add_child_autofree(label)
+
+	label.write_in("Ember   ×2\ncosts {R} more.", Color.GRAY)
+
+	assert_eq(label.get_parsed_text(), "Ember   ×2\ncosts   more.")
+	assert_eq(label.symbols(), ["r"] as Array[String])
+	assert_eq(label.written(), "Ember   ×2\ncosts {R} more.")
+
+
+func _label(text: String) -> SymbolLabel:
+	var label: SymbolLabel = SymbolLabel.new()
+	add_child_autofree(label)
+	label.write(text)
+	return label

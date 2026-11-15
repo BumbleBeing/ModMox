@@ -13,7 +13,7 @@ The layered image a card is drawn on, worked out from its characteristics: a fra
 _Avoid_: Card background, border, template
 
 **Status**:
-A lasting condition on the Hero's character that changes the starting conditions of encounters or adds an Emblem to them. A Status is never used up; what is used up is a Potion.
+A lasting condition on the Hero's character that changes the starting conditions of encounters or adds an Emblem to them. The player picks any number on Choose your Hero, a Boon only once an Achievement has unlocked it, and each one may also raise or lower, by a percentage, the gold a won run puts in the Vault: as a rule an Affliction raises it and a Boon lowers it. A Status is never used up; what is used up is a Potion.
 _Avoid_: Trait, perk, buff, condition
 
 **Boon**:
@@ -27,11 +27,11 @@ _Avoid_: Curse, debuff
 ## Runs
 
 **Tier**:
-One of a run's five steps of difficulty, each offering one Stage of every color. A run plays one Stage per Tier and never the same color twice.
+One of a run's five steps of difficulty, each offering one Stage of every color. A run plays one Stage per Tier and never the same color twice. Each Tier's Stage is rolled from the Run Seed among the colors not yet played; the Hero never chooses it.
 _Avoid_: Level, act, round
 
 **Stage**:
-One section of a run, of one color at one Tier and ending in a Boss, which sets the Backdrop of its encounters. There are 25 in all.
+One section of a run, of one color at one Tier and ending in a Boss, which sets the Backdrop of its encounters. Each has a name, shown with its Tier and its Boss when the Hero enters it. There are 25 in all.
 _Avoid_: Level, act, world, biome
 
 **Node**:
@@ -71,7 +71,7 @@ A Villain of Unique Rank, met only through a Chaos Node. It can turn up at any S
 _Avoid_: Mystery enemy, mini-boss, special
 
 **Spoils**:
-What the Hero wins for beating a Villain: gold, cards and Items. Their quantity and quality follow the Villain's Rank and the Tier; the cards come from the Villain's own deck.
+What the Hero wins for beating a Villain: gold and cards, and now and then an Item. Their quantity and quality follow the Villain's Rank and the Tier; the cards come from the Villain's own deck.
 _Avoid_: Loot, rewards, drops
 
 **Item**:
@@ -110,9 +110,49 @@ _Avoid_: Mod pip, socket, upgrade slot
 One of the losses a run can survive. Losing an encounter costs one, and the run is lost when none are left.
 _Avoid_: Life (a rules term), health, HP
 
+**Starting Pool**:
+The cards a run's first Collection is dealt from, authored and divided by color. The deal is semi-random and weighted toward the Hero's color. Achievements can add cards to it, some of them new and powerful.
+_Avoid_: Starter deck, card pool, starting collection
+
+**Achievement**:
+A goal met across runs, kept in the Profile, shown in the Gallery. Some add cards to the Starting Pool or unlock a Boon; nothing an Achievement unlocks is sold in the Bazaar.
+_Avoid_: Trophy, unlock, milestone (a roadmap term)
+
+**Hero Color**:
+The one color of mage the Hero plays as, chosen on Choose your Hero. It weights the deal from the Starting Pool and picks the Hero's Portrait; the Hero can still play cards of any color.
+_Avoid_: Class, mage type, deck color
+
+**Presentation**:
+Whether the Hero's Portrait is drawn Masc or Femme, chosen on Choose your Hero. With the Hero Color it picks one of ten Portraits.
+_Avoid_: Gender, sex, body type
+
+**Vault**:
+The gold kept between runs: whatever gold the Hero still holds when a run is won goes into it, raised or lowered by the run's Statuses. A lost run puts nothing in it. It is kept in the Profile and spent only in the Bazaar.
+_Avoid_: Bank, meta-currency, savings
+
+**Bazaar**:
+The store on the main menu where gold from the Vault buys unlocks: new cards and Items for future runs. An unlocked card joins the Starting Pool and can be stocked by Stores; an unlocked Item can turn up wherever Items do. Nothing sold here is also an Achievement's reward.
+_Avoid_: Meta shop, unlock store, Store (a Node in a run)
+
+**Profile**:
+Everything kept between runs: the Vault, the Bazaar's unlocks, the Achievements and the Gallery. There is one per installation, kept apart from the saved run, and losing or abandoning a run never touches it.
+_Avoid_: Save, account, meta-save
+
+**Tutorial**:
+A guided, staged run offered on Choose your Hero: a step-by-step guide to deckbuilding, then a guided visit to a Store and a Workshop, then a staged encounter against a demo Villain with stacked decks and set plays. It uses an authored Collection, keeping only the Hero's name and Portrait from Choose your Hero, ends on a notice that it is complete and returns to the main menu. It leaves nothing behind: no saved run, nothing in the Profile, no Achievements.
+_Avoid_: Onboarding, training, first run
+
+**Satchel**:
+Where the Hero keeps the Items they hold, Mods and Potions alike, between encounters. It is opened from a button on the Stage Map's bar, beside the Hearts, the gold and the Deckbox button, where it only shows each Item and what it does, and from a button at a Store or a Workshop, where Items are sold from it.
+_Avoid_: Inventory, bag, Potions window (the encounter's list of Potions)
+
 **Run Seed**:
 The single number from which all randomness in a run is derived: each Stage's map, which Villain a Node gives, the Spoils, and every Encounter Seed. A run is exactly replayable from it and the human's choices.
 _Avoid_: Random seed, world seed
+
+**Gallery**:
+The main menu's record of everything seen across runs, in four pages: Achievements, the Card Encyclopedia (every card collected or seen, with its Modded versions), the Stage Encyclopedia (every Stage and its Villains seen) and the Hall of Fame.
+_Avoid_: Hall of Fame (one of its pages), collection (the Collection is a run's cards), Card Gallery (a developer tool)
 
 ## Decks
 
@@ -141,7 +181,7 @@ The unsaved copy of a Deck being edited in the deckbuilder. Saving writes it to 
 _Avoid_: Draft (a Magic term), deck in progress, scratch deck
 
 **Hall of Fame**:
-The read-only copies of Active Decks, Mods included, kept from runs the Hero won. They are looked at from the main menu and never played.
+The read-only copies of Active Decks, Mods included, kept from runs the Hero won. It is a page of the Gallery, and its decks are never played.
 _Avoid_: Trophy room, deck archive, history
 
 ## Presentation
@@ -175,7 +215,7 @@ The Zone Window of a pile: a graveyard, an exile or a library. A click on the pi
 _Avoid_: Zone viewer, graveyard viewer, pile popup
 
 **Player Name**:
-What a player of an encounter is called on the screen. A player given no name goes by their part, "Hero" or "Villain", and only then takes "the" in a sentence: "the Villain's turn", but "Mishra's turn".
+What a player of an encounter is called on the screen. The Hero's is the name chosen on Choose your Hero. A player given no name goes by their part, "Hero" or "Villain", and only then takes "the" in a sentence: "the Villain's turn", but "Mishra's turn".
 _Avoid_: Nickname, handle, display name
 
 **Stack Window**:
@@ -300,7 +340,7 @@ The dropdown that opens where a card was clicked when the click could mean more 
 _Avoid_: Ability menu, context menu, popup
 
 **Pause Menu**:
-The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings and Quit to main menu. Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap, and the Controls button that opens the Controls Page.
+The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings, Quit to main menu and Abandon Run, and it can be opened on the Stage Map and at any Node too, where it has no Concede. Quitting keeps the run saved; Abandon Run, once confirmed, ends the run as lost and deletes its save. Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap, and the Controls button that opens the Controls Page.
 _Avoid_: Escape menu, options screen, system menu
 
 **Opening-Hand Overlay**:
@@ -332,7 +372,7 @@ The 16 × 16 pixel picture on a Keyword Chip that identifies its keyword.
 _Avoid_: Sprite, glyph, symbol (mana symbols are a different thing)
 
 **Inspector**:
-Where a card is read in full during an encounter, the pregame included. It takes the sidebar's place while a card is pinned, and shows that card's Card Face, its State List and its Reminders. An ability on the stack is read as the card it came from. A pinned Emblem is shown on its Emblem Face, and a pinned Potion as its Potion Icon enlarged, with its name, the type line "Potion" and its rules text. Hovering over a card shows nothing.
+Where one card is read in full, down the side of the screen, in an encounter (the pregame included) and in the deckbuilder, laid out alike in both. It shows the card's Card Face and, under it, its Card Text and a second panel: its State Information in an encounter, its Mods in the deckbuilder. While Reminders is pressed, its Reminders stand in place of both. In an encounter it takes the sidebar's place while a card is pinned, and hovering over a card shows nothing; in the deckbuilder it is always there and shows the card selected, or the card under the cursor while none is. An ability on the stack is read as the card it came from. A pinned Emblem is shown on its Emblem Face, and a pinned Potion as its Potion Icon enlarged, with its name and a type line of its Rarity and "Potion", such as "Rare Potion"; either has its Card Text under it and Reminders, but no View Original or State Information.
 _Avoid_: Card viewer, tooltip, preview (a Tap Preview is a different thing), zoom
 
 **Pinned card**:
@@ -343,14 +383,18 @@ _Avoid_: Selected card (the deckbuilder's), locked card, focused card
 A card as its Card Definition has it: no Mods, no Hexes and nothing an encounter has done to it. The Inspector shows it in place of the card as it is now while View Original is pressed. A token or an Emblem has none.
 _Avoid_: Base card, printed card, unmodified card
 
-**State List**:
-The Inspector's list of what is true of a permanent right now that its Card Face does not say, such as damage marked on it and each effect on it with where the effect came from. The Inspector draws whatever entries it is given, so a new kind of state adds an entry and changes nothing else.
-_Avoid_: Status list (a Status is the Hero's), buffs, modifiers
+**State Information**:
+The Inspector's panel of what is true of a permanent right now that its Card Face does not say, such as damage marked on it and each effect on it with where the effect came from. The Inspector draws whatever entries it is given, so a new kind of state adds an entry and changes nothing else.
+_Avoid_: State List (its old name), status list (a Status is the Hero's), buffs, modifiers
+
+**Card Text**:
+The rules text of a card, an Emblem or a Potion as its face prints it, without reminder text, set out in its own panel in the Inspector. It is always the pinned or selected thing as it is now, even while View Original is pressed.
+_Avoid_: Oracle text, description, rules box
 
 **Reminder**:
 What one keyword means, in a sentence, shown in the Inspector beside its Keyword Icon. Card Faces leave Reminders off.
 _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 
 **Rarity**:
-How scarce a card or a Potion is: Common, Uncommon, Rare, Mythic or Power-9. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green.
+How scarce a card or a Potion is: Common, Uncommon, Rare, Mythic or Power-9. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. An Emblem has none.
 _Avoid_: Tier (a part of a run), quality, grade

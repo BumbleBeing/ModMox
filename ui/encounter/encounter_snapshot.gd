@@ -27,9 +27,9 @@ var looks: Dictionary[int, CardLook] = {}
 var originals: Dictionary[int, CardLook] = {}
 ## The Rarity of each Game Object that has an Original, by object ID.
 var rarities: Dictionary[int, MmCardDefinition.Rarity] = {}
-## The State List of each permanent that has anything in one, by object ID, as an
+## The State Information of each permanent that has anything in it, by object ID, as an
 ## Array[StateEntry].
-var state_lists: Dictionary[int, Array] = {}
+var state_information: Dictionary[int, Array] = {}
 ## What each player is called.
 var names: PlayerNames = PlayerNames.new()
 ## While Auto-tap is paying for the Hero, a tap at a time: the payment decision it is
@@ -87,11 +87,11 @@ func rarity_of(object_id: int) -> MmCardDefinition.Rarity:
 	return rarities.get(object_id, MmCardDefinition.Rarity.COMMON) as MmCardDefinition.Rarity
 
 
-## The State List of the permanent [param object_id]: empty for one with nothing to say,
+## The State Information of the permanent [param object_id]: empty for one with nothing to say,
 ## and for anything that is not a permanent.
-func state_list_of(object_id: int) -> Array[StateEntry]:
+func state_information_of(object_id: int) -> Array[StateEntry]:
 	var entries: Array[StateEntry] = []
-	entries.assign(state_lists.get(object_id, []) as Array)
+	entries.assign(state_information.get(object_id, []) as Array)
 	return entries
 
 

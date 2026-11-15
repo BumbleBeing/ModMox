@@ -1,6 +1,6 @@
 extends GutTest
 ## What a snapshot carries for the Inspector (13h, ADR 0033): each card's Original and
-## Rarity, and each permanent's State List.
+## Rarity, and each permanent's State Information.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const DefaultAnswerAgent := preload("res://addons/modmox_rules/tests/support/default_answer_agent.gd")
@@ -52,7 +52,7 @@ func test_an_emblem_has_no_original_and_no_rarity() -> void:
 	assert_false(snapshot.has_rarity(emblem.id))
 
 
-func test_a_permanent_has_a_state_list_and_a_card_in_hand_has_none() -> void:
+func test_a_permanent_has_state_information_and_a_card_in_hand_has_none() -> void:
 	var presenter: EncounterPresenter = _started(_bear_setup(), false)
 	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
 	presenter.wait_until_idle()
@@ -63,9 +63,9 @@ func test_a_permanent_has_a_state_list_and_a_card_in_hand_has_none() -> void:
 
 	var snapshot: EncounterSnapshot = presenter.snapshot()
 	var bear: MmObjectView = snapshot.view.battlefield[0]
-	assert_eq(snapshot.state_list_of(bear.id).size(), 1)
-	assert_eq(snapshot.state_list_of(bear.id)[0].title, "Summoning sick")
-	assert_eq(snapshot.state_list_of(snapshot.view.hand[0].id).size(), 0)
+	assert_eq(snapshot.state_information_of(bear.id).size(), 1)
+	assert_eq(snapshot.state_information_of(bear.id)[0].title, "Summoning sick")
+	assert_eq(snapshot.state_information_of(snapshot.view.hand[0].id).size(), 0)
 
 
 func test_an_ability_on_the_stack_has_the_original_and_rarity_of_its_source() -> void:

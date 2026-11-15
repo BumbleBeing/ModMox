@@ -30,6 +30,7 @@ const BUSY: String = "The Villain is thinking."
 const NOT_PRIORITY: String = "You do not have priority."
 const PAUSED: String = "The game is paused."
 const PAYING: String = "Your mana is being paid."
+const STOPPED: String = "The encounter has been left."
 const NO_TURN: int = -1
 
 ## The steps auto-pass stops at. Change them with toggle_stop().
@@ -63,6 +64,7 @@ var _yield_turn: int = NO_TURN
 var _is_reconsider_due: bool = false
 var _task: int = -1
 var _has_started: bool = false
+var _has_stopped: bool = false
 var _snapshot: EncounterSnapshot = null
 var _events_seen: int = 0
 var _is_holding: bool = false
@@ -210,8 +212,8 @@ func poll() -> void:
 		_collect()
 
 
-## Blocks until the Hero must decide or the encounter is over, sitting through no wait. For
-## leaving the screen cleanly, and for tests.
+## Blocks until the Hero must decide or the encounter is over, sitting through no wait: the
+## Villain plays every decision on the way. For tests; a screen that is leaving calls stop().
 func wait_until_idle() -> void:
 	while _task != -1 or _is_passing_for_hero or _is_paying_for_hero:
 		if _task != -1:
@@ -225,6 +227,8 @@ func wait_until_idle() -> void:
 ## Answers the Hero's Pending Decision. Returns "" when accepted, or the reason when the
 ## answer is illegal, in which case nothing changes.
 func answer(hero_answer: Variant) -> String:
+	if _has_stopped:
+		return STOPPED
 	if _is_paused:
 		return PAUSED
 	if _task != -1:
@@ -265,6 +269,18 @@ func undo() -> String:
 
 ## Abandons the spell or ability the Hero is casting (CR 728), which also stops Auto-tap
 ## partway through paying for it.
+## Stops the encounter where it is, for leaving the screen. A thought the Villain has already
+## begun is waited for, so that no worker thread outlives the screen, and nothing more is
+## played, shown or answered after it.
+func stop() -> void:
+	if _task != -1:
+		WorkerThreadPool.wait_for_task_completion(_task)
+		_task = -1
+	_has_stopped = true
+	_is_passing_for_hero = false
+	_is_paying_for_hero = false
+
+
 func cancel_cast() -> String:
 	return _rewind(_engine.cancel_cast)
 
@@ -316,6 +332,8 @@ func toggle_stop(turn_player_id: int, step: MmTurn.Step) -> void:
 
 
 func _rewind(rewind: Callable) -> String:
+	if _has_stopped:
+		return STOPPED
 	if _is_paused:
 		return PAUSED
 	if _task != -1:
@@ -364,6 +382,8 @@ func _collect() -> void:
 ## before the Hero is passed for, or the encounter is over. [param is_passing_now] makes the
 ## pass that was put off, without asking again whether to: asking changes the answer.
 func _advance(is_passing_now: bool = false) -> void:
+	if _has_stopped:
+		return
 	_wait = 0
 	var is_pass_due: bool = is_passing_now and _is_passing_for_hero
 	_is_passing_for_hero = false
@@ -556,9 +576,9 @@ func _emit() -> void:
 		_add_look(made, seen)
 		_add_original(made, seen)
 	for permanent: MmObjectView in made.view.battlefield:
-		var state: Array[StateEntry] = StateList.of(permanent, made.view, names)
+		var state: Array[StateEntry] = StateInformation.of(permanent, made.view, names)
 		if not state.is_empty():
-			made.state_lists[permanent.id] = state
+			made.state_information[permanent.id] = state
 	_snapshot = made
 	_plans.clear()
 

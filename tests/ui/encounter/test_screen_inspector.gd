@@ -1,7 +1,7 @@
 extends GutTest
-## The Inspector on the Encounter Screen (13h, ADR 0033): a right-click pins a card, and
-## the Inspector takes the sidebar's place until the card is let go. Hovering shows
-## nothing (A472).
+## The Inspector on the Encounter Screen (13h and milestone 16, ADR 0033): a right-click
+## pins a card, and the Inspector takes the sidebar's place until the card is let go.
+## Hovering shows nothing (A472). Letting the card go resets the Inspector (A575).
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const DefaultAnswerAgent := preload("res://addons/modmox_rules/tests/support/default_answer_agent.gd")
@@ -65,7 +65,7 @@ func test_a_card_in_hand_glows_in_its_rarity_and_has_its_original() -> void:
 	assert_eq(inspector.reminder_keywords(), ["Flying"])
 
 
-func test_a_permanent_is_inspected_with_its_state_list() -> void:
+func test_a_permanent_is_inspected_with_its_state_information() -> void:
 	_open(_forests_and_bears())
 	_play("Bear")
 	var bear: int = _permanents("Bear")[0]
@@ -73,8 +73,31 @@ func test_a_permanent_is_inspected_with_its_state_list() -> void:
 	_screen.right_click_at(_on_permanent(bear))
 
 	assert_eq(_screen.inspector().shown_key(), bear)
+	assert_eq(_screen.inspector().panel_titles(), ["Card Text", "State Information"] as Array[String])
 	assert_eq(_screen.inspector().state_texts()[0][0], "Summoning sick")
-	assert_true(_screen.inspector().state_scroll().visible)
+
+
+func test_letting_the_card_go_and_pinning_it_again_lets_both_buttons_up() -> void:
+	var dragon: MmCardDefinition = load("res://content/cards/alpha/shivan_dragon.tres") as MmCardDefinition
+	_open(_setup_of([Scenario.basic_land("Forest"), dragon]))
+	var card: int = _card("Shivan Dragon")
+	_screen.right_click_at(_on(card))
+	var inspector: Inspector = _screen.inspector()
+	inspector.original_button().button_pressed = true
+	inspector.reminders_button().button_pressed = true
+
+	_screen.right_click_at(_on(card))
+	_screen.right_click_at(_on(card))
+
+	assert_eq(inspector.shown_key(), _seen(card).id)
+	assert_false(inspector.original_button().button_pressed)
+	assert_false(inspector.reminders_button().button_pressed)
+	assert_eq(inspector.panel_titles(), ["Card Text", "State Information"] as Array[String])
+
+	inspector.reminders_button().button_pressed = true
+	_screen.press_key(KEY_ESCAPE)
+	_screen.right_click_at(_on(card))
+	assert_false(inspector.reminders_button().button_pressed, "Escape lets it go too.")
 
 
 func test_a_new_snapshot_redraws_the_card_being_shown() -> void:
@@ -274,6 +297,8 @@ func test_an_ability_on_the_stack_is_read_as_the_card_it_came_from() -> void:
 	assert_eq(_screen.inspector().shown_key(), ability)
 	assert_eq(_screen.inspector().shown_look(), _presenter.snapshot().look_of(land), "The land as it is now.")
 	assert_false(_screen.inspector().original_button().disabled)
+	assert_eq(_screen.inspector().panel_titles(), ["Card Text", "State Information"] as Array[String])
+	assert_eq(_screen.inspector().card_text(), _presenter.snapshot().look_of(land).printed_rules_text())
 
 
 func test_a_real_right_click_pins_and_a_real_left_click_lets_go_and_still_plays() -> void:

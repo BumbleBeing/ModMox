@@ -35,22 +35,25 @@ func _init(decision: MmPendingDecision = null) -> void:
 
 ## How to divide the damage before the Hero changes anything: lethal damage to as many
 ## recipients as it reaches, in the order they stand. What is left over goes to the attacked
-## player with trample, and otherwise to the first recipient that is still alive, or to the
-## first of all.
+## player with trample, once every blocker has lethal damage (CR 702.19b), and otherwise to
+## the first blocker that is still alive, or to the first of all.
 static func default_split(divide: DivideCombatDamageDecision) -> Array[int]:
 	var amounts: Array[int] = []
 	var left: int = divide.amount
+	var is_short: bool = false
 	for index: int in divide.recipients.size():
 		var lethal: int = divide.lethal_amounts[index] if index < divide.lethal_amounts.size() else 0
 		var given: int = lethal if lethal > 0 and left >= lethal else 0
+		is_short = is_short or given < lethal
 		amounts.append(given)
 		left -= given
 	if left > 0 and not amounts.is_empty():
 		var onto: int = 0
-		if divide.includes_player():
+		if divide.includes_player() and not is_short:
 			onto = amounts.size() - 1
 		else:
-			for index: int in amounts.size():
+			var blocker_count: int = amounts.size() - 1 if divide.includes_player() else amounts.size()
+			for index: int in blocker_count:
 				if amounts[index] == 0:
 					onto = index
 					break

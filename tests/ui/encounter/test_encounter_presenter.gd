@@ -17,6 +17,25 @@ func before_each() -> void:
 	_snapshots.clear()
 
 
+func test_stopping_waits_for_the_one_thought_and_plays_nothing_more() -> void:
+	var agent: SlowAgent = SlowAgent.new()
+	agent.delay_msec = 50
+	var presenter: EncounterPresenter = EncounterPresenter.new(Scenario.setup(Rule.VILLAIN_CHOOSES), agent)
+	presenter.start()
+	presenter.changed.connect(func(snapshot: EncounterSnapshot) -> void: _snapshots.append(snapshot))
+
+	presenter.stop()
+
+	assert_false(presenter.is_villain_thinking(), "No worker thread outlives the screen.")
+	assert_eq(agent.answer_count, 1, "The Villain's next decisions are not played out.")
+	presenter.poll()
+	presenter.set_auto_passing(true)
+	assert_false(presenter.is_villain_thinking(), "Nothing starts it again.")
+	assert_eq(agent.answer_count, 1)
+	assert_eq(_snapshots.size(), 0, "Nothing more is shown.")
+	assert_eq(presenter.answer(0), EncounterPresenter.STOPPED)
+
+
 func test_starting_does_not_block_and_the_villain_thinks_on_a_worker_thread() -> void:
 	var agent: MmAgent = SlowAgent.new()
 	var presenter: EncounterPresenter = EncounterPresenter.new(Scenario.setup(Rule.VILLAIN_CHOOSES), agent)

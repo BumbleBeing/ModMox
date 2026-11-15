@@ -1,8 +1,9 @@
 class_name PotionReadout
 extends Control
-## A Potion as the Inspector shows it (ADR 0033, A532): its Potion Icon enlarged where a
-## Card Face would be, glowing in its Rarity's color, with its name, a type line that reads
-## "Potion" and its rules text under it.
+## A Potion as the Inspector shows it (ADR 0033, A532, A581, A588): its Potion Icon enlarged
+## where a Card Face would be, glowing in its Rarity's color, with its name and a type line
+## of its Rarity and "Potion", such as "Rare Potion", under it. Its rules text is the
+## Inspector's Card Text, not the readout's.
 
 ## How much of the Inspector's width the art takes.
 const ART_SHARE: float = 0.66
@@ -11,12 +12,11 @@ var _look: CardLook
 var _art: PotionArt
 var _name: Label
 var _type_line: Label
-var _text: Label
 
 
-## Draws [param look], a Potion's, [param width] pixels wide, glowing in [param glow] (a
-## Color, or null for none).
-func setup(look: CardLook, width: float, glow: Variant) -> void:
+## Draws [param look], a Potion's, [param width] pixels wide, glowing in the color of its
+## [param rarity] (a Rarity, or null for none).
+func setup(look: CardLook, width: float, rarity: Variant) -> void:
 	_look = look
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A whole number of screen pixels to each art pixel, so the icon's edges stay hard.
@@ -25,22 +25,22 @@ func setup(look: CardLook, width: float, glow: Variant) -> void:
 	_art = PotionArt.new(look.art_key, side, false)
 	_art.position = Vector2(roundf((width - side) / 2.0), 24)
 	add_child(_art)
-	if glow != null:
+	if rarity != null:
 		# Round the art, not as its child: the art cuts off whatever is drawn outside it.
 		var ring: Control = Control.new()
 		ring.position = _art.position
 		ring.size = _art.size
 		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(ring)
-		BorderEffects.add_glow(ring, ring.size, glow as Color)
+		BorderEffects.add_glow(ring, ring.size, Inspector.glow_of(rarity as MmCardDefinition.Rarity))
 	var below: float = _art.position.y + side + 24
 	_name = _label(look.name, 30, Color.WHITE, Rect2(0, below, width, 40))
 	_name.add_theme_font_override("font", CardFonts.title())
-	_type_line = _label(look.held_type_line(), 18, Color("#9aa3af"), Rect2(0, below + 44, width, 24))
-	_text = _label(look.rules_text, 20, Color("#e4e7ee"), Rect2(16, below + 84, width - 32, 130))
-	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_text.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	size = Vector2(width, below + 84 + 130)
+	var type_line: String = look.held_type_line()
+	if rarity != null:
+		type_line = "%s %s" % [Inspector.RARITY_NAMES[rarity as MmCardDefinition.Rarity], type_line]
+	_type_line = _label(type_line, 18, Color("#9aa3af"), Rect2(0, below + 44, width, 24))
+	size = Vector2(width, below + 44 + 24)
 	custom_minimum_size = size
 
 
@@ -59,14 +59,9 @@ func name_text() -> String:
 	return _name.text
 
 
-## The type line, which reads "Potion".
+## The type line, such as "Rare Potion".
 func type_line_text() -> String:
 	return _type_line.text
-
-
-## What the Potion does, as drawn.
-func rules_text() -> String:
-	return _text.text
 
 
 ## The color the art glows in, or null.

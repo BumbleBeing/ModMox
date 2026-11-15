@@ -25,6 +25,11 @@ var backdrop: String = Backdrops.PLAIN
 var has_sample_emblems: bool = false
 ## Gives the Hero one Big Gulp, until something holds Items between encounters (A523).
 var has_sample_potions: bool = false
+## The Hero's setup when it comes from a run's Active Deck rather than a deck in Content;
+## hero_deck is then not read (milestone 16).
+var hero_setup: MmPlayerSetup = null
+## The run this encounter is part of, or null.
+var run: Run = null
 
 
 ## The request in [param arguments], as passed after "--" on the command line, such as
@@ -74,7 +79,7 @@ static func deck_names() -> Array[String]:
 
 ## Why this request cannot be played, or "" if it can.
 func validate() -> String:
-	for deck: String in [hero_deck, villain_deck]:
+	for deck: String in ([villain_deck] if hero_setup != null else [hero_deck, villain_deck]):
 		if not ResourceLoader.exists(DECKS + deck + ".tres"):
 			return "There is no deck named \"%s\"." % deck
 	if not DIFFICULTIES.has(difficulty):
@@ -88,7 +93,7 @@ func validate() -> String:
 ## Emblems go on copies.
 func setup() -> MmEncounterSetup:
 	var encounter: MmEncounterSetup = MmEncounterSetup.new()
-	encounter.hero = load(DECKS + hero_deck + ".tres") as MmPlayerSetup
+	encounter.hero = hero_setup if hero_setup != null else load(DECKS + hero_deck + ".tres") as MmPlayerSetup
 	encounter.villain = load(DECKS + villain_deck + ".tres") as MmPlayerSetup
 	encounter.encounter_seed = encounter_seed
 	if has_sample_emblems or has_sample_potions:

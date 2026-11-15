@@ -1,6 +1,6 @@
 class_name StateEntry
 extends RefCounted
-## One entry of a State List: something true of a permanent right now that its Card Face
+## One entry of State Information: something true of a permanent right now that its Card Face
 ## does not say. The Inspector draws a title and a sentence and knows nothing of what
 ## kinds of entry there are.
 

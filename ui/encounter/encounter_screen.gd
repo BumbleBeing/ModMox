@@ -70,6 +70,8 @@ const LOSS_REASONS: Dictionary[MmPlayer.LossReason, String] = {
 ## The encounter to play next, set by whoever opens this screen: the start form, or the
 ## command line. Temporary, until runs hand the encounter its setup (A246).
 static var request: EncounterRequest = null
+## Whether this encounter is part of a run, so that its end goes back into the run.
+var is_in_run: bool = false
 
 ## Whether _ready() starts the requested encounter. Tests turn it off and call begin().
 var starts_itself: bool = true
@@ -332,6 +334,7 @@ func _ready() -> void:
 		request = EncounterRequest.from_arguments(OS.get_cmdline_user_args())
 	if request == null:
 		request = EncounterRequest.new()
+	is_in_run = request.run != null
 	show_backdrop(request.backdrop)
 	var presenter: EncounterPresenter = EncounterPresenter.new(request.setup(), request.villain_agent())
 	presenter.names = request.names()
@@ -590,7 +593,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _exit_tree() -> void:
 	# Never leave a worker thread running an encounter nobody is showing.
 	if _presenter != null:
-		_presenter.wait_until_idle()
+		_presenter.stop()
 
 
 ## Does what pressing [param keycode] does. While a row of the Controls Page waits for a key,
@@ -726,7 +729,7 @@ func undo() -> void:
 
 ## Leaves for [param scene], once a thinking Villain has finished.
 func leave(scene: String) -> void:
-	_presenter.wait_until_idle()
+	_presenter.stop()
 	navigate.call(scene)
 
 
@@ -1023,6 +1026,7 @@ func _show_inspected(is_new_snapshot: bool) -> void:
 		return
 	_inspected = shown
 	if shown == Inspection.NOTHING:
+		_inspector.let_go()
 		Easing.disappear(_inspector, _ease_seconds)
 		return
 	var subject: int = shown
@@ -1034,8 +1038,8 @@ func _show_inspected(is_new_snapshot: bool) -> void:
 			look = _snapshot.look_of(subject)
 		elif _snapshot.original_of(shown) != null:
 			look = _snapshot.original_of(shown)
-	var glow: Variant = Inspector.glow_of(_snapshot.rarity_of(shown)) if _snapshot.has_rarity(shown) else null
-	_inspector.show_card(shown, look, _snapshot.original_of(shown), glow, _snapshot.state_list_of(subject),
+	var rarity: Variant = _snapshot.rarity_of(shown) if _snapshot.has_rarity(shown) else null
+	_inspector.show_card(shown, look, _snapshot.original_of(shown), rarity, _snapshot.state_information_of(subject),
 		_ease_seconds if Easing.is_shown(_inspector) else 0.0)
 	Easing.appear(_inspector, _ease_seconds)
 
@@ -1079,7 +1083,9 @@ func advance_motion(delta: float) -> void:
 		_show_block_lines()
 	_flights.advance(delta)
 	_pose_flights()
-	if _has_draw_landed:
+	# The hand takes a drawn card in with a redraw, which closes the Option Menu, so that
+	# waits for a menu that is open: the board it was opened on is still the one drawn.
+	if _has_draw_landed and not _option_menu.is_open():
 		_has_draw_landed = false
 		_is_hand_easing = true
 		_redraw()
@@ -2971,6 +2977,15 @@ func _draw_banner(view: MmPlayerView) -> void:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 42)
 	box.add_child(label)
+	if is_in_run:
+		# The run counts the ending and says where to go: the Deckbox, or with no Hearts
+		# left the main menu (milestone 16).
+		var won: bool = not _snapshot.is_draw() and view.winner_id == HERO
+		var onward: Button = _button("Continue", func() -> void: leave(RunFlow.finish_encounter(won)), 18)
+		onward.position = Vector2(210, 170)
+		onward.size = Vector2(200, 44)
+		box.add_child(onward)
+		return
 	var again: Button = _button("Replay this seed", func() -> void: leave(scene_file_path), 18)
 	again.position = Vector2(90, 170)
 	again.size = Vector2(200, 44)

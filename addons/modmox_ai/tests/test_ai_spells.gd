@@ -66,6 +66,30 @@ func test_terror_is_never_aimed_at_its_own_creature() -> void:
 	assert_eq(target.id, Scenario.permanent_named(engine, engine.villain().id, "Hill Giant"))
 
 
+func test_a_cheap_agent_holds_removal_that_could_only_hit_its_own_creature() -> void:
+	# Terror cannot target an artifact creature, so the Hero's own Bears is all it could hit.
+	var golem: MmCardDefinition = Scenario.creature("Golem", 2, 2)
+	golem.card_types.append(MmCardTypes.CardType.ARTIFACT)
+	var engine: MmEngine = AiScenario.ready_with([AiScenario.free_alpha("grizzly_bears")], [golem],
+		[AiScenario.free_alpha("terror")])
+	assert_not_null(engine)
+	assert_true(Scenario.offers_cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Terror")))
+
+	var play: int = AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP))
+
+	assert_ne(AiScenario.cast_name(engine, play), "Terror", "It casts another card or passes.")
+
+
+func test_a_cheap_agent_casts_removal_with_an_opposing_creature_to_aim_at() -> void:
+	var engine: MmEngine = AiScenario.ready_with([AiScenario.free_alpha("grizzly_bears")],
+		[AiScenario.free_alpha("hill_giant")], [AiScenario.free_alpha("terror")])
+	assert_not_null(engine)
+
+	var play: int = AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP))
+
+	assert_eq(AiScenario.cast_name(engine, play), "Terror")
+
+
 func test_a_creature_is_cast_rather_than_held() -> void:
 	var no_creatures: Array[MmCardDefinition] = []
 	var engine: MmEngine = AiScenario.ready_with(no_creatures, no_creatures, [AiScenario.free_alpha("hill_giant")])

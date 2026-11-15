@@ -254,6 +254,12 @@ func replacement_decision() -> ChooseReplacementEffectDecision:
 	return ChooseReplacementEffectDecision.new(ReplacementRules.affected_player_id(self, event), event, suspended_batch.choices)
 
 
+## Drops a batch that is waiting for a replacement choice, so that what it still had to do
+## never happens. For a concession (CR 104.3a), which ends the encounter whatever is waiting.
+func abandon_suspended_batch() -> void:
+	suspended_batch = null
+
+
 ## Applies option [param index] of the replacement decision, and carries on with the batch.
 func choose_replacement_effect(index: int) -> void:
 	var batch: SuspendedBatch = suspended_batch

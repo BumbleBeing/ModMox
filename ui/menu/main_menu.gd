@@ -1,18 +1,20 @@
 class_name MainMenu
 extends Control
 ## The main menu: a plain list of where the game can go. A request on the command line
-## (--hero=, --villain= or --seed=) skips it and opens the Encounter Screen (A246), and
-## --deckbuilder opens the deckbuilder prototype.
+## (--hero=, --villain= or --seed=) skips it and opens the Encounter Screen (A246), unless
+## it names something that does not exist, which the menu then says. --deckbuilder opens
+## the deckbuilder on a made-up run, for pictures. Start Run (debug) begins a debug run at
+## the Deckbox (milestone 16).
 
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
 const CARD_GALLERY: String = "res://tools/card_gallery/card_gallery.tscn"
-## The deckbuilder is a prototype (milestone 15) until it is ported into ui/.
-const DECKBUILDER: String = "res://prototypes/deckbuilder/deckbuilder_screen.tscn"
+const DECKBUILDER: String = RunFlow.DECKBUILDER
 const DECKBUILDER_FLAG: String = "--deckbuilder"
 ## The smallest the window may be made: four times a Backdrop's picture, so that its pixels
 ## stay even there as they do at 1920 x 1080 (ADR 0035).
 const MIN_WINDOW: Vector2i = Vector2i(1280, 720)
+const REFUSAL_COLOR: Color = Color("#e08a7a")
 
 ## How the menu opens another scene, and how it quits. Tests replace both.
 var navigate: Callable = func(scene: String) -> void: get_tree().change_scene_to_file(scene)
@@ -21,6 +23,7 @@ var quit: Callable = func() -> void: get_tree().quit()
 var arguments: PackedStringArray = OS.get_cmdline_user_args()
 
 var _buttons: Dictionary[String, Button] = {}
+var _refusal: String = ""
 
 
 func _ready() -> void:
@@ -32,9 +35,13 @@ func _ready() -> void:
 		return
 	var asked_for: EncounterRequest = EncounterRequest.from_arguments(arguments)
 	if asked_for != null:
-		EncounterScreen.request = asked_for
-		navigate.call_deferred(ENCOUNTER)
-		return
+		_refusal = asked_for.validate()
+		if _refusal == "":
+			EncounterScreen.request = asked_for
+			navigate.call_deferred(ENCOUNTER)
+			return
+		# A deck, difficulty or backdrop that does not exist: the menu opens and says so.
+		push_error(_refusal)
 	var background: ColorRect = ColorRect.new()
 	background.color = Color("#1a1d22")
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -52,10 +59,24 @@ func _ready() -> void:
 	title.add_theme_font_override("font", CardFonts.title())
 	title.add_theme_font_size_override("font_size", 66)
 	column.add_child(title)
+	if _refusal != "":
+		var reason: Label = Label.new()
+		reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		reason.text = _refusal
+		reason.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		reason.add_theme_font_size_override("font_size", 20 + UiText.RAISE)
+		reason.add_theme_color_override("font_color", REFUSAL_COLOR)
+		column.add_child(reason)
 	_add(column, "Start Encounter", func() -> void: navigate.call(START_FORM))
-	_add(column, "Deckbuilder (prototype)", func() -> void: navigate.call(DECKBUILDER))
+	_add(column, "Start Run (debug)", func() -> void: navigate.call(RunFlow.start(Run.debug(randi()))))
 	_add(column, "Card Gallery", func() -> void: navigate.call(CARD_GALLERY))
 	_add(column, "Quit Game", func() -> void: quit.call())
+
+
+## Why the request on the command line could not be played, or "" if there was none or it
+## could. The menu shows it under its title.
+func refusal() -> String:
+	return _refusal
 
 
 ## The button labeled [param text], or null.

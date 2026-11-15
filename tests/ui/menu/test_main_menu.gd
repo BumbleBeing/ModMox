@@ -28,16 +28,25 @@ func test_each_menu_button_leads_where_it_says() -> void:
 		assert_true(ResourceLoader.exists(scene), "%s exists." % scene)
 
 
-func test_the_deckbuilder_button_opens_the_prototype() -> void:
+func test_start_run_debug_begins_a_debug_run_at_the_deckbox() -> void:
 	var menu: MainMenu = _menu(PackedStringArray())
+	RunFlow.clear()
 
-	menu.button("Deckbuilder (prototype)").pressed.emit()
+	menu.button("Start Run (debug)").pressed.emit()
 
-	assert_eq(_went_to, [MainMenu.DECKBUILDER] as Array[String])
-	assert_true(ResourceLoader.exists(MainMenu.DECKBUILDER))
-	var screen: Node = (load(MainMenu.DECKBUILDER) as PackedScene).instantiate()
-	assert_true(screen is DeckbuilderScreen)
+	assert_eq(_went_to, [RunFlow.DECKBOX] as Array[String])
+	assert_not_null(RunFlow.run)
+	assert_not_null(RunFlow.run.deckbox.active())
+	assert_ne(RunFlow.villain, "")
+	var screen: Node = (load(RunFlow.DECKBOX) as PackedScene).instantiate()
+	assert_true(screen is DeckboxScreen)
 	screen.free()
+	RunFlow.clear()
+
+
+func test_there_is_no_deckbuilder_button_any_more() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+	assert_null(menu.button("Deckbuilder (prototype)"), "the Deckbox is the only door to the deckbuilder")
 
 
 func test_the_deckbuilder_flag_no_longer_skips_the_menu_once_the_deckbuilder_has_been_left() -> void:
@@ -76,6 +85,26 @@ func test_a_request_on_the_command_line_skips_the_menu() -> void:
 	assert_eq(EncounterScreen.request.hero_deck, "blue_red")
 	assert_eq(EncounterScreen.request.encounter_seed, 4)
 	assert_null(menu.button("Start Encounter"), "The menu was never drawn.")
+
+
+func test_a_request_that_cannot_be_played_stays_on_the_menu_and_says_why() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(["--hero=no_such_deck", "--seed=4"]))
+	await wait_process_frames(2)
+
+	assert_eq(_went_to.size(), 0, "No encounter is opened on a deck that does not exist.")
+	assert_null(EncounterScreen.request)
+	assert_not_null(menu.button("Start Encounter"), "The menu is drawn instead.")
+	assert_eq(menu.refusal(), "There is no deck named \"no_such_deck\".")
+	assert_push_error("no_such_deck")
+
+
+func test_a_request_with_an_unknown_difficulty_is_refused_too() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(["--seed=4", "--difficulty=impossible"]))
+	await wait_process_frames(2)
+
+	assert_eq(_went_to.size(), 0)
+	assert_eq(menu.refusal(), "There is no difficulty named \"impossible\".")
+	assert_push_error("impossible")
 
 
 func test_the_scenes_are_the_menu_the_form_and_the_screen() -> void:

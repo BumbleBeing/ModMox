@@ -273,8 +273,11 @@ func test_a_potions_ability_on_the_stack_is_read_in_the_inspector_as_its_potion(
 
 	var readout: PotionReadout = _screen.inspector().potion_readout()
 	assert_eq(readout.name_text(), "Big Gulp", "Not \"Big Gulp ability\": the Potion it came from.")
-	assert_eq(readout.rules_text(), "Target creature gets +2/+2 until end of turn.")
+	assert_eq(readout.type_line_text(), "Common Potion")
 	assert_eq(readout.glow_color(), Inspector.glow_of(MmCardDefinition.Rarity.COMMON))
+	assert_eq(_screen.inspector().panel_titles(), ["Card Text"] as Array[String], "In the Potion's layout.")
+	assert_eq(_screen.inspector().card_text(), "Target creature gets +2/+2 until end of turn.")
+	assert_false(_screen.inspector().original_button().visible)
 
 
 func test_a_potion_and_an_emblem_are_read_in_the_inspector_from_their_windows() -> void:
@@ -287,7 +290,7 @@ func test_a_potion_and_an_emblem_are_read_in_the_inspector_from_their_windows() 
 	_screen.right_click_at(_screen.held_entry(_potion()).get_global_rect().get_center() - _screen.global_position)
 
 	assert_eq(inspector.potion_readout().name_text(), "Big Gulp")
-	assert_eq(inspector.potion_readout().type_line_text(), "Potion")
+	assert_eq(inspector.potion_readout().type_line_text(), "Common Potion")
 	assert_eq(inspector.potion_readout().glow_color(), Inspector.glow_of(MmCardDefinition.Rarity.COMMON))
 	_screen.right_click_at(_screen.held_entry(_emblem("Diviner's Boon")).get_global_rect().get_center() - _screen.global_position)
 	assert_null(inspector.potion_readout())

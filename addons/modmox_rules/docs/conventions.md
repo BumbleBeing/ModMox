@@ -50,11 +50,14 @@ content/art/     card art (one image per Card Definition) and its manifest, art.
 content/emblems/ authored Emblems (.tres): Card Definitions with abilities and nothing else
 content/potions/ authored Potions (.tres): a name, a rarity and one activated ability
 assets/          third-party art and fonts, each folder with its credits or license
+run/             a run's state (game-side, no Nodes): the Run, its Collection, Deckbox and Decks,
+                 the Mods held, the Run Seed's streams, and RunFlow, which says where the run goes next
 ui/              the GUI (game-side): ui/cards/ draws Card Faces and Battlefield Faces,
-                 ui/encounter/ is the Encounter Screen and its Presenter, ui/menu/ the main menu
+                 ui/encounter/ is the Encounter Screen and its Presenter, ui/menu/ the main menu,
+                 ui/deckbox/ the Deckbox, ui/deckbuilder/ the deckbuilder
 docs/adr/        the game's own ADRs, numbered on from the engine's (0021 is the first)
 tools/           developer tools: tools/art/ fetches card art, tools/card_gallery/ shows every card
-tests/           game-side tests, mirroring ui/ and tools/ (tests/ui/cards/, tests/ui/encounter/, tests/tools/)
+tests/           game-side tests, mirroring run/, ui/ and tools/ (tests/run/, tests/ui/cards/, tests/tools/)
 ```
 
 - One class per file. The file name is the class name in `snake_case`: `MmGameState` → `mm_game_state.gd`, `ZoneChangeEvent` → `zone_change_event.gd`.
@@ -177,7 +180,7 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 
 ## Game-side code
 
-`ui/` and `tools/` follow every rule above that is not about the engine's internals, with these differences:
+`run/`, `ui/` and `tools/` follow every rule above that is not about the engine's internals, with these differences:
 
 - Classes have **no prefix** and end with their kind where they have one: `CardFace`, `FrameSpec`, `FrameBaker`, `KeywordChips`.
 - **The GUI reads only what a player may see** (ADR 0005): a Player View in an encounter, printed characteristics outside one. Both become a `CardLook`, which is all a face is drawn from, so a deck screen and the battlefield draw an unaffected card the same way (ADR 0009).
@@ -214,6 +217,8 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - **A card that changes zones flies; never fade it yourself** (ADR 0027). `CardFlights` works out the routes from the snapshot's zone-change events and the screen draws a `FlightCard` for each. A new zone, or a new place a zone is drawn, gets its place in `_flight_place()`, which reads what is on the screen right now. Whatever a card lands on is remembered in `_faces` by its object ID, so that it shows nothing until the card arrives. A test of flights sets `card_flights().seconds`, turns the screen's own `_process` off so that waiting a frame lets no time go by, and steps time with `advance_motion()`.
 - **The opening-hand overlay's cards are placed every frame from `OpeningMotion`** (ADR 0030), never tweened: the overlay rebuilds them on each redraw, and `_pose_cards()` puts each where its move has got to, the card under the cursor higher and larger. A pose's center there is the middle of the card's bottom edge. A test of these moves turns the overlay's own `_process` off as well as the screen's, sets `opening_overlay().motion().seconds`, and steps time with `advance()` and `ease_cards()`; a snapshot rebuilds the overlay, so take a node from it only after the press that causes one.
 - **A button that should look made is shaded with `ButtonShading.apply()`**, after its size is set: the box is painted for that height. So far only the overlay's buttons are.
+- **A run's state is changed only through `Run` and the classes it holds**, never by a screen reaching past them, and it knows nothing of screens. Every random choice outside an encounter comes from its `RunRandom`, each kind of choice from a stream of its own (ADR 0025). Which scene opens next in a run is decided by `RunFlow`, which a scene asks and then navigates to.
+- **Dither Shading is the GUI's recurring look for a raised surface** (milestone 16's Deckbox, signed off by the user): a rough, pixelated gradient from a lighter tone at the top to a darker one at the bottom, in five bands of 3 × 3 px blocks dithered where they meet with a 2 × 2 Bayer pattern, drawn with nearest filtering and painted for the surface's own height so the blocks are never stretched. Panels, rows and buttons on new screens use it. It is made by `DitherShading.plate()` (`button_plate()` for a button), and a surface that should look flat says so.
 - **Every time the game waits or moves goes through `GameSpeed`** (`_apply_speed()` on the screen). A new wait or move gets its number in `Pacing` and its line there, so that every Game Speed scales it and a screen that is not paced never has it.
 - **A presenter pays nothing for the Hero until it is told to** (`set_auto_tapping()`, ADR 0031). Auto-tap is on for a player, from the settings, and off in a presenter a test makes, so a test that casts through a presenter still pays by hand. A new thing the presenter does for the Hero follows the same shape: off in the presenter, on in `GameSettings`, given to the presenter in `use_settings()`.
 - **What the Tap Preview shows is asked of the presenter, a plan at a time** (`payment_plan(answer)`). It is the one thing the screen reads that is not in the snapshot, because working out every plan for every snapshot cost a frame or two. Never work a plan out any other way than by paying on a copy of the game with the planner that then pays: a second rule would let the preview disagree with the payment.
@@ -240,12 +245,13 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - **A player is named through `PlayerNames`, from the snapshot** (`snapshot.names`). Never write "Hero" or "Villain" into text the player reads: use `of()` for a label, `the()` or `starting()` in a sentence, and `possessive()` for a title. A pure class that words things takes the names as its last, optional argument, so a test that does not care gets the parts.
 - **A test may show the screen a decision the engine cannot ask yet** by changing a snapshot's `decision` and emitting the presenter's `changed` with it. Use it only to test how something is drawn; nothing it leads to can be answered.
 - **Cards are found in every set's folder under `content/cards/`**, not only `alpha/`. A card that is not from Alpha goes in a folder named for its first set.
-- **The Inspector draws what it is handed** (ADR 0033). A card's Original, its Rarity and a permanent's State List are made by the presenter and carried on the snapshot. A new thing to say of a permanent is a new entry in `StateList`, with a test; the Inspector is not touched. A new keyword gets its sentence in `Reminders` in the same change as its Keyword Icon, with no mana or tap symbols, because a plain label draws it.
+- **The Inspector draws what it is handed** (ADR 0033). A card's Original, its Rarity and a permanent's State Information are made by the presenter and carried on the snapshot. A new thing to say of a permanent is a new entry in `StateInformation`, with a test; the Inspector is not touched. The encounter's Inspector and the deckbuilder's are built from the same parts in `ui/`, each giving them its own colors; a change to one Inspector's layout is made in those parts, so both get it. A new keyword gets its sentence in `Reminders` in the same change as its Keyword Icon, with no mana or tap symbols, because a plain label draws it.
+- **Interface text that names a cost is written with a `SymbolLabel`**, never a plain `Label` or a `Button`'s text, which show the braces as written. It draws each `{X}` symbol from the mana symbol images, as `RulesText` does on a Card Face, and `symbols()` says which it drew. The deckbuilder's Card Text, a Mod's description and a Mod's tile in the Modify window are written this way.
 - **What a right-click pins is found in `inspectable_at()`**, from where things are drawn, as `_hovered_answer()` is. A new place a known card is drawn, such as a new window, is added there and to `_pin_host_now()`, so that it can be pinned and ringed. Never give a face a click handler for it. Hovering shows nothing in the Inspector (A472).
 - **Which card is pinned is kept in `Inspection`**, outside the redrawn nodes. The screen tells it of right-clicks; it knows nothing of nodes. A test of it through the screen calls `right_click_at()`, and the real pipeline is tested once with `push_input()`.
 - **A Backdrop is made by `Backdrops.make()` from its name, and the screen never dims or fits one itself** (ADR 0035). A picture is 320 × 180, goes in `ui/sprites/backgrounds/Encounters/` as `<name>.png`, and then replaces that name's placeholder with no code changed; a new Backdrop is a new name in `Backdrops.NAMES` with a picture or a `kind` in the shader. The game is always drawn at 1920 × 1080 and scaled (stretch aspect `keep`), so nothing new needs to handle another shape of screen.
 - **A Zone Plate goes where `EncounterLayout.zone_plates()` says**, and `ZonePlates` draws them all. A new row or pile gets its plate there; nothing on the board draws a background of its own.
-- **Every sub-milestone of the GUI starts with a throwaway prototype** in `prototypes/<sub-milestone>/`, which the user signs off on. Prototypes skip these conventions and tests, and are deleted when the real build lands.
+- **Every sub-milestone of the GUI starts with a throwaway prototype** in `prototypes/<sub-milestone>/`, which the user signs off on, unless its design was already prototyped and signed off elsewhere, as milestone 16's was in the deckbuilder (ADR 0033). Prototypes skip these conventions and tests, and are deleted when the real build lands.
 
 ## Formatting
 

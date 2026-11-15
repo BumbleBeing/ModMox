@@ -6,6 +6,8 @@ Start is disabled while the Active Deck is illegal (A540). That is the only plac
 
 The alternatives were to open the deckbuilder from anywhere on the map, or only at certain Nodes. Opening it straight from the map leaves two screens that can change which Deck is played. Tying it to Nodes adds friction and takes away the answer to a revealed Villain, which is much of the fun of building a Deck in a run. Checking legality in more places (at saving, at a Store's sale, when setting the Active Deck) was also turned down: each check would need its own way out, and the one before an encounter would still be needed.
 
+Amended: there is one exception, the run's first Deck. Straight after Choose your Hero the deckbuilder opens directly on the Collection just dealt from the Starting Pool, since there is no Deck yet for the Deckbox to list. In place of its exit it has a Begin Run button, disabled while the Deck is illegal, so that is the second and only other place legality is checked. Begin Run saves the Deck to the Deckbox as the Active Deck and goes on to the Stage Intro. Every later visit goes through the Deckbox as above.
+
 Mods are applied only in the deckbuilder (ADR 0029), so the Deckbox is also the only way to a Mod's use. The deckbuilder's inspector shows cards and Mods only; Potions and other Items belong to whichever screen shows what the Hero holds (A546).
 
 The Deckbox screen does not exist yet. It is built with the deckbuilder's port into production code, in the first run milestone (A539, A551).

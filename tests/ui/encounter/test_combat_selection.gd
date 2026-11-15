@@ -350,6 +350,16 @@ func test_with_trample_the_default_division_gives_the_player_what_is_left_over()
 	assert_eq(decision.validate(selection.answer()), "")
 
 
+func test_with_trample_and_too_little_damage_the_default_division_gives_the_player_nothing() -> void:
+	# CR 702.19b: the player may be assigned damage only once every blocker has lethal.
+	var decision: DivideCombatDamageDecision = _divide_of(3, [2, 3], true)
+
+	var selection: CombatSelection = CombatSelection.new(decision)
+
+	assert_eq(selection.amounts(), [2, 1, 0] as Array[int], "The spare goes on the blocker still alive.")
+	assert_eq(decision.validate(selection.answer()), "")
+
+
 func test_amounts_go_up_and_down_within_the_damage_there_is() -> void:
 	var decision: DivideCombatDamageDecision = _divide()
 	var selection: CombatSelection = CombatSelection.new(decision)

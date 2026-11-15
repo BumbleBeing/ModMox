@@ -269,6 +269,29 @@ func test_the_heros_draw_turns_face_up_on_its_way_from_the_library_and_the_villa
 	assert_eq(_screen.face_of(drawn).modulate.a, 1.0)
 
 
+func test_a_drawn_card_landing_leaves_an_open_option_menu_alone() -> void:
+	_open(_bears())
+	_settle()
+	var held: Array[int] = _hand_ids()
+	_pass_until(func() -> bool:
+		return _presenter.snapshot().view.active_player_id == HERO and _presenter.snapshot().view.step == MmTurn.Step.DRAW)
+	var drawn: int = -1
+	for object_id: int in _hand_ids():
+		if not held.has(object_id):
+			drawn = object_id
+	assert_true(_screen.card_flights().is_flying(drawn))
+	var options: Array[ClickOption] = [ClickOption.new(0, "One"), ClickOption.new(1, "Two")]
+	_screen.option_menu().open(options, SCREEN / 2.0, EncounterLayout.regions(SCREEN)["battlefield"])
+
+	_settle()
+
+	assert_true(_screen.option_menu().is_open(), "The card landing is no new board: the menu stays.")
+	_screen.option_menu().close()
+	_advance(0.01)
+	assert_not_null(_screen.face_of(drawn), "The card joins the hand once the menu has closed.")
+	assert_eq(_screen.face_of(drawn).modulate.a, 1.0)
+
+
 func test_cards_drawn_together_leave_the_library_one_at_a_time() -> void:
 	_open(_setup_of([Scenario.free_draw("Insight", 3)]))
 	_screen.card_flights().gap_seconds = 0.1

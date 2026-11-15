@@ -134,6 +134,7 @@ func concede(player: MmPlayer) -> String:
 	if is_over():
 		return "The encounter is over."
 	_decision_log.append([CONCEDE, player.id])
+	_state.abandon_suspended_batch()
 	_state.perform(PlayerLostEvent.new(player.id, MmPlayer.LossReason.CONCEDED))
 	_state.perform(EncounterEndedEvent.new(_state.opponent_of(player.id).id))
 	_pending = null
