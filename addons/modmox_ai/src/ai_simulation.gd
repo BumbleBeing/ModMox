@@ -92,10 +92,14 @@ static func _index_of(decision: PriorityDecision, activate: ActivateAbilityActio
 
 
 ## CHEAP Agents for both players of [param copy]: [param profile] answers for
-## [param player_id]; the other player gets the default AI Profile (A180).
-static func _cheap_driver(copy: MmEngine, player_id: int, profile: AiProfile, cap: int) -> MmEncounterDriver:
+## [param player_id], playing no land on [param holds_lands_through_turn] or before; the
+## other player gets the default AI Profile (A180).
+static func _cheap_driver(copy: MmEngine, player_id: int, profile: AiProfile, cap: int,
+		holds_lands_through_turn: int = 0) -> MmEncounterDriver:
 	var agents: Dictionary[int, MmAgent] = {}
-	agents[player_id] = AiAgent.new(profile, AiAgent.Mode.CHEAP)
+	var own: AiAgent = AiAgent.new(profile, AiAgent.Mode.CHEAP)
+	own.holds_lands_through_turn = holds_lands_through_turn
+	agents[player_id] = own
 	agents[1 - player_id] = AiAgent.new(AiProfile.new(), AiAgent.Mode.CHEAP)
 	var driver: MmEncounterDriver = MmEncounterDriver.new(copy, agents)
 	driver.builds_views = false
@@ -133,12 +137,16 @@ static func play_out(copy: MmEngine, player_id: int, profile: AiProfile, through
 ## Submits [param answer] on [param copy], [param repeats] times if it is a Repeat Plan,
 ## rolls it out, and returns [param player_id]'s score of the result. The horizon is counted
 ## from the decision, before the answer is submitted, so a pass that ends the Game Turn is
-## played no further than any other answer (A190, A193).
-static func score_rollout(copy: MmEngine, answer: Variant, player_id: int, profile: AiProfile, repeats: int = 1) -> int:
-	var last_turn: int = copy.game_state().game_turn + ROLLOUT_EXTRA_TURNS
+## played no further than any other answer (A190, A193). With [param holds_lands],
+## [param player_id] plays no land for the rest of the Game Turn, which is what holding a
+## land back means.
+static func score_rollout(copy: MmEngine, answer: Variant, player_id: int, profile: AiProfile, repeats: int = 1,
+		holds_lands: bool = false) -> int:
+	var game_turn: int = copy.game_state().game_turn
+	var last_turn: int = game_turn + ROLLOUT_EXTRA_TURNS
 	if submit_plan(copy, answer, repeats, player_id, profile) == 0:
 		return FAILED
-	_roll_out_through(copy, last_turn, player_id, profile)
+	_roll_out_through(copy, last_turn, player_id, profile, game_turn if holds_lands else 0)
 	if copy.has_failed():
 		return FAILED
 	return AiBoardEvaluator.score(copy.game_state(), player_id, profile)
@@ -152,7 +160,8 @@ static func roll_out(copy: MmEngine, player_id: int, profile: AiProfile) -> void
 	_roll_out_through(copy, copy.game_state().game_turn + ROLLOUT_EXTRA_TURNS, player_id, profile)
 
 
-static func _roll_out_through(copy: MmEngine, last_turn: int, player_id: int, profile: AiProfile) -> void:
-	var driver: MmEncounterDriver = _cheap_driver(copy, player_id, profile, ROLLOUT_DECISION_CAP)
+static func _roll_out_through(copy: MmEngine, last_turn: int, player_id: int, profile: AiProfile,
+		holds_lands_through_turn: int = 0) -> void:
+	var driver: MmEncounterDriver = _cheap_driver(copy, player_id, profile, ROLLOUT_DECISION_CAP, holds_lands_through_turn)
 	driver.run_until(func(running: MmEngine) -> bool:
 		return running.game_state().game_turn > last_turn)

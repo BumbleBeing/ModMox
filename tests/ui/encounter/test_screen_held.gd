@@ -82,7 +82,7 @@ func test_an_emblem_ability_that_resolves_is_spent_and_its_window_stays_closed()
 	assert_true(boon.line_texts()[0].ends_with("(used)"))
 	assert_eq(boon.border_color(), PlayerPanel.GOLD)
 	assert_false(_screen.player_panel(HERO).is_glowing(_screen.player_panel(HERO).emblems_button()))
-	assert_eq((_screen.player_panel(HERO).emblems_button().get_theme_stylebox("normal") as StyleBoxFlat).border_color, PlayerPanel.GOLD,
+	assert_eq(PlayerPanel.tint_of(_screen.player_panel(HERO).emblems_button()), PlayerPanel.GOLD,
 		"The other two Emblems are not used up.")
 
 

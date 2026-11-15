@@ -2,8 +2,8 @@ class_name DeckbuilderLayout
 extends RefCounted
 ## Where every part of the deckbuilder sits, worked out from the screen's size alone so it
 ## can be tested without a window. Designed at 1920 × 1080: the top bar, the inspector and
-## the filter bar keep their size, the Collection keeps its share of the height, and the
-## rest goes to the deck columns.
+## the filter bar keep their size, the Collection is as tall as the Divider leaves it, and
+## the rest goes to the deck columns.
 
 const GUTTER: float = 12.0
 const PAD: float = 10.0
@@ -31,6 +31,11 @@ const FAN_GAP: float = 2.0
 ## size at which the eight columns exactly fill the strip.
 const DECK_ZOOM_SMALLEST: float = 0.6
 const DECK_ZOOM_LARGEST: float = 1.8
+## How tall the Collection pane is until the Divider is moved: its rows shown, unzoomed.
+const DEFAULT_COLLECTION_HEIGHT: float = (COLLECTION_ROWS_SHOWN * (COLLECTION_CARD_HEIGHT + CARD_GAP) - CARD_GAP
+		+ 2.0 * PAD)
+## How far into either pane the Divider can be grabbed, past the gutter it lies in.
+const DIVIDER_REACH: float = 4.0
 
 var size: Vector2
 ## How tall a Collection card is now: the zoom slider changes it, the pane keeps its size.
@@ -38,6 +43,11 @@ var collection_card_height: float = COLLECTION_CARD_HEIGHT
 ## How large the columns' cards are drawn, 1 being the size at which the eight columns
 ## exactly fill the strip. Larger, the columns widen and the strip scrolls sideways.
 var deck_zoom: float = 1.0
+## How tall the Collection pane is, where the Divider has been left. Set to anything, it
+## stops at the shortest and tallest the two panes allow.
+var collection_height: float = DEFAULT_COLLECTION_HEIGHT:
+	set(height):
+		collection_height = clampf(height, shortest_collection(), tallest_collection())
 
 
 func _init(screen_size: Vector2) -> void:
@@ -60,8 +70,30 @@ func filter_bar() -> Rect2:
 
 func collection() -> Rect2:
 	var bar: Rect2 = filter_bar()
-	var height: float = (COLLECTION_ROWS_SHOWN * (COLLECTION_CARD_HEIGHT + CARD_GAP) - CARD_GAP + 2.0 * PAD)
-	return Rect2(bar.position.x, bar.end.y + GUTTER, bar.size.x, height)
+	return Rect2(bar.position.x, bar.end.y + GUTTER, bar.size.x, collection_height)
+
+
+## The Divider: the gutter between the Collection and the deck strip.
+func divider() -> Rect2:
+	var pane: Rect2 = collection()
+	return Rect2(pane.position.x, pane.end.y, pane.size.x, GUTTER)
+
+
+## Where a press takes hold of the Divider: its gutter and a little of either pane.
+func divider_grab() -> Rect2:
+	return divider().grow_individual(0.0, DIVIDER_REACH, 0.0, DIVIDER_REACH)
+
+
+## The Collection is never shorter than one whole row of cards at the default zoom.
+func shortest_collection() -> float:
+	return COLLECTION_CARD_HEIGHT + 2.0 * PAD
+
+
+## The Collection is never so tall that the deck strip loses its header, one whole card at
+## deck zoom 1, its padding or its sideways scroll bar.
+func tallest_collection() -> float:
+	var shortest_deck: float = COLUMN_HEADER + _fitted_card_height() + 2.0 * COLUMN_PAD + SCROLL_BAR
+	return size.y - GUTTER - shortest_deck - GUTTER - (filter_bar().end.y + GUTTER)
 
 
 ## The strip the eight columns stand in.
@@ -96,8 +128,14 @@ func columns_overflow() -> bool:
 ## How tall a card in a column is: as wide as a column that fills an eighth of the strip
 ## allows, times the deck zoom.
 func column_card_height() -> float:
-	var fitted: float = (deck().size.x - COLUMN_GAP * (WorkingDeck.COLUMN_COUNT - 1)) / WorkingDeck.COLUMN_COUNT
-	return (fitted - 2.0 * COLUMN_PAD - SCROLL_BAR) / CardGeometry.ASPECT * deck_zoom
+	return _fitted_card_height() * deck_zoom
+
+
+## How tall a card in a column is at deck zoom 1, when the eight columns exactly fill the
+## strip's width.
+func _fitted_card_height() -> float:
+	var fitted: float = (filter_bar().size.x - COLUMN_GAP * (WorkingDeck.COLUMN_COUNT - 1)) / WorkingDeck.COLUMN_COUNT
+	return (fitted - 2.0 * COLUMN_PAD - SCROLL_BAR) / CardGeometry.ASPECT
 
 
 ## How far down a column its card at [param index] starts.

@@ -35,7 +35,8 @@ extends Control
 ##
 ## Steps 2 to 8 of the prototype.
 ## Add --screenshot=/absolute/path.png to save a picture and quit, and --select="Card Name"
-## to have that Deck card selected in it, with --mods to open the Mod pop-up for it.
+## to have that Deck card selected in it, with --mods to open the Mod pop-up for it, and
+## --divider=<height> to move the Divider (0 for its highest, 9999 for its lowest).
 
 const BACKGROUND: Color = DeckbuilderLook.BENCH
 const PANE: Color = DeckbuilderLook.PANE
@@ -67,6 +68,14 @@ const NOTICE_FADE: float = 0.5
 const EASE_STRETCH: float = 1.5
 ## How solid the white plate behind a basic land button's name and count is.
 const LAND_PLATE_ALPHA: float = 0.25
+## The land buttons keep this many pixels clear at their right for their counts.
+const LAND_MARGIN_RIGHT: int = 44
+## The Divider's grip: two short lines, a gap between them, gray as a pane's edge and
+## lighter while it is hovered or dragged.
+const GRIP_LINE: Vector2 = Vector2(48, 2)
+const GRIP_LINE_GAP: float = 2.0
+const GRIP: Color = DeckbuilderLook.PANEL_EDGE
+const GRIP_LIT: Color = DeckbuilderLook.MUTED
 const COLUMN_TITLES: Array[String] = ["0", "1", "2", "3", "4", "5", "6+", "Lands"]
 ## Each basic land's button color, in the order the buttons stand. The Plains' is dark
 ## enough for the white plate behind its name to show on it.
@@ -88,7 +97,7 @@ var starts_itself: bool = true
 ## How the screen opens another scene. Tests replace it.
 var navigate: Callable = func(scene: String) -> void:
 	DeckbuilderScreen.has_left = true
-	get_tree().change_scene_to_file(scene)
+	SceneFade.change_scene(get_tree(), scene)
 
 var _run: Run = null
 var _working_deck: WorkingDeck = null
@@ -100,6 +109,7 @@ var _hovered_card: DeckbuilderCard = null
 ## The inspector's pane, the card it is showing (or null), and what that card's Mod Slots
 ## held when it was drawn, so it is redrawn only when one of them changes.
 var _inspector_pane: Panel = null
+var _top_bar_pane: Panel = null
 var _inspector_shown: DeckbuilderCard = null
 var _inspector_slots: int = -1
 var _inspector: DeckbuilderInspector = null
@@ -161,6 +171,19 @@ var _name_box: LineEdit = null
 var _filter_bar: FilterBar = null
 var _collection_scroll: ScrollContainer = null
 var _collection_grid: Control = null
+var _collection_pane: Panel = null
+## How tall the Collection pane is, where the Divider was left. It is kept through redraws.
+var _collection_height: float = DeckbuilderLayout.DEFAULT_COLLECTION_HEIGHT
+## The Divider, the two lines of its grip, whether it is being dragged or is under the
+## cursor, and how far below the Collection's bottom it was taken hold of.
+var _divider: Control = null
+var _grip_lines: Array[ColorRect] = []
+var _is_dividing: bool = false
+var _is_divider_hovered: bool = false
+var _divider_hold: float = 0.0
+## What the columns stand on in the strip, and each column's box inside its pane.
+var _floor_under: Control = null
+var _column_boxes: Array[VBoxContainer] = []
 
 
 func _ready() -> void:
@@ -175,6 +198,7 @@ func _ready() -> void:
 		var sample: Run = DeckbuilderSample.make()
 		begin(sample, sample.deckbox.active())
 	_select_named(OS.get_cmdline_user_args())
+	_divide_as_named(OS.get_cmdline_user_args())
 	var picture: String = EncounterScreen.screenshot_path(OS.get_cmdline_user_args())
 	if picture == "":
 		ease_seconds = Pacing.EASE_SECONDS * EASE_STRETCH
@@ -183,6 +207,14 @@ func _ready() -> void:
 			await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(picture)
 		get_tree().quit()
+
+
+## Moves the Divider to the Collection height given by --divider= among [param arguments],
+## if there is one, for pictures: 0 for its highest, 9999 for its lowest.
+func _divide_as_named(arguments: PackedStringArray) -> void:
+	for argument: String in arguments:
+		if argument.begins_with("--divider="):
+			move_divider(argument.trim_prefix("--divider=").to_float())
 
 
 ## Selects the Deck card named by --select= among [param arguments], if there is one, so
@@ -224,6 +256,7 @@ func layout() -> DeckbuilderLayout:
 	var places: DeckbuilderLayout = DeckbuilderLayout.new(size)
 	places.collection_card_height = _collection_card_height
 	places.deck_zoom = _deck_zoom
+	places.collection_height = _collection_height
 	return places
 
 
@@ -274,6 +307,21 @@ func inspector() -> DeckbuilderInspector:
 ## The pane the inspector stands on.
 func inspector_pane() -> Panel:
 	return _inspector_pane
+
+
+## The pane the top bar stands on.
+func top_bar_pane() -> Panel:
+	return _top_bar_pane
+
+
+## The pane of the Deck's column [param column].
+func column_pane(column: int) -> Panel:
+	return _column_panes[column]
+
+
+## What [param column]'s cards scroll up and down in.
+func column_scroll(column: int) -> ScrollContainer:
+	return _column_scrolls[column]
 
 
 ## The Card Face in the inspector, or null when it shows no card.
@@ -461,6 +509,29 @@ func clear_selection() -> void:
 	_show_inspector()
 
 
+func collection_pane() -> Panel:
+	return _collection_pane
+
+
+func collection_scroll() -> ScrollContainer:
+	return _collection_scroll
+
+
+## What the Collection's faces are laid out on, inside its scroll.
+func collection_grid() -> Control:
+	return _collection_grid
+
+
+## The Divider between the Collection and the deck strip.
+func divider() -> Control:
+	return _divider
+
+
+## The color the Divider's grip is drawn in now: brighter while hovered or dragged.
+func divider_grip_color() -> Color:
+	return _grip_lines[0].color
+
+
 func zoom_slider() -> HSlider:
 	return _zoom_slider
 
@@ -509,6 +580,25 @@ func zoom_deck(zoom: float, is_settled: bool = true) -> void:
 		_deck_built_zoom = _deck_zoom
 	_draw_deck(layout())
 	_show_selection()
+
+
+## Moves the Divider so that the Collection pane is [param height] tall, or as near it as
+## the limits allow, and the deck strip takes the rest. The panes are resized and nothing is
+## rebuilt: no card changes size.
+func move_divider(height: float) -> void:
+	var places: DeckbuilderLayout = layout()
+	places.collection_height = height
+	_collection_height = places.collection_height
+	_collection_pane.size = places.collection().size
+	_collection_scroll.size = _collection_pane.size - 2.0 * Vector2(DeckbuilderLayout.PAD, DeckbuilderLayout.PAD)
+	_divider.position = places.divider_grab().position
+	var strip: Rect2 = places.deck()
+	_deck_scroll.position = strip.position
+	_deck_scroll.size = strip.size
+	_floor_under.custom_minimum_size.y = places.column(0).size.y
+	for column: int in _column_panes.size():
+		_column_panes[column].size.y = places.column(column).size.y
+		_column_boxes[column].size.y = _column_panes[column].size.y - 2.0 * DeckbuilderLayout.COLUMN_PAD
 
 
 ## The face under the cursor, whose border glows, or null.
@@ -594,6 +684,14 @@ func press_at(point: Vector2) -> void:
 	if _name_box.has_focus() and not _name_box.get_global_rect().has_point(point):
 		_name_box.release_focus()
 	_put_down()
+	if layout().divider_grab().has_point(point):
+		# The Divider lies over the edges of both panes: a press there takes hold of it.
+		_is_dividing = true
+		_divider_hold = point.y - _collection_height
+		for pane: Panel in _column_panes:
+			InspectorParts.hold_shading(pane, true)
+		_show_divider()
+		return
 	_pressed = card_at(point)
 	_press_point = point
 
@@ -601,6 +699,11 @@ func press_at(point: Vector2) -> void:
 ## The cursor moves to [param point]. With a card pressed, this picks it up once it has
 ## moved far enough, and then carries it. With none, the card under the cursor glows.
 func drag_to(point: Vector2) -> void:
+	if _is_dividing:
+		move_divider(point.y - _divider_hold)
+		return
+	_is_divider_hovered = _held == null and layout().divider_grab().has_point(point)
+	_show_divider()
 	if _pressed != null and _held == null and point.distance_to(_press_point) >= DRAG_START:
 		if not _lift():
 			_pressed = null
@@ -616,6 +719,13 @@ func drag_to(point: Vector2) -> void:
 
 ## The left button comes up at [param point]: a held card is dropped there.
 func release_at(point: Vector2) -> void:
+	if _is_dividing:
+		_is_dividing = false
+		_is_divider_hovered = layout().divider_grab().has_point(point)
+		for pane: Panel in _column_panes:
+			InspectorParts.hold_shading(pane, false)
+		_show_divider()
+		return
 	var card: DeckbuilderCard = _pressed
 	if _held == null:
 		_pressed = null
@@ -639,6 +749,9 @@ func release_at(point: Vector2) -> void:
 ## a card in the Deck leaves it.
 func double_click_at(point: Vector2) -> void:
 	_put_down()
+	if layout().divider_grab().has_point(point):
+		move_divider(DeckbuilderLayout.DEFAULT_COLLECTION_HEIGHT)
+		return
 	var card: DeckbuilderCard = card_at(point)
 	if card == null:
 		return
@@ -706,10 +819,9 @@ func _process(delta: float) -> void:
 	for column: int in _column_panes.size():
 		var lit: float = lerpf(_column_lit[column], 1.0 if column == _drop_column else 0.0, _eased(GLOW_RATE, delta))
 		_column_lit[column] = lit
-		var style: StyleBoxFlat = _column_panes[column].get_theme_stylebox("panel") as StyleBoxFlat
+		var edge: Panel = _column_panes[column].get_node("Edge") as Panel
 		# A column's edge is gray, and turns to the drop color while a held card is over it.
-		style.border_color = DeckbuilderLook.PANEL_EDGE.lerp(DROP_BORDER, lit)
-		style.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
+		(edge.get_theme_stylebox("panel") as StyleBoxFlat).border_color = DeckbuilderLook.PANEL_EDGE.lerp(DROP_BORDER, lit)
 
 
 ## Sends [param face], which is on the screen and not in any pane, gliding to [param card]'s
@@ -960,6 +1072,10 @@ func _redraw() -> void:
 	_drop_place = 0
 	_deck_scroll = null
 	_deck_built_zoom = _deck_zoom
+	_divider = null
+	_grip_lines.clear()
+	_is_dividing = false
+	_is_divider_hovered = false
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -977,11 +1093,11 @@ func _redraw() -> void:
 	_inspector = DeckbuilderInspector.new()
 	_inspector.apply_pressed.connect(open_mod_popup)
 	_fill(_inspector_pane, _inspector)
-	InspectorParts.shade_background(_inspector_pane, _inspector, PANE, DeckbuilderLook.PANEL_EDGE,
-		DeckbuilderLook.PANEL_EDGE_WIDTH, 6)
+	_shade_pane(_inspector_pane, _inspector, PANE)
 	_draw_filter_bar(places.filter_bar())
 	_draw_collection(places)
 	_draw_deck(places)
+	_draw_divider(places)
 	_show_selection()
 	_show_inspector()
 
@@ -997,26 +1113,75 @@ func _draw_deck(places: DeckbuilderLayout) -> void:
 	_column_fans.clear()
 	_column_counts.clear()
 	_column_lit.clear()
+	_column_boxes.clear()
 	var strip: Rect2 = places.deck()
 	_deck_scroll = ScrollContainer.new()
 	_deck_scroll.position = strip.position
 	_deck_scroll.size = strip.size
 	_deck_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_deck_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
+	_deck_scroll.gui_input.connect(_keep_wheel_off_strip)
 	_root.add_child(_deck_scroll)
-	var floor_under: Control = Control.new()
-	floor_under.custom_minimum_size = Vector2(places.columns_width(), places.column(0).size.y)
-	floor_under.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_deck_scroll.add_child(floor_under)
+	if _divider != null:
+		# Drawn again, the strip stays under the Divider, which reaches over its top edge.
+		_root.move_child(_deck_scroll, _divider.get_index())
+	_floor_under = Control.new()
+	_floor_under.custom_minimum_size = Vector2(places.columns_width(), places.column(0).size.y)
+	_floor_under.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_deck_scroll.add_child(_floor_under)
 	for column: int in WorkingDeck.COLUMN_COUNT:
-		_draw_column(places, column, floor_under)
+		_draw_column(places, column, _floor_under)
 	_lay_out_columns()
+
+
+## Takes the mouse wheel and a touchpad's pan before the strip can use them to scroll
+## sideways: a wheel scrolls only the column under the cursor, which has it first. The
+## strip still scrolls by its scroll bar.
+func _keep_wheel_off_strip(event: InputEvent) -> void:
+	var button: InputEventMouseButton = event as InputEventMouseButton
+	var is_wheel: bool = button != null and button.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN,
+			MOUSE_BUTTON_WHEEL_LEFT, MOUSE_BUTTON_WHEEL_RIGHT]
+	if is_wheel or event is InputEventPanGesture:
+		_deck_scroll.accept_event()
+
+
+## Draws the Divider in the gutter between the Collection and the strip, reaching a little
+## over both: flat, with a grip of two short lines in its middle.
+func _draw_divider(places: DeckbuilderLayout) -> void:
+	_divider = Control.new()
+	_divider.name = "Divider"
+	var grab: Rect2 = places.divider_grab()
+	_divider.position = grab.position
+	_divider.size = grab.size
+	_divider.mouse_filter = Control.MOUSE_FILTER_PASS
+	_divider.mouse_default_cursor_shape = Control.CURSOR_VSIZE
+	_root.add_child(_divider)
+	var middle: Vector2 = places.divider().get_center() - grab.position
+	for offset: float in [-GRIP_LINE_GAP / 2.0 - GRIP_LINE.y, GRIP_LINE_GAP / 2.0]:
+		var line: ColorRect = ColorRect.new()
+		line.size = GRIP_LINE
+		line.position = Vector2(middle.x - GRIP_LINE.x / 2.0, middle.y + offset)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_divider.add_child(line)
+		_grip_lines.append(line)
+	_show_divider()
+
+
+## Lights the Divider's grip while it is under the cursor or being dragged.
+func _show_divider() -> void:
+	if _divider == null:
+		return
+	var color: Color = GRIP_LIT if _is_dividing or _is_divider_hovered else GRIP
+	for line: ColorRect in _grip_lines:
+		line.color = color
 
 
 func _draw_top_bar(place: Rect2) -> void:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
-	_fill(_pane(place), row)
+	_top_bar_pane = _pane(place)
+	_fill(_top_bar_pane, row)
+	_shade_pane(_top_bar_pane, row, PANE)
 	_name_box = LineEdit.new()
 	_name_box.text = _working_deck.name
 	_name_box.placeholder_text = "Deck name"
@@ -1054,7 +1219,6 @@ func _draw_top_bar(place: Rect2) -> void:
 	var zoom: HBoxContainer = HBoxContainer.new()
 	zoom.add_theme_constant_override("separation", 10)
 	_zoom_panel.add_child(zoom)
-	zoom.add_child(_label("Zoom", 17, MUTED))
 	zoom.add_child(_label("Collection", 17))
 	_zoom_slider = _slider(DeckbuilderLayout.COLLECTION_CARD_SMALLEST, DeckbuilderLayout.COLLECTION_CARD_LARGEST,
 			1.0, _collection_card_height, "How large the Collection's cards are drawn.")
@@ -1068,15 +1232,18 @@ func _draw_top_bar(place: Rect2) -> void:
 	_deck_zoom_slider.drag_ended.connect(_on_deck_zoom_let_go)
 	zoom.add_child(_deck_zoom_slider)
 	_sort_button = _button("Sort")
+	_shade(_sort_button, DeckbuilderLook.BUTTON)
 	_sort_button.tooltip_text = "Put every card back in its own column."
 	_make_live(_sort_button)
 	_sort_button.pressed.connect(_on_sort_pressed)
 	row.add_child(_sort_button)
 	_save_button = _button("Save")
+	_shade(_save_button, DeckbuilderLook.BUTTON)
 	_make_live(_save_button)
 	_save_button.pressed.connect(save)
 	row.add_child(_save_button)
 	_exit_button = _button("Exit")
+	_shade(_exit_button, DeckbuilderLook.BUTTON)
 	_exit_button.tooltip_text = "Go back to the main menu."
 	_make_live(_exit_button)
 	_exit_button.pressed.connect(exit)
@@ -1170,7 +1337,9 @@ func _draw_filter_bar(place: Rect2) -> void:
 	_filter_bar = FilterBar.new()
 	_filter_bar.setup(_filter, _filter.apply(owned).size(), owned.size())
 	_filter_bar.changed.connect(_on_filter_changed)
-	_fill(_pane(place), _filter_bar, 8.0)
+	var pane: Panel = _pane(place)
+	_fill(pane, _filter_bar, 8.0)
+	_shade_pane(pane, _filter_bar, PANE)
 
 
 ## Only the Collection pane changes with the filter, and its faces are kept: the bar is not
@@ -1183,7 +1352,8 @@ func _on_filter_changed() -> void:
 func _draw_collection(places: DeckbuilderLayout) -> void:
 	_collection_scroll = ScrollContainer.new()
 	_collection_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_fill(_pane(places.collection()), _collection_scroll)
+	_collection_pane = _pane(places.collection())
+	_fill(_collection_pane, _collection_scroll)
 	_collection_grid = Control.new()
 	_collection_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_collection_scroll.add_child(_collection_grid)
@@ -1246,12 +1416,27 @@ func _draw_column(places: DeckbuilderLayout, column: int, floor_under: Control) 
 	var fan: Control = Control.new()
 	fan.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(fan)
-	(pane.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = DeckbuilderLook.COLUMN
+	_shade_pane(pane, box, DeckbuilderLook.COLUMN)
+	# Its edge is drawn again over the shading, so that it can ease to the drop color
+	# without the shading being painted again each frame.
+	var edge: Panel = Panel.new()
+	edge.name = "Edge"
+	var line: StyleBoxFlat = StyleBoxFlat.new()
+	line.draw_center = false
+	line.border_color = DeckbuilderLook.PANEL_EDGE
+	line.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
+	line.set_corner_radius_all(6)
+	edge.add_theme_stylebox_override("panel", line)
+	edge.set_anchors_preset(Control.PRESET_FULL_RECT)
+	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pane.add_child(edge)
+	pane.move_child(edge, 0)
 	_column_panes.append(pane)
 	_column_lit.append(0.0)
 	_column_scrolls.append(scroll)
 	_column_fans.append(fan)
 	_column_counts.append(count)
+	_column_boxes.append(box)
 
 
 ## Puts every Deck card's face in its column's fan, in order, making a face for a card that
@@ -1319,6 +1504,12 @@ func _pane(place: Rect2, parent: Control = null) -> Panel:
 	return pane
 
 
+## Dither Shades [param pane] in [param fill] for its own height, edged as every pane is;
+## [param content] on it is drawn as before.
+func _shade_pane(pane: Panel, content: CanvasItem, fill: Color) -> void:
+	InspectorParts.shade_background(pane, content, fill, DeckbuilderLook.PANEL_EDGE, DeckbuilderLook.PANEL_EDGE_WIDTH, 6)
+
+
 ## Puts [param content] inside [param pane], [param pad] in from every edge.
 func _fill(pane: Panel, content: Control, pad: float = DeckbuilderLayout.PAD) -> void:
 	content.position = Vector2(pad, pad)
@@ -1335,32 +1526,16 @@ func _label(text: String, font_size: int, color: Color = DeckbuilderLook.TEXT) -
 	return label
 
 
-## Paints [param button] in [param color], with lettering that reads against it.
+## Paints [param button] in [param color], Dither Shaded, with lettering that reads against it.
 func _color(button: Button, color: Color) -> void:
-	var shades: Dictionary[String, Color] = {
-		"normal": color, "hover": color.lightened(0.15), "pressed": color.darkened(0.2),
-	}
-	for state: String in shades:
-		var shade: Color = shades[state]
-		var style: StyleBoxFlat = StyleBoxFlat.new()
-		style.bg_color = shade
-		# Lit from above: a pale top edge, a dark lip underneath and a soft shadow.
-		style.border_color = shade.darkened(0.35)
-		style.border_width_bottom = 1 if state == "pressed" else 4
-		style.set_corner_radius_all(7)
-		style.shadow_color = Color(0, 0, 0, 0.45)
-		style.shadow_size = 3
-		style.shadow_offset = Vector2(0, 2)
-		style.set_content_margin_all(6)
-		style.content_margin_top = 9 if state == "pressed" else 6
-		style.content_margin_left = 12
-		style.content_margin_right = 44
-		button.add_theme_stylebox_override(state, style)
+	_shade(button, color, LAND_MARGIN_RIGHT)
 	# The button's own lettering is hidden: its name is written again on a pale plate that
 	# also holds its count, so
 	# that it reads against any land's color. Every one is lettered in the same near-black.
 	for state: String in ["font_color", "font_hover_color", "font_pressed_color"]:
 		button.add_theme_color_override(state, Color.TRANSPARENT)
+	# Its hidden lettering is bold too, so that the button is wide enough for the plate's.
+	button.add_theme_font_override("font", DeckbuilderLook.bold())
 	var plate: Panel = Panel.new()
 	plate.name = "NamePlate"
 	var pale: StyleBoxFlat = StyleBoxFlat.new()
@@ -1381,18 +1556,31 @@ func _color(button: Button, color: Color) -> void:
 	# The count's pill is on the plate too, at its right; the name is centered in the rest.
 	lettering.offset_right = -36.0
 	lettering.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lettering.add_theme_font_override("font", DeckbuilderLook.bold())
 	plate.add_child(lettering)
-	var shine: Panel = Panel.new()
-	var gloss: StyleBoxFlat = StyleBoxFlat.new()
-	gloss.bg_color = Color(1, 1, 1, 0.16)
-	gloss.set_corner_radius_all(6)
-	gloss.corner_radius_bottom_left = 0
-	gloss.corner_radius_bottom_right = 0
-	shine.add_theme_stylebox_override("panel", gloss)
-	shine.anchor_right = 1.0
-	shine.anchor_bottom = 0.42
-	shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(shine)
+
+
+## Dither Shades [param button] in [param fill] (grayed while disabled), painted again for
+## its own height whenever that changes, so its blocks are never stretched. Its lettering
+## keeps [param margin_right] pixels clear at its right.
+func _shade(button: Button, fill: Color, margin_right: int = 10) -> void:
+	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	button.resized.connect(_paint_shade.bind(button, fill, margin_right))
+	_paint_shade(button, fill, margin_right)
+
+
+func _paint_shade(button: Button, fill: Color, margin_right: int) -> void:
+	var height: int = maxi(1, int(button.size.y))
+	var faces: Dictionary[String, StyleBoxTexture] = {
+		"normal": DitherShading.button_plate(fill, false, height),
+		"hover": DitherShading.button_plate(fill.lightened(InspectorParts.HOVER_LIGHTEN), false, height),
+		"pressed": DitherShading.button_plate(fill, true, height),
+		"hover_pressed": DitherShading.button_plate(fill, true, height),
+		"disabled": DitherShading.disabled_plate(DeckbuilderLook.BUTTON_DISABLED, height),
+	}
+	for state: String in faces:
+		faces[state].content_margin_right = margin_right
+		button.add_theme_stylebox_override(state, faces[state])
 
 
 ## A small dark pill at the right of [param button] for a number.

@@ -258,6 +258,16 @@ func test_a_buttons_hover_face_is_lightened_by_ten_percent() -> void:
 	assert_almost_eq(_top_light(made.get_theme_stylebox("hover")), _top_light(hover), 0.001)
 
 
+func test_a_disabled_button_has_no_lip_and_a_clickable_one_does() -> void:
+	await _open()
+	var made: Button = _screen.button("Start")
+	var disabled: StyleBox = made.get_theme_stylebox("disabled")
+	var normal: StyleBox = made.get_theme_stylebox("normal")
+
+	assert_eq(disabled.content_margin_top, disabled.content_margin_bottom)
+	assert_gt(normal.content_margin_bottom, normal.content_margin_top, "Its text sits above its lip.")
+
+
 func test_a_selected_row_under_the_cursor_keeps_its_brass_edge() -> void:
 	await _open()
 	_screen.click_row(0)

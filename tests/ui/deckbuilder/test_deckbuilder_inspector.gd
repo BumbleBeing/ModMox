@@ -23,7 +23,7 @@ func test_the_card_text_draws_a_cost_as_symbols() -> void:
 
 	assert_eq(_inspector.card_text(), "{T}: Add {G}.")
 	assert_eq(_inspector.card_text_label().symbols(), ["t", "g"] as Array[String])
-	assert_eq(_inspector.card_text_label().get_parsed_text(), " : Add  .")
+	assert_eq(_inspector.card_text_label().get_parsed_text(), "  : Add   .", "One space either side of each symbol.")
 	assert_eq(_inspector.face().rules().symbols(), ["{T}", "{G}"] as Array[String], "As the face does.")
 
 

@@ -34,7 +34,7 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	var key: InputEventKey = event as InputEventKey
 	if key != null and key.pressed and key.keycode == KEY_ESCAPE:
-		get_tree().change_scene_to_file("res://ui/menu/main_menu.tscn")
+		SceneFade.change_scene(get_tree(), "res://ui/menu/main_menu.tscn")
 
 
 func _build_controls() -> void:

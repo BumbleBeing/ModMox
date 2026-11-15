@@ -19,6 +19,11 @@ const EDGE: float = 4.0
 const INSET: float = 12.0
 ## How tall an Inspector's buttons are, so their Dither Shading is painted for it: ten units.
 const BUTTON_HEIGHT: int = 40
+## The meta a titled panel keeps the room over its title in, for when it is shaded again.
+const TITLE_ROOM: StringName = &"title_room"
+## Set on a shaded background whose painting is held off, and the painting itself.
+const SHADING_HELD: StringName = &"shading_held"
+const REPAINT: StringName = &"repaint"
 ## How much lighter a button is under the mouse, as the Deckbox's are.
 const HOVER_LIGHTEN: float = 0.10
 const FONT_FOLDER: String = "res://assets/fonts/linux_libertine/linlibertine-%s.ttf"
@@ -102,7 +107,7 @@ static func shade_button(button: Button, palette: Palette) -> void:
 	button.add_theme_stylebox_override("hover", DitherShading.button_plate(fill.lightened(HOVER_LIGHTEN), false, BUTTON_HEIGHT))
 	button.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
 	button.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
-	button.add_theme_stylebox_override("disabled", DitherShading.button_plate(palette.button_disabled, false, BUTTON_HEIGHT))
+	button.add_theme_stylebox_override("disabled", DitherShading.disabled_plate(palette.button_disabled, BUTTON_HEIGHT))
 
 
 ## A bordered panel with [param title] centered at its top and a body under it, filled
@@ -176,11 +181,17 @@ static func plate_style(palette: Palette, top: float = INSET) -> StyleBoxFlat:
 	return style
 
 
-## Sets the room between [param made]'s title and its body to [param gap] pixels.
+## Sets the room between [param made]'s title and its body to [param gap] pixels, and the
+## room over the title to the same, so that the title is centered between the panel's top
+## and its body whether or not there is anything in it.
 static func set_title_gap(made: PanelContainer, gap: int) -> void:
 	var column: VBoxContainer = made.get_node("Column") as VBoxContainer
 	if column.get_theme_constant("separation") != gap:
 		column.add_theme_constant_override("separation", gap)
+	made.set_meta(TITLE_ROOM, gap)
+	var face: StyleBox = made.get_theme_stylebox("panel")
+	if face.content_margin_top != gap:
+		face.content_margin_top = gap
 
 
 ## A scroll that fills what is left of [param parent], scrolling only up and down.
@@ -311,12 +322,16 @@ static func clear(holder: Node) -> void:
 
 ## Gives [param back], an Inspector's outermost background, Dither Shading from [param fill]
 ## (A598), edged in [param edge] [param edge_width] pixels wide and rounded by [param radius],
-## and paints it again whenever its height changes. [param content], on it, is drawn as before.
+## and paints it again whenever its height changes. [param content], on it, is drawn as before;
+## null for a back with nothing on it.
 static func shade_background(back: Control, content: CanvasItem, fill: Color, edge: Color, edge_width: int,
 		radius: int) -> void:
 	back.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	content.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	if content != null:
+		content.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var paint: Callable = func() -> void:
+		if back.has_meta(SHADING_HELD):
+			return
 		var height: int = int(back.size.y)
 		var current: StyleBoxTexture = back.get_theme_stylebox("panel") as StyleBoxTexture
 		if height <= 0 or (current != null and current.texture.get_height() == height):
@@ -324,7 +339,19 @@ static func shade_background(back: Control, content: CanvasItem, fill: Color, ed
 		back.add_theme_stylebox_override("panel", DitherShading.plate(fill.lightened(0.06), fill.darkened(0.3),
 			edge, radius, edge_width, 0, height))
 	back.resized.connect(paint)
+	back.set_meta(REPAINT, paint)
 	paint.call()
+
+
+## Holds off painting [param back]'s Dither Shading again while [param is_held], so that it
+## can be resized every frame and its shading only stretched; let go, it is painted for its
+## height. A plate takes about 15 ms to paint, too long to paint several every frame.
+static func hold_shading(back: Control, is_held: bool) -> void:
+	if is_held:
+		back.set_meta(SHADING_HELD, true)
+		return
+	back.remove_meta(SHADING_HELD)
+	(back.get_meta(REPAINT) as Callable).call()
 
 
 ## Paints [param made]'s Dither Shading for its height, unless it already has it.
@@ -336,7 +363,7 @@ static func _shade_panel(made: PanelContainer, palette: Palette) -> void:
 	var face: StyleBoxTexture = DitherShading.plate(palette.panel.lightened(0.06), palette.panel.darkened(0.3),
 		palette.edge, 6, palette.edge_width, 0, height)
 	face.set_content_margin_all(EDGE)
-	face.content_margin_top = 4
+	face.content_margin_top = made.get_meta(TITLE_ROOM, 4)
 	made.add_theme_stylebox_override("panel", face)
 
 

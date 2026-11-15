@@ -59,9 +59,9 @@ func test_it_fills_its_box_and_is_shaded_gray() -> void:
 
 	assert_eq(button.position, BOX.position)
 	assert_eq(button.size, BOX.size)
-	assert_eq(button.get_theme_stylebox("normal"), ButtonShading.box(PassButton.COLOR, 46))
-	assert_eq(button.get_theme_stylebox("disabled"), ButtonShading.box(ButtonShading.DISABLED, 46))
-	assert_almost_eq(PassButton.COLOR.s, 0.0, 0.2, "Gray.")
+	assert_eq(button.get_theme_stylebox("normal"), ButtonShading.plate(Inspector.palette().button, "normal", 46),
+		"Dithered in the Inspector's gray.")
+	assert_eq(button.get_theme_stylebox("disabled"), ButtonShading.plate(ButtonShading.DISABLED, "disabled", 46))
 	var shading: StyleBox = button.get_theme_stylebox("normal")
 	button.place(Rect2(Vector2(10, 10), BOX.size))
 	assert_eq(button.get_theme_stylebox("normal"), shading, "Only moved, it is not shaded again.")

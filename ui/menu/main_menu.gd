@@ -16,14 +16,22 @@ const DECKBUILDER_FLAG: String = "--deckbuilder"
 const MIN_WINDOW: Vector2i = Vector2i(1280, 720)
 const REFUSAL_COLOR: Color = Color("#e08a7a")
 
-## How the menu opens another scene, and how it quits. Tests replace both.
-var navigate: Callable = func(scene: String) -> void: get_tree().change_scene_to_file(scene)
+## How the menu opens another scene, and how it quits. Tests replace both. A scene asked
+## for on the command line opens at once, so that a --screenshot is not taken mid-fade; one
+## chosen from the menu fades in.
+var navigate: Callable = func(scene: String) -> void:
+	if _is_skipping:
+		get_tree().change_scene_to_file(scene)
+	else:
+		SceneFade.change_scene(get_tree(), scene)
 var quit: Callable = func() -> void: get_tree().quit()
 ## The command line, as given after "--". Tests replace it.
 var arguments: PackedStringArray = OS.get_cmdline_user_args()
 
 var _buttons: Dictionary[String, Button] = {}
 var _refusal: String = ""
+## Whether the menu is going straight to a scene the command line asked for.
+var _is_skipping: bool = false
 
 
 func _ready() -> void:
@@ -31,6 +39,7 @@ func _ready() -> void:
 	get_window().min_size = MIN_WINDOW
 	# Only until the deckbuilder is left, so that its Exit lands here and not back in it.
 	if arguments.has(DECKBUILDER_FLAG) and not DeckbuilderScreen.has_left:
+		_is_skipping = true
 		navigate.call_deferred(DECKBUILDER)
 		return
 	var asked_for: EncounterRequest = EncounterRequest.from_arguments(arguments)
@@ -38,6 +47,7 @@ func _ready() -> void:
 		_refusal = asked_for.validate()
 		if _refusal == "":
 			EncounterScreen.request = asked_for
+			_is_skipping = true
 			navigate.call_deferred(ENCOUNTER)
 			return
 		# A deck, difficulty or backdrop that does not exist: the menu opens and says so.

@@ -1,14 +1,13 @@
 class_name PassButton
 extends Button
-## The Pass Button (game glossary): over the Info Panel and as wide, always there, gray and
-## shaded (A489). With priority it passes and names the key that does; while a combat
+## The Pass Button (game glossary): over the Info Panel and as wide, always there, and
+## Dither Shaded in the Inspector's gray (A489). With priority it passes and names the key that does; while a combat
 ## decision, an order of triggers or a choice of cards is being made it confirms that
 ## instead; at any other time it cannot be pressed. Whatever it reads, it ends with the key
 ## that presses it (A495).
 
 const PASS_FORMAT: String = "Pass Priority [%s]"
 const CONFIRM_FORMAT: String = "%s [%s]"
-const COLOR: Color = Color("#737b8a")
 const PASS_FONT: int = 21
 const CONFIRM_FONT: int = 19
 
@@ -31,7 +30,7 @@ func place(box: Rect2) -> void:
 	size = box.size
 	if box.size != _shaded_for:
 		_shaded_for = box.size
-		ButtonShading.apply(self, COLOR)
+		ButtonShading.apply(self, Inspector.palette().button)
 
 
 ## Names [param key_label] as the key that passes.

@@ -43,6 +43,26 @@ func test_the_face_is_centered_across_the_inspector() -> void:
 	assert_almost_eq(face.get_center().x, _inspector.get_global_rect().get_center().x, 1.0)
 
 
+func test_each_title_is_centered_between_the_top_of_its_panel_and_what_is_under_it() -> void:
+	_inspector.show_card(_fixture.own("serra_angel", [_winged()]), FACE_HEIGHT)
+	await wait_process_frames(3)
+
+	for panel: PanelContainer in _inspector.panels():
+		assert_almost_eq(_room_over_title(panel), _gap_under_title(panel), 1.0, _title(panel).text)
+	_inspector.reminders_button().button_pressed = true
+	await wait_process_frames(3)
+	assert_almost_eq(_room_over_title(_inspector.panels()[0]), _gap_under_title(_inspector.panels()[0]), 1.0, "Reminders")
+
+
+func test_a_panel_with_nothing_in_it_sets_its_title_as_one_with_something_would() -> void:
+	_inspector.show_card(_fixture.own("grizzly_bears"), FACE_HEIGHT)
+	await wait_process_frames(3)
+
+	var panels: Array[PanelContainer] = _inspector.panels()
+	assert_almost_eq(_room_over_title(panels[1]), _room_over_title(panels[0]), 1.0)
+	assert_almost_eq(_gap_under_title(panels[1]), _gap_under_title(panels[0]), 1.0)
+
+
 func test_card_text_puts_an_empty_line_between_abilities() -> void:
 	_inspector.show_card(_fixture.own("shivan_dragon"), FACE_HEIGHT)
 
@@ -189,6 +209,11 @@ static func _title(panel: PanelContainer) -> Label:
 	return panel.find_child("Title", true, false) as Label
 
 
+## The room between the top of a panel and its title.
+static func _room_over_title(panel: PanelContainer) -> float:
+	return _title(panel).global_position.y - panel.global_position.y
+
+
 static func _gap_under_title(panel: PanelContainer) -> float:
 	var title: Label = _title(panel)
 	var under: Control = title.get_parent().get_child(title.get_index() + 1) as Control
@@ -240,3 +265,5 @@ func _assert_dithered_button(button: Button) -> void:
 		if face != null:
 			assert_eq(face.texture.get_height(), int(button.size.y), "%s: %s" % [button.text, state])
 	assert_eq(button.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	var disabled: StyleBox = button.get_theme_stylebox("disabled")
+	assert_eq(disabled.content_margin_top, disabled.content_margin_bottom, "%s: a disabled button has no lip." % button.text)

@@ -67,6 +67,26 @@ func test_view_original_and_reminders_stand_side_by_side_under_the_face() -> voi
 	assert_almost_eq(reminders.get_global_rect().end.x, _inspector.get_global_rect().end.x - Inspector.PAD, 1.0)
 
 
+func test_each_title_is_centered_between_the_top_of_its_panel_and_what_is_under_it() -> void:
+	_inspector.show_card(ANGEL, _look("serra_angel"), null, null, [StateEntry.new("Damage", "1 damage.")])
+	await wait_process_frames(3)
+
+	for panel: PanelContainer in _inspector.panels():
+		assert_almost_eq(_room_over_title(panel), _gap_under_title(panel), 1.0, _title(panel).text)
+	_inspector.reminders_button().button_pressed = true
+	await wait_process_frames(3)
+	assert_almost_eq(_room_over_title(_inspector.panels()[0]), _gap_under_title(_inspector.panels()[0]), 1.0, "Reminders")
+
+
+func test_a_panel_with_nothing_in_it_sets_its_title_as_one_with_something_would() -> void:
+	_inspector.show_card(ANGEL, _look("serra_angel"), null, null, [])
+	await wait_process_frames(3)
+
+	var panels: Array[PanelContainer] = _inspector.panels()
+	assert_almost_eq(_room_over_title(panels[1]), _room_over_title(panels[0]), 1.0)
+	assert_almost_eq(_gap_under_title(panels[1]), _gap_under_title(panels[0]), 1.0)
+
+
 func test_card_text_and_state_information_are_equally_tall_and_fill_the_rest() -> void:
 	var states: Array[StateEntry] = [StateEntry.new("Damage", "2 damage is marked on it until end of turn."),
 		StateEntry.new("Giant Growth", "It gets +3/+3 until end of turn.")]
@@ -529,6 +549,8 @@ func _assert_dithered_button(button: Button) -> void:
 		if face != null:
 			assert_eq(face.texture.get_height(), int(button.size.y), "%s: %s" % [button.text, state])
 	assert_eq(button.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	var disabled: StyleBox = button.get_theme_stylebox("disabled")
+	assert_eq(disabled.content_margin_top, disabled.content_margin_bottom, "%s: a disabled button has no lip." % button.text)
 
 
 ## Checks that [param panel]'s content stands on a backing like a State Information entry's
@@ -614,6 +636,11 @@ static func _none_in(panel: PanelContainer) -> Label:
 
 static func _title(panel: PanelContainer) -> Label:
 	return panel.find_child("Title", true, false) as Label
+
+
+## The room between the top of a panel and its title.
+static func _room_over_title(panel: PanelContainer) -> float:
+	return _title(panel).global_position.y - panel.global_position.y
 
 
 ## The room between a panel's title and what is under it.

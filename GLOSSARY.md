@@ -398,3 +398,7 @@ _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 **Rarity**:
 How scarce a card or a Potion is: Common, Uncommon, Rare, Mythic or Power-9. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. An Emblem has none.
 _Avoid_: Tier (a part of a run), quality, grade
+
+**Divider**:
+The bar in the deckbuilder between the Collection and the Deck's columns. Dragging it up or down gives one more height and the other less; it changes no card's size, which the two zoom sliders set. Neither side can be made smaller than one whole card, and a double-click puts it back where it started. It stays where it was left until the deckbuilder closes.
+_Avoid_: Slider (the zoom sliders), splitter, sash, handle

@@ -7,6 +7,9 @@ extends Control
 ## a Controls button that opens the Controls Page (game glossary): a row for each action that has
 ## a key, which waits for the next key pressed once it is clicked, with "Reset controls" under
 ## them. Rows that share a key are red (ADR 0034).
+##
+## It takes the Inspector's treatment, as the sidebar does (ADR 0033): an edged window with
+## Dither Shading, and dithered gray buttons; the Game Speed in use has a gold ring.
 
 signal resume_pressed
 ## Conceding was confirmed.
@@ -43,6 +46,10 @@ const AUTO_TAP: String = "Auto-tapping"
 ## The border of the speed in use.
 const CHOSEN: Color = Color("#f2d36b")
 const SPEED_GAP: float = 6.0
+## How rounded the window is.
+const RADIUS: int = 10
+## What rings the Game Speed in use.
+const RING: String = "Chosen"
 
 ## How long it takes to ease in or out; the Encounter Screen sets it.
 var ease_seconds: float = 0.0
@@ -174,6 +181,18 @@ func shows_shared(action: KeyBindings.Action) -> bool:
 	return _key_labels.has(action) and _key_labels[action].get_theme_color("font_color") == SHARED
 
 
+## The window of the page showing.
+func window() -> Panel:
+	return _window
+
+
+## The gold ring on the button for [param speed], shown while it is the Game Speed in use;
+## null on any other page.
+func chosen_ring(speed: GameSpeed.Speed) -> Panel:
+	var made: Button = speed_button(speed)
+	return made.get_node(RING) as Panel if made != null else null
+
+
 func window_rect() -> Rect2:
 	return Rect2(_window.position, _window.size)
 
@@ -219,15 +238,11 @@ func _show_page(shown: Page) -> void:
 		rows_above = KeyBindings.ACTIONS.size()
 	var rect: Rect2 = EncounterLayout.pause_rect(names.size() + rows_above, _field)
 	_window = Panel.new()
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.09, 0.1, 0.13, 0.98)
-	style.border_color = InfoPanel.BORDER
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(10)
-	_window.add_theme_stylebox_override("panel", style)
 	_window.position = rect.position
 	_window.size = rect.size
 	add_child(_window)
+	var palette: InspectorParts.Palette = Inspector.palette()
+	InspectorParts.shade_background(_window, null, palette.panel, palette.edge, palette.edge_width, RADIUS)
 	_heading = Label.new()
 	_heading.text = title
 	_heading.position = Vector2(20, 14)
@@ -240,6 +255,7 @@ func _show_page(shown: Page) -> void:
 		var made: Button = _button(names[index])
 		made.position = Vector2(60, EncounterLayout.PAUSE_HEADING + (index + rows_above) * EncounterLayout.PAUSE_ROW)
 		made.size = Vector2(rect.size.x - 120, EncounterLayout.PAUSE_ROW - 12)
+		_shade(made)
 		_window.add_child(made)
 		_buttons[names[index]] = made
 	if shown == Page.MENU:
@@ -269,6 +285,7 @@ func _add_key_rows(window_width: float) -> void:
 		var made: Button = _button(WAITING if action == _waiting else key_bindings.label_of(action))
 		made.position = Vector2(230, top)
 		made.size = Vector2(window_width - 270, EncounterLayout.PAUSE_ROW - 12)
+		_shade(made)
 		made.pressed.connect(_on_key_row_pressed.bind(action))
 		_window.add_child(made)
 		_key_buttons[action] = made
@@ -301,6 +318,11 @@ func _add_speeds(window_width: float) -> void:
 		var made: Button = _button(GameSpeed.name_of(speed), 17)
 		made.position = Vector2(60 + index * (width + SPEED_GAP), EncounterLayout.PAUSE_HEADING + EncounterLayout.PAUSE_ROW)
 		made.size = Vector2(width, EncounterLayout.PAUSE_ROW - 12)
+		_shade(made)
+		var ring: Panel = CardShapes.outline(made.size, 6, 2, CHOSEN)
+		ring.name = RING
+		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		made.add_child(ring)
 		made.pressed.connect(_on_speed_pressed.bind(speed))
 		_window.add_child(made)
 		_speed_buttons[speed] = made
@@ -312,6 +334,7 @@ func _add_auto_pass(window_width: float) -> void:
 	_auto_pass = _button(_auto_pass_text(), 19)
 	_auto_pass.position = Vector2(60, EncounterLayout.PAUSE_HEADING + EncounterLayout.PAUSE_ROW * 2.0)
 	_auto_pass.size = Vector2(window_width - 120, EncounterLayout.PAUSE_ROW - 12)
+	_shade(_auto_pass)
 	_auto_pass.pressed.connect(_on_auto_pass_pressed)
 	_window.add_child(_auto_pass)
 
@@ -325,6 +348,7 @@ func _add_auto_tap(window_width: float) -> void:
 	_auto_tap = _button(_box_text(_is_auto_tapping, AUTO_TAP), 19)
 	_auto_tap.position = Vector2(60, EncounterLayout.PAUSE_HEADING + EncounterLayout.PAUSE_ROW * 3.0)
 	_auto_tap.size = Vector2(window_width - 120, EncounterLayout.PAUSE_ROW - 12)
+	_shade(_auto_tap)
 	_auto_tap.pressed.connect(_on_auto_tap_pressed)
 	_window.add_child(_auto_tap)
 
@@ -344,10 +368,7 @@ func _on_auto_pass_pressed() -> void:
 
 
 func _mark_speed(made: Button, is_chosen: bool) -> void:
-	for state: String in ["normal", "hover", "pressed"]:
-		var flat: StyleBoxFlat = made.get_theme_stylebox(state) as StyleBoxFlat
-		flat.border_color = CHOSEN
-		flat.set_border_width_all(2 if is_chosen else 0)
+	made.get_node(RING).visible = is_chosen
 
 
 func _on_speed_pressed(speed: GameSpeed.Speed) -> void:
@@ -360,16 +381,14 @@ func _button(text: String, font_size: int = 21) -> Button:
 	made.text = text
 	made.focus_mode = Control.FOCUS_NONE
 	made.add_theme_font_size_override("font_size", font_size)
-	for state: String in ["normal", "hover", "pressed", "disabled"]:
-		var flat: StyleBoxFlat = StyleBoxFlat.new()
-		flat.bg_color = PlayerPanel.PLAIN_COLOR.lightened(0.22) if state in ["hover", "pressed"] else PlayerPanel.PLAIN_COLOR
-		if state == "disabled":
-			flat.bg_color = Color("#262a32")
-		flat.set_corner_radius_all(6)
-		made.add_theme_stylebox_override(state, flat)
 	if [RESUME, CONCEDE, SETTINGS, QUIT, BACK, QUIT_NOW, CONTROLS, RESET_KEYS].has(text):
 		made.pressed.connect(_on_pressed.bind(text))
 	return made
+
+
+## Dither Shades [param made], its size already set, in the Inspector's gray.
+static func _shade(made: Button) -> void:
+	ButtonShading.shade(made, Inspector.palette().button, Inspector.palette().button_disabled)
 
 
 func _on_pressed(text: String) -> void:

@@ -109,3 +109,73 @@ func test_a_card_dropped_in_a_column_goes_above_the_nearest_name_strip() -> void
 	assert_eq(_layout.fan_place_at(step * 40.0, 5), 5, "Under every card, it goes to the bottom.")
 	assert_eq(_layout.fan_place_at(-30.0, 5), 0)
 
+
+
+func test_by_default_the_divider_leaves_the_collection_one_and_a_half_rows_tall() -> void:
+	var rows: float = DeckbuilderLayout.COLLECTION_ROWS_SHOWN
+	var height: float = rows * (DeckbuilderLayout.COLLECTION_CARD_HEIGHT + DeckbuilderLayout.CARD_GAP) \
+			- DeckbuilderLayout.CARD_GAP + 2.0 * DeckbuilderLayout.PAD
+
+	assert_almost_eq(_layout.collection().size.y, height, 0.01)
+	assert_almost_eq(_layout.collection_height, DeckbuilderLayout.DEFAULT_COLLECTION_HEIGHT, 0.01)
+	assert_almost_eq(_layout.deck().position.y, _layout.collection().end.y + DeckbuilderLayout.GUTTER, 0.01)
+	assert_almost_eq(_layout.deck().end.y, 1080.0 - DeckbuilderLayout.GUTTER, 0.01)
+
+
+func test_moving_the_divider_gives_one_pane_the_height_the_other_loses() -> void:
+	var collection: Rect2 = _layout.collection()
+	var strip: Rect2 = _layout.deck()
+
+	_layout.collection_height += 120.0
+
+	assert_almost_eq(_layout.collection().size.y, collection.size.y + 120.0, 0.01)
+	assert_eq(_layout.collection().position, collection.position)
+	assert_almost_eq(_layout.deck().position.y, strip.position.y + 120.0, 0.01)
+	assert_almost_eq(_layout.deck().size.y, strip.size.y - 120.0, 0.01)
+	assert_almost_eq(_layout.column(3).size.y, _layout.deck().size.y, 0.01)
+	test_no_two_parts_overlap_and_all_are_on_the_screen()
+
+
+func test_the_divider_stops_at_a_row_of_the_collection_and_a_card_of_the_deck() -> void:
+	_layout.collection_height = 0.0
+
+	assert_almost_eq(_layout.collection().size.y, DeckbuilderLayout.COLLECTION_CARD_HEIGHT + 2.0 * DeckbuilderLayout.PAD,
+			0.01, "One whole row at the default zoom.")
+
+	_layout.collection_height = 5000.0
+
+	var card: float = _layout.column_card_height()
+	assert_almost_eq(_layout.deck().size.y, DeckbuilderLayout.COLUMN_HEADER + card + 2.0 * DeckbuilderLayout.COLUMN_PAD
+			+ DeckbuilderLayout.SCROLL_BAR, 0.01, "Its header, one card at deck zoom 1 and the sideways scroll bar.")
+	test_no_two_parts_overlap_and_all_are_on_the_screen()
+	_layout.deck_zoom = DeckbuilderLayout.DECK_ZOOM_LARGEST
+	_layout.collection_height = 5000.0
+	assert_almost_eq(_layout.deck().size.y, DeckbuilderLayout.COLUMN_HEADER + card + 2.0 * DeckbuilderLayout.COLUMN_PAD
+			+ DeckbuilderLayout.SCROLL_BAR, 0.01, "The limit does not follow the deck zoom.")
+
+
+func test_no_card_changes_size_wherever_the_divider_is() -> void:
+	var across: int = _layout.collection_columns()
+	var cell: Rect2 = _layout.collection_cell(7)
+	var card: float = _layout.column_card_height()
+	var width: float = _layout.column_width()
+
+	for height: float in [0.0, 500.0, 5000.0]:
+		_layout.collection_height = height
+		assert_eq(_layout.collection_columns(), across)
+		assert_eq(_layout.collection_cell(7), cell)
+		assert_almost_eq(_layout.column_card_height(), card, 0.01)
+		assert_almost_eq(_layout.column_width(), width, 0.01)
+
+
+func test_the_divider_is_the_gutter_and_is_grabbed_a_little_into_either_pane() -> void:
+	_layout.collection_height = 450.0
+	var divider: Rect2 = _layout.divider()
+	var grab: Rect2 = _layout.divider_grab()
+
+	assert_almost_eq(divider.position.y, _layout.collection().end.y, 0.01)
+	assert_almost_eq(divider.end.y, _layout.deck().position.y, 0.01)
+	assert_eq(divider.position.x, _layout.collection().position.x)
+	assert_eq(divider.size.x, _layout.collection().size.x)
+	assert_eq(grab, divider.grow_individual(0.0, DeckbuilderLayout.DIVIDER_REACH, 0.0, DeckbuilderLayout.DIVIDER_REACH))
+	assert_gt(DeckbuilderLayout.DIVIDER_REACH, 0.0)

@@ -319,6 +319,45 @@ func test_the_deck_zoom_slider_widens_the_columns_and_the_strip_scrolls_sideways
 	assert_eq(_deck.size(), 40)
 
 
+func test_the_mouse_wheel_scrolls_a_column_and_never_the_strip_sideways() -> void:
+	# A screen of its own in a viewport that takes input, which the wheel goes through.
+	var viewport: SubViewport = SubViewport.new()
+	viewport.size = Vector2i(1920, 1080)
+	viewport.gui_disable_input = false
+	add_child_autofree(viewport)
+	_screen = DeckbuilderScreen.new()
+	_screen.starts_itself = false
+	viewport.add_child(_screen)
+	_screen.set_deferred("size", Vector2(1920, 1080))
+	await wait_process_frames(1)
+	_screen.begin(_sample, _sample.deckbox.active())
+	_screen.zoom_deck(1.6)
+	await wait_process_frames(3)
+	var places: DeckbuilderLayout = _screen.layout()
+	assert_true(places.columns_overflow())
+	var column: ScrollContainer = _screen.column_scroll(1)
+	var header: Vector2 = places.column(1).position + Vector2(places.column(1).size.x / 2.0, 12.0)
+	var empty_column: Vector2 = places.column(5).get_center()
+
+	for button: MouseButton in [MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_RIGHT]:
+		for point: Vector2 in [header, empty_column]:
+			for is_shifted: bool in [false, true]:
+				_wheel(point, button, is_shifted)
+	await wait_process_frames(2)
+	assert_eq(_screen.deck_scroll().scroll_horizontal, 0, "Over a header or a column with nothing to scroll.")
+
+	var inside: Vector2 = places.column(1).get_center()
+	for turn: int in 3:
+		_wheel(inside, MOUSE_BUTTON_WHEEL_DOWN, false)
+	await wait_process_frames(2)
+	assert_gt(column.scroll_vertical, 0, "The column under the cursor scrolls down.")
+	for turn: int in 30:
+		_wheel(inside, MOUSE_BUTTON_WHEEL_DOWN, false)
+	await wait_process_frames(2)
+	assert_eq(_screen.deck_scroll().scroll_horizontal, 0, "At its bottom, the strip still does not move.")
+	assert_true(_screen.deck_scroll().get_h_scroll_bar().visible, "Its scroll bar still moves it.")
+
+
 func test_a_glowing_card_can_leave_the_deck() -> void:
 	var lions: DeckbuilderCard = _spare("Savannah Lions")
 	_screen.double_click_at(_in_collection(lions))
@@ -452,6 +491,19 @@ func _button_event(point: Vector2, is_pressed: bool, is_double: bool = false) ->
 	event.double_click = is_double
 	event.position = point
 	return event
+
+
+## Turns the mouse wheel once at [param point], through the viewport as a real mouse does.
+func _wheel(point: Vector2, button: MouseButton, is_shifted: bool) -> void:
+	for is_pressed: bool in [true, false]:
+		var event: InputEventMouseButton = InputEventMouseButton.new()
+		event.button_index = button
+		event.pressed = is_pressed
+		event.shift_pressed = is_shifted
+		event.factor = 1.0
+		event.position = point
+		event.global_position = point
+		_screen.get_viewport().push_input(event)
 
 
 func _motion_event(point: Vector2) -> InputEventMouseMotion:

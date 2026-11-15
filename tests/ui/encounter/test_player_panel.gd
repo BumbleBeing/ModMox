@@ -99,7 +99,7 @@ func test_a_step_with_a_stop_that_is_the_step_it_is_now_is_green_and_glows() -> 
 	var hero: PlayerPanel = _panel(HERO)
 
 	assert_true(hero.shows_stop(MAIN))
-	assert_eq((hero.step_button(MAIN).get_theme_stylebox("normal") as StyleBoxFlat).bg_color, PlayerPanel.STOP_COLOR)
+	assert_eq(PlayerPanel.tint_of(hero.step_button(MAIN)), PlayerPanel.STOP_COLOR)
 	assert_eq(BorderEffects.glow_color(hero.step_button(MAIN)), PlayerPanel.NOW_COLOR)
 
 
@@ -134,7 +134,7 @@ func test_the_heros_panel_has_a_potions_button_that_is_gray_with_none_and_takes_
 	assert_eq(Rect2(potions.position, potions.size), parts["potions"], "Between the Emblems button and the controls.")
 	assert_true(potions.disabled)
 	assert_eq(potions.mouse_filter, Control.MOUSE_FILTER_IGNORE, "It does not light up under the cursor (A491).")
-	assert_eq((potions.get_theme_stylebox("disabled") as StyleBoxFlat).border_color, PlayerPanel.NO_ITEMS_COLOR)
+	assert_eq(PlayerPanel.tint_of(potions), PlayerPanel.NO_ITEMS_COLOR)
 	assert_null(_panel(VILLAIN).potions_button(), "Only the Hero's panel has one.")
 
 
@@ -184,7 +184,6 @@ func test_the_step_it_is_now_is_marked_on_the_active_players_panel_only() -> voi
 	assert_eq(BorderEffects.glow_color(hero.step_button(MAIN)), PlayerPanel.NOW_COLOR, "It glows (A477).")
 	assert_null(BorderEffects.glow_color(hero.step_button(UPKEEP)))
 	assert_null(BorderEffects.glow_color(villain.step_button(MAIN)), "Not on the other player's row.")
-	assert_eq((hero.step_button(MAIN).get_theme_stylebox("normal") as StyleBoxFlat).border_width_left, 0, "No border any more.")
 
 	_snapshot.view.step = UPKEEP
 	_snapshot.view.active_player_id = VILLAIN
@@ -200,22 +199,19 @@ func test_the_step_it_is_now_is_marked_on_the_active_players_panel_only() -> voi
 
 func test_a_stop_turns_its_step_green_and_back() -> void:
 	var panel: PlayerPanel = _panel(HERO)
-	var plain: Color = (panel.step_button(UPKEEP).get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+	var plain: Color = PlayerPanel.tint_of(panel.step_button(UPKEEP))
 	var had: bool = panel.shows_stop(UPKEEP)
 
 	_stops.toggle(HERO, UPKEEP)
 	_show(panel, HERO)
 
 	assert_eq(panel.shows_stop(UPKEEP), not had)
-	assert_ne((panel.step_button(UPKEEP).get_theme_stylebox("normal") as StyleBoxFlat).bg_color, plain)
-	var colors: Array[Color] = [PlayerPanel.STOP_COLOR, PlayerPanel.PLAIN_COLOR]
+	assert_ne(PlayerPanel.tint_of(panel.step_button(UPKEEP)), plain)
+	var colors: Array[Color] = [PlayerPanel.STOP_COLOR, Inspector.palette().button]
 	assert_true(colors.has(plain))
-	assert_eq((panel.step_button(UPKEEP).get_theme_stylebox("hover") as StyleBoxFlat).bg_color,
-			(PlayerPanel.PLAIN_COLOR if had else PlayerPanel.STOP_COLOR).lightened(0.18))
-	assert_eq((panel.step_button(UPKEEP).get_theme_stylebox("disabled") as StyleBoxFlat).bg_color, Color("#2c323c"))
 	_stops.toggle(HERO, UPKEEP)
 	_show(panel, HERO)
-	assert_eq((panel.step_button(UPKEEP).get_theme_stylebox("normal") as StyleBoxFlat).bg_color, plain)
+	assert_eq(PlayerPanel.tint_of(panel.step_button(UPKEEP)), plain)
 	assert_eq(panel.shows_stop(UPKEEP), had)
 
 	panel.stop_toggled.connect(func(step: MmTurn.Step) -> void: _pressed.append(step))
@@ -316,26 +312,22 @@ func test_the_emblems_button_counts_emblems_and_turns_gold_with_any() -> void:
 	var button: Button = panel.emblems_button()
 	assert_eq(button.text, "⛨  Emblems (0)")
 	assert_true(button.disabled)
-	var gray: StyleBoxFlat = button.get_theme_stylebox("normal") as StyleBoxFlat
-	assert_eq(gray.border_color, Color("#6b7280"))
+	assert_eq(PlayerPanel.tint_of(button), PlayerPanel.NO_ITEMS_COLOR)
 
 	_snapshot.view.command = [_emblem(HERO), _emblem(VILLAIN), _emblem(HERO)]
 	_show(panel, HERO)
 
 	assert_eq(button.text, "⛨  Emblems (2)")
 	assert_false(button.disabled)
-	var gold: StyleBoxFlat = button.get_theme_stylebox("normal") as StyleBoxFlat
-	assert_eq(gold.border_color, PlayerPanel.GOLD)
-	assert_eq(gold.bg_color, Color(PlayerPanel.GOLD, 0.25))
-	assert_eq((button.get_theme_stylebox("hover") as StyleBoxFlat).bg_color, Color(PlayerPanel.GOLD, 0.45))
-	assert_eq(gold.border_width_left, 1)
+	var gold: StyleBox = button.get_theme_stylebox("normal")
+	assert_eq(PlayerPanel.tint_of(button), PlayerPanel.GOLD)
 	_snapshot.view.command = [_emblem(HERO)]
 	_show(panel, HERO)
 	assert_eq(button.text, "⛨  Emblems (1)")
 	assert_eq(button.get_theme_stylebox("normal"), gold, "Still gold: not restyled.")
 	_snapshot.view.command = []
 	_show(panel, HERO)
-	assert_eq((button.get_theme_stylebox("normal") as StyleBoxFlat).border_color, Color("#6b7280"))
+	assert_eq(PlayerPanel.tint_of(button), Color("#6b7280"))
 	assert_true(button.disabled)
 	panel.emblems_pressed.connect(func() -> void: _pressed.append("emblems"))
 	button.pressed.emit()
@@ -489,7 +481,7 @@ func test_the_emblems_button_glows_green_while_an_emblem_can_be_activated() -> v
 
 	assert_true(panel.is_glowing(panel.emblems_button()))
 	assert_eq(BorderEffects.glow_color(panel.emblems_button()), DecisionClicks.color_of(DecisionClicks.Kind.PLAY))
-	assert_eq((panel.emblems_button().get_theme_stylebox("normal") as StyleBoxFlat).border_color, PlayerPanel.GOLD,
+	assert_eq(PlayerPanel.tint_of(panel.emblems_button()), PlayerPanel.GOLD,
 		"The Glow is an outline round the button; the button keeps its own color.")
 	_show(panel, HERO)
 	assert_false(panel.is_glowing(panel.emblems_button()))
@@ -503,12 +495,12 @@ func test_the_emblems_button_goes_gray_once_every_emblem_is_used_up_but_can_stil
 
 	_show(panel, HERO)
 
-	assert_eq((panel.emblems_button().get_theme_stylebox("normal") as StyleBoxFlat).border_color, Color("#6b7280"))
+	assert_eq(PlayerPanel.tint_of(panel.emblems_button()), Color("#6b7280"))
 	assert_eq(panel.emblems_button().text, "⛨  Emblems (1)")
 	assert_false(panel.emblems_button().disabled, "A used-up Emblem can still be read.")
 	_snapshot.view.command = [boon, _emblem(HERO)]
 	_show(panel, HERO)
-	assert_eq((panel.emblems_button().get_theme_stylebox("normal") as StyleBoxFlat).border_color, PlayerPanel.GOLD)
+	assert_eq(PlayerPanel.tint_of(panel.emblems_button()), PlayerPanel.GOLD)
 
 
 func test_the_potions_button_counts_potions_turns_purple_and_takes_a_press() -> void:
@@ -522,14 +514,14 @@ func test_the_potions_button_counts_potions_turns_purple_and_takes_a_press() -> 
 	assert_eq(potions.text, "⚗  Potions (2)")
 	assert_false(potions.disabled)
 	assert_eq(potions.mouse_filter, Control.MOUSE_FILTER_STOP)
-	assert_eq((potions.get_theme_stylebox("normal") as StyleBoxFlat).border_color, PlayerPanel.POTION_COLOR)
+	assert_eq(PlayerPanel.tint_of(potions), PlayerPanel.POTION_COLOR)
 	assert_false(panel.is_glowing(potions))
 	potions.pressed.emit()
 	assert_eq(_pressed, ["potions"])
 	_snapshot.view.potions = []
 	_show(panel, HERO)
 	assert_true(potions.disabled)
-	assert_eq((potions.get_theme_stylebox("disabled") as StyleBoxFlat).border_color, PlayerPanel.NO_ITEMS_COLOR)
+	assert_eq(PlayerPanel.tint_of(potions), PlayerPanel.NO_ITEMS_COLOR)
 
 
 func test_the_potions_button_glows_green_while_a_potion_can_be_used() -> void:

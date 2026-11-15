@@ -224,17 +224,57 @@ func test_the_auto_pass_box_shows_what_it_is_told() -> void:
 	assert_eq(menu.auto_pass_button().text, "☐  Auto-pass")
 
 
-func test_a_button_brightens_under_the_cursor_and_a_grayed_one_is_darker() -> void:
+func test_the_window_is_an_edged_dithered_panel_in_the_inspectors_colors() -> void:
 	var menu: PauseMenu = _menu()
 	menu.open(FIELD, true)
-	var resume: Button = menu.button(PauseMenu.RESUME)
+	var window: Panel = menu.window()
+	var height: int = int(window.size.y)
+	var palette: InspectorParts.Palette = Inspector.palette()
+	assert_eq(window.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_true(_same(window.get_theme_stylebox("panel"), DitherShading.plate(palette.panel.lightened(0.06),
+		palette.panel.darkened(0.3), palette.edge, PauseMenu.RADIUS, palette.edge_width, 0, height)))
+	menu.button(PauseMenu.SETTINGS).pressed.emit()
+	window = menu.window()
+	assert_eq((window.get_theme_stylebox("panel") as StyleBoxTexture).texture.get_height(), int(window.size.y),
+		"Each page's window is painted for its own height.")
 
-	var normal: Color = (resume.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
-	var hover: Color = (resume.get_theme_stylebox("hover") as StyleBoxFlat).bg_color
-	var disabled: Color = (resume.get_theme_stylebox("disabled") as StyleBoxFlat).bg_color
 
-	assert_gt(hover.get_luminance(), normal.get_luminance())
-	assert_lt(disabled.get_luminance(), normal.get_luminance())
+func test_every_button_is_dithered_gray_and_keeps_its_size() -> void:
+	var menu: PauseMenu = _menu()
+	menu.open(FIELD, false)
+	var palette: InspectorParts.Palette = Inspector.palette()
+	var pages: Array[Array] = [[PauseMenu.RESUME, PauseMenu.CONCEDE, PauseMenu.SETTINGS, PauseMenu.QUIT]]
+	for text: String in pages[0]:
+		_is_dithered(menu.button(text), palette)
+	assert_true(menu.button(PauseMenu.CONCEDE).disabled)
+	menu.button(PauseMenu.SETTINGS).pressed.emit()
+	for text: String in [PauseMenu.CONTROLS, PauseMenu.BACK]:
+		_is_dithered(menu.button(text), palette)
+	_is_dithered(menu.auto_pass_button(), palette)
+	_is_dithered(menu.auto_tap_button(), palette)
+	for speed: GameSpeed.Speed in GameSpeed.ALL:
+		_is_dithered(menu.speed_button(speed), palette)
+	menu.button(PauseMenu.CONTROLS).pressed.emit()
+	_is_dithered(menu.key_button(PASS), palette)
+	await wait_process_frames(1)
+	var row: float = EncounterLayout.PAUSE_ROW - 12
+	assert_eq(menu.button(PauseMenu.BACK).size, Vector2(menu.window_rect().size.x - 120, row), "No button grows.")
+	assert_eq(menu.key_button(PASS).size.y, row)
+
+
+func test_the_speed_in_use_has_a_gold_ring_and_pressing_another_moves_it() -> void:
+	var menu: PauseMenu = _menu()
+	menu.show_game_speed(GameSpeed.Speed.NORMAL)
+	menu.open(FIELD, true)
+	menu.button(PauseMenu.SETTINGS).pressed.emit()
+	for speed: GameSpeed.Speed in GameSpeed.ALL:
+		assert_eq(menu.chosen_ring(speed).visible, speed == GameSpeed.Speed.NORMAL, GameSpeed.name_of(speed))
+	var ring: StyleBoxFlat = menu.chosen_ring(GameSpeed.Speed.NORMAL).get_theme_stylebox("panel") as StyleBoxFlat
+	assert_eq(ring.border_color, PauseMenu.CHOSEN)
+	var other: GameSpeed.Speed = GameSpeed.ALL[0]
+	menu.speed_button(other).pressed.emit()
+	assert_true(menu.chosen_ring(other).visible)
+	assert_false(menu.chosen_ring(GameSpeed.Speed.NORMAL).visible)
 
 
 func _menu() -> PauseMenu:
@@ -244,6 +284,23 @@ func _menu() -> PauseMenu:
 	menu.concede_confirmed.connect(func() -> void: _events.append("concede"))
 	menu.quit_confirmed.connect(func() -> void: _events.append("quit"))
 	return menu
+
+
+func _is_dithered(button: Button, palette: InspectorParts.Palette) -> void:
+	var height: int = int(button.size.y)
+	assert_eq(button.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, button.text)
+	assert_eq(button.get_theme_stylebox("normal"), ButtonShading.plate(palette.button, "normal", height), button.text)
+	assert_eq(button.get_theme_stylebox("disabled"), ButtonShading.plate(palette.button_disabled, "disabled", height),
+		button.text)
+
+
+## Whether two Dither Shaded plates are painted alike, pixel for pixel.
+func _same(a: StyleBox, b: StyleBox) -> bool:
+	var left: StyleBoxTexture = a as StyleBoxTexture
+	var right: StyleBoxTexture = b as StyleBoxTexture
+	if left == null or right == null:
+		return false
+	return left.texture.get_image().get_data() == right.texture.get_image().get_data()
 
 
 func test_the_settings_page_has_a_keys_button_that_opens_the_controls_page() -> void:

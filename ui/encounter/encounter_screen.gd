@@ -79,7 +79,7 @@ var starts_itself: bool = true
 ## itself uses the game's own file; one made in a test uses none unless it is given one.
 var settings_path: String = ""
 ## How this screen leaves for another scene. Tests replace it.
-var navigate: Callable = func(scene: String) -> void: get_tree().change_scene_to_file(scene)
+var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get_tree(), scene)
 
 var _presenter: EncounterPresenter = null
 var _snapshot: EncounterSnapshot = null
@@ -217,6 +217,8 @@ var _backdrop: Control = null
 var _backdrop_dimmer: ColorRect = null
 ## The plates behind the rows and piles, over the Backdrop and under the board.
 var _zone_plates: ZonePlates
+## The sidebar's backing, Dither Shaded as the Inspector is, under the player panels.
+var _sidebar: Panel
 
 
 func _ready() -> void:
@@ -237,6 +239,11 @@ func _ready() -> void:
 	add_child(_ghost_layer)
 	_block_lines = BlockLines.new()
 	add_child(_block_lines)
+	# Built once, and painted again only for a new height: painting it takes milliseconds.
+	_sidebar = Panel.new()
+	_sidebar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_sidebar)
+	InspectorParts.shade_background(_sidebar, null, Inspector.BACKGROUND, Inspector.BACKGROUND, 0, 0)
 	for player_id: int in [VILLAIN, HERO]:
 		var panel: PlayerPanel = PlayerPanel.new(player_id, "HERO" if player_id == HERO else "VILLAIN")
 		panel.mana_pressed.connect(_answer)
@@ -879,6 +886,11 @@ func hand_order() -> HandOrder:
 ## The face of the card being held or waiting on the Option Menu, or null.
 func lifted_face() -> CardFace:
 	return _lifted_face
+
+
+## The sidebar's Dither Shaded backing, under the player panels.
+func sidebar_backing() -> Panel:
+	return _sidebar
 
 
 ## The Inspector, which lies over the sidebar while a card is pinned (ADR 0033).
@@ -1577,11 +1589,8 @@ func _redraw() -> void:
 	plates.assign(EncounterLayout.zone_plates(regions).values())
 	_zone_plates.place(plates)
 
-	var sidebar: ColorRect = ColorRect.new()
-	sidebar.color = Color("#22262e")
-	sidebar.position = regions["sidebar"].position
-	sidebar.size = regions["sidebar"].size
-	_board.add_child(sidebar)
+	_sidebar.position = regions["sidebar"].position
+	_sidebar.size = regions["sidebar"].size
 	var middle: ColorRect = ColorRect.new()
 	middle.color = Color(1, 1, 1, 0.12)
 	middle.position = Vector2(regions["battlefield"].position.x, (regions["villain_nonlands"].end.y + regions["hero_nonlands"].position.y) / 2.0)

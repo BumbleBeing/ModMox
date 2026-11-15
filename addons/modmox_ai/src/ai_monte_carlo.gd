@@ -30,15 +30,18 @@ static func candidates(options: Array[int], one_step_scores: Array[int], pick: i
 ## re-dealt worlds, as one row per sample. Every answer in a row is played on the same
 ## world, Game RNG and CHEAP Agents' AI RNGs, so they differ only by the answer (A193).
 ## [param repeats] maps an answer that is a Repeat Plan to how many times it is activated.
+## [param holding_lands] is an answer rolled out with [param player_id] playing no land for
+## the rest of the Game Turn, or -1.
 static func sample_scores(source: MmSimulationSource, rng: MmRng, answers: Array[int], samples: int,
-		player_id: int, profile: AiProfile, repeats: Dictionary[int, int] = {}) -> Array:
+		player_id: int, profile: AiProfile, repeats: Dictionary[int, int] = {}, holding_lands: int = -1) -> Array:
 	var rows: Array = []
 	for _sample: int in samples:
 		var world_seed: int = rng.next_seed()
 		var row: Array[int] = []
 		for answer: int in answers:
 			var copy: MmEngine = source.simulation_copy(MmRng.new(world_seed))
-			row.append(AiSimulation.score_rollout(copy, answer, player_id, profile, repeats.get(answer, 1)))
+			row.append(AiSimulation.score_rollout(copy, answer, player_id, profile, repeats.get(answer, 1),
+				answer == holding_lands))
 		rows.append(row)
 	return rows
 

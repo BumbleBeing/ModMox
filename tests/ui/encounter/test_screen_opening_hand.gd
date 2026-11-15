@@ -741,7 +741,7 @@ func test_every_button_is_shaded_in_its_own_color_and_confirm_is_gray_until_enou
 	assert_gt(OpeningHandOverlay.CONFIRM_COLOR.g, OpeningHandOverlay.CONFIRM_COLOR.b, "Green.")
 	var confirm: Button = _overlay.button("Confirm")
 	assert_true(confirm.disabled, "A card is still owed,")
-	assert_eq(confirm.get_theme_stylebox("disabled"), ButtonShading.box(ButtonShading.DISABLED, roundi(confirm.size.y)), "so it is gray.")
+	assert_eq(confirm.get_theme_stylebox("disabled"), ButtonShading.plate(ButtonShading.DISABLED, "disabled", int(confirm.size.y)), "so it is gray.")
 
 	_open(Scenario.setup(Rule.HERO_CHOOSES))
 	_is_shaded("Play first", OpeningHandOverlay.CHOICE_COLOR)
@@ -752,11 +752,10 @@ func test_every_button_is_shaded_in_its_own_color_and_confirm_is_gray_until_enou
 ## under the cursor or held down.
 func _is_shaded(text: String, color: Color) -> void:
 	var shaded: Button = _overlay.button(text)
-	var height: int = roundi(shaded.size.y)
+	var height: int = int(shaded.size.y)
 	var size_before: Vector2 = shaded.size
-	assert_eq(shaded.get_theme_stylebox("normal"), ButtonShading.box(color, height), text)
-	assert_eq(shaded.get_theme_stylebox("hover"), ButtonShading.box(ButtonShading.hover_color(color), height), text)
-	assert_eq(shaded.get_theme_stylebox("pressed"), ButtonShading.box(ButtonShading.pressed_color(color), height), text)
+	for state: String in ["normal", "hover", "pressed"]:
+		assert_eq(shaded.get_theme_stylebox(state), ButtonShading.plate(color, state, height), "%s, %s." % [text, state])
 	assert_eq(shaded.size, size_before, "%s keeps the size the layout gave it." % text)
 	assert_eq(shaded.scale, Vector2.ONE)
 

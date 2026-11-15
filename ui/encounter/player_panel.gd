@@ -10,6 +10,11 @@ extends Control
 ## and Yield Turn; the Pass Button is not here but over the Info Panel (A489). The
 ## Villain's panel says when the Villain is thinking, under its Emblems button (A294).
 ##
+## It takes the Inspector's treatment, in the Inspector's colors (ADR 0033): an edged panel
+## with Dither Shading, dithered buttons, and the Hero's controls on an entry's plate. The
+## buttons' plates keep little room round their text, so that nothing grows past its box,
+## and the Portrait lies on a flat square, so the dithering does not show through it.
+##
 ## Unlike the board, a panel is not rebuilt from each snapshot. It is built once for its
 ## size, and each snapshot only changes what it shows differently: building its thirty-odd
 ## buttons took six to nine milliseconds a panel, most of it laying out the two symbols on
@@ -44,7 +49,14 @@ const UNDO_FORMAT: String = "Undo [%s]"
 const POTIONS_FORMAT: String = "⚗  Potions (%d)"
 const POTION_COLOR: Color = Color("#9a63d8")
 const NO_ITEMS_COLOR: Color = Color("#6b7280")
-
+## How rounded the panel is.
+const RADIUS: int = 8
+## How much of its tint the Emblems or the Potions button takes over the panel's color.
+const HELD_SHARE: float = 0.4
+## The color a button is drawn in, kept on it.
+const TINT: StringName = &"tint"
+## The room a button's plate keeps at its sides: "Begin Combat" fits its step only with this.
+const BUTTON_SIDE: int = 2
 ## How long a Glow takes to ease in or out, the priority Glow among them; the Encounter
 ## Screen sets it.
 var glow_seconds: float = 0.0
@@ -77,6 +89,10 @@ var _yield: Button = null
 var _thinking: Label = null
 var _name: Label = null
 var _portrait: Panel = null
+var _backing: Panel = null
+var _controls: Panel = null
+var _portrait_edge: Panel = null
+var _portrait_back: Panel = null
 
 
 ## [param title] is what the panel calls its player until a snapshot names them.
@@ -172,6 +188,40 @@ func yield_button() -> Button:
 	return _yield
 
 
+## The panel's Dither Shaded panel, behind everything on it.
+func backing() -> Panel:
+	return _backing
+
+
+## The entry plate the Hero's controls sit on: null on the Villain's panel.
+func controls_plate() -> Panel:
+	return _controls
+
+
+## The flat square the Portrait lies on: null for a player who has none.
+func portrait_back() -> Panel:
+	return _portrait_back
+
+
+## The edge round the Portrait: null for a player who has none.
+func portrait_edge() -> Panel:
+	return _portrait_edge
+
+
+func name_label() -> Label:
+	return _name
+
+
+## The color [param button], a step or the Emblems, Potions or Undo button, is drawn in.
+static func tint_of(button: Button) -> Color:
+	return button.get_meta(TINT)
+
+
+## What the Emblems or the Potions button is filled with when drawn in [param tint].
+static func held_fill(tint: Color) -> Color:
+	return Inspector.palette().panel.lerp(tint, HELD_SHARE)
+
+
 ## The player's name as the panel shows it, in capitals.
 func name_text() -> String:
 	return _name.text
@@ -257,8 +307,16 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 	_potions = null
 	_has_potions = null
 	_picture = null
+	_controls = null
+	_portrait_edge = null
+	_portrait_back = null
 	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(Rect2(Vector2.ZERO, panel_size))
-	add_child(CardShapes.rounded(panel_size, 8, Color("#2c323c")))
+	var palette: InspectorParts.Palette = Inspector.palette()
+	_backing = Panel.new()
+	_backing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_backing.size = panel_size
+	add_child(_backing)
+	InspectorParts.shade_background(_backing, null, palette.panel, palette.edge, palette.edge_width, RADIUS)
 	_priority = Control.new()
 	_priority.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_priority.size = panel_size
@@ -302,13 +360,18 @@ func _add_portrait(box: Rect2) -> void:
 	if texture == null:
 		_portrait = CardShapes.rounded(box.size, 8, Color("#444c5a"))
 	else:
+		# Flat, so the dithering does not show through the picture's empty pixels.
+		_portrait_back = CardShapes.rounded(box.size, 0, Inspector.palette().panel)
+		_portrait_back.position = box.position
+		_portrait_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_portrait_back)
 		_picture = CardShapes.image(texture, box)
 		_picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		_picture.stretch_mode = TextureRect.STRETCH_SCALE
 		add_child(_picture)
-		var edge: Panel = CardShapes.outline(box.size, 0, 2, Color("#14161a"))
-		edge.position = box.position
-		add_child(edge)
+		_portrait_edge = CardShapes.outline(box.size, 0, 2, Inspector.palette().edge)
+		_portrait_edge.position = box.position
+		add_child(_portrait_edge)
 		_portrait = Panel.new()
 		_portrait.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 		_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -369,7 +432,7 @@ func _show_emblems(count: int, look: HeldState.Look) -> void:
 	if _is_emblems_gold is bool and _is_emblems_gold == is_gold:
 		return
 	_is_emblems_gold = is_gold
-	_tint(_emblems, GOLD if is_gold else Color("#6b7280"))
+	_tint(_emblems, GOLD if is_gold else NO_ITEMS_COLOR)
 
 
 ## Purple with Potions held and gray with none, as the Emblems button is gold or gray; it
@@ -391,16 +454,21 @@ func _show_potions(count: int, look: HeldState.Look) -> void:
 	_tint(_potions, tint)
 
 
-## Draws [param button], the Emblems or the Potions button, in [param tint]: see-through,
-## lighter under the cursor, with a thin border.
+## Draws [param button], the Emblems or the Potions button, in [param tint]: Dither
+## Shaded in the panel's color tinted toward it, flat while it cannot be pressed.
 static func _tint(button: Button, tint: Color) -> void:
-	for state: String in ["normal", "hover", "pressed", "disabled"]:
-		var style: StyleBoxFlat = StyleBoxFlat.new()
-		style.bg_color = Color(tint, 0.45 if state == "hover" else 0.25)
-		style.border_color = tint
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(5)
-		button.add_theme_stylebox_override(state, style)
+	# Its symbol comes from a taller fallback font, which leaves no room to lift the text
+	# above the lip without the button growing.
+	_shade(button, held_fill(tint), held_fill(tint), false)
+	button.set_meta(TINT, tint)
+
+
+## Gives [param button] Dither Shading in [param fill], and [param disabled_fill] while it
+## cannot be pressed, with no more room round its text than "Begin Combat" fits its step
+## with; without [param lifts_text] its text is centered on the whole plate.
+static func _shade(button: Button, fill: Color, disabled_fill: Color, lifts_text: bool = true) -> void:
+	ButtonShading.shade(button, fill, disabled_fill, BUTTON_SIDE, lifts_text)
+	button.set_meta(TINT, fill)
 
 
 ## Gives [param button] the green Glow of something that can be used now, or takes it
@@ -424,18 +492,8 @@ func _show_step(step: int, has_stop: bool, is_now: bool) -> void:
 	_step_looks[step] = look
 	var button: Button = _steps[step]
 	button.set_meta("has_stop", has_stop)
-	for state: String in ["normal", "hover", "pressed", "disabled"]:
-		var style: StyleBoxFlat = StyleBoxFlat.new()
-		style.bg_color = STOP_COLOR if has_stop else PLAIN_COLOR
-		if state == "hover":
-			style.bg_color = style.bg_color.lightened(0.18)
-		if state == "disabled":
-			style.bg_color = Color("#2c323c")
-		style.set_corner_radius_all(5)
-		# "Begin Combat" fits the column only with thin margins.
-		style.content_margin_left = 2
-		style.content_margin_right = 2
-		button.add_theme_stylebox_override(state, style)
+	var palette: InspectorParts.Palette = Inspector.palette()
+	_shade(button, STOP_COLOR if has_stop else palette.button, palette.button_disabled)
 	if is_now and not was_now:
 		BorderEffects.add_glow(button, button.size, NOW_COLOR, seconds)
 	elif was_now and not is_now:
@@ -476,11 +534,15 @@ func _add_potions(box: Rect2) -> void:
 
 ## The Hero's controls, in a section of their own under the Potions button.
 func _add_controls(parts: Dictionary[String, Rect2]) -> void:
-	var section: Panel = CardShapes.rounded(parts["controls"].size, 6, Color("#22262e"))
-	section.position = parts["controls"].position
-	add_child(section)
+	_controls = Panel.new()
+	_controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_controls.add_theme_stylebox_override("panel", InspectorParts.plate_style(Inspector.palette()))
+	_controls.position = parts["controls"].position
+	_controls.size = parts["controls"].size
+	add_child(_controls)
 	# Always there: grayed out when nothing can be undone (A245).
 	_undo = _control(UNDO_FORMAT % _undo_key, parts["undo"], 16, func() -> void: undo_pressed.emit())
+	_shade(_undo, Inspector.palette().button, Inspector.palette().button_disabled)
 	_yield = _control("", parts["yield"], 17, func() -> void: yield_toggled.emit())
 	_yield.flat = true
 

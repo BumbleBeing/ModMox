@@ -43,7 +43,7 @@ const PIPS: Dictionary[MmCardTypes.CardColor, String] = {
 ## Whether the screen reads the run from RunFlow when it is ready. Tests hand it one.
 var starts_itself: bool = true
 ## How the screen opens another scene. Tests replace it.
-var navigate: Callable = func(scene: String) -> void: get_tree().change_scene_to_file(scene)
+var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get_tree(), scene)
 
 var _run: Run = null
 var _villain: String = ""
@@ -345,7 +345,7 @@ func _add_button(parent: Control, text: String, on_press: Callable) -> Button:
 	made.add_theme_stylebox_override("hover", DitherShading.button_plate(fill.lightened(HOVER_LIGHTEN), false, BUTTON_HEIGHT))
 	made.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
 	made.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
-	made.add_theme_stylebox_override("disabled", DitherShading.button_plate(DeckbuilderLook.BUTTON_DISABLED, false, BUTTON_HEIGHT))
+	made.add_theme_stylebox_override("disabled", DitherShading.disabled_plate(DeckbuilderLook.BUTTON_DISABLED, BUTTON_HEIGHT))
 	made.pressed.connect(on_press)
 	parent.add_child(made)
 	_buttons[text] = made

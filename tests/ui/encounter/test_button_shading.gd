@@ -1,76 +1,82 @@
 extends GutTest
-## The buttons of the opening-hand overlay: lit from above, with rounded corners, a lighter
-## rim and a shadow underneath.
+## The encounter's made buttons: Dither Shaded in their own color, as the Inspector's and the
+## sidebar's are, lighter under the cursor, sat down on their lip while held, and flat and
+## gray while they cannot be pressed. They never change size for it.
 
 const BLUE: Color = Color(0.17, 0.36, 0.66)
 const HEIGHT: int = 58
-const PAD: int = ButtonShading.PAD
 
 
-func test_the_corners_are_rounded_and_the_middle_is_solid() -> void:
-	var strip: Image = ButtonShading.image(BLUE, HEIGHT)
-
-	assert_eq(strip.get_pixel(PAD, PAD).a, 0.0, "The very corner of the button is cut away.")
-	assert_eq(strip.get_pixel(strip.get_width() / 2, PAD + HEIGHT / 2).a, 1.0)
-	assert_eq(strip.get_pixel(PAD + 12, PAD + 3).a, 1.0, "Past the corner the top edge is whole.")
-
-
-func test_it_is_lit_from_above() -> void:
-	var strip: Image = ButtonShading.image(BLUE, HEIGHT)
-	var middle: int = strip.get_width() / 2
-
-	var top: Color = strip.get_pixel(middle, PAD + 6)
-	var bottom: Color = strip.get_pixel(middle, PAD + HEIGHT - 6)
-
-	assert_gt(top.get_luminance(), bottom.get_luminance())
-	assert_gt(top.b, top.r, "And still blue.")
-
-
-func test_the_rim_is_lighter_than_what_it_surrounds() -> void:
-	var strip: Image = ButtonShading.image(BLUE, HEIGHT)
-	var middle: int = strip.get_width() / 2
-
-	assert_gt(strip.get_pixel(middle, PAD).get_luminance(), strip.get_pixel(middle, PAD + 4).get_luminance(), "Along the top,")
-	assert_gt(strip.get_pixel(middle, PAD + HEIGHT - 1).get_luminance(), strip.get_pixel(middle, PAD + HEIGHT - 5).get_luminance(),
-		"and along the bottom, where the button is darkest.")
-
-
-func test_a_shadow_falls_under_it_and_none_above() -> void:
-	var strip: Image = ButtonShading.image(BLUE, HEIGHT)
-	var middle: int = strip.get_width() / 2
-
-	var under: Color = strip.get_pixel(middle, PAD + HEIGHT + 2)
-	assert_gt(under.a, 0.0)
-	assert_lt(under.a, 1.0)
-	assert_lt(under.get_luminance(), 0.05, "Dark.")
-	assert_eq(strip.get_pixel(middle, 1).a, 0.0)
-
-
-func test_the_box_stretches_only_its_middle_and_draws_its_shadow_outside_the_button() -> void:
-	var made: StyleBoxTexture = ButtonShading.box(BLUE, HEIGHT)
-
-	assert_eq(made.texture.get_height(), HEIGHT + PAD * 2, "As tall as the button and its shadow: nothing stretches up or down.")
-	assert_gte(made.texture_margin_left, PAD + ButtonShading.RADIUS, "The rounded ends keep their shape.")
-	assert_eq(made.texture_margin_left, made.texture_margin_right)
-	for side: Side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
-		assert_eq(made.get_expand_margin(side), float(PAD))
-	assert_eq(ButtonShading.box(BLUE, HEIGHT), made, "Painted once and kept.")
-
-
-func test_a_shaded_button_is_lighter_under_the_cursor_darker_held_down_and_gray_when_it_cannot_be_pressed() -> void:
-	var button: Button = Button.new()
-	add_child_autofree(button)
-	button.size = Vector2(230, HEIGHT)
+func test_a_shaded_button_is_dithered_in_its_color_in_every_state() -> void:
+	var button: Button = _button("Keep 7")
 
 	ButtonShading.apply(button, BLUE)
 
-	assert_eq(button.get_theme_stylebox("normal"), ButtonShading.box(BLUE, HEIGHT))
-	assert_eq(button.get_theme_stylebox("hover"), ButtonShading.box(ButtonShading.hover_color(BLUE), HEIGHT))
-	assert_eq(button.get_theme_stylebox("pressed"), ButtonShading.box(ButtonShading.pressed_color(BLUE), HEIGHT))
-	assert_eq(button.get_theme_stylebox("disabled"), ButtonShading.box(ButtonShading.DISABLED, HEIGHT))
-	assert_gt(ButtonShading.hover_color(BLUE).get_luminance(), BLUE.get_luminance())
-	assert_lt(ButtonShading.pressed_color(BLUE).get_luminance(), BLUE.get_luminance())
-	assert_almost_eq(ButtonShading.DISABLED.r, ButtonShading.DISABLED.b, 0.08, "Gray.")
-	for state: String in ["normal", "hover", "pressed", "disabled"]:
-		assert_eq(button.get_theme_stylebox(state).get_minimum_size(), button.get_theme_stylebox("normal").get_minimum_size(),
-			"No state changes the button's size.")
+	assert_eq(button.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_true(_same(button.get_theme_stylebox("normal"), DitherShading.button_plate(BLUE, false, HEIGHT)))
+	assert_true(_same(button.get_theme_stylebox("hover"),
+		DitherShading.button_plate(BLUE.lightened(InspectorParts.HOVER_LIGHTEN), false, HEIGHT)))
+	assert_true(_same(button.get_theme_stylebox("pressed"), DitherShading.button_plate(BLUE, true, HEIGHT)))
+	assert_true(_same(button.get_theme_stylebox("hover_pressed"), DitherShading.button_plate(BLUE, true, HEIGHT)))
+	assert_true(_same(button.get_theme_stylebox("disabled"), DitherShading.disabled_plate(ButtonShading.DISABLED, HEIGHT)))
+	assert_eq(ButtonShading.DISABLED, Inspector.palette().button_disabled, "Gray as the Inspector's are.")
+
+
+func test_its_text_is_white_and_dim_while_it_cannot_be_pressed() -> void:
+	var button: Button = _button("Keep 7")
+	ButtonShading.apply(button, BLUE)
+	assert_eq(button.get_theme_color("font_color"), Color.WHITE)
+	assert_eq(button.get_theme_color("font_hover_color"), Color.WHITE)
+	assert_eq(button.get_theme_color("font_disabled_color"), ButtonShading.DISABLED_TEXT)
+
+
+func test_shade_leaves_the_text_colors_alone() -> void:
+	var button: Button = _button("Emblems")
+	button.add_theme_color_override("font_color", Color.GOLD)
+	ButtonShading.shade(button, BLUE)
+	assert_eq(button.get_theme_color("font_color"), Color.GOLD)
+
+
+func test_each_plate_is_painted_once_and_shared() -> void:
+	var one: Button = _button("Keep 7")
+	var other: Button = _button("Mulligan")
+	ButtonShading.apply(one, BLUE)
+	ButtonShading.apply(other, BLUE)
+	assert_eq(one.get_theme_stylebox("normal"), other.get_theme_stylebox("normal"))
+	assert_eq(one.get_theme_stylebox("normal"), ButtonShading.plate(BLUE, "normal", HEIGHT))
+
+
+func test_the_text_is_lifted_above_the_lip_with_little_room_round_it() -> void:
+	var plate: StyleBox = ButtonShading.plate(BLUE, "normal", HEIGHT)
+	assert_eq(plate.content_margin_top, 0.0)
+	assert_eq(plate.content_margin_bottom, float(DitherShading.LIP))
+	assert_eq(plate.content_margin_left, float(ButtonShading.SIDE))
+	var flat: StyleBox = ButtonShading.plate(BLUE, "normal", HEIGHT, 2, false)
+	assert_eq(flat.content_margin_bottom, 0.0, "Or centered on the whole plate where even that would not fit.")
+	assert_eq(flat.content_margin_left, 2.0)
+
+
+func test_a_button_keeps_its_size() -> void:
+	var button: Button = _button("Pass Priority [SPACE]")
+	button.size = Vector2(280, 46)
+	button.add_theme_font_size_override("font_size", 21 + UiText.RAISE)
+	ButtonShading.apply(button, BLUE)
+	await wait_process_frames(1)
+	assert_eq(button.size, Vector2(280, 46))
+
+
+func _button(text: String) -> Button:
+	var button: Button = Button.new()
+	button.text = text
+	button.size = Vector2(240, HEIGHT)
+	add_child_autofree(button)
+	return button
+
+
+## Whether two Dither Shaded plates are painted alike, pixel for pixel.
+func _same(a: StyleBox, b: StyleBox) -> bool:
+	var left: StyleBoxTexture = a as StyleBoxTexture
+	var right: StyleBoxTexture = b as StyleBoxTexture
+	if left == null or right == null:
+		return false
+	return left.texture.get_image().get_data() == right.texture.get_image().get_data()

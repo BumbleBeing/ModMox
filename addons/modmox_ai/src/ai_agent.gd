@@ -46,12 +46,18 @@ enum Reason {
 	KILL_MOST_VALUABLE,
 	## Flat Monte Carlo chose the answer, whether or not it kept the one-step pick (A202).
 	ROLLOUT_SCORE,
+	## A land was kept back because playing it cost more than it was worth, such as damage
+	## from its player's own Ankh of Mishra (AiDifficulty.weighs_land_plays).
+	LAND_COSTS_TOO_MUCH,
 }
 
 var profile: AiProfile
 var mode: Mode
 var difficulty: AiDifficulty
 
+## A CHEAP Agent plays no land on this Game Turn or any before it: set in the rollout of a
+## land held back, so holding it there means not playing it this turn (_is_land_worth_playing()).
+var holds_lands_through_turn: int = 0
 var _reason: Reason = Reason.NONE
 var _detail: String = ""
 var _rollouts: int = 0
@@ -145,20 +151,54 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 
 # --- Priority ----------------------------------------------------------------------
 
-## Plays a land if it can; otherwise compares passing with every play worth looking at now
-## (A161, A183), leaving out a spell that only adds mana nothing could be spent on and an
-## ability that would go on top of its own earlier activation, by one-step simulation and
-## then, if the AI Difficulty uses it, by Flat Monte Carlo (A188). An activated ability is
-## weighed as its best Repeat Plan. With a trick among the plays, every option is scored
-## once the Game Turn is over, if the AI Difficulty says so. CHEAP Agents use a fixed order
-## instead.
+## Plays a land if it can, unless the AI Difficulty weighs land plays and this one costs
+## too much (_is_land_worth_playing()); otherwise compares passing with every play worth
+## looking at now (_choose_play()). A land kept back is the reason for a pass.
 func _priority(decision: PriorityDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
-	var me: int = decision.player_id
 	var passing: int = _pass_index(decision)
-	var land: int = _best_land(decision, world)
+	var land: int = _best_land(decision, world) if world.game_turn > holds_lands_through_turn else -1
+	var land_detail: String = ""
 	if land != -1:
-		_reason = Reason.PLAY_LAND
-		return land
+		if mode == Mode.CHEAP or not difficulty.weighs_land_plays or _is_land_worth_playing(source, rng, land, passing, decision.player_id):
+			_reason = Reason.PLAY_LAND
+			return land
+		land_detail = _detail
+	var answer: int = _choose_play(decision, world, source, rng, passing)
+	if land != -1 and answer == passing:
+		_reason = Reason.LAND_COSTS_TOO_MUCH
+		_detail = land_detail
+	return answer
+
+
+## Whether [param land] is worth playing rather than holding it for the Game Turn. One step
+## ahead, a land that scores at least as well as passing is played; one that scores worse,
+## as when a trigger of its player's own deals it damage, is rolled out against passing
+## with the land as the default (A192), since one step never sees the spells its mana
+## would pay for. Passing is rolled out with its player holding its lands for the rest of
+## the Game Turn, or the CHEAP Agent would play the land later in the turn instead. Without
+## Flat Monte Carlo the land is kept only if it loses the game in every re-dealt world.
+func _is_land_worth_playing(source: MmSimulationSource, rng: MmRng, land: int, passing: int, me: int) -> bool:
+	var scores: Array[int] = _simulate_each(source, rng, [passing, land], me)
+	if scores[1] >= scores[0]:
+		return true
+	if not difficulty.uses_monte_carlo:
+		return scores[1] > -AiBoardEvaluator.WIN * _world_seeds.size()
+	var rolled: Array[int] = [land, passing]
+	var samples: int = AiDifficulty.scaled(difficulty.rollout_samples, profile.search_budget_percent)
+	var rows: Array = AiMonteCarlo.sample_scores(source, rng, rolled, samples, me, profile, {}, passing)
+	_rollouts += rolled.size() * samples
+	_detail = AiMonteCarlo.describe(rolled, rows)
+	return AiMonteCarlo.choose(rolled, AiMonteCarlo.totals(rows, rolled.size()), AiMonteCarlo.margin(profile, samples), rng) == land
+
+
+## Compares passing with every play worth looking at now (A161, A183), leaving out a land,
+## a spell that only adds mana nothing could be spent on and an ability that would go on
+## top of its own earlier activation, by one-step simulation and then, if the AI Difficulty
+## uses it, by Flat Monte Carlo (A188). An activated ability is weighed as its best Repeat
+## Plan. With a trick among the plays, every option is scored once the Game Turn is over,
+## if the AI Difficulty says so. CHEAP Agents use a fixed order instead.
+func _choose_play(decision: PriorityDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng, passing: int) -> int:
+	var me: int = decision.player_id
 	if mode == Mode.CHEAP:
 		return _cheap_priority(decision, world, passing)
 	var candidates: Array[int] = []
@@ -205,7 +245,7 @@ func _priority(decision: PriorityDecision, world: MmGameState, source: MmSimulat
 		return best
 	var samples: int = AiDifficulty.scaled(difficulty.rollout_samples, profile.search_budget_percent)
 	var rows: Array = AiMonteCarlo.sample_scores(source, rng, rolled, samples, me, profile, repeats)
-	_rollouts = rolled.size() * samples
+	_rollouts += rolled.size() * samples
 	_reason = Reason.ROLLOUT_SCORE
 	_detail = AiMonteCarlo.describe(rolled, rows)
 	var chosen: int = AiMonteCarlo.choose(rolled, AiMonteCarlo.totals(rows, rolled.size()), AiMonteCarlo.margin(profile, samples), rng)

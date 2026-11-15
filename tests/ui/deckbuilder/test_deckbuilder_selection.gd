@@ -37,6 +37,68 @@ func test_the_pane_behind_the_inspector_is_dither_shaded_for_its_height() -> voi
 	assert_ne(_screen.inspector().texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, "What is on it is drawn as before.")
 
 
+func test_the_top_bars_buttons_are_dither_shaded_for_their_height() -> void:
+	var buttons: Array[Button] = [_screen.sort_button(), _screen.save_button(), _screen.exit_button()]
+	for land: String in ["Plains", "Island", "Swamp", "Mountain", "Forest"]:
+		buttons.append(_screen.land_button(land))
+	for button: Button in buttons:
+		for state: String in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+			var face: StyleBoxTexture = button.get_theme_stylebox(state) as StyleBoxTexture
+			assert_not_null(face, "%s: %s is Dither Shaded." % [button.text, state])
+			if face != null:
+				assert_eq(face.texture.get_height(), int(button.size.y), "%s: %s" % [button.text, state])
+		assert_eq(button.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, button.text)
+
+
+func test_a_land_buttons_dither_is_in_its_land_color() -> void:
+	var face: StyleBoxTexture = _screen.land_button("Island").get_theme_stylebox("normal") as StyleBoxTexture
+	var image: Image = face.texture.get_image()
+	var middle: Color = image.get_pixel(image.get_width() / 2, image.get_height() / 2)
+	assert_gt(middle.b, middle.r, "Island's button is blue.")
+
+
+func test_everything_in_the_top_bar_stays_inside_it() -> void:
+	var bar: Rect2 = _screen.top_bar_pane().get_global_rect()
+	for button: Button in [_screen.land_button("Plains"), _screen.sort_button(), _screen.save_button(), _screen.exit_button()]:
+		assert_true(bar.encloses(button.get_global_rect()), button.text)
+
+
+func test_the_zoom_panel_names_only_its_two_sliders() -> void:
+	var words: Array[String] = []
+	for label: Node in _screen.zoom_panel().find_children("*", "Label", true, false):
+		words.append((label as Label).text)
+	assert_eq(words, ["Collection", "Deck"] as Array[String])
+
+
+func test_the_land_buttons_names_are_bold() -> void:
+	for land: String in ["Plains", "Island", "Swamp", "Mountain", "Forest"]:
+		var lettering: Label = _screen.land_name_plate(land).get_child(0) as Label
+		assert_eq(lettering.get_theme_font("font"), DeckbuilderLook.bold(), land)
+
+
+## Checks that [param pane] is Dither Shaded for its own height, and what is on it is not.
+func _assert_dithered_pane(pane: Control, what: String) -> void:
+	var face: StyleBoxTexture = pane.get_theme_stylebox("panel") as StyleBoxTexture
+	assert_not_null(face, "%s is Dither Shaded." % what)
+	if face != null:
+		assert_eq(face.texture.get_height(), int(pane.size.y), what)
+	assert_eq(pane.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, what)
+
+
+func test_the_top_bar_and_filter_bar_stand_on_dither_shaded_panes() -> void:
+	_assert_dithered_pane(_screen.top_bar_pane(), "The top bar")
+	_assert_dithered_pane(_screen.filter_bar().get_parent() as Control, "The filter bar")
+	assert_ne(_screen.filter_bar().texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, "What is on it is drawn as before.")
+
+
+func test_every_deck_column_is_dither_shaded_and_its_cards_are_drawn_as_before() -> void:
+	for column: int in WorkingDeck.COLUMN_COUNT:
+		var pane: Panel = _screen.column_pane(column)
+		_assert_dithered_pane(pane, "Column %d" % column)
+		assert_ne((pane.get_child(pane.get_child_count() - 1) as CanvasItem).texture_filter,
+				CanvasItem.TEXTURE_FILTER_NEAREST, "Column %d's cards" % column)
+
+
 func test_nothing_is_selected_at_first_and_the_inspector_says_how_to_use_it() -> void:
 	assert_null(_screen.selected())
 	assert_null(_screen.inspected())

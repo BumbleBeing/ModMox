@@ -24,14 +24,20 @@ extends Resource
 ## The most activations a Repeat Plan may hold (glossary "Repeat Plan"). At 1 an ability is
 ## only ever weighed one activation at a time.
 @export var repeat_plan_length: int = 8
+## Whether a land play is weighed against holding the land: simulated one step ahead, and
+## rolled out against passing when it scores worse, so the AI does not play a land into
+## its own Ankh of Mishra at 1 life. Without it the AI plays a land whenever it can.
+@export var weighs_land_plays: bool = true
 
 
-## Milestone 11's AI: one-step simulation only, scored at once, one activation at a time.
+## Milestone 11's AI: one-step simulation only, scored at once, one activation at a time,
+## and a land played whenever it can be.
 static func easy() -> AiDifficulty:
 	var difficulty: AiDifficulty = AiDifficulty.new()
 	difficulty.uses_monte_carlo = false
 	difficulty.judges_tricks_after_the_turn = false
 	difficulty.repeat_plan_length = 1
+	difficulty.weighs_land_plays = false
 	return difficulty
 
 

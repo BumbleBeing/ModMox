@@ -9,7 +9,7 @@ const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
 const MENU: String = "res://ui/menu/main_menu.tscn"
 
 ## How this form leaves for another scene. Tests replace it.
-var navigate: Callable = func(scene: String) -> void: get_tree().change_scene_to_file(scene)
+var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get_tree(), scene)
 
 var _request: EncounterRequest = EncounterRequest.new()
 var _hero: OptionButton
