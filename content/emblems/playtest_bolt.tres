@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_6iq1v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_ibg3e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_cwmc6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_5go7v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="5_lekpt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="6_771du"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="7_ketoi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_ew13o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="9_g4t0f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_3u0yh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="11_44u66"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_266b2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="13_sggg0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="14_umk64"]
+
+[sub_resource type="Resource" id="Resource_utnql"]
+script = ExtResource("4_5go7v")
+value = 20
+
+[sub_resource type="Resource" id="Resource_e8hgc"]
+script = ExtResource("5_lekpt")
+
+[sub_resource type="Resource" id="Resource_ax5io"]
+script = ExtResource("6_771du")
+amount = SubResource("Resource_utnql")
+recipients = SubResource("Resource_e8hgc")
+
+[sub_resource type="Resource" id="Resource_1m17o"]
+script = ExtResource("7_ketoi")
+
+[sub_resource type="Resource" id="Resource_q0c5e"]
+script = ExtResource("11_44u66")
+
+[sub_resource type="Resource" id="Resource_ihe5l"]
+script = ExtResource("12_266b2")
+
+[sub_resource type="Resource" id="Resource_q4a7r"]
+script = ExtResource("13_sggg0")
+filters = Array[ExtResource("10_3u0yh")]([SubResource("Resource_q0c5e"), SubResource("Resource_ihe5l")])
+
+[sub_resource type="Resource" id="Resource_we7h1"]
+script = ExtResource("9_g4t0f")
+filter = SubResource("Resource_q4a7r")
+
+[sub_resource type="Resource" id="Resource_11ofq"]
+script = ExtResource("8_ew13o")
+mana_cost = SubResource("Resource_1m17o")
+targets = Array[ExtResource("9_g4t0f")]([SubResource("Resource_we7h1")])
+effects = Array[ExtResource("3_cwmc6")]([SubResource("Resource_ax5io")])
+
+[resource]
+script = ExtResource("14_umk64")
+name = "Playtest Bolt"
+abilities = Array[ExtResource("1_6iq1v")]([SubResource("Resource_11ofq")])

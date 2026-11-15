@@ -25,7 +25,10 @@ func _open(before_encounter: bool = true) -> void:
 	_screen.navigate = func(scene: String) -> void: _went_to.append(scene)
 	add_child_autofree(_screen)
 	_screen.size = Vector2(1920, 1080)
-	_screen.begin(_run, "white_black" if before_encounter else "")
+	if before_encounter:
+		while not _run.stage_visit.must_play():
+			_run.move_to(_run.stage_visit.choices()[0])
+	_screen.begin(_run, _run.stage_visit.meeting if before_encounter else null)
 	await wait_process_frames(1)
 
 
@@ -103,18 +106,20 @@ func test_start_is_off_while_the_active_deck_is_illegal() -> void:
 
 func test_start_plays_the_encounter_against_the_villain_shown() -> void:
 	await _open()
-	assert_eq(_screen.villain_shown(), "white_black")
+	var villain: Villain = _run.stage_visit.meeting
+	assert_eq(_screen.villain_shown(), villain)
 	_screen.button("Start").pressed.emit()
 	assert_eq(_went_to, [DeckboxScreen.ENCOUNTER] as Array[String])
 	assert_not_null(EncounterScreen.request)
-	assert_eq(EncounterScreen.request.villain_deck, "white_black")
+	assert_eq(EncounterScreen.request.villain_setup, villain.setups[0])
+	assert_eq(EncounterScreen.request.villain_name, villain.name)
 	assert_eq(EncounterScreen.request.run, _run)
 
 
 func test_opened_with_no_villain_it_has_close_and_a_centered_title() -> void:
 	await _open(false)
 	assert_null(_screen.button("Start"))
-	assert_eq(_screen.villain_shown(), "")
+	assert_null(_screen.villain_shown())
 	assert_eq(_screen.title_alignment(), HORIZONTAL_ALIGNMENT_CENTER)
 	_screen.button("Close").pressed.emit()
 	assert_eq(_went_to, [RunFlow.back_from_deckbox] as Array[String])
@@ -203,7 +208,7 @@ func test_a_real_click_on_a_row_selects_it() -> void:
 	_screen.navigate = func(scene: String) -> void: _went_to.append(scene)
 	viewport.add_child(_screen)
 	_screen.size = Vector2(1920, 1080)
-	_screen.begin(_run, "white_black")
+	_screen.begin(_run, null)
 	await wait_process_frames(3)
 	var center: Vector2 = _screen.row_rect(1).get_center()
 	for pressed: bool in [true, false]:

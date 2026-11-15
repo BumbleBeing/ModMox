@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Villain" format=3]
+
+[ext_resource type="Script" path="res://run/villain.gd" id="1_5vsra"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="2_ifu3u"]
+[ext_resource type="Resource" path="res://content/decks/blue_red.tres" id="3_0qfa2"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/purple_demon.png" id="4_rr1hb"]
+
+[resource]
+script = ExtResource("1_5vsra")
+name = "Blue-Red"
+sprite = ExtResource("4_rr1hb")
+setups = Array[ExtResource("2_ifu3u")]([ExtResource("3_0qfa2")])

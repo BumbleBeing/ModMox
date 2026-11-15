@@ -34,9 +34,25 @@ _Avoid_: Level, act, round
 One section of a run, of one color at one Tier and ending in a Boss, which sets the Backdrop of its encounters. Each has a name, shown with its Tier and its Boss when the Hero enters it. There are 25 in all.
 _Avoid_: Level, act, world, biome
 
+**Stage Intro**:
+The screen that opens a Stage before its Stage Map: the Stage's name, its Tier and its Boss, who is introduced here.
+_Avoid_: Cutscene, title card, splash
+
 **Node**:
 One stop on a Stage's map. Its kind is one of Start Node, Store, Workshop, Trove, Lesser Encounter, Elite Encounter, Boss Encounter or Chaos Node.
 _Avoid_: Event (an engine term for a change to the game), room, space
+
+**Stage Map**:
+The map of a Stage's Nodes and the links between them, and the screen that shows it, where the Hero chooses which Node to go to next. The Hero moves one link at a time and must play an encounter before moving on.
+_Avoid_: Stage Navigation, navigation screen, world map, overworld
+
+**Map View**:
+The overlay that shows a Stage Map whole: its shape, every Node and the Path walked so far. The Stage Map itself shows only the Hero's row and the two rows ahead.
+_Avoid_: Minimap, full map, overview
+
+**Path**:
+Any walk the Hero could take across a Stage Map from the Node they stand on: forward along links, either way along a link between Nodes of the same row, and never back to a Node already visited.
+_Avoid_: Route, lane, branch
 
 **Start Node**:
 The Node a Stage begins on, where nothing happens.
@@ -142,8 +158,12 @@ _Avoid_: Save, account, meta-save
 A guided, staged run offered on Choose your Hero: a step-by-step guide to deckbuilding, then a guided visit to a Store and a Workshop, then a staged encounter against a demo Villain with stacked decks and set plays. It uses an authored Collection, keeping only the Hero's name and Portrait from Choose your Hero, ends on a notice that it is complete and returns to the main menu. It leaves nothing behind: no saved run, nothing in the Profile, no Achievements.
 _Avoid_: Onboarding, training, first run
 
+**Run Bar**:
+The strip along the Stage Map that shows the Stage, its Tier, the Hearts left and the gold held, with the Satchel button and the Deckbox button.
+_Avoid_: HUD, status bar, top bar
+
 **Satchel**:
-Where the Hero keeps the Items they hold, Mods and Potions alike, between encounters. It is opened from a button on the Stage Map's bar, beside the Hearts, the gold and the Deckbox button, where it only shows each Item and what it does, and from a button at a Store or a Workshop, where Items are sold from it.
+Where the Hero keeps the Items they hold, Mods and Potions alike, between encounters. It is opened from a button on the Run Bar, beside the Hearts, the gold and the Deckbox button, where it only shows each Item and what it does, and from a button at a Store or a Workshop, where Items are sold from it.
 _Avoid_: Inventory, bag, Potions window (the encounter's list of Potions)
 
 **Run Seed**:
@@ -165,7 +185,7 @@ A named list of Run Cards from the Collection, each at most once, plus any numbe
 _Avoid_: Decklist, loadout, build
 
 **Deckbox**:
-The Decks the Hero has saved in the run, and the screen that lists them, sets the Active Deck and is the only way into the deckbuilder. It can be opened from Stage Navigation, and it opens by itself before an encounter once the Villain is revealed, with a Start button that is disabled while the Active Deck is illegal.
+The Decks the Hero has saved in the run, and the screen that lists them, sets the Active Deck and is the only way into the deckbuilder. It can be opened from the Stage Map, and it opens by itself before an encounter once the Villain is revealed, with a Start button that is disabled while the Active Deck is illegal.
 _Avoid_: Deck list, deck slots, saved decks
 
 **Active Deck**:

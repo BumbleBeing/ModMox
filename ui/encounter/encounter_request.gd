@@ -16,8 +16,8 @@ var difficulty: String = "easy"
 ## What each player is called; "" for a player who goes by their part.
 var hero_name: String = ""
 var villain_name: String = ""
-## The Backdrop (game glossary) behind the encounter, one of Backdrops.NAMES. Named here
-## until Stages exist, when the encounter's Stage will set it (ADR 0035).
+## The Backdrop (game glossary) behind the encounter, one of Backdrops.NAMES: in a run, the
+## color of the Stage it is met on (ADR 0035).
 var backdrop: String = Backdrops.PLAIN
 ## Gives each player sample Emblems, so the Emblems windows have something to show and to
 ## activate: the Hero Howling Winds and both Boons, the Villain Ankh's Curse and
@@ -28,6 +28,9 @@ var has_sample_potions: bool = false
 ## The Hero's setup when it comes from a run's Active Deck rather than a deck in Content;
 ## hero_deck is then not read (milestone 16).
 var hero_setup: MmPlayerSetup = null
+## The Villain's setup when it comes from a run's Villain rather than a deck in Content;
+## villain_deck is then not read (milestone 17).
+var villain_setup: MmPlayerSetup = null
 ## The run this encounter is part of, or null.
 var run: Run = null
 
@@ -79,7 +82,12 @@ static func deck_names() -> Array[String]:
 
 ## Why this request cannot be played, or "" if it can.
 func validate() -> String:
-	for deck: String in ([villain_deck] if hero_setup != null else [hero_deck, villain_deck]):
+	var decks: Array[String] = []
+	if hero_setup == null:
+		decks.append(hero_deck)
+	if villain_setup == null:
+		decks.append(villain_deck)
+	for deck: String in decks:
 		if not ResourceLoader.exists(DECKS + deck + ".tres"):
 			return "There is no deck named \"%s\"." % deck
 	if not DIFFICULTIES.has(difficulty):
@@ -94,7 +102,7 @@ func validate() -> String:
 func setup() -> MmEncounterSetup:
 	var encounter: MmEncounterSetup = MmEncounterSetup.new()
 	encounter.hero = hero_setup if hero_setup != null else load(DECKS + hero_deck + ".tres") as MmPlayerSetup
-	encounter.villain = load(DECKS + villain_deck + ".tres") as MmPlayerSetup
+	encounter.villain = villain_setup if villain_setup != null else load(DECKS + villain_deck + ".tres") as MmPlayerSetup
 	encounter.encounter_seed = encounter_seed
 	if has_sample_emblems or has_sample_potions:
 		encounter.hero = encounter.hero.duplicate() as MmPlayerSetup

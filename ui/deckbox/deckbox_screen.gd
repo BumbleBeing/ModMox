@@ -11,7 +11,6 @@ const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
 const DECKBUILDER: String = RunFlow.DECKBUILDER
 const SELECTION_BUTTONS: Array[String] = ["Edit Deck", "Duplicate Deck", "Set Active", "Delete Deck"]
 const STAR: String = "res://ui/sprites/deckbox/active_star.png"
-const VILLAIN_PORTRAIT: String = "res://ui/sprites/portraits/purple_demon.png"
 ## Pixel art is drawn at a whole multiple of its size.
 const STAR_SCALE: int = 2
 const PORTRAIT_SIZE: int = 64
@@ -46,7 +45,7 @@ var starts_itself: bool = true
 var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get_tree(), scene)
 
 var _run: Run = null
-var _villain: String = ""
+var _villain: Villain = null
 var _selected: Deck = null
 var _title: Label
 var _list: VBoxContainer
@@ -75,9 +74,9 @@ func _ready() -> void:
 		get_tree().quit()
 
 
-## Opens on [param run]'s Decks. [param villain] is the deck name of the Villain the
-## encounter is against, or "" when the Deckbox is opened from the map.
-func begin(run: Run, villain: String) -> void:
+## Opens on [param run]'s Decks. [param villain] is the Villain the encounter is against,
+## or null when the Deckbox is opened to close.
+func begin(run: Run, villain: Villain) -> void:
 	_run = run
 	_villain = villain
 	_build()
@@ -92,7 +91,7 @@ func button(text: String) -> Button:
 	return _buttons.get(text, null) as Button
 
 
-func villain_shown() -> String:
+func villain_shown() -> Villain:
 	return _villain
 
 
@@ -218,7 +217,7 @@ func _heading() -> Control:
 	_title.add_theme_font_size_override("font_size", 40)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(_title)
-	if _villain == "":
+	if _villain == null:
 		_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	else:
 		heading.add_child(_villain_strip())
@@ -253,7 +252,7 @@ func _villain_strip() -> Control:
 	frame.add_theme_stylebox_override("panel", back)
 	frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var portrait: TextureRect = TextureRect.new()
-	portrait.texture = load(VILLAIN_PORTRAIT) as Texture2D
+	portrait.texture = _villain.sprite
 	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.custom_minimum_size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
@@ -262,12 +261,8 @@ func _villain_strip() -> Control:
 	return strip
 
 
-## The Villain's deck name as a title: "white_black" reads "White-Black Villain".
 func _villain_title() -> String:
-	var words: PackedStringArray = []
-	for word: String in _villain.split("_"):
-		words.append(word.capitalize())
-	return "%s Villain" % "-".join(words)
+	return _villain.name
 
 
 func _list_well() -> Control:
@@ -331,7 +326,7 @@ func _button_bar() -> Control:
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(spacer)
-	var finish: Button = _add_button(bar, "Close" if _villain == "" else "Start", _close if _villain == "" else _start)
+	var finish: Button = _add_button(bar, "Close" if _villain == null else "Start", _close if _villain == null else _start)
 	finish.custom_minimum_size = Vector2(140, 0)
 	return bar
 
@@ -489,7 +484,7 @@ func _on_selection_button(text: String) -> void:
 
 
 func _start() -> void:
-	EncounterScreen.request = _run.encounter_request(_villain)
+	EncounterScreen.request = _run.encounter_request()
 	navigate.call(ENCOUNTER)
 
 

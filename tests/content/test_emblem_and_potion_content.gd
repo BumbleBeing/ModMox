@@ -1,5 +1,6 @@
 extends GutTest
-## The authored Emblems and Potions (ADR 0036, A516 and A517): what each one does when it
+## The authored Emblems and Potions (ADR 0036, A516 and A517, and milestone 17's Playtest
+## Bolt): what each one does when it
 ## is used in a game, so a changed default or a mis-saved file is caught.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
@@ -45,6 +46,31 @@ func test_diviners_boon_costs_two_and_blue_and_draws_two_as_a_sorcery_once_each_
 	assert_false(_offers(engine, boon), "Only once each game.")
 
 
+func test_playtest_bolt_costs_nothing_and_deals_twenty_damage_with_no_limit() -> void:
+	var engine: MmEngine = _engine_with(MmMana.Type.RED, [load(EMBLEMS + "playtest_bolt.tres")] as Array[MmCardDefinition], [])
+	Scenario.play_until_step(engine, 1, Step.PRECOMBAT_MAIN)
+	var bolt: int = engine.view_for(engine.hero()).command[0].id
+
+	assert_eq(Scenario.activate(engine, bolt, [MmReference.to_player(engine.villain().id)]), "", "It costs {0}.")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.villain().life, 0)
+	assert_eq(engine.view_for(engine.hero()).command[0].name, "Playtest Bolt")
+
+
+func test_playtest_bolt_can_be_activated_again_in_the_same_game() -> void:
+	var engine: MmEngine = _engine_with(MmMana.Type.RED, [load(EMBLEMS + "playtest_bolt.tres")] as Array[MmCardDefinition], [])
+	Scenario.play_until_step(engine, 1, Step.PRECOMBAT_MAIN)
+	var bolt: int = engine.view_for(engine.hero()).command[0].id
+	Scenario.cast_and_resolve(engine, "Bear")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+	Scenario.activate(engine, bolt, [MmReference.to_object(bear)])
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.hero().graveyard.size(), 1, "The Bear died.")
+	assert_true(_offers(engine, bolt), "No limit on how often it is activated.")
+
+
 func test_big_gulp_is_a_common_potion_that_gives_plus_two_plus_two_and_is_used_up() -> void:
 	var big_gulp: MmCardDefinition = load(POTIONS + "big_gulp.tres")
 	var engine: MmEngine = _engine_with(MmMana.Type.GREEN, [], [big_gulp] as Array[MmCardDefinition])
@@ -64,7 +90,7 @@ func test_big_gulp_is_a_common_potion_that_gives_plus_two_plus_two_and_is_used_u
 
 
 func test_an_authored_emblem_has_abilities_and_nothing_else() -> void:
-	for file_name: String in ["electromancers_boon", "diviners_boon"]:
+	for file_name: String in ["electromancers_boon", "diviners_boon", "playtest_bolt"]:
 		var emblem: MmCardDefinition = load(EMBLEMS + file_name + ".tres")
 
 		assert_eq(emblem.card_types.size(), 0, "ADR 0011: \"Emblem\" is not a card type.")

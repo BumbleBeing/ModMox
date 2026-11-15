@@ -25,7 +25,7 @@ Rows 3 to 8 are generated.
 ## A valid map
 
 - Every Node can be reached from the Start Node and can reach the Boss Encounter.
-- Every path has at least 2 and at most 5 Lesser and Elite Encounters. The Boss Encounter and Chaos Nodes do not count.
+- Every path has at least 2 and at most 4 Lesser and Elite Encounters. The Boss Encounter and Chaos Nodes do not count.
 - No Store links to a Store, and no Workshop to a Workshop.
 - Elite Encounters are in rows 3 to 6 only.
 - An Elite Encounter's only forward link is to its Trove, and a Trove's only arriving link is from its Elite Encounter.
@@ -47,6 +47,8 @@ Rolling Elite Encounter alongside the other kinds, at 15% and legal only where a
 
 ## What the prototype measured
 
-Over 2,000 Run Seeds every one got a valid map, in 3.6 attempts on average and 25 at worst, at about a millisecond an attempt. Four attempts in five that fail have a path with fewer than 2 encounters. Because such maps are thrown away, the kinds that survive are not the kinds that were rolled: Lesser Encounters are 41% of generated Nodes, Chaos Nodes 29%, Elite Encounters and Troves 9% each, Stores and Workshops 6% each. The prototype is in `prototypes/stage_map/`.
+Over 2,000 Run Seeds every one got a valid map, in 8.7 attempts on average (median 6) and 53 at worst, at about a millisecond an attempt. Two attempts in three that fail have a path with fewer than 2 encounters, and nearly all the rest one with more than 4. Because such maps are thrown away, the kinds that survive are not the kinds that were rolled: Lesser Encounters are 38% of generated Nodes, Chaos Nodes 31%, Elite Encounters and Troves 9% each, Stores and Workshops 6% each. Most maps have a path with 4 encounters and one with only 2.
+
+The most was first 5. Cutting it to 4 (in the milestone 17 prototype) shortened the longest paths, which had reached 5 on three maps in five, at the cost of more than twice as many attempts (3.6 on average and 25 at worst before), and took about one Lesser Encounter a map, its place going mostly to Chaos Nodes. The prototype was in `prototypes/stage_map/`; milestone 17 ported it to `StageMapGenerator` in `run/`, where each attempt draws on from the last in the map's stream rather than starting a stream of its own.
 
 The percentages are the same at every Tier. Difficulty already rises with the Tier through the Villains' decks, so the map's shape stays constant until play shows otherwise. All the numbers here are first values to tune.

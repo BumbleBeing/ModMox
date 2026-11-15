@@ -6,6 +6,10 @@ extends RefCounted
 
 const VILLAINS: String = "villains"
 const ENCOUNTER_SEEDS: String = "encounter_seeds"
+const STAGES: String = "stages"
+const STAGE_MAPS: String = "stage_maps"
+const BOSSES: String = "bosses"
+const MAP_LAYOUT: String = "map_layout"
 
 var _run_seed: int
 var _streams: Dictionary[String, RandomNumberGenerator] = {}
@@ -18,6 +22,11 @@ func _init(run_seed: int) -> void:
 ## The next whole number from 0 to [param count] - 1 in [param stream].
 func pick(stream: String, count: int) -> int:
 	return _stream(stream).randi_range(0, count - 1)
+
+
+## The next number in [param stream] from 0 up to (not including) 1.
+func fraction(stream: String) -> float:
+	return _stream(stream).randf()
 
 
 ## The next number in [param stream] that can seed an encounter.

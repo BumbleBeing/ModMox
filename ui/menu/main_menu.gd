@@ -3,8 +3,9 @@ extends Control
 ## The main menu: a plain list of where the game can go. A request on the command line
 ## (--hero=, --villain= or --seed=) skips it and opens the Encounter Screen (A246), unless
 ## it names something that does not exist, which the menu then says. --deckbuilder opens
-## the deckbuilder on a made-up run, for pictures. Start Run (debug) begins a debug run at
-## the Deckbox (milestone 16).
+## the deckbuilder on a made-up run, for pictures. --stage-map opens the Stage Map of a
+## debug run (--run-seed=N, --stage=red), for pictures. Start Run (debug) begins a debug
+## run at the Deckbox (milestones 16 and 17).
 
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
@@ -41,6 +42,11 @@ func _ready() -> void:
 	if arguments.has(DECKBUILDER_FLAG) and not DeckbuilderScreen.has_left:
 		_is_skipping = true
 		navigate.call_deferred(DECKBUILDER)
+		return
+	if arguments.has(StageMapScreen.FLAG) and not StageMapScreen.has_left:
+		_is_skipping = true
+		RunFlow.start(StageMapScreen.debug_run_from(arguments))
+		navigate.call_deferred(RunFlow.finish_intro())
 		return
 	var asked_for: EncounterRequest = EncounterRequest.from_arguments(arguments)
 	if asked_for != null:

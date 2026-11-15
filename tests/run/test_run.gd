@@ -1,6 +1,7 @@
 extends GutTest
-## The run's state (milestone 16): its Hearts and gold, the Villains the Run Seed draws, the
-## Active Deck, and the encounter's setup built from it (ADRs 0025 and 0028).
+## The run's state (milestones 16 and 17): its Hearts and gold, the Active Deck and the
+## encounter's setup built from it (ADRs 0025 and 0028), and the Stage the Run Seed rolls,
+## with its map, its Boss and the Villains met on it (ADRs 0024 and 0026).
 
 const ALPHA: String = "res://content/cards/alpha/%s.tres"
 
@@ -36,23 +37,93 @@ func test_a_debug_run_has_a_legal_active_deck_built_from_red_green() -> void:
 	assert_true(run.deckbox.is_legal(active))
 
 
-func test_the_same_run_seed_draws_the_same_villains_in_the_same_order() -> void:
+## T1: the same Run Seed gives the same Stage, map, Boss and Villains in order.
+func test_the_same_run_seed_gives_the_same_stage_map_boss_and_villains() -> void:
 	var first: Run = Run.debug(42)
 	var second: Run = Run.debug(42)
-	var drawn: Array[String] = []
-	for index: int in 8:
-		var villain: String = first.next_villain()
-		drawn.append(villain)
-		assert_eq(second.next_villain(), villain)
-	for villain: String in drawn:
-		assert_true(EncounterRequest.deck_names().has(villain), villain)
+
+	assert_eq(first.stage_visit.stage, second.stage_visit.stage)
+	assert_eq(_describe(first.stage_visit.map), _describe(second.stage_visit.map))
+	assert_eq(first.stage_visit.boss, second.stage_visit.boss)
+	assert_eq(first.stage_visit.offsets, second.stage_visit.offsets)
+	assert_eq(_walk(first), _walk(second))
 
 
-func test_another_run_seed_can_draw_other_villains() -> void:
-	var drawn: Dictionary[String, bool] = {}
+func test_other_run_seeds_give_other_stages_and_maps() -> void:
+	var stages: Dictionary[StageDefinition, bool] = {}
+	var maps: Dictionary[String, bool] = {}
 	for run_seed: int in 20:
-		drawn[Run.debug(run_seed).next_villain()] = true
-	assert_gt(drawn.size(), 1)
+		var run: Run = Run.debug(run_seed)
+		stages[run.stage_visit.stage] = true
+		maps[_describe(run.stage_visit.map)] = true
+
+	assert_gt(stages.size(), 1)
+	assert_gt(maps.size(), 1)
+
+
+func test_a_debug_run_starts_on_the_start_node_of_a_tier_one_stage() -> void:
+	var run: Run = Run.debug(7)
+
+	assert_eq(run.stage_visit.stage.tier, 1)
+	assert_eq(run.stage_visit.node().kind, StageMap.Kind.START)
+	assert_true(run.stage_visit.stage.bosses.has(run.stage_visit.boss))
+	assert_false(run.is_won())
+
+
+func test_every_node_is_given_a_place_in_its_cell() -> void:
+	var run: Run = Run.debug(7)
+
+	for node: MapNode in run.stage_visit.map.nodes:
+		var offset: Vector2 = run.stage_visit.offsets[node.id]
+		assert_between(offset.x, -1.0, 1.0)
+		assert_between(offset.y, -1.0, 1.0)
+
+
+func test_a_debug_run_holds_the_playtest_bolt_in_every_encounter() -> void:
+	var run: Run = Run.debug(7)
+
+	assert_eq(run.hero_setup().emblems.size(), 1)
+	assert_eq(run.hero_setup().emblems[0].name, "Playtest Bolt")
+
+
+func test_the_encounter_is_against_the_villain_met_in_front_of_the_stages_backdrop() -> void:
+	var run: Run = Run.debug(3)
+	_move_to_an_encounter(run)
+	var villain: Villain = run.stage_visit.meeting
+
+	var request: EncounterRequest = run.encounter_request()
+
+	assert_eq(request.villain_setup, villain.setup_for_tier(1))
+	assert_eq(request.setup().villain, villain.setups[0])
+	assert_eq(request.villain_name, villain.name)
+	assert_eq(request.backdrop, run.stage_visit.stage.backdrop())
+	assert_eq(request.setup().hero, request.hero_setup)
+	assert_eq(request.validate(), "")
+
+
+## T8: beating the Boss wins the run.
+func test_beating_the_boss_wins_the_run() -> void:
+	var run: Run = Run.debug(5)
+
+	_walk(run)
+
+	assert_true(run.is_won())
+	assert_eq(run.hearts, Run.STARTING_HEARTS)
+
+
+func test_losing_to_the_boss_costs_a_heart_and_meets_it_again() -> void:
+	var run: Run = Run.debug(5)
+	while run.stage_visit.node().kind != StageMap.Kind.BOSS:
+		if run.stage_visit.must_play():
+			run.record_encounter(true)
+		else:
+			run.move_to(run.stage_visit.choices()[0])
+
+	run.record_encounter(false)
+
+	assert_eq(run.hearts, Run.STARTING_HEARTS - 1)
+	assert_eq(run.stage_visit.meeting, run.stage_visit.boss)
+	assert_false(run.is_won())
 
 
 func test_each_encounter_gets_its_own_encounter_seed() -> void:
@@ -64,11 +135,12 @@ func test_each_encounter_gets_its_own_encounter_seed() -> void:
 	assert_eq(again.next_encounter_seed(), first)
 
 
-func test_drawing_a_villain_does_not_change_the_encounter_seeds() -> void:
+func test_walking_the_stage_does_not_change_the_encounter_seeds() -> void:
 	var plain: Run = Run.debug(9)
 	var busy: Run = Run.debug(9)
-	busy.next_villain()
-	busy.next_villain()
+
+	_walk(busy)
+
 	assert_eq(busy.next_encounter_seed(), plain.next_encounter_seed())
 
 
@@ -132,10 +204,26 @@ func test_a_modded_card_keeps_its_mods_in_the_setup() -> void:
 	assert_true(card.run_card.modifications.has(symbol))
 
 
-func test_the_villains_setup_is_its_content_deck() -> void:
-	var run: Run = Run.debug(3)
-	var request: EncounterRequest = run.encounter_request("white_black")
-	assert_eq(request.villain_deck, "white_black")
-	assert_not_null(request.hero_setup)
-	assert_eq(request.setup().hero, request.hero_setup)
-	assert_eq(request.setup().villain.deck.size(), (load(EncounterRequest.DECKS + "white_black.tres") as MmPlayerSetup).deck.size())
+## Walks the Stage to its Boss and beats it: the first choice at every Node, every
+## encounter won. Says which Villains were met, in order.
+func _walk(run: Run) -> Array[String]:
+	var met: Array[String] = []
+	while not run.is_won():
+		if run.stage_visit.must_play():
+			met.append(run.stage_visit.meeting.name)
+			run.record_encounter(true)
+		else:
+			assert_eq(run.move_to(run.stage_visit.choices()[0]), "")
+	return met
+
+
+func _move_to_an_encounter(run: Run) -> void:
+	while not run.stage_visit.must_play():
+		run.move_to(run.stage_visit.choices()[0])
+
+
+func _describe(map: StageMap) -> String:
+	var lines: PackedStringArray = []
+	for node: MapNode in map.nodes:
+		lines.append("%d %d %d %s %d" % [node.row, node.column, node.kind, node.forward, node.side])
+	return "\n".join(lines)

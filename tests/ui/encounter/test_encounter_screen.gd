@@ -2031,15 +2031,16 @@ func test_outside_a_run_the_banner_offers_a_replay_and_the_start_form() -> void:
 	assert_eq(_banner_buttons(), ["Replay this seed", "Start form"] as Array[String])
 
 
-func test_in_a_run_a_loss_costs_a_heart_and_continue_returns_to_the_deckbox() -> void:
+func test_in_a_run_a_loss_costs_a_heart_and_continue_returns_to_the_stage_map() -> void:
 	RunFlow.start(Run.debug(2))
+	RunFlow.finish_intro()
 	_open(_bear_setup())
 	_screen.is_in_run = true
 	_screen.navigate = func(scene: String) -> void: _went_to.append(scene)
 	_presenter.concede()
 	assert_eq(_banner_buttons(), ["Continue"] as Array[String])
 	_banner_button("Continue").pressed.emit()
-	assert_eq(_went_to, [RunFlow.DECKBOX] as Array[String])
+	assert_eq(_went_to, [RunFlow.STAGE_MAP] as Array[String])
 	assert_eq(RunFlow.run.hearts, Run.STARTING_HEARTS - 1)
 	RunFlow.clear()
 

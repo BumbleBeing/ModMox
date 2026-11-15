@@ -28,7 +28,7 @@ func test_each_menu_button_leads_where_it_says() -> void:
 		assert_true(ResourceLoader.exists(scene), "%s exists." % scene)
 
 
-func test_start_run_debug_begins_a_debug_run_at_the_deckbox() -> void:
+func test_start_run_debug_begins_a_debug_run_at_the_deckbox_with_close() -> void:
 	var menu: MainMenu = _menu(PackedStringArray())
 	RunFlow.clear()
 
@@ -37,7 +37,8 @@ func test_start_run_debug_begins_a_debug_run_at_the_deckbox() -> void:
 	assert_eq(_went_to, [RunFlow.DECKBOX] as Array[String])
 	assert_not_null(RunFlow.run)
 	assert_not_null(RunFlow.run.deckbox.active())
-	assert_ne(RunFlow.villain, "")
+	assert_null(RunFlow.villain, "The run opens on the Deckbox with Close.")
+	assert_eq(RunFlow.back_from_deckbox, RunFlow.STAGE_INTRO)
 	var screen: Node = (load(RunFlow.DECKBOX) as PackedScene).instantiate()
 	assert_true(screen is DeckboxScreen)
 	screen.free()
@@ -66,6 +67,32 @@ func test_the_deckbuilder_flag_skips_the_menu() -> void:
 
 	assert_eq(_went_to, [MainMenu.DECKBUILDER] as Array[String])
 	assert_null(menu.button("Start Encounter"), "The menu was never drawn.")
+
+
+## S12: the Stage Map flag opens the Stage Map of the debug run asked for.
+func test_the_stage_map_flag_opens_the_stage_map_of_the_run_asked_for() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(["--stage-map", "--run-seed=7", "--stage=red"]))
+	await wait_process_frames(2)
+
+	assert_eq(_went_to, [RunFlow.STAGE_MAP] as Array[String])
+	assert_eq(RunFlow.run.run_seed, 7)
+	assert_eq(RunFlow.run.stage_visit.stage.backdrop(), "red")
+	assert_null(menu.button("Start Encounter"), "The menu was never drawn.")
+	var screen: Node = (load(RunFlow.STAGE_MAP) as PackedScene).instantiate()
+	assert_true(screen is StageMapScreen)
+	screen.free()
+	RunFlow.clear()
+
+
+func test_the_stage_map_flag_no_longer_skips_the_menu_once_the_run_has_ended() -> void:
+	StageMapScreen.has_left = true
+
+	var menu: MainMenu = _menu(PackedStringArray(["--stage-map"]))
+	await wait_process_frames(2)
+	StageMapScreen.has_left = false
+
+	assert_eq(_went_to, [] as Array[String])
+	assert_not_null(menu.button("Start Encounter"))
 
 
 func test_quit_game_quits() -> void:
