@@ -110,7 +110,7 @@ static func shade_button(button: Button, palette: Palette) -> void:
 	button.add_theme_stylebox_override("disabled", DitherShading.disabled_plate(palette.button_disabled, BUTTON_HEIGHT))
 
 
-## A bordered panel with [param title] centered at its top and a body under it, filled
+## A bordered panel with [param title] centered at its top in bold and a body under it, filled
 ## through body_of(). It clips what is in it. A backed one holds its body on a backing as
 ## dark as an entry's plate, from under its title to its bottom, so that only a thin edge
 ## of the panel shows around its sides and bottom (A593); one whose entries have plates of
@@ -138,6 +138,7 @@ static func panel(title: String, palette: Palette, title_size: int, is_backed: b
 	made.add_child(column)
 	var heading: Label = label(title, title_size, palette.muted)
 	heading.name = "Title"
+	heading.add_theme_font_override("font", bold())
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(heading)
 	var body: VBoxContainer = VBoxContainer.new()

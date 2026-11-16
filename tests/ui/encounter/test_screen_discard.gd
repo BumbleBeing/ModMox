@@ -23,15 +23,15 @@ func test_at_cleanup_the_hand_glows_and_the_pass_button_waits_to_confirm_the_dis
 	assert_eq(_screen.pass_button().text, "Confirm discard [SPACE]")
 	assert_true(_screen.pass_button().disabled)
 	assert_false(_screen.opening_overlay().visible, "The board stays in sight.")
-	for card_id: int in _screen.hand_order().cards():
+	for card_id: int in _screen.hand_strip().order():
 		assert_eq(BorderEffects.glow_color(_face(card_id)), GREEN)
 		assert_null(ClickCatcher.of(_face(card_id)), "The hand takes its presses in _input().")
-	assert_eq(_screen.hand_order().cards().size(), 9)
+	assert_eq(_screen.hand_strip().order().size(), 9)
 
 
 func test_a_click_raises_a_card_with_a_white_glow_and_a_second_click_lowers_it() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	var rest: float = _face(cards[3]).position.y
 
 	_click(cards[3])
@@ -44,8 +44,7 @@ func test_a_click_raises_a_card_with_a_white_glow_and_a_second_click_lowers_it()
 	assert_false(_screen.undo_button().disabled)
 	_settle_hand()
 	var raised: float = rest - _face(cards[3]).size.y * EncounterLayout.PICKED_RISE
-	assert_almost_eq(_screen.hand_places(Vector2(900, 300))[3].y, raised, 0.01, "A quarter of its height above the rest.")
-	assert_almost_eq(_face(cards[3]).position.y, raised, 1.0)
+	assert_almost_eq(_face(cards[3]).position.y, raised, 1.0, "A quarter of its height above the rest.")
 	assert_true(_presenter.snapshot().decision is ChooseCardsToDiscardDecision, "Nothing is answered yet.")
 
 	_click(cards[3])
@@ -59,7 +58,7 @@ func test_a_click_raises_a_card_with_a_white_glow_and_a_second_click_lowers_it()
 
 func test_nothing_is_rebuilt_for_a_click_so_the_card_eases_up() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	var face: Control = _face(cards[1])
 	var before: float = face.position.y
 
@@ -67,14 +66,14 @@ func test_nothing_is_rebuilt_for_a_click_so_the_card_eases_up() -> void:
 
 	assert_eq(_face(cards[1]), face, "The same face.")
 	assert_eq(face.position.y, before, "It has not jumped.")
-	_screen._spread_hand(0.3)
+	_screen.hand_strip().frame(1.0 / 60.0, _screen.get_local_mouse_position())
 	assert_lt(face.position.y, before)
 	assert_gt(face.position.y, before - face.size.y * EncounterLayout.PICKED_RISE)
 
 
 func test_with_enough_chosen_another_click_does_nothing_and_the_rest_stop_glowing() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	_click(cards[0])
 	_click(cards[5])
 
@@ -92,7 +91,7 @@ func test_with_enough_chosen_another_click_does_nothing_and_the_rest_stop_glowin
 
 func test_undo_takes_back_the_last_click_and_then_has_nothing_to_take_back() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	assert_true(_screen.undo_button().disabled)
 	_click(cards[2])
 	_click(cards[4])
@@ -110,7 +109,7 @@ func test_undo_takes_back_the_last_click_and_then_has_nothing_to_take_back() -> 
 
 func test_confirming_discards_the_chosen_cards_and_no_others() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	var kept: Array[int] = cards.duplicate()
 	kept.erase(cards[1])
 	kept.erase(cards[6])
@@ -132,7 +131,7 @@ func test_confirming_discards_the_chosen_cards_and_no_others() -> void:
 
 func test_space_confirms_only_once_enough_are_chosen() -> void:
 	_open_at_discard(1)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 
 	var asked: EncounterSnapshot = _presenter.snapshot()
 	_screen.press_key(KEY_SPACE)
@@ -148,7 +147,7 @@ func test_space_confirms_only_once_enough_are_chosen() -> void:
 
 func test_a_press_that_moves_is_a_drag_that_rearranges_the_hand_and_chooses_nothing() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	var at: Vector2 = _on(cards[0])
 	var strip: Rect2 = EncounterLayout.regions(SCREEN)["hero_hand"]
 
@@ -158,13 +157,13 @@ func test_a_press_that_moves_is_a_drag_that_rearranges_the_hand_and_chooses_noth
 	_screen.release_hand(Vector2(strip.end.x - 20.0, at.y))
 
 	assert_eq(_screen.card_picks().picked(), [] as Array[int])
-	assert_eq(_screen.hand_order().cards().back(), cards[0], "It went to the right end.")
+	assert_eq(_screen.hand_strip().order().back(), cards[0], "It went to the right end.")
 	assert_eq(BorderEffects.glow_color(_face(cards[0])), GREEN, "And still can be chosen.")
 
 
 func test_a_chosen_card_stays_chosen_and_raised_when_the_hand_is_rearranged() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	_click(cards[8])
 	_settle_hand()
 	var at: Vector2 = _on(cards[0])
@@ -183,7 +182,7 @@ func test_a_chosen_card_stays_chosen_and_raised_when_the_hand_is_rearranged() ->
 
 func test_a_double_click_is_two_clicks() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	var at: Vector2 = _on(cards[2])
 
 	_screen.press_hand(at, false)
@@ -197,7 +196,7 @@ func test_a_double_click_is_two_clicks() -> void:
 
 func test_a_click_chooses_nothing_while_paused_or_at_priority() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 
 	_screen.press_key(KEY_ESCAPE)
 	_screen._click_hand(cards[0])
@@ -209,17 +208,20 @@ func test_a_click_chooses_nothing_while_paused_or_at_priority() -> void:
 	_presenter.wait_until_idle()
 	_pass_until(func() -> bool: return _presenter.snapshot().decision is PriorityDecision)
 
-	var first: int = _screen.hand_order().cards()[0]
+	var first: int = _screen.hand_strip().order()[0]
 	_click(first)
 
 	assert_false(_screen.card_picks().is_active())
 	assert_ne(BorderEffects.glow_color(_face(first)), Color.WHITE, "One click at priority does nothing (A371).")
-	assert_eq(_face(first).position.y, _screen.hand_places(Vector2(900, 300))[0].y, "And raises nothing.")
+	var row: Array[Vector2] = EncounterLayout.hand_row(_screen.hand_strip().order().size(), DragCard.NONE,
+			EncounterLayout.regions(_screen.size)["hero_hand"], _face(first).size)
+	_settle_hand()
+	assert_almost_eq(_face(first).position.y, row[0].y, 1.0, "And raises nothing.")
 
 
 func test_a_redraw_draws_the_chosen_cards_raised_and_white_again() -> void:
 	_open_at_discard(2)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	_click(cards[4])
 	_settle_hand()
 	var raised: float = _face(cards[4]).position.y
@@ -238,7 +240,7 @@ func test_a_real_press_and_release_in_place_chooses_a_card_and_a_real_drag_does_
 	window.size = Vector2i(SCREEN)
 	add_child_autofree(window)
 	_open_at_discard(2, window)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	var at: Vector2 = _on(cards[3])
 	var strip: Rect2 = EncounterLayout.regions(SCREEN)["hero_hand"]
 
@@ -260,7 +262,7 @@ func test_a_real_press_and_release_in_place_chooses_a_card_and_a_real_drag_does_
 	window.push_input(_button(false, Vector2(strip.position.x + 10.0, other.y)))
 
 	assert_eq(_screen.card_picks().picked(), [_seen(cards[3]).id] as Array[int], "A drag chooses nothing.")
-	assert_eq(_screen.hand_order().cards()[0], cards[6], "It rearranged the hand.")
+	assert_eq(_screen.hand_strip().order()[0], cards[6], "It rearranged the hand.")
 
 
 func test_a_real_click_on_the_raised_part_of_a_chosen_card_lets_it_go() -> void:
@@ -268,7 +270,7 @@ func test_a_real_click_on_the_raised_part_of_a_chosen_card_lets_it_go() -> void:
 	window.size = Vector2i(SCREEN)
 	add_child_autofree(window)
 	_open_at_discard(2, window)
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	_click(cards[4])
 	_settle_hand()
 	var top_edge: Vector2 = _face(cards[4]).position + Vector2(30, 12)
@@ -335,7 +337,7 @@ func _click(card_id: int) -> void:
 
 func _settle_hand() -> void:
 	for frame: int in 60:
-		_screen._spread_hand(0.3)
+		_screen.hand_strip().frame(1.0 / 60.0, _screen.get_local_mouse_position())
 
 
 func _motion(at: Vector2) -> InputEventMouseMotion:

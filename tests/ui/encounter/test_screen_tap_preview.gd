@@ -90,7 +90,7 @@ func test_a_held_card_is_previewed_for_the_whole_drag_and_nothing_is_rebuilt() -
 	_screen.drag_to(AWAY)
 	_screen.follow_preview(0.0)
 
-	assert_true(_screen.drag_card().is_holding())
+	assert_true(_screen.hand_strip().is_holding())
 	assert_eq(_screen.previewed_answer(), _cast(), "The cursor is nowhere near the hand, and the card is in it.")
 	assert_eq(_glowing_lands().size(), 2)
 	_screen.drag_to(Vector2(1000, 1040))
@@ -105,6 +105,7 @@ func test_with_several_options_only_the_row_pointed_at_is_previewed() -> void:
 	var bear: MmObjectView = _in_hand("Bear")
 	var options: Array[ClickOption] = _screen._clicks.hand_options_of(bear.id)
 	_screen._clicks._hand_options[bear.id] = [options[0], ClickOption.new(options[0].answer, "Cast Bear another way")]
+	_screen._show_hand()
 
 	_point_at_card("Bear")
 	assert_eq(_screen.previewed_answer(), EncounterScreen.NO_PREVIEW, "A card with two ways shows neither until one is pointed at.")
@@ -324,12 +325,12 @@ func _point_at_card(card_name: String) -> void:
 	_window.push_input(_motion(_on_card(card_name)))
 	_settle()
 	_point(_on_card(card_name))
-	assert_eq(_screen.hand_card_under(_on_card(card_name)), _in_hand(card_name).card_id, "The cursor is on the %s." % card_name)
+	assert_eq(_screen.hand_strip().card_under(_on_card(card_name)), _in_hand(card_name).card_id, "The cursor is on the %s." % card_name)
 
 
 func _settle() -> void:
 	for frame: int in 60:
-		_screen._spread_hand(0.3)
+		_screen.hand_strip().frame(1.0 / 60.0, _screen.get_local_mouse_position())
 
 
 func _motion(at: Vector2) -> InputEventMouseMotion:
@@ -352,7 +353,7 @@ func _bear(generic: int) -> MmCardDefinition:
 
 ## The Hero's view of the leftmost card in hand named [param card_name], or null.
 func _in_hand(card_name: String) -> MmObjectView:
-	for card_id: int in _screen.hand_order().cards():
+	for card_id: int in _screen.hand_strip().order():
 		for card: MmObjectView in _presenter.snapshot().view.hand:
 			if card.card_id == card_id and card.name == card_name:
 				return card

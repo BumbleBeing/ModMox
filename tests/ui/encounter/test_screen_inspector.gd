@@ -222,7 +222,7 @@ func test_nothing_is_pinned_while_a_card_is_dragged() -> void:
 	var bear: int = _card("Bear")
 	_screen.press_hand(_on(bear), false)
 	_screen.drag_to(FIELD)
-	assert_true(_screen.drag_card().is_holding())
+	assert_true(_screen.hand_strip().is_holding())
 
 	_screen.right_click_at(_on(_card("Forest")))
 
@@ -337,11 +337,11 @@ func test_a_real_right_click_while_a_card_is_held_puts_it_down_and_pins_nothing(
 	var bear: int = _card("Bear")
 	window.push_input(_button(MOUSE_BUTTON_LEFT, true, _on(bear)))
 	window.push_input(_motion(FIELD))
-	assert_true(_screen.drag_card().is_holding())
+	assert_true(_screen.hand_strip().is_holding())
 
 	window.push_input(_button(MOUSE_BUTTON_RIGHT, true, _on(_card("Forest"))))
 
-	assert_false(_screen.drag_card().is_holding())
+	assert_false(_screen.hand_strip().is_holding())
 	assert_eq(_screen.inspection().pinned(), Inspection.NOTHING)
 
 
@@ -433,7 +433,7 @@ func _seen(card_id: int) -> MmObjectView:
 
 
 func _card(card_name: String) -> int:
-	for card_id: int in _screen.hand_order().cards():
+	for card_id: int in _screen.hand_strip().order():
 		if _seen(card_id).name == card_name:
 			return card_id
 	return DragCard.NONE

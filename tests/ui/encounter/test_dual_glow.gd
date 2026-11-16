@@ -139,13 +139,13 @@ func test_a_held_card_with_two_kinds_glows_in_both_made_lighter_and_plainly_agai
 	_screen.press_hand(at, false)
 	_screen.drag_to(at + Vector2(0, -400))
 
-	assert_eq(BorderEffects.glow_colors(_screen.lifted_face()), [
+	assert_eq(BorderEffects.glow_colors(_screen.hand_strip().face_of(_screen.hand_strip().held())), [
 		DecisionClicks.bright_color_of(DecisionClicks.Kind.PLAY), DecisionClicks.bright_color_of(DecisionClicks.Kind.ABILITY),
 	] as Array[Color], "Letting go here would offer both.")
 
 	_screen.release_hand(at)
 
-	assert_null(_screen.lifted_face())
+	assert_null(_screen.hand_strip().face_of(_screen.hand_strip().held()))
 	assert_eq(BorderEffects.glow_colors(face), [
 		DecisionClicks.color_of(DecisionClicks.Kind.PLAY), DecisionClicks.color_of(DecisionClicks.Kind.ABILITY),
 	] as Array[Color])
@@ -176,11 +176,12 @@ func test_letting_go_of_a_card_with_only_an_ability_uses_it() -> void:
 	clicks._hand_abilities[card.id] = clicks._hand_options[card.id]
 	clicks._hand_options.erase(card.id)
 	clicks.glow_as(card.id, DecisionClicks.Kind.ABILITY)
+	_screen._show_hand()
 	var at: Vector2 = _screen.face_of(card.id).position + Vector2(30, 60)
 
 	_screen.press_hand(at, false)
 	_screen.drag_to(at + Vector2(0, -400))
-	assert_eq(BorderEffects.glow_colors(_screen.lifted_face()), [DecisionClicks.bright_color_of(DecisionClicks.Kind.ABILITY)] as Array[Color])
+	assert_eq(BorderEffects.glow_colors(_screen.hand_strip().face_of(_screen.hand_strip().held())), [DecisionClicks.bright_color_of(DecisionClicks.Kind.ABILITY)] as Array[Color])
 	_screen.release_hand(at + Vector2(0, -400))
 	_presenter.wait_until_idle()
 
@@ -205,6 +206,8 @@ func _give_an_ability(object_id: int) -> void:
 	var clicks: DecisionClicks = _screen._clicks
 	clicks._hand_abilities[object_id] = [ClickOption.new(clicks.hand_options_of(object_id)[0].answer, "Its ability")]
 	clicks._add_kind(object_id, DecisionClicks.Kind.ABILITY)
+	# The Hand Strip is shown what each card offers, so it is shown the hand again.
+	_screen._show_hand()
 
 
 ## An artifact costing {0} with a mana ability and one that deals damage.

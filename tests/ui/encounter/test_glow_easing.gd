@@ -121,7 +121,7 @@ func test_a_redraw_leaves_a_glow_that_was_showing_as_it_was_and_a_new_one_eases_
 	_presenter.toggle_stop(MmEncounterSetup.HERO_PLAYER_ID, MmTurn.Step.UPKEEP)
 
 	var redrawn: Control = _hand_face(screen, "Bear")
-	assert_ne(redrawn, bear, "The hand was drawn again.")
+	assert_eq(redrawn, bear, "The Hand Strip keeps its faces through a redraw (13j).")
 	assert_eq(_alpha(redrawn, BorderEffects.GLOW), 1.0, "Glowing as it was, not lit again.")
 
 
@@ -133,14 +133,14 @@ func test_a_held_card_that_glows_brighter_keeps_its_glow_through_a_redraw() -> v
 	screen.press_hand(at, false)
 	screen.drag_to(at + Vector2(0, -400))
 	await wait_seconds(SECONDS * 1.5)
-	var bright: Color = BorderEffects.glow_color(screen.lifted_face())
+	var bright: Color = BorderEffects.glow_color(screen.hand_strip().face_of(screen.hand_strip().held()))
 	assert_eq(bright, DecisionClicks.bright_color_of(DecisionClicks.Kind.PLAY))
 
 	_presenter.toggle_stop(MmEncounterSetup.HERO_PLAYER_ID, MmTurn.Step.UPKEEP)
 
-	assert_eq(BorderEffects.glow_color(screen.lifted_face()), bright)
-	assert_eq(_alpha(screen.lifted_face(), BorderEffects.GLOW), 1.0)
-	assert_eq(screen.lifted_face().get_child_count(), _children_but_leaving(screen.lifted_face()), "Nothing fading out.")
+	assert_eq(BorderEffects.glow_color(screen.hand_strip().face_of(screen.hand_strip().held())), bright)
+	assert_eq(_alpha(screen.hand_strip().face_of(screen.hand_strip().held()), BorderEffects.GLOW), 1.0)
+	assert_eq(screen.hand_strip().face_of(screen.hand_strip().held()).get_child_count(), _children_but_leaving(screen.hand_strip().face_of(screen.hand_strip().held())), "Nothing fading out.")
 	screen.release_hand(at + Vector2(0, -400))
 
 

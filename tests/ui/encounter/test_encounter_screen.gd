@@ -889,8 +889,13 @@ func test_parting_the_hand_on_the_screen_keeps_every_card_inside_its_bounds() ->
 	var cursor: Vector2 = rest[5] + Vector2(10.0, 40.0)
 	assert_gt(EncounterLayout.hand_spread(rest, card, cursor)[6].x + card.x, hand.end.x, "Unbounded, the last card would leave.")
 
-	var places: Array[Vector2] = _screen.hand_places(cursor)
+	for frame: int in 120:
+		_screen.hand_strip().frame(1.0 / 60.0, cursor)
 
+	var places: Array[Vector2] = []
+	for in_hand: MmObjectView in view.hand:
+		places.append(_screen.face_of(in_hand.id).position)
+	places.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.x < b.x)
 	assert_eq(places.size(), 7)
 	assert_lt(places[6].x + card.x, hand.end.x + 0.01)
 	assert_gt(places[0].x, hand.position.x - 0.01)
@@ -1388,7 +1393,7 @@ func test_a_press_on_the_board_puts_a_picked_up_blocker_down_but_a_press_on_a_ca
 
 	_screen._input(on_card)
 	assert_eq(_screen.selection().picked_ids(), [bear] as Array[int], "The press was the hand's.")
-	assert_true(_screen.drag_card().is_pressed())
+	assert_true(_screen.hand_strip().is_pressing())
 	_screen.cancel_drag()
 	_screen._gui_input(on_board)
 	assert_eq(_screen.selection().picked_ids(), [] as Array[int], "A314.")

@@ -471,14 +471,36 @@ static func hand_spread(rest: Array[Vector2], card_size: Vector2, cursor: Vector
 ## cards on each side of those two keep their spacing when there is room, and are squeezed
 ## evenly toward their end of the bounds when there is not, so none is ever hidden behind
 ## another at the edge.
+##
+## Which card is under the cursor changes in steps, and a hand that fills its bounds is laid
+## out differently around each one, so the cursor crossing from one card to the next would
+## throw every card at once (a 70-pixel jump for one pixel of cursor in a hand of eight).
+## The layouts for the two cards either side of the cursor are therefore blended by how far
+## it has gone from one to the other, slow at both ends, so the hand only ever slides.
 static func hand_spread_within(rest: Array[Vector2], card_size: Vector2, cursor: Vector2, bounds: Rect2) -> Array[Vector2]:
 	var places: Array[Vector2] = hand_spread(rest, card_size, cursor)
-	if places.size() < 2:
+	if places.size() < 2 or not is_cursor_over_hand(rest, card_size, cursor):
 		return places
+	var place: float = hand_cursor_place(rest, card_size, cursor)
+	var below: int = floori(place)
+	var above: int = mini(below + 1, places.size() - 1)
+	var toward: float = smoothstep(0.0, 1.0, place - below)
+	var from: Array[Vector2] = _spread_within_around(places, card_size, bounds, below)
+	if toward <= 0.0 or above == below:
+		return from
+	var to: Array[Vector2] = _spread_within_around(places, card_size, bounds, above)
+	var blended: Array[Vector2] = []
+	for index: int in places.size():
+		blended.append(from[index].lerp(to[index], toward))
+	return blended
+
+
+## hand_spread_within() for spread [param places] with the card at [param under] taken as
+## the one under the cursor.
+static func _spread_within_around(places: Array[Vector2], card_size: Vector2, bounds: Rect2, under: int) -> Array[Vector2]:
 	var most_left: float = bounds.position.x
 	var most_right: float = maxf(most_left, bounds.end.x - card_size.x)
 	var last: int = places.size() - 1
-	var under: int = roundi(hand_cursor_place(rest, card_size, cursor))
 	var after: int = mini(under + 1, last)
 	var gap: float = places[after].x - places[under].x
 	var anchor: float = clampf(minf(places[under].x, most_right - gap), most_left, most_right)

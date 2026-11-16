@@ -80,7 +80,8 @@ func test_it_covers_everything_right_of_the_sidebar_and_the_hands_strip_is_empty
 	assert_gt(_overlay.get_index(), _screen.stack_window().get_index())
 	assert_lt(_overlay.get_index(), _screen.pause_menu().get_index())
 	for card: MmObjectView in _presenter.snapshot().view.hand:
-		assert_null(_screen.face_of(card.id), "The overlay holds the cards (A384).")
+		var face: Control = _screen.face_of(card.id)
+		assert_true(face == null or not face.visible, "The overlay holds the cards (A384).")
 		assert_not_null(_overlay.face_of(card.id))
 	assert_false(_screen.press_hand(regions["hero_hand"].get_center(), false))
 	assert_eq(_screen.info_panel().prompt_text(), "", "The overlay says it all.")
@@ -88,7 +89,7 @@ func test_it_covers_everything_right_of_the_sidebar_and_the_hands_strip_is_empty
 
 func test_the_cards_are_drawn_large_in_the_hand_order_fanned_as_the_layout_says() -> void:
 	_open(Scenario.setup())
-	var cards: Array[int] = _screen.hand_order().cards()
+	var cards: Array[int] = _screen.hand_strip().order()
 	var places: Array[Rect2] = EncounterLayout.opening_hand_cards(7, 7, Rect2(Vector2.ZERO, _overlay.size))
 	var turns: Array[float] = EncounterLayout.opening_hand_turns(7, 7)
 
@@ -141,7 +142,7 @@ func test_a_mulligan_shows_the_new_hand_and_counts_the_cards_it_cost() -> void:
 	assert_eq(_overlay.shown_ids().size(), 7)
 	assert_ne(_overlay.shown_ids(), first)
 	for index: int in 7:
-		assert_eq(_card_id(_overlay.shown_ids()[index]), _screen.hand_order().cards()[index])
+		assert_eq(_card_id(_overlay.shown_ids()[index]), _screen.hand_strip().order()[index])
 	assert_eq(_overlay.heading_text(), "Mulligans taken: 1")
 	assert_eq(_overlay.button_texts(), ["Keep 6", "Mulligan"] as Array[String])
 
@@ -237,7 +238,7 @@ func test_confirm_puts_the_clicked_cards_down_in_the_order_clicked() -> void:
 
 	assert_gt(_presenter.snapshot().view.game_turn, 0, "Both players have kept.")
 	assert_false(_overlay.visible)
-	assert_eq(_screen.hand_order().cards(), kept, "The five that stayed, in their order.")
+	assert_eq(_screen.hand_strip().order(), kept, "The five that stayed, in their order.")
 
 
 func test_space_confirms_the_cards_put_down_once_there_are_enough() -> void:
@@ -842,7 +843,7 @@ func test_an_overlay_shown_again_while_it_fades_out_is_whole_and_stays() -> void
 	var again: OpeningHand = OpeningHand.new()
 	again.read(asked)
 
-	_overlay.show_frame(again, asked, CardPicks.new(), _screen.hand_order().cards(), area)
+	_overlay.show_frame(again, asked, CardPicks.new(), _screen.hand_strip().order(), area)
 
 	assert_true(_overlay.is_open())
 	assert_false(_overlay.is_closing())
@@ -923,7 +924,7 @@ func test_a_real_press_where_the_hand_would_be_reaches_nothing_under_the_overlay
 	await _real_click(window, regions["battlefield"].get_center() + Vector2(0, -300))
 
 	assert_eq(_presenter.snapshot(), before)
-	assert_false(_screen.drag_card().is_pressed())
+	assert_false(_screen.hand_strip().is_pressing())
 	assert_true(_screen._is_covered(regions["hero_hand"].get_center()))
 	assert_false(_screen._is_covered(regions["hero_panel"].get_center()), "The sidebar is not under it.")
 

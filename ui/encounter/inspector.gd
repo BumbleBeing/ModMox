@@ -27,7 +27,7 @@ const HINT_BUFFER: int = 8
 ## The room between the face, the buttons and the panels.
 const GAP: int = 8
 const TITLE_SIZE: int = 18
-const BODY_SIZE: int = 16
+const BODY_SIZE: int = 17
 const BUTTON_SIZE: int = 17
 const BACKGROUND: Color = Color("#22262e")
 const MUTED: Color = Color("#9aa3af")

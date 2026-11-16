@@ -250,6 +250,10 @@ _Avoid_: Entry tint, stack hue, highlight color
 What the Stack Window entry under the cursor draws on the board, in its Stack Color: a solid border on the source of an ability, which is settled, and a dashed border on each target, which is still to happen. A mark takes the place of the Glow while it is there.
 _Avoid_: Hover highlight, preview, target glow
 
+**Hand Strip**:
+The Hero's hand as the Encounter Screen draws it: a fanned row of Card Faces along the bottom that parts around the card under the cursor, lights it, and makes room where a Drag Card hovers. It keeps the Hand Order and the Drag Card, carries each card's place across a redraw, and leaves out the cards still flying in until they land. It is told what each card's click would do, and says what the Hero did with a card; it plays nothing itself.
+_Avoid_: Hand view, hand row, hand panel
+
 **Hand Order**:
 The order the Hero keeps their hand in, which is theirs alone: cards are dragged along the hand to rearrange it, a new card joins at the right end, and a card that a canceled cast or an undo brings back takes the place it had.
 _Avoid_: Hand sort, hand layout, card order

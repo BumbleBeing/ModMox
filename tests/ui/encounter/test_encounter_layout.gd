@@ -139,6 +139,25 @@ func test_parting_a_full_hand_never_pushes_a_card_past_its_bounds() -> void:
 	assert_eq(EncounterLayout.hand_spread_within([] as Array[Vector2], card, Vector2.ZERO, hand).size(), 0)
 
 
+func test_a_hand_that_fills_its_bounds_slides_with_the_cursor_and_never_jumps() -> void:
+	var hand: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["hero_hand"]
+	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
+
+	for count: int in [7, 8, 9, 10, 12]:
+		var rest: Array[Vector2] = EncounterLayout.hand_rest(count, hand, card)
+		var y: float = rest[0].y + 60.0
+		var before: Array[Vector2] = EncounterLayout.hand_spread_within(rest, card, Vector2(rest[0].x, y), hand)
+		var worst: float = 0.0
+		for x: int in range(int(rest[0].x), int(rest[count - 1].x + card.x)):
+			var now: Array[Vector2] = EncounterLayout.hand_spread_within(rest, card, Vector2(x, y), hand)
+			for index: int in count:
+				worst = maxf(worst, now[index].distance_to(before[index]))
+			before = now
+		# Crossing from one card to the next once threw every card of a hand of eight 70
+		# pixels for one pixel of cursor.
+		assert_lt(worst, 8.0, "A hand of %d moves no card more than a few pixels for a pixel of cursor." % count)
+
+
 func test_the_card_under_the_cursor_still_shows_whole_at_the_right_end_of_a_bounded_hand() -> void:
 	var hand: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["hero_hand"]
 	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
@@ -165,7 +184,8 @@ func test_a_bounded_hand_parted_near_its_left_end_squeezes_evenly_and_hides_no_c
 		assert_gt(held[index].x, held[index - 1].x + 1.0, "Card %d is not hidden behind the one before it." % index)
 	assert_gt(held[0].x, hand.position.x - 0.01)
 	assert_almost_eq(held[24].x, hand.end.x - card.x, 0.01, "The far end is squeezed up to the bound.")
-	assert_almost_eq(held[4].x - held[3].x, free[4].x - free[3].x, 0.01, "The card under the cursor shows as whole as it would unbounded.")
+	# Within a pixel: between two cards the hand is blended from the layouts around each.
+	assert_almost_eq(held[4].x - held[3].x, free[4].x - free[3].x, 1.0, "The card under the cursor shows as whole as it would unbounded.")
 	assert_almost_eq((held[2].x - held[1].x) / (free[2].x - free[1].x), (held[1].x - held[0].x) / (free[1].x - free[0].x), 0.001,
 		"Those before it are all squeezed by the same amount.")
 	assert_almost_eq(held[20].x - held[19].x, held[10].x - held[9].x, 0.01, "And so are those after it.")

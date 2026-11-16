@@ -51,12 +51,6 @@ const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
 const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 const MENU: String = "res://ui/menu/main_menu.tscn"
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
-## How much of the way to its place a card of the hand goes in a sixtieth of a second.
-const HAND_EASE: float = 0.3
-## How much lighter the card of the hand under the cursor is drawn, and how much of the way
-## it goes to or from that in a sixtieth of a second.
-const HAND_HOVER_LIGHT: Color = ClickCatcher.BRIGHT
-const HAND_LIGHT_EASE: float = 0.4
 ## The Glow of a card of the hand chosen to be discarded (A401).
 const PICKED_GLOW: Color = Color.WHITE
 ## What the Tap Preview shows when the cursor asks for nothing.
@@ -107,8 +101,6 @@ var _pile_state: PileWindows = PileWindows.new()
 var _pile_hosts: Dictionary[String, Control] = {}
 var _faces: Dictionary[int, Control] = {}
 var _face_sizes: Dictionary[int, Vector2] = {}
-var _hand_faces: Array[CardFace] = []
-var _hand_rest: Array[Vector2] = []
 var _card_backs: Array[Control] = []
 var _stack_entries: Array[StackEntry] = []
 var _stack_items: Dictionary[int, StackItem] = {}
@@ -185,14 +177,10 @@ var _are_stack_entries_placed: bool = false
 ## or a window of another size (A365).
 var _is_snapping: bool = false
 var _drawn_size: Vector2 = Vector2.ZERO
-## The order the Hero keeps their hand in, and the card of it they are holding (13e-1).
-var _hand_order: HandOrder = HandOrder.new()
-var _drag: DragCard = DragCard.new()
-## The Card Identity of each of _hand_faces, and how far each is turning toward.
-var _hand_cards: Array[int] = []
-var _hand_turns: Array[float] = []
+## The Hero's hand (13e-1, 13j), kept outside the redrawn board, and the layer above the
+## windows where a card of it that is held is drawn.
+var _hand_strip: HandStrip
 var _drag_layer: Control
-var _lifted_face: CardFace = null
 ## What the pregame has said so far, and the overlay that shows it (13e-2).
 var _opening: OpeningHand = OpeningHand.new()
 var _overlay: OpeningHandOverlay
@@ -234,6 +222,14 @@ func _ready() -> void:
 	_board.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_board)
+	_hand_strip = HandStrip.new()
+	_hand_strip.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_hand_strip.answered.connect(_answer)
+	_hand_strip.menu_wanted.connect(func(options: Array[ClickOption], at: Vector2) -> void:
+		_option_menu.open(options, at, _regions["battlefield"]))
+	_hand_strip.clicked.connect(_click_hand)
+	_hand_strip.offer_changed.connect(func(_option: ClickOption) -> void: _info.show_option(_release_text()))
+	add_child(_hand_strip)
 	_ghost_layer = Control.new()
 	_ghost_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_ghost_layer)
@@ -305,7 +301,7 @@ func _ready() -> void:
 	_overlay.answered.connect(_answer_overlay)
 	_overlay.card_clicked.connect(_put_on_bottom)
 	_overlay.confirmed.connect(_confirm_picks)
-	_overlay.closed.connect(_show_landed_hand)
+	_overlay.closed.connect(_show_hand)
 	add_child(_overlay)
 	for player_id: int in [HERO, VILLAIN]:
 		move_child(_emblem_windows[player_id], _overlay.get_index())
@@ -313,6 +309,7 @@ func _ready() -> void:
 	_drag_layer = Control.new()
 	_drag_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_drag_layer)
+	_hand_strip.setup(_drag_layer)
 	# Over every window, wherever a click has brought one to the front, and over the card
 	# of the hand that is raised.
 	_flight_layer = Control.new()
@@ -526,8 +523,7 @@ func _process(delta: float) -> void:
 		return
 	set_hold_key_down(Input.is_key_pressed(hold_key()))
 	_presenter.poll()
-	_spread_hand(EncounterLayout.ease_weight(HAND_EASE, delta))
-	_light_hand(EncounterLayout.ease_weight(HAND_LIGHT_EASE, delta))
+	_hand_strip.frame(delta, get_local_mouse_position())
 	follow_preview(_ease_seconds)
 
 
@@ -543,7 +539,7 @@ func _input(event: InputEvent) -> void:
 		return
 	var mouse: InputEventMouse = make_input_local(event) as InputEventMouse
 	var click: InputEventMouseButton = mouse as InputEventMouseButton
-	if not _drag.is_pressed() and not _drag.is_holding():
+	if not _hand_strip.is_pressing() and not _hand_strip.is_holding():
 		if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT and not _is_covered(click.position) \
 				and press_hand(click.position, click.double_click):
 			get_viewport().set_input_as_handled()
@@ -554,7 +550,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if click.button_index == MOUSE_BUTTON_LEFT and not click.pressed:
 		release_hand(click.position)
-	elif click.button_index == MOUSE_BUTTON_RIGHT and click.pressed and _drag.is_holding():
+	elif click.button_index == MOUSE_BUTTON_RIGHT and click.pressed and _hand_strip.is_holding():
 		cancel_drag()
 		get_viewport().set_input_as_handled()
 
@@ -759,133 +755,34 @@ func _is_covered(cursor: Vector2) -> bool:
 	return false
 
 
-## The card of the Hero's hand that [param cursor] is on, as a Card Identity, or
-## DragCard.NONE. The card nearest the cursor counts where it is drawn and also where the
-## cursor is sending it: the hand eases toward the cursor over several frames, fewer when a
-## frame is slow, and a press made on arriving must not miss the card for being early.
-func hand_card_at(cursor: Vector2) -> int:
-	if _hand_faces.is_empty():
-		return DragCard.NONE
-	var card: Vector2 = _hand_faces[0].size
-	var rest: Array[Vector2] = _hand_rest_now()
-	if not EncounterLayout.is_cursor_over_hand(rest, card, cursor):
-		return DragCard.NONE
-	var drawn: int = hand_card_under(cursor)
-	if drawn != DragCard.NONE:
-		return drawn
-	var index: int = roundi(EncounterLayout.hand_cursor_place(rest, card, cursor))
-	var is_on_it: bool = Rect2(_hand_faces[index].position, card).grow(8.0).has_point(cursor) \
-			or Rect2(hand_places(cursor)[index], card).grow(8.0).has_point(cursor)
-	return _hand_cards[index] if is_on_it else DragCard.NONE
-
-
-## The card of the Hero's hand drawn under [param cursor], as a Card Identity, or
-## DragCard.NONE: the one seen there, turned and parted as it is, and of two that overlap
-## the one on top. This is the card that is lit.
-func hand_card_under(cursor: Vector2) -> int:
-	var found: int = DragCard.NONE
-	for index: int in _hand_faces.size():
-		var face: CardFace = _hand_faces[index]
-		if not Rect2(Vector2.ZERO, face.size).has_point(face.get_transform().affine_inverse() * cursor):
-			continue
-		# A later card is drawn over an earlier one, and a raised one over them all.
-		if face.z_index > 0:
-			return _hand_cards[index]
-		found = _hand_cards[index]
-	return found
-
-
-## The left button went down at [param cursor]. On a card of the hand this is the start of
-## a drag, or with [param is_double] it plays the card: at once if there is one way to, or
-## from the Option Menu, opened there, if there are several (A377). One click alone does
-## nothing (A371). A double-click on a card that cannot be played is a press like any
-## other: two tries at a drag in quick succession arrive as one, and the second must not be
-## swallowed. Returns whether a card of the hand was under the cursor.
+## The left button went down at [param cursor], a double-click when [param is_double], with
+## nothing drawn over the hand there: the Hand Strip takes it if a card of the hand is under
+## it, unless the game is paused. Returns whether it did.
 func press_hand(cursor: Vector2, is_double: bool) -> bool:
-	var card_id: int = DragCard.NONE if _is_paused or _snapshot == null else hand_card_at(cursor)
-	if card_id == DragCard.NONE:
+	if _is_paused or _snapshot == null:
 		return false
-	var options: Array[ClickOption] = _hand_options(card_id) if is_double else ([] as Array[ClickOption])
-	if options.size() > 1:
-		_option_menu.open(options, cursor, _regions["battlefield"])
-	elif options.size() == 1:
-		_answer(options[0].answer)
-	else:
-		_drag.press(card_id, cursor, cursor - _hand_faces[_hand_cards.find(card_id)].position)
-	return true
+	return _hand_strip.press(cursor, is_double)
 
 
-## The mouse moved to [param cursor] with a card pressed or held. Once it has moved far
-## enough the card is picked up and follows the cursor; the hand makes room for it while it
-## is over the hand's strip, and over the panels at the left it is let go of (A371).
+## The mouse moved to [param cursor] with a card of the hand pressed or held.
 func drag_to(cursor: Vector2) -> void:
-	if _drag.move(cursor):
-		_lift()
-	if not _drag.is_holding():
-		return
-	if EncounterLayout.is_over_panels(cursor, _regions):
-		cancel_drag()
-		return
-	var is_above: bool = EncounterLayout.is_above_hand(cursor, _regions)
-	var gap: int = DragCard.NONE
-	if not is_above:
-		gap = EncounterLayout.hand_gap(_hand_faces.size(), _regions["hero_hand"], _lifted_face.size, cursor)
-	if _drag.hover(is_above, gap):
-		_lay_out_hand()
-	_lifted_face.position = _drag.place()
+	_hand_strip.drag_to(cursor)
 
 
-## The left button came up at [param cursor]. A card that was pressed and never picked up
-## has been clicked. A held card let go above the hand's strip is
-## played: at once with one way to play it, from the Option Menu with several, the card
-## waiting where it was let go (A372). One that cannot be played right now goes back to its
-## place without a word (A380). Over the strip it is put down where the hand made room.
+## The left button came up at [param cursor] with a card of the hand pressed or held.
 func release_hand(cursor: Vector2) -> void:
-	drag_to(cursor)
-	if not _drag.is_holding():
-		if _drag.is_pressed():
-			# Let go where it was pressed: a click, which chooses a card to discard (A400).
-			var clicked: int = _drag.card_id()
-			_drag.drop()
-			_click_hand(clicked)
-		return
-	if not _drag.is_above():
-		_put_down(_drag.gap())
-		return
-	var options: Array[ClickOption] = _hand_options(_drag.card_id())
-	if options.is_empty():
-		_put_back()
-	elif options.size() > 1:
-		_drag.wait()
-		_lay_out_hand()
-		_option_menu.open(options, cursor, _regions["battlefield"])
-	else:
-		# The answer brings a redraw of its own, accepted or refused, and a refused card
-		# must not stay held with the button up.
-		_drag.drop()
-		_answer(options[0].answer)
+	_hand_strip.release(cursor)
 
 
-## Lets go of a card that is pressed, held or waiting on the Option Menu, back to its place
-## in the hand: a right-click, the panels at the left, or the Pause Menu opening.
+## Lets go of a card of the hand that is pressed, held or waiting on the Option Menu, back
+## to its place: a right-click, or the Pause Menu opening.
 func cancel_drag() -> void:
-	if _drag.is_lifted():
-		_put_back()
-	else:
-		_drag.drop()
+	_hand_strip.cancel()
 
 
-func drag_card() -> DragCard:
-	return _drag
-
-
-func hand_order() -> HandOrder:
-	return _hand_order
-
-
-## The face of the card being held or waiting on the Option Menu, or null.
-func lifted_face() -> CardFace:
-	return _lifted_face
+## The Hero's hand (ADR 0027).
+func hand_strip() -> HandStrip:
+	return _hand_strip
 
 
 ## The sidebar's Dither Shaded backing, under the player panels.
@@ -936,7 +833,7 @@ func inspectable_at(cursor: Vector2) -> int:
 		return _opening_card_at(cursor)
 	if _is_covered(cursor):
 		return Inspection.NOTHING
-	var in_hand: MmObjectView = _hand_view(hand_card_under(cursor)) if not _hand_faces.is_empty() else null
+	var in_hand: MmObjectView = _hand_view(_hand_strip.card_under(cursor))
 	if in_hand != null:
 		return in_hand.id
 	for object_id: int in _faces:
@@ -997,7 +894,7 @@ func _window_of(entry: ZoneEntry) -> ZoneWindow:
 
 ## Whether a card of the hand or a trigger being ordered is held.
 func _is_dragging() -> bool:
-	return _drag.is_holding() or (_is_trigger_pressed() and _trigger_list.is_holding())
+	return _hand_strip.is_holding() or (_is_trigger_pressed() and _trigger_list.is_holding())
 
 
 func _is_over_inspector(cursor: Vector2) -> bool:
@@ -1078,8 +975,8 @@ func _pin_host_now() -> Control:
 	if _overlay.is_open():
 		return _overlay.face_of(pinned)
 	var seen: MmObjectView = _seen(pinned)
-	if seen != null and _snapshot.view.hand.has(seen) and _hand_cards.has(seen.card_id):
-		return _hand_faces[_hand_cards.find(seen.card_id)]
+	if seen != null and _snapshot.view.hand.has(seen) and _hand_strip.face_of(seen.card_id) != null:
+		return _hand_strip.face_of(seen.card_id)
 	var face: Control = _faces.get(pinned, null) as Control
 	return face if face != null and is_instance_valid(face) else null
 
@@ -1124,9 +1021,16 @@ func ghost_of(object_id: int) -> BattlefieldFace:
 	return _ghosts.get(object_id, null) as BattlefieldFace
 
 
-## The Control that draws Game Object [param object_id], or null if none is on screen.
+## The Control that draws Game Object [param object_id], or null if none is on screen: a
+## card of the Hero's hand is drawn by the Hand Strip.
 func face_of(object_id: int) -> Control:
-	return _faces.get(object_id, null) as Control
+	var face: Control = _faces.get(object_id, null) as Control
+	if face != null or _snapshot == null:
+		return face
+	for in_hand: MmObjectView in _snapshot.view.hand:
+		if in_hand.id == object_id:
+			return _hand_strip.face_of(in_hand.card_id)
+	return null
 
 
 func player_panel(player_id: int) -> PlayerPanel:
@@ -1336,13 +1240,6 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	_snapshot = snapshot
 	_error = ""
 	_is_snapping = _is_snapping or snapshot.is_rewind
-	var hand: Array[int] = []
-	for card: MmObjectView in snapshot.view.hand:
-		hand.append(card.card_id)
-	_hand_order.update(hand, snapshot.is_rewind)
-	if not hand.has(_drag.card_id()):
-		# The card being held has left the hand (A380).
-		_drag.drop()
 	# An answer means something else in a new snapshot, so the preview is asked for afresh,
 	# and shown at once: the cursor may not have moved.
 	_previewed = NO_PREVIEW
@@ -1549,18 +1446,11 @@ func _redraw() -> void:
 	for panel: PlayerPanel in _panels.values():
 		panel.glow_seconds = _ease_seconds
 	var unseen: Array[int] = _unseen_faces()
-	var hand_was: Dictionary[int, Transform2D] = {}
-	if _is_hand_easing:
-		for index: int in _hand_faces.size():
-			hand_was[_hand_cards[index]] = Transform2D(_hand_faces[index].rotation, _hand_faces[index].position)
 	for child: Node in _board.get_children():
 		_board.remove_child(child)
 		child.queue_free()
 	_faces.clear()
 	_face_sizes.clear()
-	_hand_faces.clear()
-	_hand_rest.clear()
-	_hand_cards.clear()
 	_card_backs.clear()
 	_lines.clear()
 	_line_ids.clear()
@@ -1612,9 +1502,6 @@ func _redraw() -> void:
 	_draw_nonlands(view, VILLAIN, regions["villain_nonlands"], glow)
 	_draw_nonlands(view, HERO, regions["hero_nonlands"], glow)
 	_draw_row(_permanents(view, HERO, true), regions["hero_lands"], glow)
-	# Through the pregame the overlay holds the hand, and its strip is empty (A384).
-	if not _opening.is_open():
-		_draw_hand(view, regions["hero_hand"], glow)
 	for player_id: int in [VILLAIN, HERO]:
 		var who: String = "hero" if player_id == HERO else "villain"
 		_draw_library(view.library_sizes.get(player_id, 0), who + "_library", regions[who + "_library"])
@@ -1633,6 +1520,7 @@ func _redraw() -> void:
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
 	_info.show_undeclare(not _selection.attacker_ids().is_empty())
 	_hold_panel.place(regions["hold"])
+	_show_hand()
 	_info.show_option(_release_text())
 	_move_faces(unseen)
 	_tint_arrows()
@@ -1641,12 +1529,6 @@ func _redraw() -> void:
 		_draw_banner(view)
 	_show_overlay()
 	_show_picks()
-	_spread_hand(1.0)
-	# A card that was in the hand eases from where it was to make room for one that landed.
-	for index: int in _hand_faces.size():
-		if hand_was.has(_hand_cards[index]):
-			_hand_faces[index].position = hand_was[_hand_cards[index]].origin
-			_hand_faces[index].rotation = hand_was[_hand_cards[index]].get_rotation()
 	_hide_landing_places()
 	if _preview_plan() != null:
 		_panels[HERO].mark_pool(_preview_plan().pool_types)
@@ -1855,7 +1737,7 @@ func follow_preview(seconds: float) -> void:
 	_previewed = wanted
 	for object_id: int in _clicks.glowing_ids():
 		var face: Control = _faces.get(object_id)
-		if face == null or not is_instance_valid(face) or face == _lifted_face:
+		if face == null or not is_instance_valid(face):
 			continue
 		if _clicks.kinds_of(object_id).has(DecisionClicks.Kind.MANA):
 			BorderEffects.set_glow_of(face, _face_sizes[object_id], _glow_colors(object_id, _clicks), seconds)
@@ -1892,8 +1774,8 @@ func _hovered_answer() -> int:
 	var answer: int = NO_PREVIEW
 	if _option_menu.is_open():
 		answer = _option_menu.pointed_answer()
-	elif _drag.is_lifted():
-		answer = _only_answer(_hand_options(_drag.card_id()))
+	elif _hand_strip.held() != DragCard.NONE:
+		answer = _only_answer(_hand_options(_hand_strip.held()))
 	else:
 		var cursor: Vector2 = get_local_mouse_position()
 		var held_id: int = _held_under(cursor)
@@ -1903,7 +1785,7 @@ func _hovered_answer() -> int:
 		elif _is_covered(cursor):
 			return NO_PREVIEW
 		else:
-			var card_id: int = hand_card_under(cursor)
+			var card_id: int = _hand_strip.card_under(cursor)
 			if card_id != DragCard.NONE:
 				answer = _only_answer(_hand_options(card_id))
 			else:
@@ -2185,6 +2067,8 @@ func _pose_flights() -> void:
 ## Takes the card that lands as Game Object [param object_id] out of the air, and shows it
 ## where it landed.
 func _end_flight(object_id: int) -> void:
+	var was_into_hand: bool = _flight_routes.has(object_id) and _is_into_hand(_flight_routes[object_id]) \
+			and not _drawing.has(object_id)
 	if _drawing.has(object_id):
 		_drawing.erase(object_id)
 		_has_draw_landed = not _is_redrawing
@@ -2196,6 +2080,9 @@ func _end_flight(object_id: int) -> void:
 	if _faces.has(object_id) and is_instance_valid(_faces[object_id]):
 		var pose: FacePose = _motion.pose_of(object_id)
 		_faces[object_id].modulate.a = pose.alpha if pose != null else 1.0
+	if was_into_hand and not _is_redrawing:
+		# What it lands on in the hand shows it now.
+		_show_hand()
 
 
 func _clear_flights() -> void:
@@ -2224,13 +2111,9 @@ func _flight_place(zone_kind: MmZone.Kind, owner_id: int, object_id: int, card_i
 			if owner_id != HERO:
 				return FacePose.of(_regions["villain_hand"].get_center(), EncounterLayout.VILLAIN_CARD_HEIGHT, 0.0)
 			if _drawing.has(object_id):
-				return _draw_landing_place(object_id)
-			var index: int = _hand_cards.find(card_id)
+				return _hand_strip.rest_of(card_id)
 			# A card played by letting go of it flies from where it was let go.
-			var face: Control = _hand_faces[index] if index >= 0 else _lifted_face
-			if face == null or not is_instance_valid(face) or not face.is_inside_tree():
-				return null
-			return FacePose.of(face.get_global_transform() * (face.size / 2.0) - global_position, face.size.y, 0.0)
+			return _hand_strip.place_of(card_id)
 		MmZone.Kind.STACK:
 			return FacePose.of(_stack_art_place(object_id), StackEntry.ART_SIZE, 0.0)
 		MmZone.Kind.LIBRARY, MmZone.Kind.GRAVEYARD, MmZone.Kind.EXILE:
@@ -2300,51 +2183,6 @@ func _draw_villain_hand(count: int, hand_rect: Rect2) -> void:
 		_card_backs.append(back)
 
 
-func _draw_hand(view: MmPlayerView, hand_rect: Rect2, glow: DecisionClicks) -> void:
-	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
-	var seen: Dictionary[int, MmObjectView] = {}
-	for in_hand: MmObjectView in view.hand:
-		seen[in_hand.card_id] = in_hand
-	for card_id: int in _hand_row_cards(0):
-		_hand_cards.append(card_id)
-	var gap: int = _drag.gap() if _drag.has_gap() else DragCard.NONE
-	_hand_rest = EncounterLayout.hand_row(_hand_cards.size(), gap, hand_rect, card)
-	_hand_turns = EncounterLayout.hand_row_angles(_hand_cards.size(), gap)
-	for index: int in _hand_cards.size():
-		# _spread_hand() places and turns it once the whole board is drawn.
-		var face: CardFace = _hand_face(seen[_hand_cards[index]], card)
-		_board.add_child(face)
-		_hand_faces.append(face)
-		_remember_face(seen[_hand_cards[index]].id, face, card, glow)
-	# The card being held is drawn again where it is held, on its own layer (A380).
-	for child: Node in _drag_layer.get_children():
-		_drag_layer.remove_child(child)
-		child.queue_free()
-	_lifted_face = null
-	if not _drag.is_lifted():
-		return
-	var lifted: MmObjectView = seen[_drag.card_id()]
-	_lifted_face = _hand_face(lifted, card)
-	_lifted_face.position = _drag.place()
-	_drag_layer.add_child(_lifted_face)
-	_remember_face(lifted.id, _lifted_face, card, glow)
-	_glow_lifted_face()
-
-
-## The Card Identities of the hand's row, in order, without the card being held and without
-## the drawn cards still in the air from the one at [param first_out] of _drawing on.
-func _hand_row_cards(first_out: int) -> Array[int]:
-	var out: Array[int] = []
-	for index: int in range(first_out, _drawing.size()):
-		if _flight_routes[_drawing[index]].to_owner_id == HERO:
-			out.append(_flight_routes[_drawing[index]].card_id)
-	var row: Array[int] = []
-	for card_id: int in _hand_order.cards():
-		if not out.has(card_id) and not (_drag.is_lifted() and card_id == _drag.card_id()):
-			row.append(card_id)
-	return row
-
-
 ## How many drawn cards are still on their way to the hand of [param player_id].
 func _drawing_count(player_id: int) -> int:
 	var count: int = 0
@@ -2352,31 +2190,6 @@ func _drawing_count(player_id: int) -> int:
 		if _flight_routes[object_id].to_owner_id == player_id:
 			count += 1
 	return count
-
-
-## Where the drawn card that is Game Object [param object_id] lands in the Hero's hand: its
-## place in the row as the row will be when it arrives, with every card drawn before it
-## already there.
-func _draw_landing_place(object_id: int) -> FacePose:
-	var row: Array[int] = _hand_row_cards(_drawing.find(object_id) + 1)
-	var index: int = row.find(_flight_routes[object_id].card_id)
-	if index < 0:
-		return null
-	var card: Vector2 = Vector2(EncounterLayout.HAND_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.HAND_CARD_HEIGHT)
-	var corner: Vector2 = EncounterLayout.hand_row(row.size(), DragCard.NONE, _regions["hero_hand"], card)[index]
-	var turn: float = EncounterLayout.hand_row_angles(row.size(), DragCard.NONE)[index]
-	# The card turns about the middle of its bottom edge.
-	var middle: Vector2 = corner + Vector2(card.x / 2.0, card.y) + Vector2(0.0, -card.y / 2.0).rotated(turn)
-	return FacePose.of(middle, card.y, 0.0)
-
-
-## A card of the Hero's hand, turning about the middle of its bottom edge.
-func _hand_face(seen: MmObjectView, card: Vector2) -> CardFace:
-	var face: CardFace = CardFace.new()
-	face.setup(_snapshot.look_of(seen.id), card.y)
-	face.pivot_offset = Vector2(card.x / 2.0, card.y)
-	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return face
 
 
 ## The Hero's view of the card in hand with Card Identity [param card_id], or null.
@@ -2395,144 +2208,14 @@ func _hand_options(card_id: int) -> Array[ClickOption]:
 
 ## What the Info Panel says while a card is held where letting go would play it, or "".
 func _release_text() -> String:
-	if not _drag.is_holding() or not _drag.is_above():
-		return ""
-	var options: Array[ClickOption] = _hand_options(_drag.card_id())
-	return InfoPrompt.release_text(options[0].text) if not options.is_empty() else ""
+	var offer: ClickOption = _hand_strip.offer()
+	return InfoPrompt.release_text(offer.text) if offer != null else ""
 
 
-## A lifted card that can be played or has an ability to use glows in the colors of what
-## letting go offers, brighter where letting go would do it (A375).
-func _glow_lifted_face() -> void:
-	if _hand_options(_drag.card_id()).is_empty():
-		return
-	var object_id: int = _hand_view(_drag.card_id()).id
-	var colors: Array[Color] = _clicks.colors_of(object_id, _drag.is_waiting() or _drag.is_above())
-	BorderEffects.set_glow_of(_lifted_face, _lifted_face.size, colors, _glow_seconds_for(object_id, colors))
-
-
-## Takes the pressed card out of the hand's row and holds it. Nothing is rebuilt: its own
-## face is lifted to the layer above the windows, upright.
-func _lift() -> void:
-	var index: int = _hand_cards.find(_drag.card_id())
-	_lifted_face = _hand_faces[index]
-	# Where the rest go is worked out again as soon as the card hovers (_lay_out_hand).
-	_hand_faces.remove_at(index)
-	_hand_cards.remove_at(index)
-	_board.remove_child(_lifted_face)
-	_drag_layer.add_child(_lifted_face)
-	_lifted_face.rotation = 0.0
-	_lifted_face.z_index = 0
-
-
-## Tells the hand's row where its cards go now, for where the held card is, and shows on
-## the held card and in the Info Panel whether letting go would play it. Nothing is
-## rebuilt: the cards ease to their places.
-func _lay_out_hand() -> void:
-	var gap: int = _drag.gap() if _drag.has_gap() else DragCard.NONE
-	if not _hand_faces.is_empty():
-		_hand_rest = EncounterLayout.hand_row(_hand_faces.size(), gap, _regions["hero_hand"], _hand_faces[0].size)
-		_hand_turns = EncounterLayout.hand_row_angles(_hand_faces.size(), gap)
-	if _lifted_face != null:
-		_glow_lifted_face()
-	_info.show_option(_release_text())
-
-
-## Puts the lifted card into the hand's row at [param index] among the other cards, and
-## into the Hand Order there. Nothing is rebuilt: its face goes back into the row.
-func _put_down(index: int) -> void:
-	var card_id: int = _drag.card_id()
-	var face: CardFace = _lifted_face
-	var at: int = clampi(index, 0, _hand_faces.size())
-	_drag.drop()
-	_lifted_face = null
-	_hand_order.place(card_id, at)
-	_drag_layer.remove_child(face)
-	_board.add_child(face)
-	if not _hand_faces.is_empty():
-		var is_last: bool = at == _hand_faces.size()
-		_board.move_child(face, _hand_faces[at - 1].get_index() + 1 if is_last else _hand_faces[at].get_index())
-	_hand_faces.insert(at, face)
-	_hand_cards.insert(at, card_id)
-	# Only a card that can be played glowed brighter while held; any other keeps its glow.
-	if BorderEffects.glow_color(face) != null and not _hand_options(card_id).is_empty():
-		BorderEffects.set_glow_of(face, face.size, _clicks.colors_of(_hand_view(card_id).id), _ease_seconds)
-	_lay_out_hand()
-
-
-## Puts the lifted card back where it was in the hand.
-func _put_back() -> void:
-	_put_down(_hand_order.place_of(_drag.card_id()))
-
-
-## The Option Menu closed. A card that was waiting on it goes back to the hand; if a way to
-## play it was chosen, the answer takes it from there.
+## The Option Menu closed. A card of the hand that was waiting on it goes back to the hand;
+## if a way to play it was chosen, the answer takes it from there.
 func _on_menu_closed() -> void:
-	if _drag.is_waiting():
-		_put_back()
-
-
-## Where the hand's cards go with the cursor at [param cursor]: parted around the card under
-## it, and never past the hand's bounds. While a card is held they keep to their places.
-func hand_places(cursor: Vector2) -> Array[Vector2]:
-	if _hand_faces.is_empty():
-		return []
-	var rest: Array[Vector2] = _hand_rest_now()
-	if _drag.is_lifted():
-		return rest
-	return EncounterLayout.hand_spread_within(rest, _hand_faces[0].size, cursor, _regions["hero_hand"])
-
-
-## Moves the hand's cards [param weight] of the way to where they belong, in place and in
-## turn.
-func _spread_hand(weight: float) -> void:
-	if _hand_faces.is_empty():
-		return
-	var card: Vector2 = _hand_faces[0].size
-	var cursor: Vector2 = get_local_mouse_position()
-	var places: Array[Vector2] = hand_places(cursor)
-	var nearest: int = -1
-	var rest: Array[Vector2] = _hand_rest_now()
-	if not _drag.is_lifted() and EncounterLayout.is_cursor_over_hand(rest, card, cursor):
-		nearest = roundi(EncounterLayout.hand_cursor_place(rest, card, cursor))
-	for index: int in _hand_faces.size():
-		_hand_faces[index].position = _hand_faces[index].position.lerp(places[index], weight)
-		_hand_faces[index].rotation = lerpf(_hand_faces[index].rotation, _hand_turns[index], weight)
-		_hand_faces[index].z_index = 1 if index == nearest else 0
-
-
-## Moves each card of the hand [param weight] of the way to how light it belongs: a little
-## lighter while it is the one drawn under the cursor, unless it is pressed or held.
-func _light_hand(weight: float) -> void:
-	var lit: int = DragCard.NONE
-	if not _drag.is_lifted():
-		lit = hand_card_under(get_local_mouse_position())
-	if _drag.is_pressed() and lit == _drag.card_id():
-		lit = DragCard.NONE
-	for index: int in _hand_faces.size():
-		var is_lit: bool = _hand_cards[index] == lit
-		_ease_light(_hand_faces[index], HAND_HOVER_LIGHT if is_lit else Color.WHITE, weight)
-	if _lifted_face != null:
-		_ease_light(_lifted_face, Color.WHITE, weight)
-
-
-static func _ease_light(face: CardFace, light: Color, weight: float) -> void:
-	var alpha: float = face.modulate.a
-	face.modulate = face.modulate.lerp(light, weight)
-	face.modulate.a = alpha
-
-
-## Where each card of the hand's row rests right now: where the row puts it, and a card
-## chosen to be discarded a quarter of its height above that (A401).
-func _hand_rest_now() -> Array[Vector2]:
-	var rest: Array[Vector2] = _hand_rest.duplicate()
-	if not _picks.is_discarding() or _hand_faces.is_empty():
-		return rest
-	for index: int in mini(rest.size(), _hand_cards.size()):
-		var in_hand: MmObjectView = _hand_view(_hand_cards[index])
-		if in_hand != null and _picks.is_picked(in_hand.id):
-			rest[index].y -= _hand_faces[0].size.y * EncounterLayout.PICKED_RISE
-	return rest
+	_hand_strip.menu_closed()
 
 
 ## The card of the hand with Card Identity [param card_id] was clicked: pressed and let go
@@ -2552,33 +2235,74 @@ func _show_overlay() -> void:
 	if not _opening.is_open():
 		if _overlay.is_open():
 			_overlay.close(_motion.seconds, _hand_poses())
-		_show_landed_hand()
+		_show_hand()
 		return
 	var area: Rect2 = Rect2(_regions["sidebar"].end.x, 0, size.x - _regions["sidebar"].end.x, size.y)
 	var pile: Vector2 = Vector2(EncounterLayout.PILE_HEIGHT * CardGeometry.ASPECT, EncounterLayout.PILE_HEIGHT)
 	var library: Rect2 = _regions["hero_library"]
-	_overlay.show_frame(_opening, _snapshot, _picks, _hand_order.cards(), area,
+	_overlay.show_frame(_opening, _snapshot, _picks, _hand_strip.order(), area,
 			Rect2(library.position + Vector2((library.size.x - pile.x) / 2.0, 0), pile))
 	_opening.forget_new_hand()
 
 
 ## Where each card of the hand's strip rests, by Game Object ID, as a pose whose center is
-## the middle of the card's bottom edge: where the overlay's cards fly to when it goes.
+## the middle of the card's bottom edge, turned as it is in the row: where the overlay's
+## cards fly to when it goes.
 func _hand_poses() -> Dictionary[int, FacePose]:
 	var poses: Dictionary[int, FacePose] = {}
-	for index: int in mini(_hand_cards.size(), _hand_rest.size()):
-		var in_hand: MmObjectView = _hand_view(_hand_cards[index])
-		if in_hand != null and index < _hand_faces.size():
-			var card: Vector2 = _hand_faces[index].size
-			poses[in_hand.id] = FacePose.of(_hand_rest[index] + Vector2(card.x / 2.0, card.y), card.y, _hand_turns[index])
+	for in_hand: MmObjectView in _snapshot.view.hand:
+		var rest: FacePose = _hand_strip.rest_of(in_hand.card_id)
+		if rest != null:
+			var turn: float = _hand_strip.fan_turn_of(in_hand.card_id)
+			poses[in_hand.id] = FacePose.of(rest.center + Vector2(0.0, rest.height / 2.0).rotated(turn), rest.height, turn)
 	return poses
 
 
-## Shows each card of the hand's strip unless the overlay is still flying it there.
-func _show_landed_hand() -> void:
-	for index: int in mini(_hand_cards.size(), _hand_faces.size()):
-		var in_hand: MmObjectView = _hand_view(_hand_cards[index])
-		_hand_faces[index].visible = in_hand == null or not _overlay.is_landing(in_hand.id)
+## Shows the Hero's hand in the Hand Strip as the snapshot has it: what a click on each card
+## would do and how it glows, the cards chosen to be discarded, and which are not shown yet.
+## Cards drawn and still in the air are left out until they land; a card flying in some
+## other way, and through the pregame the whole hand, which the overlay holds (A384), keep
+## their places and are not shown. Nothing is rebuilt for a card already drawn.
+func _show_hand() -> void:
+	if _snapshot == null:
+		return
+	var hand: HandShow = HandShow.new()
+	hand.regions = _regions
+	hand.glow_seconds = _ease_seconds
+	hand.is_rewind = _snapshot.is_rewind
+	# A redraw puts every card at its place at once, unless a drawn card has landed and the
+	# rest make room for it; anything else, such as a click choosing a card to discard,
+	# rebuilds nothing, and the cards ease.
+	hand.is_easing = _is_hand_easing or not _is_redrawing
+	hand.cursor = get_local_mouse_position()
+	var flying_in: Dictionary[int, bool] = {}
+	for object_id: int in _flight_routes:
+		if _is_into_hand(_flight_routes[object_id]) and not _drawing.has(object_id):
+			flying_in[_flight_routes[object_id].card_id] = true
+	for object_id: int in _drawing:
+		if _flight_routes[object_id].to_owner_id == HERO:
+			hand.arriving.append(_flight_routes[object_id].card_id)
+	var is_discarding: bool = _picks.is_active() and _picks.is_discarding() and not _snapshot.is_over()
+	for in_hand: MmObjectView in _snapshot.view.hand:
+		var glow: Array[Color] = _glow_colors(in_hand.id, _clicks)
+		if is_discarding:
+			glow = []
+			if _picks.is_picked(in_hand.id):
+				glow = [PICKED_GLOW]
+			elif _picks.can_pick(in_hand.id):
+				glow = [DecisionClicks.color_of(DecisionClicks.Kind.OTHER)]
+		hand.add(in_hand.card_id, _snapshot.look_of(in_hand.id), _clicks.hand_options_of(in_hand.id), glow,
+				_clicks.colors_of(in_hand.id, true))
+		if _opening.is_open() or _overlay.is_landing(in_hand.id) or flying_in.has(in_hand.card_id):
+			hand.hidden.append(in_hand.card_id)
+		if is_discarding and _picks.is_picked(in_hand.id):
+			hand.raised.append(in_hand.card_id)
+	_hand_strip.show_hand(hand)
+
+
+## Whether [param route] lands in the Hero's hand.
+func _is_into_hand(route: CardFlights.Route) -> bool:
+	return route.to_zone_kind == MmZone.Kind.HAND and route.to_owner_id == HERO
 
 
 ## Shows how far the choice of cards has come, on what is already drawn: a card chosen to
@@ -2595,18 +2319,8 @@ func _show_picks() -> void:
 	_panels[HERO].show_undo(_picks.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
 	_show_confirm("Confirm discard", _picks.is_complete(), _picks.can_undo())
 	_info.show_prompt(_picks.prompt())
-	for index: int in _hand_faces.size():
-		var in_hand: MmObjectView = _hand_view(_hand_cards[index])
-		if in_hand == null:
-			continue
-		var face: Control = _hand_faces[index]
-		if _picks.is_picked(in_hand.id):
-			BorderEffects.set_glow(face, face.size, PICKED_GLOW, _glow_seconds_for(in_hand.id, PICKED_GLOW))
-		elif _picks.can_pick(in_hand.id):
-			var color: Color = DecisionClicks.color_of(DecisionClicks.Kind.OTHER)
-			BorderEffects.set_glow(face, face.size, color, _glow_seconds_for(in_hand.id, color))
-		else:
-			BorderEffects.remove_glow(face, _glow_seconds_for(in_hand.id, null))
+	# A chosen card glows white and rises; the rest that can be chosen glow green.
+	_show_hand()
 
 
 ## The choice of cards changed by a click or an undo. Cards put on the bottom leave the

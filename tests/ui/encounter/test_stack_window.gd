@@ -373,7 +373,7 @@ func test_a_real_press_drag_and_release_reorder_the_triggers_through_the_input_p
 
 	assert_false(list.is_pressed())
 	assert_eq(_screen.trigger_order().order(), [1, 0] as Array[int])
-	assert_false(_screen.drag_card().is_pressed(), "No card of the hand was touched.")
+	assert_false(_screen.hand_strip().is_pressing(), "No card of the hand was touched.")
 
 	# The entries ease to their new places over the next frames.
 	await wait_seconds(0.4)
