@@ -1,10 +1,9 @@
 class_name EncounterRequest
 extends RefCounted
 ## What encounter to play: both decks, the Encounter Seed and how hard the Villain plays.
-## Filled in on the start form or from the command line (A246) until runs exist, when the
-## game around the encounter will hand it over instead.
+## Filled in on the start form or from the command line (A246), or made by for_run() for
+## the encounter a run's Stage Map has led to.
 
-const DECKS: String = "res://content/decks/"
 const EMBLEMS: String = "res://content/emblems/"
 const POTIONS: String = "res://content/potions/"
 const DIFFICULTIES: Array[String] = ["easy", "normal", "hard"]
@@ -33,6 +32,20 @@ var hero_setup: MmPlayerSetup = null
 var villain_setup: MmPlayerSetup = null
 ## The run this encounter is part of, or null.
 var run: Run = null
+
+
+## The encounter against the Villain the Hero of [param run] is meeting, with the Hero
+## playing the Active Deck, in front of the Stage's Backdrop (ADR 0035).
+static func for_run(run: Run) -> EncounterRequest:
+	var request: EncounterRequest = EncounterRequest.new()
+	var villain: Villain = run.stage_visit.meeting
+	request.villain_setup = villain.setup_for_tier(run.stage_visit.stage.tier)
+	request.villain_name = villain.name
+	request.backdrop = run.stage_visit.stage.backdrop()
+	request.hero_setup = run.hero_setup()
+	request.encounter_seed = run.next_encounter_seed()
+	request.run = run
+	return request
 
 
 ## The request in [param arguments], as passed after "--" on the command line, such as
@@ -67,19 +80,6 @@ static func from_arguments(arguments: PackedStringArray) -> EncounterRequest:
 	return request if is_asked_for else null
 
 
-## The names of the decks in content/decks/, in order.
-static func deck_names() -> Array[String]:
-	var names: Array[String] = []
-	var files: PackedStringArray = DirAccess.get_files_at(DECKS)
-	files.sort()
-	for file: String in files:
-		# An exported game lists a resource as "name.tres.remap".
-		var deck: String = file.trim_suffix(".remap")
-		if deck.ends_with(".tres"):
-			names.append(deck.trim_suffix(".tres"))
-	return names
-
-
 ## Why this request cannot be played, or "" if it can.
 func validate() -> String:
 	var decks: Array[String] = []
@@ -88,7 +88,7 @@ func validate() -> String:
 	if villain_setup == null:
 		decks.append(villain_deck)
 	for deck: String in decks:
-		if not ResourceLoader.exists(DECKS + deck + ".tres"):
+		if not ContentDecks.has(deck):
 			return "There is no deck named \"%s\"." % deck
 	if not DIFFICULTIES.has(difficulty):
 		return "There is no difficulty named \"%s\"." % difficulty
@@ -101,8 +101,8 @@ func validate() -> String:
 ## Emblems go on copies.
 func setup() -> MmEncounterSetup:
 	var encounter: MmEncounterSetup = MmEncounterSetup.new()
-	encounter.hero = hero_setup if hero_setup != null else load(DECKS + hero_deck + ".tres") as MmPlayerSetup
-	encounter.villain = villain_setup if villain_setup != null else load(DECKS + villain_deck + ".tres") as MmPlayerSetup
+	encounter.hero = hero_setup if hero_setup != null else ContentDecks.load_deck(hero_deck)
+	encounter.villain = villain_setup if villain_setup != null else ContentDecks.load_deck(villain_deck)
 	encounter.encounter_seed = encounter_seed
 	if has_sample_emblems or has_sample_potions:
 		encounter.hero = encounter.hero.duplicate() as MmPlayerSetup

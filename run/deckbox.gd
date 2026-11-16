@@ -86,7 +86,7 @@ func colors_of(deck: Deck, collection: Collection) -> Array[MmCardTypes.CardColo
 		var card: DeckbuilderCard = collection.card(id)
 		if card == null:
 			continue
-		for color: MmCardTypes.CardColor in card.look().colors:
+		for color: MmCardTypes.CardColor in card.characteristics().colors:
 			seen[color] = true
 	var colors: Array[MmCardTypes.CardColor] = []
 	for color: MmCardTypes.CardColor in MmCardTypes.CardColor.values():

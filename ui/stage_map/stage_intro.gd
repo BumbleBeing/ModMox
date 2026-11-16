@@ -81,7 +81,7 @@ func begin(run: Run) -> void:
 	_button.add_theme_stylebox_override("hover", DitherShading.button_plate(BUTTON_FILL.lightened(0.1), false, BUTTON_HEIGHT))
 	_button.add_theme_stylebox_override("pressed", DitherShading.button_plate(BUTTON_FILL, true, BUTTON_HEIGHT))
 	_button.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(BUTTON_FILL, true, BUTTON_HEIGHT))
-	_button.pressed.connect(func() -> void: navigate.call(RunFlow.finish_intro()))
+	_button.pressed.connect(func() -> void: navigate.call(Screens.scene(RunFlow.finish_intro())))
 	column.add_child(_button)
 
 

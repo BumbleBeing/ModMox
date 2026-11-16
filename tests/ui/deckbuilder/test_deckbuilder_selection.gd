@@ -352,7 +352,7 @@ func test_nothing_behind_the_pop_up_takes_clicks_and_escape_closes_it() -> void:
 
 func test_applying_a_mod_uses_it_up_and_changes_the_card_everywhere_at_once() -> void:
 	var bears: DeckbuilderCard = _deck.cards_in(2)[2]
-	assert_eq(bears.look().name, "Grizzly Bears")
+	assert_eq(DeckbuilderLooks.look_of(bears).name, "Grizzly Bears")
 	assert_eq(bears.mods.size(), 0)
 	var ember: Mod = _held("Ember")
 	var held_before: int = _sample.held_mods.count_of(ember)
@@ -574,7 +574,7 @@ func test_a_basic_lands_first_mod_puts_it_in_the_collection_and_off_its_lands_bu
 	_screen.mod_popup().button("yes").pressed.emit()
 	await wait_process_frames(2)
 
-	assert_eq(forest.look().name, "Ancient Forest")
+	assert_eq(DeckbuilderLooks.look_of(forest).name, "Ancient Forest")
 	assert_eq(_sample.collection.cards().size(), owned + 1)
 	assert_true(_deck.contains(forest), "It stays in the Deck.")
 	assert_eq(_deck.basic_land_count("Forest"), forests - 1)

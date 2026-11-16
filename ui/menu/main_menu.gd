@@ -10,7 +10,7 @@ extends Control
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
 const CARD_GALLERY: String = "res://tools/card_gallery/card_gallery.tscn"
-const DECKBUILDER: String = RunFlow.DECKBUILDER
+const DECKBUILDER: String = Screens.DECKBUILDER
 const DECKBUILDER_FLAG: String = "--deckbuilder"
 ## The smallest the window may be made: four times a Backdrop's picture, so that its pixels
 ## stay even there as they do at 1920 x 1080 (ADR 0035).
@@ -46,7 +46,7 @@ func _ready() -> void:
 	if arguments.has(StageMapScreen.FLAG) and not StageMapScreen.has_left:
 		_is_skipping = true
 		RunFlow.start(StageMapScreen.debug_run_from(arguments))
-		navigate.call_deferred(RunFlow.finish_intro())
+		navigate.call_deferred(Screens.scene(RunFlow.finish_intro()))
 		return
 	var asked_for: EncounterRequest = EncounterRequest.from_arguments(arguments)
 	if asked_for != null:
@@ -84,7 +84,7 @@ func _ready() -> void:
 		reason.add_theme_color_override("font_color", REFUSAL_COLOR)
 		column.add_child(reason)
 	_add(column, "Start Encounter", func() -> void: navigate.call(START_FORM))
-	_add(column, "Start Run (debug)", func() -> void: navigate.call(RunFlow.start(Run.debug(randi()))))
+	_add(column, "Start Run (debug)", func() -> void: navigate.call(Screens.scene(RunFlow.start(Run.debug(randi())))))
 	_add(column, "Card Gallery", func() -> void: navigate.call(CARD_GALLERY))
 	_add(column, "Quit Game", func() -> void: quit.call())
 

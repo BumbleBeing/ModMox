@@ -7,6 +7,13 @@ const SECONDS: float = 0.2
 const FIELD: Rect2 = Rect2(352, 86, 1386, 806)
 
 
+## These tests time fades by the wall clock, so a slow first frame would carry a fade past
+## the point they read. Whatever the test before left to be freed (a file of card faces, say)
+## is freed in the frames waited here, before any timing starts.
+func before_all() -> void:
+	await wait_process_frames(5)
+
+
 func after_each() -> void:
 	await wait_process_frames(2)
 

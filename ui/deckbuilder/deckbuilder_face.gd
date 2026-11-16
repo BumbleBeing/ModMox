@@ -8,7 +8,7 @@ extends RefCounted
 ## [param shows_slots] is false.
 static func make(card: DeckbuilderCard, height: float, shows_slots: bool = true) -> CardFace:
 	var face: CardFace = CardFace.new()
-	face.setup(card.look(), height)
+	face.setup(DeckbuilderLooks.look_of(card), height)
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if shows_slots:
 		var row: ModSlotRow = ModSlotRow.new()

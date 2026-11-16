@@ -25,11 +25,11 @@ func test_no_card_flies_until_the_screen_is_told_to_play_at_the_games_pace() -> 
 	_screen = EncounterScreen.new()
 	_screen.starts_itself = false
 	add_child_autofree(_screen)
-	assert_eq(_screen.card_flights().seconds, 0.0)
+	assert_eq(_screen.flight_layer().seconds, 0.0)
 
 	_screen.use_game_pace(EncounterPresenter.new(_bears(), DefaultAnswerAgent.new()))
 
-	assert_almost_eq(_screen.card_flights().seconds, GameSpeed.seconds(Pacing.FLIGHT_SECONDS, GameSpeed.Speed.NORMAL), 0.0001)
+	assert_almost_eq(_screen.flight_layer().seconds, GameSpeed.seconds(Pacing.FLIGHT_SECONDS, GameSpeed.Speed.NORMAL), 0.0001)
 	assert_lt(Pacing.FLIGHT_SECONDS * 1000.0, float(Pacing.ACTION_MSEC), "A flight lands before the Villain's next action.")
 
 
@@ -39,14 +39,14 @@ func test_with_flights_off_a_card_is_simply_where_it_belongs() -> void:
 	_play("Forest")
 
 	var forest: int = _permanents("Forest")[0]
-	assert_eq(_screen.card_flights().ids(), [] as Array[int])
+	assert_eq(_screen.flight_layer().flying_ids(), [] as Array[int])
 	assert_null(_screen.flight_card_of(forest))
 
 
 func test_nothing_flies_through_the_pregame() -> void:
 	_open(_bears())
 
-	assert_eq(_screen.card_flights().ids(), [] as Array[int], "Opening hands are not dealt through the air.")
+	assert_eq(_screen.flight_layer().flying_ids(), [] as Array[int], "Opening hands are not dealt through the air.")
 
 
 func test_a_land_played_flies_from_its_place_in_the_hand_to_its_place_in_the_row() -> void:
@@ -70,7 +70,7 @@ func test_a_land_played_flies_from_its_place_in_the_hand_to_its_place_in_the_row
 	assert_null(_screen.flight_card_of(forest))
 	assert_true(card.is_queued_for_deletion())
 	assert_eq(_screen.face_of(forest).modulate.a, 1.0, "It has landed.")
-	assert_eq(_screen.card_flights().ids(), [] as Array[int])
+	assert_eq(_screen.flight_layer().flying_ids(), [] as Array[int])
 
 
 func test_a_flying_card_is_over_every_window_and_takes_no_clicks() -> void:
@@ -240,7 +240,7 @@ func test_the_heros_draw_turns_face_up_on_its_way_from_the_library_and_the_villa
 	_pass_until(func() -> bool:
 		return _presenter.snapshot().view.active_player_id == VILLAIN and _presenter.snapshot().view.step == MmTurn.Step.DRAW)
 
-	var villains: Array[int] = _screen.card_flights().ids()
+	var villains: Array[int] = _screen.flight_layer().flying_ids()
 	assert_eq(villains.size(), 1, "The Villain drew.")
 	var back: FlightCard = _screen.flight_card_of(villains[0])
 	assert_true(back.is_face_down())
@@ -249,7 +249,8 @@ func test_the_heros_draw_turns_face_up_on_its_way_from_the_library_and_the_villa
 	assert_eq(_screen.villain_card_back_count(), villain_hand - 1, "The Villain's hand grows when the card lands.")
 	_settle()
 	assert_eq(_screen.villain_card_back_count(), villain_hand)
-	assert_almost_eq(back.position, EncounterLayout.regions(SCREEN)["villain_hand"].get_center(), NEAR)
+	var last: Control = _screen.villain_hand().back(villain_hand - 1)
+	assert_almost_eq(back.position, last.get_transform() * (last.size / 2.0), NEAR, "It landed where its back now hangs, at the right end.")
 
 	var held: Array[int] = _hand_ids()
 	_pass_until(func() -> bool:
@@ -279,7 +280,7 @@ func test_a_drawn_card_landing_leaves_an_open_option_menu_alone() -> void:
 	for object_id: int in _hand_ids():
 		if not held.has(object_id):
 			drawn = object_id
-	assert_true(_screen.card_flights().is_flying(drawn))
+	assert_true(_screen.flight_layer().is_flying(drawn))
 	var options: Array[ClickOption] = [ClickOption.new(0, "One"), ClickOption.new(1, "Two")]
 	_screen.option_menu().open(options, SCREEN / 2.0, EncounterLayout.regions(SCREEN)["battlefield"])
 
@@ -294,7 +295,7 @@ func test_a_drawn_card_landing_leaves_an_open_option_menu_alone() -> void:
 
 func test_cards_drawn_together_leave_the_library_one_at_a_time() -> void:
 	_open(_setup_of([Scenario.free_draw("Insight", 3)]))
-	_screen.card_flights().gap_seconds = 0.1
+	_screen.flight_layer().gap_seconds = 0.1
 	_settle()
 	var held: Array[int] = _hand_ids()
 	_presenter.is_hold_key_down = true
@@ -314,7 +315,7 @@ func test_cards_drawn_together_leave_the_library_one_at_a_time() -> void:
 
 	var drawn: Array[int] = []
 	for object_id: int in _hand_ids():
-		if not held.has(object_id) and _screen.card_flights().is_flying(object_id):
+		if not held.has(object_id) and _screen.flight_layer().is_flying(object_id):
 			drawn.append(object_id)
 	drawn.sort()
 	assert_eq(drawn.size(), 3)
@@ -348,7 +349,7 @@ func test_cards_drawn_together_leave_the_library_one_at_a_time() -> void:
 	assert_almost_eq(last.position, _middle(_screen.face_of(drawn[2])), NEAR, "Each lands on the place it takes.")
 	for object_id: int in drawn:
 		assert_eq(_screen.face_of(object_id).modulate.a, 1.0, "Each is in the hand once it lands.")
-	assert_eq(_screen.card_flights().ids(), [] as Array[int])
+	assert_eq(_screen.flight_layer().flying_ids(), [] as Array[int])
 
 
 func test_a_discarded_card_flies_from_the_hand_to_the_graveyard() -> void:
@@ -374,7 +375,7 @@ func test_an_undo_takes_every_card_out_of_the_air_and_flies_nothing() -> void:
 
 	_screen.undo()
 
-	assert_eq(_screen.card_flights().ids(), [] as Array[int], "A rewind is not something that happened in the game.")
+	assert_eq(_screen.flight_layer().flying_ids(), [] as Array[int], "A rewind is not something that happened in the game.")
 	assert_true(card.is_queued_for_deletion())
 	assert_eq(_screen.face_of(_in_hand("Forest")).modulate.a, 1.0, "The card is back in the hand at once.")
 
@@ -389,7 +390,7 @@ func test_a_window_of_another_size_lands_every_card_at_once() -> void:
 
 	_screen.size = Vector2(1600, 1000)
 
-	assert_eq(_screen.card_flights().ids(), [] as Array[int])
+	assert_eq(_screen.flight_layer().flying_ids(), [] as Array[int])
 	assert_null(_screen.flight_card_of(forest))
 	assert_eq(_screen.face_of(forest).modulate.a, 1.0)
 
@@ -473,7 +474,7 @@ func _open(setup: MmEncounterSetup, flight_seconds: float = FLIGHT) -> void:
 	# Not at the corner of the window, so a place worked out from the wrong corner shows.
 	_screen.position = Vector2(30, 20)
 	_screen.face_motion().seconds = MOVE
-	_screen.card_flights().seconds = flight_seconds
+	_screen.flight_layer().seconds = flight_seconds
 	_presenter = EncounterPresenter.new(setup, DefaultAnswerAgent.new())
 	_presenter.set_auto_passing(false)
 	_screen.begin(_presenter)

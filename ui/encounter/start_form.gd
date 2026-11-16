@@ -41,9 +41,9 @@ func _ready() -> void:
 	heading.add_theme_font_size_override("font_size", 30)
 	column.add_child(heading)
 	_hero_name = _name_box(column, "Hero's name", "Hero", _request.hero_name)
-	_hero = _choice(column, "Hero's deck", EncounterRequest.deck_names(), _request.hero_deck)
+	_hero = _choice(column, "Hero's deck", ContentDecks.names(), _request.hero_deck)
 	_villain_name = _name_box(column, "Villain's name", "Villain", _request.villain_name)
-	_villain = _choice(column, "Villain's deck", EncounterRequest.deck_names(), _request.villain_deck)
+	_villain = _choice(column, "Villain's deck", ContentDecks.names(), _request.villain_deck)
 	_seed = SpinBox.new()
 	_seed.max_value = 999999
 	_seed.value = _request.encounter_seed

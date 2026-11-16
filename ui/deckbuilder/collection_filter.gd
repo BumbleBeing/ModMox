@@ -52,7 +52,7 @@ func apply(cards: Array[DeckbuilderCard]) -> Array[DeckbuilderCard]:
 
 
 func _matches_search(card: DeckbuilderCard) -> bool:
-	var look: CardLook = card.look()
+	var look: CardLook = DeckbuilderLooks.look_of(card)
 	var text: String = ("%s\n%s\n%s" % [look.name, look.type_line(), look.rules_text]).to_lower()
 	for word: String in search.to_lower().split(" ", false):
 		if not text.contains(word):
@@ -63,7 +63,7 @@ func _matches_search(card: DeckbuilderCard) -> bool:
 func _matches_color(card: DeckbuilderCard) -> bool:
 	if colors.is_empty() and not multicolor and not colorless:
 		return true
-	var card_colors: Array[MmCardTypes.CardColor] = card.look().colors
+	var card_colors: Array[MmCardTypes.CardColor] = DeckbuilderLooks.look_of(card).colors
 	if card_colors.is_empty():
 		return colorless
 	if multicolor:
@@ -80,7 +80,7 @@ func _matches_type(card: DeckbuilderCard) -> bool:
 	if card_types.is_empty():
 		return true
 	for card_type: MmCardTypes.CardType in card_types:
-		if card.look().has_card_type(card_type):
+		if DeckbuilderLooks.look_of(card).has_card_type(card_type):
 			return true
 	return false
 
@@ -112,6 +112,6 @@ func _sort_keys(card: DeckbuilderCard) -> Array[int]:
 
 func _type_rank(card: DeckbuilderCard) -> int:
 	for rank: int in TYPE_ORDER.size():
-		if card.look().has_card_type(TYPE_ORDER[rank]):
+		if DeckbuilderLooks.look_of(card).has_card_type(TYPE_ORDER[rank]):
 			return rank
 	return TYPE_ORDER.size()

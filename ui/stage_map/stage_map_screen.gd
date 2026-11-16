@@ -148,7 +148,7 @@ func begin(run: Run) -> void:
 	_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	add_child(_bar)
 	_bar.show_run(run)
-	_bar.deckbox_pressed.connect(func() -> void: navigate.call(RunFlow.open_deckbox()))
+	_bar.deckbox_pressed.connect(func() -> void: navigate.call(Screens.scene(RunFlow.open_deckbox())))
 	_scroll_row = StageMapLayout.framed_row(_hero_row())
 	_links.ease_toward(run.stage_visit, -1, 1.0)
 	if run.is_won():
@@ -283,7 +283,7 @@ func _arrive() -> void:
 	var reason: String = _run.move_to(id)
 	assert(reason == "", reason)
 	queue_redraw()
-	var scene: String = RunFlow.arrive()
+	var scene: String = Screens.scene(RunFlow.arrive())
 	if scene != "":
 		navigate.call(scene)
 
@@ -302,7 +302,7 @@ func _open_notice() -> void:
 	_notice.fade_seconds = GameSpeed.seconds(RunWonNotice.FADE_SECONDS, game_speed) if is_paced else 0.0
 	_notice.main_menu = func() -> void:
 		has_left = true
-		navigate.call(RunFlow.finish_run())
+		navigate.call(Screens.scene(RunFlow.finish_run()))
 	add_child(_notice)
 
 

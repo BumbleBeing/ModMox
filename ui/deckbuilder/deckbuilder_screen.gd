@@ -224,7 +224,7 @@ func _select_named(arguments: PackedStringArray) -> void:
 		if not argument.begins_with("--select="):
 			continue
 		for card: DeckbuilderCard in _working_deck.cards():
-			if card.look().name == argument.trim_prefix("--select="):
+			if card.card_name() == argument.trim_prefix("--select="):
 				_selected = card
 				_show_selection()
 				_show_inspector()

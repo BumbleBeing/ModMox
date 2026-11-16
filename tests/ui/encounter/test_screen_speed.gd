@@ -33,7 +33,7 @@ func test_a_speed_scales_every_wait_move_flight_and_fade_of_a_paced_screen() -> 
 	assert_eq(_presenter.mana_wait_msec, Pacing.MANA_MSEC / 2)
 	assert_eq(_presenter.step_wait_msec, Pacing.STEP_MSEC / 2)
 	assert_almost_eq(_screen.face_motion().seconds, Pacing.MOVE_SECONDS / 2.0, 0.0001)
-	assert_almost_eq(_screen.card_flights().seconds, Pacing.FLIGHT_SECONDS / 2.0, 0.0001)
+	assert_almost_eq(_screen.flight_layer().seconds, Pacing.FLIGHT_SECONDS / 2.0, 0.0001)
 	assert_almost_eq(_screen.pause_menu().ease_seconds, Pacing.EASE_SECONDS / 2.0, 0.0001)
 	assert_almost_eq(_screen.opening_overlay().motion().seconds, Pacing.DEAL_SECONDS / 2.0, 0.0001)
 	assert_almost_eq(_screen.opening_overlay().motion().gap_seconds, Pacing.DEAL_GAP_SECONDS / 2.0, 0.0001)
@@ -47,7 +47,7 @@ func test_a_speed_scales_every_wait_move_flight_and_fade_of_a_paced_screen() -> 
 	assert_eq(_presenter.mana_wait_msec, Pacing.MANA_MSEC)
 	assert_eq(_presenter.step_wait_msec, Pacing.STEP_MSEC)
 	assert_almost_eq(_screen.face_motion().seconds, Pacing.MOVE_SECONDS, 0.0001)
-	assert_almost_eq(_screen.card_flights().seconds, Pacing.FLIGHT_SECONDS, 0.0001)
+	assert_almost_eq(_screen.flight_layer().seconds, Pacing.FLIGHT_SECONDS, 0.0001)
 	assert_almost_eq(_screen.pause_menu().ease_seconds, Pacing.EASE_SECONDS, 0.0001)
 
 
@@ -58,7 +58,7 @@ func test_a_screen_that_is_not_paced_waits_for_nothing_at_any_speed() -> void:
 
 	assert_eq(_presenter.action_wait_msec, 0)
 	assert_eq(_screen.face_motion().seconds, 0.0)
-	assert_eq(_screen.card_flights().seconds, 0.0)
+	assert_eq(_screen.flight_layer().seconds, 0.0)
 	assert_eq(_screen.opening_overlay().motion().seconds, 0.0, "No card of the opening hand is dealt: each is at its place.")
 
 

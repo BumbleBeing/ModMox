@@ -15,8 +15,12 @@ var run_card: MmRunCard = null
 ## The Mods on the card, in the order earned. Each one's Modification is on the Run Card.
 var mods: Array[Mod] = []
 
-var _look: CardLook = null
-var _original_look: CardLook = null
+## How many times the card has changed: one more for each Mod attached, so that whatever is
+## worked out from the card, such as how it is drawn, knows when to work it out again.
+var revision: int = 0
+
+var _characteristics: MmCharacteristics = null
+var _original_characteristics: MmCharacteristics = null
 
 
 func _init(card_id: int, card: MmRunCard) -> void:
@@ -24,20 +28,32 @@ func _init(card_id: int, card: MmRunCard) -> void:
 	run_card = card
 
 
-## The card as it reads now, with every Mod applied.
-func look() -> CardLook:
-	if _look == null:
-		_look = CardLook.of_characteristics(MmCharacteristics.printed(run_card.flatten()), _art_key())
-		_look.name = _modded_name(_look.name)
-		_look.rules_text = AbilityText.of_card(_look.abilities, _look.card_types, _look.supertypes, _look.name)
-	return _look
+## The card's printed characteristics as it reads now, with every Mod applied and each
+## Mod's name in front of its own. Never change what it returns.
+func characteristics() -> MmCharacteristics:
+	if _characteristics == null:
+		_characteristics = MmCharacteristics.printed(run_card.flatten())
+		_characteristics.name = _modded_name(_characteristics.name)
+	return _characteristics
 
 
-## The card as its Card Definition has it: no Mods and no Hexes.
-func original_look() -> CardLook:
-	if _original_look == null:
-		_original_look = CardLook.of_characteristics(MmCharacteristics.printed(run_card.base), _art_key())
-	return _original_look
+## The printed characteristics of its Card Definition: no Mods and no Hexes. Never change
+## what it returns.
+func original_characteristics() -> MmCharacteristics:
+	if _original_characteristics == null:
+		_original_characteristics = MmCharacteristics.printed(run_card.base)
+	return _original_characteristics
+
+
+## The card's name as it reads now, each Mod's name in front of its own.
+func card_name() -> String:
+	return characteristics().name
+
+
+## Which art the card is drawn with: its Card Definition's file name, whatever the Mods
+## have made of it.
+func art_key() -> String:
+	return run_card.base.resource_path.get_file().get_basename()
 
 
 ## Whether it has a Mod or a Hex, and so differs from its Original.
@@ -46,7 +62,7 @@ func is_modified() -> bool:
 
 
 func is_land() -> bool:
-	return look().has_card_type(MmCardTypes.CardType.LAND)
+	return characteristics().has_card_type(MmCardTypes.CardType.LAND)
 
 
 func is_basic_land() -> bool:
@@ -54,11 +70,11 @@ func is_basic_land() -> bool:
 
 
 func mana_value() -> int:
-	return 0 if look().mana_cost == null else look().mana_cost.mana_value()
+	return characteristics().mana_value()
 
 
 func color_rank() -> int:
-	var colors: Array[MmCardTypes.CardColor] = look().colors
+	var colors: Array[MmCardTypes.CardColor] = characteristics().colors
 	if colors.is_empty():
 		return COLORLESS_RANK
 	return MULTICOLOR_RANK if colors.size() > 1 else colors[0] as int
@@ -77,7 +93,8 @@ func has_empty_mod_slot() -> bool:
 func attach(mod: Mod) -> void:
 	mods.append(mod)
 	run_card.modifications.append(mod.modification)
-	_look = null
+	revision += 1
+	_characteristics = null
 
 
 ## A throwaway copy of this card as it would be with [param mod] in its next Mod Slot,
@@ -90,10 +107,6 @@ func with_mod(mod: Mod) -> DeckbuilderCard:
 	copy.mods = mods.duplicate()
 	copy.attach(mod)
 	return copy
-
-
-func _art_key() -> String:
-	return run_card.base.resource_path.get_file().get_basename()
 
 
 ## [param own_name] with the name of each Mod and Hex in front of it, in slot order. A Mod
@@ -115,5 +128,5 @@ func sorts_before(other: DeckbuilderCard) -> bool:
 
 
 func comes_before_by_name(other: DeckbuilderCard) -> bool:
-	var order: int = look().name.naturalnocasecmp_to(other.look().name)
+	var order: int = card_name().naturalnocasecmp_to(other.card_name())
 	return id < other.id if order == 0 else order < 0

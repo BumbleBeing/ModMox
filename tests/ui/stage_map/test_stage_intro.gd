@@ -42,13 +42,13 @@ func test_continue_opens_the_stage_map() -> void:
 
 	_intro.button().pressed.emit()
 
-	assert_eq(_went_to, [RunFlow.STAGE_MAP] as Array[String])
-	assert_eq(RunFlow.back_from_deckbox, RunFlow.STAGE_MAP)
+	assert_eq(_went_to, [Screens.STAGE_MAP] as Array[String])
+	assert_eq(RunFlow.back_from_deckbox, RunFlow.Screen.STAGE_MAP)
 
 
 func test_the_deckboxs_close_at_the_start_of_a_run_leads_here() -> void:
-	assert_eq(RunFlow.back_from_deckbox, RunFlow.STAGE_INTRO)
-	assert_true(ResourceLoader.exists(RunFlow.STAGE_INTRO))
-	var scene: Node = (load(RunFlow.STAGE_INTRO) as PackedScene).instantiate()
+	assert_eq(RunFlow.back_from_deckbox, RunFlow.Screen.STAGE_INTRO)
+	assert_true(ResourceLoader.exists(Screens.STAGE_INTRO))
+	var scene: Node = (load(Screens.STAGE_INTRO) as PackedScene).instantiate()
 	assert_true(scene is StageIntro)
 	scene.free()

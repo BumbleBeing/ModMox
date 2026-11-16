@@ -86,7 +86,7 @@ func setup(card: DeckbuilderCard, held_mods: HeldMods) -> void:
 	var rows: VBoxContainer = VBoxContainer.new()
 	rows.add_theme_constant_override("separation", 14)
 	_window.add_child(rows)
-	var heading: Label = _label("Modify %s" % card.look().name, 26)
+	var heading: Label = _label("Modify %s" % card.card_name(), 26)
 	heading.name = "Heading"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_font_override("font", DeckbuilderLook.bold())
@@ -341,7 +341,7 @@ func _show_state() -> void:
 			_add_button("apply", "Apply", _on_apply)
 			_add_button("cancel", "Cancel", _on_cancel)
 		State.CONFIRMING:
-			_question = _label("Are you sure? Applying %s to %s cannot be undone." % [_chosen.name, _card.look().name], 18)
+			_question = _label("Are you sure? Applying %s to %s cannot be undone." % [_chosen.name, _card.card_name()], 18)
 			_footer.add_child(_line(_question))
 			_add_button("yes", "Yes, apply it", _on_yes)
 			_add_button("no", "No, go back", _on_no)

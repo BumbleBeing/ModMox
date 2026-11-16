@@ -1,5 +1,5 @@
 extends GutTest
-## An encounter is asked for on the start form or from the command line, until runs exist.
+## An encounter is asked for on the start form, from the command line, or by a run's Stage.
 
 
 func test_arguments_naming_no_deck_or_seed_ask_for_the_start_form() -> void:
@@ -56,10 +56,6 @@ func test_sample_emblems_go_on_copies_and_leave_the_loaded_decks_alone() -> void
 	assert_gt(setup.hero.emblems[0].abilities.size(), 0)
 	assert_eq((load("res://content/decks/red_green.tres") as MmPlayerSetup).emblems.size(), 0)
 	assert_eq(setup.validate(), "")
-
-
-func test_every_deck_in_content_is_offered() -> void:
-	assert_eq(EncounterRequest.deck_names(), ["blue_red", "red_green", "white_black"] as Array[String])
 
 
 func test_an_unknown_deck_or_difficulty_is_refused_with_a_reason() -> void:
@@ -120,8 +116,28 @@ func test_a_request_without_the_flag_holds_no_potion() -> void:
 	assert_false(EncounterRequest.from_arguments(PackedStringArray(["--seed=3", "--emblems"])).has_sample_potions)
 
 
+func test_the_encounter_is_against_the_villain_met_in_front_of_the_stages_backdrop() -> void:
+	var run: Run = Run.debug(3)
+	_move_to_an_encounter(run)
+	var villain: Villain = run.stage_visit.meeting
+
+	var request: EncounterRequest = EncounterRequest.for_run(run)
+
+	assert_eq(request.villain_setup, villain.setup_for_tier(1))
+	assert_eq(request.setup().villain, villain.setups[0])
+	assert_eq(request.villain_name, villain.name)
+	assert_eq(request.backdrop, run.stage_visit.stage.backdrop())
+	assert_eq(request.setup().hero, request.hero_setup)
+	assert_eq(request.validate(), "")
+
+
 func _names(definitions: Array[MmCardDefinition]) -> Array[String]:
 	var names: Array[String] = []
 	for definition: MmCardDefinition in definitions:
 		names.append(definition.name)
 	return names
+
+
+func _move_to_an_encounter(run: Run) -> void:
+	while not run.stage_visit.must_play():
+		run.move_to(run.stage_visit.choices()[0])

@@ -205,8 +205,8 @@ func _apply(card: DeckbuilderCard, face_height: float) -> void:
 	_original_button.disabled = not card.is_modified()
 	_original_button.tooltip_text = "" if card.is_modified() else "This card has no Mods or Hexes."
 	_draw_face()
-	_fill_text(card.look().printed_rules_text())
-	_fill_reminders(Reminders.of(card.look().abilities))
+	_fill_text(DeckbuilderLooks.look_of(card).printed_rules_text())
+	_fill_reminders(Reminders.of(DeckbuilderLooks.look_of(card).abilities))
 	_fill_mods()
 
 
@@ -224,7 +224,7 @@ func shown_card() -> DeckbuilderCard:
 func shown_look() -> CardLook:
 	if _card == null:
 		return null
-	return _card.original_look() if is_showing_original() else _card.look()
+	return DeckbuilderLooks.original_of(_card) if is_showing_original() else DeckbuilderLooks.look_of(_card)
 
 
 func is_showing_original() -> bool:

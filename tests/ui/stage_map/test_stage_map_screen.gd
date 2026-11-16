@@ -97,7 +97,7 @@ func test_arriving_at_an_encounter_opens_the_deckbox_against_its_villain() -> vo
 	while _went_to.is_empty():
 		_go_to(_run.stage_visit.choices()[0])
 
-	assert_eq(_went_to, [RunFlow.DECKBOX] as Array[String])
+	assert_eq(_went_to, [Screens.DECKBOX] as Array[String])
 	assert_true(StageMap.is_encounter(_run.stage_visit.node()))
 	assert_eq(RunFlow.villain, _run.stage_visit.meeting)
 
@@ -111,7 +111,7 @@ func test_after_an_encounter_the_map_shows_the_hero_there_with_hearts_updated() 
 	_screen.queue_free()
 	_went_to.clear()
 
-	assert_eq(RunFlow.finish_encounter(false), RunFlow.STAGE_MAP)
+	assert_eq(RunFlow.finish_encounter(false), RunFlow.Screen.STAGE_MAP)
 	await _open()
 
 	assert_eq(_screen.hero_spot(), _screen.node_spot(at))
@@ -193,9 +193,9 @@ func test_satchel_does_nothing_and_deckbox_opens_the_deckbox_with_close() -> voi
 	assert_false(bar.button(RunBar.SATCHEL).disabled)
 	bar.button(RunBar.DECKBOX).pressed.emit()
 
-	assert_eq(_went_to, [RunFlow.DECKBOX] as Array[String])
+	assert_eq(_went_to, [Screens.DECKBOX] as Array[String])
 	assert_null(RunFlow.villain)
-	assert_eq(RunFlow.back_from_deckbox, RunFlow.STAGE_MAP)
+	assert_eq(RunFlow.back_from_deckbox, RunFlow.Screen.STAGE_MAP)
 
 
 ## S11: beating the Boss shows "Run won", and Main Menu goes there.
@@ -212,7 +212,7 @@ func test_beating_the_boss_shows_run_won_and_main_menu_goes_there() -> void:
 	assert_not_null(_screen.notice())
 	assert_true(_screen.glowing().is_empty())
 	_screen.notice().button().pressed.emit()
-	assert_eq(_went_to, [RunFlow.MENU] as Array[String])
+	assert_eq(_went_to, [Screens.MENU] as Array[String])
 	assert_null(RunFlow.run)
 	StageMapScreen.has_left = false
 

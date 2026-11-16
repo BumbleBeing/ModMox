@@ -122,7 +122,7 @@ func test_opened_with_no_villain_it_has_close_and_a_centered_title() -> void:
 	assert_null(_screen.villain_shown())
 	assert_eq(_screen.title_alignment(), HORIZONTAL_ALIGNMENT_CENTER)
 	_screen.button("Close").pressed.emit()
-	assert_eq(_went_to, [RunFlow.back_from_deckbox] as Array[String])
+	assert_eq(_went_to, [Screens.scene(RunFlow.back_from_deckbox)] as Array[String])
 
 
 func test_close_leaves_even_with_an_illegal_active_deck() -> void:

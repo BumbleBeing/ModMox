@@ -414,7 +414,7 @@ func test_a_basic_land_button_adds_one_land_and_it_leaves_like_any_card() -> voi
 
 	var lands: Array[DeckbuilderCard] = _deck.cards_in(WorkingDeck.LANDS_COLUMN)
 	var swamp: DeckbuilderCard = lands[-1]
-	assert_eq(swamp.look().name, "Swamp")
+	assert_eq(DeckbuilderLooks.look_of(swamp).name, "Swamp")
 	assert_eq(lands.size(), 18)
 	assert_not_null(_screen.column_face(swamp))
 	assert_eq(_screen.count_label().text, "41 / 40 cards")

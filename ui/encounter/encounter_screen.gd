@@ -101,7 +101,8 @@ var _pile_state: PileWindows = PileWindows.new()
 var _pile_hosts: Dictionary[String, Control] = {}
 var _faces: Dictionary[int, Control] = {}
 var _face_sizes: Dictionary[int, Vector2] = {}
-var _card_backs: Array[Control] = []
+## The Villain's hand of card backs, kept outside the redrawn board like the Hand Strip.
+var _villain_hand: VillainHand
 var _stack_entries: Array[StackEntry] = []
 var _stack_items: Dictionary[int, StackItem] = {}
 ## Which color each object on the stack was given, kept across redraws (A335).
@@ -150,15 +151,10 @@ var _motion: FaceMotion = FaceMotion.new()
 var _rest: Dictionary[int, Vector2] = {}
 var _ghost_layer: Control
 var _ghosts: Dictionary[int, BattlefieldFace] = {}
-## The cards in the air between two zones, by the ID of the Game Object each lands as, the
-## route each is on, and the card drawn for each (13d-2).
-var _flights: CardFlights = CardFlights.new()
-var _flight_routes: Dictionary[int, CardFlights.Route] = {}
-var _flight_cards: Dictionary[int, FlightCard] = {}
-var _flight_layer: Control
-## The Game Objects of the cards on their way from a library to a hand, in the order they
-## left: a card drawn joins the hand when it lands.
-var _drawing: Array[int] = []
+## The cards in the air between two zones (13d-2, 13k), over every window.
+var _flight_layer: FlightLayer
+## A card was put in the air by the snapshot being shown, so the board's faces are posed again.
+var _has_taken_off: bool = false
 ## A drawn card has landed, and the hand is to be drawn again with it.
 var _has_draw_landed: bool = false
 ## The redraw under way adds a card that landed, so the hand eases apart from where it was.
@@ -222,6 +218,9 @@ func _ready() -> void:
 	_board.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_board)
+	_villain_hand = VillainHand.new()
+	_villain_hand.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_villain_hand)
 	_hand_strip = HandStrip.new()
 	_hand_strip.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_hand_strip.answered.connect(_answer)
@@ -312,9 +311,11 @@ func _ready() -> void:
 	_hand_strip.setup(_drag_layer)
 	# Over every window, wherever a click has brought one to the front, and over the card
 	# of the hand that is raised.
-	_flight_layer = Control.new()
-	_flight_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flight_layer = FlightLayer.new()
 	_flight_layer.z_index = 2
+	_flight_layer.setup(_flight_place)
+	_flight_layer.took_off.connect(_on_took_off)
+	_flight_layer.landed.connect(_on_landed)
 	add_child(_flight_layer)
 	_option_menu = OptionMenu.new()
 	_option_menu.closed.connect(_on_menu_closed)
@@ -487,8 +488,8 @@ func _apply_speed() -> void:
 	_paced_presenter.mana_wait_msec = GameSpeed.msec(Pacing.MANA_MSEC, _speed)
 	_paced_presenter.step_wait_msec = GameSpeed.msec(Pacing.STEP_MSEC, _speed)
 	_motion.seconds = GameSpeed.seconds(Pacing.MOVE_SECONDS, _speed)
-	_flights.seconds = GameSpeed.seconds(Pacing.FLIGHT_SECONDS, _speed)
-	_flights.gap_seconds = GameSpeed.seconds(Pacing.DRAW_GAP_SECONDS, _speed)
+	_flight_layer.seconds = GameSpeed.seconds(Pacing.FLIGHT_SECONDS, _speed)
+	_flight_layer.gap_seconds = GameSpeed.seconds(Pacing.DRAW_GAP_SECONDS, _speed)
 	_overlay.motion().seconds = GameSpeed.seconds(Pacing.DEAL_SECONDS, _speed)
 	_overlay.motion().gap_seconds = GameSpeed.seconds(Pacing.DEAL_GAP_SECONDS, _speed)
 	set_ease_seconds(GameSpeed.seconds(Pacing.EASE_SECONDS, _speed))
@@ -524,6 +525,7 @@ func _process(delta: float) -> void:
 	set_hold_key_down(Input.is_key_pressed(hold_key()))
 	_presenter.poll()
 	_hand_strip.frame(delta, get_local_mouse_position())
+	_villain_hand.frame(delta)
 	follow_preview(_ease_seconds)
 
 
@@ -990,8 +992,7 @@ func advance_motion(delta: float) -> void:
 	if was_moving:
 		_pose_faces()
 		_show_block_lines()
-	_flights.advance(delta)
-	_pose_flights()
+	_flight_layer.frame(delta)
 	# The hand takes a drawn card in with a redraw, which closes the Option Menu, so that
 	# waits for a menu that is open: the board it was opened on is still the one drawn.
 	if _has_draw_landed and not _option_menu.is_open():
@@ -1005,14 +1006,15 @@ func face_motion() -> FaceMotion:
 	return _motion
 
 
-func card_flights() -> CardFlights:
-	return _flights
+## The layer where cards fly between zones (ADR 0027).
+func flight_layer() -> FlightLayer:
+	return _flight_layer
 
 
 ## The card drawn in the air on its way to being Game Object [param object_id], or null
 ## once it has landed.
 func flight_card_of(object_id: int) -> FlightCard:
-	return _flight_cards.get(object_id, null) as FlightCard
+	return _flight_layer.flight_card_of(object_id)
 
 
 ## The fading face of Game Object [param object_id], which has left the battlefield, or
@@ -1175,7 +1177,12 @@ func click_catcher(object_id: int) -> ClickCatcher:
 
 ## How many card backs stand for the Villain's hand.
 func villain_card_back_count() -> int:
-	return _card_backs.size()
+	return _villain_hand.count()
+
+
+## The Villain's hand of card backs.
+func villain_hand() -> VillainHand:
+	return _villain_hand
 
 
 ## The scrolling line named [param key] ("hero_creatures", "hero_others",
@@ -1234,8 +1241,9 @@ func _show(snapshot: EncounterSnapshot) -> void:
 		_trigger_order = TriggerOrder.new(order)
 	if not _picks.is_for(snapshot.decision if CardPicks.covers(snapshot.decision) else null):
 		_picks = CardPicks.new(snapshot.decision)
-	# Where each card that changed zones was is read from what is still drawn.
-	var begun: Array[CardFlights.Route] = _begin_flights(snapshot)
+	var previous: EncounterSnapshot = _snapshot
+	# Nothing flies through the pregame, whose cards the overlay holds.
+	var may_fly: bool = not _opening.is_open()
 	_opening.read(snapshot)
 	_snapshot = snapshot
 	_error = ""
@@ -1243,9 +1251,19 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	# An answer means something else in a new snapshot, so the preview is asked for afresh,
 	# and shown at once: the cursor may not have moved.
 	_previewed = NO_PREVIEW
-	_redraw()
-	follow_preview(0.0)
-	_aim_flights(begun)
+	var redraw: Callable = func() -> void:
+		_redraw()
+		follow_preview(0.0)
+	if not may_fly:
+		redraw.call()
+		return
+	# Where each card that changed zones was is read from what is still drawn, before the
+	# redraw, and where it lands from what the redraw draws.
+	_has_taken_off = false
+	_flight_layer.show_snapshot(previous, snapshot, redraw)
+	if _has_taken_off:
+		_pose_faces()
+		_hide_landing_places()
 
 
 ## A pile was clicked: its window opens, or closes if it was open.
@@ -1441,7 +1459,7 @@ func _redraw() -> void:
 	_is_redrawing = true
 	if _is_snapping or size != _drawn_size:
 		# A rewind or a window of another size: every card in the air is where it lands.
-		_clear_flights()
+		_flight_layer.land_all()
 	_overlay.glow_seconds = _ease_seconds
 	for panel: PlayerPanel in _panels.values():
 		panel.glow_seconds = _ease_seconds
@@ -1451,7 +1469,6 @@ func _redraw() -> void:
 		child.queue_free()
 	_faces.clear()
 	_face_sizes.clear()
-	_card_backs.clear()
 	_lines.clear()
 	_line_ids.clear()
 	_steppers.clear()
@@ -1497,7 +1514,9 @@ func _redraw() -> void:
 	elif _trigger_order.is_active():
 		_show_confirm("Confirm order", true, _trigger_order.can_undo())
 	_add_player_stepper()
-	_draw_villain_hand(view.hand_sizes.get(VILLAIN, 0) - _drawing_count(VILLAIN), regions["villain_hand"])
+	# Like the Hero's, the Villain's hand eases aside for a drawn card that has landed.
+	_villain_hand.show_hand(view.hand_sizes.get(VILLAIN, 0) - _flight_layer.drawn_in_air(VILLAIN).size(),
+			regions["villain_hand"], _is_hand_easing)
 	_draw_row(_permanents(view, VILLAIN, true), regions["villain_lands"], glow)
 	_draw_nonlands(view, VILLAIN, regions["villain_nonlands"], glow)
 	_draw_nonlands(view, HERO, regions["hero_nonlands"], glow)
@@ -1970,7 +1989,7 @@ func _pose_faces() -> void:
 		face.pivot_offset = face.size / 2.0
 		face.position = _rest[object_id] + pose.center - rest.center
 		face.scale = Vector2.ONE * (pose.height / rest.height)
-		face.modulate.a = 0.0 if _flights.is_flying(object_id) else pose.alpha
+		face.modulate.a = 0.0 if _flight_layer.is_flying(object_id) else pose.alpha
 		face.show_turn(pose.turn)
 	var fading: Array[int] = _motion.ghost_ids()
 	for object_id: int in _ghosts.keys():
@@ -1990,130 +2009,58 @@ func _pose_faces() -> void:
 		_ghosts[object_id].modulate.a = pose.alpha
 
 
-## Before the board is rebuilt for [param snapshot]: each card its events moved to another
-## zone is put in the air where it is drawn now, going nowhere yet, so that what it lands
-## on is drawn knowing it has not arrived. Returns the routes begun. Nothing flies for a
-## rewind, which is not something that happened in the game, or through the pregame.
-func _begin_flights(snapshot: EncounterSnapshot) -> Array[CardFlights.Route]:
-	var begun: Array[CardFlights.Route] = []
-	if _flights.seconds <= 0.0 or snapshot.is_rewind or _snapshot == null or _opening.is_open():
-		return begun
-	for route: CardFlights.Route in CardFlights.routes(snapshot.events):
-		var kind: FlightCard.Kind = FlightCard.kind_in(route.from_zone_kind)
-		var look: CardLook = _snapshot.look_of(route.first_object_id)
-		var start: FacePose = _flights.pose_of(route.first_object_id)
-		var is_carrying_on: bool = start != null
-		if is_carrying_on:
-			# Still in the air from its last move: it carries on from where it has got to.
-			kind = _flight_cards[route.first_object_id].landing_kind
-			look = _flight_cards[route.first_object_id].landing_look
-			_end_flight(route.first_object_id)
-		else:
-			start = _flight_place(route.from_zone_kind, route.from_owner_id, route.first_object_id, route.card_id, false)
-		if start == null:
-			continue
-		# A card appears from nothing only where it starts at the Stack Window, which shows an
-		# entry and no card; one already in the air is there to be seen.
-		_flights.launch(route.object_id, start, start, route.from_zone_kind == MmZone.Kind.STACK and not is_carrying_on,
-				route.to_zone_kind == MmZone.Kind.STACK, route.drawn_after * _flights.gap_seconds)
-		_flight_routes[route.object_id] = route
-		if route.from_zone_kind == MmZone.Kind.LIBRARY and route.to_zone_kind == MmZone.Kind.HAND:
-			_drawing.append(route.object_id)
-		# The card is drawn once the board is, when the look it lands with is known.
-		route.leaving_kind = kind
-		route.leaving_look = look
-		begun.append(route)
-	return begun
+## A card put in the air: a permanent that flies away leaves no ghost, and the board's faces
+## are posed again once the snapshot is shown.
+func _on_took_off(route: CardFlights.Route) -> void:
+	_has_taken_off = true
+	if route.from_zone_kind == MmZone.Kind.BATTLEFIELD:
+		_motion.forget(route.first_object_id)
 
 
-## After the board is rebuilt: each card put in the air by [param begun] is aimed at where
-## it now belongs and drawn. A permanent that flies away leaves no ghost.
-func _aim_flights(begun: Array[CardFlights.Route]) -> void:
-	for route: CardFlights.Route in begun:
-		if not _flights.is_flying(route.object_id):
-			continue
-		var landing: FacePose = _flight_place(route.to_zone_kind, route.to_owner_id, route.object_id, route.card_id, true)
-		if landing == null:
-			_end_flight(route.object_id)
-			continue
-		_flights.aim(route.object_id, landing)
-		var card: FlightCard = FlightCard.new(route.leaving_kind, route.leaving_look,
-				FlightCard.kind_in(route.to_zone_kind), _snapshot.look_of(route.object_id))
-		_flight_layer.add_child(card)
-		_flight_cards[route.object_id] = card
-		if route.from_zone_kind == MmZone.Kind.BATTLEFIELD:
-			_motion.forget(route.first_object_id)
-	if not begun.is_empty():
-		_pose_faces()
-		_hide_landing_places()
-		_pose_flights()
-
-
-## Draws each card in the air where Card Flights has it right now, aimed at where it lands
-## now, and takes down each one that has arrived.
-func _pose_flights() -> void:
-	for object_id: int in _flights.ids():
-		if not _flight_cards.has(object_id):
-			continue
-		var route: CardFlights.Route = _flight_routes[object_id]
-		var landing: FacePose = _flight_place(route.to_zone_kind, route.to_owner_id, object_id, route.card_id, true)
-		if landing != null:
-			_flights.aim(object_id, landing)
-		_flight_cards[object_id].show_pose(_flights.pose_of(object_id), _flights.along_of(object_id))
-		if _flights.has_landed(object_id):
-			_end_flight(object_id)
-
-
-## Takes the card that lands as Game Object [param object_id] out of the air, and shows it
-## where it landed.
-func _end_flight(object_id: int) -> void:
-	var was_into_hand: bool = _flight_routes.has(object_id) and _is_into_hand(_flight_routes[object_id]) \
-			and not _drawing.has(object_id)
-	if _drawing.has(object_id):
-		_drawing.erase(object_id)
+## A card in the air has landed. What it landed on shows it now. A drawn card joins its
+## hand with a redraw, made from the next frame so that an open Option Menu can wait for
+## it; a card that lands in the Hero's hand some other way shows there at once.
+func _on_landed(route: CardFlights.Route) -> void:
+	var is_drawn: bool = route.from_zone_kind == MmZone.Kind.LIBRARY and route.to_zone_kind == MmZone.Kind.HAND
+	if is_drawn:
 		_has_draw_landed = not _is_redrawing
-	_flights.land(object_id)
-	_flight_routes.erase(object_id)
-	if _flight_cards.has(object_id):
-		_flight_cards[object_id].queue_free()
-		_flight_cards.erase(object_id)
-	if _faces.has(object_id) and is_instance_valid(_faces[object_id]):
-		var pose: FacePose = _motion.pose_of(object_id)
-		_faces[object_id].modulate.a = pose.alpha if pose != null else 1.0
-	if was_into_hand and not _is_redrawing:
-		# What it lands on in the hand shows it now.
+	if _faces.has(route.object_id) and is_instance_valid(_faces[route.object_id]):
+		var pose: FacePose = _motion.pose_of(route.object_id)
+		_faces[route.object_id].modulate.a = pose.alpha if pose != null else 1.0
+	if not is_drawn and route.to_zone_kind == MmZone.Kind.HAND and route.to_owner_id == HERO and not _is_redrawing:
 		_show_hand()
 
 
-func _clear_flights() -> void:
-	for object_id: int in _flights.ids():
-		_end_flight(object_id)
-
-
-## What a card in the air lands on shows nothing of it until it arrives: its face in the
-## hand, on a pile or in a row.
+## What a card in the air lands on shows nothing of it until it arrives: its face on a pile
+## or in a row. A card landing in a hand is held back or hidden by that hand.
 func _hide_landing_places() -> void:
-	for object_id: int in _flights.ids():
-		if _faces.has(object_id):
+	for object_id: int in _faces:
+		if _flight_layer.is_flying(object_id) and is_instance_valid(_faces[object_id]):
 			_faces[object_id].modulate.a = 0.0
 
 
-## Where a card in the zone of [param zone_kind] that [param owner_id] owns is drawn, read
-## from what is on the screen right now, or null if nothing shows it: the Game Object
-## [param object_id], or in the Hero's hand the card with Card Identity [param card_id].
-## With [param is_landing] a permanent's place is where it belongs; otherwise it is where
-## the permanent is drawn, on its way there.
-func _flight_place(zone_kind: MmZone.Kind, owner_id: int, object_id: int, card_id: int, is_landing: bool) -> FacePose:
+## Where the zone of [param route] is drawn, read from what is on the screen right now, or
+## null if nothing shows it: the Flight Layer's one question (ADR 0027). Leaving, it is
+## where the Game Object that left is drawn; with [param is_landing], where the one it
+## became belongs. A permanent's place leaving is where it is drawn, on its way there.
+func _flight_place(route: CardFlights.Route, is_landing: bool) -> FacePose:
+	var zone_kind: MmZone.Kind = route.to_zone_kind if is_landing else route.from_zone_kind
+	var owner_id: int = route.to_owner_id if is_landing else route.from_owner_id
+	var object_id: int = route.object_id if is_landing else route.first_object_id
+	var is_drawn: bool = is_landing and route.from_zone_kind == MmZone.Kind.LIBRARY and route.to_zone_kind == MmZone.Kind.HAND
 	match zone_kind:
 		MmZone.Kind.BATTLEFIELD:
 			return _field_flight_place(object_id, is_landing)
 		MmZone.Kind.HAND:
 			if owner_id != HERO:
+				if is_drawn:
+					# A drawn card lands where its back will be, at the right end.
+					return _villain_hand.landing_place(_flight_layer.drawn_in_air(owner_id).find(route.card_id))
 				return FacePose.of(_regions["villain_hand"].get_center(), EncounterLayout.VILLAIN_CARD_HEIGHT, 0.0)
-			if _drawing.has(object_id):
-				return _hand_strip.rest_of(card_id)
+			if is_drawn:
+				return _hand_strip.rest_of(route.card_id)
 			# A card played by letting go of it flies from where it was let go.
-			return _hand_strip.place_of(card_id)
+			return _hand_strip.place_of(route.card_id)
 		MmZone.Kind.STACK:
 			return FacePose.of(_stack_art_place(object_id), StackEntry.ART_SIZE, 0.0)
 		MmZone.Kind.LIBRARY, MmZone.Kind.GRAVEYARD, MmZone.Kind.EXILE:
@@ -2169,27 +2116,6 @@ func _tint_arrows() -> void:
 			elif side > 0:
 				right = color
 		line.tint_arrows(left, right)
-
-
-func _draw_villain_hand(count: int, hand_rect: Rect2) -> void:
-	var card: Vector2 = Vector2(EncounterLayout.VILLAIN_CARD_HEIGHT * CardGeometry.ASPECT, EncounterLayout.VILLAIN_CARD_HEIGHT)
-	var places: Array[Vector2] = EncounterLayout.villain_hand(count, hand_rect, card)
-	for index: int in count:
-		var back: Panel = CardBack.make(card.y)
-		back.position = places[index]
-		back.pivot_offset = Vector2(card.x / 2.0, 0)
-		back.rotation = -EncounterLayout.fan_angle(index, count)
-		_board.add_child(back)
-		_card_backs.append(back)
-
-
-## How many drawn cards are still on their way to the hand of [param player_id].
-func _drawing_count(player_id: int) -> int:
-	var count: int = 0
-	for object_id: int in _drawing:
-		if _flight_routes[object_id].to_owner_id == player_id:
-			count += 1
-	return count
 
 
 ## The Hero's view of the card in hand with Card Identity [param card_id], or null.
@@ -2275,13 +2201,8 @@ func _show_hand() -> void:
 	# rebuilds nothing, and the cards ease.
 	hand.is_easing = _is_hand_easing or not _is_redrawing
 	hand.cursor = get_local_mouse_position()
-	var flying_in: Dictionary[int, bool] = {}
-	for object_id: int in _flight_routes:
-		if _is_into_hand(_flight_routes[object_id]) and not _drawing.has(object_id):
-			flying_in[_flight_routes[object_id].card_id] = true
-	for object_id: int in _drawing:
-		if _flight_routes[object_id].to_owner_id == HERO:
-			hand.arriving.append(_flight_routes[object_id].card_id)
+	var flying_in: Array[int] = _flight_layer.flying_into_hand(HERO)
+	hand.arriving = _flight_layer.drawn_in_air(HERO)
 	var is_discarding: bool = _picks.is_active() and _picks.is_discarding() and not _snapshot.is_over()
 	for in_hand: MmObjectView in _snapshot.view.hand:
 		var glow: Array[Color] = _glow_colors(in_hand.id, _clicks)
@@ -2298,11 +2219,6 @@ func _show_hand() -> void:
 		if is_discarding and _picks.is_picked(in_hand.id):
 			hand.raised.append(in_hand.card_id)
 	_hand_strip.show_hand(hand)
-
-
-## Whether [param route] lands in the Hero's hand.
-func _is_into_hand(route: CardFlights.Route) -> bool:
-	return route.to_zone_kind == MmZone.Kind.HAND and route.to_owner_id == HERO
 
 
 ## Shows how far the choice of cards has come, on what is already drawn: a card chosen to
@@ -2371,7 +2287,7 @@ func _draw_pile(zone_name: String, cards: Array, key: String, pile_rect: Rect2) 
 	var top: MmObjectView = cards.back() as MmObjectView if not cards.is_empty() else null
 	var landed: MmObjectView = null
 	for index: int in range(cards.size() - 1, -1, -1):
-		if not _flights.is_flying((cards[index] as MmObjectView).id):
+		if not _flight_layer.is_flying((cards[index] as MmObjectView).id):
 			landed = cards[index] as MmObjectView
 			break
 	if landed == null:
@@ -2704,7 +2620,7 @@ func _draw_banner(view: MmPlayerView) -> void:
 		# The run counts the ending and says where to go: the Deckbox, or with no Hearts
 		# left the main menu (milestone 16).
 		var won: bool = not _snapshot.is_draw() and view.winner_id == HERO
-		var onward: Button = _button("Continue", func() -> void: leave(RunFlow.finish_encounter(won)), 18)
+		var onward: Button = _button("Continue", func() -> void: leave(Screens.scene(RunFlow.finish_encounter(won))), 18)
 		onward.position = Vector2(210, 170)
 		onward.size = Vector2(200, 44)
 		box.add_child(onward)

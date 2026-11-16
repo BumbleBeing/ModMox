@@ -17,14 +17,14 @@ func test_a_debug_run_starts_with_three_hearts_and_no_gold() -> void:
 func test_a_debug_run_owns_every_nonland_card_of_the_content_decks() -> void:
 	var run: Run = Run.debug(7)
 	var expected: int = 0
-	for deck_name: String in EncounterRequest.deck_names():
-		var setup: MmPlayerSetup = load(EncounterRequest.DECKS + deck_name + ".tres") as MmPlayerSetup
+	for deck_name: String in ContentDecks.names():
+		var setup: MmPlayerSetup = ContentDecks.load_deck(deck_name)
 		for run_card: MmRunCard in setup.deck:
 			if not run_card.base.supertypes.has(MmCardTypes.Supertype.BASIC):
 				expected += 1
 	assert_eq(run.collection.cards().size(), expected)
 	for card: DeckbuilderCard in run.collection.cards():
-		assert_false(card.is_basic_land(), card.look().name)
+		assert_false(card.is_basic_land(), card.card_name())
 
 
 func test_a_debug_run_has_a_legal_active_deck_built_from_red_green() -> void:
@@ -32,7 +32,7 @@ func test_a_debug_run_has_a_legal_active_deck_built_from_red_green() -> void:
 	var active: Deck = run.deckbox.active()
 	assert_not_null(active)
 	assert_eq(run.deckbox.decks().size(), 1)
-	var red_green: MmPlayerSetup = load(EncounterRequest.DECKS + "red_green.tres") as MmPlayerSetup
+	var red_green: MmPlayerSetup = ContentDecks.load_deck("red_green")
 	assert_eq(active.size(), red_green.deck.size())
 	assert_true(run.deckbox.is_legal(active))
 
@@ -84,21 +84,6 @@ func test_a_debug_run_holds_the_playtest_bolt_in_every_encounter() -> void:
 
 	assert_eq(run.hero_setup().emblems.size(), 1)
 	assert_eq(run.hero_setup().emblems[0].name, "Playtest Bolt")
-
-
-func test_the_encounter_is_against_the_villain_met_in_front_of_the_stages_backdrop() -> void:
-	var run: Run = Run.debug(3)
-	_move_to_an_encounter(run)
-	var villain: Villain = run.stage_visit.meeting
-
-	var request: EncounterRequest = run.encounter_request()
-
-	assert_eq(request.villain_setup, villain.setup_for_tier(1))
-	assert_eq(request.setup().villain, villain.setups[0])
-	assert_eq(request.villain_name, villain.name)
-	assert_eq(request.backdrop, run.stage_visit.stage.backdrop())
-	assert_eq(request.setup().hero, request.hero_setup)
-	assert_eq(request.validate(), "")
 
 
 ## T8: beating the Boss wins the run.

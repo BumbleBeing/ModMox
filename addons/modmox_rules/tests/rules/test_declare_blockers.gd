@@ -96,3 +96,17 @@ func test_no_blockers_decision_when_the_defender_has_no_untapped_creatures() -> 
 
 func _bears(count: int) -> Array[MmCardDefinition]:
 	return Scenario.copies(Scenario.creature("Bear", 2, 2), count)
+
+
+func test_no_blockers_decision_when_every_attacker_has_left_combat() -> void:
+	var exile: MmCardDefinition = Scenario.exile_spell("Banish")
+	var engine: MmEngine = Scenario.combat_ready(_bears(1), _bears(1), [], [exile])
+	var attacker: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+	Scenario.declare_attackers(engine, [attacker])
+	Scenario.pass_priority(engine)
+	Scenario.cast_and_resolve(engine, "Banish", [MmReference.to_object(attacker)])
+
+	Scenario.pass_until_step(engine, Step.DECLARE_BLOCKERS)
+
+	assert_true(engine.pending_decision() is PriorityDecision, "No attackers are left to block.")
+	assert_eq(engine.game_state().step, Step.DECLARE_BLOCKERS)

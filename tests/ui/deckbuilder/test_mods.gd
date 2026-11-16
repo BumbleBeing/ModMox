@@ -73,7 +73,7 @@ func test_a_basic_lands_first_mod_makes_it_a_run_card_of_the_collections() -> vo
 	assert_gt(plains.id, 0, "The Collection gave it an identity that lasts the run.")
 	assert_eq(_fixture.collection.card(plains.id), plains)
 	assert_true(deck.contains(plains), "It stays in the Deck, where it was.")
-	assert_eq(plains.look().name, "Ancient Plains")
+	assert_eq(DeckbuilderLooks.look_of(plains).name, "Ancient Plains")
 	assert_eq(deck.basic_land_count("Plains"), 1, "Only a card named exactly Plains counts.")
 
 
@@ -103,22 +103,22 @@ func test_each_mods_name_goes_in_front_of_the_cards_in_slot_order() -> void:
 
 	assert_false(bears.is_modified())
 	bears.attach(Fixture.word_mod("Violent"))
-	assert_eq(bears.look().name, "Violent Grizzly Bears")
+	assert_eq(DeckbuilderLooks.look_of(bears).name, "Violent Grizzly Bears")
 	bears.attach(Fixture.word_mod("Burdened", true))
-	assert_eq(bears.look().name, "Violent Burdened Grizzly Bears", "A Hex's name too.")
+	assert_eq(DeckbuilderLooks.look_of(bears).name, "Violent Burdened Grizzly Bears", "A Hex's name too.")
 
 	assert_true(bears.is_modified())
-	assert_eq(bears.original_look().name, "Grizzly Bears")
-	assert_eq(bears.with_mod(Fixture.word_mod("Mossy")).look().name, "Violent Burdened Mossy Grizzly Bears")
-	assert_eq(bears.look().name, "Violent Burdened Grizzly Bears", "Looking ahead changes nothing.")
+	assert_eq(DeckbuilderLooks.original_of(bears).name, "Grizzly Bears")
+	assert_eq(DeckbuilderLooks.look_of(bears.with_mod(Fixture.word_mod("Mossy"))).name, "Violent Burdened Mossy Grizzly Bears")
+	assert_eq(DeckbuilderLooks.look_of(bears).name, "Violent Burdened Grizzly Bears", "Looking ahead changes nothing.")
 
 
 func test_the_original_is_the_card_with_no_mods_or_hexes() -> void:
 	var bolt: DeckbuilderCard = _fixture.own("lightning_bolt", [Fixture.add_symbol_mod(MmMana.Type.RED)])
 
-	assert_eq(bolt.look().mana_cost.describe(), "{R}{R}")
-	assert_eq(bolt.original_look().mana_cost.describe(), "{R}")
-	assert_eq(bolt.original_look().art_key, "lightning_bolt")
+	assert_eq(DeckbuilderLooks.look_of(bolt).mana_cost.describe(), "{R}{R}")
+	assert_eq(DeckbuilderLooks.original_of(bolt).mana_cost.describe(), "{R}")
+	assert_eq(DeckbuilderLooks.original_of(bolt).art_key, "lightning_bolt")
 
 
 func test_applying_a_held_mod_changes_the_card_and_uses_the_mod_up() -> void:
@@ -131,7 +131,7 @@ func test_applying_a_held_mod_changes_the_card_and_uses_the_mod_up() -> void:
 
 	assert_eq(bolt.mods, [mod] as Array[Mod])
 	assert_eq(bolt.run_card.modifications.size(), 1)
-	assert_eq(bolt.look().mana_cost.describe(), "{R}{R}")
+	assert_eq(DeckbuilderLooks.look_of(bolt).mana_cost.describe(), "{R}{R}")
 	assert_eq(_fixture.held_mods.count_of(mod), 1)
 
 
@@ -148,7 +148,7 @@ func test_a_mod_that_is_not_held_or_not_applicable_is_not_applied() -> void:
 	assert_false(_fixture.collection.owns(forest), "A basic land that took no Mod is still free.")
 
 	assert_eq(_fixture.held_mods.count_of(mod), 1)
-	assert_eq(bolt.look().name, "Lightning Bolt")
+	assert_eq(DeckbuilderLooks.look_of(bolt).name, "Lightning Bolt")
 
 
 func test_held_mods_are_listed_by_kind_in_the_order_first_held() -> void:
@@ -168,10 +168,10 @@ func test_applying_a_mod_never_changes_the_base_card_definition() -> void:
 
 	bolt.attach(Fixture.rename_mod("Zap"))
 
-	assert_eq(bolt.look().name, "Zap")
-	assert_eq(other.look().name, "Lightning Bolt")
+	assert_eq(DeckbuilderLooks.look_of(bolt).name, "Zap")
+	assert_eq(DeckbuilderLooks.look_of(other).name, "Lightning Bolt")
 	assert_eq(Fixture.definition("lightning_bolt").name, "Lightning Bolt")
-	assert_eq(bolt.look().art_key, "lightning_bolt", "A renamed card keeps its art.")
+	assert_eq(DeckbuilderLooks.look_of(bolt).art_key, "lightning_bolt", "A renamed card keeps its art.")
 
 
 func test_a_mod_survives_leaving_without_saving_and_shows_in_every_deck_with_the_card() -> void:

@@ -68,7 +68,7 @@ func test_every_card_in_the_deck_has_its_own_face_in_its_column() -> void:
 			assert_almost_eq(face.position.y, places.fan_offset(index), 0.01)
 			assert_almost_eq(face.position.x, places.fan_left(), 0.01)
 			assert_true(places.column(column).has_point(face.global_position + Vector2(2, 2)),
-					"%s is drawn in column %d." % [shown.look().name, column])
+					"%s is drawn in column %d." % [DeckbuilderLooks.look_of(shown).name, column])
 
 
 func test_every_owned_card_is_in_the_collection_pane_and_those_in_the_deck_are_dimmed() -> void:
@@ -78,7 +78,7 @@ func test_every_owned_card_is_in_the_collection_pane_and_those_in_the_deck_are_d
 		var face: CardFace = _screen.collection_face(card)
 		assert_not_null(face)
 		if face != null:
-			assert_eq(face.modulate.a < 1.0, deck.contains(card), card.look().name)
+			assert_eq(face.modulate.a < 1.0, deck.contains(card), DeckbuilderLooks.look_of(card).name)
 
 
 func test_the_top_bar_shows_the_decks_name_and_size() -> void:
@@ -95,7 +95,7 @@ func test_a_filter_hides_the_cards_it_rules_out_and_packs_the_rest_from_the_firs
 	assert_gt(shown.size(), 0)
 	assert_lt(shown.size(), _sample.collection.cards().size())
 	for card: DeckbuilderCard in _sample.collection.cards():
-		assert_eq(_screen.collection_face(card) != null, shown.has(card), card.look().name)
+		assert_eq(_screen.collection_face(card) != null, shown.has(card), DeckbuilderLooks.look_of(card).name)
 	assert_eq(_screen.collection_face(shown[0]).position, Vector2.ZERO)
 	# Counted, not written down: the Collection grows with every card added to Content.
 	assert_eq(_screen.filter_bar().count_label().text, "%d of %d" % [shown.size(), _sample.collection.cards().size()])

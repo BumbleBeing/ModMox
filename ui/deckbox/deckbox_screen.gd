@@ -8,7 +8,7 @@ extends Control
 ## Signed off as the prototype in prototypes/deckbox (milestone 16).
 
 const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
-const DECKBUILDER: String = RunFlow.DECKBUILDER
+const DECKBUILDER: String = Screens.DECKBUILDER
 const SELECTION_BUTTONS: Array[String] = ["Edit Deck", "Duplicate Deck", "Set Active", "Delete Deck"]
 const STAR: String = "res://ui/sprites/deckbox/active_star.png"
 ## Pixel art is drawn at a whole multiple of its size.
@@ -466,13 +466,13 @@ func _on_row_input(event: InputEvent, index: int) -> void:
 
 
 func _new_deck() -> void:
-	navigate.call(RunFlow.edit(null))
+	navigate.call(Screens.scene(RunFlow.edit(null)))
 
 
 func _on_selection_button(text: String) -> void:
 	match text:
 		"Edit Deck":
-			navigate.call(RunFlow.edit(_selected))
+			navigate.call(Screens.scene(RunFlow.edit(_selected)))
 		"Duplicate Deck":
 			_selected = _run.deckbox.duplicate_deck(_selected)
 			_refresh()
@@ -484,12 +484,12 @@ func _on_selection_button(text: String) -> void:
 
 
 func _start() -> void:
-	EncounterScreen.request = _run.encounter_request()
+	EncounterScreen.request = EncounterRequest.for_run(_run)
 	navigate.call(ENCOUNTER)
 
 
 func _close() -> void:
-	navigate.call(RunFlow.back_from_deckbox)
+	navigate.call(Screens.scene(RunFlow.back_from_deckbox))
 
 
 ## The confirmation before a Deck is deleted, in the list's dark gray with its gray edge.

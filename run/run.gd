@@ -44,8 +44,8 @@ func _init(seed_of_run: int) -> void:
 static func debug(seed_of_run: int, stage: StageDefinition = null) -> Run:
 	var run: Run = Run.new(seed_of_run)
 	var active: Deck = null
-	for deck_name: String in EncounterRequest.deck_names():
-		var setup: MmPlayerSetup = load(EncounterRequest.DECKS + deck_name + ".tres") as MmPlayerSetup
+	for deck_name: String in ContentDecks.names():
+		var setup: MmPlayerSetup = ContentDecks.load_deck(deck_name)
 		var deck: Deck = Deck.new()
 		for run_card: MmRunCard in setup.deck:
 			if run_card.base.supertypes.has(MmCardTypes.Supertype.BASIC):
@@ -130,17 +130,3 @@ func hero_setup() -> MmPlayerSetup:
 			fresh.base = land
 			setup.deck.append(fresh)
 	return setup
-
-
-## The encounter against the Villain the Hero is meeting, with the Hero playing the Active
-## Deck, in front of the Stage's Backdrop (ADR 0035).
-func encounter_request() -> EncounterRequest:
-	var request: EncounterRequest = EncounterRequest.new()
-	var villain: Villain = stage_visit.meeting
-	request.villain_setup = villain.setup_for_tier(stage_visit.stage.tier)
-	request.villain_name = villain.name
-	request.backdrop = stage_visit.stage.backdrop()
-	request.hero_setup = hero_setup()
-	request.encounter_seed = next_encounter_seed()
-	request.run = self
-	return request

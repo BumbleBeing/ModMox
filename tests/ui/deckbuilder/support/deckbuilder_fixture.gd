@@ -66,5 +66,5 @@ static func word_mod(word: String, is_hex: bool = false) -> Mod:
 static func names(cards: Array[DeckbuilderCard]) -> Array[String]:
 	var result: Array[String] = []
 	for card: DeckbuilderCard in cards:
-		result.append(card.look().name)
+		result.append(DeckbuilderLooks.look_of(card).name)
 	return result

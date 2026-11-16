@@ -18,7 +18,7 @@ func test_there_is_a_villain_for_each_content_deck() -> void:
 	for villain: Villain in StageDefinition.all_villains():
 		names.append(villain.resource_path.get_file().get_basename())
 
-	assert_eq(names, EncounterRequest.deck_names())
+	assert_eq(names, ContentDecks.names())
 
 
 func test_each_villain_has_a_name_a_sprite_and_its_deck_as_its_one_setup() -> void:
@@ -28,7 +28,7 @@ func test_each_villain_has_a_name_a_sprite_and_its_deck_as_its_one_setup() -> vo
 		assert_ne(villain.name, "", deck)
 		assert_eq(villain.sprite.get_size(), Vector2(32, 32), deck)
 		assert_eq(villain.setups.size(), 1, deck)
-		assert_eq(villain.setups[0].resource_path, EncounterRequest.DECKS + deck + ".tres")
+		assert_eq(villain.setups[0].resource_path, ContentDecks.path_of(deck))
 		assert_eq(villain.validate(), "", deck)
 
 
@@ -82,7 +82,7 @@ func test_each_placeholder_stage_has_its_colors_villain_as_boss_and_the_others_o
 		everyone.append_array(stage.lesser_villains)
 		var all: Array[String] = _files(everyone)
 		all.sort()
-		assert_eq(all, EncounterRequest.deck_names(), stage.name)
+		assert_eq(all, ContentDecks.names(), stage.name)
 
 
 func test_a_stage_with_a_villain_in_two_lists_is_invalid() -> void:

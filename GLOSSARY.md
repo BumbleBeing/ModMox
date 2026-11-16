@@ -254,6 +254,10 @@ _Avoid_: Hover highlight, preview, target glow
 The Hero's hand as the Encounter Screen draws it: a fanned row of Card Faces along the bottom that parts around the card under the cursor, lights it, and makes room where a Drag Card hovers. It keeps the Hand Order and the Drag Card, carries each card's place across a redraw, and leaves out the cards still flying in until they land. It is told what each card's click would do, and says what the Hero did with a card; it plays nothing itself.
 _Avoid_: Hand view, hand row, hand panel
 
+**Villain Hand**:
+The Villain's hand as the Encounter Screen draws it: a fan of card backs hanging from the top, one for each card the Villain holds. Like the Hand Strip it keeps its backs across a redraw, so a card that lands in it makes the others ease aside at the same pace, and a drawn card flies to where its back will be at the right end. It takes no clicks.
+_Avoid_: Enemy hand, opponent hand, card backs
+
 **Hand Order**:
 The order the Hero keeps their hand in, which is theirs alone: cards are dragged along the hand to rearrange it, a new card joins at the right end, and a card that a canceled cast or an undo brings back takes the place it had.
 _Avoid_: Hand sort, hand layout, card order
@@ -275,6 +279,10 @@ A card drawn in the air on its way from one zone to another, in place of fading 
 **Flight Card**:
 The card drawn for a Card Flight. It is drawn as what the card was where it left and as what it is where it lands, one fading into the other: a Card Face becomes a Battlefield Face, and a card back turns face up. At the Stack Window, which shows an entry and no card, it flies to the entry's art and fades out, or fades in there.
 _Avoid_: Corpse, death animation, afterimage
+
+**Flight Layer**:
+The layer of the Encounter Screen, over every window, where Card Flights are drawn, and the one place they are worked out: it puts each card that changed zones in the air from where it was drawn, aims it at where it now belongs, draws its Flight Card every frame, and says when it has landed. It asks the screen where a zone is drawn and touches nothing else on it; what a card lands on shows nothing while it is in the air.
+_Avoid_: Flight director, flight manager, animation layer
 
 **Pacing**:
 The wait before the Villain's next answer is shown, so the Hero can read the last one: at the Fast Game Speed, half a second after an action, about a quarter after tapping for mana, and none after a pass that showed nothing. Thinking counts toward it. A step of the turn is also shown for at least a tenth of a second, again at Fast, before the game leaves it, whoever is passing.

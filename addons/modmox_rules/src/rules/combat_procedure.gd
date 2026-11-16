@@ -89,7 +89,11 @@ func next_decision() -> MmPendingDecision:
 			var defending_id: int = _state.combat.defending_player_id
 			var legal: Dictionary[int, Array] = {}
 			var most: Dictionary[int, int] = {}
-			var candidates: Array[int] = [] if attackers.is_empty() else _blocker_candidates(defending_id, attackers, legal, most)
+			# CR 509.1: blockers can be declared only while an attacker is still in combat.
+			# Not a ternary: its untyped [] branch would not convert to Array[int].
+			var candidates: Array[int] = []
+			if not attackers.is_empty():
+				candidates = _blocker_candidates(defending_id, attackers, legal, most)
 			if not candidates.is_empty():
 				return DeclareBlockersDecision.new(defending_id, candidates, attackers, legal, most)
 		Kind.COMBAT_DAMAGE:
