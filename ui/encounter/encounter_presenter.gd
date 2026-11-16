@@ -15,6 +15,12 @@ extends RefCounted
 ## time too, whoever would move the game on: the Villain's answer is held back as above, and
 ## a pass made for the Hero is put off, the snapshot meanwhile asking the Hero nothing.
 ##
+## Hangtime (A600): nothing leaves the stack sooner than the hangtime after it was first
+## shown there. Nothing is put off for it until something would leave: a Villain answer
+## that takes something off the stack is held back as above, so the Villain thinks during
+## the hangtime, and a pass for the Hero that would resolve something, made for them or
+## clicked, is put off as a pass at a new step is.
+##
 ## Auto-tap (ADR 0031): with it on, the presenter pays the Hero's mana costs, choosing each
 ## source as the Villain's Agent would, and shows each tap for the mana wait before the
 ## next. Asked at the Hero's priority, it says what a cast would tap (payment_plan()).
@@ -32,6 +38,7 @@ const PAUSED: String = "The game is paused."
 const PAYING: String = "Your mana is being paid."
 const STOPPED: String = "The encounter has been left."
 const NO_TURN: int = -1
+const NOT_CHECKED: int = -1
 
 ## The steps auto-pass stops at. Change them with toggle_stop().
 var stops: StepStops = StepStops.new()
@@ -49,6 +56,9 @@ var mana_wait_msec: int = 0
 ## The least time a step of the turn is shown before the game leaves it (Pacing). Zero until
 ## the screen sets it, as the waits above.
 var step_wait_msec: int = 0
+## The hangtime: the least time a spell or ability is shown on the stack before it leaves
+## (Pacing). Zero until the screen sets it, as the waits above.
+var hang_wait_msec: int = 0
 ## The time in milliseconds. Tests hand in their own.
 var clock: Callable = Time.get_ticks_msec
 
@@ -77,8 +87,15 @@ var _wait: int = 0
 var _is_rewinding: bool = false
 ## When the step now showing has been up for the step wait.
 var _step_shown_until: int = 0
-## Whether a pass for the Hero is being put off until then. The snapshot asks them nothing.
+## Whether a pass for the Hero is being put off until then, and until _pass_due_at too. The
+## snapshot asks them nothing.
 var _is_passing_for_hero: bool = false
+var _pass_due_at: int = 0
+## When each object on the stack was first shown there, by Game Object ID.
+var _stack_shown_at: Dictionary[int, int] = {}
+## When the Villain's answer that has come in may be collected for the hangtime, or
+## NOT_CHECKED until it has been worked out, once for each answer.
+var _answer_due_at: int = NOT_CHECKED
 ## Auto-tap. Off until the screen turns it on from the settings, as Pacing is, so a
 ## presenter made in a test pays nothing unless the test asks.
 var _is_auto_tapping: bool = false
@@ -207,8 +224,9 @@ func poll() -> void:
 	if now < _step_shown_until:
 		return
 	if _is_passing_for_hero:
-		_advance(true)
-	elif is_villain_answer_ready() and now - _shown_at >= _wait:
+		if now >= _pass_due_at:
+			_advance(true)
+	elif is_villain_answer_ready() and now - _shown_at >= _wait and now >= _hangtime_due_at():
 		_collect()
 
 
@@ -237,6 +255,14 @@ func answer(hero_answer: Variant) -> String:
 		return PAYING
 	if _is_passing_for_hero or _engine.is_over() or _engine.pending_decision().player_id != HERO:
 		return NOT_PRIORITY
+	var priority: PriorityDecision = _engine.pending_decision() as PriorityDecision
+	if priority != null and hero_answer is int and hero_answer == AutoPass.pass_index(priority) \
+			and priority.actions[hero_answer] is PassAction and _put_off_pass():
+		# The pass is taken now and made once the hangtime is over.
+		_is_holding = false
+		_emit()
+		changed.emit(_snapshot)
+		return ""
 	var error: String = _engine.submit(hero_answer)
 	if error != "":
 		return error
@@ -388,6 +414,7 @@ func _advance(is_passing_now: bool = false) -> void:
 	var is_pass_due: bool = is_passing_now and _is_passing_for_hero
 	_is_passing_for_hero = false
 	_is_paying_for_hero = false
+	_pass_due_at = 0
 	while not _engine.is_over():
 		var decision: MmPendingDecision = _engine.pending_decision()
 		if not (decision is PayManaDecision and decision.player_id == HERO):
@@ -397,6 +424,7 @@ func _advance(is_passing_now: bool = false) -> void:
 			# The snapshot comes first: once the task starts, the engine is the worker's.
 			_emit()
 			_task = WorkerThreadPool.add_task(_think)
+			_answer_due_at = NOT_CHECKED
 			_snapshot.is_villain_thinking = true
 			changed.emit(_snapshot)
 			return
@@ -422,6 +450,8 @@ func _advance(is_passing_now: bool = false) -> void:
 			break
 		elif _is_step_still_showing():
 			_is_passing_for_hero = true
+			break
+		elif _put_off_pass():
 			break
 		_engine.submit(AutoPass.pass_index(decision as PriorityDecision))
 	_emit()
@@ -520,6 +550,53 @@ func _is_step_still_showing() -> bool:
 	return entries.size() > _events_seen and Pacing.starts_step(entries.slice(_events_seen))
 
 
+## When the Villain's answer, which has come in, may be collected: the hangtime after
+## the last of the objects it took off the stack was first shown there, or 0. Worked out
+## once for each answer, since it reads the engine, which the worker has finished with.
+func _hangtime_due_at() -> int:
+	if hang_wait_msec <= 0:
+		return 0
+	if _answer_due_at == NOT_CHECKED:
+		_answer_due_at = _due_once_gone(_engine.view_for(_engine.hero()).stack)
+	return _answer_due_at
+
+
+## When the objects shown on the stack that are not in [param stack] may have left it: the
+## hangtime after the last of them was first shown there, or 0.
+func _due_once_gone(stack: Array[MmObjectView]) -> int:
+	var still_there: Dictionary[int, bool] = {}
+	for item: MmObjectView in stack:
+		still_there[item.id] = true
+	var due: int = 0
+	for id: int in _stack_shown_at:
+		if not still_there.has(id):
+			due = maxi(due, _stack_shown_at[id] + hang_wait_msec)
+	return due
+
+
+## Puts off the Hero's pass, and says so, if it would resolve what is on top of the stack
+## sooner than the hangtime after it was first shown. Whether it would is found by passing
+## on a copy, which is only made while the top is that young.
+func _put_off_pass() -> bool:
+	if hang_wait_msec <= 0:
+		return false
+	var now: int = clock.call()
+	var stack: Array[MmObjectView] = _engine.view_for(_engine.hero()).stack
+	if stack.is_empty():
+		return false
+	# What has not been shown yet will be by the snapshot this pass is put off with.
+	var due: int = _stack_shown_at.get(stack.back().id, now) + hang_wait_msec
+	if due <= now:
+		return false
+	var copy: MmEngine = _copy()
+	copy.submit(AutoPass.pass_index(copy.pending_decision() as PriorityDecision))
+	if _due_once_gone(copy.view_for(copy.hero()).stack) <= now:
+		return false
+	_is_passing_for_hero = true
+	_pass_due_at = due
+	return true
+
+
 ## Runs on the worker thread: one answer from the Villain's Agent.
 func _think() -> void:
 	_driver.run()
@@ -570,6 +647,10 @@ func _emit() -> void:
 		made.events = entries.slice(_events_seen)
 	_events_seen = entries.size()
 	_shown_at = clock.call()
+	var shown_at: Dictionary[int, int] = {}
+	for item: MmObjectView in made.view.stack:
+		shown_at[item.id] = _stack_shown_at.get(item.id, _shown_at)
+	_stack_shown_at = shown_at
 	if step_wait_msec > 0 and Pacing.starts_step(made.events):
 		_step_shown_until = _shown_at + step_wait_msec
 	for seen: MmObjectView in made.visible_objects():

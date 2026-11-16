@@ -2,7 +2,8 @@ class_name StageIntro
 extends Control
 ## The Stage Intro (game glossary; milestone 17, signed off as prototypes/stage_map_screen),
 ## in its plain form: the Stage's name, its Tier in words, and its Boss, breathing in the
-## Boss's disc with its name under it. Continue opens the Stage Map. Later (milestone 19):
+## Boss's disc with its name under it, on a ground of the Stage's own color shaded with
+## Dither Shading, or the slate for a Stage without one (ADR 0038). Continue opens the Stage Map. Later (milestone 19):
 ## the Tier graphic.
 ##
 ## Opened on its own (godot --path . res://ui/stage_map/stage_intro.tscn) it begins a debug
@@ -12,6 +13,12 @@ extends Control
 const GROUND: Color = Color8(42, 44, 56)
 const TEXT: Color = Color8(228, 231, 238)
 const MUTED: Color = Color8(154, 163, 181)
+## The text on a light ground, which the pale TEXT would vanish on.
+const INK: Color = Color8(46, 40, 36)
+const INK_MUTED: Color = Color8(108, 96, 84)
+## How far a Stage's color is lightened at the top of the ground and darkened at its foot.
+const GROUND_LIGHTEN: float = 0.08
+const GROUND_DARKEN: float = 0.18
 ## The Boss's disc and its ring.
 const RING_RADIUS: float = 104.0
 const RING_WIDTH: float = 10.0
@@ -52,6 +59,15 @@ func begin(run: Run) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var visit: StageVisit = run.stage_visit
+	if visit.stage.has_intro_color():
+		var shaded: Panel = Panel.new()
+		shaded.set_anchors_preset(Control.PRESET_FULL_RECT)
+		shaded.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		shaded.add_theme_stylebox_override("panel", DitherShading.plate(ground().lightened(GROUND_LIGHTEN),
+				ground().darkened(GROUND_DARKEN), ground(), 0, 0, 0, int(StageMapLayout.SCREEN.y)))
+		add_child(shaded)
+	var text: Color = INK if _is_light() else TEXT
+	var muted: Color = INK_MUTED if _is_light() else MUTED
 	var centered: CenterContainer = CenterContainer.new()
 	centered.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(centered)
@@ -59,16 +75,16 @@ func begin(run: Run) -> void:
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 12)
 	centered.add_child(column)
-	column.add_child(_text(visit.stage.name, 64, TEXT, true))
-	column.add_child(_text("Tier %d" % visit.stage.tier, 30, MUTED, false))
+	column.add_child(_text(visit.stage.name, 64, text, true))
+	column.add_child(_text("Tier %d" % visit.stage.tier, 30, muted, false))
 	column.add_child(_gap())
-	column.add_child(_text("Boss", 24, MUTED, false))
+	column.add_child(_text("Boss", 24, muted, false))
 	_ring = Control.new()
 	_ring.custom_minimum_size = Vector2.ONE * (RING_RADIUS * 2.0 + 40.0)
 	_ring.draw.connect(func() -> void:
 		BossDisc.draw(_ring, _ring.size / 2.0, RING_RADIUS, RING_WIDTH, visit.boss.sprite, _time, Color.WHITE))
 	column.add_child(_ring)
-	column.add_child(_text(visit.boss.name, 36, TEXT, true))
+	column.add_child(_text(visit.boss.name, 36, text, true))
 	column.add_child(_gap())
 	_button = Button.new()
 	_button.text = CONTINUE
@@ -93,6 +109,17 @@ func texts() -> Array[String]:
 	return said
 
 
+## The color the ground is shaded in: the Stage's own, or the slate.
+func ground() -> Color:
+	var stage: StageDefinition = _run.stage_visit.stage
+	return stage.intro_color if stage.has_intro_color() else GROUND
+
+
+## The color the Stage's name is written in.
+func text_color() -> Color:
+	return INK if _is_light() else TEXT
+
+
 func button() -> Button:
 	return _button
 
@@ -105,6 +132,10 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), GROUND)
+
+
+func _is_light() -> bool:
+	return ground().get_luminance() > 0.5
 
 
 func _gap() -> Control:

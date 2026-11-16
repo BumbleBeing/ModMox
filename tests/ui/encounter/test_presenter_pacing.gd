@@ -10,6 +10,9 @@ const Rule := MmEncounterSetup.StartingPlayerRule
 const ACTION: int = 500
 const MANA: int = 270
 const STEP: int = 100
+const HANG: int = 500
+const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
+const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 
 var _now: int = 0
 var _snapshots: Array[EncounterSnapshot] = []
@@ -384,8 +387,225 @@ func test_an_undo_is_taken_while_a_step_is_shown() -> void:
 	presenter.wait_until_idle()
 
 
+func test_a_presenter_hangs_nothing_on_the_stack_until_it_is_told_to() -> void:
+	var presenter: EncounterPresenter = _hanging(_fountain_setup())
+	presenter.hang_wait_msec = 0
+	_activate_fountain(presenter)
+
+	_let_the_villain_answer(presenter)
+	presenter.poll()
+
+	assert_true(presenter.snapshot().view.stack.is_empty(), "Resolved with the clock standing still.")
+	presenter.wait_until_idle()
+
+
+func test_the_villain_thinks_while_the_heros_ability_hangs_on_the_stack() -> void:
+	var presenter: EncounterPresenter = _hanging(_fountain_setup())
+	_activate_fountain(presenter)
+	var shown: EncounterSnapshot = presenter.snapshot()
+	assert_eq(shown.view.stack.size(), 1, "The ability is on the stack.")
+	assert_true(shown.is_villain_thinking, "The Hero was passed for at once (A600).")
+
+	_let_the_villain_answer(presenter)
+	_now += HANG - 1
+	presenter.poll()
+	assert_eq(presenter.snapshot(), shown, "The Villain's pass would resolve it a millisecond too soon.")
+	_now += 1
+	presenter.poll()
+
+	assert_ne(presenter.snapshot(), shown)
+	assert_true(presenter.snapshot().view.stack.is_empty(), "Collected, and it resolved.")
+	presenter.wait_until_idle()
+
+
+func test_time_spent_paused_counts_toward_the_hangtime() -> void:
+	var presenter: EncounterPresenter = _hanging(_fountain_setup())
+	_activate_fountain(presenter)
+	var shown: EncounterSnapshot = presenter.snapshot()
+	_let_the_villain_answer(presenter)
+
+	presenter.set_paused(true)
+	_now += HANG
+	presenter.poll()
+	assert_eq(presenter.snapshot(), shown)
+	presenter.set_paused(false)
+	presenter.poll()
+
+	assert_ne(presenter.snapshot(), shown)
+	presenter.wait_until_idle()
+
+
+func test_with_the_hold_key_down_the_heros_ability_is_held_not_passed() -> void:
+	var presenter: EncounterPresenter = _hanging(_fountain_setup())
+	presenter.is_hold_key_down = true
+
+	_activate_fountain(presenter)
+
+	assert_false(presenter.is_passing_for_hero())
+	assert_true(presenter.snapshot().is_holding_priority, "The Hero has priority over their own ability.")
+	assert_true(presenter.snapshot().decision is PriorityDecision)
+
+
+func test_a_pass_the_hero_makes_that_would_resolve_too_soon_is_put_off() -> void:
+	var presenter: EncounterPresenter = _hanging(_fountain_setup())
+	presenter.start()
+	# With the clock standing still, the Villain's trigger is still young when the Hero is asked.
+	for tick: int in 400:
+		var snapshot: EncounterSnapshot = presenter.snapshot()
+		if snapshot.decision is PriorityDecision and not snapshot.view.stack.is_empty() \
+				and snapshot.view.stack.back().controller_id == VILLAIN:
+			break
+		if snapshot.is_villain_thinking:
+			_let_the_villain_answer(presenter)
+			presenter.poll()
+			if presenter.snapshot() == snapshot:
+				_now += HANG
+		elif snapshot.decision != null:
+			presenter.answer(Scenario.default_answer(snapshot.decision))
+		else:
+			_now += HANG
+			presenter.poll()
+	var asked: EncounterSnapshot = presenter.snapshot()
+	assert_true(asked.view.stack.back().ability is TriggeredAbility, "The Villain's upkeep trigger, which the Villain has passed.")
+
+	assert_eq(presenter.pass_priority(), "")
+	var held: EncounterSnapshot = presenter.snapshot()
+	assert_true(_is_held.call(held), "The click is taken, and the pass put off.")
+	assert_true(presenter.is_passing_for_hero())
+	assert_eq(held.view.stack.size(), asked.view.stack.size())
+	_now += HANG - 1
+	presenter.poll()
+	assert_eq(presenter.snapshot(), held)
+	_now += 1
+	presenter.poll()
+
+	assert_lt(presenter.snapshot().view.stack.size(), asked.view.stack.size(), "Now it resolved.")
+	presenter.wait_until_idle()
+
+
+func test_waiting_until_idle_sits_through_no_hangtime() -> void:
+	var presenter: EncounterPresenter = _hanging(_fountain_setup())
+	_activate_fountain(presenter)
+
+	presenter.wait_until_idle()
+
+	assert_true(presenter.snapshot().view.stack.is_empty())
+	assert_true(presenter.snapshot().decision != null or presenter.snapshot().is_over())
+
+
+func test_every_spell_and_ability_stays_on_the_stack_for_the_hangtime() -> void:
+	var presenter: EncounterPresenter = _hanging(_fountain_setup())
+	presenter.action_wait_msec = ACTION
+	presenter.mana_wait_msec = MANA
+	presenter.step_wait_msec = STEP
+	presenter.start()
+	# What the Hero has done in each Game Turn: they cast and activate once a turn each.
+	var done: Dictionary[String, bool] = {}
+	for tick: int in 20000:
+		var snapshot: EncounterSnapshot = presenter.snapshot()
+		if snapshot.is_over() or snapshot.view.game_turn > 6:
+			break
+		_now += 10
+		if snapshot.is_villain_thinking:
+			_let_the_villain_answer(presenter)
+			presenter.poll()
+		elif snapshot.decision != null:
+			presenter.answer(_eager_answer(snapshot, done))
+		else:
+			presenter.poll()
+
+	var first_seen: Dictionary[int, int] = {}
+	var kinds: Dictionary[String, int] = {}
+	for index: int in _snapshots.size():
+		var on_stack: Dictionary[int, bool] = {}
+		for item: MmObjectView in _snapshots[index].view.stack:
+			on_stack[item.id] = true
+			if not first_seen.has(item.id):
+				first_seen[item.id] = _times[index]
+				var kind: String = "spell" if item.ability == null else "activated" if item.ability is ActivatedAbility \
+						else "Hero's trigger" if item.controller_id == HERO else "Villain's trigger"
+				kinds[kind] = kinds.get(kind, 0) + 1
+		for id: int in first_seen.keys():
+			if not on_stack.has(id):
+				assert_gte(_times[index] - first_seen[id], HANG, "Object %d left the stack too soon." % id)
+				first_seen.erase(id)
+	for kind: String in ["spell", "activated", "Hero's trigger", "Villain's trigger"]:
+		assert_gt(kinds.get(kind, 0), 0, "Some %s was on the stack." % kind)
+	presenter.wait_until_idle()
+
+
 func _clock() -> int:
 	return _now
+
+
+## Between two decks of lands and free draw spells, the Hero holding an Emblem with
+## "{0}: You gain 1 life." and each player one with "At the beginning of your upkeep, you
+## gain 1 life."
+func _fountain_setup() -> MmEncounterSetup:
+	var forest: MmCardDefinition = Scenario.basic_land("Forest")
+	var deck: Array[MmCardDefinition] = Scenario.cycled([forest, Scenario.free_draw("Peek", 1)])
+	var setup: MmEncounterSetup = Scenario.setup_with(deck, deck)
+	var fountain: ActivatedAbility = ActivatedAbility.new()
+	fountain.mana_cost = Scenario.mana_cost(0)
+	fountain.effects = [Scenario.gain_life(1, YouSelection.new())]
+	setup.hero.emblems = [Scenario.emblem("Fountain", [fountain]), _spring()]
+	setup.villain.emblems = [_spring()]
+	return setup
+
+
+func _spring() -> MmCardDefinition:
+	var upkeep: StepBeganTrigger = Scenario.at_step(MmTurn.Step.UPKEEP, MmTrigger.Whose.YOU)
+	return Scenario.emblem("Spring", [Scenario.triggered(upkeep, [Scenario.gain_life(1, YouSelection.new())])])
+
+
+## A presenter that hangs what is on the stack and waits for nothing else, remembering its
+## snapshots.
+func _hanging(setup: MmEncounterSetup) -> EncounterPresenter:
+	var presenter: EncounterPresenter = EncounterPresenter.new(setup, DefaultAnswerAgent.new())
+	presenter.clock = _clock
+	presenter.hang_wait_msec = HANG
+	presenter.changed.connect(_remember)
+	return presenter
+
+
+## Plays on to the Hero's first chance to activate the Fountain, and activates it.
+func _activate_fountain(presenter: EncounterPresenter) -> void:
+	presenter.start()
+	presenter.wait_until_idle()
+	for attempt: int in 30:
+		var priority: PriorityDecision = presenter.snapshot().decision as PriorityDecision
+		if priority != null and Scenario.action_index(priority, _is_activation) != -1:
+			break
+		presenter.answer(Scenario.default_answer(presenter.snapshot().decision))
+		presenter.wait_until_idle()
+	var offered: PriorityDecision = presenter.snapshot().decision as PriorityDecision
+	assert_eq(presenter.answer(Scenario.action_index(offered, _is_activation)), "")
+	while presenter.snapshot().decision is PayManaDecision:
+		assert_eq(presenter.answer(0), "", "Paying for {0}.")
+
+
+## The Hero's answer, casting a spell and activating the Fountain the first time each turn
+## they can, recorded in [param done].
+func _eager_answer(snapshot: EncounterSnapshot, done: Dictionary[String, bool]) -> Variant:
+	var priority: PriorityDecision = snapshot.decision as PriorityDecision
+	if priority != null and snapshot.view.stack.is_empty():
+		for kind: String in ["cast", "activate"]:
+			var key: String = "%s %d" % [kind, snapshot.view.game_turn]
+			var index: int = Scenario.action_index(priority, _is_cast if kind == "cast" else _is_activation)
+			if index != -1 and not done.has(key):
+				done[key] = true
+				return index
+	if snapshot.decision is PayManaDecision:
+		return 0
+	return Scenario.default_answer(snapshot.decision)
+
+
+func _is_activation(action: MmAction) -> bool:
+	return action is ActivateAbilityAction
+
+
+func _is_cast(action: MmAction) -> bool:
+	return action is CastSpellAction
 
 
 func _remember(snapshot: EncounterSnapshot) -> void:

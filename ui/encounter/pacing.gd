@@ -6,7 +6,7 @@ extends RefCounted
 ## as much as casting one. It is also how long a step of the turn is shown, at the least,
 ## so that the steps a turn is passed through can be followed.
 ##
-## These are the game's numbers at the Fast Game Speed; Normal takes one and a half times
+## These are the game's numbers at the Blazing Game Speed; Normal takes twice
 ## as long. The Encounter Presenter and Face Motion take theirs as
 ## plain values that default to zero, which the Encounter Screen sets when it starts a real
 ## encounter, so tests and screenshots never wait.
@@ -19,6 +19,9 @@ const ACTION_MSEC: int = 500
 const MANA_MSEC: int = 200
 ## The least time a step of the turn is shown before the game leaves it.
 const STEP_MSEC: int = 100
+## The hangtime (A600): the least time a spell or ability is shown on the stack before it
+## leaves, so it is seen there. Twice a move, the time a land takes to tap start to finish.
+const HANG_MSEC: int = 500
 ## How long a face takes to move, turn or fade (Face Motion).
 const MOVE_SECONDS: float = 0.25
 ## How long a card takes to fly from one zone to another (Card Flights): longer than a

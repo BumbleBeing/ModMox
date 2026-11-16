@@ -35,7 +35,7 @@ One section of a run, of one color at one Tier and ending in a Boss, which sets 
 _Avoid_: Level, act, world, biome
 
 **Stage Intro**:
-The screen that opens a Stage before its Stage Map: the Stage's name, its Tier and its Boss, who is introduced here.
+The screen that opens a Stage before its Stage Map: the Stage's name, its Tier and its Boss, who is introduced here, on a ground of the Stage's own color.
 _Avoid_: Cutscene, title card, splash
 
 **Node**:
@@ -49,6 +49,14 @@ _Avoid_: Stage Navigation, navigation screen, world map, overworld
 **Map View**:
 The overlay that shows a Stage Map whole: its shape, every Node and the Path walked so far. The Stage Map itself shows only the Hero's row and the two rows ahead.
 _Avoid_: Minimap, full map, overview
+
+**Map Backdrop**:
+The one picture behind a Stage's Stage Map, belonging to that Stage alone: as wide as the screen and as tall as the whole map, pixel art drawn six screen pixels to each of its own, never tiled and never dimmed. It scrolls with the map, so the Nodes sit on its ground. A Stage without one shows the plain slate.
+_Avoid_: Background, map background, Backdrop (the picture behind an encounter, one for each color)
+
+**Scenery**:
+The sprites placed at random over a Stage's Map Backdrop, such as mountains, trees and creatures, some still and some moving, of many sizes. Each Stage has its own set, and rules keep them clear of the Nodes; where they fall comes from the Run Seed.
+_Avoid_: Decorations, props, doodads
 
 **Path**:
 Any walk the Hero could take across a Stage Map from the Node they stand on: forward along links, either way along a link between Nodes of the same row, and never back to a Node already visited.
@@ -285,10 +293,14 @@ The layer of the Encounter Screen, over every window, where Card Flights are dra
 _Avoid_: Flight director, flight manager, animation layer
 
 **Pacing**:
-The wait before the Villain's next answer is shown, so the Hero can read the last one: at the Fast Game Speed, half a second after an action, about a quarter after tapping for mana, and none after a pass that showed nothing. Thinking counts toward it. A step of the turn is also shown for at least a tenth of a second, again at Fast, before the game leaves it, whoever is passing.
+The wait before the Villain's next answer is shown, so the Hero can read the last one: at the Blazing Game Speed, half a second after an action, about a quarter after tapping for mana, and none after a pass that showed nothing. Thinking counts toward it. A step of the turn is also shown for at least a tenth of a second, again at Blazing, before the game leaves it, whoever is passing. And nothing leaves the stack sooner than the Hangtime after it was first shown there.
+
+**Hangtime**:
+The least time a spell or ability, either player's, cast, activated or triggered, is shown on the stack before it resolves or otherwise leaves: half a second at the Blazing Game Speed, twice the time a land takes to tap. It holds back only what would take something off the stack, so the Villain thinks during it and a pass that resolves nothing is made at once.
+_Avoid_: Stack delay, resolve delay
 
 **Game Speed**:
-The setting that scales every wait, move, Card Flight and fade of an encounter together: Slow, Normal, Fast or Blazing. Normal takes one and a half times as long as Fast, Slow twice as long, and Blazing half. It is chosen in the Pause Menu's settings and kept between runs.
+The setting that scales every wait, move, Card Flight and fade of an encounter together: Slow, Normal, Fast or Blazing. Normal takes twice as long as Blazing, Fast one and a half times as long, and Slow three times as long. It is chosen in the Pause Menu's settings and kept between runs.
 _Avoid_: Delay, Villain speed, animation lock
 
 **Potions window**:

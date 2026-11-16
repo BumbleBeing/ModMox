@@ -24,31 +24,30 @@ func test_a_speed_scales_every_wait_move_flight_and_fade_of_a_paced_screen() -> 
 	_screen.use_game_pace(_presenter)
 	assert_eq(_screen.game_speed(), GameSpeed.Speed.NORMAL)
 
-	assert_eq(_presenter.action_wait_msec, 750, "Normal is one and a half times Pacing's numbers.")
-
-	_screen.set_game_speed(GameSpeed.Speed.BLAZING)
-
-	assert_eq(_screen.game_speed(), GameSpeed.Speed.BLAZING)
-	assert_eq(_presenter.action_wait_msec, Pacing.ACTION_MSEC / 2)
-	assert_eq(_presenter.mana_wait_msec, Pacing.MANA_MSEC / 2)
-	assert_eq(_presenter.step_wait_msec, Pacing.STEP_MSEC / 2)
-	assert_almost_eq(_screen.face_motion().seconds, Pacing.MOVE_SECONDS / 2.0, 0.0001)
-	assert_almost_eq(_screen.flight_layer().seconds, Pacing.FLIGHT_SECONDS / 2.0, 0.0001)
-	assert_almost_eq(_screen.pause_menu().ease_seconds, Pacing.EASE_SECONDS / 2.0, 0.0001)
-	assert_almost_eq(_screen.opening_overlay().motion().seconds, Pacing.DEAL_SECONDS / 2.0, 0.0001)
-	assert_almost_eq(_screen.opening_overlay().motion().gap_seconds, Pacing.DEAL_GAP_SECONDS / 2.0, 0.0001)
-
-	_screen.set_game_speed(GameSpeed.Speed.SLOW)
-	assert_eq(_presenter.action_wait_msec, 1000)
-	assert_almost_eq(_screen.face_motion().seconds, Pacing.MOVE_SECONDS * 2.0, 0.0001)
+	assert_eq(_presenter.action_wait_msec, 1000, "Normal is twice Pacing's numbers.")
 
 	_screen.set_game_speed(GameSpeed.Speed.FAST)
-	assert_eq(_presenter.action_wait_msec, Pacing.ACTION_MSEC, "Fast plays at Pacing's own numbers.")
+
+	assert_eq(_screen.game_speed(), GameSpeed.Speed.FAST)
+	assert_eq(_presenter.action_wait_msec, 750, "Fast is one and a half times Pacing's numbers.")
+	assert_almost_eq(_screen.face_motion().seconds, Pacing.MOVE_SECONDS * 1.5, 0.0001)
+
+	_screen.set_game_speed(GameSpeed.Speed.SLOW)
+	assert_eq(_presenter.action_wait_msec, 1500)
+	assert_eq(_presenter.hang_wait_msec, Pacing.HANG_MSEC * 3)
+	assert_almost_eq(_screen.face_motion().seconds, Pacing.MOVE_SECONDS * 3.0, 0.0001)
+
+	_screen.set_game_speed(GameSpeed.Speed.BLAZING)
+	assert_eq(_screen.game_speed(), GameSpeed.Speed.BLAZING)
+	assert_eq(_presenter.action_wait_msec, Pacing.ACTION_MSEC, "Blazing plays at Pacing's own numbers.")
 	assert_eq(_presenter.mana_wait_msec, Pacing.MANA_MSEC)
 	assert_eq(_presenter.step_wait_msec, Pacing.STEP_MSEC)
+	assert_eq(_presenter.hang_wait_msec, Pacing.HANG_MSEC)
 	assert_almost_eq(_screen.face_motion().seconds, Pacing.MOVE_SECONDS, 0.0001)
 	assert_almost_eq(_screen.flight_layer().seconds, Pacing.FLIGHT_SECONDS, 0.0001)
 	assert_almost_eq(_screen.pause_menu().ease_seconds, Pacing.EASE_SECONDS, 0.0001)
+	assert_almost_eq(_screen.opening_overlay().motion().seconds, Pacing.DEAL_SECONDS, 0.0001)
+	assert_almost_eq(_screen.opening_overlay().motion().gap_seconds, Pacing.DEAL_GAP_SECONDS, 0.0001)
 
 
 func test_a_screen_that_is_not_paced_waits_for_nothing_at_any_speed() -> void:
@@ -73,7 +72,7 @@ func test_a_speed_chosen_in_the_pause_menu_is_applied_to_the_running_encounter_a
 	_screen.pause_menu().speed_button(GameSpeed.Speed.FAST).pressed.emit()
 
 	assert_eq(_screen.game_speed(), GameSpeed.Speed.FAST)
-	assert_eq(_presenter.action_wait_msec, Pacing.ACTION_MSEC)
+	assert_eq(_presenter.action_wait_msec, 750)
 	assert_true(_screen.is_paused(), "The menu stays open.")
 	assert_true(_screen.pause_menu().is_speed_chosen(GameSpeed.Speed.FAST))
 
@@ -94,7 +93,7 @@ func test_the_speed_chosen_is_saved_and_the_next_screen_starts_with_it() -> void
 	var presenter: EncounterPresenter = EncounterPresenter.new(_setup(), DefaultAnswerAgent.new())
 	next.use_game_pace(presenter)
 	assert_eq(next.game_speed(), GameSpeed.Speed.SLOW)
-	assert_eq(presenter.action_wait_msec, 1000)
+	assert_eq(presenter.action_wait_msec, 1500)
 
 
 func test_auto_pass_turned_off_in_the_pause_menu_applies_once_the_game_resumes_and_is_saved() -> void:

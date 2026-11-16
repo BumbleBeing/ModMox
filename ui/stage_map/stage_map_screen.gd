@@ -6,9 +6,10 @@ extends Control
 ## Hero is their Portrait on the Node they stand on, rocking gently; the Nodes a Path
 ## allows next glow, and a click on one glides the Portrait there along the link at the
 ## Game Speed, clicks ignored until it arrives. Only the links the Hero can take now are
-## lit. Hovering a Node names it. The Boss breathes in its disc. Arriving at an encounter
-## opens the Deckbox against its Villain; once the Boss is beaten the "Run won" notice
-## covers the map.
+## lit. The Stage's Map Backdrop lies behind it all, scrolling with the map, and each Node
+## stands in a halo that sets it off from the picture (ADR 0038). Hovering a Node names it.
+## The Boss breathes in its disc. Arriving at an encounter opens the Deckbox against its
+## Villain; once the Boss is beaten the "Run won" notice covers the map.
 ##
 ## Opened on its own (godot --path . res://ui/stage_map/stage_map_screen.tscn, or the main
 ## menu's --stage-map) it begins a debug run: --run-seed=N picks the run, --stage=red its
@@ -29,9 +30,14 @@ const KIND_NAMES: Dictionary[StageMap.Kind, String] = {
 	StageMap.Kind.BOSS: "Boss Encounter", StageMap.Kind.CHAOS: "Chaos Node",
 }
 const GROUND: Color = Color8(42, 44, 56)
-## The Glow on a Node the Hero can move to, in the color of a playable thing; brighter
-## under the cursor.
+## The Glow on a Node the Hero can move to: a white ring 32 pixels across, drawn at the
+## Node's halo scale and tinted the color of a playable thing, at this opacity; brighter
+## under the cursor. It eases in and out over this long at Blazing.
 const GLOW: Color = Color("#7be36a")
+const GLOW_SPRITE: Texture2D = preload("res://ui/sprites/map_nodes/glow.png")
+const BOSS_GLOW_SPRITE: Texture2D = preload("res://ui/sprites/map_nodes/boss_glow.png")
+const GLOW_ALPHA: float = 0.7
+const GLOW_FADE_SECONDS: float = 0.25
 const HOVER_LIGHTEN: float = 0.35
 ## A visited Node is drawn this dark.
 const VISITED_TINT: Color = Color(0.45, 0.45, 0.5)
@@ -52,7 +58,7 @@ const DOT_STEP: float = 16.0
 const DOT_CLEAR: float = 40.0
 const DOT_EDGE: Color = Color8(20, 20, 26)
 ## The hover label: a slate plate like the Deckbox's, this far under its Node, three
-## quarters opaque, easing in and out over this long at Fast.
+## quarters opaque, easing in and out over this long at Blazing.
 const LABEL_SLATE: Color = Color("#2a2f37")
 const LABEL_BORDER: Color = Color("#14171c")
 const LABEL_TEXT: Color = Color8(228, 231, 238)
@@ -85,6 +91,10 @@ var _label_text: Label
 var _label_tween: Tween
 var _notice: RunWonNotice = null
 var _links: StageMapLinks = StageMapLinks.new()
+## How far each Node's Glow has eased in, from 0 to 1.
+var _glow_levels: Dictionary[int, float] = {}
+## Each size of halo's picture, by the radius of its Node.
+var _halos: Dictionary[float, Texture2D] = {}
 ## Where the view is, in rows: the row framed at the bottom.
 var _scroll_row: float = 1.0
 ## The Node being glided to, how far along (0 to 1) and how long it takes; -1 when the
@@ -151,9 +161,20 @@ func begin(run: Run) -> void:
 	_bar.deckbox_pressed.connect(func() -> void: navigate.call(Screens.scene(RunFlow.open_deckbox())))
 	_scroll_row = StageMapLayout.framed_row(_hero_row())
 	_links.ease_toward(run.stage_visit, -1, 1.0)
+	_ease_glows(1.0)
 	if run.is_won():
 		_open_notice()
 	queue_redraw()
+
+
+## The Stage's Map Backdrop, or null when it shows the plain slate.
+func map_backdrop() -> Texture2D:
+	return _run.stage_visit.stage.map_backdrop
+
+
+## Where the Map Backdrop is drawn now.
+func map_backdrop_rect() -> Rect2:
+	return StageMapLayout.map_backdrop_rect(_scroll_row)
 
 
 func run_bar() -> RunBar:
@@ -187,6 +208,12 @@ func glowing() -> Array[int]:
 	if _gliding_to != -1 or _notice != null:
 		return []
 	return _run.stage_visit.choices()
+
+
+## How opaque the Glow on the Node [param id] is drawn now: GLOW_ALPHA on a Node the Hero
+## can move to, none elsewhere, and between while it eases.
+func glow_of(id: int) -> float:
+	return GLOW_ALPHA * StageMapLayout.eased(_glow_levels.get(id, 0.0))
 
 
 ## The tint the Node [param id] is drawn with: darker once visited.
@@ -255,6 +282,7 @@ func advance(delta: float) -> void:
 		_scroll_row = target
 	var step: float = 1.0 if not is_paced else delta / GameSpeed.seconds(StageMapLinks.FADE_SECONDS, game_speed)
 	_links.ease_toward(_run.stage_visit, _gliding_to, step)
+	_ease_glows(delta / GameSpeed.seconds(GLOW_FADE_SECONDS, game_speed) if is_paced else 1.0)
 	_place_label()
 	queue_redraw()
 
@@ -366,16 +394,19 @@ func _draw() -> void:
 	if _run == null:
 		return
 	var visit: StageVisit = _run.stage_visit
+	if map_backdrop() != null:
+		draw_texture_rect(map_backdrop(), map_backdrop_rect(), false)
 	for node: MapNode in visit.map.nodes:
 		for id: int in node.forward:
 			_draw_link(node.id, id, visit.map.nodes[id].kind == StageMap.Kind.BOSS)
 		if node.side > node.id:
 			_draw_link(node.id, node.side, false)
-	var glows: Array[int] = glowing()
+	for node: MapNode in visit.map.nodes:
+		_draw_halo(node_spot(node.id), StageMapLayout.radius_of(node.kind))
 	for node: MapNode in visit.map.nodes:
 		var center: Vector2 = node_spot(node.id)
-		if glows.has(node.id):
-			_draw_glow(center, StageMapLayout.radius_of(node.kind), node.id == _pointed)
+		if glow_of(node.id) > 0.0:
+			_draw_glow(center, node.kind, glow_of(node.id), node.id == _pointed)
 		if node.kind == StageMap.Kind.BOSS:
 			BossDisc.draw(self, center, StageMapLayout.BOSS_RADIUS, BOSS_RING, boss_portrait(), _time, node_tint(node.id))
 			continue
@@ -402,11 +433,43 @@ func _draw_link(a: int, b: int, is_to_boss: bool) -> void:
 		at += DOT_STEP
 
 
-## A soft ring and a hard one round a Node the Hero can move to.
-func _draw_glow(center: Vector2, radius: float, is_hovered: bool) -> void:
+## The halo setting a Node of [param radius] off from the Map Backdrop: a 32 x 32 pixel
+## circle of the slate, scaled with hard edges.
+func _draw_halo(center: Vector2, radius: float) -> void:
+	var halo: Texture2D = _halo(radius)
+	var extent: Vector2 = halo.get_size() * StageMapLayout.halo_scale(radius)
+	draw_texture_rect(halo, Rect2((center - extent / 2.0).round(), extent), false)
+
+
+## The halo's picture round a Node of [param radius], made once.
+func _halo(radius: float) -> Texture2D:
+	if _halos.has(radius):
+		return _halos[radius]
+	var size: int = StageMapLayout.HALO_PIXELS
+	var scale: int = StageMapLayout.halo_scale(radius)
+	var image: Image = Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
+	for y: int in size:
+		for x: int in size:
+			image.set_pixel(x, y, Color(GROUND, StageMapLayout.halo_alpha(x, y, radius, scale)))
+	_halos[radius] = ImageTexture.create_from_image(image)
+	return _halos[radius]
+
+
+## The Glow round a Node of [param kind] the Hero can move to, at [param alpha].
+func _draw_glow(center: Vector2, kind: StageMap.Kind, alpha: float, is_hovered: bool) -> void:
+	var sprite: Texture2D = BOSS_GLOW_SPRITE if kind == StageMap.Kind.BOSS else GLOW_SPRITE
+	var extent: Vector2 = sprite.get_size() * StageMapLayout.halo_scale(StageMapLayout.radius_of(kind))
 	var color: Color = GLOW.lightened(HOVER_LIGHTEN) if is_hovered else GLOW
-	draw_arc(center, radius + 7.0, 0.0, TAU, 64, Color(color, 0.35), 4.0)
-	draw_arc(center, radius + 3.0, 0.0, TAU, 64, color, 3.0)
+	draw_texture_rect(sprite, Rect2((center - extent / 2.0).round(), extent), false, Color(color, alpha))
+
+
+## Eases each Node's Glow [param step] of the way in, on a Node the Hero can move to now,
+## or out.
+func _ease_glows(step: float) -> void:
+	var glows: Array[int] = glowing()
+	for node: MapNode in _run.stage_visit.map.nodes:
+		var target: float = 1.0 if glows.has(node.id) else 0.0
+		_glow_levels[node.id] = move_toward(_glow_levels.get(node.id, 0.0), target, step)
 
 
 ## The Hero's Portrait standing on their Node, or part way along the link, rocking on its

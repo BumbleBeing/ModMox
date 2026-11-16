@@ -9,7 +9,7 @@ extends RefCounted
 const LIT: Color = Color8(195, 201, 214)
 const DARK: Color = Color8(69, 74, 92)
 const WALKED: Color = Color8(238, 196, 74)
-## A link eases from dark to lit, or back, over this long at Fast.
+## A link eases from dark to lit, or back, over this long at Blazing.
 const FADE_SECONDS: float = 0.25
 
 ## How lit each link is, from 0 (dark) to 1, by its two Nodes' ids, lower first.

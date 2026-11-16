@@ -25,6 +25,11 @@ const BACKDROPS: Dictionary[MmCardTypes.CardColor, String] = {
 @export var elite_villains: Array[Villain] = []
 ## A list although a Stage has one Boss today, because Stages will have several later.
 @export var bosses: Array[Villain] = []
+## The one picture behind its Stage Map, 320 x 560, in ui/sprites/backgrounds/stage_maps/;
+## null for the plain slate (ADR 0038).
+@export var map_backdrop: Texture2D
+## The color the Stage Intro's ground is shaded in; clear for the plain slate (ADR 0038).
+@export var intro_color: Color = Color(0, 0, 0, 0)
 
 
 ## Every Stage in content/stages/, in file order.
@@ -54,6 +59,11 @@ func villains_for(kind: StageMap.Kind) -> Array[Villain]:
 		StageMap.Kind.BOSS:
 			return bosses
 	return []
+
+
+## Whether the Stage Intro is drawn in a color of the Stage's own.
+func has_intro_color() -> bool:
+	return intro_color.a > 0.0
 
 
 ## The name of the Backdrop of its encounters.

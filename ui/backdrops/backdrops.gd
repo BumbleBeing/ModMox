@@ -17,7 +17,7 @@ const SLATE: Color = Color("#1a1d22")
 ## How far every Backdrop is dimmed toward SLATE, so that faces, Glows and labels read over
 ## any picture, and a picture is painted at its own brightness (A506).
 const DIM: float = 0.55
-const FOLDER: String = "res://ui/sprites/backgrounds/Encounters/"
+const FOLDER: String = "res://ui/sprites/backgrounds/encounters/"
 const SHADER: String = "res://ui/backdrops/backdrop.gdshader"
 
 

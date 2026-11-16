@@ -122,6 +122,17 @@ func test_exit_with_nothing_to_save_goes_straight_to_the_main_menu() -> void:
 	assert_true(ResourceLoader.exists(DeckbuilderScreen.MENU))
 
 
+func test_exit_from_a_deck_opened_in_the_deckbox_goes_back_to_the_deckbox() -> void:
+	RunFlow.edit(_sample.deckbox.active())
+
+	_screen.exit_button().pressed.emit()
+
+	assert_eq(_went_to, [Screens.scene(RunFlow.Screen.DECKBOX)] as Array[String])
+	assert_true(ResourceLoader.exists(_went_to[0]))
+	assert_false(RunFlow.is_editing)
+	RunFlow.clear()
+
+
 func test_exit_with_unsaved_changes_asks_first() -> void:
 	_screen.land_button("Forest").pressed.emit()
 

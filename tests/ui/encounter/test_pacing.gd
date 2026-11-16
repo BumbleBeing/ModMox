@@ -28,6 +28,10 @@ func test_tapping_for_mana_among_quiet_events_takes_the_mana_wait() -> void:
 	assert_eq(Pacing.wait_for(events, ACTION, MANA), MANA)
 
 
+func test_the_hangtime_is_as_long_as_two_land_taps() -> void:
+	assert_eq(Pacing.HANG_MSEC, roundi(Pacing.MOVE_SECONDS * 2.0 * 1000.0), "A tap is a move from start to finish (A600).")
+
+
 func test_anything_else_takes_the_action_wait() -> void:
 	assert_eq(Pacing.wait_for([SpellCastEvent.new(9, 1)], ACTION, MANA), ACTION)
 	assert_eq(Pacing.wait_for([LifeLostEvent.new(0, 2)], ACTION, MANA), ACTION)

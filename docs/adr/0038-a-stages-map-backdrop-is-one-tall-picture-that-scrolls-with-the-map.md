@@ -1,0 +1,15 @@
+# A Stage's Map Backdrop is one tall picture that scrolls with the map, and is never dimmed
+
+Each Stage is meant to look like a place of its own, so its Stage Map has a picture behind it, the Map Backdrop, that belongs to that Stage alone. Kitty Keep's is its first. Map art will be painted to whatever size is chosen here, so the size is hard to change later.
+
+**One picture of the whole map, 320 × 560, scrolling exactly with the Nodes.** It is pixel art drawn six screen pixels to each of its own, as the encounter's Backdrop is (ADR 0035), so it is as wide as the screen, 1920 pixels. The view scrolls from row 1 to row 8 of the map, 7 rows of 320 pixels, so all it ever shows is 2,240 + 1,080 = 3,320 pixels tall, about 553 of the picture's; 560 gives a round number. Its bottom edge meets the screen's when the view is at the Start Node, and the 40 screen pixels left over at its top lie above the screen even at the Boss. It moves with the Nodes, so the art can put ground, paths and the Boss's keep where the Nodes sit. The Boss's Node is the one fixed point: it is always in the top row's middle column, and unlike every other Node it is drawn at its cell's center, never moved at random, so in the picture its center is always 160 pixels across and 51⅔ down, and the art can be painted round it. It is never tiled, so a detail can be painted anywhere.
+
+Two other shapes were considered. A single 320 × 180 picture held still behind a scrolling map, or one moving more slowly than it, makes the map a layer floating over a view, not a place climbed through. A smaller picture tiled seamlessly as the map scrolls costs less art, but repeats, and a Stage's landmarks could be painted only once.
+
+**A Stage holds its own picture**, as `StageDefinition.map_backdrop`, a texture, in place of a file found by name as the encounter's Backdrops are. There will be 25 Stages, each with its own art, and the Stage resource is where the rest of what makes it itself is set. A Stage without one shows the plain slate the Stage Map always had; there is no drawn placeholder. The pictures go in `ui/sprites/backgrounds/stage_maps/`.
+
+**It is never dimmed.** The encounter's Backdrop is darkened by 55% so the board reads over it. The Stage Map has much less over its picture, and keeping its colors vivid matters more there. Each Node is set off from it by a halo instead: a circle of slate 32 pixels across, scaled up with hard edges like the rest of the pixel art (three times over round a Node, four round the Boss's disc), in rings at half opacity next to the Node and fainter outward, so the picture's texture still shows through. The link dots keep their dark edge.
+
+**The Stage Intro is drawn in the Stage's color**, `StageDefinition.intro_color`, as Dither Shading from top to bottom over its whole ground; a Stage without one keeps the slate.
+
+**Back to front: Map Backdrop, Scenery, links, halos, Nodes.** Scenery, the sprites to be placed at random over the picture, waits for a later milestone. When built, each Stage lists its own, and where they fall comes from a stream of the Run Seed (ADR 0025).

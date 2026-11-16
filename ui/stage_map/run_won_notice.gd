@@ -13,7 +13,7 @@ const WINDOW_SIZE: Vector2 = Vector2(560, 300)
 const WINDOW_RADIUS: int = 16
 const BUTTON_FILL: Color = Color("#4b4e55")
 const BUTTON_HEIGHT: int = 52
-## It eases in over this long at Fast.
+## It eases in over this long at Blazing.
 const FADE_SECONDS: float = 0.3
 const MAIN_MENU: String = "Main Menu"
 

@@ -5,11 +5,13 @@ extends Control
 ## it names something that does not exist, which the menu then says. --deckbuilder opens
 ## the deckbuilder on a made-up run, for pictures. --stage-map opens the Stage Map of a
 ## debug run (--run-seed=N, --stage=red), for pictures. Start Run (debug) begins a debug
-## run at the Deckbox (milestones 16 and 17).
+## run at the Deckbox, in Kitty Keep, the Stage being built first (milestones 16 and 17).
 
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
 const CARD_GALLERY: String = "res://tools/card_gallery/card_gallery.tscn"
+## The Stage a debug run begins in.
+const DEMO_STAGE: String = "res://content/stages/kitty_keep.tres"
 const DECKBUILDER: String = Screens.DECKBUILDER
 const DECKBUILDER_FLAG: String = "--deckbuilder"
 ## The smallest the window may be made: four times a Backdrop's picture, so that its pixels
@@ -84,7 +86,7 @@ func _ready() -> void:
 		reason.add_theme_color_override("font_color", REFUSAL_COLOR)
 		column.add_child(reason)
 	_add(column, "Start Encounter", func() -> void: navigate.call(START_FORM))
-	_add(column, "Start Run (debug)", func() -> void: navigate.call(Screens.scene(RunFlow.start(Run.debug(randi())))))
+	_add(column, "Start Run (debug)", func() -> void: navigate.call(Screens.scene(RunFlow.start(Run.debug(randi(), load(DEMO_STAGE) as StageDefinition)))))
 	_add(column, "Card Gallery", func() -> void: navigate.call(CARD_GALLERY))
 	_add(column, "Quit Game", func() -> void: quit.call())
 

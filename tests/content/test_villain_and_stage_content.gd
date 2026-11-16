@@ -106,6 +106,24 @@ func test_a_stages_color_names_its_backdrop() -> void:
 	assert_true(Backdrops.has(stage.backdrop()))
 
 
+## ADR 0038: Kitty Keep, the white Tier 1 Stage, has its Map Backdrop and Intro color; no
+## other Stage has either yet.
+func test_kitty_keep_has_a_map_backdrop_and_an_intro_color() -> void:
+	var keep: StageDefinition = load(STAGES + "kitty_keep.tres")
+
+	assert_eq(keep.name, "Kitty Keep")
+	assert_eq(keep.color, MmCardTypes.CardColor.WHITE)
+	assert_eq(keep.tier, 1)
+	assert_not_null(keep.map_backdrop)
+	assert_eq(Vector2i(keep.map_backdrop.get_size()), StageMapLayout.MAP_BACKDROP_SIZE)
+	assert_eq(keep.map_backdrop.resource_path.get_base_dir(), "res://ui/sprites/backgrounds/stage_maps")
+	assert_true(keep.has_intro_color())
+	for stage: StageDefinition in StageDefinition.all():
+		if stage != keep:
+			assert_null(stage.map_backdrop, stage.name)
+			assert_false(stage.has_intro_color(), stage.name)
+
+
 func _files(villains: Array[Villain]) -> Array[String]:
 	var files: Array[String] = []
 	for villain: Villain in villains:

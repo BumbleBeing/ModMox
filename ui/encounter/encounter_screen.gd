@@ -487,6 +487,7 @@ func _apply_speed() -> void:
 	_paced_presenter.action_wait_msec = GameSpeed.msec(Pacing.ACTION_MSEC, _speed)
 	_paced_presenter.mana_wait_msec = GameSpeed.msec(Pacing.MANA_MSEC, _speed)
 	_paced_presenter.step_wait_msec = GameSpeed.msec(Pacing.STEP_MSEC, _speed)
+	_paced_presenter.hang_wait_msec = GameSpeed.msec(Pacing.HANG_MSEC, _speed)
 	_motion.seconds = GameSpeed.seconds(Pacing.MOVE_SECONDS, _speed)
 	_flight_layer.seconds = GameSpeed.seconds(Pacing.FLIGHT_SECONDS, _speed)
 	_flight_layer.gap_seconds = GameSpeed.seconds(Pacing.DRAW_GAP_SECONDS, _speed)

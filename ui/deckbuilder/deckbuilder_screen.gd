@@ -401,7 +401,7 @@ func _on_exit_answer(answer: int) -> void:
 ## Where Exit leads: back to the Deckbox it was opened from, or to the main menu when the
 ## deckbuilder was opened on its own.
 func _exit_scene() -> String:
-	return RunFlow.finish_editing() if RunFlow.is_editing else MENU
+	return Screens.scene(RunFlow.finish_editing()) if RunFlow.is_editing else MENU
 
 
 func _on_name_changed(text: String) -> void:

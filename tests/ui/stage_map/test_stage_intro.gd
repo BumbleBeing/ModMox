@@ -52,3 +52,21 @@ func test_the_deckboxs_close_at_the_start_of_a_run_leads_here() -> void:
 	var scene: Node = (load(Screens.STAGE_INTRO) as PackedScene).instantiate()
 	assert_true(scene is StageIntro)
 	scene.free()
+
+
+## ADR 0038: the Intro's ground is the Stage's own color.
+func test_the_intro_is_drawn_in_the_stages_color() -> void:
+	_run = Run.debug(7, load("res://content/stages/kitty_keep.tres") as StageDefinition)
+	await _open()
+
+	assert_eq(_intro.ground(), _run.stage_visit.stage.intro_color)
+	assert_eq(_intro.text_color(), StageIntro.INK, "Kitty Keep's cream is light, so its text is dark.")
+
+
+## ADR 0038: a Stage without a color keeps the slate.
+func test_a_stage_without_a_color_keeps_the_slate() -> void:
+	_run = Run.debug(7, load("res://content/stages/placeholder_red.tres") as StageDefinition)
+	await _open()
+
+	assert_eq(_intro.ground(), StageIntro.GROUND)
+	assert_eq(_intro.text_color(), StageIntro.TEXT)

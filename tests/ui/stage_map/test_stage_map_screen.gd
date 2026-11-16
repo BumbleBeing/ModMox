@@ -217,6 +217,64 @@ func test_beating_the_boss_shows_run_won_and_main_menu_goes_there() -> void:
 	StageMapScreen.has_left = false
 
 
+## The Glow is a 32 x 32 sprite at seven-tenths opacity on the Nodes the Hero can move to.
+func test_the_nodes_the_hero_can_move_to_glow_at_seven_tenths() -> void:
+	await _open()
+	var choices: Array[int] = _run.stage_visit.choices()
+
+	assert_eq(StageMapScreen.GLOW_SPRITE.get_size(), Vector2(32, 32))
+	assert_eq(StageMapScreen.BOSS_GLOW_SPRITE.get_size(), Vector2(32, 32))
+	for id: int in choices:
+		assert_almost_eq(_screen.glow_of(id), 0.7, 0.001)
+	assert_eq(_screen.glow_of(_run.stage_visit.current), 0.0)
+
+
+## The Glow eases out when the Hero sets off, and in on the next Nodes when they arrive.
+func test_the_glow_eases_out_and_in() -> void:
+	await _open()
+	_screen.is_paced = true
+	var going: int = _run.stage_visit.choices()[0]
+	var other: int = _run.stage_visit.choices()[1]
+
+	_screen.click_at(_screen.node_spot(going))
+	_screen.advance(0.05)
+	assert_between(_screen.glow_of(other), 0.01, 0.69, "Fading out, not gone at once.")
+	_screen.advance(0.5)
+	assert_eq(_screen.glow_of(other), 0.0)
+	while _screen.is_gliding():
+		_screen.advance(0.02)
+	var next: int = _run.stage_visit.choices()[0]
+	assert_lt(_screen.glow_of(next), 0.69, "Not lit at once when the Hero arrives...")
+	_screen.advance(0.05)
+	assert_between(_screen.glow_of(next), 0.01, 0.69, "...but easing in.")
+	_screen.advance(0.5)
+	assert_almost_eq(_screen.glow_of(next), 0.7, 0.001)
+
+
+## ADR 0038: a Stage's Map Backdrop is drawn behind its map, scrolling with it.
+func test_a_stages_map_backdrop_is_drawn_behind_its_map() -> void:
+	_run = Run.debug(7, load("res://content/stages/kitty_keep.tres") as StageDefinition)
+	RunFlow.start(_run)
+	RunFlow.finish_intro()
+	await _open()
+
+	assert_eq(_screen.map_backdrop(), _run.stage_visit.stage.map_backdrop)
+	assert_not_null(_screen.map_backdrop())
+	assert_eq(_screen.map_backdrop_rect(), StageMapLayout.map_backdrop_rect(_screen.scroll_row()))
+	_go_to(_run.stage_visit.choices()[0])
+	assert_eq(_screen.map_backdrop_rect(), StageMapLayout.map_backdrop_rect(_screen.scroll_row()))
+
+
+## ADR 0038: a Stage without one shows the plain slate.
+func test_a_stage_without_a_map_backdrop_shows_the_slate() -> void:
+	_run = Run.debug(7, load("res://content/stages/placeholder_red.tres") as StageDefinition)
+	RunFlow.start(_run)
+	RunFlow.finish_intro()
+	await _open()
+
+	assert_null(_screen.map_backdrop())
+
+
 ## A real click, through the input pipeline, sets the Hero off.
 func test_a_real_click_on_a_glowing_node_sets_the_hero_off() -> void:
 	var viewport: SubViewport = SubViewport.new()

@@ -60,6 +60,54 @@ func test_a_longer_link_takes_longer_to_glide_and_the_game_speed_scales_it() -> 
 	far.row = 5
 	far.column = 6
 
-	assert_eq(StageMapLayout.glide_seconds(from, near, GameSpeed.Speed.FAST), 0.8)
-	assert_gt(StageMapLayout.glide_seconds(from, far, GameSpeed.Speed.FAST), 1.6)
-	assert_almost_eq(StageMapLayout.glide_seconds(from, near, GameSpeed.Speed.NORMAL), 1.2, 0.0001)
+	assert_eq(StageMapLayout.glide_seconds(from, near, GameSpeed.Speed.BLAZING), 0.8)
+	assert_gt(StageMapLayout.glide_seconds(from, far, GameSpeed.Speed.BLAZING), 1.6)
+	assert_almost_eq(StageMapLayout.glide_seconds(from, near, GameSpeed.Speed.NORMAL), 1.6, 0.0001)
+
+
+## ADR 0038: the Map Backdrop meets the screen's bottom with the view at the Start, and
+## still covers the screen with the view at its far end.
+func test_the_map_backdrop_covers_the_screen_at_both_ends_of_the_scroll() -> void:
+	var at_start: Rect2 = StageMapLayout.map_backdrop_rect(1.0)
+	var at_end: Rect2 = StageMapLayout.map_backdrop_rect(StageMapLayout.framed_row(StageMap.ROWS))
+
+	assert_eq(at_start.size, Vector2(StageMapLayout.MAP_BACKDROP_SIZE) * StageMapLayout.BACKDROP_PIXEL)
+	assert_eq(at_start.size.x, StageMapLayout.SCREEN.x)
+	assert_eq(at_start.end.y, StageMapLayout.SCREEN.y)
+	assert_lte(at_end.position.y, 0.0)
+	assert_gte(at_end.end.y, StageMapLayout.SCREEN.y)
+
+
+## ADR 0038: it scrolls exactly with the Nodes.
+func test_the_map_backdrop_scrolls_with_the_nodes() -> void:
+	for scroll: float in [1.0, 3.5, 8.0]:
+		assert_eq(StageMapLayout.map_backdrop_rect(scroll).position.y - StageMapLayout.cell_center(4, 5, scroll).y,
+				StageMapLayout.map_backdrop_rect(1.0).position.y - StageMapLayout.cell_center(4, 5, 1.0).y)
+
+
+## ADR 0038: a Node's halo is a 32 x 32 pixel circle, drawn whole pixels at a time, a tenth
+## wider than the three 4-pixel bands it was.
+func test_a_nodes_halo_is_a_32_pixel_circle_a_tenth_wider_than_its_bands() -> void:
+	var radius: float = StageMapLayout.ICON_RADIUS
+
+	assert_eq(StageMapLayout.HALO_PIXELS, 32)
+	assert_eq(StageMapLayout.halo_scale(radius), 3, "(32 + 12) x 1.1 x 2 is nearest 3 x 32.")
+	assert_eq(StageMapLayout.halo_scale(StageMapLayout.BOSS_RADIUS), 4)
+
+
+## ADR 0038: it is slate at half opacity next to the Node, fainter outward, and clear
+## outside the circle.
+func test_a_nodes_halo_is_half_opaque_next_to_it_and_fades_outward() -> void:
+	var radius: float = StageMapLayout.ICON_RADIUS
+	var scale: int = StageMapLayout.halo_scale(radius)
+	var last: float = 1.0
+	var seen: Array[float] = []
+	for x: int in range(16, 32):
+		var alpha: float = StageMapLayout.halo_alpha(x, 16, radius, scale)
+		assert_lte(alpha, last, "Never darker further out.")
+		last = alpha
+		if not seen.has(alpha):
+			seen.append(alpha)
+
+	assert_eq(seen, [0.5, 0.3, 0.15] as Array[float])
+	assert_eq(StageMapLayout.halo_alpha(0, 0, radius, scale), 0.0, "Its corners are clear.")

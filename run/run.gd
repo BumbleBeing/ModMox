@@ -77,14 +77,17 @@ func roll_stage(tier: int) -> StageDefinition:
 
 ## Enters [param stage]: its map is built, its Boss picked and where each Node is drawn
 ## chosen, each from a stream of its own of the Run Seed (ADR 0025), and the Hero stands
-## on its Start Node.
+## on its Start Node. The Boss's Node is always at its cell's center, so a Map Backdrop can
+## be painted round it (ADR 0038); its place is drawn all the same, so the rest are not
+## moved.
 func enter_stage(stage: StageDefinition) -> void:
 	var map: StageMap = StageMapGenerator.generate(_random.next_seed(RunRandom.STAGE_MAPS))
 	var boss: Villain = stage.bosses[_random.pick(RunRandom.BOSSES, stage.bosses.size())]
 	stage_visit = StageVisit.new(stage, map, boss)
 	for node: MapNode in map.nodes:
-		stage_visit.offsets[node.id] = Vector2(
+		var offset: Vector2 = Vector2(
 			_random.fraction(RunRandom.MAP_LAYOUT) * 2.0 - 1.0, _random.fraction(RunRandom.MAP_LAYOUT) * 2.0 - 1.0)
+		stage_visit.offsets[node.id] = Vector2.ZERO if node.kind == StageMap.Kind.BOSS else offset
 
 
 ## Moves the Hero to the Node [param id] of the Stage, meeting its Villain if it is an

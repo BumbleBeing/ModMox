@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c68ym5ivbg53d"
-path="res://.godot/imported/Hell-ish.png-cc90f697e2c58a0b542a18507f426614.ctex"
+uid="uid://1oeks8w2qfon"
+path="res://.godot/imported/glow.png-3d5137cc1682188f8d858633ec4fbae5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://ui/sprites/backgrounds/Encounters/Hell-ish.png"
-dest_files=["res://.godot/imported/Hell-ish.png-cc90f697e2c58a0b542a18507f426614.ctex"]
+source_file="res://ui/sprites/map_nodes/glow.png"
+dest_files=["res://.godot/imported/glow.png-3d5137cc1682188f8d858633ec4fbae5.ctex"]
 
 [params]
 

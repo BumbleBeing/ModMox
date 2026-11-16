@@ -39,6 +39,7 @@ func test_start_run_debug_begins_a_debug_run_at_the_deckbox_with_close() -> void
 	assert_not_null(RunFlow.run.deckbox.active())
 	assert_null(RunFlow.villain, "The run opens on the Deckbox with Close.")
 	assert_eq(RunFlow.back_from_deckbox, RunFlow.Screen.STAGE_INTRO)
+	assert_eq(RunFlow.run.stage_visit.stage.name, "Kitty Keep", "The demo's Stage.")
 	var screen: Node = (load(Screens.DECKBOX) as PackedScene).instantiate()
 	assert_true(screen is DeckboxScreen)
 	screen.free()

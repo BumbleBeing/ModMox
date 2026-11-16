@@ -19,10 +19,21 @@ const ICON_RADIUS: float = 32.0
 const BOSS_RADIUS: float = 52.0
 ## How far beyond a Node's edge a click still picks it.
 const CLICK_SLACK: float = 4.0
-## A glide along one row's length takes this long at Fast; longer links take longer, and
+## A glide along one row's length takes this long at Blazing; longer links take longer, and
 ## none takes less than the shortest.
 const GLIDE_SECONDS: float = 0.8
 const SHORTEST_GLIDE: float = 0.6
+## A Map Backdrop is this many pixels, each drawn this many screen pixels square, so it is
+## as wide as the screen and taller than all the view ever shows of the map (ADR 0038).
+const MAP_BACKDROP_SIZE: Vector2i = Vector2i(320, 560)
+const BACKDROP_PIXEL: int = 6
+## A Node's halo (ADR 0038): a circle of the map's slate HALO_PIXELS pixels across, drawn
+## at the whole scale nearest to reaching HALO_REACH beyond the Node's edge, widened by
+## HALO_WIDEN, in three rings at these opacities from the Node outward.
+const HALO_PIXELS: int = 32
+const HALO_REACH: float = 12.0
+const HALO_WIDEN: float = 1.1
+const HALO_ALPHAS: Array[float] = [0.5, 0.3, 0.15]
 
 
 ## The row framed at the bottom while the Hero is at [param hero_row], never past either
@@ -69,3 +80,31 @@ static func glide_seconds(from: MapNode, to: MapNode, speed: GameSpeed.Speed) ->
 ## The glide's easing, slow at both ends: [param t] from 0 to 1.
 static func eased(t: float) -> float:
 	return t * t * (3.0 - 2.0 * t)
+
+
+## Where the Map Backdrop is drawn with the view at [param scroll_row]: its bottom at the
+## screen's with the view at the Start, moving with the Nodes (ADR 0038).
+static func map_backdrop_rect(scroll_row: float) -> Rect2:
+	var extent: Vector2 = Vector2(MAP_BACKDROP_SIZE * BACKDROP_PIXEL)
+	return Rect2(Vector2(0.0, SCREEN.y - extent.y + (scroll_row - 1.0) * ROW_PITCH), extent)
+
+
+## How many screen pixels square each of the halo's pixels is round a Node of
+## [param radius].
+static func halo_scale(radius: float) -> int:
+	return maxi(1, roundi((radius + HALO_REACH) * HALO_WIDEN * 2.0 / HALO_PIXELS))
+
+
+## The opacity of the halo's pixel [param x], [param y] round a Node of [param radius] at
+## [param scale]: HALO_ALPHAS[0] under and next to the Node, each ring fainter, and clear
+## outside the circle.
+static func halo_alpha(x: int, y: int, radius: float, scale: int) -> float:
+	var half: float = HALO_PIXELS / 2.0
+	var distance: float = Vector2(x + 0.5 - half, y + 0.5 - half).length() * scale
+	var outer: float = half * scale
+	if distance > outer:
+		return 0.0
+	if distance <= radius:
+		return HALO_ALPHAS[0]
+	var ring: float = (outer - radius) / HALO_ALPHAS.size()
+	return HALO_ALPHAS[mini(HALO_ALPHAS.size() - 1, floori((distance - radius) / ring))]

@@ -79,6 +79,18 @@ func test_every_node_is_given_a_place_in_its_cell() -> void:
 		assert_between(offset.y, -1.0, 1.0)
 
 
+## The Boss's Node is always drawn at the center of its cell, the same spot on every map,
+## so a Map Backdrop can be painted round it (ADR 0038).
+func test_the_bosss_node_is_always_at_the_center_of_its_cell() -> void:
+	for run_seed: int in [1, 7, 42]:
+		var run: Run = Run.debug(run_seed)
+		var boss: MapNode = run.stage_visit.map.boss()
+
+		assert_eq(run.stage_visit.offsets[boss.id], Vector2.ZERO)
+		assert_eq(StageMapLayout.node_spot(boss, run.stage_visit.offsets[boss.id], 8.0),
+				StageMapLayout.cell_center(StageMap.ROWS, 5, 8.0))
+
+
 func test_a_debug_run_holds_the_playtest_bolt_in_every_encounter() -> void:
 	var run: Run = Run.debug(7)
 

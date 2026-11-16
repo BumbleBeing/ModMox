@@ -5,10 +5,13 @@
 [ext_resource type="Resource" path="res://content/villains/blue_red.tres" id="3_xdi4n"]
 [ext_resource type="Resource" path="res://content/villains/red_green.tres" id="4_bkkcg"]
 [ext_resource type="Script" path="res://run/stage_definition.gd" id="5_besua"]
+[ext_resource type="Texture2D" path="res://ui/sprites/backgrounds/stage_maps/kitty_keep.png" id="5_gruod"]
 
 [resource]
 script = ExtResource("5_besua")
-name = "Placeholder White"
+name = "Kitty Keep"
 lesser_villains = Array[ExtResource("1_55mbs")]([ExtResource("4_bkkcg")])
 elite_villains = Array[ExtResource("1_55mbs")]([ExtResource("3_xdi4n")])
 bosses = Array[ExtResource("1_55mbs")]([ExtResource("2_rhaj0")])
+map_backdrop = ExtResource("5_gruod")
+intro_color = Color(0.9254902, 0.87058824, 0.7294118, 1)
