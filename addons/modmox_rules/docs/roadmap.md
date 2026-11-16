@@ -115,7 +115,7 @@ The milestones from 16 on build the game around the encounter, in the order that
 22. **The Store and the Satchel**: buying and selling cards and Items, the gold box, the Satchel screen, Potions held between encounters in place of the mock, and Items in Spoils, in the Item row whose layout milestone 18's prototype signed off, with any Spoils only one Villain gives (`Villain.spoils`). The Spoils' gold and card counts are tuned against the Store's prices.
 23. **The Workshop and real Mods**: buying and selling Mods, removing one for a price, Hexes, and the naming rules for Modded Names.
 24. **Elites and the Trove**: treasure after every Elite Encounter, won or lost.
-25. **Content, first round**: one Stage of each Tier, five in all and each of a different color, with their Villains' decks and Bosses.
+25. **Content, first round**: one Stage of each Tier, five in all and each of a different color, with their Villains' decks and Bosses. Each of those Villains gets its Portrait and Pain Portrait, drawn after a Magic character with `/draw-portrait`, and the game starts showing a player's Pain Portrait; when and how (on damage or on any loss of life, for how long, with a flash or a shake or not) is agreed at the milestone's start.
 26. **The Chaos Node and Unique Villains**, after a design round of its own. A Unique Villain's Spoils pay cards as an Elite's do: 1, 2 or 3 at 40%, 40% and 20% (milestone 18).
 27. **Content, the rest**: the other twenty Stages and the full Starting Pool.
 

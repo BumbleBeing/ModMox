@@ -368,8 +368,12 @@ The gray, shaded button over the Info Panel and as wide, which is always there. 
 _Avoid_: Confirm button, OK button, next button
 
 **Portrait**:
-The 32 × 32 pixel picture of a player on their panel, drawn six screen pixels to each of its own with hard edges, with the life total in its corner. It is what glows and is clicked when its player can be chosen. Until Heroes and Villains have their own, the Hero's is a white wizard and the Villain's a purple demon.
+The 32 × 32 pixel picture of a player on their panel, drawn six screen pixels to each of its own with hard edges, with the life total in its corner. It is what glows and is clicked when its player can be chosen. Every Portrait has a Pain Portrait. A Villain's is drawn after a character in a Magic card's art, turned to face the front; the Hero's ten are a set of their own. Until Heroes and Villains have their own, the Hero's is a white wizard and the Villain's a purple demon.
 _Avoid_: Avatar, icon, face (a Card Face or Battlefield Face is a card's)
+
+**Pain Portrait**:
+The second picture of a Portrait: the same character the moment after being hurt, wincing and knocked a little aside.
+_Avoid_: Pain frame (a Frame is a card's), hurt portrait, damage sprite
 
 **Key Binding**:
 The key that does one of the four actions that have a key: passing priority (Space), undo (Z), cancel (X) and holding priority (Control). Any single key can be bound to any of them, a modifier included; never Escape, which is the Pause Menu's, and never a combination or a mouse button. Two actions may share a key: a press of it does only the first of pass, undo and cancel bound to it, and holding priority goes with any of them. Buttons that name a key name the one bound. They are kept in the settings file.

@@ -1,0 +1,76 @@
+; Keldon Warlord's Portrait and Pain Portrait, facing front: antlered helm, fanged mask,
+; red harness and a beast-skull pauldron on his left shoulder.
+; Drawn after the art of Keldon Warlord: Limited Edition Alpha (lea) #160, by Kev Brockschmidt.
+; Scryfall ID: 8fe3fd83-969c-4add-888f-86f4306b067c
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= keldon_warlord
+1#1..1#1.......11.......1#1..1#1
+161.161.1.....1dc1.....1.161.161
+16611611#1....1dc1....1#11611661
+.166161161...11dc11...161161661.
+..16666161.1133dc2211.16166661..
+...156666613+32dc222216666651...
+....11556133322dc22222165511....
+......111332222dc222222111......
+.......13322222dc22222221.......
+.......123333223222222221.......
+.......12220#223222#02221.......
+.......122200223222002221.......
+.......122222223222222221.......
+.......123322222222222221.......
+.......122606060060606221.......
+...111111g5g5h5hh5h5g5g111111...
+.11ijiihgfhiihhhhhhhhhfghhhih1..
+1ijiiihhhgfggggggggggfghhh11111.
+1iihhhhhhhgggggggggggghh11yyyxw1
+1iihgh!!hhhhhgggggghhhh1xyyxxxw1
+1ihhfii!!jiihhhgghhhhh1xxxx10xw1
+1hhhfiji!!iihhhgghhhhh1wxx100xw1
+1hhgfiiih!!hhhh55hhhh1wwxxxxxww1
+1hggfhihhh!!hb5665bh!1vwwwxwwwv1
+1gghgfhhhhh!!b+!!+b!!1vvwwwwvvu1
+1hhhgfghhhhgggg++gggg16u6u6u6u61
+1hhhhgfgggggggggggggg15g5g5g5g51
+1hhhhffhhhghihhgghhhhg1g1g1g1g11
+1hhhgfghhhghhhhgghhhhghhhgfghhh1
+1hhhgfghhhgggggggggggghhhgfghhh1
+1hhggfghhhghihhgghhhhghhhgfgghh1
+1hgggfghhhghhhhgghhhhghhhgfgggh1
+
+= keldon_warlord_pain
+.1#1..1#1.......11.......1#1..1#
+.161.161.1.....1dc1.....1.161.16
+.16611611#1....1dc1....1#1161166
+..166161161...11dc11...161161661
+...16666161.1133dc2211.16166661.
+....156666613+32dc222216666651..
+.....11556133322dc22222165511...
+.......111332222dc222222111.....
+........13322222dc22222221......
+........123303223222202221......
+........122220223222022221......
+........122202223222202221......
+........122222223222222221......
+........123322222222222221......
+........1226+6+6++6+6+6221......
+...1111111f5+5+5++5+5+5f11111...
+.11ijiihg1fhiihhhhhhhhhfhhhih1..
+1ijiiihhh1gfggggggggggfghh11111.
+1iihhhhhhhgggggggggggghh11yyyxw1
+1iihgh!!hhhhhgggggghhhh1xyyxxxw1
+1ihhfii!!jiihhhgghhhhh1xxxx10xw1
+1hhhfiji!!iihhhgghhhhh1wxx100xw1
+1hhgfiiih!!hhhh55hhhh1wwxxxxxww1
+1hggfhihhh!!hb5665bh!1vwwwxwwwv1
+1gghgfhhhhh!!b+!!+b!!1vvwwwwvvu1
+1hhhgfghhhhgggg++gggg16u6u6u6u61
+1hhhhgfgggggggggggggg15g5g5g5g51
+1hhhhffhhhghihhgghhhhg1g1g1g1g11
+1hhhgfghhhghhhhgghhhhghhhgfghhh1
+1hhhgfghhhgggggggggggghhhgfghhh1
+1hhggfghhhghihhgghhhhghhhgfgghh1
+1hgggfghhhghhhhgghhhhghhhgfgggh1
