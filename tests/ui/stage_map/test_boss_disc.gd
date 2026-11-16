@@ -31,17 +31,37 @@ func test_the_boss_breathes_four_percent_each_way_once_every_three_seconds() -> 
 	assert_almost_eq(BossDisc.breath(3.0), 1.0, 0.0001)
 
 
-func test_the_ring_casts_its_shadow_across_the_top_of_the_clay() -> void:
-	var clay: Image = BossDisc.dithered_clay(46).get_image()
+## The whole disc, clay and ring, is one 32 x 32 pixel picture, scaled by a whole number
+## to the disc's radius: four times on the Stage Map, eight in the Stage Intro.
+func test_the_disc_is_a_32_pixel_picture_scaled_whole() -> void:
+	var disc: Image = BossDisc.pixel_disc().get_image()
 
-	var near_top: Color = clay.get_pixel(46, 1)
-	var below_shadow: Color = clay.get_pixel(46, 6)
-	assert_lt(near_top.v, below_shadow.v)
-	assert_eq(clay.get_pixel(0, 0).a, 0.0, "Round: the corners are empty.")
+	assert_eq(disc.get_size(), Vector2i(32, 32))
+	assert_eq(BossDisc.ring_scale(StageMapLayout.BOSS_RADIUS), 4)
+	assert_eq(BossDisc.ring_scale(StageIntro.RING_RADIUS), 8)
 
 
-func test_the_ring_is_shaded_smoothly_from_light_at_the_top_to_dark_at_the_bottom() -> void:
-	var ring: Image = BossDisc.shaded_ring(52).get_image()
+## The ring is red edged dark, clear outside, shaded from light at the top to dark at the
+## bottom, each row of pixels one color.
+func test_the_ring_is_red_edged_dark_and_shaded_top_to_bottom() -> void:
+	var disc: Image = BossDisc.pixel_disc().get_image()
 
-	assert_gt(ring.get_pixel(52, 2).v, ring.get_pixel(52, 101).v)
-	assert_eq(ring.get_pixel(40, 30), ring.get_pixel(60, 30), "Each row is one color: no dither.")
+	assert_eq(disc.get_pixel(0, 0).a, 0.0, "Clear outside.")
+	assert_eq(disc.get_pixel(16, 2), BossDisc.EDGE, "Edged dark at the top...")
+	assert_eq(disc.get_pixel(16, 29), BossDisc.EDGE, "...and the bottom.")
+	assert_gt(disc.get_pixel(16, 3).v, disc.get_pixel(16, 28).v, "Lighter at the top.")
+	assert_eq(disc.get_pixel(3, 16), disc.get_pixel(28, 16), "Each row one color: no dither.")
+	assert_gt(disc.get_pixel(16, 3).r, disc.get_pixel(16, 3).g, "Red.")
+
+
+## Inside, the clay is Dither Shaded a pixel at a time, and the ring casts a pixel of
+## shadow down across its top.
+func test_the_clay_is_dithered_by_the_pixel_under_the_rings_shadow() -> void:
+	var disc: Image = BossDisc.pixel_disc().get_image()
+	var colors: Dictionary[Color, bool] = {}
+	for x: int in range(10, 22):
+		colors[disc.get_pixel(x, 14)] = true
+
+	assert_eq(disc.get_pixel(16, 16).a, 1.0, "Clay fills the middle.")
+	assert_gt(colors.size(), 1, "Dithered: neighbors in a row differ.")
+	assert_lt(disc.get_pixel(16, 5).v, disc.get_pixel(16, 8).v, "Shadowed under the ring's top.")

@@ -41,8 +41,6 @@ const GLOW_FADE_SECONDS: float = 0.25
 const HOVER_LIGHTEN: float = 0.35
 ## A visited Node is drawn this dark.
 const VISITED_TINT: Color = Color(0.45, 0.45, 0.5)
-## The Boss's ring is this wide on its Node.
-const BOSS_RING: float = 6.0
 ## The Hero's Portrait stands on its Node at twice its size, its foot this far below the
 ## Node's center, and rocks on its foot this far each way, once in this long.
 const PORTRAIT_SCALE: int = 2
@@ -408,7 +406,7 @@ func _draw() -> void:
 		if glow_of(node.id) > 0.0:
 			_draw_glow(center, node.kind, glow_of(node.id), node.id == _pointed)
 		if node.kind == StageMap.Kind.BOSS:
-			BossDisc.draw(self, center, StageMapLayout.BOSS_RADIUS, BOSS_RING, boss_portrait(), _time, node_tint(node.id))
+			BossDisc.draw(self, center, StageMapLayout.BOSS_RADIUS, boss_portrait(), _time, node_tint(node.id))
 			continue
 		var texture: Texture2D = _icons[node.kind]
 		var extent: Vector2 = texture.get_size() * StageMapLayout.ICON_SCALE
