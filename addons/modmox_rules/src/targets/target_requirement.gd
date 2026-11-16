@@ -1,4 +1,4 @@
-class_name TargetSpec
+class_name TargetRequirement
 extends Resource
 ## One target requirement of a spell or ability: one instance of the word "target"
 ## (CR 115.1), with a Filter saying what may be chosen. Effects refer to the chosen target

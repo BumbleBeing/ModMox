@@ -9,7 +9,7 @@ extends MmAbility
 @export var mana_cost: MmManaCost = null
 ## Every other part of its cost, such as {T}, paid once the mana is (CR 601.2h).
 @export var costs: Array[MmCost] = []
-@export var targets: Array[TargetSpec] = []
+@export var targets: Array[TargetRequirement] = []
 @export var effects: Array[MmEffect] = []
 ## "Activate only once each game" (CR 602.5b, ADR 0036): its source marks it Spent when it
 ## is activated, and it is never offered again from that object.

@@ -75,14 +75,23 @@ func test_commands_are_refused_while_the_villain_is_thinking() -> void:
 	presenter.start()
 	var during: EncounterSnapshot = presenter.snapshot()
 
-	assert_eq(presenter.answer(0), EncounterPresenter.BUSY)
-	assert_eq(presenter.pass_priority(), EncounterPresenter.BUSY)
-	assert_eq(presenter.undo(), EncounterPresenter.BUSY)
-	assert_eq(presenter.cancel_cast(), EncounterPresenter.BUSY)
+	assert_eq(presenter.answer(0), "The Villain is thinking.")
+	assert_eq(presenter.pass_priority(), "The Villain is thinking.")
+	assert_eq(presenter.undo(), "The Villain is thinking.")
+	assert_eq(presenter.cancel_cast(), "The Villain is thinking.")
 	presenter.set_auto_passing(false)
 	presenter.toggle_stop(HERO, MmTurn.Step.UPKEEP)
 
 	assert_eq(presenter.snapshot(), during, "Nothing read the engine or made a new snapshot mid-thought.")
+	presenter.wait_until_idle()
+
+
+func test_a_command_refused_while_a_named_villain_thinks_says_their_name() -> void:
+	var presenter: EncounterPresenter = EncounterPresenter.new(Scenario.setup(Rule.VILLAIN_CHOOSES), SlowAgent.new())
+	presenter.names = PlayerNames.new("", "Mishra")
+	presenter.start()
+
+	assert_eq(presenter.answer(0), "Mishra is thinking.")
 	presenter.wait_until_idle()
 
 

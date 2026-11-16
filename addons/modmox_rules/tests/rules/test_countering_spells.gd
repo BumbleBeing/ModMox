@@ -139,7 +139,7 @@ func test_a_spell_that_targets_players_and_permanents_is_never_offered_a_spell()
 	var decision: ChooseTargetDecision = engine.pending_decision() as ChooseTargetDecision
 	for candidate: MmReference in decision.candidates:
 		assert_false(candidate.is_object() and candidate.id == greeter, "A creature spell is not a creature on the battlefield (CR 115.4).")
-	assert_eq(TargetSpec.new().among, TargetSpec.Among.PLAYERS_AND_PERMANENTS, "The default every saved card relies on.")
+	assert_eq(TargetRequirement.new().among, TargetRequirement.Among.PLAYERS_AND_PERMANENTS, "The default every saved card relies on.")
 
 
 func test_casting_a_counter_can_be_undone_but_a_countered_spell_cannot_come_back() -> void:
@@ -181,7 +181,7 @@ func test_an_ability_on_the_stack_is_never_a_legal_spell_target() -> void:
 	Scenario.activate(engine, Scenario.first_permanent_of(engine, hero.id), [MmReference.to_player(hero.id)])
 	Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Shock"), [MmReference.to_player(hero.id)])
 	var on_stack: Array[int] = Scenario.stack_ids(engine)
-	var spec: TargetSpec = Scenario.target_spell()
+	var spec: TargetRequirement = Scenario.target_spell()
 	var context: MmEffectContext = MmEffectContext.new(hero.id, 0)
 
 	assert_true(spec.is_still_legal(engine.game_state(), MmReference.to_object(on_stack[0]), context), "The Shock.")

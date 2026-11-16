@@ -104,7 +104,7 @@ func test_a_spell_is_never_a_legal_ability_target() -> void:
 	Scenario.activate(engine, Scenario.permanent_named(engine, hero.id, "Life Land"), [MmReference.to_player(hero.id)])
 	Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Shock"), [MmReference.to_player(hero.id)])
 	var on_stack: Array[int] = Scenario.stack_ids(engine)
-	var spec: TargetSpec = Scenario.target_ability()
+	var spec: TargetRequirement = Scenario.target_ability()
 	var context: MmEffectContext = MmEffectContext.new(hero.id, 0)
 
 	assert_false(spec.is_still_legal(engine.game_state(), MmReference.to_object(on_stack[0]), context), "The Shock is a spell.")

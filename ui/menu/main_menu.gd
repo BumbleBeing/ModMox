@@ -1,10 +1,12 @@
 class_name MainMenu
 extends Control
-## The main menu: a plain list of where the game can go. A request on the command line
+## The main menu: a plain list of where the game can go, in the Spoils screen's dithered
+## window on the slate ground, with its buttons. A request on the command line
 ## (--hero=, --villain= or --seed=) skips it and opens the Encounter Screen (A246), unless
 ## it names something that does not exist, which the menu then says. --deckbuilder opens
 ## the deckbuilder on a made-up run, for pictures. --stage-map opens the Stage Map of a
-## debug run (--run-seed=N, --stage=red), for pictures. Start Run (debug) begins a debug
+## debug run (--run-seed=N, --stage=red), for pictures, and --spoils the Spoils screen of
+## a win in one (--rank=lesser, elite or boss). Start Run (debug) begins a debug
 ## run at the Deckbox, in Kitty Keep, the Stage being built first (milestones 16 and 17).
 
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
@@ -18,6 +20,8 @@ const DECKBUILDER_FLAG: String = "--deckbuilder"
 ## stay even there as they do at 1920 x 1080 (ADR 0035).
 const MIN_WINDOW: Vector2i = Vector2i(1280, 720)
 const REFUSAL_COLOR: Color = Color("#e08a7a")
+## The gap between the menu's rows: the Spoils screen's.
+const BUTTON_GAP: int = SpoilsScreen.ROW_GAP
 
 ## How the menu opens another scene, and how it quits. Tests replace both. A scene asked
 ## for on the command line opens at once, so that a --screenshot is not taken mid-fade; one
@@ -50,6 +54,12 @@ func _ready() -> void:
 		RunFlow.start(StageMapScreen.debug_run_from(arguments))
 		navigate.call_deferred(Screens.scene(RunFlow.finish_intro()))
 		return
+	if arguments.has(SpoilsScreen.FLAG) and not SpoilsScreen.has_left:
+		_is_skipping = true
+		RunFlow.start(SpoilsScreen.debug_run_from(arguments))
+		RunFlow.finish_intro()
+		navigate.call_deferred(Screens.SPOILS)
+		return
 	var asked_for: EncounterRequest = EncounterRequest.from_arguments(arguments)
 	if asked_for != null:
 		_refusal = asked_for.validate()
@@ -60,22 +70,29 @@ func _ready() -> void:
 			return
 		# A deck, difficulty or backdrop that does not exist: the menu opens and says so.
 		push_error(_refusal)
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var background: ColorRect = ColorRect.new()
-	background.color = Color("#1a1d22")
+	background.color = StageIntro.GROUND
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 	var center: CenterContainer = CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
+	var window: PanelContainer = PanelContainer.new()
+	window.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	window.resized.connect(func() -> void: _shade_window(window))
+	center.add_child(window)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.custom_minimum_size = Vector2(360, 0)
-	column.add_theme_constant_override("separation", 14)
-	center.add_child(column)
+	column.add_theme_constant_override("separation", BUTTON_GAP)
+	window.add_child(column)
+	_shade_window(window)
 	var title: Label = Label.new()
 	title.text = "ModMox"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_override("font", CardFonts.title())
 	title.add_theme_font_size_override("font_size", 66)
+	title.add_theme_color_override("font_color", SpoilsScreen.TEXT)
 	column.add_child(title)
 	if _refusal != "":
 		var reason: Label = Label.new()
@@ -105,8 +122,42 @@ func button(text: String) -> Button:
 func _add(column: VBoxContainer, text: String, on_press: Callable) -> void:
 	var made: Button = Button.new()
 	made.text = text
-	made.custom_minimum_size = Vector2(0, 56)
+	made.custom_minimum_size = Vector2(0, SpoilsScreen.BUTTON_HEIGHT)
+	made.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	made.add_theme_font_override("font", UiText.bold())
 	made.add_theme_font_size_override("font_size", 24)
+	made.add_theme_color_override("font_color", SpoilsScreen.TEXT)
+	var fill: Color = SpoilsScreen.BUTTON_FILL
+	var height: int = SpoilsScreen.BUTTON_HEIGHT
+	var radius: int = SpoilsScreen.BUTTON_RADIUS
+	made.add_theme_stylebox_override("normal", DitherShading.button_plate(fill, false, height, radius))
+	made.add_theme_stylebox_override("hover", DitherShading.button_plate(fill.lightened(0.1), false, height, radius))
+	made.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, height, radius))
+	made.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, height, radius))
 	made.pressed.connect(on_press)
-	column.add_child(made)
+	column.add_child(_shadowed(made))
 	_buttons[text] = made
+
+
+## The window the menu sits in: the Spoils screen's, shaded over its own height.
+func _shade_window(window: PanelContainer) -> void:
+	var color: Color = SpoilsScreen.WINDOW_COLOR
+	var radius: int = SpoilsScreen.WINDOW_RADIUS
+	var face: StyleBoxTexture = DitherShading.plate(color.lightened(0.06), color.darkened(0.3), SpoilsScreen.WINDOW_EDGE,
+			radius, 2, 0, maxi(int(window.size.y), radius * 2 + 4))
+	face.set_content_margin_all(SpoilsScreen.WINDOW_MARGIN)
+	window.add_theme_stylebox_override("panel", face)
+
+
+## [param item] in a frame that draws only the Spoils screen's drop shadow under a button.
+func _shadowed(item: Control) -> Control:
+	var frame: PanelContainer = PanelContainer.new()
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.set_corner_radius_all(SpoilsScreen.BUTTON_RADIUS + 1)
+	style.shadow_color = SpoilsScreen.SHADOW
+	style.shadow_size = SpoilsScreen.SHADOW_SIZE
+	style.shadow_offset = Vector2(0, SpoilsScreen.PART_SHADOW_DROP)
+	frame.add_theme_stylebox_override("panel", style)
+	frame.add_child(item)
+	return frame

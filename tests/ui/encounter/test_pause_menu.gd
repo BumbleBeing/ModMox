@@ -224,22 +224,19 @@ func test_the_auto_pass_box_shows_what_it_is_told() -> void:
 	assert_eq(menu.auto_pass_button().text, "☐  Auto-pass")
 
 
-func test_the_window_is_an_edged_dithered_panel_in_the_inspectors_colors() -> void:
+func test_the_window_is_drawn_as_the_spoils_screens_is() -> void:
 	var menu: PauseMenu = _menu()
 	menu.open(FIELD, true)
 	var window: Panel = menu.window()
-	var height: int = int(window.size.y)
-	var palette: InspectorParts.Palette = Inspector.palette()
 	assert_eq(window.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
-	assert_true(_same(window.get_theme_stylebox("panel"), DitherShading.plate(palette.panel.lightened(0.06),
-		palette.panel.darkened(0.3), palette.edge, PauseMenu.RADIUS, palette.edge_width, 0, height)))
+	assert_true(_same(window.get_theme_stylebox("panel"), WindowLook.plate(int(window.size.y))))
 	menu.button(PauseMenu.SETTINGS).pressed.emit()
 	window = menu.window()
 	assert_eq((window.get_theme_stylebox("panel") as StyleBoxTexture).texture.get_height(), int(window.size.y),
 		"Each page's window is painted for its own height.")
 
 
-func test_every_button_is_dithered_gray_and_keeps_its_size() -> void:
+func test_every_button_is_dithered_as_the_spoils_screens_and_keeps_its_size() -> void:
 	var menu: PauseMenu = _menu()
 	menu.open(FIELD, false)
 	var palette: InspectorParts.Palette = Inspector.palette()
@@ -289,9 +286,11 @@ func _menu() -> PauseMenu:
 func _is_dithered(button: Button, palette: InspectorParts.Palette) -> void:
 	var height: int = int(button.size.y)
 	assert_eq(button.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, button.text)
-	assert_eq(button.get_theme_stylebox("normal"), ButtonShading.plate(palette.button, "normal", height), button.text)
-	assert_eq(button.get_theme_stylebox("disabled"), ButtonShading.plate(palette.button_disabled, "disabled", height),
+	assert_eq(button.get_theme_stylebox("normal"),
+		ButtonShading.plate(WindowLook.BUTTON, "normal", height, ButtonShading.SIDE, true, WindowLook.BUTTON_RADIUS),
 		button.text)
+	assert_eq(button.get_theme_stylebox("disabled"), ButtonShading.plate(palette.button_disabled, "disabled", height,
+		ButtonShading.SIDE, true, WindowLook.BUTTON_RADIUS), button.text)
 
 
 ## Whether two Dither Shaded plates are painted alike, pixel for pixel.

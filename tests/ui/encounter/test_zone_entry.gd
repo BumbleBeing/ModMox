@@ -4,6 +4,11 @@ extends GutTest
 ## brightens under the cursor and takes a click (ADR 0032, A520 and A537).
 
 
+func after_each() -> void:
+	# What a redraw replaced is freed at the end of the frame.
+	await wait_process_frames(2)
+
+
 func test_lines_are_each_cut_and_a_spent_one_is_gray_and_marked_used() -> void:
 	var entry: ZoneEntry = _entry()
 

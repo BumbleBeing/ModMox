@@ -1,8 +1,9 @@
 extends GutTest
 ## How the debug run moves between screens (milestones 16 and 17): the Deckbox first, the
 ## Stage Intro, the Stage Map, the Deckbox before each encounter met there, the encounter,
-## and back to the Stage Map; the Boss again after losing to it; the main menu when the run
-## is lost or, from the "Run won" notice, won.
+## and back to the Stage Map, through the Spoils screen after a win (milestone 18); the Boss
+## again after losing to it; the main menu when the run is lost or, from the "Run won"
+## notice, won.
 
 
 func before_each() -> void:
@@ -62,6 +63,19 @@ func test_after_an_encounter_the_stage_map_opens_again() -> void:
 	assert_false(run.stage_visit.must_play())
 
 
+## T10: a won encounter opens the Spoils screen, and the Spoils screen the Stage Map.
+func test_winning_an_encounter_opens_the_spoils_then_the_stage_map() -> void:
+	var run: Run = _on_the_map()
+	_move_to_an_encounter(run)
+	RunFlow.arrive()
+
+	assert_eq(RunFlow.finish_encounter(true), RunFlow.Screen.SPOILS)
+	assert_not_null(run.last_spoils)
+	assert_null(RunFlow.villain)
+	assert_eq(RunFlow.finish_spoils(), RunFlow.Screen.STAGE_MAP)
+	assert_false(run.stage_visit.must_play())
+
+
 func test_losing_to_the_boss_opens_the_deckbox_against_it_again() -> void:
 	var run: Run = _on_the_map()
 	_walk_to_the_boss(run)
@@ -71,13 +85,15 @@ func test_losing_to_the_boss_opens_the_deckbox_against_it_again() -> void:
 	assert_eq(RunFlow.villain, run.stage_visit.boss)
 
 
-func test_beating_the_boss_returns_to_the_stage_map_with_the_run_won() -> void:
+## T10: a beaten Boss's Spoils come first, then the Stage Map with the run won.
+func test_beating_the_boss_shows_its_spoils_then_the_stage_map_with_the_run_won() -> void:
 	var run: Run = _on_the_map()
 	_walk_to_the_boss(run)
 	RunFlow.arrive()
 
-	assert_eq(RunFlow.finish_encounter(true), RunFlow.Screen.STAGE_MAP)
+	assert_eq(RunFlow.finish_encounter(true), RunFlow.Screen.SPOILS)
 	assert_true(run.is_won())
+	assert_eq(RunFlow.finish_spoils(), RunFlow.Screen.STAGE_MAP)
 	assert_eq(RunFlow.finish_run(), RunFlow.Screen.MENU)
 	assert_null(RunFlow.run)
 

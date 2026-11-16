@@ -91,6 +91,13 @@ func test_the_bosss_node_is_always_at_the_center_of_its_cell() -> void:
 				StageMapLayout.cell_center(StageMap.ROWS, 5, 8.0))
 
 
+## ADR 0038: entering a Stage draws its Scenery's seed from a stream of its own, so the
+## same Run Seed places the same Scenery and Stages differ.
+func test_entering_a_stage_draws_its_scenery_seed() -> void:
+	assert_eq(Run.debug(7).stage_visit.scenery_seed, Run.debug(7).stage_visit.scenery_seed)
+	assert_ne(Run.debug(7).stage_visit.scenery_seed, Run.debug(8).stage_visit.scenery_seed)
+
+
 func test_a_debug_run_holds_the_playtest_bolt_in_every_encounter() -> void:
 	var run: Run = Run.debug(7)
 

@@ -18,7 +18,7 @@ const TIERS: int = 5
 @export var setups: Array[MmPlayerSetup] = []
 ## How it plays, when it should play unlike the rest; null for the default.
 @export var ai_profile: AiProfile
-## Later (milestone 18): the Spoils only this Villain gives.
+## Later (milestone 22): the Spoils only this Villain gives.
 @export var spoils: Array[Resource] = []
 
 

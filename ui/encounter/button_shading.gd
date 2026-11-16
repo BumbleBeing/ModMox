@@ -16,6 +16,8 @@ const DISABLED_TEXT: Color = Color(1, 1, 1, 0.4)
 ## The room a plate keeps at each side of its text.
 const SIDE: int = 8
 const STATES: Array[String] = ["normal", "hover", "pressed", "hover_pressed", "disabled"]
+## How round a plate's corners are, unless a button asks for others.
+const RADIUS: int = 6
 
 static var _plates: Dictionary[String, StyleBoxTexture] = {}
 
@@ -30,31 +32,34 @@ static func apply(button: Button, color: Color, disabled_color: Color = DISABLED
 
 ## Gives [param button], its size already set, Dither Shading in [param color] in every
 ## state, and [param disabled_color] while it cannot be pressed, keeping [param side] pixels
-## at the sides of its text. Its text colors are left as they are.
+## at the sides of its text, its corners rounded by [param radius]. Its text colors are left
+## as they are.
 static func shade(button: Button, color: Color, disabled_color: Color = DISABLED, side: int = SIDE,
-		lifts_text: bool = true) -> void:
+		lifts_text: bool = true, radius: int = RADIUS) -> void:
 	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var height: int = maxi(1, int(button.size.y))
 	for state: String in STATES:
 		button.add_theme_stylebox_override(state,
-			plate(disabled_color if state == "disabled" else color, state, height, side, lifts_text))
+			plate(disabled_color if state == "disabled" else color, state, height, side, lifts_text, radius))
 
 
-## The plate of a button [param height] pixels tall in [param state], drawn in [param color].
-static func plate(color: Color, state: String, height: int, side: int = SIDE, lifts_text: bool = true) -> StyleBoxTexture:
-	var key: String = "%s/%s/%d/%d/%s" % [color.to_html(), state, height, side, lifts_text]
+## The plate of a button [param height] pixels tall in [param state], drawn in [param color]
+## and rounded by [param radius].
+static func plate(color: Color, state: String, height: int, side: int = SIDE, lifts_text: bool = true,
+		radius: int = RADIUS) -> StyleBoxTexture:
+	var key: String = "%s/%s/%d/%d/%s/%d" % [color.to_html(), state, height, side, lifts_text, radius]
 	if _plates.has(key):
 		return _plates[key]
 	var made: StyleBoxTexture
 	match state:
 		"hover":
-			made = DitherShading.button_plate(color.lightened(InspectorParts.HOVER_LIGHTEN), false, height)
+			made = DitherShading.button_plate(color.lightened(InspectorParts.HOVER_LIGHTEN), false, height, radius)
 		"pressed", "hover_pressed":
-			made = DitherShading.button_plate(color, true, height)
+			made = DitherShading.button_plate(color, true, height, radius)
 		"disabled":
-			made = DitherShading.disabled_plate(color, height)
+			made = DitherShading.disabled_plate(color, height, radius)
 		_:
-			made = DitherShading.button_plate(color, false, height)
+			made = DitherShading.button_plate(color, false, height, radius)
 	made.content_margin_left = side
 	made.content_margin_right = side
 	made.content_margin_bottom = made.content_margin_bottom - made.content_margin_top if lifts_text else 0.0

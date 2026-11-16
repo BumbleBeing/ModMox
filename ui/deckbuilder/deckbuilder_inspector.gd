@@ -22,14 +22,17 @@ extends VBoxContainer
 signal apply_pressed
 
 
-## One Mod Slot in the tray, drawn as the bubbles on a card's face are: a rimmed hollow lit
-## from the upper left, with a green or red chip in it.
+## One Mod Slot in the tray, drawn as the bubbles on a card's face are, from their sprite
+## at twice its size.
 class Bubble:
 	extends Control
 	var slot: ModSlotRow.Slot = ModSlotRow.Slot.EMPTY
 
+	func _init() -> void:
+		texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
 	func _draw() -> void:
-		ModSlotRow.draw_bubble(self, size / 2.0, minf(size.x, size.y) / 2.0, slot)
+		ModSlotRow.draw_bubble(self, size / 2.0, minf(size.x, size.y), slot)
 
 const HINT: String = "Hover over any card to view it here.\nRight-click any card to select it."
 const NONE: String = InspectorParts.NONE
@@ -37,7 +40,8 @@ const TITLE_SIZE: int = 18
 const BODY_SIZE: int = 17
 const BUTTON_SIZE: int = 17
 const HINT_SIZE: int = 18
-const BUBBLE_SIZE: float = 22.0
+## A bubble in the tray: its sprite at twice its size.
+const BUBBLE_SIZE: float = 2.0 * ModSlotRow.BUBBLE
 const GAP: int = 8
 
 var _card: DeckbuilderCard = null
@@ -372,7 +376,7 @@ func _fill_mods() -> void:
 		style.border_color = tint
 		style.set_border_width_all(1)
 		style.border_width_left = 5
-		style.set_corner_radius_all(5)
+		style.set_corner_radius_all(DeckbuilderLook.SUBPANEL_RADIUS)
 		style.set_content_margin_all(6)
 		style.content_margin_left = 10
 		plate.add_theme_stylebox_override("panel", style)

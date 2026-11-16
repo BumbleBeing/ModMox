@@ -55,8 +55,20 @@ The one picture behind a Stage's Stage Map, belonging to that Stage alone: as wi
 _Avoid_: Background, map background, Backdrop (the picture behind an encounter, one for each color)
 
 **Scenery**:
-The sprites placed at random over a Stage's Map Backdrop, such as mountains, trees and creatures, some still and some moving, of many sizes. Each Stage has its own set, and rules keep them clear of the Nodes; where they fall comes from the Run Seed.
+The sprites placed at random over a Stage's Map Backdrop, such as mountains, trees and creatures, some still and some animated, of many sizes, their pixels finer or coarser than the Backdrop's so they stand apart from it. Each Stage lists its own Scenery Kinds, rules keep the pieces on its Scenery Ground and clear of the Nodes, the links and each other, and where they fall comes from the Run Seed.
 _Avoid_: Decorations, props, doodads
+
+**Scenery Kind**:
+One kind of Scenery a Stage can have, such as Kitty Keep's tree or its cat: its picture, or the frames it loops through, the size of its pixels, and how many of it are placed.
+_Avoid_: Scenery type, prop definition
+
+**Scenery Ground**:
+Where a Stage's Scenery may stand: a mask the size of its Map Backdrop, painted over the meadow and left clear over what Scenery must keep off, such as Kitty Keep's castle and sky.
+_Avoid_: Mask, placement area, spawn zone
+
+**Scenery Piece**:
+One Scenery Kind placed on one Stage Map, at a spot of its own and perhaps facing the other way.
+_Avoid_: Scenery object, instance, decoration
 
 **Path**:
 Any walk the Hero could take across a Stage Map from the Node they stand on: forward along links, either way along a link between Nodes of the same row, and never back to a Node already visited.
@@ -87,7 +99,7 @@ The Node through which a Unique Villain is met. It never counts as an encounter 
 _Avoid_: Mystery Node, event node
 
 **Rank**:
-How dangerous a Villain is where it is met: Lesser, Elite, Boss or Unique. A Stage says which Villains it has at each of the first three Ranks, so Rank belongs to the meeting, not to the Villain. The Rank and the Stage's Tier decide the Spoils.
+How dangerous a Villain is where it is met: Lesser, Elite, Boss or Unique. A Stage says which Villains it has at each of the first three Ranks, so Rank belongs to the meeting, not to the Villain. The Rank decides how many cards the Spoils pay, and the Rank with the Stage's Tier how much gold.
 _Avoid_: Difficulty (AI Difficulty is the one global setting for how hard every Villain thinks), level, class
 
 **Unique Villain**:
@@ -95,7 +107,7 @@ A Villain of Unique Rank, met only through a Chaos Node. It can turn up at any S
 _Avoid_: Mystery enemy, mini-boss, special
 
 **Spoils**:
-What the Hero wins for beating a Villain: gold and cards, and now and then an Item. Their quantity and quality follow the Villain's Rank and the Tier; the cards come from the Villain's own deck.
+What the Hero wins for beating a Villain: gold and cards, and now and then an Item. They are paid the moment the win is counted and the Hero takes all of them; the Spoils screen only shows what was won. How many cards follows the Villain's Rank (a Lesser Villain pays 1 to 3, mostly 1, an Elite or a Unique Villain 1 to 3 more evenly, a Boss 2 or 3), and how much gold its Rank and the Tier. The cards are drawn evenly from the copies in the Villain's own deck at that Tier, never its basic lands, so their quality is whatever that deck holds. A loss pays nothing.
 _Avoid_: Loot, rewards, drops
 
 **Item**:
@@ -207,6 +219,10 @@ _Avoid_: Free land
 **Working Deck**:
 The unsaved copy of a Deck being edited in the deckbuilder. Saving writes it to the Deckbox; leaving without saving throws it away. Mods applied meanwhile are not part of it and stay applied.
 _Avoid_: Draft (a Magic term), deck in progress, scratch deck
+
+**Modify Window**:
+The window in the deckbuilder where a held Mod is applied to the selected card. It shows every kind of Mod the Hero holds, the card as it is, and the card as the chosen Mod would make it, and asks once more before applying, because applying is final.
+_Avoid_: Mod popup, mod dialog
 
 **Hall of Fame**:
 The read-only copies of Active Decks, Mods included, kept from runs the Hero won. It is a page of the Gallery, and its decks are never played.

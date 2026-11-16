@@ -96,6 +96,16 @@ static func texture(spec: FrameSpec) -> ImageTexture:
 	return _textures[key]
 
 
+## Whether [param spec]'s Frame is already a texture, so that drawing it costs nothing more.
+static func has_texture(spec: FrameSpec) -> bool:
+	return _textures.has(spec.key())
+
+
+## Whether the Battlefield Face's border for [param spec] is already a texture.
+static func has_field_border_texture(spec: FrameSpec) -> bool:
+	return _border_textures.has(spec.without_power_toughness().key())
+
+
 ## The Battlefield Face's border for [param spec]: its Frame without the P/T box, from the
 ## top down to the bottom of the art window, then the strip under the rules box.
 static func field_border(spec: FrameSpec) -> Image:

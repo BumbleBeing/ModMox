@@ -3,14 +3,15 @@ extends RefCounted
 ## Where the debug run goes between screens (milestones 16 and 17), kept here because a
 ## scene is made afresh each time it is opened. The run opens on the Deckbox, whose Close
 ## leads to the Stage Intro and on to the Stage Map. Arriving at an encounter there opens
-## the Deckbox against its Villain, with Start; after the encounter the Stage Map opens
-## again, or the Deckbox against the Boss after losing to it. Losing the last Heart ends
+## the Deckbox against its Villain, with Start; after a won encounter the Spoils screen
+## (milestone 18) and then the Stage Map open, after a lost one the Stage Map at once, or
+## the Deckbox against the Boss after losing to it. Losing the last Heart ends
 ## the run at the main menu; beating the Boss leaves the Stage Map to say so.
 
 ## The screens a run moves between. RunFlow says which comes next and never which scene it
 ## is: only the GUI knows that, so the run knows nothing of the scene tree. NONE means
 ## staying where the Hero is.
-enum Screen { NONE, MENU, DECKBOX, DECKBUILDER, STAGE_INTRO, STAGE_MAP }
+enum Screen { NONE, MENU, DECKBOX, DECKBUILDER, STAGE_INTRO, STAGE_MAP, SPOILS }
 
 static var run: Run = null
 ## The Villain the Deckbox shows before an encounter, or null when it is opened to close.
@@ -71,6 +72,14 @@ static func finish_encounter(won: bool) -> Screen:
 	if run.stage_visit.must_play():
 		villain = run.stage_visit.meeting
 		return Screen.DECKBOX
+	if run.last_spoils != null:
+		return Screen.SPOILS
+	return Screen.STAGE_MAP
+
+
+## The Spoils screen is closed; says which Screen opens: the Stage Map, which says the run
+## is won if the Boss was beaten.
+static func finish_spoils() -> Screen:
 	return Screen.STAGE_MAP
 
 

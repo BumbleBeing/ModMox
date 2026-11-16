@@ -42,8 +42,7 @@ const GOLD: Color = Color("#c9a544")
 const STOP_COLOR: Color = Color("#2f8f46")
 const PLAIN_COLOR: Color = Color("#3a414d")
 const NOW_COLOR: Color = Color("#f3e9a0")
-const THINKING: String = "The Villain is thinking…"
-## The same for a Villain with a name of their own.
+## What the Villain's panel says while they think, with the Villain as they are named.
 const THINKING_FORMAT: String = "%s is thinking…"
 const UNDO_FORMAT: String = "Undo [%s]"
 const POTIONS_FORMAT: String = "⚗  Potions (%d)"
@@ -227,8 +226,8 @@ func name_text() -> String:
 	return _name.text
 
 
-## What the panel says about its player thinking: THINKING on the Villain's while they
-## think, and "" otherwise.
+## What the panel says about its player thinking: that they are, by name, on the Villain's
+## while they think, and "" otherwise.
 func thinking_text() -> String:
 	return _thinking.text if _thinking != null and _thinking.visible else ""
 
@@ -347,7 +346,7 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 		_add_potions(parts["potions"])
 		_add_controls(parts)
 	else:
-		_thinking = _label(THINKING, Rect2(parts["potions"].position, Vector2(parts["potions"].size.x, 34)), 16)
+		_thinking = _label("", Rect2(parts["potions"].position, Vector2(parts["potions"].size.x, 34)), 16)
 		_thinking.modulate = Color(1, 0.85, 0.4)
 		add_child(_thinking)
 

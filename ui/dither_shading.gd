@@ -45,12 +45,12 @@ static func plate(top: Color, bottom: Color, edge: Color, radius: int, edge_widt
 ## A clickable button's plate: [param fill] lightened at the top and darkened at the
 ## bottom, a dark edge and a darker lip that a pressed button sits down on. Its text is
 ## centered on the face, above the lip: the bottom margin is deeper than the top by the
-## lip's depth.
-static func button_plate(fill: Color, is_pressed: bool, height: int) -> StyleBoxTexture:
+## lip's depth. Its corners are rounded by [param radius].
+static func button_plate(fill: Color, is_pressed: bool, height: int, radius: int = 6) -> StyleBoxTexture:
 	var top: Color = fill.darkened(0.2) if is_pressed else fill.lightened(0.12)
 	var bottom: Color = fill.lightened(0.02) if is_pressed else fill.darkened(0.25)
 	var lip: int = PRESSED_LIP if is_pressed else LIP
-	var made: StyleBoxTexture = plate(top, bottom, fill.darkened(0.55), 6, 1, lip, height, fill.darkened(LIP_DARKEN))
+	var made: StyleBoxTexture = plate(top, bottom, fill.darkened(0.55), radius, 1, lip, height, fill.darkened(LIP_DARKEN))
 	made.content_margin_left = 10
 	made.content_margin_right = 10
 	made.content_margin_top = 7
@@ -59,9 +59,9 @@ static func button_plate(fill: Color, is_pressed: bool, height: int) -> StyleBox
 
 
 ## A button that cannot be clicked: shaded as a clickable one is but with no lip, so it
-## lies flat on the pane, its text centered.
-static func disabled_plate(fill: Color, height: int) -> StyleBoxTexture:
-	var made: StyleBoxTexture = plate(fill.lightened(0.12), fill.darkened(0.25), fill.darkened(0.55), 6, 1, 0, height)
+## lies flat on the pane, its text centered. Its corners are rounded by [param radius].
+static func disabled_plate(fill: Color, height: int, radius: int = 6) -> StyleBoxTexture:
+	var made: StyleBoxTexture = plate(fill.lightened(0.12), fill.darkened(0.25), fill.darkened(0.55), radius, 1, 0, height)
 	made.content_margin_left = 10
 	made.content_margin_right = 10
 	made.content_margin_top = 7

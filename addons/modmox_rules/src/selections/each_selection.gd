@@ -8,7 +8,7 @@ extends MmSelection
 
 func select(state: MmGameState, context: MmEffectContext) -> Array[MmReference]:
 	var result: Array[MmReference] = []
-	for candidate: MmReference in TargetSpec.candidates(state):
+	for candidate: MmReference in TargetRequirement.candidates(state):
 		if filter.matches(state, candidate, context):
 			result.append(candidate)
 	return result

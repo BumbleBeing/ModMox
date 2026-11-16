@@ -28,6 +28,14 @@ func test_the_sample_run_owns_three_of_every_card_and_no_basic_lands() -> void:
 		assert_false(card.is_basic_land())
 
 
+func test_the_sample_run_owns_cards_from_every_set_not_only_alpha() -> void:
+	var names: Array[String] = []
+	for card: DeckbuilderCard in _sample.collection.cards():
+		names.append(card.card_name())
+
+	assert_has(names, "Stifle", "Stifle is in scourge/, a set folder of its own.")
+
+
 func test_the_sample_deck_is_legal_and_saved() -> void:
 	var deck: WorkingDeck = WorkingDeck.new(_sample.collection, _sample.deckbox, _sample.basic_lands, _sample.deckbox.active())
 

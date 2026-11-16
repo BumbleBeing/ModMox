@@ -32,7 +32,7 @@ func setup(title: String, message: String, choices: Array[String]) -> void:
 	style.bg_color = FILL
 	style.border_color = BORDER
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(8)
+	style.set_corner_radius_all(DeckbuilderLook.WINDOW_RADIUS)
 	style.shadow_color = Color(0, 0, 0, 0.5)
 	style.shadow_size = 16
 	window.add_theme_stylebox_override("panel", style)

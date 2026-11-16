@@ -88,15 +88,15 @@ func test_it_does_not_resolve_if_its_target_left_the_graveyard_first() -> void:
 func test_a_permanent_is_never_a_legal_graveyard_target() -> void:
 	var engine: MmEngine = _engine()
 	var hero: MmPlayer = engine.hero()
-	var spec: TargetSpec = Scenario.target_graveyard_card()
+	var requirement: TargetRequirement = Scenario.target_graveyard_card()
 	var context: MmEffectContext = MmEffectContext.new(hero.id, 0)
 	var bear: MmReference = MmReference.to_object(Scenario.permanent_named(engine, hero.id, "Bear"))
 
-	assert_false(spec.is_still_legal(engine.game_state(), bear, context), "It is on the battlefield.")
-	assert_false(spec.is_still_legal(engine.game_state(), MmReference.to_player(hero.id), context))
+	assert_false(requirement.is_still_legal(engine.game_state(), bear, context), "It is on the battlefield.")
+	assert_false(requirement.is_still_legal(engine.game_state(), MmReference.to_player(hero.id), context))
 	Scenario.cast_and_resolve(engine, "Doom", [bear])
 	var dead: MmReference = MmReference.to_object(Scenario.card_in_graveyard(engine, hero, "Bear"))
-	assert_true(spec.is_still_legal(engine.game_state(), dead, context))
+	assert_true(requirement.is_still_legal(engine.game_state(), dead, context))
 	assert_false(Scenario.any_target().is_still_legal(engine.game_state(), dead, context), "And a card there is no permanent.")
 
 

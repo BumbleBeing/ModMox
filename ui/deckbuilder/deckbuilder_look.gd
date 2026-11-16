@@ -2,20 +2,26 @@ class_name DeckbuilderLook
 extends RefCounted
 ## How the deckbuilder looks. Everything that is not printed on a card is set in Linux
 ## Libertine (SIL Open Font License, bundled in assets/fonts/); cards keep their own fonts
-## (CardFonts). Every background is a shade of maroon, laid out like a workbench (A557): the
-## bench behind everything is the darkest, panes are mid, and what stands on a pane (a deck
-## column, a panel inside it) is lighter. Buttons are shaded gray and text boxes dark gray. Text is a
-## shade of gray, never of the background's color. Card faces, the green and red of Mods
+## (CardFonts). Every background is a shade of a muted, grayed maroon, laid out like a
+## workbench (A557): the bench behind everything is the darkest, panes are mid, and what
+## stands on a pane (a panel inside it) is lighter. The deck columns and the Collection are a
+## dark mauve gray, lettered in light gray. Buttons are shaded gray and text boxes dark gray.
+## Text is a shade of gray, never of the background's color. Card faces, the green and red of Mods
 ## and Hexes and the mana colors keep their own colors.
 
-const BENCH: Color = Color("#170a0e")
-const PANE: Color = Color("#2b1219")
-const PANE_BORDER: Color = Color("#16080b")
-## A deck column: lighter than a pane, so the piles stand out from the bench.
-const COLUMN: Color = Color("#3a1a23")
-const SUBPANEL: Color = Color("#46202b")
+const BENCH: Color = Color("#282222")
+const PANE: Color = Color("#4b3f3f")
+const PANE_BORDER: Color = Color("#262020")
+## A deck column and the Collection: mauve gray, so the cards stand out from the bench.
+const COLUMN: Color = Color("#6c696c")
+## A deck column's heading and its count, which read against the mauve gray.
+const COLUMN_TEXT: Color = Color("#e9e9e9")
+const COLUMN_MUTED: Color = Color("#d0d0d0")
+## A panel in the Modify Window: lighter than a pane.
+const MODIFY_PANEL: Color = Color("#655656")
+const SUBPANEL: Color = Color("#7a6868")
 ## A panel in the inspector: darker than other subpanels, lighter than its pane.
-const INSPECTOR_PANEL: Color = Color("#35171f")
+const INSPECTOR_PANEL: Color = Color("#5d4e4e")
 ## The tray the Mod Slot bubbles sit in.
 const BUBBLE_TRAY: Color = Color("#34373d")
 const BUBBLE_TRAY_BORDER: Color = Color("#1f2125")
@@ -25,7 +31,14 @@ const BAR_PANEL: Color = Color("#34373d")
 ## The thin gray edge of a deck column and of a panel in the inspector, and how wide it is.
 const PANEL_EDGE: Color = Color("#575a60")
 const PANEL_EDGE_WIDTH: int = 2
-const SUBPANEL_BORDER: Color = Color("#220d13")
+## How round corners are, as the Spoils screen's: a window standing over the deckbuilder, a
+## pane or a panel, a panel set inside another (four pixels in, so its curve follows the
+## outer one), and a button.
+const WINDOW_RADIUS: int = 24
+const PANEL_RADIUS: int = 14
+const SUBPANEL_RADIUS: int = 10
+const BUTTON_RADIUS: int = 12
+const SUBPANEL_BORDER: Color = Color("#3b3131")
 ## A hollow cut into the wood: a text box, an empty place for a card.
 const HOLLOW: Color = Color("#171a1f")
 const BUTTON: Color = Color("#4b4e55")
@@ -49,6 +62,9 @@ static func inspector_palette() -> InspectorParts.Palette:
 	if _inspector_palette == null:
 		_inspector_palette = InspectorParts.Palette.new(INSPECTOR_PANEL, PANEL_EDGE, TEXT, MUTED)
 		_inspector_palette.edge_width = PANEL_EDGE_WIDTH
+		_inspector_palette.panel_radius = PANEL_RADIUS
+		_inspector_palette.plate_radius = SUBPANEL_RADIUS
+		_inspector_palette.button_radius = BUTTON_RADIUS
 	return _inspector_palette
 
 
@@ -107,7 +123,7 @@ static func shade(style: StyleBoxFlat, lip: int = 4) -> void:
 ## A button's face, lit from above: its fill, a dark lip underneath and a soft shadow. A
 ## pressed one sits down on its lip.
 static func _button_face(fill: Color, is_pressed: bool) -> StyleBoxFlat:
-	var style: StyleBoxFlat = _plate(fill, fill.darkened(0.45), 6, 8.0)
+	var style: StyleBoxFlat = _plate(fill, fill.darkened(0.45), BUTTON_RADIUS, 8.0)
 	style.border_width_top = 1
 	style.border_width_bottom = 1 if is_pressed else 4
 	style.content_margin_top = 10.0 if is_pressed else 7.0

@@ -9,7 +9,7 @@ extends MmAbility
 ## An intervening "if" clause (CR 603.4), or null. Checked when it triggers and again on
 ## resolution.
 @export var condition: MmCondition = null
-@export var targets: Array[TargetSpec] = []
+@export var targets: Array[TargetRequirement] = []
 @export var effects: Array[MmEffect] = []
 
 

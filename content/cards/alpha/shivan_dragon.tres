@@ -10,7 +10,7 @@
 [ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="8_217jm"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="9_tkuuc"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="10_276re"]
-[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="11_w8pc4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_w8pc4"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="12_qn8xb"]
 
 [sub_resource type="Resource" id="Resource_f1efh"]

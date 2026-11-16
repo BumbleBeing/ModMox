@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://pywgexs5bf3d"
+path="res://.godot/imported/kitty_keep_ground.png-dbe01e7d2d71c9e5ef72e11ab28a022d.image"
+
+[deps]
+
+source_file="res://ui/sprites/backgrounds/stage_maps/kitty_keep_ground.png"
+dest_files=["res://.godot/imported/kitty_keep_ground.png-dbe01e7d2d71c9e5ef72e11ab28a022d.image"]
+
+[params]
+

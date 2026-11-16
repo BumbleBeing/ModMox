@@ -212,9 +212,9 @@ func test_applying_a_mod_is_not_an_unsaved_change() -> void:
 	_screen.right_click_at(_strip_of(bears))
 	_screen.drag_to(OUTSIDE)
 	_screen.apply_mod_button().pressed.emit()
-	_screen.mod_popup().choose(_sample.held_mods.kinds()[0])
-	_screen.mod_popup().button("apply").pressed.emit()
-	_screen.mod_popup().button("yes").pressed.emit()
+	_screen.modify_window().choose(_sample.held_mods.kinds()[0])
+	_screen.modify_window().button("apply").pressed.emit()
+	_screen.modify_window().button("yes").pressed.emit()
 
 	_screen.exit_button().pressed.emit()
 

@@ -6,7 +6,7 @@ Every card has three Mod Slots, Hexes included. A basic land has them too, and i
 
 **A Mod's name goes in front of the card's** (A559). A Grizzly Bears with a Mod named Violent is named Violent Grizzly Bears, and a Plains with one named Ancient is Ancient Plains. For now the rule is the simplest one: the name of each Mod and Hex on the card, in slot order, then the card's own name. The user has a fuller list of naming rules, to be agreed later. The name is built game-side from the Mods on the card, and the engine's Modification is unchanged. Whether the engine should see the new name is left open until then: no card in the game cares about a name yet (ADR 0001).
 
-**Mods are applied only in the deckbuilder** (A544). The Workshop and Spoils hand Mods out, and the Workshop removes them, but there is one place, one pop-up and one "are you sure" for putting a Mod on a card.
+**Mods are applied only in the deckbuilder** (A544). The Workshop and Spoils hand Mods out, and the Workshop removes them, but there is one place, one Modify Window and one "are you sure" for putting a Mod on a card.
 
 A Hex is a Mod like any other in data, but the Hero never holds or applies one. It arrives already on a card and takes a Mod Slot.
 

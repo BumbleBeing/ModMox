@@ -356,10 +356,10 @@ func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbi
 	return ability.is_mana_ability() or _every_requirement_has_a_target(ability.targets, player.id, source.id)
 
 
-func _every_requirement_has_a_target(specs: Array[TargetSpec], player_id: int, source_id: int) -> bool:
+func _every_requirement_has_a_target(requirements: Array[TargetRequirement], player_id: int, source_id: int) -> bool:
 	var context: MmEffectContext = MmEffectContext.new(player_id, source_id)
-	for spec: TargetSpec in specs:
-		if spec.legal_targets(_state, context).is_empty():
+	for requirement: TargetRequirement in requirements:
+		if requirement.legal_targets(_state, context).is_empty():
 			return false
 	return true
 

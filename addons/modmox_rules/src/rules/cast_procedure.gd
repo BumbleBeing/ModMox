@@ -15,7 +15,7 @@ var _stack_object_id: int
 var _source_object_id: int = 0
 var _ability_index: int = 0
 var _ability: MmAbility
-var _target_specs: Array[TargetSpec] = []
+var _target_requirements: Array[TargetRequirement] = []
 var _next_target: int = 0
 var _remaining_generic: int = 0
 var _remaining_symbols: Array[MmMana.Type] = []
@@ -29,7 +29,7 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -
 	var spell: SpellAbility = spell_ability_of(characteristics)
 	procedure._ability = spell
 	if spell != null:
-		procedure._target_specs = spell.targets
+		procedure._target_requirements = spell.targets
 	# Later: cost increases, reductions and additional costs (CR 601.2f).
 	procedure._remaining_generic = characteristics.mana_cost.generic
 	procedure._remaining_symbols = characteristics.mana_cost.symbols.duplicate()
@@ -45,7 +45,7 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	var procedure: CastProcedure = CastProcedure.new(state, player_id)
 	var ability: ActivatedAbility = state.characteristics_of(source).abilities[ability_index] as ActivatedAbility
 	procedure._ability = ability
-	procedure._target_specs = ability.targets
+	procedure._target_requirements = ability.targets
 	procedure._source_object_id = source.id
 	procedure._ability_index = ability_index
 	if ability.mana_cost != null:
@@ -79,7 +79,7 @@ func copy_for(state: MmGameState) -> CastProcedure:
 	copy._source_object_id = _source_object_id
 	copy._ability_index = _ability_index
 	copy._ability = _ability
-	copy._target_specs = _target_specs
+	copy._target_requirements = _target_requirements
 	copy._next_target = _next_target
 	copy._remaining_generic = _remaining_generic
 	copy._remaining_symbols = _remaining_symbols.duplicate()
@@ -100,8 +100,8 @@ func next_decision() -> MmPendingDecision:
 	while true:
 		match _stage:
 			Stage.CHOOSE_TARGETS:
-				if _next_target < _target_specs.size():
-					var legal: Array[MmReference] = _target_specs[_next_target].legal_targets(_state, _context())
+				if _next_target < _target_requirements.size():
+					var legal: Array[MmReference] = _target_requirements[_next_target].legal_targets(_state, _context())
 					return ChooseTargetDecision.new(_player_id, _stack_object_id, _next_target, legal)
 				_stage = Stage.PAY_MANA
 			Stage.PAY_MANA:

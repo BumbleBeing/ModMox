@@ -408,7 +408,7 @@ func test_the_villains_panel_says_when_the_villain_is_thinking_and_has_no_contro
 
 	_snapshot.is_villain_thinking = true
 	_show(panel, VILLAIN)
-	assert_eq(panel.thinking_text(), PlayerPanel.THINKING)
+	assert_eq(panel.thinking_text(), "The Villain is thinking…")
 	_snapshot.is_villain_thinking = false
 	_show(panel, VILLAIN)
 	assert_eq(panel.thinking_text(), "")

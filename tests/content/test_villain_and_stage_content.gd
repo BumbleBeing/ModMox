@@ -124,6 +124,22 @@ func test_kitty_keep_has_a_map_backdrop_and_an_intro_color() -> void:
 			assert_false(stage.has_intro_color(), stage.name)
 
 
+## ADR 0038: Kitty Keep has six Scenery Kinds, all valid: three still at 4 and three
+## cats of different colors that flick their tails at 3.
+func test_kitty_keep_has_six_valid_scenery_kinds() -> void:
+	var keep: StageDefinition = load(STAGES + "kitty_keep.tres")
+	var names: Array[String] = []
+	for kind: SceneryKind in keep.scenery:
+		assert_eq(kind.validate(), "", kind.name)
+		names.append(kind.name)
+		var is_creature: bool = kind.frames.size() > 1
+		assert_eq(kind.scale, 3 if is_creature else 4, kind.name)
+
+	assert_eq(names, ["Tree", "Flower Bush", "Hay Bale", "Ginger Cat", "Gray Cat", "Black Cat"] as Array[String])
+	assert_not_null(keep.scenery_ground, "Its Scenery keeps off the castle and the sky.")
+	assert_eq(Vector2i(keep.scenery_ground.get_size()), StageMapLayout.MAP_BACKDROP_SIZE)
+
+
 func _files(villains: Array[Villain]) -> Array[String]:
 	var files: Array[String] = []
 	for villain: Villain in villains:

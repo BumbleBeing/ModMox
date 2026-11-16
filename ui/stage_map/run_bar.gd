@@ -3,20 +3,24 @@ extends PanelContainer
 ## The Run Bar (game glossary) across the top of the Stage Map (milestone 17, signed off as
 ## prototypes/stage_map_screen): the Stage's name and Tier at the left, then the Hearts left
 ## and the gold held, then the Satchel button, which does nothing yet, and the Deckbox
-## button. A slate plate with Dither Shading, as the Deckbox's window is.
+## button. A plate with Dither Shading in the Spoils screen's window color, its buttons
+## drawn as the Spoils screen's Continue is (milestone 18).
 
 signal deckbox_pressed
 
 const HEIGHT: int = 96
-const SLATE: Color = Color("#2a2f37")
+## The Spoils screen's window color.
+const SLATE: Color = Color("#4b3f3f")
 const SLATE_BORDER: Color = Color("#14171c")
 const TEXT: Color = Color8(228, 231, 238)
 const MUTED: Color = Color8(154, 163, 181)
 const ICONS: String = "res://ui/sprites/run_bar/%s.png"
 ## The 16 × 16 icons are drawn at twice their size.
 const ICON_SCALE: int = 2
-const BUTTON_FILL: Color = Color("#4b4e55")
+## The Spoils screen's Continue: its title bar gray (#656a75) darkened a fifth.
+const BUTTON_FILL: Color = Color("#51555e")
 const BUTTON_HEIGHT: int = 48
+const BUTTON_RADIUS: int = 12
 ## A button is as wide as its name and icon, with this much room at each side.
 const BUTTON_SIDE: int = 18
 const HOVER_LIGHTEN: float = 0.10
@@ -159,7 +163,7 @@ func _add_button(parent: Control, text: String, icon_name: String, on_press: Cal
 
 
 func _plate(fill: Color, is_pressed: bool) -> StyleBoxTexture:
-	var made: StyleBoxTexture = DitherShading.button_plate(fill, is_pressed, BUTTON_HEIGHT)
+	var made: StyleBoxTexture = DitherShading.button_plate(fill, is_pressed, BUTTON_HEIGHT, BUTTON_RADIUS)
 	made.content_margin_left = BUTTON_SIDE
 	made.content_margin_right = BUTTON_SIDE
 	return made

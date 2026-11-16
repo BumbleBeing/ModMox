@@ -8,8 +8,9 @@ extends Control
 ## a key, which waits for the next key pressed once it is clicked, with "Reset controls" under
 ## them. Rows that share a key are red (ADR 0034).
 ##
-## It takes the Inspector's treatment, as the sidebar does (ADR 0033): an edged window with
-## Dither Shading, and dithered gray buttons; the Game Speed in use has a gold ring.
+## It is drawn as the Spoils screen's window is (WindowLook): an edged, well rounded window
+## with Dither Shading, and rounded, dithered slate-gray buttons; the Game Speed in use has
+## a gold ring.
 
 signal resume_pressed
 ## Conceding was confirmed.
@@ -47,7 +48,7 @@ const AUTO_TAP: String = "Auto-tapping"
 const CHOSEN: Color = Color("#f2d36b")
 const SPEED_GAP: float = 6.0
 ## How rounded the window is.
-const RADIUS: int = 10
+const RADIUS: int = WindowLook.RADIUS
 ## What rings the Game Speed in use.
 const RING: String = "Chosen"
 
@@ -241,8 +242,7 @@ func _show_page(shown: Page) -> void:
 	_window.position = rect.position
 	_window.size = rect.size
 	add_child(_window)
-	var palette: InspectorParts.Palette = Inspector.palette()
-	InspectorParts.shade_background(_window, null, palette.panel, palette.edge, palette.edge_width, RADIUS)
+	InspectorParts.shade_background(_window, null, WindowLook.FILL, WindowLook.EDGE, WindowLook.EDGE_WIDTH, RADIUS)
 	_heading = Label.new()
 	_heading.text = title
 	_heading.position = Vector2(20, 14)
@@ -319,7 +319,7 @@ func _add_speeds(window_width: float) -> void:
 		made.position = Vector2(60 + index * (width + SPEED_GAP), EncounterLayout.PAUSE_HEADING + EncounterLayout.PAUSE_ROW)
 		made.size = Vector2(width, EncounterLayout.PAUSE_ROW - 12)
 		_shade(made)
-		var ring: Panel = CardShapes.outline(made.size, 6, 2, CHOSEN)
+		var ring: Panel = CardShapes.outline(made.size, WindowLook.BUTTON_RADIUS, 2, CHOSEN)
 		ring.name = RING
 		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		made.add_child(ring)
@@ -386,9 +386,11 @@ func _button(text: String, font_size: int = 21) -> Button:
 	return made
 
 
-## Dither Shades [param made], its size already set, in the Inspector's gray.
+## Dither Shades [param made], its size already set, as the Spoils screen's buttons are,
+## and in the Inspector's gray while it cannot be pressed.
 static func _shade(made: Button) -> void:
-	ButtonShading.shade(made, Inspector.palette().button, Inspector.palette().button_disabled)
+	ButtonShading.shade(made, WindowLook.BUTTON, Inspector.palette().button_disabled, ButtonShading.SIDE, true,
+		WindowLook.BUTTON_RADIUS)
 
 
 func _on_pressed(text: String) -> void:

@@ -24,6 +24,9 @@ var is_won: bool = false
 ## how far a Node may stray from its cell's center. Picked from the Run Seed, so the same
 ## run always draws its map alike.
 var offsets: Dictionary[int, Vector2] = {}
+## The seed the Stage Map places the Stage's Scenery from, drawn from the Run Seed
+## (ADR 0038).
+var scenery_seed: int = 0
 
 var _visited: Dictionary[int, bool] = {}
 ## Each link walked, as [lower id, higher id].

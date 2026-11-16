@@ -10,6 +10,9 @@ const STAGES: String = "stages"
 const STAGE_MAPS: String = "stage_maps"
 const BOSSES: String = "bosses"
 const MAP_LAYOUT: String = "map_layout"
+const SPOILS_GOLD: String = "spoils_gold"
+const SPOILS_CARDS: String = "spoils_cards"
+const SCENERY: String = "scenery"
 
 var _run_seed: int
 var _streams: Dictionary[String, RandomNumberGenerator] = {}

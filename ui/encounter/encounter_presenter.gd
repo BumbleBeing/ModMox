@@ -32,7 +32,8 @@ signal changed(snapshot: EncounterSnapshot)
 const ART_KEY_META: String = "art_key"
 const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
 const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
-const BUSY: String = "The Villain is thinking."
+## Why a command is refused while the Villain thinks, with the Villain as they are named.
+const BUSY_FORMAT: String = "%s is thinking."
 const NOT_PRIORITY: String = "You do not have priority."
 const PAUSED: String = "The game is paused."
 const PAYING: String = "Your mana is being paid."
@@ -250,7 +251,7 @@ func answer(hero_answer: Variant) -> String:
 	if _is_paused:
 		return PAUSED
 	if _task != -1:
-		return BUSY
+		return _busy()
 	if _is_paying_for_hero:
 		return PAYING
 	if _is_passing_for_hero or _engine.is_over() or _engine.pending_decision().player_id != HERO:
@@ -276,7 +277,7 @@ func pass_priority() -> String:
 	if _is_paused:
 		return PAUSED
 	if _task != -1:
-		return BUSY
+		return _busy()
 	if _is_paying_for_hero:
 		return PAYING
 	var priority: PriorityDecision = null if _engine.is_over() else _engine.pending_decision() as PriorityDecision
@@ -363,7 +364,7 @@ func _rewind(rewind: Callable) -> String:
 	if _is_paused:
 		return PAUSED
 	if _task != -1:
-		return BUSY
+		return _busy()
 	var error: String = rewind.call()
 	if error != "":
 		return error
@@ -676,10 +677,10 @@ func _add_look(made: EncounterSnapshot, seen: MmObjectView) -> void:
 		return
 	var emblem: MmCardDefinition = _emblem_of(seen.id, made.view)
 	if emblem != null:
-		made.looks[seen.id] = CardLook.of_held(seen, _emblem_art_key(emblem), CardLook.Kind.EMBLEM)
+		made.looks[seen.id] = CardLook.of_held(seen, emblem_art_key(emblem), CardLook.Kind.EMBLEM)
 		return
 	var source: MmCardDefinition = _emblem_of(seen.source_object_id, made.view) if seen.ability != null else null
-	made.looks[seen.id] = CardLook.of_view(seen, _emblem_art_key(source) if source != null else _art_key(seen))
+	made.looks[seen.id] = CardLook.of_view(seen, emblem_art_key(source) if source != null else _art_key(seen))
 
 
 ## The Potion [param seen] is, or for an ability on the stack the Potion it came from, as it
@@ -709,7 +710,7 @@ func _player_setup(player_id: int) -> MmPlayerSetup:
 
 ## The art of an Emblem: the picture named after its file in the Emblems' art folder, or
 ## for a sample made in code, the card art it was told to borrow. "" when it has neither.
-static func _emblem_art_key(emblem: MmCardDefinition) -> String:
+static func emblem_art_key(emblem: MmCardDefinition) -> String:
 	if emblem.has_meta(ART_KEY_META):
 		return str(emblem.get_meta(ART_KEY_META))
 	var file_name: String = _file_name(emblem)
@@ -741,3 +742,7 @@ func _art_key(seen: MmObjectView) -> String:
 	if run_card == null or run_card.base == null:
 		return ""
 	return run_card.base.resource_path.get_file().get_basename()
+
+
+func _busy() -> String:
+	return BUSY_FORMAT % names.starting(VILLAIN)

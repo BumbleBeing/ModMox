@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_2dble"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/effects/prevent_damage_effect.gd" id="3_1m6vr"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="4_rnuvw"]
-[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="5_jnbpy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="5_jnbpy"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="6_d4jv3"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="7_gcdcr"]
 

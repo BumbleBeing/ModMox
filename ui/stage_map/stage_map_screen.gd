@@ -6,8 +6,8 @@ extends Control
 ## Hero is their Portrait on the Node they stand on, rocking gently; the Nodes a Path
 ## allows next glow, and a click on one glides the Portrait there along the link at the
 ## Game Speed, clicks ignored until it arrives. Only the links the Hero can take now are
-## lit. The Stage's Map Backdrop lies behind it all, scrolling with the map, and each Node
-## stands in a halo that sets it off from the picture (ADR 0038). Hovering a Node names it.
+## lit. The Stage's Map Backdrop lies behind it all, scrolling with the map, its Scenery
+## over it, and each Node stands in a halo that sets it off from the picture (ADR 0038). Hovering a Node names it.
 ## The Boss breathes in its disc. Arriving at an encounter opens the Deckbox against its
 ## Villain; once the Boss is beaten the "Run won" notice covers the map.
 ##
@@ -89,6 +89,8 @@ var _label_text: Label
 var _label_tween: Tween
 var _notice: RunWonNotice = null
 var _links: StageMapLinks = StageMapLinks.new()
+## The Stage's Scenery, placed once, the lower last.
+var _scenery: Array[SceneryPiece] = []
 ## How far each Node's Glow has eased in, from 0 to 1.
 var _glow_levels: Dictionary[int, float] = {}
 ## Each size of halo's picture, by the radius of its Node.
@@ -160,6 +162,7 @@ func begin(run: Run) -> void:
 	_scroll_row = StageMapLayout.framed_row(_hero_row())
 	_links.ease_toward(run.stage_visit, -1, 1.0)
 	_ease_glows(1.0)
+	_scenery = SceneryLayout.place(run.stage_visit)
 	if run.is_won():
 		_open_notice()
 	queue_redraw()
@@ -173,6 +176,16 @@ func map_backdrop() -> Texture2D:
 ## Where the Map Backdrop is drawn now.
 func map_backdrop_rect() -> Rect2:
 	return StageMapLayout.map_backdrop_rect(_scroll_row)
+
+
+## The Stage's Scenery Pieces, the lower last.
+func scenery() -> Array[SceneryPiece]:
+	return _scenery
+
+
+## Where the Scenery Piece [param index] is drawn now.
+func scenery_rect(index: int) -> Rect2:
+	return SceneryLayout.screen_rect(_scenery[index], _scroll_row)
 
 
 func run_bar() -> RunBar:
@@ -394,6 +407,8 @@ func _draw() -> void:
 	var visit: StageVisit = _run.stage_visit
 	if map_backdrop() != null:
 		draw_texture_rect(map_backdrop(), map_backdrop_rect(), false)
+	for index: int in _scenery.size():
+		_draw_scenery(_scenery[index], scenery_rect(index))
 	for node: MapNode in visit.map.nodes:
 		for id: int in node.forward:
 			_draw_link(node.id, id, visit.map.nodes[id].kind == StageMap.Kind.BOSS)
@@ -451,6 +466,18 @@ func _halo(radius: float) -> Texture2D:
 			image.set_pixel(x, y, Color(GROUND, StageMapLayout.halo_alpha(x, y, radius, scale)))
 	_halos[radius] = ImageTexture.create_from_image(image)
 	return _halos[radius]
+
+
+## A Scenery Piece in [param rect], showing its frame now and facing its way.
+func _draw_scenery(piece: SceneryPiece, rect: Rect2) -> void:
+	if rect.end.y < 0.0 or rect.position.y > size.y:
+		return
+	if piece.is_flipped:
+		draw_set_transform(Vector2(rect.end.x, rect.position.y), 0.0, Vector2(-1.0, 1.0))
+		draw_texture_rect(piece.frame_at(_time), Rect2(Vector2.ZERO, rect.size), false)
+		draw_set_transform_matrix(Transform2D.IDENTITY)
+	else:
+		draw_texture_rect(piece.frame_at(_time), rect, false)
 
 
 ## The Glow round a Node of [param kind] the Hero can move to, at [param alpha].

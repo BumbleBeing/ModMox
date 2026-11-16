@@ -275,6 +275,24 @@ func test_a_stage_without_a_map_backdrop_shows_the_slate() -> void:
 	assert_null(_screen.map_backdrop())
 
 
+## ADR 0038: the Stage's Scenery is drawn as placed, scrolling with the map.
+func test_the_stages_scenery_is_drawn_and_scrolls_with_the_map() -> void:
+	_run = Run.debug(7, load("res://content/stages/kitty_keep.tres") as StageDefinition)
+	RunFlow.start(_run)
+	RunFlow.finish_intro()
+	await _open()
+	var placed: Array[SceneryPiece] = SceneryLayout.place(_run.stage_visit)
+
+	assert_gt(_screen.scenery().size(), 0)
+	assert_eq(_screen.scenery().size(), placed.size())
+	var before: Rect2 = _screen.scenery_rect(0)
+	var node_before: Vector2 = _screen.node_spot(_run.stage_visit.map.start().id)
+	_go_to(_run.stage_visit.choices()[0])
+	var moved: float = _screen.node_spot(_run.stage_visit.map.start().id).y - node_before.y
+	assert_almost_eq(_screen.scenery_rect(0).position.y - before.position.y, moved, 0.001)
+	assert_eq(_screen.scenery_rect(0).size, before.size)
+
+
 ## A real click, through the input pipeline, sets the Hero off.
 func test_a_real_click_on_a_glowing_node_sets_the_hero_off() -> void:
 	var viewport: SubViewport = SubViewport.new()

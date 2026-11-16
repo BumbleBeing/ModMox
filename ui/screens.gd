@@ -8,6 +8,7 @@ const DECKBOX: String = "res://ui/deckbox/deckbox_screen.tscn"
 const DECKBUILDER: String = "res://ui/deckbuilder/deckbuilder_screen.tscn"
 const STAGE_INTRO: String = "res://ui/stage_map/stage_intro.tscn"
 const STAGE_MAP: String = "res://ui/stage_map/stage_map_screen.tscn"
+const SPOILS: String = "res://ui/spoils/spoils_screen.tscn"
 
 const _SCENES: Dictionary[RunFlow.Screen, String] = {
 	RunFlow.Screen.MENU: MENU,
@@ -15,6 +16,7 @@ const _SCENES: Dictionary[RunFlow.Screen, String] = {
 	RunFlow.Screen.DECKBUILDER: DECKBUILDER,
 	RunFlow.Screen.STAGE_INTRO: STAGE_INTRO,
 	RunFlow.Screen.STAGE_MAP: STAGE_MAP,
+	RunFlow.Screen.SPOILS: SPOILS,
 }
 
 

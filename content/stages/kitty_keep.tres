@@ -6,6 +6,65 @@
 [ext_resource type="Resource" path="res://content/villains/red_green.tres" id="4_bkkcg"]
 [ext_resource type="Script" path="res://run/stage_definition.gd" id="5_besua"]
 [ext_resource type="Texture2D" path="res://ui/sprites/backgrounds/stage_maps/kitty_keep.png" id="5_gruod"]
+[ext_resource type="Script" path="res://run/scenery_kind.gd" id="6_gmlbg"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/tree.png" id="7_cia8u"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/flower_bush.png" id="8_rkirp"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/hay_bale.png" id="9_dx840"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/ginger_cat_0.png" id="10_nbhat"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/ginger_cat_1.png" id="11_yxd1v"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/ginger_cat_2.png" id="12_0ds10"]
+[ext_resource type="Image" path="res://ui/sprites/backgrounds/stage_maps/kitty_keep_ground.png" id="13_cia8u"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/gray_cat_0.png" id="13_res7u"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/gray_cat_1.png" id="14_3wb0c"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/gray_cat_2.png" id="15_xgxq3"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/black_cat_0.png" id="16_dy8ix"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/black_cat_1.png" id="17_axcsg"]
+[ext_resource type="Texture2D" path="res://ui/sprites/scenery/black_cat_2.png" id="18_ipkip"]
+
+[sub_resource type="Resource" id="Resource_res7u"]
+script = ExtResource("6_gmlbg")
+name = "Tree"
+frames = Array[Texture2D]([ExtResource("7_cia8u")])
+least = 4
+most = 7
+
+[sub_resource type="Resource" id="Resource_3wb0c"]
+script = ExtResource("6_gmlbg")
+name = "Flower Bush"
+frames = Array[Texture2D]([ExtResource("8_rkirp")])
+least = 6
+most = 10
+
+[sub_resource type="Resource" id="Resource_xgxq3"]
+script = ExtResource("6_gmlbg")
+name = "Hay Bale"
+frames = Array[Texture2D]([ExtResource("9_dx840")])
+least = 2
+most = 4
+
+[sub_resource type="Resource" id="Resource_impsd"]
+script = ExtResource("6_gmlbg")
+name = "Ginger Cat"
+frames = Array[Texture2D]([ExtResource("10_nbhat"), ExtResource("11_yxd1v"), ExtResource("12_0ds10"), ExtResource("11_yxd1v")])
+frames_per_second = 3.0
+scale = 3
+most = 2
+
+[sub_resource type="Resource" id="Resource_hu2ih"]
+script = ExtResource("6_gmlbg")
+name = "Gray Cat"
+frames = Array[Texture2D]([ExtResource("13_res7u"), ExtResource("14_3wb0c"), ExtResource("15_xgxq3"), ExtResource("14_3wb0c")])
+frames_per_second = 3.0
+scale = 3
+most = 2
+
+[sub_resource type="Resource" id="Resource_o1p7k"]
+script = ExtResource("6_gmlbg")
+name = "Black Cat"
+frames = Array[Texture2D]([ExtResource("16_dy8ix"), ExtResource("17_axcsg"), ExtResource("18_ipkip"), ExtResource("17_axcsg")])
+frames_per_second = 3.0
+scale = 3
+most = 2
 
 [resource]
 script = ExtResource("5_besua")
@@ -15,3 +74,5 @@ elite_villains = Array[ExtResource("1_55mbs")]([ExtResource("3_xdi4n")])
 bosses = Array[ExtResource("1_55mbs")]([ExtResource("2_rhaj0")])
 map_backdrop = ExtResource("5_gruod")
 intro_color = Color(0.9254902, 0.87058824, 0.7294118, 1)
+scenery = Array[ExtResource("6_gmlbg")]([SubResource("Resource_res7u"), SubResource("Resource_3wb0c"), SubResource("Resource_xgxq3"), SubResource("Resource_impsd"), SubResource("Resource_hu2ih"), SubResource("Resource_o1p7k")])
+scenery_ground = ExtResource("13_cia8u")

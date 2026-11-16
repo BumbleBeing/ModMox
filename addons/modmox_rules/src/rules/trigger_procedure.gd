@@ -18,7 +18,7 @@ var _ordering_player_id: int = MmGameState.NO_PLAYER
 var _ordering: Array[PendingTrigger] = []
 ## The triggered ability whose targets are being chosen, or 0.
 var _stack_object_id: int = 0
-var _target_specs: Array[TargetSpec] = []
+var _target_requirements: Array[TargetRequirement] = []
 var _next_target: int = 0
 var _controller_id: int = MmGameState.NO_PLAYER
 
@@ -37,7 +37,7 @@ func copy_for(state: MmGameState) -> TriggerProcedure:
 	copy._ordering_player_id = _ordering_player_id
 	copy._ordering = _ordering.duplicate()
 	copy._stack_object_id = _stack_object_id
-	copy._target_specs = _target_specs
+	copy._target_requirements = _target_requirements
 	copy._next_target = _next_target
 	copy._controller_id = _controller_id
 	return copy
@@ -47,9 +47,9 @@ func copy_for(state: MmGameState) -> TriggerProcedure:
 ## or removed.
 func next_decision() -> MmPendingDecision:
 	while true:
-		if _stack_object_id != 0 and _next_target < _target_specs.size():
+		if _stack_object_id != 0 and _next_target < _target_requirements.size():
 			var context: MmEffectContext = MmEffectContext.new(_controller_id, _stack_object_id)
-			var legal: Array[MmReference] = _target_specs[_next_target].legal_targets(_state, context)
+			var legal: Array[MmReference] = _target_requirements[_next_target].legal_targets(_state, context)
 			return ChooseTargetDecision.new(_controller_id, _stack_object_id, _next_target, legal)
 		_stack_object_id = 0
 		if _ordering_player_id != MmGameState.NO_PLAYER:
@@ -89,13 +89,13 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 
 
 func _put_on_stack(pending: PendingTrigger) -> void:
-	for spec: TargetSpec in pending.ability.targets:
-		if spec.legal_targets(_state, pending.context()).is_empty():
+	for requirement: TargetRequirement in pending.ability.targets:
+		if requirement.legal_targets(_state, pending.context()).is_empty():
 			_state.perform(TriggerRemovedEvent.new(pending))  # CR 603.3d
 			return
 	var put: TriggeredAbilityPutOnStackEvent = TriggeredAbilityPutOnStackEvent.new(pending)
 	_state.perform(put)
 	_stack_object_id = put.new_object_id
-	_target_specs = pending.ability.targets
+	_target_requirements = pending.ability.targets
 	_next_target = 0
 	_controller_id = pending.controller_id

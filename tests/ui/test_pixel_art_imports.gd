@@ -12,6 +12,8 @@ func test_every_sprite_imports_without_mipmaps() -> void:
 	for path: String in imports:
 		var config: ConfigFile = ConfigFile.new()
 		assert_eq(config.load(path), OK, path)
+		if config.get_value("remap", "importer", "") == "image":
+			continue # Read for its pixels and never drawn, as a Scenery Ground is: no mipmaps to have.
 		assert_false(config.get_value("params", "mipmaps/generate", true), "%s has no mipmaps." % path)
 
 

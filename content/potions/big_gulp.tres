@@ -9,7 +9,7 @@
 [ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="7_0jglt"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="8_a5pie"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="9_eng2b"]
-[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_spec.gd" id="10_tjccq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_tjccq"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_r05ab"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="12_ddhnh"]
 

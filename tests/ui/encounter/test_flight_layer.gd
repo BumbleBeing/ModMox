@@ -36,6 +36,11 @@ func before_each() -> void:
 	_put(MmZone.Kind.GRAVEYARD, HERO, GRAVEYARD_PLACE, 96.0)
 
 
+func after_each() -> void:
+	# What a redraw replaced is freed at the end of the frame.
+	await wait_process_frames(2)
+
+
 # --- Flying ---
 
 

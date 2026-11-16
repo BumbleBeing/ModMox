@@ -64,7 +64,7 @@ func test_after_a_villain_action_the_next_answer_waits_for_the_action_wait() -> 
 	presenter.poll()
 	assert_eq(presenter.snapshot(), shown, "A millisecond short, the answer is still held back.")
 	assert_true(presenter.is_villain_thinking())
-	assert_eq(presenter.answer(0), EncounterPresenter.BUSY, "And the engine is still the worker's.")
+	assert_eq(presenter.answer(0), "The Villain is thinking.", "And the engine is still the worker's.")
 	_now += 1
 	presenter.poll()
 
@@ -162,7 +162,7 @@ func test_the_hero_is_asked_the_moment_the_villains_answer_is_collected() -> voi
 	var last: EncounterSnapshot = _snapshots.back()
 	assert_not_null(last.decision, "The snapshot that shows the Villain's last answer already asks the Hero.")
 	assert_eq(last, presenter.snapshot())
-	assert_eq(presenter.answer(-1) == EncounterPresenter.BUSY, false, "And an answer is taken at once.")
+	assert_eq(presenter.answer(-1) == "The Villain is thinking.", false, "And an answer is taken at once.")
 
 
 func test_time_spent_paused_counts_toward_the_wait() -> void:

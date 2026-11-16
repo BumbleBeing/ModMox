@@ -16,6 +16,11 @@ func before_each() -> void:
 	add_child_autofree(_hand)
 
 
+func after_each() -> void:
+	# What a redraw replaced is freed at the end of the frame.
+	await wait_process_frames(2)
+
+
 func test_the_hand_is_that_many_card_backs_fanned_from_the_top_and_deaf_to_the_mouse() -> void:
 	_hand.show_hand(5, _rect, false)
 

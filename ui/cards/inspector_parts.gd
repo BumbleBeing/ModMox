@@ -42,6 +42,11 @@ class Palette:
 	var button_disabled: Color = Color("#303238")
 	var disabled_text: Color = Color("#797979")
 	var edge_width: int = 2
+	## How round the corners are of a panel, of a plate in one (an entry's, a panel's
+	## backing) and of a button.
+	var panel_radius: int = 6
+	var plate_radius: int = 5
+	var button_radius: int = 6
 	## An entry's plate: darker than the panel it stands in.
 	var plate: Color
 
@@ -103,11 +108,14 @@ static func shade_button(button: Button, palette: Palette) -> void:
 	button.custom_minimum_size.y = BUTTON_HEIGHT
 	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var fill: Color = palette.button
-	button.add_theme_stylebox_override("normal", DitherShading.button_plate(fill, false, BUTTON_HEIGHT))
-	button.add_theme_stylebox_override("hover", DitherShading.button_plate(fill.lightened(HOVER_LIGHTEN), false, BUTTON_HEIGHT))
-	button.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
-	button.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
-	button.add_theme_stylebox_override("disabled", DitherShading.disabled_plate(palette.button_disabled, BUTTON_HEIGHT))
+	var radius: int = palette.button_radius
+	button.add_theme_stylebox_override("normal", DitherShading.button_plate(fill, false, BUTTON_HEIGHT, radius))
+	button.add_theme_stylebox_override("hover",
+			DitherShading.button_plate(fill.lightened(HOVER_LIGHTEN), false, BUTTON_HEIGHT, radius))
+	button.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT, radius))
+	button.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT, radius))
+	button.add_theme_stylebox_override("disabled",
+			DitherShading.disabled_plate(palette.button_disabled, BUTTON_HEIGHT, radius))
 
 
 ## A bordered panel with [param title] centered at its top in bold and a body under it, filled
@@ -121,7 +129,7 @@ static func panel(title: String, palette: Palette, title_size: int, is_backed: b
 	style.bg_color = palette.panel
 	style.border_color = palette.edge
 	style.set_border_width_all(palette.edge_width)
-	style.set_corner_radius_all(6)
+	style.set_corner_radius_all(palette.panel_radius)
 	style.set_content_margin_all(EDGE)
 	style.content_margin_top = 4
 	made.add_theme_stylebox_override("panel", style)
@@ -176,7 +184,7 @@ static func plate_style(palette: Palette, top: float = INSET) -> StyleBoxFlat:
 	style.bg_color = palette.plate
 	style.border_color = palette.edge
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(5)
+	style.set_corner_radius_all(palette.plate_radius)
 	style.set_content_margin_all(INSET)
 	style.content_margin_top = top
 	return style
@@ -362,7 +370,7 @@ static func _shade_panel(made: PanelContainer, palette: Palette) -> void:
 	if height <= 0 or (current != null and current.texture.get_height() == height):
 		return
 	var face: StyleBoxTexture = DitherShading.plate(palette.panel.lightened(0.06), palette.panel.darkened(0.3),
-		palette.edge, 6, palette.edge_width, 0, height)
+		palette.edge, palette.panel_radius, palette.edge_width, 0, height)
 	face.set_content_margin_all(EDGE)
 	face.content_margin_top = made.get_meta(TITLE_ROOM, 4)
 	made.add_theme_stylebox_override("panel", face)

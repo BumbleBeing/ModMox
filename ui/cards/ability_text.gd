@@ -32,12 +32,21 @@ const OPPONENT_OWNS: String = "an opponent owns"
 
 ## What the ability's source calls itself.
 var _noun: String
-var _targets: Array[TargetSpec] = []
+var _targets: Array[TargetRequirement] = []
 var _trigger: MmTrigger = null
 ## The target requirements already named, which are "it" from then on.
 var _named: Dictionary[int, bool] = {}
 ## What "X" stands for in the sentence being written, or "".
 var _where: String = ""
+
+
+## The words of a Filter: what goes before its noun, the noun, and what follows it.
+class FilterWords:
+	extends RefCounted
+	var adjectives: Array[String] = []
+	## The last kind named, such as "creature" in "artifact creature", or "" for none.
+	var noun: String = ""
+	var after: Array[String] = []
 
 
 ## What a card with [param card_types] named [param card_name] calls itself in its own
@@ -271,9 +280,9 @@ func _condition(condition: MmCondition) -> String:
 	if matches == null:
 		return _fallback(condition, "_condition")
 	var subject: String = _selection(matches.selection)
-	var words: Array = _filter_words(matches.filter)
-	var is_what: String = ", ".join(PackedStringArray(words[0] as Array))
-	if (words[1] as String) != "" or is_what == "":
+	var words: FilterWords = _filter_words(matches.filter)
+	var is_what: String = ", ".join(PackedStringArray(words.adjectives))
+	if words.noun != "" or is_what == "":
 		is_what = _with_article(_noun_phrase(matches.filter, false))
 	return "%s %s %s" % [subject, "are" if subject == "you" else "is", is_what]
 
@@ -422,15 +431,15 @@ func _selection(selection: MmSelection) -> String:
 func _target(index: int) -> String:
 	if index >= _targets.size():
 		return "that target"
-	var spec: TargetSpec = _targets[index]
+	var spec: TargetRequirement = _targets[index]
 	if _named.has(index):
 		return "that player" if spec.filter is IsPlayerFilter else "it"
 	_named[index] = true
-	if spec.among == TargetSpec.Among.SPELLS:
+	if spec.among == TargetRequirement.Among.SPELLS:
 		return "target " + _spell_phrase(spec.filter)
-	if spec.among == TargetSpec.Among.ABILITIES:
+	if spec.among == TargetRequirement.Among.ABILITIES:
 		return "target activated or triggered ability"
-	if spec.among == TargetSpec.Among.GRAVEYARD_CARDS:
+	if spec.among == TargetRequirement.Among.GRAVEYARD_CARDS:
 		return "target " + _graveyard_phrase(spec.filter)
 	if _is_any_target(spec.filter):
 		return "any target"
@@ -443,7 +452,7 @@ func _is_yours(selection: MmSelection) -> bool:
 	var targeted: TargetSelection = selection as TargetSelection
 	if targeted == null or targeted.target_index >= _targets.size():
 		return false
-	return (_filter_words(_targets[targeted.target_index].filter)[2] as Array).has(YOU_OWN)
+	return _filter_words(_targets[targeted.target_index].filter).after.has(YOU_OWN)
 
 
 ## "Any target" is a creature or a player (there are no planeswalkers, ADR 0001).
@@ -465,7 +474,7 @@ func _triggering_noun() -> String:
 		return "spell"
 	var moved: ZoneChangeTrigger = _trigger as ZoneChangeTrigger
 	if moved != null:
-		var noun: String = _filter_words(moved.filter)[1] as String
+		var noun: String = _filter_words(moved.filter).noun
 		return noun if noun != "" else "permanent"
 	return "permanent"
 
@@ -496,10 +505,10 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 		for part: MmFilter in either.filters:
 			choices.append(_noun_phrase(part, is_plural))
 		return " or ".join(choices)
-	var words: Array = _filter_words(filter)
-	var adjectives: PackedStringArray = PackedStringArray(words[0] as Array)
-	var noun: String = words[1] as String
-	var after: PackedStringArray = PackedStringArray(words[2] as Array)
+	var words: FilterWords = _filter_words(filter)
+	var adjectives: PackedStringArray = PackedStringArray(words.adjectives)
+	var noun: String = words.noun
+	var after: PackedStringArray = PackedStringArray(words.after)
 	if noun == "":
 		noun = "permanent"
 	if is_plural:
@@ -518,24 +527,24 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 
 ## "Creature spell", "white spell", or just "spell" for no filter.
 func _spell_phrase(filter: MmFilter) -> String:
-	var words: Array = _filter_words(filter)
-	var parts: PackedStringArray = PackedStringArray(words[0] as Array)
-	if (words[1] as String) != "":
-		parts.append(words[1] as String)
+	var words: FilterWords = _filter_words(filter)
+	var parts: PackedStringArray = PackedStringArray(words.adjectives)
+	if words.noun != "":
+		parts.append(words.noun)
 	parts.append("spell")
 	var phrase: String = " ".join(parts)
-	var after: PackedStringArray = PackedStringArray(words[2] as Array)
+	var after: PackedStringArray = PackedStringArray(words.after)
 	return phrase if after.is_empty() else phrase + " " + " ".join(after)
 
 
 ## "Creature card from your graveyard", or "card from a graveyard" for no filter.
 func _graveyard_phrase(filter: MmFilter) -> String:
-	var words: Array = _filter_words(filter)
-	var parts: PackedStringArray = PackedStringArray(words[0] as Array)
-	if (words[1] as String) != "":
-		parts.append(words[1] as String)
+	var words: FilterWords = _filter_words(filter)
+	var parts: PackedStringArray = PackedStringArray(words.adjectives)
+	if words.noun != "":
+		parts.append(words.noun)
 	parts.append("card")
-	var after: Array = (words[2] as Array).duplicate()
+	var after: Array[String] = words.after.duplicate()
 	var whose: String = "a graveyard"
 	if after.has(YOU_OWN):
 		whose = "your graveyard"
@@ -549,16 +558,16 @@ func _graveyard_phrase(filter: MmFilter) -> String:
 
 
 ## The words of [param filter]: its adjectives, its noun ("" for none) and what follows
-## the noun, as [adjectives, noun, after].
-func _filter_words(filter: MmFilter) -> Array:
-	var adjectives: Array[String] = []
-	var after: Array[String] = []
+## the noun.
+func _filter_words(filter: MmFilter) -> FilterWords:
+	var words: FilterWords = FilterWords.new()
 	var nouns: Array[String] = []
-	_collect(filter, false, adjectives, nouns, after)
-	if nouns.is_empty():
-		return [adjectives, "", after]
-	# "Artifact creature": the last kind named is the noun, and the others describe it.
-	return [adjectives + nouns.slice(0, -1), nouns.back(), after]
+	_collect(filter, false, words.adjectives, nouns, words.after)
+	if not nouns.is_empty():
+		# "Artifact creature": the last kind named is the noun, and the others describe it.
+		words.adjectives.append_array(nouns.slice(0, -1))
+		words.noun = nouns.back()
+	return words
 
 
 func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nouns: Array[String], after: Array[String]) -> void:

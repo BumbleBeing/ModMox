@@ -30,6 +30,12 @@ const BACKDROPS: Dictionary[MmCardTypes.CardColor, String] = {
 @export var map_backdrop: Texture2D
 ## The color the Stage Intro's ground is shaded in; clear for the plain slate (ADR 0038).
 @export var intro_color: Color = Color(0, 0, 0, 0)
+## The Scenery Kinds placed on its Stage Map (ADR 0038).
+@export var scenery: Array[SceneryKind] = []
+## Where its Scenery may stand: a picture the Map Backdrop's size, opaque there and clear
+## elsewhere, such as over a castle or the sky; null for anywhere on the Map Backdrop.
+## Imported as an Image, since its pixels are read and it is never drawn.
+@export var scenery_ground: Image
 
 
 ## Every Stage in content/stages/, in file order.

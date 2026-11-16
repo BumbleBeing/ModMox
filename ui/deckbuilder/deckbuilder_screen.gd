@@ -12,7 +12,7 @@ extends Control
 ## rebuilt for any of this: faces are kept and moved.
 ##
 ## The inspector and the windows ease as the encounter's do (Easing, Pacing.EASE_SECONDS): a
-## change of card eases the old one out and the new one in, and the Mod pop-up and the
+## change of card eases the old one out and the new one in, and the Modify Window and the
 ## unsaved-changes prompt fade in and out.
 ##
 ## Movement is eased, never snapped: a held card glides to the cursor and, dropped on a
@@ -24,7 +24,7 @@ extends Control
 ## shows only that card; with none selected it shows the card under the cursor. Every card shows its Mod Slots on its face,
 ## a basic land too.
 ##
-## Apply a Mod, in the inspector, opens the Mod pop-up over the screen for the selected
+## Apply a Mod, in the inspector, opens the Modify Window over the screen for the selected
 ## card. A Mod applied there is used up and changes the card at once, wherever it shows; it
 ## has nothing to do with saving. A basic land's first Mod makes it a card of the
 ## Collection's, which then shows in the Collection too (A558).
@@ -35,7 +35,7 @@ extends Control
 ##
 ## Steps 2 to 8 of the prototype.
 ## Add --screenshot=/absolute/path.png to save a picture and quit, and --select="Card Name"
-## to have that Deck card selected in it, with --mods to open the Mod pop-up for it, and
+## to have that Deck card selected in it, with --mods to open the Modify Window for it, and
 ## --divider=<height> to move the Divider (0 for its highest, 9999 for its lowest).
 
 const BACKGROUND: Color = DeckbuilderLook.BENCH
@@ -113,8 +113,8 @@ var _top_bar_pane: Panel = null
 var _inspector_shown: DeckbuilderCard = null
 var _inspector_slots: int = -1
 var _inspector: DeckbuilderInspector = null
-## The Mod pop-up while it is open, or null.
-var _mod_popup: ModPopup = null
+## The Modify Window while it is open, or null.
+var _modify_window: ModifyWindow = null
 var _save_button: Button = null
 var _exit_button: Button = null
 ## The unsaved-changes prompt while it is open, or null.
@@ -229,7 +229,7 @@ func _select_named(arguments: PackedStringArray) -> void:
 				_show_selection()
 				_show_inspector()
 				if arguments.has("--mods"):
-					open_mod_popup()
+					open_modify_window()
 				return
 
 
@@ -334,9 +334,9 @@ func apply_mod_button() -> Button:
 	return _inspector.apply_button() if inspected() != null else null
 
 
-## The Mod pop-up while it is open, or null.
-func mod_popup() -> ModPopup:
-	return _mod_popup
+## The Modify Window while it is open, or null.
+func modify_window() -> ModifyWindow:
+	return _modify_window
 
 
 func save_button() -> Button:
@@ -377,7 +377,7 @@ func exit() -> void:
 	if not _working_deck.has_unsaved_changes():
 		navigate.call(_exit_scene())
 		return
-	close_mod_popup()
+	close_modify_window()
 	_put_down()
 	_exit_prompt = ChoicePrompt.new()
 	_exit_prompt.z_index = 10
@@ -424,28 +424,28 @@ func _show_notice(text: String, is_refusal: bool) -> void:
 	_notice_left = NOTICE_TIME
 
 
-## Opens the Mod pop-up for the selected card, if it has an empty Mod Slot.
-func open_mod_popup() -> void:
-	if _mod_popup != null or _selected == null or not _selected.has_empty_mod_slot():
+## Opens the Modify Window for the selected card, if it has an empty Mod Slot.
+func open_modify_window() -> void:
+	if _modify_window != null or _selected == null or not _selected.has_empty_mod_slot():
 		return
 	_put_down()
 	_hovered_card = null
 	_hover(null)
-	_mod_popup = ModPopup.new()
-	_mod_popup.z_index = 10
-	_mod_popup.setup(_selected, _run.held_mods)
-	_mod_popup.applied.connect(_on_mod_applied)
-	_mod_popup.closed.connect(close_mod_popup)
-	add_child(_mod_popup)
-	Easing.fade_in(_mod_popup, ease_seconds)
+	_modify_window = ModifyWindow.new()
+	_modify_window.z_index = 10
+	_modify_window.setup(_selected, _run.held_mods)
+	_modify_window.applied.connect(_on_mod_applied)
+	_modify_window.closed.connect(close_modify_window)
+	add_child(_modify_window)
+	Easing.fade_in(_modify_window, ease_seconds)
 
 
-func close_mod_popup() -> void:
-	if _mod_popup == null:
+func close_modify_window() -> void:
+	if _modify_window == null:
 		return
 	# It is gone at once to anyone who asks and to the mouse, and only drawn while it fades.
-	Easing.fade_out_and_free(_mod_popup, ease_seconds)
-	_mod_popup = null
+	Easing.fade_out_and_free(_modify_window, ease_seconds)
+	_modify_window = null
 
 
 ## A held Mod goes on the selected card for good. Its faces are made again, since the card
@@ -454,7 +454,7 @@ func close_mod_popup() -> void:
 func _on_mod_applied(mod: Mod) -> void:
 	var card: DeckbuilderCard = _selected
 	var old_id: int = card.id
-	close_mod_popup()
+	close_modify_window()
 	if not _run.held_mods.apply(mod, card, _run.collection):
 		return
 	if card.id != old_id:
@@ -688,7 +688,7 @@ func press_at(point: Vector2) -> void:
 		# The Divider lies over the edges of both panes: a press there takes hold of it.
 		_is_dividing = true
 		_divider_hold = point.y - _collection_height
-		for pane: Panel in _column_panes:
+		for pane: Panel in _column_panes + [_collection_pane]:
 			InspectorParts.hold_shading(pane, true)
 		_show_divider()
 		return
@@ -722,7 +722,7 @@ func release_at(point: Vector2) -> void:
 	if _is_dividing:
 		_is_dividing = false
 		_is_divider_hovered = layout().divider_grab().has_point(point)
-		for pane: Panel in _column_panes:
+		for pane: Panel in _column_panes + [_collection_pane]:
 			InspectorParts.hold_shading(pane, false)
 		_show_divider()
 		return
@@ -771,15 +771,15 @@ func double_click_at(point: Vector2) -> void:
 func _input(event: InputEvent) -> void:
 	if _working_deck == null:
 		return
-	if _mod_popup != null or _exit_prompt != null:
-		# A window has the screen: only Escape gets through, which closes the pop-up or
+	if _modify_window != null or _exit_prompt != null:
+		# A window has the screen: only Escape gets through, which closes the window or
 		# answers the prompt with Keep building.
 		var pressed_key: InputEventKey = event as InputEventKey
 		if pressed_key != null and pressed_key.pressed and pressed_key.keycode == KEY_ESCAPE:
 			if _exit_prompt != null:
 				_on_exit_answer(ExitAnswer.KEEP_BUILDING)
 			else:
-				close_mod_popup()
+				close_modify_window()
 		return
 	var button: InputEventMouseButton = event as InputEventMouseButton
 	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
@@ -1042,7 +1042,7 @@ func show_filter(filter: CollectionFilter) -> void:
 
 
 func _redraw() -> void:
-	close_mod_popup()
+	close_modify_window()
 	if _exit_prompt != null:
 		_exit_prompt.queue_free()
 		_exit_prompt = null
@@ -1091,7 +1091,7 @@ func _redraw() -> void:
 	_draw_top_bar(places.top_bar())
 	_inspector_pane = _pane(places.inspector())
 	_inspector = DeckbuilderInspector.new()
-	_inspector.apply_pressed.connect(open_mod_popup)
+	_inspector.apply_pressed.connect(open_modify_window)
 	_fill(_inspector_pane, _inspector)
 	_shade_pane(_inspector_pane, _inspector, PANE)
 	_draw_filter_bar(places.filter_bar())
@@ -1211,7 +1211,7 @@ func _draw_top_bar(place: Rect2) -> void:
 	plate_style.bg_color = DeckbuilderLook.BAR_PANEL
 	plate_style.border_color = DeckbuilderLook.BUTTON_EDGE
 	plate_style.set_border_width_all(1)
-	plate_style.set_corner_radius_all(8)
+	plate_style.set_corner_radius_all(DeckbuilderLook.PANEL_RADIUS)
 	plate_style.content_margin_left = 12.0
 	plate_style.content_margin_right = 12.0
 	_zoom_panel.add_theme_stylebox_override("panel", plate_style)
@@ -1258,7 +1258,7 @@ func _draw_top_bar(place: Rect2) -> void:
 	plate.bg_color = DeckbuilderLook.HOLLOW
 	plate.border_color = PANE_BORDER
 	plate.set_border_width_all(1)
-	plate.set_corner_radius_all(6)
+	plate.set_corner_radius_all(DeckbuilderLook.PANEL_RADIUS)
 	plate.set_content_margin_all(10)
 	_notice.add_theme_stylebox_override("normal", plate)
 	_notice.position = Vector2(place.position.x, place.end.y + 6.0)
@@ -1354,6 +1354,7 @@ func _draw_collection(places: DeckbuilderLayout) -> void:
 	_collection_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_collection_pane = _pane(places.collection())
 	_fill(_collection_pane, _collection_scroll)
+	_shade_pane(_collection_pane, _collection_scroll, DeckbuilderLook.COLUMN)
 	_collection_grid = Control.new()
 	_collection_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_collection_scroll.add_child(_collection_grid)
@@ -1405,9 +1406,9 @@ func _draw_column(places: DeckbuilderLayout, column: int, floor_under: Control) 
 	var header: HBoxContainer = HBoxContainer.new()
 	header.custom_minimum_size = Vector2(0, DeckbuilderLayout.COLUMN_HEADER - 4.0)
 	box.add_child(header)
-	header.add_child(_label(COLUMN_TITLES[column], 22))
+	header.add_child(_label(COLUMN_TITLES[column], 22, DeckbuilderLook.COLUMN_TEXT))
 	header.add_child(_spacer())
-	var count: Label = _label("", 20, MUTED)
+	var count: Label = _label("", 20, DeckbuilderLook.COLUMN_MUTED)
 	header.add_child(count)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1425,7 +1426,7 @@ func _draw_column(places: DeckbuilderLayout, column: int, floor_under: Control) 
 	line.draw_center = false
 	line.border_color = DeckbuilderLook.PANEL_EDGE
 	line.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
-	line.set_corner_radius_all(6)
+	line.set_corner_radius_all(DeckbuilderLook.PANEL_RADIUS)
 	edge.add_theme_stylebox_override("panel", line)
 	edge.set_anchors_preset(Control.PRESET_FULL_RECT)
 	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1495,7 +1496,7 @@ func _pane(place: Rect2, parent: Control = null) -> Panel:
 	style.bg_color = PANE
 	style.border_color = DeckbuilderLook.PANEL_EDGE
 	style.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
-	style.set_corner_radius_all(6)
+	style.set_corner_radius_all(DeckbuilderLook.PANEL_RADIUS)
 	pane.add_theme_stylebox_override("panel", style)
 	pane.position = place.position
 	pane.size = place.size
@@ -1507,7 +1508,8 @@ func _pane(place: Rect2, parent: Control = null) -> Panel:
 ## Dither Shades [param pane] in [param fill] for its own height, edged as every pane is;
 ## [param content] on it is drawn as before.
 func _shade_pane(pane: Panel, content: CanvasItem, fill: Color) -> void:
-	InspectorParts.shade_background(pane, content, fill, DeckbuilderLook.PANEL_EDGE, DeckbuilderLook.PANEL_EDGE_WIDTH, 6)
+	InspectorParts.shade_background(pane, content, fill, DeckbuilderLook.PANEL_EDGE, DeckbuilderLook.PANEL_EDGE_WIDTH,
+		DeckbuilderLook.PANEL_RADIUS)
 
 
 ## Puts [param content] inside [param pane], [param pad] in from every edge.
@@ -1571,12 +1573,13 @@ func _shade(button: Button, fill: Color, margin_right: int = 10) -> void:
 
 func _paint_shade(button: Button, fill: Color, margin_right: int) -> void:
 	var height: int = maxi(1, int(button.size.y))
+	var radius: int = DeckbuilderLook.BUTTON_RADIUS
 	var faces: Dictionary[String, StyleBoxTexture] = {
-		"normal": DitherShading.button_plate(fill, false, height),
-		"hover": DitherShading.button_plate(fill.lightened(InspectorParts.HOVER_LIGHTEN), false, height),
-		"pressed": DitherShading.button_plate(fill, true, height),
-		"hover_pressed": DitherShading.button_plate(fill, true, height),
-		"disabled": DitherShading.disabled_plate(DeckbuilderLook.BUTTON_DISABLED, height),
+		"normal": DitherShading.button_plate(fill, false, height, radius),
+		"hover": DitherShading.button_plate(fill.lightened(InspectorParts.HOVER_LIGHTEN), false, height, radius),
+		"pressed": DitherShading.button_plate(fill, true, height, radius),
+		"hover_pressed": DitherShading.button_plate(fill, true, height, radius),
+		"disabled": DitherShading.disabled_plate(DeckbuilderLook.BUTTON_DISABLED, height, radius),
 	}
 	for state: String in faces:
 		faces[state].content_margin_right = margin_right

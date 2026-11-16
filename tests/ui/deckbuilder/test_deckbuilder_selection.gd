@@ -266,6 +266,17 @@ func test_mod_slots_are_filled_in_the_order_earned_green_for_a_mod_and_red_for_a
 	assert_ne(ModSlotRow.color_of(ModSlotRow.Slot.MOD), ModSlotRow.color_of(ModSlotRow.Slot.HEX))
 
 
+func test_a_mod_slot_is_a_16_pixel_sprite_drawn_at_whole_multiples_while_the_bar_has_room() -> void:
+	for slot: ModSlotRow.Slot in [ModSlotRow.Slot.EMPTY, ModSlotRow.Slot.MOD, ModSlotRow.Slot.HEX]:
+		assert_eq(ModSlotRow.texture_of(slot).get_size(), Vector2(16, 16))
+	assert_eq(ModSlotRow.sprite_size(DeckbuilderLayout.COLLECTION_CARD_HEIGHT), 16.0)
+	assert_eq(ModSlotRow.sprite_size(DeckbuilderLayout.COLLECTION_CARD_LARGEST), 16.0)
+	assert_eq(ModSlotRow.sprite_size(500.0), 32.0, "Twice the size once the bar has room for twice the size.")
+	var smallest: float = DeckbuilderLayout.COLLECTION_CARD_SMALLEST
+	var bubble: float = ModSlotRow.sprite_size(smallest) * ModSlotRow.BUBBLE / ModSlotRow.SPRITE
+	assert_almost_eq(bubble, smallest * (1.0 - ModSlotRow.BAR_TOP), 0.01, "Shrunk to the bar on a card too small for it.")
+
+
 func test_every_face_shows_its_mod_slots_inside_the_card_a_basic_lands_too() -> void:
 	var wurm: DeckbuilderCard = _modded("Craw Wurm", 1)
 	var forest: DeckbuilderCard = _deck.cards_in(WorkingDeck.LANDS_COLUMN)[0]
@@ -275,10 +286,12 @@ func test_every_face_shows_its_mod_slots_inside_the_card_a_basic_lands_too() -> 
 		assert_not_null(row)
 		assert_eq(row.slots(), ModSlotRow.slots_of(wurm))
 		assert_true(Rect2(Vector2.ZERO, face.size).encloses(Rect2(row.position, row.size)))
-		assert_almost_eq(row.position.x + row.size.x / 2.0, face.size.x / 2.0, 0.01, "Centered along the bottom.")
+		assert_almost_eq(row.position.x + row.size.x / 2.0, face.size.x / 2.0, 0.5,
+				"Centered along the bottom, to the nearest pixel.")
 		var bar_middle: float = face.size.y * (ModSlotRow.BAR_TOP + 1.0) / 2.0
-		assert_almost_eq(row.get_rect().get_center().y, bar_middle - ModSlotRow.LIFT, 0.01,
+		assert_almost_eq(row.get_rect().get_center().y, bar_middle - ModSlotRow.LIFT, 0.5,
 				"One unit above the middle of the black bar under the frame.")
+		assert_eq(row.size, Vector2(3.0, 1.0) * ModSlotRow.sprite_size(face.size.y), "A sprite for each bubble.")
 	assert_eq(_screen.mod_slots_on(_screen.column_face(forest)).slots().size(), 3)
 
 	_screen.right_click_at(_strip_of(wurm))
@@ -325,9 +338,9 @@ func test_modify_opens_the_mod_pop_up_for_the_selected_card() -> void:
 
 	_screen.apply_mod_button().pressed.emit()
 
-	assert_not_null(_screen.mod_popup())
-	assert_eq(_screen.mod_popup().before_face().title_text().shown_text(), "Savannah Lions")
-	assert_eq(_screen.mod_popup().z_index, 10, "Over everything, a raised card included.")
+	assert_not_null(_screen.modify_window())
+	assert_eq(_screen.modify_window().before_face().title_text().shown_text(), "Savannah Lions")
+	assert_eq(_screen.modify_window().z_index, 10, "Over everything, a raised card included.")
 
 
 func test_nothing_behind_the_pop_up_takes_clicks_and_escape_closes_it() -> void:
@@ -346,8 +359,8 @@ func test_nothing_behind_the_pop_up_takes_clicks_and_escape_closes_it() -> void:
 	escape.keycode = KEY_ESCAPE
 	escape.pressed = true
 	_screen._input(escape)
-	assert_null(_screen.mod_popup())
-	assert_eq(_screen.selected(), lions, "Escape closed the pop-up and left the selection.")
+	assert_null(_screen.modify_window())
+	assert_eq(_screen.selected(), lions, "Escape closed the window and left the selection.")
 
 
 func test_applying_a_mod_uses_it_up_and_changes_the_card_everywhere_at_once() -> void:
@@ -360,11 +373,11 @@ func test_applying_a_mod_uses_it_up_and_changes_the_card_everywhere_at_once() ->
 	_screen.drag_to(OUTSIDE)
 	_screen.apply_mod_button().pressed.emit()
 
-	_screen.mod_popup().choose(ember)
-	_screen.mod_popup().button("apply").pressed.emit()
-	_screen.mod_popup().button("yes").pressed.emit()
+	_screen.modify_window().choose(ember)
+	_screen.modify_window().button("apply").pressed.emit()
+	_screen.modify_window().button("yes").pressed.emit()
 
-	assert_null(_screen.mod_popup())
+	assert_null(_screen.modify_window())
 	assert_eq(bears.mods, [ember] as Array[Mod])
 	assert_eq(_sample.held_mods.count_of(ember), held_before - 1)
 	assert_eq(bears.mana_value(), 3)
@@ -383,12 +396,12 @@ func test_closing_the_pop_up_applies_nothing() -> void:
 	var lions: DeckbuilderCard = _spare("Savannah Lions")
 	_screen.right_click_at(_in_collection(lions))
 	_screen.apply_mod_button().pressed.emit()
-	_screen.mod_popup().choose(_held("Ember"))
+	_screen.modify_window().choose(_held("Ember"))
 
-	_screen.mod_popup().button("cancel").pressed.emit()
-	_screen.mod_popup().button("close").pressed.emit()
+	_screen.modify_window().button("cancel").pressed.emit()
+	_screen.modify_window().button("close").pressed.emit()
 
-	assert_null(_screen.mod_popup())
+	assert_null(_screen.modify_window())
 	assert_eq(lions.mods.size(), 0)
 	assert_eq(_sample.held_mods.count_of(_held("Ember")), 2)
 
@@ -400,15 +413,15 @@ func test_apply_a_mod_goes_gray_when_the_last_mod_slot_is_filled() -> void:
 	_screen.right_click_at(_in_collection(two))
 	_screen.apply_mod_button().pressed.emit()
 
-	_screen.mod_popup().choose(_held("Ember"))
-	_screen.mod_popup().button("apply").pressed.emit()
-	_screen.mod_popup().button("yes").pressed.emit()
+	_screen.modify_window().choose(_held("Ember"))
+	_screen.modify_window().button("apply").pressed.emit()
+	_screen.modify_window().button("yes").pressed.emit()
 	_screen.drag_to(OUTSIDE)
 
 	assert_eq(two.mods.size(), 3)
 	assert_true(_screen.apply_mod_button().disabled)
-	_screen.open_mod_popup()
-	assert_null(_screen.mod_popup())
+	_screen.open_modify_window()
+	assert_null(_screen.modify_window())
 	await wait_process_frames(2)
 
 
@@ -499,16 +512,16 @@ func test_the_mod_pop_up_fades_in_and_is_gone_at_once_to_anyone_who_asks_when_cl
 	_screen.ease_seconds = 0.2
 	_screen.right_click_at(_in_collection(_spare("Savannah Lions")))
 	_screen.apply_mod_button().pressed.emit()
-	var popup: ModPopup = _screen.mod_popup()
-	assert_almost_eq(popup.modulate.a, 0.0, 0.001, "It eases in from nothing.")
+	var modify_window: ModifyWindow = _screen.modify_window()
+	assert_almost_eq(modify_window.modulate.a, 0.0, 0.001, "It eases in from nothing.")
 	await wait_seconds(0.3)
-	assert_almost_eq(popup.modulate.a, 1.0, 0.001)
+	assert_almost_eq(modify_window.modulate.a, 1.0, 0.001)
 
-	_screen.close_mod_popup()
-	assert_null(_screen.mod_popup())
-	assert_true(is_instance_valid(popup), "It is still drawn while it fades.")
+	_screen.close_modify_window()
+	assert_null(_screen.modify_window())
+	assert_true(is_instance_valid(modify_window), "It is still drawn while it fades.")
 	await wait_seconds(0.3)
-	assert_false(is_instance_valid(popup))
+	assert_false(is_instance_valid(modify_window))
 	_screen.ease_seconds = 0.0
 
 
@@ -569,9 +582,9 @@ func test_a_basic_lands_first_mod_puts_it_in_the_collection_and_off_its_lands_bu
 	await wait_process_frames(2)
 	_screen.apply_mod_button().pressed.emit()
 
-	_screen.mod_popup().choose(ancient)
-	_screen.mod_popup().button("apply").pressed.emit()
-	_screen.mod_popup().button("yes").pressed.emit()
+	_screen.modify_window().choose(ancient)
+	_screen.modify_window().button("apply").pressed.emit()
+	_screen.modify_window().button("yes").pressed.emit()
 	await wait_process_frames(2)
 
 	assert_eq(DeckbuilderLooks.look_of(forest).name, "Ancient Forest")

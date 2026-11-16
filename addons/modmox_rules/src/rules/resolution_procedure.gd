@@ -23,7 +23,7 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 	var procedure: ResolutionProcedure = ResolutionProcedure.new(state)
 	var resolving: MmGameObject = state.stack.objects().back()
 	procedure._object_id = resolving.id
-	var specs: Array[TargetSpec] = []
+	var specs: Array[TargetRequirement] = []
 	if resolving.is_card():
 		var spell: SpellAbility = CastProcedure.spell_ability_of(state.characteristics_of(resolving))
 		if spell != null:

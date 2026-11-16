@@ -1001,6 +1001,23 @@ func test_the_banner_is_drawn_over_the_block_lines_and_under_the_windows() -> vo
 	assert_lt(banner.get_index(), _screen.pause_menu().get_index())
 
 
+func test_the_banner_is_drawn_as_the_spoils_screens_window_is() -> void:
+	_open(_bear_setup())
+	_keep()
+
+	_presenter.concede()
+
+	var banner: Control = _screen.banner()
+	var face: StyleBoxTexture = banner.get_theme_stylebox("panel") as StyleBoxTexture
+	assert_not_null(face, "Dither Shaded.")
+	assert_eq(face.texture.get_image().get_data(), WindowLook.plate(int(banner.size.y)).texture.get_image().get_data())
+	var buttons: Array[Node] = banner.find_children("*", "Button", true, false)
+	assert_false(buttons.is_empty())
+	for button: Button in buttons:
+		assert_eq(button.get_theme_stylebox("normal"), ButtonShading.plate(WindowLook.BUTTON, "normal", int(button.size.y),
+			ButtonShading.SIDE, true, WindowLook.BUTTON_RADIUS), button.text)
+
+
 func test_a_redraw_after_the_end_leaves_one_banner() -> void:
 	_open(_bear_setup())
 	_keep()

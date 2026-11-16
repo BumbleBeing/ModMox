@@ -1,11 +1,13 @@
 class_name DeckbuilderSample
 extends RefCounted
 ## A made-up run for looking at the deckbuilder on its own (--deckbuilder) and for its
-## tests: three copies of every Content card, a few made-up Mods that each add a mana
-## symbol, cards that arrive Hexed or full, and one saved Deck, the Active one. A Mod's name is the word it puts in front of the card's (A559). None of these Mods
-## fits a land, so no basic land can be modified here (A560). Nothing is saved to disk.
+## tests: three copies of every Content card in every set's folder, a few made-up Mods
+## that each add a mana symbol, cards that arrive Hexed or full, and one saved Deck, the
+## Active one. A Mod's name is the word it puts in front of the card's (A559). None of
+## these Mods fits a land, so no basic land can be modified here (A560). Nothing is saved
+## to disk.
 
-const CARDS: String = "res://content/cards/alpha/"
+const CARDS: String = "res://content/cards/"
 const COPIES: int = 3
 const DECK_NAME: String = "Red-Green Stompy"
 ## The sample Deck: how many copies of each card, and of each basic land.
@@ -28,12 +30,8 @@ static func make() -> Run:
 
 
 func _own_every_card() -> void:
-	var files: PackedStringArray = DirAccess.get_files_at(CARDS)
-	files.sort()
-	for file: String in files:
-		if not file.ends_with(".tres"):
-			continue
-		var definition: MmCardDefinition = load(CARDS + file) as MmCardDefinition
+	for path: String in _card_files(CARDS):
+		var definition: MmCardDefinition = load(path) as MmCardDefinition
 		if definition.supertypes.has(MmCardTypes.Supertype.BASIC):
 			continue
 		for copy: int in COPIES:
@@ -94,3 +92,18 @@ static func _add_symbol(mod_name: String, symbol: MmMana.Type, is_hex: bool = fa
 	mod.modification = modification
 	mod.needs_mana_cost = true
 	return mod
+
+
+## Every Card Definition under [param folder], a set's folder at a time, each in name order.
+static func _card_files(folder: String) -> PackedStringArray:
+	var found: PackedStringArray = []
+	var sets: PackedStringArray = DirAccess.get_directories_at(folder)
+	sets.sort()
+	for card_set: String in sets:
+		found.append_array(_card_files(folder + card_set + "/"))
+	var files: PackedStringArray = DirAccess.get_files_at(folder)
+	files.sort()
+	for file: String in files:
+		if file.ends_with(".tres"):
+			found.append(folder + file)
+	return found

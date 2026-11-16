@@ -3,7 +3,7 @@ extends MmAbility
 ## What an instant or sorcery does when it resolves (CR 113.3a): its target requirements
 ## and its effects, in order.
 
-@export var targets: Array[TargetSpec] = []
+@export var targets: Array[TargetRequirement] = []
 @export var effects: Array[MmEffect] = []
 
 

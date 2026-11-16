@@ -15,6 +15,11 @@ var _presenter: EncounterPresenter
 var _screen: EncounterScreen
 
 
+func after_each() -> void:
+	# What a redraw replaced is freed at the end of the frame.
+	await wait_process_frames(2)
+
+
 func test_an_emblem_that_can_be_activated_glows_green_and_the_others_take_no_click() -> void:
 	_open()
 	_play_land()

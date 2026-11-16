@@ -1,6 +1,6 @@
 # A Villain's Rank comes from the Stage that lists it
 
-A Stage holds three lists of Villains: its Lesser Villains, its Elite Villains and its Bosses. A Villain holds no Rank of its own. Its Rank in a meeting is the list the Stage took it from, and that Rank, with the Stage's Tier, decides the Spoils. The same Villain may be listed in several Stages, at different Ranks if wanted, so a Villain that is Elite at Tier 1 can be Lesser at Tier 4 and pays out as whichever it was met as. A Villain may not be in two lists of the same Stage, which keeps "what Rank was this?" answerable from the Stage alone.
+A Stage holds three lists of Villains: its Lesser Villains, its Elite Villains and its Bosses. A Villain holds no Rank of its own. Its Rank in a meeting is the list the Stage took it from, and that Rank decides how many cards the Spoils pay and, with the Stage's Tier, how much gold (ADR 0039). The same Villain may be listed in several Stages, at different Ranks if wanted, so a Villain that is Elite at Tier 1 can be Lesser at Tier 4 and pays out as whichever it was met as. A Villain may not be in two lists of the same Stage, which keeps "what Rank was this?" answerable from the Stage alone.
 
 Bosses are a list although a Stage has one today, because Stages will have several later. The Boss is picked once when the Hero enters the Stage and stays the same through every rematch, so a loss never swaps it.
 

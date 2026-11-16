@@ -1,13 +1,14 @@
-class_name ModPopup
+class_name ModifyWindow
 extends Control
-## The window for applying a held Mod to the selected card. It covers the deckbuilder and
-## has three bordered panels of one height, a card's and a little more, each with its title
-## centered at the top. Valid Mods lists every kind of Mod the Hero holds, with how many:
-## the ones not applicable to the card are gray and take no clicks. Current is the card as
-## it is. The third is the card as it would become: "With selected Mod" until a Mod is
-## hovered over or clicked, then "With" and that Mod's name; its place is empty until then. The faces here show no Mod
-## Slots. Clicking a Mod makes Apply live and offers Cancel, and Apply asks once more
-## before it says the Mod was applied, because applying is final.
+## The Modify Window: where a held Mod is applied to the selected card. It covers the
+## deckbuilder and has three bordered panels of one height, a card's and a little more,
+## each with its title centered at the top. Valid Mods lists every kind of Mod the Hero
+## holds, with how many: the ones not applicable to the card are gray and take no clicks.
+## Current is the card as it is. The third is the card as it would become: "With selected
+## Mod" until a Mod is hovered over or clicked, then "With" and that Mod's name; its place
+## is empty until then. The faces here show no Mod Slots. Clicking a Mod makes Apply live
+## and offers Cancel, and Apply asks once more before it says the Mod was applied, because
+## applying is final.
 ##
 ## The window is as large as what is in it and no larger.
 ##
@@ -35,6 +36,10 @@ const TILE: Color = Color("#33363c")
 const TILE_PAD: float = 8.0
 const TILE_HEIGHT: float = 68.0
 const TILE_FONT_SIZE: int = 18
+const TILE_RADIUS: int = 5
+## Set on a button with the Callable that paints its Dither Shading, so that painting it in
+## other colors replaces it.
+const PAINT: StringName = &"paint"
 
 var _card: DeckbuilderCard = null
 var _held_mods: HeldMods = null
@@ -72,17 +77,19 @@ func setup(card: DeckbuilderCard, held_mods: HeldMods) -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
-	_window = PanelContainer.new()
+	# A Dither Shaded plate casts no shadow, so a flat window behind it casts the shadow.
+	var shadow: PanelContainer = PanelContainer.new()
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = FILL
-	style.border_color = DeckbuilderLook.PANEL_EDGE
-	style.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
-	style.set_corner_radius_all(8)
+	style.set_corner_radius_all(DeckbuilderLook.WINDOW_RADIUS)
 	style.shadow_color = Color(0, 0, 0, 0.5)
 	style.shadow_size = 16
-	style.set_content_margin_all(PAD)
-	_window.add_theme_stylebox_override("panel", style)
-	center.add_child(_window)
+	shadow.add_theme_stylebox_override("panel", style)
+	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(shadow)
+	_window = PanelContainer.new()
+	_shade(_window, FILL, DeckbuilderLook.WINDOW_RADIUS, Vector4(PAD, PAD, PAD, PAD))
+	shadow.add_child(_window)
 	var rows: VBoxContainer = VBoxContainer.new()
 	rows.add_theme_constant_override("separation", 14)
 	_window.add_child(rows)
@@ -126,6 +133,11 @@ func previewed() -> Mod:
 ## The Mod that was clicked and is waiting for Apply, or null.
 func chosen() -> Mod:
 	return _chosen
+
+
+## The place the card as it would become is shown in.
+func after_place() -> Control:
+	return _after_place
 
 
 ## The window itself, which is no larger than what is in it.
@@ -212,18 +224,12 @@ func _on_close() -> void:
 	closed.emit()
 
 
-## A lighter panel with a gray border and [param title] centered at its top, added to
+## A lighter panel with a gray border, Dither Shaded, and [param title] centered at its top, added to
 ## [param row]. Returns the column to fill under the title, which is a card's height.
 func _panel(row: HBoxContainer, title: String) -> VBoxContainer:
 	var panel: PanelContainer = PanelContainer.new()
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = DeckbuilderLook.COLUMN
-	style.border_color = DeckbuilderLook.PANEL_EDGE
-	style.set_border_width_all(DeckbuilderLook.PANEL_EDGE_WIDTH)
-	style.set_corner_radius_all(6)
-	style.set_content_margin_all(PANEL_PAD)
-	style.content_margin_top = PANEL_PAD - 4.0
-	panel.add_theme_stylebox_override("panel", style)
+	_shade(panel, DeckbuilderLook.MODIFY_PANEL, DeckbuilderLook.PANEL_RADIUS,
+			Vector4(PANEL_PAD, PANEL_PAD - 4.0, PANEL_PAD, PANEL_PAD))
 	row.add_child(panel)
 	_panels.append(panel)
 	var column: VBoxContainer = VBoxContainer.new()
@@ -261,6 +267,8 @@ func _tile_list(column: VBoxContainer) -> void:
 		words.offset_bottom = -TILE_PAD
 		words.write("%s   ×%d\n%s" % [mod.name, _held_mods.count_of(mod), mod.description])
 		words.minimum_size_changed.connect(_fit_tile.bind(button, words))
+		# The tile's shading is drawn pixel for pixel; its words as they would be anywhere else.
+		words.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		button.add_child(words)
 		_tile_words[mod] = words
 		_style_tile(button, false)
@@ -293,7 +301,8 @@ func _faces(row: HBoxContainer) -> void:
 	_after_caption = right.get_node("Title") as Label
 	_after_place = Panel.new()
 	var empty: StyleBoxFlat = StyleBoxFlat.new()
-	empty.bg_color = Color(0, 0, 0, 0.25)
+	# Solid, as dark as a quarter-black veil over the panel, so the panel's shading stops at it.
+	empty.bg_color = DeckbuilderLook.MODIFY_PANEL.darkened(0.25)
 	empty.border_color = BORDER
 	empty.set_border_width_all(1)
 	empty.set_corner_radius_all(roundi(card_size.x * CardGeometry.CORNER))
@@ -347,22 +356,86 @@ func _show_state() -> void:
 			_add_button("no", "No, go back", _on_no)
 
 
-## Paints a Mod's tile: a darker gray than the other buttons, shaded as they are, and
-## ringed while it [param is_chosen].
+## Paints a Mod's tile: a darker gray than the other buttons, Dither Shaded as they are,
+## and lighter and ringed while it [param is_chosen].
 func _style_tile(button: Button, is_chosen: bool) -> void:
-	var fills: Dictionary[String, Color] = {
-		"normal": TILE, "hover": TILE.lightened(0.1), "pressed": TILE.darkened(0.15), "disabled": TILE.darkened(0.3),
-	}
-	for look: String in fills:
-		var style: StyleBoxFlat = StyleBoxFlat.new()
-		style.bg_color = DeckbuilderLook.BUTTON_HOVER if is_chosen else fills[look]
-		style.set_corner_radius_all(5)
-		style.set_content_margin_all(8)
-		DeckbuilderLook.shade(style)
-		if is_chosen:
-			style.border_color = CHOSEN_RING
-			style.set_border_width_all(2)
-		button.add_theme_stylebox_override(look, style)
+	if is_chosen:
+		_shade_button(button, DeckbuilderLook.BUTTON_HOVER, DeckbuilderLook.BUTTON_HOVER, TILE_RADIUS, CHOSEN_RING)
+	else:
+		_shade_button(button, TILE, TILE.darkened(0.3), TILE_RADIUS)
+
+
+## Gives [param panel] Dither Shading in [param fill] for its own height, painted again
+## whenever that changes, edged in the panels' gray and rounded by [param radius], with
+## [param margins] (left, top, right, bottom) between its edge and what is in it. What is
+## in it is drawn as it would be anywhere else.
+static func _shade(panel: PanelContainer, fill: Color, radius: int, margins: Vector4) -> void:
+	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var paint: Callable = func() -> void:
+		var height: int = int(panel.size.y)
+		var current: StyleBoxTexture = panel.get_theme_stylebox("panel") as StyleBoxTexture
+		if height <= 0 or (current != null and current.texture.get_height() == height):
+			return
+		var face: StyleBoxTexture = DitherShading.plate(fill.lightened(0.06), fill.darkened(0.3),
+				DeckbuilderLook.PANEL_EDGE, radius, DeckbuilderLook.PANEL_EDGE_WIDTH, 0, height)
+		face.content_margin_left = margins.x
+		face.content_margin_top = margins.y
+		face.content_margin_right = margins.z
+		face.content_margin_bottom = margins.w
+		panel.add_theme_stylebox_override("panel", face)
+	panel.resized.connect(paint)
+	# Until it has a height, a flat stand-in keeps the same room around what is in it.
+	var stand_in: StyleBoxFlat = StyleBoxFlat.new()
+	stand_in.bg_color = fill
+	stand_in.content_margin_left = margins.x
+	stand_in.content_margin_top = margins.y
+	stand_in.content_margin_right = margins.z
+	stand_in.content_margin_bottom = margins.w
+	panel.add_theme_stylebox_override("panel", stand_in)
+	panel.child_entered_tree.connect(func(child: Node) -> void:
+		if child is CanvasItem:
+			(child as CanvasItem).texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR)
+
+
+## Gives [param button] Dither Shading in every state, as the deckbuilder's buttons have,
+## painted again whenever its height changes: [param fill] lit from above with a darker lip,
+## lighter under the mouse, sitting down on its lip when pressed, and
+## [param disabled_fill] lying flat when it takes no clicks. Its corners are rounded by
+## [param radius]; a [param ring] color, when given, edges it two pixels wide.
+static func _shade_button(button: Button, fill: Color, disabled_fill: Color, radius: int, ring: Variant = null) -> void:
+	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if button.has_meta(PAINT):
+		button.resized.disconnect(button.get_meta(PAINT) as Callable)
+	var paint: Callable = func() -> void:
+		var height: int = maxi(1, int(button.size.y))
+		var faces: Dictionary[String, StyleBoxTexture] = {
+			"normal": _button_face(fill, false, height, radius, ring),
+			"hover": _button_face(fill.lightened(InspectorParts.HOVER_LIGHTEN), false, height, radius, ring),
+			"pressed": _button_face(fill, true, height, radius, ring),
+			"hover_pressed": _button_face(fill, true, height, radius, ring),
+			"disabled": DitherShading.disabled_plate(disabled_fill, height, radius),
+		}
+		for state: String in faces:
+			button.add_theme_stylebox_override(state, faces[state])
+	button.set_meta(PAINT, paint)
+	button.resized.connect(paint)
+	paint.call()
+
+
+## A button's face [param height] tall: DitherShading.button_plate, edged in [param ring]
+## two pixels wide in place of its own dark edge when a ring is given.
+static func _button_face(fill: Color, is_pressed: bool, height: int, radius: int, ring: Variant) -> StyleBoxTexture:
+	var face: StyleBoxTexture = DitherShading.button_plate(fill, is_pressed, height, radius)
+	if ring == null:
+		return face
+	var lip: int = DitherShading.PRESSED_LIP if is_pressed else DitherShading.LIP
+	var top: Color = fill.darkened(0.2) if is_pressed else fill.lightened(0.12)
+	var bottom: Color = fill.lightened(0.02) if is_pressed else fill.darkened(0.25)
+	var ringed: StyleBoxTexture = DitherShading.plate(top, bottom, ring as Color, radius, 2, lip, height,
+			fill.darkened(DitherShading.LIP_DARKEN))
+	for side: Side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		ringed.set_content_margin(side, face.get_content_margin(side))
+	return ringed
 
 
 ## [param label] made to take the footer's spare width and wrap in it, so that a long line
@@ -379,6 +452,7 @@ func _add_button(key: String, text: String, action: Callable) -> void:
 	button.custom_minimum_size = Vector2(110, 0)
 	button.add_theme_font_size_override("font_size", 20)
 	button.focus_mode = Control.FOCUS_NONE
+	_shade_button(button, DeckbuilderLook.BUTTON, DeckbuilderLook.BUTTON_DISABLED, DeckbuilderLook.BUTTON_RADIUS)
 	button.pressed.connect(action)
 	_footer.add_child(button)
 	_buttons[key] = button

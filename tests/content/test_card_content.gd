@@ -98,7 +98,7 @@ func test_lightning_bolt_deals_three_damage_to_a_player() -> void:
 
 func test_lightning_bolt_can_target_creatures_and_players_only() -> void:
 	# Its filter is saved with default values left out; check it still means "any target".
-	var spec: TargetSpec = (_alpha("lightning_bolt").abilities[0] as SpellAbility).targets[0]
+	var spec: TargetRequirement = (_alpha("lightning_bolt").abilities[0] as SpellAbility).targets[0]
 	var engine: MmEngine = _hero_ready_to_cast(_alpha("lightning_bolt"), "mountain")
 	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
 	var land: MmReference = MmReference.to_object(Scenario.first_permanent_of(engine, engine.hero().id))
@@ -598,7 +598,7 @@ func test_terror_cannot_target_white_knight_but_destroys_grizzly_bears() -> void
 
 
 func test_terror_cannot_target_artifact_or_black_creatures() -> void:
-	var spec: TargetSpec = (_alpha("terror").abilities[0] as SpellAbility).targets[0]
+	var spec: TargetRequirement = (_alpha("terror").abilities[0] as SpellAbility).targets[0]
 	var engine: MmEngine = MmEngine.start(_setup_with_deck_of(_alpha("black_knight")))
 	var state: MmGameState = engine.game_state()
 	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)

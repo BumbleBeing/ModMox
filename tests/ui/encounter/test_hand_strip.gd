@@ -27,6 +27,11 @@ func before_each() -> void:
 	_strip.setup(_drag_layer)
 
 
+func after_each() -> void:
+	# What a redraw replaced is freed at the end of the frame.
+	await wait_process_frames(2)
+
+
 # --- Drawing the hand ---
 
 

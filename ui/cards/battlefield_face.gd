@@ -15,6 +15,8 @@ signal rules_scroll_requested(steps: float)
 const TAPPED_SHADE: float = 0.45
 ## A P/T box's height on the Card Face, as a fraction of the card's height.
 const CARD_FACE_BOX: float = 0.14
+## The size the P/T box's image is resized to before it is drawn.
+const POWER_TOUGHNESS_PIXELS: Vector2i = Vector2i(377, 206)
 
 var _look: CardLook
 var _card: Control
@@ -46,6 +48,12 @@ static func power_toughness_box(height: float) -> Rect2:
 	var box_size: Vector2 = Vector2(box_height * 377.0 / 206.0, box_height)
 	var side: float = CardGeometry.FIELD_SIDE * CardGeometry.BAKE_SIZE.x * _scale(height)
 	return Rect2(size_for(height) - box_size - Vector2(side * 0.55, side * 0.25), box_size)
+
+
+## The P/T box drawn on a creature with the Frame [param spec], at the one size every
+## Battlefield Face draws it from.
+static func power_toughness_texture(spec: FrameSpec) -> ImageTexture:
+	return FrameBaker.source_texture(spec.power_toughness_image(), POWER_TOUGHNESS_PIXELS)
 
 
 ## The width keyword chips have, from the art's left edge to the P/T box (or the art's
@@ -191,7 +199,7 @@ func _border(spec: FrameSpec, face_size: Vector2, scale_now: float) -> NinePatch
 
 func _add_power_toughness(shape: Panel, spec: FrameSpec, height: float) -> void:
 	var box: Rect2 = power_toughness_box(height)
-	shape.add_child(CardShapes.image(FrameBaker.source_texture(spec.power_toughness_image(), Vector2i(377, 206)), box))
+	shape.add_child(CardShapes.image(power_toughness_texture(spec), box))
 	var text_box: Rect2 = CardGeometry.power_toughness_text_in_box()
 	var text: AnchoredText = AnchoredText.new()
 	text.setup(Rect2(box.position + text_box.position * box.size, text_box.size * box.size),

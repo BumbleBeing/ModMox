@@ -110,8 +110,30 @@ func texts() -> Array[String]:
 
 ## The color the ground is shaded in: the Stage's own, or the slate.
 func ground() -> Color:
-	var stage: StageDefinition = _run.stage_visit.stage
+	return ground_of(_run.stage_visit.stage)
+
+
+## The color the ground of [param stage]'s Stage Intro is shaded in, which the Spoils
+## screen shares: the Stage's own, or the slate.
+static func ground_of(stage: StageDefinition) -> Color:
 	return stage.intro_color if stage.has_intro_color() else GROUND
+
+
+## The ground [param stage]'s Stage Intro is drawn on, filling its parent: the Stage's color
+## shaded with Dither Shading over the screen's height, or the flat slate.
+static func ground_panel(stage: StageDefinition) -> Panel:
+	var made: Panel = Panel.new()
+	made.set_anchors_preset(Control.PRESET_FULL_RECT)
+	made.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var color: Color = ground_of(stage)
+	if stage.has_intro_color():
+		made.add_theme_stylebox_override("panel", DitherShading.plate(color.lightened(GROUND_LIGHTEN),
+				color.darkened(GROUND_DARKEN), color, 0, 0, 0, int(StageMapLayout.SCREEN.y)))
+	else:
+		var flat: StyleBoxFlat = StyleBoxFlat.new()
+		flat.bg_color = color
+		made.add_theme_stylebox_override("panel", flat)
+	return made
 
 
 ## The color the Stage's name is written in.

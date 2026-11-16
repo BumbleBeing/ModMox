@@ -203,6 +203,8 @@ var _backdrop_dimmer: ColorRect = null
 var _zone_plates: ZonePlates
 ## The sidebar's backing, Dither Shaded as the Inspector is, under the player panels.
 var _sidebar: Panel
+## Holds the art of the encounter's cards loaded for as long as the screen shows it.
+var _warmup: CardWarmup = CardWarmup.new()
 
 
 func _ready() -> void:
@@ -341,7 +343,10 @@ func _ready() -> void:
 		request = EncounterRequest.new()
 	is_in_run = request.run != null
 	show_backdrop(request.backdrop)
-	var presenter: EncounterPresenter = EncounterPresenter.new(request.setup(), request.villain_agent())
+	var setup: MmEncounterSetup = request.setup()
+	# Behind the Scene Fade's black, so the first card drawn costs no more than any other.
+	_warmup.warm(setup)
+	var presenter: EncounterPresenter = EncounterPresenter.new(setup, request.villain_agent())
 	presenter.names = request.names()
 	var picture: String = screenshot_path(OS.get_cmdline_user_args())
 	if picture == "":
@@ -1889,7 +1894,7 @@ func _add_player_stepper() -> void:
 ## A line from every blocker to its attacker: those the engine has blocking, and those the
 ## Hero has paired so far.
 func _show_block_lines() -> void:
-	var lines: Array = []
+	var lines: Array[BlockLines.Line] = []
 	if _snapshot != null:
 		for permanent: MmObjectView in _snapshot.view.battlefield:
 			for attacker_id: int in permanent.blocking_ids:
@@ -1899,9 +1904,11 @@ func _show_block_lines() -> void:
 	_block_lines.show_lines(lines)
 
 
-func _add_block_line(lines: Array, blocker_id: int, attacker_id: int, is_chosen: bool) -> void:
+func _add_block_line(lines: Array[BlockLines.Line], blocker_id: int, attacker_id: int,
+		is_chosen: bool) -> void:
 	if _faces.has(blocker_id) and _faces.has(attacker_id):
-		lines.append([_block_line_end(blocker_id), _block_line_end(attacker_id), is_chosen])
+		var blocker_end: Vector2 = _block_line_end(blocker_id)
+		lines.append(BlockLines.Line.new(blocker_end, _block_line_end(attacker_id), is_chosen))
 
 
 ## Where a block line meets Game Object [param object_id], in this screen's coordinates.
@@ -2602,7 +2609,11 @@ func _draw_banner(view: MmPlayerView) -> void:
 		var loser: int = VILLAIN if view.winner_id == HERO else HERO
 		var reason: String = LOSS_REASONS.get(view.loss_reasons.get(loser, MmPlayer.LossReason.NONE), "lost")
 		text = "%s\n%s %s." % ["Victory" if view.winner_id == HERO else "Defeat", _snapshot.names.starting(loser), reason]
-	var box: Panel = CardShapes.rounded(Vector2(620, 240), 12, Color(0.05, 0.05, 0.07, 0.95))
+	# Drawn as the Spoils screen's window is, its buttons as its Continue.
+	var box: Panel = Panel.new()
+	box.size = Vector2(620, 240)
+	box.add_theme_stylebox_override("panel", WindowLook.plate(int(box.size.y)))
+	box.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	box.position = (size - box.size) / 2.0
 	box.mouse_filter = Control.MOUSE_FILTER_STOP
 	box.set_meta("text", text)
@@ -2624,13 +2635,22 @@ func _draw_banner(view: MmPlayerView) -> void:
 		var onward: Button = _button("Continue", func() -> void: leave(Screens.scene(RunFlow.finish_encounter(won))), 18)
 		onward.position = Vector2(210, 170)
 		onward.size = Vector2(200, 44)
+		_shade_as_window(onward)
 		box.add_child(onward)
 		return
 	var again: Button = _button("Replay this seed", func() -> void: leave(scene_file_path), 18)
 	again.position = Vector2(90, 170)
 	again.size = Vector2(200, 44)
+	_shade_as_window(again)
 	box.add_child(again)
 	var form: Button = _button("Start form", func() -> void: leave(START_FORM), 18)
 	form.position = Vector2(330, 170)
 	form.size = Vector2(200, 44)
+	_shade_as_window(form)
 	box.add_child(form)
+
+
+## Dither Shades [param button], its size already set, as a WindowLook button.
+static func _shade_as_window(button: Button) -> void:
+	ButtonShading.shade(button, WindowLook.BUTTON, ButtonShading.DISABLED, ButtonShading.SIDE, true,
+		WindowLook.BUTTON_RADIUS)

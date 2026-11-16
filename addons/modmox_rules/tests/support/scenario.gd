@@ -261,14 +261,14 @@ static func constant(number: int) -> ConstantValue:
 	return value
 
 
-static func target(filter: MmFilter) -> TargetSpec:
-	var spec: TargetSpec = TargetSpec.new()
-	spec.filter = filter
-	return spec
+static func target(filter: MmFilter) -> TargetRequirement:
+	var requirement: TargetRequirement = TargetRequirement.new()
+	requirement.filter = filter
+	return requirement
 
 
 ## "Any target": a creature or a player (there are no planeswalkers, ADR 0001).
-static func any_target() -> TargetSpec:
+static func any_target() -> TargetRequirement:
 	var creature: HasCardTypeFilter = HasCardTypeFilter.new()
 	creature.card_type = MmCardTypes.CardType.CREATURE
 	var either: AnyOfFilter = AnyOfFilter.new()
@@ -276,7 +276,7 @@ static func any_target() -> TargetSpec:
 	return target(either)
 
 
-static func target_player() -> TargetSpec:
+static func target_player() -> TargetRequirement:
 	return target(IsPlayerFilter.new())
 
 
@@ -332,7 +332,7 @@ static func add_mana(type: MmMana.Type, amount: int) -> AddManaEffect:
 
 
 static func spell(card_name: String, card_type: MmCardTypes.CardType, cost: MmManaCost,
-		targets: Array[TargetSpec], effects: Array[MmEffect]) -> MmCardDefinition:
+		targets: Array[TargetRequirement], effects: Array[MmEffect]) -> MmCardDefinition:
 	var definition: MmCardDefinition = vanilla(card_name)
 	definition.card_types = [card_type]
 	definition.mana_cost = cost
@@ -343,11 +343,11 @@ static func spell(card_name: String, card_type: MmCardTypes.CardType, cost: MmMa
 	return definition
 
 
-static func instant(card_name: String, cost: MmManaCost, targets: Array[TargetSpec], effects: Array[MmEffect]) -> MmCardDefinition:
+static func instant(card_name: String, cost: MmManaCost, targets: Array[TargetRequirement], effects: Array[MmEffect]) -> MmCardDefinition:
 	return spell(card_name, MmCardTypes.CardType.INSTANT, cost, targets, effects)
 
 
-static func sorcery(card_name: String, cost: MmManaCost, targets: Array[TargetSpec], effects: Array[MmEffect]) -> MmCardDefinition:
+static func sorcery(card_name: String, cost: MmManaCost, targets: Array[TargetRequirement], effects: Array[MmEffect]) -> MmCardDefinition:
 	return spell(card_name, MmCardTypes.CardType.SORCERY, cost, targets, effects)
 
 
@@ -736,7 +736,7 @@ static func emblem(emblem_name: String, abilities: Array[MmAbility]) -> MmCardDe
 	return definition
 
 
-static func triggered(trigger: MmTrigger, effects: Array[MmEffect], targets: Array[TargetSpec] = [],
+static func triggered(trigger: MmTrigger, effects: Array[MmEffect], targets: Array[TargetRequirement] = [],
 		condition: MmCondition = null) -> TriggeredAbility:
 	var ability: TriggeredAbility = TriggeredAbility.new()
 	ability.trigger = trigger
@@ -1082,10 +1082,10 @@ static func card_of(engine: MmEngine, object_id: int) -> int:
 
 
 ## "Target spell", or "target [filter] spell".
-static func target_spell(filter: MmFilter = null) -> TargetSpec:
-	var spec: TargetSpec = target(filter)
-	spec.among = TargetSpec.Among.SPELLS
-	return spec
+static func target_spell(filter: MmFilter = null) -> TargetRequirement:
+	var requirement: TargetRequirement = target(filter)
+	requirement.among = TargetRequirement.Among.SPELLS
+	return requirement
 
 
 static func counter(selection: MmSelection) -> CounterEffect:
@@ -1111,17 +1111,17 @@ static func stack_ids(engine: MmEngine) -> Array[int]:
 
 
 ## "Target card in a graveyard", or "target [filter] card in a graveyard".
-static func target_graveyard_card(filter: MmFilter = null) -> TargetSpec:
-	var spec: TargetSpec = target(filter)
-	spec.among = TargetSpec.Among.GRAVEYARD_CARDS
-	return spec
+static func target_graveyard_card(filter: MmFilter = null) -> TargetRequirement:
+	var requirement: TargetRequirement = target(filter)
+	requirement.among = TargetRequirement.Among.GRAVEYARD_CARDS
+	return requirement
 
 
 ## "Target activated or triggered ability".
-static func target_ability() -> TargetSpec:
-	var spec: TargetSpec = target(null)
-	spec.among = TargetSpec.Among.ABILITIES
-	return spec
+static func target_ability() -> TargetRequirement:
+	var requirement: TargetRequirement = target(null)
+	requirement.among = TargetRequirement.Among.ABILITIES
+	return requirement
 
 
 static func owned_by(whose: MmTrigger.Whose) -> OwnedByFilter:
@@ -1137,7 +1137,7 @@ static func return_to_hand(selection: MmSelection) -> ReturnToHandEffect:
 
 
 ## "Target creature card in your graveyard."
-static func your_dead_creature() -> TargetSpec:
+static func your_dead_creature() -> TargetRequirement:
 	return target_graveyard_card(all_of([of_type(MmCardTypes.CardType.CREATURE), owned_by(MmTrigger.Whose.YOU)]))
 
 

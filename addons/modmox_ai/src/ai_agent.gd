@@ -430,8 +430,8 @@ func _targets_spells(world: MmGameState, cast: CastSpellAction) -> bool:
 		var spell: SpellAbility = ability as SpellAbility
 		if spell == null:
 			continue
-		for spec: TargetSpec in spell.targets:
-			if spec.among == TargetSpec.Among.SPELLS:
+		for requirement: TargetRequirement in spell.targets:
+			if requirement.among == TargetRequirement.Among.SPELLS:
 				return true
 	return false
 
