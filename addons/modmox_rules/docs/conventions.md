@@ -121,7 +121,7 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 7. **Never mutate a loaded Resource.** Card Definitions and Run Cards from disk are read-only at runtime. Flattening works on a `duplicate_deep()` copy (ADR 0004).
 8. **Effects never hold targets (ADR 0014).** Every effect names who or what it affects through a Selection.
 9. **Identity by ID.** References to Game Objects and players are by their integer IDs in anything that is stored, logged or answered. A changed ID means a different object (ADR 0008).
-10. **No strong reference cycles.** Engine classes are `RefCounted`, and two objects holding each other are never freed. When a child needs to reach its owner (a Game Object finding its zone), the child holds a `WeakRef` behind a typed accessor, as in `MmGameObject.zone()`. The test run must end without "ObjectDB instances were leaked".
+10. **No strong reference cycles.** Engine classes are `RefCounted`, and two objects holding each other are never freed. When a child needs to reach its owner (a Game Object finding its zone), the child holds a `WeakRef` behind a typed accessor, as in `MmGameObject.zone()`. The test run must end without "ObjectDB instances were leaked" (see "The run ends clean").
 
 ## Errors
 
@@ -154,6 +154,20 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - `combat_ready()` and the helpers under it let an ability that triggers as a creature arrives resolve before the next creature is cast, so a creature with an "enters" ability can start on the battlefield: count what its ability did during setup before the scenario's own step.
 - "Originally named [card name]" is `Scenario.named()`. Every card in a scenario is flattened from a Run Card, so each has an Original; rename one with a `ChangeNameModification` on its Run Card in the Encounter Setup, and set `definition.original` to null on a permanent to stand in for an object with none.
 - The engine asks which replacement effect applies first only when the effects differ: two shields with the same amount left are applied without asking, so give them different amounts.
+
+## The run ends clean
+
+A test run that leaks fails, even when every test passed. `tools/test.sh` runs `tools/leak_check.sh` over the run's output, which fails on any of Godot's lines at exit: "ObjectDB instances were leaked", "resources still in use", "RID allocations ... were leaked" and "Pages in use exist at exit".
+
+- **A script that exports an Array or Dictionary of a script class never uses its own class as a value**: no `as Itself`, `is Itself`, `Itself.new()`, `Array[Itself]` or `Dictionary[Itself, ...]`. The type of a variable, a parameter or a return is fine. Put what needs the class as a value in another class, as `ContentStages` lists the Stages for `StageDefinition`. `tests/test_self_naming.gd` scans for this.
+- Why: Godot 4.7.2 fails to clear its scripts at exit when one script's compiling is the first to load a class A and then a class B that exports a list of A and uses itself as a value. Every script loaded before that one then keeps its static variables, so all of GUT leaks, by the hundred, with nothing wrong in any test. Naming B before A, or having loaded either earlier, hides it, so the leak comes and goes with the order of names in a test file.
+
+When a run leaks, find the cause in this order:
+
+1. Run each folder alone (`tools/test.sh -gdir=res://tests/content -ginclude_subdirs -gexit`), then each file of the leaking folder alone (`-gselect=test_x`). The runs are independent, so start them together.
+2. Run the leaking file with `-gunit_test_name=<one test>`. If it leaks whichever test runs, the file leaks by being loaded, which is the Godot fault above: look for a class it names that breaks the rule in a way the scan misses, and widen the scan.
+3. If one test leaks, it is an ordinary leak. List the leaked objects by class with `$GODOT --headless --verbose --path . -s res://addons/gut/gut_cmdln.gd -gselect=test_x -gexit` (`tools/test.sh` cannot pass `--verbose` to Godot), then look for a Node never freed (the Game-side rules on `queue_free()` and `after_each()`) or two objects holding each other (hard rule 10).
+4. If no file leaks alone but a folder does, look for a `static var` that one test fills and nothing clears.
 
 ## The AI addon
 

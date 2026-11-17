@@ -5,9 +5,10 @@ extends Resource
 ##
 ## Saved files leave out values equal to these defaults, so never change a default once
 ## Stages exist; add a new property instead.
+##
+## It exports lists of Villains, so it never names itself (conventions, "The run ends
+## clean"): ContentStages lists the Stages in Content.
 
-const STAGES: String = "res://content/stages/"
-const VILLAINS: String = "res://content/villains/"
 ## The Backdrop of each color's encounters (ADR 0035).
 const BACKDROPS: Dictionary[MmCardTypes.CardColor, String] = {
 	MmCardTypes.CardColor.WHITE: "white", MmCardTypes.CardColor.BLUE: "blue",
@@ -36,22 +37,6 @@ const BACKDROPS: Dictionary[MmCardTypes.CardColor, String] = {
 ## elsewhere, such as over a castle or the sky; null for anywhere on the Map Backdrop.
 ## Imported as an Image, since its pixels are read and it is never drawn.
 @export var scenery_ground: Image
-
-
-## Every Stage in content/stages/, in file order.
-static func all() -> Array[StageDefinition]:
-	var found: Array[StageDefinition] = []
-	for file: String in _files_in(STAGES):
-		found.append(load(STAGES + file) as StageDefinition)
-	return found
-
-
-## Every Villain in content/villains/, in file order.
-static func all_villains() -> Array[Villain]:
-	var found: Array[Villain] = []
-	for file: String in _files_in(VILLAINS):
-		found.append(load(VILLAINS + file) as Villain)
-	return found
 
 
 ## The Villains the Stage gives at the Rank of a Node of [param kind]: its Lesser
@@ -94,16 +79,3 @@ func validate() -> String:
 			if reason != "":
 				return reason
 	return ""
-
-
-## The resource files in [param folder], sorted. An exported game lists a resource as
-## "name.tres.remap".
-static func _files_in(folder: String) -> Array[String]:
-	var found: Array[String] = []
-	var files: PackedStringArray = DirAccess.get_files_at(folder)
-	files.sort()
-	for file: String in files:
-		var named: String = file.trim_suffix(".remap")
-		if named.ends_with(".tres"):
-			found.append(named)
-	return found

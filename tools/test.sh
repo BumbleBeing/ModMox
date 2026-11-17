@@ -19,4 +19,11 @@ fi
 # Bake every card Frame afresh, so the suite tests the baking and not Frames kept on disk.
 export MODMOX_FRAME_CACHE=off
 
-exec "$GODOT" --headless --path "$PROJECT_DIR" -s res://addons/gut/gut_cmdln.gd "$@"
+# A run that leaks fails, even when every test passed (conventions, "The run ends clean").
+OUTPUT="$(mktemp)"
+trap 'rm -f "$OUTPUT"' EXIT
+
+status=0
+"$GODOT" --headless --path "$PROJECT_DIR" -s res://addons/gut/gut_cmdln.gd "$@" 2>&1 | tee "$OUTPUT" || status=$?
+"$PROJECT_DIR/tools/leak_check.sh" "$OUTPUT" || status=1
+exit "$status"

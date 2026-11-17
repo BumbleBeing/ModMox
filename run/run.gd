@@ -72,7 +72,7 @@ static func debug(seed_of_run: int, stage: StageDefinition = null) -> Run:
 ## Later (milestone 19): only among the colors not yet played.
 func roll_stage(tier: int) -> StageDefinition:
 	var stages: Array[StageDefinition] = []
-	for stage: StageDefinition in StageDefinition.all():
+	for stage: StageDefinition in ContentStages.all():
 		if stage.tier == tier:
 			stages.append(stage)
 	return stages[_random.pick(RunRandom.STAGES, stages.size())]

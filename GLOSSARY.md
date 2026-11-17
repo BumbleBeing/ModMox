@@ -186,6 +186,14 @@ _Avoid_: Save, account, meta-save
 A guided, staged run offered on Choose your Hero: a step-by-step guide to deckbuilding, then a guided visit to a Store and a Workshop, then a staged encounter against a demo Villain with stacked decks and set plays. It uses an authored Collection, keeping only the Hero's name and Portrait from Choose your Hero, ends on a notice that it is complete and returns to the main menu. It leaves nothing behind: no saved run, nothing in the Profile, no Achievements.
 _Avoid_: Onboarding, training, first run
 
+**Run Won**:
+The screen a run ends on when its fifth Boss is beaten: the five Stages played, each with its Boss, the gold still held and the Hearts left. It leads to the Credits.
+_Avoid_: Victory screen, win screen, Run Won notice (the plain stand-in it replaced)
+
+**Run Lost**:
+The screen a run ends on when its last Heart is lost: the Villain that took it, the Stage and Tier where it fell, and the Stages already beaten. It leads to the main menu.
+_Avoid_: Game over, defeat screen, death screen
+
 **Run Bar**:
 The strip along the Stage Map that shows the Stage, its Tier, the Hearts left and the gold held, with the Satchel button and the Deckbox button.
 _Avoid_: HUD, status bar, top bar

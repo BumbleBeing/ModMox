@@ -15,14 +15,14 @@ const BOSSES: Dictionary[MmCardTypes.CardColor, String] = {
 
 func test_there_is_a_villain_for_each_content_deck() -> void:
 	var names: Array[String] = []
-	for villain: Villain in StageDefinition.all_villains():
+	for villain: Villain in ContentStages.all_villains():
 		names.append(villain.resource_path.get_file().get_basename())
 
 	assert_eq(names, ContentDecks.names())
 
 
 func test_each_villain_has_a_name_a_sprite_and_its_deck_as_its_one_setup() -> void:
-	for villain: Villain in StageDefinition.all_villains():
+	for villain: Villain in ContentStages.all_villains():
 		var deck: String = villain.resource_path.get_file().get_basename()
 
 		assert_ne(villain.name, "", deck)
@@ -58,7 +58,7 @@ func test_a_villain_with_another_number_of_setups_is_invalid() -> void:
 
 func test_there_is_one_tier_one_placeholder_stage_of_each_color() -> void:
 	var colors: Array[MmCardTypes.CardColor] = []
-	for stage: StageDefinition in StageDefinition.all():
+	for stage: StageDefinition in ContentStages.all():
 		assert_eq(stage.tier, 1, stage.name)
 		colors.append(stage.color)
 
@@ -69,7 +69,7 @@ func test_there_is_one_tier_one_placeholder_stage_of_each_color() -> void:
 
 ## T10: every placeholder Stage is valid under ADR 0024.
 func test_each_placeholder_stage_has_its_colors_villain_as_boss_and_the_others_one_each() -> void:
-	for stage: StageDefinition in StageDefinition.all():
+	for stage: StageDefinition in ContentStages.all():
 		var boss: String = BOSSES[stage.color]
 
 		assert_eq(stage.validate(), "", stage.name)
@@ -118,7 +118,7 @@ func test_kitty_keep_has_a_map_backdrop_and_an_intro_color() -> void:
 	assert_eq(Vector2i(keep.map_backdrop.get_size()), StageMapLayout.MAP_BACKDROP_SIZE)
 	assert_eq(keep.map_backdrop.resource_path.get_base_dir(), "res://ui/sprites/backgrounds/stage_maps")
 	assert_true(keep.has_intro_color())
-	for stage: StageDefinition in StageDefinition.all():
+	for stage: StageDefinition in ContentStages.all():
 		if stage != keep:
 			assert_null(stage.map_backdrop, stage.name)
 			assert_false(stage.has_intro_color(), stage.name)

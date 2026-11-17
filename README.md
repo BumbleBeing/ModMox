@@ -19,7 +19,7 @@ The engine's tests run headless from the command line. Point `GODOT` at the Godo
 GODOT=~/Desktop/Godot_v4.7.2-stable_linux.x86_64 tools/test.sh
 ```
 
-Extra GUT options are passed through, for example `tools/test.sh -gselect=test_static_typing` to run one test script. The command exits non-zero when any test fails.
+Extra GUT options are passed through, for example `tools/test.sh -gselect=test_static_typing` to run one test script. The command exits non-zero when any test fails, or when the run leaks: Godot says at exit that something was never freed (conventions, "The run ends clean").
 
 ## Static typing
 

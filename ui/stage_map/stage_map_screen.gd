@@ -138,7 +138,7 @@ static func debug_run_from(arguments: PackedStringArray) -> Run:
 			run_seed = int(argument.trim_prefix("--run-seed="))
 		elif argument.begins_with("--stage="):
 			var color: String = argument.trim_prefix("--stage=")
-			for each: StageDefinition in StageDefinition.all():
+			for each: StageDefinition in ContentStages.all():
 				if each.backdrop() == color:
 					stage = each
 	return Run.debug(run_seed, stage)
