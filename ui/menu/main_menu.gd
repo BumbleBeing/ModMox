@@ -10,7 +10,8 @@ extends Control
 ## run at the Deckbox, in Kitty Keep, the Stage being built first (milestones 16 and 17).
 ## The Menu Soldier stands on top of the window, playing his animations, casting the Soldier
 ## Shadow on it; the two are centered on the screen together. The Wisp floats about them,
-## bringing him his effects, and casts the Wisp Light on the window when it comes near.
+## bringing him his effects, and casts the Wisp Light on the window when it comes near. As
+## he takes each effect on, its Effect Callout floats off from him.
 
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
@@ -47,6 +48,7 @@ var _soldier: MenuSoldier
 var _shadow_layer: Control
 ## Over the shadow's, so that the Wisp Light lies over the shadow where the two meet.
 var _light_layer: Control
+var _callouts: MenuCallouts
 var _wisp: MenuWisp
 var _refusal: String = ""
 ## Whether the menu is going straight to a scene the command line asked for.
@@ -117,7 +119,10 @@ func _ready() -> void:
 	_light_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_light_layer.draw.connect(_draw_light)
 	add_child(_light_layer)
-	# Last, so that it floats in front of him.
+	_callouts = MenuCallouts.new(_soldier)
+	_callouts.name = "EffectCallouts"
+	add_child(_callouts)
+	# Last, so that it floats in front of him and his callouts.
 	_wisp = MenuWisp.new(_soldier, window)
 	_wisp.name = "Wisp"
 	add_child(_wisp)
@@ -168,6 +173,11 @@ func window() -> PanelContainer:
 ## The Wisp, or null when the menu went straight to another scene.
 func wisp() -> MenuWisp:
 	return _wisp
+
+
+## The Menu Soldier's Effect Callouts, or null when the menu went straight to another scene.
+func callouts() -> MenuCallouts:
+	return _callouts
 
 
 ## The Wisp Light's blocks as they are drawn now, on the screen: none while the Wisp is far

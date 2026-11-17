@@ -291,6 +291,32 @@ func test_the_wisp_light_lies_over_the_soldier_shadow() -> void:
 	assert_gt(menu.get_node("WispLight").get_index(), menu.get_node("SoldierShadow").get_index())
 
 
+func test_effect_callouts_float_in_front_of_him_and_behind_the_wisp_on_whole_pixels_taking_no_clicks() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+	menu.size = Vector2(1920, 1080)
+	await wait_process_frames(2)
+	var soldier: MenuSoldier = menu.soldier()
+	soldier.set_process(false)
+
+	soldier.advance(soldier.sequence().seconds_until_flash() + 0.5)
+
+	var layer: MenuCallouts = menu.callouts()
+	var shown: Array[EffectCallout] = layer.callouts().shown()
+	assert_eq(shown.size(), 1, "his first effect's")
+	assert_gt(layer.get_index(), soldier.get_parent().get_parent().get_index(), "drawn in front of him")
+	assert_lt(layer.get_index(), menu.wisp().get_index(), "and behind the Wisp")
+	assert_eq(layer.mouse_filter, Control.MOUSE_FILTER_IGNORE, "it takes no clicks")
+	assert_eq(layer.callouts().square(), soldier.get_global_rect(), "it knows where he stands")
+	var drawn: Rect2 = shown[0].drawn_rect(soldier.get_global_rect(), layer.callouts().age_of(shown[0]))
+	assert_eq(drawn.position, drawn.position.round(), "on whole pixels")
+
+
+func test_there_are_no_effect_callouts_when_the_menu_is_skipped() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(["--seed=7"]))
+
+	assert_null(menu.callouts())
+
+
 func test_there_is_no_wisp_when_the_menu_is_skipped() -> void:
 	var menu: MainMenu = _menu(PackedStringArray(["--seed=7"]))
 

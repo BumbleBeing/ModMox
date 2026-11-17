@@ -1,0 +1,450 @@
+{
+	"ancestral_recall": {
+		"mana_cost": "{U}",
+		"name": "Ancestral Recall",
+		"oracle_id": "550c74d4-1fcb-406a-b02a-639a760a4380",
+		"oracle_text": "Target player draws three cards.",
+		"rarity": "rare",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Instant"
+	},
+	"ankh_of_mishra": {
+		"mana_cost": "{2}",
+		"name": "Ankh of Mishra",
+		"oracle_id": "63c1eda1-3e6f-4e9c-adf3-a43164df98bb",
+		"oracle_text": "Whenever a land enters, this artifact deals 2 damage to that land's controller.",
+		"rarity": "rare",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Artifact"
+	},
+	"black_knight": {
+		"mana_cost": "{B}{B}",
+		"name": "Black Knight",
+		"oracle_id": "9456c5b6-946d-403a-8ed0-dff9f921d98c",
+		"oracle_text": "First strike (This creature deals combat damage before creatures without first strike.)\nProtection from white (This creature can't be blocked, targeted, dealt damage, or enchanted by anything white.)",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "2",
+		"type_line": "Creature — Human Knight"
+	},
+	"counterspell": {
+		"mana_cost": "{U}{U}",
+		"name": "Counterspell",
+		"oracle_id": "cc187110-1148-4090-bbb8-e205694a39f5",
+		"oracle_text": "Counter target spell.",
+		"rarity": "uncommon",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Instant"
+	},
+	"craw_wurm": {
+		"mana_cost": "{4}{G}{G}",
+		"name": "Craw Wurm",
+		"oracle_id": "6a462a69-3e42-41de-a3aa-a488d9f38d69",
+		"oracle_text": "",
+		"power": "6",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "4",
+		"type_line": "Creature — Wurm"
+	},
+	"dark_ritual": {
+		"mana_cost": "{B}",
+		"name": "Dark Ritual",
+		"oracle_id": "53f7c868-b03e-4fc2-8dcf-a75bbfa3272b",
+		"oracle_text": "Add {B}{B}{B}.",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Instant"
+	},
+	"drudge_skeletons": {
+		"mana_cost": "{1}{B}",
+		"name": "Drudge Skeletons",
+		"oracle_id": "c180ed02-07f4-4538-9bea-8c249234a8e2",
+		"oracle_text": "{B}: Regenerate this creature. (The next time this creature would be destroyed this turn, instead tap it, remove it from combat, and heal all damage on it.)",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Skeleton"
+	},
+	"elvish_archers": {
+		"mana_cost": "{1}{G}",
+		"name": "Elvish Archers",
+		"oracle_id": "534ce8e2-53a1-407c-9881-d3b5347d43c3",
+		"oracle_text": "First strike",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Elf Archer"
+	},
+	"fog": {
+		"mana_cost": "{G}",
+		"name": "Fog",
+		"oracle_id": "27e9db49-7af7-4bef-ad4c-bf5dfb92030d",
+		"oracle_text": "Prevent all combat damage that would be dealt this turn.",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Instant"
+	},
+	"forest": {
+		"mana_cost": "",
+		"name": "Forest",
+		"oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+		"oracle_text": "({T}: Add {G}.)",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Basic Land — Forest"
+	},
+	"frozen_shade": {
+		"mana_cost": "{2}{B}",
+		"name": "Frozen Shade",
+		"oracle_id": "f75f9006-217d-4ec8-9c35-ceefe1c5ae4e",
+		"oracle_text": "{B}: This creature gets +1/+1 until end of turn.",
+		"power": "0",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Shade"
+	},
+	"giant_growth": {
+		"mana_cost": "{G}",
+		"name": "Giant Growth",
+		"oracle_id": "5748ebf1-24e3-499d-ab7c-c2cebd462a24",
+		"oracle_text": "Target creature gets +3/+3 until end of turn.",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Instant"
+	},
+	"giant_spider": {
+		"mana_cost": "{3}{G}",
+		"name": "Giant Spider",
+		"oracle_id": "e740ce2f-2134-473c-afa1-1b6d2d1e38ef",
+		"oracle_text": "Reach (This creature can block creatures with flying.)",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "4",
+		"type_line": "Creature — Spider"
+	},
+	"goblin_balloon_brigade": {
+		"mana_cost": "{R}",
+		"name": "Goblin Balloon Brigade",
+		"oracle_id": "10bc98b0-3fdc-46d1-8d3b-6d160e9dd62f",
+		"oracle_text": "{R}: This creature gains flying until end of turn.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Goblin Warrior"
+	},
+	"gray_ogre": {
+		"mana_cost": "{2}{R}",
+		"name": "Gray Ogre",
+		"oracle_id": "83c8a3a6-2e1a-4e26-8847-6d066f42d906",
+		"oracle_text": "",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "2",
+		"type_line": "Creature — Ogre"
+	},
+	"grizzly_bears": {
+		"mana_cost": "{1}{G}",
+		"name": "Grizzly Bears",
+		"oracle_id": "14c8f55d-d177-4c25-a931-ebeb9e6062a0",
+		"oracle_text": "",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "2",
+		"type_line": "Creature — Bear"
+	},
+	"hill_giant": {
+		"mana_cost": "{3}{R}",
+		"name": "Hill Giant",
+		"oracle_id": "342199e0-15b6-4824-83da-25caef2592b3",
+		"oracle_text": "",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "3",
+		"type_line": "Creature — Giant"
+	},
+	"howling_mine": {
+		"mana_cost": "{2}",
+		"name": "Howling Mine",
+		"oracle_id": "d26b27db-a567-4631-b4b6-7294222fbdd1",
+		"oracle_text": "At the beginning of each player's draw step, if this artifact is untapped, that player draws an additional card.",
+		"rarity": "rare",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Artifact"
+	},
+	"hurloon_minotaur": {
+		"mana_cost": "{1}{R}{R}",
+		"name": "Hurloon Minotaur",
+		"oracle_id": "8f1dae40-b307-446e-bbd2-86aa35813871",
+		"oracle_text": "",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "3",
+		"type_line": "Creature — Minotaur"
+	},
+	"ironroot_treefolk": {
+		"mana_cost": "{4}{G}",
+		"name": "Ironroot Treefolk",
+		"oracle_id": "b7c0bb85-fb87-4c73-bc1b-7b4dc763c7e8",
+		"oracle_text": "",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "5",
+		"type_line": "Creature — Treefolk"
+	},
+	"island": {
+		"mana_cost": "",
+		"name": "Island",
+		"oracle_id": "b2c6aa39-2d2a-459c-a555-fb48ba993373",
+		"oracle_text": "({T}: Add {U}.)",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Basic Land — Island"
+	},
+	"ivory_tower": {
+		"mana_cost": "{1}",
+		"name": "Ivory Tower",
+		"oracle_id": "d416a4ed-9f16-4a8b-8aee-03c630e1eb6c",
+		"oracle_text": "At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.",
+		"rarity": "uncommon",
+		"set_name": "Antiquities",
+		"type_line": "Artifact"
+	},
+	"keldon_warlord": {
+		"mana_cost": "{2}{R}{R}",
+		"name": "Keldon Warlord",
+		"oracle_id": "acc869f8-dcbe-4d57-baa0-3eef4aceb251",
+		"oracle_text": "Keldon Warlord's power and toughness are each equal to the number of non-Wall creatures you control.",
+		"power": "*",
+		"rarity": "uncommon",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "*",
+		"type_line": "Creature — Human Barbarian"
+	},
+	"lightning_bolt": {
+		"mana_cost": "{R}",
+		"name": "Lightning Bolt",
+		"oracle_id": "4457ed35-7c10-48c8-9776-456485fdf070",
+		"oracle_text": "Lightning Bolt deals 3 damage to any target.",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Instant"
+	},
+	"llanowar_elves": {
+		"mana_cost": "{G}",
+		"name": "Llanowar Elves",
+		"oracle_id": "68954295-54e3-4303-a6bc-fc4547a4e3a3",
+		"oracle_text": "{T}: Add {G}.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Elf Druid"
+	},
+	"merfolk_of_the_pearl_trident": {
+		"mana_cost": "{U}",
+		"name": "Merfolk of the Pearl Trident",
+		"oracle_id": "218d9277-c179-4de3-9c7f-79b5a6d4fa38",
+		"oracle_text": "",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Merfolk"
+	},
+	"mountain": {
+		"mana_cost": "",
+		"name": "Mountain",
+		"oracle_id": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+		"oracle_text": "({T}: Add {R}.)",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Basic Land — Mountain"
+	},
+	"pearled_unicorn": {
+		"mana_cost": "{2}{W}",
+		"name": "Pearled Unicorn",
+		"oracle_id": "c071be90-0531-40cc-af46-0cbe80c4ddd4",
+		"oracle_text": "",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "2",
+		"type_line": "Creature — Unicorn"
+	},
+	"plains": {
+		"mana_cost": "",
+		"name": "Plains",
+		"oracle_id": "bc71ebf6-2056-41f7-be35-b2e5c34afa99",
+		"oracle_text": "({T}: Add {W}.)",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Basic Land — Plains"
+	},
+	"prodigal_sorcerer": {
+		"mana_cost": "{2}{U}",
+		"name": "Prodigal Sorcerer",
+		"oracle_id": "5e961d15-5972-4e4b-9385-1cd7cd7c6bbe",
+		"oracle_text": "{T}: This creature deals 1 damage to any target.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Human Wizard Sorcerer"
+	},
+	"raise_dead": {
+		"mana_cost": "{B}",
+		"name": "Raise Dead",
+		"oracle_id": "cbc9c731-181a-4f00-a7b0-eb7e56eac2ea",
+		"oracle_text": "Return target creature card from your graveyard to your hand.",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Sorcery"
+	},
+	"samite_healer": {
+		"mana_cost": "{1}{W}",
+		"name": "Samite Healer",
+		"oracle_id": "95a0ca48-d924-47f4-86ed-42c673ee778c",
+		"oracle_text": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Human Cleric"
+	},
+	"savannah_lions": {
+		"mana_cost": "{W}",
+		"name": "Savannah Lions",
+		"oracle_id": "60ba93eb-39e6-4af2-9c66-cd38f72daff2",
+		"oracle_text": "",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Cat"
+	},
+	"scathe_zombies": {
+		"mana_cost": "{2}{B}",
+		"name": "Scathe Zombies",
+		"oracle_id": "e0fefaf0-da20-4d58-8db7-019dba16c780",
+		"oracle_text": "",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "2",
+		"type_line": "Creature — Zombie"
+	},
+	"serra_angel": {
+		"mana_cost": "{3}{W}{W}",
+		"name": "Serra Angel",
+		"oracle_id": "4b7ac066-e5c7-43e6-9e7e-2739b24a905d",
+		"oracle_text": "Flying\nVigilance (Attacking doesn't cause this creature to tap.)",
+		"power": "4",
+		"rarity": "uncommon",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "4",
+		"type_line": "Creature — Angel"
+	},
+	"shatter": {
+		"mana_cost": "{1}{R}",
+		"name": "Shatter",
+		"oracle_id": "84d32e68-72b9-432d-a023-7bc6a26b8ad0",
+		"oracle_text": "Destroy target artifact.",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Instant"
+	},
+	"shivan_dragon": {
+		"mana_cost": "{4}{R}{R}",
+		"name": "Shivan Dragon",
+		"oracle_id": "711eea87-0fa3-46e0-a42b-fa5a86455f04",
+		"oracle_text": "Flying\n{R}: This creature gets +1/+0 until end of turn.",
+		"power": "5",
+		"rarity": "rare",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "5",
+		"type_line": "Creature — Dragon"
+	},
+	"stifle": {
+		"mana_cost": "{U}",
+		"name": "Stifle",
+		"oracle_id": "b3b00911-ece7-4484-bc36-f211ce72b6cc",
+		"oracle_text": "Counter target activated or triggered ability. (Mana abilities can't be targeted.)",
+		"rarity": "rare",
+		"set_name": "Scourge",
+		"type_line": "Instant"
+	},
+	"swamp": {
+		"mana_cost": "",
+		"name": "Swamp",
+		"oracle_id": "56719f6a-1a6c-4c0a-8d21-18f7d7350b68",
+		"oracle_text": "({T}: Add {B}.)",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Basic Land — Swamp"
+	},
+	"terror": {
+		"mana_cost": "{1}{B}",
+		"name": "Terror",
+		"oracle_id": "b81f041d-98db-4408-9472-c483e4a502bc",
+		"oracle_text": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
+		"rarity": "common",
+		"set_name": "Limited Edition Alpha",
+		"type_line": "Instant"
+	},
+	"uthden_troll": {
+		"mana_cost": "{2}{R}",
+		"name": "Uthden Troll",
+		"oracle_id": "d6329dcc-b450-482a-8ee3-45449f7a4b3d",
+		"oracle_text": "{R}: Regenerate this creature.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "2",
+		"type_line": "Creature — Troll"
+	},
+	"wall_of_stone": {
+		"mana_cost": "{1}{R}{R}",
+		"name": "Wall of Stone",
+		"oracle_id": "cd4cadb4-3156-49bd-b36e-12ba5c85938b",
+		"oracle_text": "Defender (This creature can't attack.)",
+		"power": "0",
+		"rarity": "uncommon",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "8",
+		"type_line": "Creature — Wall"
+	},
+	"water_elemental": {
+		"mana_cost": "{3}{U}{U}",
+		"name": "Water Elemental",
+		"oracle_id": "c470fbe1-0538-46ec-8741-3143f5e78af8",
+		"oracle_text": "",
+		"power": "5",
+		"rarity": "uncommon",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "4",
+		"type_line": "Creature — Elemental"
+	},
+	"white_knight": {
+		"mana_cost": "{W}{W}",
+		"name": "White Knight",
+		"oracle_id": "ddb021df-ae4a-4ac1-8353-d0b375761714",
+		"oracle_text": "First strike (This creature deals combat damage before creatures without first strike.)\nProtection from black (This creature can't be blocked, targeted, dealt damage, or enchanted by anything black.)",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Limited Edition Alpha",
+		"toughness": "2",
+		"type_line": "Creature — Human Knight"
+	}
+}

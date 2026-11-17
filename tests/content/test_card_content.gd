@@ -73,20 +73,6 @@ func test_a_basic_land_from_content_taps_for_its_mana_in_a_game() -> void:
 	assert_eq(add_mana.mana_type, MmMana.Type.GREEN)
 
 
-func test_the_alpha_spells_have_the_right_printed_characteristics() -> void:
-	var expected: Dictionary[String, Array] = {
-		"lightning_bolt": ["Lightning Bolt", MmCardTypes.CardColor.RED],
-		"ancestral_recall": ["Ancestral Recall", MmCardTypes.CardColor.BLUE],
-		"dark_ritual": ["Dark Ritual", MmCardTypes.CardColor.BLACK],
-	}
-	for file_name: String in expected:
-		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
-		assert_eq(printed.name, expected[file_name][0])
-		assert_eq(printed.card_types, [MmCardTypes.CardType.INSTANT], file_name)
-		assert_eq(printed.colors, [expected[file_name][1]], file_name)
-		assert_eq(printed.mana_value(), 1, file_name)
-
-
 func test_lightning_bolt_deals_three_damage_to_a_player() -> void:
 	var engine: MmEngine = _hero_ready_to_cast(_alpha("lightning_bolt"), "mountain")
 
@@ -117,16 +103,6 @@ func test_ancestral_recall_makes_its_target_draw_three() -> void:
 	assert_eq(engine.hero().hand.size(), hand_before + 3)
 
 
-func test_counterspell_is_a_blue_instant_for_two_blue_mana() -> void:
-	var printed: MmCharacteristics = MmCharacteristics.printed(_alpha("counterspell"))
-
-	assert_eq(printed.name, "Counterspell")
-	assert_eq(printed.card_types, [MmCardTypes.CardType.INSTANT])
-	assert_eq(printed.colors, [MmCardTypes.CardColor.BLUE])
-	assert_eq(printed.mana_cost.generic, 0)
-	assert_eq(printed.mana_cost.symbols, [MmMana.Type.BLUE, MmMana.Type.BLUE] as Array[MmMana.Type])
-
-
 func test_counterspell_counters_a_spell_so_it_never_resolves() -> void:
 	var cards: Array[MmCardDefinition] = Scenario.cycled([_alpha("island"), _alpha("island"), _alpha("counterspell"), _alpha("ancestral_recall")])
 	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
@@ -144,16 +120,6 @@ func test_counterspell_counters_a_spell_so_it_never_resolves() -> void:
 
 	assert_eq(hero.hand.size(), hand_before - 1, "Counterspell left the hand, and nothing was drawn.")
 	assert_eq(Scenario.names(engine, hero.graveyard), ["Ancestral Recall", "Counterspell"])
-
-
-func test_raise_dead_is_a_black_sorcery_for_one_black_mana() -> void:
-	var printed: MmCharacteristics = MmCharacteristics.printed(_alpha("raise_dead"))
-
-	assert_eq(printed.name, "Raise Dead")
-	assert_eq(printed.card_types, [MmCardTypes.CardType.SORCERY])
-	assert_eq(printed.colors, [MmCardTypes.CardColor.BLACK])
-	assert_eq(printed.mana_cost.generic, 0)
-	assert_eq(printed.mana_cost.symbols, [MmMana.Type.BLACK] as Array[MmMana.Type])
 
 
 func test_raise_dead_returns_a_creature_card_from_its_casters_graveyard() -> void:
@@ -177,16 +143,6 @@ func test_raise_dead_returns_a_creature_card_from_its_casters_graveyard() -> voi
 
 	assert_eq(Scenario.names(engine, hero.hand).count("Scathe Zombies"), 1)
 	assert_eq(Scenario.names(engine, hero.graveyard), ["Doom", "Raise Dead"])
-
-
-func test_stifle_is_a_blue_instant_for_one_blue_mana() -> void:
-	var printed: MmCharacteristics = MmCharacteristics.printed(_card("scourge", "stifle"))
-
-	assert_eq(printed.name, "Stifle")
-	assert_eq(printed.card_types, [MmCardTypes.CardType.INSTANT])
-	assert_eq(printed.colors, [MmCardTypes.CardColor.BLUE])
-	assert_eq(printed.mana_cost.generic, 0)
-	assert_eq(printed.mana_cost.symbols, [MmMana.Type.BLUE] as Array[MmMana.Type])
 
 
 func test_stifle_counters_a_triggered_ability_so_it_never_resolves() -> void:
@@ -223,24 +179,6 @@ func test_dark_ritual_adds_three_black_mana_when_it_resolves() -> void:
 	assert_eq(pool.size(), 3)
 	for mana: MmMana in pool:
 		assert_eq(mana.type, MmMana.Type.BLACK)
-
-
-func test_the_alpha_creatures_have_the_right_printed_characteristics() -> void:
-	var expected: Dictionary[String, Array] = {
-		"grizzly_bears": ["Grizzly Bears", ["Bear"], MmCardTypes.CardColor.GREEN, 2, 2, 2],
-		"hill_giant": ["Hill Giant", ["Giant"], MmCardTypes.CardColor.RED, 4, 3, 3],
-		"elvish_archers": ["Elvish Archers", ["Elf", "Archer"], MmCardTypes.CardColor.GREEN, 2, 1, 2],
-	}
-	for file_name: String in expected:
-		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
-		assert_eq(printed.name, expected[file_name][0])
-		assert_eq(printed.card_types, [MmCardTypes.CardType.CREATURE], file_name)
-		assert_eq(printed.subtypes, expected[file_name][1], file_name)
-		assert_eq(printed.colors, [expected[file_name][2]], file_name)
-		assert_eq(printed.mana_value(), expected[file_name][3], file_name)
-		assert_eq(printed.power, expected[file_name][4], file_name)
-		assert_eq(printed.toughness, expected[file_name][5], file_name)
-		assert_eq(printed.has_ability(FirstStrikeAbility), file_name == "elvish_archers", file_name)
 
 
 func test_grizzly_bears_is_cast_with_forests_and_enters_the_battlefield_as_a_two_two() -> void:
@@ -327,21 +265,6 @@ func test_ancestral_recall_from_a_short_library_makes_its_target_lose() -> void:
 	assert_eq(engine.hero().loss_reason, MmPlayer.LossReason.EMPTY_LIBRARY)
 
 
-func test_the_alpha_artifacts_have_the_right_printed_characteristics() -> void:
-	var expected: Dictionary[String, Array] = {
-		"ankh_of_mishra": ["Ankh of Mishra", 2],
-		"howling_mine": ["Howling Mine", 2],
-		"ivory_tower": ["Ivory Tower", 1],
-	}
-	for file_name: String in expected:
-		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
-		assert_eq(printed.name, expected[file_name][0])
-		assert_eq(printed.card_types, [MmCardTypes.CardType.ARTIFACT], file_name)
-		assert_eq(printed.colors, [], file_name)
-		assert_eq(printed.mana_value(), expected[file_name][1], file_name)
-		assert_true(printed.has_ability(TriggeredAbility), file_name)
-
-
 func test_ankh_of_mishra_damages_the_controller_of_each_land_that_enters() -> void:
 	var engine: MmEngine = _artifact_cast_on_turn_three("ankh_of_mishra", "mountain")
 
@@ -390,33 +313,6 @@ func _artifact_cast_on_turn_three(file_name: String, land_file: String) -> MmEng
 	assert_not_null(engine, "No seed gave the needed hand.")
 	assert_eq(Scenario.cast_and_resolve(engine, artifact.name), "")
 	return engine
-
-
-func test_the_milestone_nine_cards_have_the_right_printed_characteristics() -> void:
-	var white: MmCardTypes.CardColor = MmCardTypes.CardColor.WHITE
-	var red: MmCardTypes.CardColor = MmCardTypes.CardColor.RED
-	var green: MmCardTypes.CardColor = MmCardTypes.CardColor.GREEN
-	# file: [name, card type, colors, mana value, subtypes, power, toughness, keyword or null]
-	var expected: Dictionary[String, Array] = {
-		"giant_growth": ["Giant Growth", MmCardTypes.CardType.INSTANT, [green], 1, [], 0, 0, null],
-		"serra_angel": ["Serra Angel", MmCardTypes.CardType.CREATURE, [white], 5, ["Angel"], 4, 4, VigilanceAbility],
-		"giant_spider": ["Giant Spider", MmCardTypes.CardType.CREATURE, [green], 4, ["Spider"], 2, 4, ReachAbility],
-		"wall_of_stone": ["Wall of Stone", MmCardTypes.CardType.CREATURE, [red], 3, ["Wall"], 0, 8, DefenderAbility],
-		"keldon_warlord": ["Keldon Warlord", MmCardTypes.CardType.CREATURE, [red], 4, ["Human", "Barbarian"], 0, 0, CharacteristicDefiningAbility],
-	}
-	for file_name: String in expected:
-		var facts: Array = expected[file_name]
-		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
-		assert_eq(printed.name, facts[0])
-		assert_eq(printed.card_types, [facts[1]], file_name)
-		assert_eq(printed.colors, facts[2], file_name)
-		assert_eq(printed.mana_value(), facts[3], file_name)
-		assert_eq(printed.subtypes, facts[4], file_name)
-		assert_eq([printed.power, printed.toughness], [facts[5], facts[6]], file_name)
-		if facts[7] != null:
-			assert_true(printed.has_ability(facts[7]), file_name)
-	assert_true(MmCharacteristics.printed(_alpha("serra_angel")).has_ability(FlyingAbility))
-	assert_true(MmCharacteristics.printed(_alpha("keldon_warlord")).is_power_variable, "Printed as */*.")
 
 
 func test_giant_growth_gives_plus_three_plus_three_until_end_of_turn() -> void:
@@ -478,36 +374,6 @@ func test_keldon_warlord_counts_the_non_wall_creatures_its_controller_controls()
 	var warlord_id: int = Scenario.permanent_named(engine, engine.hero().id, "Keldon Warlord")
 
 	assert_eq(Scenario.pt(engine, warlord_id), [2, 2])
-
-
-func test_the_milestone_ten_cards_have_the_right_printed_characteristics() -> void:
-	var white: MmCardTypes.CardColor = MmCardTypes.CardColor.WHITE
-	var black: MmCardTypes.CardColor = MmCardTypes.CardColor.BLACK
-	var expected: Dictionary[String, Array] = {
-		"fog": ["Fog", MmCardTypes.CardType.INSTANT, [MmCardTypes.CardColor.GREEN], 1, [], 0, 0],
-		"samite_healer": ["Samite Healer", MmCardTypes.CardType.CREATURE, [white], 2, ["Human", "Cleric"], 1, 1],
-		"white_knight": ["White Knight", MmCardTypes.CardType.CREATURE, [white], 2, ["Human", "Knight"], 2, 2],
-		"black_knight": ["Black Knight", MmCardTypes.CardType.CREATURE, [black], 2, ["Human", "Knight"], 2, 2],
-		"drudge_skeletons": ["Drudge Skeletons", MmCardTypes.CardType.CREATURE, [black], 2, ["Skeleton"], 1, 1],
-		"terror": ["Terror", MmCardTypes.CardType.INSTANT, [black], 2, [], 0, 0],
-	}
-	for file_name: String in expected:
-		var facts: Array = expected[file_name]
-		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
-		assert_eq(printed.name, facts[0])
-		assert_eq(printed.card_types, [facts[1]], file_name)
-		assert_eq(printed.colors, facts[2], file_name)
-		assert_eq(printed.mana_value(), facts[3], file_name)
-		assert_eq(printed.subtypes, facts[4], file_name)
-		if facts[1] == MmCardTypes.CardType.CREATURE:
-			assert_eq([printed.power, printed.toughness], [facts[5], facts[6]], file_name)
-	for knight: String in ["white_knight", "black_knight"]:
-		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(knight))
-		assert_true(printed.has_ability(FirstStrikeAbility), knight)
-		assert_true(printed.has_ability(ProtectionAbility), knight)
-	var skeleton_ability: ActivatedAbility = _alpha("drudge_skeletons").abilities[0] as ActivatedAbility
-	assert_eq(skeleton_ability.mana_cost.symbols, [MmMana.Type.BLACK])
-	assert_eq(skeleton_ability.costs, [], "Regenerating does not tap it.")
 
 
 func test_fog_prevents_all_combat_damage() -> void:
@@ -632,46 +498,6 @@ func test_drudge_skeletons_regenerates_for_black_mana() -> void:
 	assert_not_null(engine.game_state().object(skeleton))
 	assert_true(engine.game_state().object(skeleton).is_tapped)
 	assert_eq(Scenario.damage_on(engine, skeleton), 0)
-
-
-func test_the_milestone_eleven_cards_have_the_right_printed_characteristics() -> void:
-	var white: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.WHITE]
-	var blue: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.BLUE]
-	var black: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.BLACK]
-	var red: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.RED]
-	var green: Array[MmCardTypes.CardColor] = [MmCardTypes.CardColor.GREEN]
-	var creature: MmCardTypes.CardType = MmCardTypes.CardType.CREATURE
-	var expected: Dictionary[String, Array] = {
-		"shivan_dragon": ["Shivan Dragon", creature, red, 6, ["Dragon"], 5, 5],
-		"frozen_shade": ["Frozen Shade", creature, black, 3, ["Shade"], 0, 1],
-		"goblin_balloon_brigade": ["Goblin Balloon Brigade", creature, red, 1, ["Goblin", "Warrior"], 1, 1],
-		"uthden_troll": ["Uthden Troll", creature, red, 3, ["Troll"], 2, 2],
-		"llanowar_elves": ["Llanowar Elves", creature, green, 1, ["Elf", "Druid"], 1, 1],
-		"prodigal_sorcerer": ["Prodigal Sorcerer", creature, blue, 3, ["Human", "Wizard"], 1, 1],
-		"craw_wurm": ["Craw Wurm", creature, green, 6, ["Wurm"], 6, 4],
-		"gray_ogre": ["Gray Ogre", creature, red, 3, ["Ogre"], 2, 2],
-		"savannah_lions": ["Savannah Lions", creature, white, 1, ["Cat"], 2, 1],
-		"pearled_unicorn": ["Pearled Unicorn", creature, white, 3, ["Unicorn"], 2, 2],
-		"water_elemental": ["Water Elemental", creature, blue, 5, ["Elemental"], 5, 4],
-		"merfolk_of_the_pearl_trident": ["Merfolk of the Pearl Trident", creature, blue, 1, ["Merfolk"], 1, 1],
-		"scathe_zombies": ["Scathe Zombies", creature, black, 3, ["Zombie"], 2, 2],
-		"hurloon_minotaur": ["Hurloon Minotaur", creature, red, 3, ["Minotaur"], 2, 3],
-		"ironroot_treefolk": ["Ironroot Treefolk", creature, green, 5, ["Treefolk"], 3, 5],
-		"shatter": ["Shatter", MmCardTypes.CardType.INSTANT, red, 2, [], 0, 0],
-	}
-	for file_name: String in expected:
-		var facts: Array = expected[file_name]
-		var printed: MmCharacteristics = MmCharacteristics.printed(_alpha(file_name))
-		assert_eq(printed.name, facts[0])
-		assert_eq(printed.card_types, [facts[1]], file_name)
-		assert_eq(printed.colors, facts[2], file_name)
-		assert_eq(printed.mana_value(), facts[3], file_name)
-		assert_eq(printed.subtypes, facts[4], file_name)
-		if facts[1] == creature:
-			assert_eq([printed.power, printed.toughness], [facts[5], facts[6]], file_name)
-	assert_true(MmCharacteristics.printed(_alpha("shivan_dragon")).has_ability(FlyingAbility))
-	assert_true((_alpha("llanowar_elves").abilities[0] as ActivatedAbility).is_mana_ability())
-	assert_false((_alpha("prodigal_sorcerer").abilities[0] as ActivatedAbility).is_mana_ability())
 
 
 func test_shivan_dragon_gets_plus_one_plus_zero_for_each_red_paid_until_end_of_turn() -> void:

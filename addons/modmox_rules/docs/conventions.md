@@ -57,13 +57,14 @@ ui/              the GUI (game-side): ui/cards/ draws Card Faces and Battlefield
                  ui/encounter/ is the Encounter Screen and its Presenter, ui/menu/ the main menu,
                  ui/deckbox/ the Deckbox, ui/deckbuilder/ the deckbuilder
 docs/adr/        the game's own ADRs, numbered on from the engine's (0021 is the first)
-tools/           developer tools: tools/art/ fetches card art, tools/card_gallery/ shows every card
+tools/           developer tools: tools/art/ fetches card art, tools/card_gallery/ shows every card,
+                 tools/cards/ fetches Oracle Data and writes cards' printed characteristics (ADR 0040)
 tests/           game-side tests, mirroring run/, ui/ and tools/ (tests/run/, tests/ui/cards/, tests/tools/)
 ```
 
 - One class per file. The file name is the class name in `snake_case`: `MmGameState` → `mm_game_state.gd`, `ZoneChangeEvent` → `zone_change_event.gd`.
 - Put a new class in the folder for its domain. Create a new folder only when a new domain appears, such as `filters/` when the first Filter is needed.
-- Author Content `.tres` files in the Godot editor, or generate them with `ResourceSaver`, never by hand-writing the file format.
+- Author Content `.tres` files in the Godot editor, or generate them with `ResourceSaver`, never by hand-writing the file format. A card is added with `/add-card` (game ADR 0040), which writes its printed characteristics from its Oracle Data; its abilities are composed in a throwaway script that saves it again.
 
 ## Naming classes
 

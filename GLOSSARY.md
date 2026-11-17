@@ -8,6 +8,14 @@ The roguelike RPG around the rules engine: runs, characters, and everything that
 The Card Definitions authored for the game and shipped with it, such as the Alpha cards. The rules engine never contains or depends on Content.
 _Avoid_: Card database, card pool, assets
 
+**Oracle Data**:
+A real Magic card's current official characteristics and rules text, as Scryfall gives them, which that card's Card Definition starts from. It has nothing to do with the AI's Combat Oracle.
+_Avoid_: Scryfall data, card data, printed text
+
+**Rebalance**:
+A deliberate change to a Card Definition away from its Oracle Data, made for the game's balance, such as a new rarity or cost.
+_Avoid_: Deviation, nerf, buff, errata (Wizards' own change to Oracle text)
+
 **Frame**:
 The layered image a card is drawn on, worked out from its characteristics: a frame for its color category (a land's follows the colors of mana it can produce), a power/toughness box if it is a creature, and a crown if it is legendary. A colored artifact keeps its colors' frame, box and crown inside the artifact frame's silver border.
 _Avoid_: Card background, border, template
@@ -494,3 +502,7 @@ _Avoid_: Magic ball, orb, dot
 **Wisp Light**:
 The light the Wisp casts on the main menu's window when it comes near the window's top or either side: the Soldier Shadow turned to light, in the Wisp's color at half strength, longer the nearer the Wisp is. It lies over the Soldier Shadow where the two meet.
 _Avoid_: Anti-shadow, glow (a Pending Decision's), highlight
+
+**Effect Callout**:
+The name of the effect the Menu Soldier takes on, floating off from him as he first flashes its color: its keyword as cards print it, such as Flying or First strike, or +1/+1 for his boost, ghostly faint in the flash's color. It appears just outside his picture, beside or above his upper half, and floats straight away from him for two seconds, wiggling and rocking a little as it fades out. His other flashes bring none.
+_Avoid_: Text box, popup, floating text, ghost (a leaving permanent's)

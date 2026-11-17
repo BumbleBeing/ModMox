@@ -5,8 +5,8 @@ extends RefCounted
 ## Animation chosen at random; then an Effect Animation and a Transition Animation take turns,
 ## and neither kind plays the same one twice in a row.
 ##
-## The hook for the Wisp, which brings him his effects: the next Effect Animation is
-## chosen two animations ahead, so [method next_effect], [method next_color] and
+## The hook for the Wisp, which brings him his effects, and for his Effect Callouts: the next
+## Effect Animation is chosen two animations ahead, so [method next_effect], [method next_color] and
 ## [method seconds_until_flash] always name the effect whose flash comes next and when, and
 ## [signal next_effect_changed] tells of the following one on the very frame he flashes.
 
@@ -35,6 +35,11 @@ func advance(seconds: float) -> void:
 		_next += 2
 		_choose_two()
 		next_effect_changed.emit(next_effect())
+
+
+## How long he has been playing, in seconds.
+func seconds() -> float:
+	return _clock
 
 
 ## The frame he is showing now.

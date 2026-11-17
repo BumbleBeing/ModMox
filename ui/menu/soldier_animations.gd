@@ -137,6 +137,25 @@ const EFFECTS: Dictionary[String, Array] = {
 	],
 }
 
+## What each Effect Animation's Effect Callout says: the keyword as cards print it, or, for
+## boost, what it does to him.
+const WORDS: Dictionary[String, String] = {
+	"boost": "+1/+1",
+	"lifelink": "Lifelink",
+	"deathtouch": "Deathtouch",
+	"flying": "Flying",
+	"reach": "Reach",
+	"vigilance": "Vigilance",
+	"haste": "Haste",
+	"defender": "Defender",
+	"first_strike": "First strike",
+	"double_strike": "Double strike",
+	"trample": "Trample",
+	"indestructible": "Indestructible",
+	"protection": "Protection",
+	"menace": "Menace",
+}
+
 
 ## The timeline of [param animation], a Transition or an Effect Animation.
 static func timeline_of(animation: String) -> Array:
@@ -197,6 +216,11 @@ static func seconds_to_flash(effect: String) -> float:
 ## The color [param effect] flashes.
 static func color_of(effect: String) -> Color:
 	return FLASH_COLORS[flash_of(effect)]
+
+
+## The words [param effect]'s Effect Callout says.
+static func words_of(effect: String) -> String:
+	return WORDS[effect]
 
 
 ## Every frame any animation shows, each once, in the order they first appear.
