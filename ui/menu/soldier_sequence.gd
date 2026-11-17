@@ -5,7 +5,7 @@ extends RefCounted
 ## Animation chosen at random; then an Effect Animation and a Transition Animation take turns,
 ## and neither kind plays the same one twice in a row.
 ##
-## The hook for what brings him his effects (the magic ball): the next Effect Animation is
+## The hook for the Wisp, which brings him his effects: the next Effect Animation is
 ## chosen two animations ahead, so [method next_effect], [method next_color] and
 ## [method seconds_until_flash] always name the effect whose flash comes next and when, and
 ## [signal next_effect_changed] tells of the following one on the very frame he flashes.

@@ -207,8 +207,9 @@ func test_the_window_is_never_smaller_than_four_times_a_backdrop() -> void:
 	assert_eq(get_window().min_size, MainMenu.MIN_WINDOW)
 
 
-func test_the_menu_soldier_stands_left_of_the_menu_in_whole_pixels() -> void:
+func test_the_menu_soldier_stands_on_the_window_and_the_two_are_centered_together() -> void:
 	var menu: MainMenu = _menu(PackedStringArray())
+	menu.size = Vector2(1920, 1080)
 	await wait_process_frames(2)
 
 	var soldier: MenuSoldier = menu.soldier()
@@ -219,12 +220,81 @@ func test_the_menu_soldier_stands_left_of_the_menu_in_whole_pixels() -> void:
 	assert_true(soldier.is_visible_in_tree())
 	assert_eq(his.size, Vector2.ONE * MenuSoldier.SPRITE_SIZE * MenuSoldier.SCALE)
 	assert_eq(his.position, his.position.round(), "on whole pixels")
-	assert_almost_eq(window.position.x - his.end.x, float(MainMenu.SOLDIER_GAP), 1.0, "beside the window")
-	assert_almost_eq(his.end.y - MenuSoldier.SCALE, window.end.y, 1.0,
-			"his soles, a sprite pixel above his picture's foot, level with the window's")
+	assert_almost_eq(his.get_center().x, window.get_center().x, 1.0, "centered on the window")
+	assert_eq(his.end.y - MenuSoldier.SCALE, window.position.y,
+			"his soles, a sprite pixel above his picture's foot, on the window's top")
+	assert_almost_eq((his.position.y + window.end.y) / 2, menu.get_global_rect().get_center().y, 1.0,
+			"he and the window centered on the screen together")
 	assert_eq(soldier.texture.resource_path, SoldierAnimations.SPRITES % SoldierAnimations.NEUTRAL,
 			"every animation opens standing still")
 	assert_not_null(soldier.sequence(), "what brings him his effects asks his sequence")
+
+
+func test_his_shadow_lies_on_the_windows_top_under_where_he_touches_it() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+	menu.size = Vector2(1920, 1080)
+	await wait_process_frames(2)
+	var soldier: MenuSoldier = menu.soldier()
+	var his: Rect2 = soldier.get_global_rect()
+	var window: Rect2 = menu.window().get_global_rect()
+
+	var blocks: Array[Rect2] = menu.shadow_blocks()
+
+	assert_gt(blocks.size(), 0)
+	for block: Rect2 in blocks:
+		assert_between(block.position.y, window.position.y, window.position.y + 12.0, "on the window's top")
+		assert_has(soldier.contacts(), floori((block.get_center().x - his.position.x) / MenuSoldier.SCALE))
+		assert_eq(posmod(int(block.position.y - window.position.y), DitherShading.BLOCK), 0,
+				"in step with the window's dither")
+
+
+func test_the_wisp_floats_in_front_of_him_on_whole_pixels_and_takes_no_clicks() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+	menu.size = Vector2(1920, 1080)
+	await wait_process_frames(3)
+	var wisp: MenuWisp = menu.wisp()
+
+	assert_not_null(wisp)
+	assert_true(wisp.is_visible_in_tree(), "flying once it knows where he stands")
+	assert_gt(wisp.get_index(), menu.soldier().get_parent().get_parent().get_index(), "drawn in front of him")
+	assert_eq(wisp.mouse_filter, Control.MOUSE_FILTER_IGNORE, "it takes no clicks")
+	assert_eq(wisp.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_eq(wisp.size, Vector2.ONE * MenuWisp.SPRITE_SIZE * MenuWisp.SCALE, "eight times its sprite")
+	assert_eq(wisp.global_position, wisp.global_position.round(), "on whole pixels")
+	assert_false(menu.window().get_global_rect().intersects(wisp.get_global_rect()), "off the window")
+
+
+func test_the_wisp_light_pools_on_the_windows_top_at_his_feet_as_the_wisp_touches_him() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+	menu.size = Vector2(1920, 1080)
+	await wait_process_frames(2)
+	var soldier: MenuSoldier = menu.soldier()
+	var window: Rect2 = menu.window().get_global_rect()
+	soldier.set_process(false)
+
+	soldier.advance(soldier.sequence().seconds_until_flash() + 0.001)
+
+	assert_lt(menu.wisp().flight().position().distance_to(soldier.chest()), 0.01, "on his chest as he flashes")
+	var blocks: Array[Rect2] = menu.light_blocks()
+	var middle: float = 0.0
+	assert_gt(blocks.size(), 0)
+	for block: Rect2 in blocks:
+		assert_between(block.position.y, window.position.y, window.position.y + DitherShading.BLOCK * 3.0,
+				"on the window's top")
+		middle += block.get_center().x
+	assert_almost_eq(middle / blocks.size(), soldier.chest().x, DitherShading.BLOCK * 1.0, "at his feet")
+
+
+func test_the_wisp_light_lies_over_the_soldier_shadow() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+
+	assert_gt(menu.get_node("WispLight").get_index(), menu.get_node("SoldierShadow").get_index())
+
+
+func test_there_is_no_wisp_when_the_menu_is_skipped() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(["--seed=7"]))
+
+	assert_null(menu.wisp())
 
 
 func test_the_window_keeps_its_smallest_size_when_the_menu_is_skipped() -> void:

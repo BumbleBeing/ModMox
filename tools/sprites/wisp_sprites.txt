@@ -1,0 +1,57 @@
+; The main menu's Wisp, stand-ins until it is drawn properly: one frame in each of the Menu
+; Soldier's flash colors, a soft round light with the flash color around a paler middle.
+; A color's frames are wisp_<color>_0, _1 and so on; the Wisp flickers through as many as
+; there are (MenuWisp). Each is 6 rows of 6; see KEY in build_sprites.lua for which
+; character is which color.
+;   ASEPRITE=... tools/sprites/build.sh tools/sprites/wisp_sprites.txt ui/sprites/menu
+; Once a sprite's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 6
+
+= wisp_white_0
+..++..
+.+66+.
++6##6+
++6##6+
+.+66+.
+..++..
+
+= wisp_red_0
+..cc..
+.c!!c.
+c!ee!c
+c!ee!c
+.c!!c.
+..cc..
+
+= wisp_gold_0
+..ww..
+.w$$w.
+w$yy$w
+w$yy$w
+.w$$w.
+..ww..
+
+= wisp_green_0
+..HH..
+.H%%H.
+H%JJ%H
+H%JJ%H
+.H%%H.
+..HH..
+
+= wisp_blue_0
+..RR..
+.R&&R.
+R&TT&R
+R&TT&R
+.R&&R.
+..RR..
+
+= wisp_violet_0
+..WW..
+.W**W.
+W*YY*W
+W*YY*W
+.W**W.
+..WW..

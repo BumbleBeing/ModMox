@@ -33,6 +33,45 @@ func test_time_goes_by_for_him_on_its_own() -> void:
 	assert_lt(soldier.sequence().seconds_until_flash(), before)
 
 
+func test_he_tells_when_his_frame_changes_and_only_then() -> void:
+	var soldier: MenuSoldier = _soldier(4)
+	watch_signals(soldier)
+
+	soldier.advance(0.1)
+	assert_signal_not_emitted(soldier, "frame_changed", "still standing at the start")
+	while soldier.sequence().frame() == SoldierAnimations.NEUTRAL:
+		soldier.advance(0.05)
+
+	assert_signal_emit_count(soldier, "frame_changed", 1)
+	assert_signal_emitted_with_parameters(soldier, "frame_changed", [soldier.sequence().frame()])
+
+
+func test_where_he_touches_the_ground_follows_his_feet_and_his_spear() -> void:
+	var soldier: MenuSoldier = _soldier(5)
+	var standing: Array[int] = soldier.contacts()
+	var lifted: Dictionary[String, bool] = {}
+
+	for step: int in 1200:
+		soldier.advance(0.05)
+		assert_eq_deep(soldier.contacts(), SoldierShadow.contacts_of(soldier.texture.get_image()))
+		if soldier.contacts() != standing:
+			lifted[soldier.sequence().frame()] = true
+
+	assert_gt(lifted.size(), 0, "a foot or the spear lifts within a minute")
+
+
+func test_his_shadow_flashes_on_the_frame_he_does() -> void:
+	var soldier: MenuSoldier = _soldier(6)
+	watch_signals(soldier)
+
+	soldier.advance(soldier.sequence().seconds_until_flash() + 0.001)
+
+	assert_true(SoldierAnimations.FLASH_COLORS.has(soldier.sequence().frame()))
+	var flash: Color = SoldierAnimations.FLASH_COLORS[soldier.sequence().frame()]
+	assert_eq(soldier.shadow().color_of(soldier.contacts()[0]), Color(flash, 0.5))
+	assert_signal_emitted(soldier, "shadow_changed")
+
+
 func test_without_a_seed_each_soldier_chooses_his_first_transition_at_random() -> void:
 	var firsts: Dictionary[String, bool] = {}
 

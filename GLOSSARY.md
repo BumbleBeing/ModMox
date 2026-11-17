@@ -468,8 +468,12 @@ The bar in the deckbuilder between the Collection and the Deck's columns. Draggi
 _Avoid_: Slider (the zoom sliders), splitter, sash, handle
 
 **Menu Soldier**:
-The pixel-art soldier who stands left of the main menu's window and plays one Soldier Animation after another, each starting as the last one ends. The first, from the moment the menu opens, is a Transition Animation chosen at random; then an Effect Animation and a Transition Animation take turns, and he never plays the same Transition Animation, or the same Effect Animation, twice in a row. The next Effect Animation is chosen two animations ahead, so whatever brings it to him knows its color and the moment he will flash it.
+The pixel-art soldier who stands on top of the main menu's window, the two centered on the screen together, and plays one Soldier Animation after another, each starting as the last one ends. The first, from the moment the menu opens, is a Transition Animation chosen at random; then an Effect Animation and a Transition Animation take turns, and he never plays the same Transition Animation, or the same Effect Animation, twice in a row. The next Effect Animation is chosen two animations ahead, so the Wisp, which brings it to him, knows its color and the moment he will flash it.
 _Avoid_: Mascot, idle soldier
+
+**Soldier Shadow**:
+The shadow the Menu Soldier casts on the window he stands on: half black, in the window's own Dither Shading blocks, two rows solid and two dithered away, under every column where the bottom of his sprite is black. It follows his frames, fading out rapidly under a lifted foot or a raised spear and back in as it comes down, and on the frame he flashes it takes the flash's color, fading back to black as rapidly after.
+_Avoid_: Drop shadow, contact shadow
 
 **Soldier Animation**:
 Seven seconds of the Menu Soldier's frames, starting and ending on him standing still, as long at one end as at the other: a Transition Animation or an Effect Animation.
@@ -482,3 +486,11 @@ _Avoid_: Idle (its old name), interlude
 **Effect Animation**:
 A Soldier Animation that gives the Menu Soldier a keyword's look for a while, such as wings for flying or a goblin's face for menace. He flashes the effect's color on the way in and again on the way out.
 _Avoid_: Buff animation, keyword animation
+
+**Wisp**:
+The little light that floats about the main menu bringing the Menu Soldier his effects. In the next Effect Animation's color, it reaches his chest at the moment he first flashes that color, drifts on through him to the other side of the window from the one it came from, and wanders lazily back in time for the next; after each touch it turns slowly to the following effect's color. It never crosses the window or goes below it, and it fades in when the menu opens.
+_Avoid_: Magic ball, orb, dot
+
+**Wisp Light**:
+The light the Wisp casts on the main menu's window when it comes near the window's top or either side: the Soldier Shadow turned to light, in the Wisp's color at half strength, longer the nearer the Wisp is. It lies over the Soldier Shadow where the two meet.
+_Avoid_: Anti-shadow, glow (a Pending Decision's), highlight
