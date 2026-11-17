@@ -6,7 +6,7 @@ extends RefCounted
 ## answers with these in-progress results, so a Filter in a later layer sees what earlier
 ## layers did, and nothing recurses. Within a layer, effects apply in timestamp order.
 ##
-## Later: layers 1-5 (copy, control, text, type, color), and dependencies (CR 613.8), which
+## Later: layers 1-3 and 5 (copy, control, text, color), and dependencies (CR 613.8), which
 ## override timestamp order.
 
 
@@ -19,7 +19,8 @@ static func compute(state: MmGameState) -> Dictionary[int, MmCharacteristics]:
 	state.begin_layer_computation(current)
 	# CR 613.6: the static abilities whose effects have started applying, by source.
 	var started: Dictionary[int, Array] = {}
-	# Later: layers 1-5.
+	# Later: layers 1-3 and 5.
+	_apply_layer(state, objects, current, started, MmContinuousEffect.Layer.TYPE)
 	_apply_layer(state, objects, current, started, MmContinuousEffect.Layer.ABILITY)
 	for game_object: MmGameObject in objects:
 		_apply_defining_abilities(state, game_object, current[game_object.id])
@@ -70,6 +71,12 @@ static func _apply_layer(state: MmGameState, objects: Array[MmGameObject], curre
 		for ability: Variant in abilities:
 			var generating: ContinuousStaticAbility = ability as ContinuousStaticAbility
 			if generating == null:
+				continue
+			# CR 613.6: one that has started applying keeps applying, so only one that has not
+			# yet is asked its condition.
+			var has_started: bool = (started.get(game_object.id, []) as Array).has(generating)
+			if not has_started and generating.condition != null and not generating.condition.is_true(
+					state, MmEffectContext.new(game_object.controller_id, game_object.id)):
 				continue
 			for continuous: MmContinuousEffect in generating.effects:
 				if continuous.layer() == layer:

@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_xo662"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flash_ability.gd" id="2_r50tf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_xi1ye"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_mbfst"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_mm7rn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_hand_effect.gd" id="4_nmt2m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="5_6qcs5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="6_603hc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="7_q0321"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="8_73dkd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/chosen_selection.gd" id="9_tk54k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="10_4vvys"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_b7dq3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_xv2io"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="13_wxjvi"]
+
+[sub_resource type="Resource" id="Resource_a4uns"]
+script = ExtResource("2_r50tf")
+
+[sub_resource type="Resource" id="Resource_tsbkf"]
+script = ExtResource("6_603hc")
+
+[sub_resource type="Resource" id="Resource_nw4d5"]
+script = ExtResource("7_q0321")
+
+[sub_resource type="Resource" id="Resource_tahkr"]
+script = ExtResource("8_73dkd")
+filters = Array[ExtResource("5_6qcs5")]([SubResource("Resource_tsbkf"), SubResource("Resource_nw4d5")])
+
+[sub_resource type="Resource" id="Resource_5w750"]
+script = ExtResource("9_tk54k")
+filter = SubResource("Resource_tahkr")
+
+[sub_resource type="Resource" id="Resource_n3gjq"]
+script = ExtResource("4_nmt2m")
+selection = SubResource("Resource_5w750")
+
+[sub_resource type="Resource" id="Resource_6bwbd"]
+script = ExtResource("12_xv2io")
+
+[sub_resource type="Resource" id="Resource_d3eh4"]
+script = ExtResource("13_wxjvi")
+filter = SubResource("Resource_6bwbd")
+
+[sub_resource type="Resource" id="Resource_fg1bm"]
+script = ExtResource("10_4vvys")
+trigger = SubResource("Resource_d3eh4")
+effects = Array[ExtResource("3_mbfst")]([SubResource("Resource_n3gjq")])
+
+[sub_resource type="Resource" id="Resource_ayrrh"]
+script = ExtResource("2_xi1ye")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_mm7rn")
+name = "Whitemane Lion"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat"])
+mana_cost = SubResource("Resource_ayrrh")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_xo662")]([SubResource("Resource_a4uns"), SubResource("Resource_fg1bm")])

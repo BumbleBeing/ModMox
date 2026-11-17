@@ -312,6 +312,15 @@
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Mountain"
 	},
+	"oblivion_ring": {
+		"mana_cost": "{2}{W}",
+		"name": "Oblivion Ring",
+		"oracle_id": "bd9b9772-f5f9-4c6b-913e-7193bea5d0a7",
+		"oracle_text": "When this enchantment enters, exile another target nonland permanent.\nWhen this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.",
+		"rarity": "common",
+		"set_name": "Lorwyn",
+		"type_line": "Enchantment"
+	},
 	"ornery_kudu": {
 		"mana_cost": "{2}{G}",
 		"name": "Ornery Kudu",
@@ -427,6 +436,17 @@
 		"toughness": "5",
 		"type_line": "Creature — Dragon"
 	},
+	"skyknight_squire": {
+		"mana_cost": "{1}{W}",
+		"name": "Skyknight Squire",
+		"oracle_id": "7e497f6b-69e1-4fab-bb04-f687c99a8310",
+		"oracle_text": "Whenever another creature you control enters, put a +1/+1 counter on this creature.\nAs long as this creature has three or more +1/+1 counters on it, it has flying and is a Knight in addition to its other types.",
+		"power": "1",
+		"rarity": "rare",
+		"set_name": "Foundations",
+		"toughness": "1",
+		"type_line": "Creature — Cat Scout"
+	},
 	"stifle": {
 		"mana_cost": "{U}",
 		"name": "Stifle",
@@ -497,5 +517,16 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "2",
 		"type_line": "Creature — Human Knight"
+	},
+	"whitemane_lion": {
+		"mana_cost": "{1}{W}",
+		"name": "Whitemane Lion",
+		"oracle_id": "e8d6084b-9b72-438e-a30a-851b888f3e4d",
+		"oracle_text": "Flash\nWhen this creature enters, return a creature you control to its owner's hand.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Salvat 2005",
+		"toughness": "2",
+		"type_line": "Creature — Cat"
 	}
 }

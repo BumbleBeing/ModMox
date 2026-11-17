@@ -7,8 +7,10 @@ extends MmEvent
 ## Only ever add values at the end, so saved event histories keep their meaning.
 ## DESTROY is CR 701.8 (indestructible and regeneration care); ZERO_TOUGHNESS is CR 704.5f,
 ## which is not destruction. COUNTER is CR 701.6: a spell countered on the stack.
-## RETURN_TO_HAND is an effect putting a card into its owner's hand.
-enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND }
+## RETURN_TO_HAND is an effect putting a card into its owner's hand. EXILE is CR 701.13a,
+## and RETURN_TO_BATTLEFIELD an effect putting a card in exile onto the battlefield.
+enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND,
+	EXILE, RETURN_TO_BATTLEFIELD }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -22,6 +24,9 @@ var position: int
 var reason: Reason
 ## For a destruction: false when it "can't be regenerated", as with Terror (CR 701.19c).
 var can_be_regenerated: bool = true
+## For an exile: the object whose ability exiled the card, which its linked ability later
+## looks for (CR 607.2a), or 0.
+var exiled_with_object_id: int = 0
 ## The new object's ID, set when the event is applied.
 var new_object_id: int = 0
 ## For an object leaving the battlefield: its characteristics as it last existed there,
@@ -56,6 +61,8 @@ func apply(state: MmGameState) -> void:
 	var arriving: MmGameObject = state.create_object(leaving.card_id, leaving.owner_id, leaving.definition)
 	to_zone.insert(arriving, position)
 	new_object_id = arriving.id
+	if to_zone_kind == MmZone.Kind.EXILE and exiled_with_object_id != 0:
+		arriving.record_exiled_with(exiled_with_object_id)
 	if to_zone_kind == MmZone.Kind.LIBRARY and from_zone_kind == MmZone.Kind.HAND:
 		# Whoever held the card knows where it went, until the library is shuffled.
 		# Later: a card put there from a zone everyone sees, when a card does that.
@@ -68,6 +75,8 @@ func apply(state: MmGameState) -> void:
 
 
 func describe() -> String:
-	return "%s%s: object %d (card %d) from %s to %s as object %d" % [
+	var exiled_with: String = "" if exiled_with_object_id == 0 else " with object %d" % exiled_with_object_id
+	return "%s%s: object %d (card %d) from %s to %s%s as object %d" % [
 		Reason.find_key(reason), "" if can_be_regenerated else " (can't be regenerated)", object_id, card_id,
-		MmZone.describe_zone(from_zone_kind, from_owner_id), MmZone.describe_zone(to_zone_kind, to_owner_id), new_object_id]
+		MmZone.describe_zone(from_zone_kind, from_owner_id), MmZone.describe_zone(to_zone_kind, to_owner_id), exiled_with,
+		new_object_id]

@@ -13,9 +13,9 @@ enum Tag {
 	## Only grants abilities until end of turn, such as flying: it can change who may block
 	## whom, so it is considered from the declare attackers step, and in response to a spell.
 	EVASION,
-	## Deals damage, destroys or puts -1/-1 counters: considered in its controller's main
-	## phases, once blockers are declared, in response to a spell, and in the other player's
-	## end step.
+	## Deals damage, destroys, exiles or puts -1/-1 counters: considered in its controller's
+	## main phases, once blockers are declared, in response to a spell, and in the other
+	## player's end step.
 	REMOVAL,
 	## Counters a spell or an ability: considered only with the other player's spell or ability on top
 	## of the stack, never to counter its own.
@@ -38,7 +38,7 @@ static func tag_of_effects(effects: Array[MmEffect]) -> Tag:
 		if effect is CounterEffect:
 			return Tag.COUNTER
 	for effect: MmEffect in effects:
-		if effect is DealDamageEffect or effect is DestroyEffect or _shrinks_for_good(effect):
+		if effect is DealDamageEffect or effect is DestroyEffect or effect is ExileEffect or _shrinks_for_good(effect):
 			return Tag.REMOVAL
 		var lasts_the_turn: bool = effect is CreateContinuousEffect \
 			and (effect as CreateContinuousEffect).duration == CreateContinuousEffect.Duration.UNTIL_END_OF_TURN

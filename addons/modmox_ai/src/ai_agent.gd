@@ -145,6 +145,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _order_triggers(decision as OrderTriggersDecision, source, rng)
 	if decision is ChooseReplacementEffectDecision:
 		return _choose_replacement(decision as ChooseReplacementEffectDecision, source, rng)
+	if decision is ChooseObjectDecision:
+		return _choose_object(decision as ChooseObjectDecision, world, source, rng)
 	assert(false, "AiAgent cannot answer %s." % decision.describe())
 	return null
 
@@ -526,6 +528,32 @@ func _order_triggers(decision: OrderTriggersDecision, source: MmSimulationSource
 	return orders[_best_option(options, scores, rng, 0)]
 
 
+## A choice made as a spell or ability resolves (CR 608.2d). FULL: simulates each
+## candidate. CHEAP: its own least valuable permanent, which costs it least to lose or have
+## returned to its hand; with none of its own, the first.
+func _choose_object(decision: ChooseObjectDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
+	if decision.candidates.size() == 1:
+		_reason = Reason.ONLY_CHOICE
+		return 0
+	_reason = Reason.BEST_SCORE
+	if mode == Mode.FULL:
+		var options: Array[int] = []
+		for index: int in decision.candidates.size():
+			options.append(index)
+		return _best_option(options, _simulate_each(source, rng, options, decision.player_id), rng, 0)
+	var least: int = 0
+	var least_value: int = -1
+	for index: int in decision.candidates.size():
+		var candidate: MmGameObject = world.object(decision.candidates[index].id)
+		if candidate == null or candidate.controller_id != decision.player_id:
+			continue
+		var value: int = AiBoardEvaluator.permanent_value(world, candidate, profile)
+		if least_value == -1 or value < least_value:
+			least = index
+			least_value = value
+	return least
+
+
 func _choose_replacement(decision: ChooseReplacementEffectDecision, source: MmSimulationSource, rng: MmRng) -> int:
 	if mode == Mode.CHEAP or decision.options.size() == 1:
 		_reason = Reason.ONLY_CHOICE
@@ -734,6 +762,9 @@ func _effects_of_stack_object(world: MmGameState, object_id: int) -> Array[MmEff
 		return effects
 	if item.ability is ActivatedAbility:
 		effects.append_array((item.ability as ActivatedAbility).effects)
+		return effects
+	if item.ability is TriggeredAbility:
+		effects.append_array((item.ability as TriggeredAbility).effects)
 		return effects
 	for ability: MmAbility in world.characteristics_of(item).abilities:
 		if ability is SpellAbility:

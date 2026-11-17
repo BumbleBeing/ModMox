@@ -188,6 +188,23 @@ func test_both_players_see_a_permanents_counters() -> void:
 		assert_eq([seen.power, seen.toughness, seen.base_power, seen.base_toughness], [4, 4, 2, 2])
 
 
+func test_a_counter_filter_matches_a_permanent_with_at_least_that_many_of_its_kind() -> void:
+	var engine: MmEngine = _hero_main([_bear()], [], [Scenario.free_counters("Grow", PLUS, 2), Scenario.free_counters("Swell", PLUS, 1)])
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, bear)
+	var three_or_more: HasCountersFilter = Scenario.has_counters(PLUS, 3)
+	Scenario.cast_and_resolve(engine, "Grow", [_object(bear)])
+	assert_false(three_or_more.matches(engine.game_state(), _object(bear), context), "Two is not three or more.")
+	assert_true(Scenario.has_counters(PLUS, 1).matches(engine.game_state(), _object(bear), context))
+
+	Scenario.cast_and_resolve(engine, "Swell", [_object(bear)])
+
+	assert_true(three_or_more.matches(engine.game_state(), _object(bear), context))
+	assert_false(Scenario.has_counters(MINUS, 1).matches(engine.game_state(), _object(bear), context),
+		"Counters of another kind do not count.")
+	assert_false(three_or_more.matches(engine.game_state(), MmReference.to_player(engine.hero().id), context))
+
+
 func test_a_copy_of_the_state_keeps_the_counters_and_replays_are_exact() -> void:
 	var hero_cards: Array[MmCardDefinition] = [_bear()]
 	var extras: Array[MmCardDefinition] = [Scenario.free_counters("Grow", PLUS, 1)]

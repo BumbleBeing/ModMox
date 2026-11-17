@@ -309,6 +309,16 @@
 		"scryfall_id": "eace2c85-976c-425e-9800-5a6ccbd91b56",
 		"set": "lea"
 	},
+	"oblivion_ring": {
+		"artist": "Wayne England",
+		"collector_number": "34",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "1c7fffe8-709c-4cb4-bbad-e4a0c35b616a",
+		"set": "lrw"
+	},
 	"ornery_kudu": {
 		"artist": "Deruchenko Alexander",
 		"collector_number": "178",
@@ -419,6 +429,16 @@
 		"scryfall_id": "fefbf149-f988-4f8b-9f53-56f5878116a6",
 		"set": "lea"
 	},
+	"skyknight_squire": {
+		"artist": "Alexander Mokhov",
+		"collector_number": "23",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "fcfe4e62-c153-47b8-8e09-cedaf91f53d8",
+		"set": "fdn"
+	},
 	"stifle": {
 		"artist": "Dany Orizio",
 		"collector_number": "52",
@@ -488,5 +508,15 @@
 		],
 		"scryfall_id": "50abfba8-c9f9-4ebf-965a-4b425fe83129",
 		"set": "lea"
+	},
+	"whitemane_lion": {
+		"artist": "Zoltan Boros & Gabor Szikszai",
+		"collector_number": "L32",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "97c98609-b2e5-447f-9b9d-6833584d2998",
+		"set": "psal"
 	}
 }

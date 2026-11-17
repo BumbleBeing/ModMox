@@ -67,7 +67,8 @@ func _candidates(state: MmGameState, context: MmEffectContext) -> Array[MmRefere
 		_:
 			var on_stack: Array[MmGameObject] = state.stack.objects()
 			for index: int in range(on_stack.size() - 1, -1, -1):
-				if _is_in_place(state, on_stack[index].id) and on_stack[index].id != context.source_object_id:
+				# CR 115.5: a spell or ability on the stack can't target itself.
+				if _is_in_place(state, on_stack[index].id) and on_stack[index].id != context.own_object_id:
 					result.append(MmReference.to_object(on_stack[index].id))
 	return result
 
@@ -90,8 +91,7 @@ func _matches(state: MmGameState, candidate: MmReference, context: MmEffectConte
 
 
 ## CR 702.16b: a permanent can't be the target of a spell, or an ability from a source, that
-## it has protection from. The context's source is the spell or ability's own object or its
-## source; ProtectionAbility follows an ability to its source either way.
+## it has protection from. The context's source is the spell itself or the ability's source.
 func _is_protected(state: MmGameState, candidate: MmReference, context: MmEffectContext) -> bool:
 	# CR 113.6: protection works only on the battlefield, so a spell, an ability on the
 	# stack and a card in a graveyard are never protected.

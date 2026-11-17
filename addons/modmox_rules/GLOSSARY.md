@@ -79,7 +79,7 @@ One instance of the word "target" on a spell or ability, with a Filter saying wh
 _Avoid_: Target slot, targeting rule
 
 **Selection**:
-Who or what an effect applies to: the target chosen for a Target Requirement, each player or permanent matching a Filter, or the controller.
+Who or what an effect applies to: the target chosen for a Target Requirement, each player or permanent matching a Filter, a permanent the controller chooses as the effect resolves ("a creature you control", not a target), or the controller.
 _Avoid_: Target (unless an actual target is meant), recipient list, scope
 
 **Filter**:
@@ -143,6 +143,10 @@ _Avoid_: Revealed card, seen card, tracked card
 **Last-Known Information**:
 What an object was like the last time it was on the battlefield, kept after it leaves so that "dies" triggers and "its power" still have an answer.
 _Avoid_: Ghost, snapshot (in rules talk), LKI (in code)
+
+**Linked Abilities**:
+Two abilities of one object where the second refers to what the first did, as Oblivion Ring's "exile another target nonland permanent" and "return the exiled card" are (CR 607). A card the first exiles remembers the object that exiled it, and the second finds only the cards that object exiled. An object that changes zones is a new object, so the link does not follow it.
+_Avoid_: Paired abilities, remembered card, hostage
 
 **Condition**:
 Something true or false about the game right now, such as "this permanent is untapped", used for an intervening "if" clause.

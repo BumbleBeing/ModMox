@@ -598,6 +598,30 @@ func test_a_clicked_target_on_the_battlefield_is_chosen() -> void:
 	assert_eq(_view_of(bear).damage_marked, 1)
 
 
+func test_a_creature_chosen_as_an_ability_resolves_glows_is_asked_for_in_the_info_panel_and_is_clicked() -> void:
+	var yours: ControlledByFilter = ControlledByFilter.new()
+	yours.whose = MmTrigger.Whose.YOU
+	var lion: MmCardDefinition = Scenario.creature("Lion", 2, 2, [Scenario.triggered(Scenario.enters(IsSourceFilter.new()),
+		[Scenario.return_to_hand(Scenario.chosen(Scenario.all_of([Scenario.of_type(MmCardTypes.CardType.CREATURE), yours])))])])
+	_open(_setup_of([_free_bear(), lion]))
+	_keep_and_reach_main()
+	_do(CastSpellAction, "Bear")
+	_presenter.wait_until_idle()
+	var bear: int = _permanent("Bear")
+
+	_do(CastSpellAction, "Lion")
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is ChooseObjectDecision, "Passed for the Hero until the ability resolved.")
+	assert_eq(_screen.info_panel().prompt_text(), "Choose a creature you control for Lion's ability")
+	assert_eq(BorderEffects.glow_color(_screen.face_of(bear)), DecisionClicks.color_of(DecisionClicks.Kind.TARGET))
+	assert_eq(BorderEffects.glow_color(_screen.face_of(_permanent("Lion"))), DecisionClicks.color_of(DecisionClicks.Kind.TARGET))
+	_click(bear)
+	_presenter.wait_until_idle()
+	assert_eq(_permanent("Bear"), -1)
+	assert_ne(_permanent("Lion"), -1)
+
+
 func test_mana_is_paid_by_clicking_sources_and_the_info_panel_says_what_is_owed() -> void:
 	_open(_bear_setup(Scenario.mana_cost(1, [MmMana.Type.GREEN])))
 	_keep()

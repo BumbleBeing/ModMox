@@ -48,7 +48,7 @@ func copy_for(state: MmGameState) -> TriggerProcedure:
 func next_decision() -> MmPendingDecision:
 	while true:
 		if _stack_object_id != 0 and _next_target < _target_requirements.size():
-			var context: MmEffectContext = MmEffectContext.new(_controller_id, _stack_object_id)
+			var context: MmEffectContext = MmEffectContext.of_stack_object(_state.object(_stack_object_id))
 			var legal: Array[MmReference] = _target_requirements[_next_target].legal_targets(_state, context)
 			return ChooseTargetDecision.new(_controller_id, _stack_object_id, _next_target, legal)
 		_stack_object_id = 0

@@ -82,6 +82,24 @@ func test_targeting_names_the_spell_or_the_abilitys_source() -> void:
 	assert_eq(activated.text, "Choose a target for Wand's ability")
 
 
+func test_a_choice_made_on_resolution_says_what_to_choose_and_for_what_and_cannot_be_canceled() -> void:
+	var view: MmPlayerView = _view()
+	var ability: MmObjectView = _object(21, "ability", MmGameObject.NO_CARD)
+	ability.source_object_id = 1
+	view.stack = [ability]
+	var yours: ControlledByFilter = ControlledByFilter.new()
+	yours.whose = MmTrigger.Whose.YOU
+	var creature: HasCardTypeFilter = HasCardTypeFilter.new()
+	var filter: AllOfFilter = AllOfFilter.new()
+	filter.filters = [creature, yours]
+
+	var prompt: InfoPrompt = InfoPrompt.of(ChooseObjectDecision.new(HERO, 21, 0, filter, [MmReference.to_object(1)] as Array[MmReference]), view)
+
+	assert_eq(prompt.text, "Choose a creature you control for Wand's ability")
+	assert_false(prompt.can_cancel, "It is chosen as the ability resolves: there is no cast to take back.")
+	assert_null(prompt.owed)
+
+
 func test_an_ability_whose_source_is_out_of_sight_keeps_its_own_name() -> void:
 	var view: MmPlayerView = _view()
 	var ability: MmObjectView = _object(21, "Boon ability", MmGameObject.NO_CARD)

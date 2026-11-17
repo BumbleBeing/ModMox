@@ -10,6 +10,7 @@ static func kinds() -> Dictionary[Script, String]:
 		PriorityDecision: "the hand, permanents and the pass button (DecisionClicks)",
 		PayManaDecision: "mana sources and the pool (DecisionClicks), unless Auto-tap pays (ADR 0031)",
 		ChooseTargetDecision: "what can be targeted (DecisionClicks)",
+		ChooseObjectDecision: "what can be chosen, clicked as a target is (DecisionClicks)",
 		DeclareAttackersDecision: "the Hero's creatures (CombatSelection)",
 		DeclareBlockersDecision: "the Hero's creatures and the attackers (CombatSelection)",
 		DivideCombatDamageDecision: "steppers on the recipients (CombatSelection)",

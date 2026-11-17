@@ -65,6 +65,10 @@ var potion_index: int = NOT_A_POTION
 ## The once-each-game abilities of this object that have been activated (Spent), by their
 ## place among its abilities, in the order they were activated (CR 602.5b).
 var spent_ability_indexes: Array[int] = []
+## For a card in exile: the object whose ability exiled it, so that object's linked ability
+## can find "the exiled card" (CR 607.2a); 0 for anything else. The object that exiled it
+## may have left the battlefield since, and is then known only by this ID.
+var exiled_with_object_id: int = 0
 ## Weak, because the zone already holds this object strongly; a strong reference both ways
 ## is a cycle that reference counting never frees.
 var _zone_ref: WeakRef = null
@@ -99,6 +103,7 @@ func duplicate_object() -> MmGameObject:
 	copy.known_to_player_ids = known_to_player_ids.duplicate()
 	copy.potion_index = potion_index
 	copy.spent_ability_indexes = spent_ability_indexes.duplicate()
+	copy.exiled_with_object_id = exiled_with_object_id
 	return copy
 
 
@@ -204,6 +209,11 @@ func make_known_to(player_id: int) -> void:
 ## Event-only: its library was shuffled, so nobody knows which card it is.
 func forget_who_knows() -> void:
 	known_to_player_ids.clear()
+
+
+## Event-only: an ability of the object [param object_id] exiled this card (CR 607.2a).
+func record_exiled_with(object_id: int) -> void:
+	exiled_with_object_id = object_id
 
 
 ## Event-only: the once-each-game ability at [param ability_index] was activated.

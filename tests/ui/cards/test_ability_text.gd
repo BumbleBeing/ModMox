@@ -35,6 +35,8 @@ const PRINTED: Dictionary[String, String] = {
 	"lightning_bolt": "Lightning Bolt deals 3 damage to any target.",
 	"llanowar_elves": "{T}: Add {G}.",
 	"mountain": "({T}: Add {R}.)",
+	"oblivion_ring": "When this enchantment enters, exile another target nonland permanent.\n"
+		+ "When this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.",
 	"ornery_kudu": "When this creature enters, put a -1/-1 counter on target creature you control.",
 	"plains": "({T}: Add {W}.)",
 	"raise_dead": "Return target creature card from your graveyard to your hand.",
@@ -43,12 +45,15 @@ const PRINTED: Dictionary[String, String] = {
 	"serra_angel": "Flying, vigilance",
 	"shatter": "Destroy target artifact.",
 	"shivan_dragon": "Flying\n{R}: This creature gets +1/+0 until end of turn.",
+	"skyknight_squire": "Whenever another creature you control enters, put a +1/+1 counter on this creature.\n"
+		+ "As long as this creature has three or more +1/+1 counters on it, it has flying and is a Knight in addition to its other types.",
 	"stifle": "Counter target activated or triggered ability.",
 	"swamp": "({T}: Add {B}.)",
 	"terror": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
 	"uthden_troll": "{R}: Regenerate this creature.",
 	"wall_of_stone": "Defender",
 	"white_knight": "First strike\nProtection from black",
+	"whitemane_lion": "Flash\nWhen this creature enters, return a creature you control to its owner's hand.",
 }
 
 
@@ -149,8 +154,12 @@ func test_the_trigger_kinds_are_worded() -> void:
 		"At the beginning of your end step, you gain 1 life.": Scenario.at_step(MmTurn.Step.END, Whose.YOU),
 		"When this creature enters, you gain 1 life.": Scenario.enters(IsSourceFilter.new()),
 		"Whenever a creature you control enters, you gain 1 life.": Scenario.enters(creature, Whose.YOU),
+		"Whenever another creature you control enters, you gain 1 life.":
+			Scenario.enters(Scenario.all_of([creature, Scenario.is_not(IsSourceFilter.new())]), Whose.YOU),
 		"Whenever a creature dies, you gain 1 life.": Scenario.dies(creature),
 		"When this creature dies, you gain 1 life.": Scenario.dies(IsSourceFilter.new()),
+		"When this creature leaves the battlefield, you gain 1 life.": Scenario.leaves(IsSourceFilter.new()),
+		"Whenever a creature leaves the battlefield, you gain 1 life.": Scenario.leaves(creature),
 		"Whenever you cast a creature spell, you gain 1 life.": Scenario.casts(creature, Whose.YOU),
 		"Whenever an opponent casts a spell, you gain 1 life.": Scenario.casts(null, Whose.OPPONENT),
 		"Whenever a player casts an artifact spell, you gain 1 life.": Scenario.casts(Scenario.of_type(CardType.ARTIFACT), Whose.ANY),
@@ -178,6 +187,9 @@ func test_the_effects_no_authored_card_uses_yet_are_worded() -> void:
 		"Put two -1/-1 counters on each white creature.": Scenario.put_counters(MmCounter.Kind.MINUS_ONE_MINUS_ONE, 2, white_creatures),
 		"Destroy each other white creature you control originally named Charmed Stray.": Scenario.destroy(other_strays),
 		"Destroy each creature not originally named Bear.": Scenario.destroy(Scenario.each_creature(Scenario.is_not(Scenario.named("Bear")))),
+		"Return a creature you control to its owner's hand.": Scenario.return_to_hand(Scenario.chosen(Scenario.all_of([Scenario.of_type(CardType.CREATURE), you_control]))),
+		"Return each creature to its owner's hand.": Scenario.return_to_hand(Scenario.each_creature()),
+		"Destroy an artifact.": Scenario.destroy(Scenario.chosen(Scenario.of_type(CardType.ARTIFACT))),
 	}
 	for text: String in expected:
 		var spell: SpellAbility = SpellAbility.new()
@@ -246,6 +258,23 @@ func test_a_card_in_a_graveyard_is_worded_with_whose_graveyard_it_is_in() -> voi
 	assert_eq(AbilityText.things(Scenario.owned_by(Whose.YOU)), "permanents you own")
 
 
+func test_exiling_another_target_and_returning_the_exiled_card_are_worded() -> void:
+	var exiling: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()),
+		[Scenario.exile(Scenario.targeted(0))], [Scenario.another_nonland_permanent()])
+	var returning: TriggeredAbility = Scenario.triggered(Scenario.leaves(IsSourceFilter.new()),
+		[Scenario.return_to_battlefield(ExiledWithSourceSelection.new())])
+	var another_creature: ActivatedAbility = ActivatedAbility.new()
+	another_creature.targets = [Scenario.target(Scenario.all_of([Scenario.is_not(IsSourceFilter.new()), Scenario.of_type(CardType.CREATURE)]))]
+	another_creature.effects = [Scenario.deal_damage(1, Scenario.targeted(0))]
+
+	assert_eq(AbilityText.of_ability(exiling, "this enchantment"), "When this enchantment enters, exile another target nonland permanent.")
+	assert_eq(AbilityText.of_ability(returning, "this enchantment"),
+		"When this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.")
+	assert_eq(AbilityText.of_ability(Scenario.exile_spell("Banish").abilities[0], "Banish"), "Exile target creature.")
+	assert_eq(AbilityText.of_ability(another_creature, "this creature"), "{0}: This creature deals 1 damage to another target creature.")
+	assert_eq(AbilityText.things(Scenario.is_not(IsPlayerFilter.new())), "permanents", "Anything but a player is a permanent.")
+
+
 func test_target_ability_is_worded_as_activated_or_triggered() -> void:
 	var stifle: SpellAbility = SpellAbility.new()
 	stifle.targets = [Scenario.target_ability()]
@@ -267,6 +296,49 @@ func test_the_static_abilities_no_authored_card_uses_yet_are_worded() -> void:
 	assert_eq(AbilityText.of_ability(anthem, "this enchantment"), "Each white creature gets +1/+1.")
 	assert_eq(AbilityText.of_ability(Scenario.protection_from(Scenario.of_type(CardType.ARTIFACT)), "this creature"), "Protection from artifacts")
 	assert_eq(AbilityText.of_ability(HasteAbility.new(), "this creature"), "Haste")
+
+
+func test_a_static_ability_says_has_and_is_where_an_effect_says_gains_and_becomes() -> void:
+	var knights: EachSelection = Scenario.each_creature(Scenario.has_subtype("Knight"))
+	var lord: ContinuousStaticAbility = Scenario.continuous_static([Scenario.gain_abilities([FlyingAbility.new()], knights)])
+	var knighted: ContinuousStaticAbility = Scenario.continuous_static([Scenario.add_subtypes(["Knight"], SourceSelection.new())])
+	var elves: ContinuousStaticAbility = Scenario.continuous_static([Scenario.add_subtypes(["Elf", "Warrior"], knights)])
+	var spell: SpellAbility = SpellAbility.new()
+	spell.targets = [Scenario.target(Scenario.of_type(CardType.CREATURE))]
+	spell.effects = [Scenario.until_end_of_turn(Scenario.add_subtypes(["Knight"], Scenario.targeted(0)))]
+
+	assert_eq(AbilityText.of_ability(lord, "this creature"), "Each Knight creature has flying.")
+	assert_eq(AbilityText.of_ability(knighted, "this creature"), "This creature is a Knight in addition to its other types.")
+	assert_eq(AbilityText.of_ability(elves, "this creature"), "Each Knight creature is an Elf Warrior in addition to its other types.")
+	assert_eq(AbilityText.of_ability(spell, "Sample"), "Target creature becomes a Knight in addition to its other types until end of turn.")
+
+
+func test_a_conditional_static_ability_is_one_sentence_that_calls_its_source_it_after_the_condition() -> void:
+	var plus: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE
+	var squire: ContinuousStaticAbility = Scenario.continuous_static(
+		[Scenario.gain_abilities([FlyingAbility.new()], SourceSelection.new()), Scenario.add_subtypes(["Knight"], SourceSelection.new())],
+		Scenario.condition(SourceSelection.new(), Scenario.has_counters(plus, 3)))
+	var one_counter: ContinuousStaticAbility = Scenario.continuous_static(
+		[Scenario.modify_pt(1, 0, SourceSelection.new())], Scenario.condition(SourceSelection.new(), Scenario.has_counters(plus, 1)))
+
+	assert_eq(AbilityText.of_ability(squire, "this creature"),
+		"As long as this creature has three or more +1/+1 counters on it, it has flying and is a Knight in addition to its other types.")
+	assert_eq(AbilityText.of_ability(one_counter, "this creature"), "As long as this creature has a +1/+1 counter on it, it gets +1/+0.")
+
+
+func test_a_counter_filter_is_worded_after_its_noun() -> void:
+	var plus: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE
+	var minus: MmCounter.Kind = MmCounter.Kind.MINUS_ONE_MINUS_ONE
+	var expected: Dictionary[String, MmFilter] = {
+		"Destroy each creature with a +1/+1 counter on it.": Scenario.has_counters(plus, 1),
+		"Destroy each creature with three or more -1/-1 counters on it.": Scenario.has_counters(minus, 3),
+		"Destroy each creature without a +1/+1 counter on it.": Scenario.is_not(Scenario.has_counters(plus, 1)),
+		"Destroy each creature with fewer than two -1/-1 counters on it.": Scenario.is_not(Scenario.has_counters(minus, 2)),
+	}
+	for text: String in expected:
+		var spell: SpellAbility = SpellAbility.new()
+		spell.effects = [Scenario.destroy(Scenario.each_creature(expected[text]))]
+		assert_eq(AbilityText.of_ability(spell, "Sample"), text)
 
 
 func test_keywords_share_a_line_and_other_abilities_get_their_own() -> void:

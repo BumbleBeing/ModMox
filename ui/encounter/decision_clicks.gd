@@ -92,6 +92,12 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 				clicks.glow_as(candidates[index].id, Kind.TARGET)
 				clicks._options[candidates[index].id] = [ClickOption.new(index, "Target")]
 		clicks._find_piles(candidates, view)
+	elif decision is ChooseObjectDecision:
+		# Chosen as a spell or ability resolves, and clicked as a target is.
+		var choices: Array[MmReference] = (decision as ChooseObjectDecision).candidates
+		for index: int in choices.size():
+			clicks.glow_as(choices[index].id, Kind.TARGET)
+			clicks._options[choices[index].id] = [ClickOption.new(index, "Choose")]
 	elif decision is DivideCombatDamageDecision:
 		clicks._add_references((decision as DivideCombatDamageDecision).recipients, Kind.TARGET)
 	elif decision is DeclareBlockersDecision:

@@ -206,4 +206,4 @@ func _finish() -> void:
 
 
 func _context() -> MmEffectContext:
-	return MmEffectContext.new(_player_id, _stack_object_id)
+	return MmEffectContext.of_stack_object(_state.object(_stack_object_id))

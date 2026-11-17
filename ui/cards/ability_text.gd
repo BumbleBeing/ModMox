@@ -121,6 +121,12 @@ static func things(filter: MmFilter) -> String:
 	return AbilityText.new("it")._noun_phrase(filter, true)
 
 
+## What a choice made on resolution asks for, such as "a creature you control", in the
+## words a prompt uses.
+static func chosen_words(filter: MmFilter) -> String:
+	return _with_article(AbilityText.new("this")._noun_phrase(filter, false))
+
+
 ## Whether [param text] has something in it there were no words for.
 static func has_fallback(text: String) -> bool:
 	return text.contains("[")
@@ -152,10 +158,7 @@ func _ability(ability: MmAbility) -> String:
 	if ability is CharacteristicDefiningAbility:
 		return _characteristic_defining(ability as CharacteristicDefiningAbility)
 	if ability is ContinuousStaticAbility:
-		var clauses: PackedStringArray = []
-		for continuous: MmContinuousEffect in (ability as ContinuousStaticAbility).effects:
-			clauses.append(_capitalized(_continuous(continuous)) + ".")
-		return " ".join(clauses)
+		return _static(ability as ContinuousStaticAbility)
 	if ability is AdditionalLandPlaysAbility:
 		return "You may play %s on each of your turns." % _additional((ability as AdditionalLandPlaysAbility).count, "land")
 	if ability is BlockAdditionalAbility:
@@ -271,6 +274,8 @@ func _trigger_text(trigger: MmTrigger) -> String:
 
 
 func _move_verb(moved: ZoneChangeTrigger) -> String:
+	if moved.any_to_zone:
+		return "changes zones" if moved.any_from_zone else "leaves " + (ZONE_NAMES[moved.from_zone] as String)
 	if moved.to_zone == MmZone.Kind.BATTLEFIELD and moved.any_from_zone:
 		return "enters"
 	if not moved.any_from_zone and moved.from_zone == MmZone.Kind.BATTLEFIELD and moved.to_zone == MmZone.Kind.GRAVEYARD:
@@ -284,11 +289,48 @@ func _condition(condition: MmCondition) -> String:
 	if matches == null:
 		return _fallback(condition, "_condition")
 	var subject: String = _selection(matches.selection)
+	if matches.filter is HasCountersFilter:
+		return "%s has %s" % [subject, _counters_on(matches.filter as HasCountersFilter)]
 	var words: FilterWords = _filter_words(matches.filter)
 	var is_what: String = ", ".join(PackedStringArray(words.adjectives))
 	if words.noun != "" or is_what == "":
 		is_what = _with_article(_noun_phrase(matches.filter, false))
 	return "%s %s %s" % [subject, "are" if subject == "you" else "is", is_what]
+
+
+## A sentence for each effect, "Each white creature gets +1/+1."; or, with a condition, one
+## sentence that names the source in the condition and calls it "it" after: "As long as
+## this creature has a +1/+1 counter on it, it has flying and is a Knight in addition to
+## its other types."
+func _static(ability: ContinuousStaticAbility) -> String:
+	var clauses: PackedStringArray = []
+	if ability.condition == null:
+		for continuous: MmContinuousEffect in ability.effects:
+			clauses.append(_capitalized(_continuous(continuous, true)) + ".")
+		return " ".join(clauses)
+	var condition: String = _condition(ability.condition)
+	var noun: String = _noun
+	_noun = "it"
+	var subject: String = ""
+	for continuous: MmContinuousEffect in ability.effects:
+		var clause: String = _continuous(continuous, true)
+		# "It has flying and is a Knight": a subject already said is not said again.
+		var affected: String = "" if continuous.affected == null or continuous.affected.is_targeted() \
+			else _selection(continuous.affected)
+		if clauses.is_empty():
+			subject = affected
+		elif affected != "" and affected == subject and clause.begins_with(subject + " "):
+			clause = clause.substr(subject.length() + 1)
+		clauses.append(clause)
+	_noun = noun
+	return "As long as %s, %s." % [condition, _listed(clauses)]
+
+
+## "A and B", or "A, B, and C".
+static func _listed(parts: PackedStringArray) -> String:
+	if parts.size() <= 2:
+		return " and ".join(parts)
+	return ", ".join(parts.slice(0, -1)) + ", and " + parts[parts.size() - 1]
 
 
 func _characteristic_defining(ability: CharacteristicDefiningAbility) -> String:
@@ -347,6 +389,10 @@ func _effect(effect: MmEffect) -> String:
 		return "destroy " + _selection((effect as DestroyEffect).selection)
 	if effect is CounterEffect:
 		return "counter " + _selection((effect as CounterEffect).selection)
+	if effect is ExileEffect:
+		return "exile " + _selection((effect as ExileEffect).selection)
+	if effect is ReturnToBattlefieldEffect:
+		return "return %s to the battlefield under its owner's control" % _selection((effect as ReturnToBattlefieldEffect).selection)
 	if effect is ReturnToHandEffect:
 		var returned: MmSelection = (effect as ReturnToHandEffect).selection
 		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]
@@ -358,7 +404,7 @@ func _effect(effect: MmEffect) -> String:
 		var put: PutCountersEffect = effect as PutCountersEffect
 		return "put %s on %s" % [_counters(put.amount, put.kind), _selection(put.recipients)]
 	if effect is CreateContinuousEffect:
-		return _continuous((effect as CreateContinuousEffect).continuous) + " until end of turn"
+		return _continuous((effect as CreateContinuousEffect).continuous, false) + " until end of turn"
 	return _fallback(effect, "_effect")
 
 
@@ -378,7 +424,9 @@ func _prevention(effect: PreventDamageEffect) -> String:
 	return "prevent all %sdamage that would be dealt%s%s this turn" % ["combat " if effect.combat_only else "", to_whom, by_whom]
 
 
-func _continuous(continuous: MmContinuousEffect) -> String:
+## What [param continuous] does. A static ability's says "has" and "is" where a resolved
+## effect's says "gains" and "becomes" ([param is_static]).
+func _continuous(continuous: MmContinuousEffect, is_static: bool) -> String:
 	var affected: String = _selection(continuous.affected)
 	if continuous is ModifyPowerToughnessContinuousEffect:
 		var modify: ModifyPowerToughnessContinuousEffect = continuous as ModifyPowerToughnessContinuousEffect
@@ -392,7 +440,14 @@ func _continuous(continuous: MmContinuousEffect) -> String:
 		for ability: MmAbility in (continuous as GainAbilitiesContinuousEffect).abilities:
 			var text: String = _ability(ability)
 			gained.append(text.to_lower() if _keyword(ability) != "" or ability is ProtectionAbility else "\"%s\"" % text)
-		return "%s %s %s" % [affected, _verb(continuous.affected, "gain"), " and ".join(gained)]
+		var gains: String = _verb(continuous.affected, "gain")
+		if is_static:
+			gains = "have" if continuous.affected is YouSelection else "has"
+		return "%s %s %s" % [affected, gains, " and ".join(gained)]
+	if continuous is AddSubtypesContinuousEffect:
+		var subtypes: PackedStringArray = PackedStringArray((continuous as AddSubtypesContinuousEffect).subtypes)
+		return "%s %s %s in addition to its other types" % [affected,
+			"is" if is_static else _verb(continuous.affected, "become"), _with_article(" ".join(subtypes))]
 	if continuous is LoseAllAbilitiesContinuousEffect:
 		return "%s %s all abilities" % [affected, _verb(continuous.affected, "lose")]
 	return _fallback(continuous, "_continuous_effect")
@@ -430,8 +485,12 @@ func _selection(selection: MmSelection) -> String:
 		return _possessive(_selection((selection as ControllerOfSelection).selection)) + " controller"
 	if selection is EachSelection:
 		return "each " + _noun_phrase((selection as EachSelection).filter, false)
+	if selection is ChosenSelection:
+		return _with_article(_noun_phrase((selection as ChosenSelection).filter, false))
 	if selection is TargetSelection:
 		return _target((selection as TargetSelection).target_index)
+	if selection is ExiledWithSourceSelection:
+		return "the exiled card"
 	return _fallback(selection, "_selection")
 
 
@@ -450,7 +509,11 @@ func _target(index: int) -> String:
 		return "target " + _graveyard_phrase(spec.filter)
 	if _is_any_target(spec.filter):
 		return "any target"
-	return "target " + _noun_phrase(spec.filter, false)
+	var phrase: String = _noun_phrase(spec.filter, false)
+	# "Another target creature": a target that can't be the source.
+	if phrase.begins_with(OTHER + " "):
+		return "another target " + phrase.trim_prefix(OTHER + " ")
+	return "target " + phrase
 
 
 ## Whether [param selection] is a targeted card that can only be one its controller owns,
@@ -628,8 +691,18 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		var kind: Script = (filter as HasAbilityFilter).ability_kind
 		var keyword: String = _keyword(kind.new() as MmAbility) if kind != null else ""
 		after.append("%s %s" % ["without" if is_negated else "with", keyword.to_lower() if keyword != "" else _fallback(filter, "_filter")])
+	elif filter is HasCountersFilter:
+		var counted: HasCountersFilter = filter as HasCountersFilter
+		if not is_negated:
+			after.append("with " + _counters_on(counted))
+		elif counted.at_least <= 1:
+			after.append("without " + _counters_on(counted))
+		else:
+			after.append("with fewer than %s %s counters on it" % [_number_word(counted.at_least), MmCounter.label(counted.kind)])
 	elif filter is IsPlayerFilter:
-		nouns.append("player")
+		# Anything that is not a player is a permanent, the noun when none is named.
+		if not is_negated:
+			nouns.append("player")
 	else:
 		adjectives.append(_fallback(filter, "_filter"))
 
@@ -660,6 +733,13 @@ func _counters(value: MmValue, kind: MmCounter.Kind) -> String:
 	if constant.value == 1:
 		return "a %s counter" % MmCounter.label(kind)
 	return "%s %s counters" % [_number_word(constant.value), MmCounter.label(kind)]
+
+
+## "a +1/+1 counter on it" or "three or more -1/-1 counters on it".
+static func _counters_on(filter: HasCountersFilter) -> String:
+	if filter.at_least <= 1:
+		return "a %s counter on it" % MmCounter.label(filter.kind)
+	return "%s or more %s counters on it" % [_number_word(filter.at_least), MmCounter.label(filter.kind)]
 
 
 func _value_phrase(value: MmValue) -> String:
@@ -694,6 +774,9 @@ static func _color_word(color: MmCardTypes.CardColor) -> String:
 
 
 static func _with_article(words: String) -> String:
+	# "Another creature", never "an other creature".
+	if words.begins_with(OTHER + " "):
+		return "an" + words
 	return ("an " if "aeiou".contains(words.left(1).to_lower()) else "a ") + words
 
 

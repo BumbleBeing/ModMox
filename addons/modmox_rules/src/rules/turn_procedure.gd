@@ -128,6 +128,8 @@ func next_decision() -> MmPendingDecision:
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	if decision is ChooseReplacementEffectDecision:
 		_state.choose_replacement_effect(answer as int)  # next_decision() carries on from here.
+	elif decision is ChooseObjectDecision:
+		_resolution.apply_answer(decision, answer)
 	elif _cast != null:
 		_cast.apply_answer(decision, answer)
 	elif _stacking != null:

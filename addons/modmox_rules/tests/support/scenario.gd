@@ -1,8 +1,6 @@
 extends RefCounted
 ## Builders and shortcuts for encounter scenarios shared by tests.
 
-const ExileTestEffect := preload("res://addons/modmox_rules/tests/support/exile_test_effect.gd")
-
 const Rule := MmEncounterSetup.StartingPlayerRule
 
 
@@ -187,7 +185,7 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 		return all_to_first(decision as DivideCombatDamageDecision)
 	if decision is OrderTriggersDecision:
 		return range((decision as OrderTriggersDecision).source_object_ids.size())
-	if decision is ChooseTargetDecision or decision is ChooseReplacementEffectDecision:
+	if decision is ChooseTargetDecision or decision is ChooseReplacementEffectDecision or decision is ChooseObjectDecision:
 		return 0
 	return null
 
@@ -598,13 +596,9 @@ static func pass_to_blockers(engine: MmEngine) -> String:
 	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is DeclareBlockersDecision)
 
 
-## An instant costing {0}: "Exile target creature." Test-only (see exile_test_effect.gd).
+## An instant costing {0}: "Exile target creature."
 static func exile_spell(card_name: String) -> MmCardDefinition:
-	var creature_filter: HasCardTypeFilter = HasCardTypeFilter.new()
-	creature_filter.card_type = MmCardTypes.CardType.CREATURE
-	var effect: ExileTestEffect = ExileTestEffect.new()
-	effect.recipients = targeted(0)
-	return instant(card_name, mana_cost(0), [target(creature_filter)], [effect])
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))], [exile(targeted(0))])
 
 
 ## An instant costing {0}: "[param amount] damage to any target."
@@ -839,10 +833,20 @@ static func resolve_stack(engine: MmEngine) -> String:
 # --- Milestone 9: static abilities and layers ----------------------------------------
 
 
-static func continuous_static(effects: Array[MmContinuousEffect]) -> ContinuousStaticAbility:
+## "[effects]", or "As long as [condition], [effects]".
+static func continuous_static(effects: Array[MmContinuousEffect], condition: MmCondition = null) -> ContinuousStaticAbility:
 	var ability: ContinuousStaticAbility = ContinuousStaticAbility.new()
 	ability.effects = effects
+	ability.condition = condition
 	return ability
+
+
+## Layer 4: "[affected] is a [subtypes] in addition to its other types".
+static func add_subtypes(subtypes: Array[String], affected: MmSelection) -> AddSubtypesContinuousEffect:
+	var effect: AddSubtypesContinuousEffect = AddSubtypesContinuousEffect.new()
+	effect.subtypes = subtypes
+	effect.affected = affected
+	return effect
 
 
 ## Layer 7c: "[affected] get(s) +[power]/+[toughness]".
@@ -1137,6 +1141,25 @@ static func return_to_hand(selection: MmSelection) -> ReturnToHandEffect:
 	return effect
 
 
+## An instant costing {0}: "Return target creature to its owner's hand."
+static func free_bounce(card_name: String) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))], [return_to_hand(targeted(0))])
+
+
+## "A [param filter]", chosen as the effect resolves (CR 608.2d), as choice [param index].
+static func chosen(filter: MmFilter, index: int = 0) -> ChosenSelection:
+	var selection: ChosenSelection = ChosenSelection.new()
+	selection.filter = filter
+	selection.choice_index = index
+	return selection
+
+
+## Passes priority and answers everything else as autoplay() does, until a choice made on
+## resolution is asked.
+static func pass_to_choice(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is ChooseObjectDecision)
+
+
 ## "Target creature card in your graveyard."
 static func your_dead_creature() -> TargetRequirement:
 	return target_graveyard_card(all_of([of_type(MmCardTypes.CardType.CREATURE), owned_by(MmTrigger.Whose.YOU)]))
@@ -1185,8 +1208,81 @@ static func counters_on(engine: MmEngine, object_id: int, kind: MmCounter.Kind) 
 	return engine.game_state().object(object_id).counters_of(kind)
 
 
+## "With [param at_least] or more [param kind] counters on it."
+static func has_counters(kind: MmCounter.Kind, at_least: int) -> HasCountersFilter:
+	var filter: HasCountersFilter = HasCountersFilter.new()
+	filter.kind = kind
+	filter.at_least = at_least
+	return filter
+
+
 ## "Originally named [param card_name]."
 static func named(card_name: String) -> HasOriginalNameFilter:
 	var filter: HasOriginalNameFilter = HasOriginalNameFilter.new()
 	filter.original_name = card_name
 	return filter
+
+
+# --- Exile and linked abilities --------------------------------------------------------
+
+
+## An enchantment costing {0} with [param abilities].
+static func enchantment(card_name: String, abilities: Array[MmAbility]) -> MmCardDefinition:
+	var definition: MmCardDefinition = vanilla(card_name)
+	definition.card_types = [MmCardTypes.CardType.ENCHANTMENT]
+	definition.mana_cost = mana_cost(0)
+	definition.abilities = abilities
+	return definition
+
+
+static func exile(selection: MmSelection) -> ExileEffect:
+	var effect: ExileEffect = ExileEffect.new()
+	effect.selection = selection
+	return effect
+
+
+static func return_to_battlefield(selection: MmSelection) -> ReturnToBattlefieldEffect:
+	var effect: ReturnToBattlefieldEffect = ReturnToBattlefieldEffect.new()
+	effect.selection = selection
+	return effect
+
+
+## "Whenever a [filter] leaves the battlefield": from the battlefield to anywhere.
+static func leaves(filter: MmFilter) -> ZoneChangeTrigger:
+	var trigger: ZoneChangeTrigger = ZoneChangeTrigger.new()
+	trigger.any_from_zone = false
+	trigger.from_zone = MmZone.Kind.BATTLEFIELD
+	trigger.any_to_zone = true
+	trigger.filter = filter
+	return trigger
+
+
+## "Another target nonland permanent": not a player, not the source, not a land.
+static func another_nonland_permanent() -> TargetRequirement:
+	return target(all_of([is_not(IsPlayerFilter.new()), is_not(IsSourceFilter.new()),
+		is_not(of_type(MmCardTypes.CardType.LAND))]))
+
+
+## An enchantment costing {0} with Oblivion Ring's two linked abilities: "When this
+## enchantment enters, exile another target nonland permanent. When this enchantment leaves
+## the battlefield, return the exiled card to the battlefield under its owner's control."
+static func free_prison(card_name: String) -> MmCardDefinition:
+	return enchantment(card_name, [
+		triggered(enters(IsSourceFilter.new()), [exile(targeted(0))], [another_nonland_permanent()]),
+		triggered(leaves(IsSourceFilter.new()), [return_to_battlefield(ExiledWithSourceSelection.new())]),
+	])
+
+
+## An instant costing {0}: "Destroy target enchantment."
+static func free_disenchant(card_name: String) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.ENCHANTMENT))],
+		[destroy(targeted(0))])
+
+
+## The IDs of the cards [param player] owns in exile, in the zone's order.
+static func exiled_by_owner(engine: MmEngine, player: MmPlayer) -> Array[int]:
+	var ids: Array[int] = []
+	for card: MmGameObject in engine.game_state().exile.objects():
+		if card.owner_id == player.id:
+			ids.append(card.id)
+	return ids

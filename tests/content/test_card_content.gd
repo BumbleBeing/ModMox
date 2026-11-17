@@ -393,6 +393,51 @@ func test_ornery_kudu_puts_a_minus_one_minus_one_counter_on_a_creature_of_its_co
 	assert_eq(Scenario.pt(engine, bears), [2, 2])
 
 
+func test_skyknight_squire_becomes_a_flying_knight_once_three_other_creatures_enter() -> void:
+	var others: Array[MmCardDefinition] = [Scenario.free_copy(_alpha("grizzly_bears")),
+		Scenario.free_copy(_alpha("savannah_lions")), Scenario.free_copy(_alpha("hill_giant"))]
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_card("foundations", "skyknight_squire"))], [], others)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	Scenario.declare_attackers(engine, [])
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	var squire: int = Scenario.permanent_named(engine, engine.hero().id, "Skyknight Squire")
+	for other: MmCardDefinition in others.slice(0, 2):
+		Scenario.cast_and_resolve(engine, other.name)
+		Scenario.resolve_stack(engine)
+	assert_eq(Scenario.pt(engine, squire), [3, 3])
+	assert_false(Scenario.now(engine, squire).has_ability(FlyingAbility), "Two counters are not enough.")
+
+	Scenario.cast_and_resolve(engine, "Hill Giant")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(Scenario.counters_on(engine, squire, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 3)
+	assert_eq(Scenario.pt(engine, squire), [4, 4])
+	assert_true(Scenario.now(engine, squire).has_ability(FlyingAbility))
+	assert_eq(Scenario.now(engine, squire).subtypes, ["Cat", "Scout", "Knight"] as Array[String])
+
+
+func test_whitemane_lion_is_cast_in_combat_and_returns_the_creature_its_controller_chooses() -> void:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("grizzly_bears"))], [],
+		[Scenario.free_copy(_card("salvat_2005", "whitemane_lion"))])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	Scenario.declare_attackers(engine, [bears])
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Whitemane Lion"), "", "Flash: cast during combat.")
+	assert_eq(Scenario.pass_to_choice(engine), "")
+
+	var decision: ChooseObjectDecision = engine.pending_decision() as ChooseObjectDecision
+	var lion: int = Scenario.permanent_named(engine, engine.hero().id, "Whitemane Lion")
+	var candidates: Array[int] = []
+	for candidate: MmReference in decision.candidates:
+		candidates.append(candidate.id)
+	assert_eq(candidates, [bears, lion])
+	assert_eq(engine.submit(candidates.find(bears)), "")
+	Scenario.resolve_stack(engine)
+	assert_ne(Scenario.card_in_hand(engine, engine.hero(), "Grizzly Bears"), -1, "Back in hand, out of the attack.")
+	assert_eq(Scenario.permanent_named(engine, engine.hero().id, "Whitemane Lion"), lion)
+
+
 func test_serra_angel_attacks_without_tapping_over_ground_blockers() -> void:
 	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("serra_angel"))], [Scenario.free_copy(_alpha("grizzly_bears"))])
 	var angel: int = Scenario.permanent_named(engine, engine.hero().id, "Serra Angel")
@@ -682,6 +727,38 @@ func test_shatter_destroys_an_artifact_and_cannot_target_a_creature() -> void:
 	Scenario.cast_and_resolve(engine, "Shatter", [MmReference.to_object(artifact)])
 
 	assert_null(engine.game_state().object(artifact))
+
+
+func test_oblivion_ring_exiles_a_noncreature_permanent_until_it_leaves() -> void:
+	var mine: MmCardDefinition = Scenario.free_copy(_alpha("howling_mine"))
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var ring: MmCardDefinition = Scenario.free_copy(_card("lorwyn", "oblivion_ring"))
+	var disenchant: MmCardDefinition = Scenario.free_disenchant("Disenchant")
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(no_cards, [mine, bears], [ring, disenchant]),
+		no_cards, [mine, bears], [ring, disenchant], no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var artifact: int = Scenario.permanent_named(engine, engine.villain().id, "Howling Mine")
+
+	Scenario.cast_and_resolve(engine, "Oblivion Ring")
+	var decision: ChooseTargetDecision = engine.pending_decision() as ChooseTargetDecision
+	assert_not_null(decision)
+	var candidates: Array[int] = []
+	for candidate: MmReference in decision.candidates:
+		candidates.append(candidate.id)
+	assert_eq(candidates, [artifact, Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears")],
+		"Any nonland permanent but itself, and never a player.")
+	Scenario.choose_target(engine, MmReference.to_object(artifact))
+	Scenario.resolve_stack(engine)
+	assert_eq(Scenario.permanent_named(engine, engine.villain().id, "Howling Mine"), -1)
+	assert_eq(Scenario.exiled_by_owner(engine, engine.villain()).size(), 1)
+
+	var ring_id: int = Scenario.permanent_named(engine, engine.hero().id, "Oblivion Ring")
+	Scenario.cast_and_resolve(engine, "Disenchant", [MmReference.to_object(ring_id)])
+	Scenario.resolve_stack(engine)
+
+	assert_ne(Scenario.permanent_named(engine, engine.villain().id, "Howling Mine"), -1, "Back under its owner's control.")
+	assert_eq(Scenario.exiled_by_owner(engine, engine.villain()).size(), 0)
 
 
 func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:

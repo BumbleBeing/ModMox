@@ -2,9 +2,10 @@ class_name ResolutionProcedure
 extends RefCounted
 ## CR 608.2: the top of the stack resolves. Targets are rechecked first: if every target is
 ## now illegal it does not resolve, and otherwise effects simply skip illegal targets. Each
-## effect then performs its batches in order, and resolution stops whenever a batch is
-## waiting for a replacement choice, carrying on once it is answered (A143). The spell or
-## ability leaves the stack only once every effect is done.
+## effect then performs its batches in order. Resolution stops as an effect begins for each
+## choice it offers (CR 608.2d), and whenever a batch is waiting for a replacement choice,
+## carrying on once it is answered (A143). The spell or ability leaves the stack only once
+## every effect is done.
 
 var _state: MmGameState
 var _object_id: int
@@ -37,9 +38,7 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 		var activated: ActivatedAbility = resolving.ability as ActivatedAbility
 		specs = activated.targets
 		procedure._effects = activated.effects
-	var source_id: int = resolving.id if resolving.is_card() else resolving.source_object_id
-	var checking: MmEffectContext = MmEffectContext.new(resolving.controller_id, source_id, [],
-		resolving.triggering_player_id, resolving.triggering_object_id)
+	var checking: MmEffectContext = MmEffectContext.of_stack_object(resolving)
 	var targets: Array[MmReference] = []
 	var any_legal: bool = specs.is_empty()
 	for index: int in specs.size():
@@ -51,8 +50,7 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 	if triggered_ability != null and not triggered_ability.condition_holds(state, checking):
 		any_legal = false  # CR 603.4: the intervening "if" no longer holds, so it does nothing.
 	procedure._resolves = any_legal
-	procedure._context = MmEffectContext.new(resolving.controller_id, source_id, targets,
-		resolving.triggering_player_id, resolving.triggering_object_id)
+	procedure._context = MmEffectContext.of_stack_object(resolving, targets)
 	return procedure
 
 
@@ -86,6 +84,9 @@ func next_decision() -> MmPendingDecision:
 			return null
 		var effect: MmEffect = _effects[_effect_index]
 		if _step == 0:
+			var choice: ChooseObjectDecision = _next_choice(effect)
+			if choice != null:
+				return choice
 			_numbers = effect.numbers(_state, _context)
 		var batch: Array[MmEvent] = effect.next_batch(_state, _context, _step, _numbers)
 		if batch.is_empty():
@@ -94,6 +95,29 @@ func next_decision() -> MmPendingDecision:
 			continue
 		_step += 1
 		_state.perform_resumably(batch)
+	return null
+
+
+## Applies an already-validated answer to a choice this procedure asked.
+func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
+	var choice: ChooseObjectDecision = decision as ChooseObjectDecision
+	assert(choice != null, "A resolution cannot answer %s." % decision.describe())
+	_context = _context.with_choice(choice.choice_index, choice.candidates[answer as int])
+
+
+## The choice [param effect] still needs before it begins, or null. One with nothing to
+## choose from is made at once, as nothing (CR 608.2d).
+# Later: a choice inside another Selection, such as "its controller" of a chosen creature.
+func _next_choice(effect: MmEffect) -> ChooseObjectDecision:
+	for selection: MmSelection in effect.selections():
+		var chosen: ChosenSelection = selection as ChosenSelection
+		if chosen == null or _context.choices.has(chosen.choice_index):
+			continue
+		var legal: Array[MmReference] = chosen.candidates(_state, _context)
+		if legal.is_empty():
+			_context = _context.with_choice(chosen.choice_index, null)
+			continue
+		return ChooseObjectDecision.new(_context.controller_id, _object_id, chosen.choice_index, chosen.filter, legal)
 	return null
 
 

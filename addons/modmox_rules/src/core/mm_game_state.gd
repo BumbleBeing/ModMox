@@ -442,6 +442,8 @@ func fingerprint() -> String:
 				entries.append("%d potion %d" % [game_object.id, game_object.potion_index])
 			if not game_object.known_to_player_ids.is_empty():
 				entries.append("%d known to %s" % [game_object.id, game_object.known_to_player_ids])
+			if game_object.exiled_with_object_id != 0:
+				entries.append("%d exiled with %d" % [game_object.id, game_object.exiled_with_object_id])
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 

@@ -1,12 +1,15 @@
 class_name ZoneChangeTrigger
 extends MmTrigger
 ## "Whenever a [filter] [whose] is put into [to zone] from [from zone]", which covers
-## "enters the battlefield" and "dies" (battlefield to graveyard, CR 700.4). The Filter and
-## whose see the object as it was before it moved when it left the battlefield, and as it
-## is now otherwise. "That creature" is the moving object, as it was before it moved.
+## "enters the battlefield", "dies" (battlefield to graveyard, CR 700.4) and, with any
+## destination, "leaves the battlefield" (CR 603.6c). The Filter and whose see the object as
+## it was before it moved when it left the battlefield, and as it is now otherwise. "That
+## creature" is the moving object, as it was before it moved.
 
 @export var any_from_zone: bool = true
 @export var from_zone: MmZone.Kind = MmZone.Kind.BATTLEFIELD
+## True for a move to any zone, when [member to_zone] is not read.
+@export var any_to_zone: bool = false
 @export var to_zone: MmZone.Kind = MmZone.Kind.BATTLEFIELD
 ## Null matches any object.
 @export var filter: MmFilter = null
@@ -16,7 +19,7 @@ extends MmTrigger
 
 func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bool:
 	var moved: ZoneChangeEvent = event as ZoneChangeEvent
-	if moved == null or moved.to_zone_kind != to_zone:
+	if moved == null or (not any_to_zone and moved.to_zone_kind != to_zone):
 		return false
 	if not any_from_zone and moved.from_zone_kind != from_zone:
 		return false

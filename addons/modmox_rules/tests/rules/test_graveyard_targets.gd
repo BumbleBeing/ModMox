@@ -116,18 +116,6 @@ func test_a_card_with_protection_can_still_be_targeted_in_a_graveyard() -> void:
 	assert_eq(_moves_with(engine, Reason.RETURN_TO_HAND).size(), 1)
 
 
-func test_only_a_card_in_a_graveyard_is_returned() -> void:
-	var sweep: MmCardDefinition = Scenario.instant("Raise", Scenario.mana_cost(0), [],
-		[Scenario.return_to_hand(Scenario.each_creature())])
-	var engine: MmEngine = _engine(null, sweep)
-	var hero: MmPlayer = engine.hero()
-
-	Scenario.cast_and_resolve(engine, "Raise")
-
-	assert_eq(Scenario.permanents_named(engine, hero.id, "Bear").size(), 1, "A permanent stays where it is, for now.")
-	assert_eq(_moves_with(engine, Reason.RETURN_TO_HAND).size(), 0)
-
-
 func test_returning_a_card_can_be_undone_while_it_is_on_the_stack_only() -> void:
 	var engine: MmEngine = _engine()
 	var hero: MmPlayer = engine.hero()

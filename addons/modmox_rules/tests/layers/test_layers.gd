@@ -7,6 +7,8 @@ extends GutTest
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const Step := MmTurn.Step
 const CardType := MmCardTypes.CardType
+const PLUS := MmCounter.Kind.PLUS_ONE_PLUS_ONE
+const MINUS := MmCounter.Kind.MINUS_ONE_MINUS_ONE
 
 
 func test_setting_power_and_toughness_comes_before_modifying_it_whatever_the_order() -> void:
@@ -154,6 +156,55 @@ func test_a_filter_in_layer_seven_sees_abilities_granted_in_layer_six() -> void:
 	assert_eq(Scenario.pt(engine, bear), [3, 3])
 
 
+func test_a_conditional_static_ability_applies_only_while_its_condition_is_true() -> void:
+	var engine: MmEngine = _hero_main([_squire()], [], [Scenario.free_counters("Grow", PLUS, 2),
+		Scenario.free_counters("Swell", PLUS, 1), Scenario.free_counters("Wither", MINUS, 1)])
+	var squire: int = Scenario.permanent_named(engine, engine.hero().id, "Squire")
+	Scenario.cast_and_resolve(engine, "Grow", [_object(squire)])
+	assert_false(Scenario.now(engine, squire).has_ability(FlyingAbility), "Two counters: the condition is false.")
+
+	Scenario.cast_and_resolve(engine, "Swell", [_object(squire)])
+
+	assert_true(Scenario.now(engine, squire).has_ability(FlyingAbility), "CR 611.3a: three counters, so it applies now.")
+	Scenario.cast_and_resolve(engine, "Wither", [_object(squire)])
+	assert_eq(Scenario.counters_on(engine, squire, PLUS), 2, "CR 704.5q took one away.")
+	assert_false(Scenario.now(engine, squire).has_ability(FlyingAbility), "False again, so it stops applying.")
+
+
+func test_a_type_changing_effect_adds_a_subtype_and_keeps_the_others() -> void:
+	var knighted: MmCardDefinition = Scenario.creature("Squire", 1, 1, [Scenario.continuous_static([
+		Scenario.add_subtypes(["Knight"], SourceSelection.new())])])
+	knighted.subtypes = ["Cat", "Scout"]
+	var already: MmCardDefinition = _knight()
+	already.abilities = [Scenario.continuous_static([Scenario.add_subtypes(["Knight"], SourceSelection.new())])]
+	var engine: MmEngine = _hero_main([knighted, already], [], [])
+	var squire: int = Scenario.permanent_named(engine, engine.hero().id, "Squire")
+	var knight: int = Scenario.permanent_named(engine, engine.hero().id, "Knight")
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, squire)
+
+	var subtypes: Array[String] = Scenario.now(engine, squire).subtypes
+
+	assert_eq(subtypes, ["Cat", "Scout", "Knight"] as Array[String], "CR 205.1b: in addition to its other types.")
+	assert_true(Scenario.has_subtype("Knight").matches(engine.game_state(), _object(squire), context))
+	assert_eq(Scenario.now(engine, knight).subtypes, ["Knight"] as Array[String], "Never twice.")
+	assert_eq(MmCharacteristics.printed(knighted).subtypes, ["Cat", "Scout"] as Array[String], "The definition is untouched.")
+
+
+func test_a_filter_in_layer_six_sees_a_subtype_added_in_layer_four() -> void:
+	var knighted: MmCardDefinition = Scenario.creature("Squire", 1, 1, [Scenario.continuous_static([
+		Scenario.add_subtypes(["Knight"], SourceSelection.new())])])
+	var lord: MmCardDefinition = Scenario.creature("Lord", 1, 1, [Scenario.continuous_static([
+		Scenario.gain_abilities([FlyingAbility.new()], Scenario.each_creature(Scenario.has_subtype("Knight")))])])
+	var engine: MmEngine = _hero_main([lord, _captain()], [], [knighted])
+
+	Scenario.cast_and_resolve(engine, "Squire")
+
+	var squire: int = Scenario.permanent_named(engine, engine.hero().id, "Squire")
+	assert_true(Scenario.now(engine, squire).has_ability(FlyingAbility),
+		"CR 613.1d: layer 4 applies before layer 6, whatever the timestamps.")
+	assert_eq(Scenario.pt(engine, squire), [2, 2], "The Captain's Knights get +1/+1 in layer 7c.")
+
+
 func test_a_characteristic_defining_ability_works_everywhere_and_prints_as_a_star() -> void:
 	var wall: MmCardDefinition = Scenario.creature("Wall", 0, 4)
 	wall.subtypes = ["Wall"]
@@ -225,6 +276,13 @@ func _knight() -> MmCardDefinition:
 func _captain() -> MmCardDefinition:
 	return Scenario.creature("Captain", 1, 1, [Scenario.continuous_static([
 		Scenario.modify_pt(1, 1, Scenario.each_creature(Scenario.has_subtype("Knight")))])])
+
+
+## "As long as this creature has three or more +1/+1 counters on it, it has flying."
+func _squire() -> MmCardDefinition:
+	return Scenario.creature("Squire", 1, 1, [Scenario.continuous_static(
+		[Scenario.gain_abilities([FlyingAbility.new()], SourceSelection.new())],
+		Scenario.condition(SourceSelection.new(), Scenario.has_counters(PLUS, 3)))])
 
 
 ## "Target creature has base power and toughness 0/1 until end of turn."

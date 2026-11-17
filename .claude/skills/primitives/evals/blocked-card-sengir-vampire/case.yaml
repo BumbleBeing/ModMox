@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: blocked-card-sengir-vampire
+expected_outcome: |
+  Sengir Vampire is Blocked: Flying, the dies trigger and putting a +1/+1 counter on this creature exist, but nothing records which creatures a source dealt damage to this turn, so "a creature dealt damage by this creature this turn" is a gap. A plain "whenever a creature dies" trigger is a near miss. The gap is sketched as a new primitive.

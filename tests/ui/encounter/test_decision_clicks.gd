@@ -404,6 +404,20 @@ func test_while_targeting_each_candidate_answers_with_its_index_and_nothing_else
 	assert_eq(decision.validate(clicks.options_of(11)[0].answer), "")
 
 
+func test_a_choice_made_on_resolution_glows_and_answers_as_a_target_does() -> void:
+	var decision: ChooseObjectDecision = ChooseObjectDecision.new(HERO, 20, 0, Scenario.of_type(MmCardTypes.CardType.CREATURE),
+		[MmReference.to_object(11), MmReference.to_object(12)] as Array[MmReference])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, _view())
+
+	assert_eq(_kinds(clicks), {11: [DecisionClicks.Kind.TARGET], 12: [DecisionClicks.Kind.TARGET]})
+	assert_eq(clicks.options_of(12)[0].answer, 1)
+	assert_eq(clicks.options_of(12)[0].text, "Choose")
+	assert_eq(clicks.options_of(LAND_ID).size(), 0, "A permanent that is not a candidate.")
+	assert_eq(clicks.players.size(), 0)
+	assert_eq(decision.validate(clicks.options_of(11)[0].answer), "")
+
+
 func test_a_kind_with_no_input_of_its_own_glows_but_gives_no_click_answers() -> void:
 	var attackers: DecisionClicks = DecisionClicks.of(DeclareAttackersDecision.new(HERO, [3, 4] as Array[int]), _view())
 	var discard: DecisionClicks = DecisionClicks.of(ChooseCardsToDiscardDecision.new(HERO, 1, [1, 2] as Array[int]), _view())

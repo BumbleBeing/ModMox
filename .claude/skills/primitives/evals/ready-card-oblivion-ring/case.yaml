@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: ready-card-oblivion-ring
+expected_outcome: |
+  Oblivion Ring is Ready: two triggered abilities (enters: exile another target nonland permanent; leaves the battlefield: return the exiled card), composed from existing primitives including ExileEffect, ReturnToBattlefieldEffect and ExiledWithSourceSelection, with GDScript that runs and generates matching rules text.

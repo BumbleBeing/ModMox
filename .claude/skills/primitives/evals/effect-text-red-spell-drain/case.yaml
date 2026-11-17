@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: effect-text-red-spell-drain
+expected_outcome: |
+  The text is Ready: a TriggeredAbility with a SpellCastTrigger (whose OPPONENT, red HasColorFilter), a GainLifeEffect on YouSelection and a LoseLifeEffect on TriggeringPlayerSelection, each with a ConstantValue of 1, with GDScript that runs and generates matching rules text.

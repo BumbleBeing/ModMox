@@ -449,3 +449,26 @@ func _guard() -> MmCardDefinition:
 
 func _cleric() -> MmCardDefinition:
 	return Scenario.creature("Cleric", 3, 3, [LifelinkAbility.new()])
+
+
+func test_exiling_is_removal() -> void:
+	assert_eq(AiTiming.tag_of_effects([Scenario.exile(Scenario.targeted(0))]), AiTiming.Tag.REMOVAL)
+
+
+func test_an_enchantment_that_exiles_as_it_enters_is_cast_and_aimed_at_the_opposing_creature() -> void:
+	# Oblivion Ring's two abilities. Its trigger is harmful, so even a Cheap Agent in a
+	# rollout aims it at the other player's permanent, never its own.
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Scout", 2, 2)], [AiScenario.free_alpha("hill_giant")],
+		[Scenario.free_prison("Prison")])
+	assert_not_null(engine)
+	_cast_every(engine, "Scout")
+	var agent: AiAgent = AiAgent.new()
+
+	var play: int = AiScenario.ask(engine, agent)
+	assert_eq(AiScenario.cast_name(engine, play), "Prison")
+	engine.submit(play)
+	assert_eq(AiScenario.pass_to(engine, engine.hero().id, ChooseTargetDecision), "")
+
+	var giant: int = Scenario.permanent_named(engine, engine.villain().id, "Hill Giant")
+	assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, agent)).id, giant)
+	assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP))).id, giant)
