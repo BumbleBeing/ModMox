@@ -27,3 +27,8 @@ enum Rarity { COMMON, UNCOMMON, RARE, MYTHIC, POWER_NINE }
 ## land's mana ability, are added by the characteristics query.
 @export var abilities: Array[MmAbility] = []
 @export var rarity: Rarity = Rarity.COMMON
+
+## The Original: the base Card Definition this one was flattened from, set by
+## MmRunCard.flatten() and null on a definition that was never flattened (ADR 0004). Not a
+## characteristic, and never saved: an "originally named" Filter reads its name.
+var original: MmCardDefinition = null

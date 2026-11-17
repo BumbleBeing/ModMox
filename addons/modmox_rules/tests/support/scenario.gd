@@ -550,7 +550,8 @@ static func combat_setup(hero_creatures: Array[MmCardDefinition], villain_creatu
 ## [param hero_creatures] on Game Turn 1 and the Villain one of each of
 ## [param villain_creatures] on Game Turn 2, then plays on to the first decision in the
 ## Hero's declare attackers step on Game Turn 3 with each player still holding their extra
-## cards. Every card must cost {0}. Returns null if no seed deals the needed hands.
+## cards. Every card must cost {0}, and an ability that triggers as a creature arrives
+## resolves before the next is cast. Returns null if no seed deals the needed hands.
 static func combat_ready_with(combat: MmEncounterSetup, hero_creatures: Array[MmCardDefinition],
 		villain_creatures: Array[MmCardDefinition], hero_extras: Array[MmCardDefinition] = [],
 		villain_extras: Array[MmCardDefinition] = []) -> MmEngine:
@@ -567,12 +568,12 @@ static func permanents_ready_with(combat: MmEncounterSetup, hero_creatures: Arra
 		if play_until_step(engine, 1, MmTurn.Step.PRECOMBAT_MAIN) != "":
 			return false
 		for definition: MmCardDefinition in hero_creatures:
-			if cast_and_resolve(engine, definition.name) != "":
+			if cast_and_resolve(engine, definition.name) != "" or resolve_stack(engine) != "":
 				return false
 		if play_until_step(engine, 2, MmTurn.Step.PRECOMBAT_MAIN) != "":
 			return false
 		for definition: MmCardDefinition in villain_creatures:
-			if cast_and_resolve(engine, definition.name) != "":
+			if cast_and_resolve(engine, definition.name) != "" or resolve_stack(engine) != "":
 				return false
 		if play_until_step(engine, game_turn, step) != "":
 			return false
@@ -1159,3 +1160,33 @@ static func card_in_graveyard(engine: MmEngine, player: MmPlayer, card_name: Str
 		if engine.game_state().characteristics_of(card).name == card_name:
 			return card.id
 	return -1
+
+
+# --- Counters -------------------------------------------------------------------------
+
+
+## "Put [param amount] [param kind] counters on [param recipients]."
+static func put_counters(kind: MmCounter.Kind, amount: int, recipients: MmSelection) -> PutCountersEffect:
+	var effect: PutCountersEffect = PutCountersEffect.new()
+	effect.kind = kind
+	effect.amount = constant(amount)
+	effect.recipients = recipients
+	return effect
+
+
+## An instant costing {0}: "Put [param amount] [param kind] counters on target creature."
+static func free_counters(card_name: String, kind: MmCounter.Kind, amount: int) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))],
+		[put_counters(kind, amount, targeted(0))])
+
+
+## How many [param kind] counters are on the permanent [param object_id].
+static func counters_on(engine: MmEngine, object_id: int, kind: MmCounter.Kind) -> int:
+	return engine.game_state().object(object_id).counters_of(kind)
+
+
+## "Originally named [param card_name]."
+static func named(card_name: String) -> HasOriginalNameFilter:
+	var filter: HasOriginalNameFilter = HasOriginalNameFilter.new()
+	filter.original_name = card_name
+	return filter

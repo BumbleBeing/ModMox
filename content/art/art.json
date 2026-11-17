@@ -19,6 +19,16 @@
 		"scryfall_id": "f594b7aa-d44e-47c4-989b-565f881e25f1",
 		"set": "lea"
 	},
+	"battlegrowth": {
+		"artist": "John Matson",
+		"collector_number": "113",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "2b34e76b-86b3-464e-93e7-c3f2074028fb",
+		"set": "mrd"
+	},
 	"black_knight": {
 		"artist": "Jeff A. Menges",
 		"collector_number": "94",
@@ -28,6 +38,16 @@
 		],
 		"scryfall_id": "c1662949-0d69-49a3-8c69-daf10717ed4e",
 		"set": "lea"
+	},
+	"charmed_stray": {
+		"artist": "Chris Rahn",
+		"collector_number": "8",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "357513b9-0505-4b67-9a29-36a705a175b1",
+		"set": "war"
 	},
 	"counterspell": {
 		"artist": "Mark Poole",
@@ -159,6 +179,16 @@
 		"scryfall_id": "ce2d603a-3231-4a8c-bf39-1617586ea870",
 		"set": "lea"
 	},
+	"helpful_hunter": {
+		"artist": "Xabi Gaztelua",
+		"collector_number": "16",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "1b9a0e91-80b5-428f-8f08-931d0631be14",
+		"set": "fdn"
+	},
 	"hill_giant": {
 		"artist": "Dan Frazier",
 		"collector_number": "157",
@@ -188,6 +218,16 @@
 		],
 		"scryfall_id": "78a9088f-8755-47cb-aa93-51d992ccab90",
 		"set": "lea"
+	},
+	"instill_infection": {
+		"artist": "Chris Rahn",
+		"collector_number": "68",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "82ef2567-f798-4447-9735-c7c0d88aba85",
+		"set": "som"
 	},
 	"ironroot_treefolk": {
 		"artist": "Jesper Myrfors",
@@ -268,6 +308,16 @@
 		],
 		"scryfall_id": "eace2c85-976c-425e-9800-5a6ccbd91b56",
 		"set": "lea"
+	},
+	"ornery_kudu": {
+		"artist": "Deruchenko Alexander",
+		"collector_number": "178",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "8ba1d3a1-8c1b-4b77-b149-13d5ad9f125a",
+		"set": "akh"
 	},
 	"pearled_unicorn": {
 		"artist": "Cornelius Brudi",

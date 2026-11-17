@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_wo1w8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_k16ef"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_otm6f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_jfrcn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_xms7d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_cqkgw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="5_ss18a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="6_357gd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="7_1v8uy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="8_lkwrn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_824r6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="10_ruwd1"]
+
+[sub_resource type="Resource" id="Resource_aq3h8"]
+script = ExtResource("3_xms7d")
+value = 1
+
+[sub_resource type="Resource" id="Resource_kmbbo"]
+script = ExtResource("4_cqkgw")
+
+[sub_resource type="Resource" id="Resource_6sdlv"]
+script = ExtResource("5_ss18a")
+kind = 1
+amount = SubResource("Resource_aq3h8")
+recipients = SubResource("Resource_kmbbo")
+
+[sub_resource type="Resource" id="Resource_4g5sr"]
+script = ExtResource("3_xms7d")
+value = 1
+
+[sub_resource type="Resource" id="Resource_4sqlj"]
+script = ExtResource("6_357gd")
+
+[sub_resource type="Resource" id="Resource_xvv3g"]
+script = ExtResource("7_1v8uy")
+amount = SubResource("Resource_4g5sr")
+players = SubResource("Resource_4sqlj")
+
+[sub_resource type="Resource" id="Resource_udjah"]
+script = ExtResource("10_ruwd1")
+
+[sub_resource type="Resource" id="Resource_jc8lg"]
+script = ExtResource("9_824r6")
+filter = SubResource("Resource_udjah")
+
+[sub_resource type="Resource" id="Resource_edxv1"]
+script = ExtResource("8_lkwrn")
+targets = Array[ExtResource("9_824r6")]([SubResource("Resource_jc8lg")])
+effects = Array[ExtResource("2_otm6f")]([SubResource("Resource_6sdlv"), SubResource("Resource_xvv3g")])
+
+[sub_resource type="Resource" id="Resource_78ce3"]
+script = ExtResource("2_k16ef")
+generic = 3
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_jfrcn")
+name = "Instill Infection"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_78ce3")
+abilities = Array[ExtResource("1_wo1w8")]([SubResource("Resource_edxv1")])

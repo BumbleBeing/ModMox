@@ -30,6 +30,8 @@ var is_power_variable: bool = false
 var is_toughness_variable: bool = false
 ## Damage marked on a creature this turn, shown on a Damage Chip. Always 0 as printed.
 var damage_marked: int = 0
+## How many counters of each kind are on a permanent; a kind it has none of is not listed.
+var counters: Dictionary[MmCounter.Kind, int] = {}
 ## Every ability it has right now, including granted ones.
 var abilities: Array[MmAbility] = []
 var is_tapped: bool = false
@@ -86,6 +88,7 @@ static func of_view(view: MmObjectView, card_art_key: String = "") -> CardLook:
 	look.abilities = view.abilities.duplicate()
 	look.is_tapped = view.is_tapped
 	look.damage_marked = view.damage_marked
+	look.counters = view.counters.duplicate()
 	look.art_key = card_art_key
 	look.rules_text = AbilityText.of_card(look.abilities, look.card_types, look.supertypes, look.name)
 	return look

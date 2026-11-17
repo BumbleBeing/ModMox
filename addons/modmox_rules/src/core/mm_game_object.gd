@@ -22,6 +22,9 @@ var controller_id: int
 var is_tapped: bool = false
 ## Damage marked on this permanent (CR 120.3e), until the cleanup step removes it.
 var damage_marked: int = 0
+## How many counters of each kind are on this permanent (CR 122). A kind it has none of is
+## not listed.
+var counters: Dictionary[MmCounter.Kind, int] = {}
 ## CR 704.5h: dealt damage by a source with deathtouch since state-based actions were last
 ## checked, so it is destroyed at the next check. Cleared when it regenerates, or by that
 ## check when it can't be destroyed.
@@ -81,6 +84,7 @@ func duplicate_object() -> MmGameObject:
 	copy.controller_id = controller_id
 	copy.is_tapped = is_tapped
 	copy.damage_marked = damage_marked
+	copy.counters = counters.duplicate()
 	copy.was_dealt_deathtouch_damage = was_dealt_deathtouch_damage
 	copy.controlled_since_game_turn = controlled_since_game_turn
 	copy.targets = targets.duplicate()  # MmReferences never change, so sharing them is safe.
@@ -123,6 +127,11 @@ func is_known_to(player_id: int) -> bool:
 	return known_to_player_ids.has(player_id)
 
 
+## How many counters of [param kind] are on this permanent.
+func counters_of(kind: MmCounter.Kind) -> int:
+	return counters.get(kind, 0)
+
+
 ## Zone-only: records which zone now holds this object (null when removed).
 func attach_to_zone(holder: MmZone) -> void:
 	_zone_ref = null if holder == null else weakref(holder)
@@ -151,6 +160,21 @@ func clear_deathtouch_damage() -> void:
 ## Event-only: removes all damage marked on this permanent.
 func remove_damage() -> void:
 	damage_marked = 0
+
+
+## Event-only: puts [param amount] more counters of [param kind] on this permanent.
+func put_counters(kind: MmCounter.Kind, amount: int) -> void:
+	counters[kind] = counters_of(kind) + amount
+
+
+## Event-only: removes [param amount] counters of [param kind], or all of them if it has
+## fewer.
+func remove_counters(kind: MmCounter.Kind, amount: int) -> void:
+	var left: int = counters_of(kind) - amount
+	if left > 0:
+		counters[kind] = left
+	else:
+		counters.erase(kind)
 
 
 ## Event-only: records that the current controller began controlling this permanent in

@@ -19,13 +19,13 @@ const GAP: float = 0.12
 static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
 	var order: Array[Script] = [
 		FlyingAbility, ReachAbility, VigilanceAbility, HasteAbility, DeathtouchAbility,
-		DefenderAbility, FirstStrikeAbility, DoubleStrikeAbility, TrampleAbility,
+		LifelinkAbility, DefenderAbility, FirstStrikeAbility, DoubleStrikeAbility, TrampleAbility,
 		IndestructibleAbility, ProtectionAbility,
 	]
-	var letters: Array[String] = ["F", "R", "V", "H", "DT", "DF", "FS", "DS", "T", "I", "P"]
+	var letters: Array[String] = ["F", "R", "V", "H", "DT", "LL", "DF", "FS", "DS", "T", "I", "P"]
 	var icons: Array[String] = [
-		"flying", "reach", "vigilance", "haste", "deathtouch", "defender", "first_strike",
-		"double_strike", "trample", "indestructible", "protection",
+		"flying", "reach", "vigilance", "haste", "deathtouch", "lifelink", "defender",
+		"first_strike", "double_strike", "trample", "indestructible", "protection",
 	]
 	var chips: Array[KeywordChip] = []
 	var seen: Dictionary[String, bool] = {}

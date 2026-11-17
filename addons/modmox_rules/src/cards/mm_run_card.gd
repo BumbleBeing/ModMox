@@ -8,11 +8,12 @@ extends Resource
 
 
 ## Returns a private Card Definition with every Modification applied in the order earned.
-## The result counts as the card's printed card for all rules purposes. The base is
-## never changed.
+## The result counts as the card's printed card for all rules purposes, and points to the
+## base as its Original. The base is never changed.
 func flatten() -> MmCardDefinition:
 	assert(base != null, "A Run Card needs a base Card Definition.")
 	var result: MmCardDefinition = base.duplicate_deep(Resource.DEEP_DUPLICATE_ALL) as MmCardDefinition
 	for modification: MmModification in modifications:
 		modification.apply_to(result)
+	result.original = base
 	return result

@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_r7aui"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_rhqco"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ubvtg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_8mn3s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_vyos2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_2iyhh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_yn47i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_r6iel"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_b4hqm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_sfx63"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_333lk"]
+
+[sub_resource type="Resource" id="Resource_vj0ei"]
+script = ExtResource("3_8mn3s")
+value = 1
+
+[sub_resource type="Resource" id="Resource_d3at5"]
+script = ExtResource("4_2iyhh")
+
+[sub_resource type="Resource" id="Resource_lmifv"]
+script = ExtResource("5_yn47i")
+amount = SubResource("Resource_vj0ei")
+players = SubResource("Resource_d3at5")
+
+[sub_resource type="Resource" id="Resource_uos64"]
+script = ExtResource("8_sfx63")
+
+[sub_resource type="Resource" id="Resource_aoi6h"]
+script = ExtResource("9_333lk")
+filter = SubResource("Resource_uos64")
+
+[sub_resource type="Resource" id="Resource_iqiuo"]
+script = ExtResource("6_r6iel")
+trigger = SubResource("Resource_aoi6h")
+effects = Array[ExtResource("2_rhqco")]([SubResource("Resource_lmifv")])
+
+[sub_resource type="Resource" id="Resource_01in8"]
+script = ExtResource("2_ubvtg")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_vyos2")
+name = "Helpful Hunter"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat"])
+mana_cost = SubResource("Resource_01in8")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_r7aui")]([SubResource("Resource_iqiuo")])

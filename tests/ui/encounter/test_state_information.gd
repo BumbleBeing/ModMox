@@ -31,6 +31,19 @@ func test_damage_marked_is_counted() -> void:
 	assert_eq(_texts(StateInformation.of(bears, _view())), [["Damage", "2 damage is marked on it until end of turn."]])
 
 
+func test_counters_are_counted_in_words_with_what_they_add_up_to() -> void:
+	var grown: MmObjectView = _bears()
+	grown.counters = {MmCounter.Kind.PLUS_ONE_PLUS_ONE: 2}
+	var shrunk: MmObjectView = _bears()
+	shrunk.counters = {MmCounter.Kind.MINUS_ONE_MINUS_ONE: 1}
+	var huge: MmObjectView = _bears()
+	huge.counters = {MmCounter.Kind.PLUS_ONE_PLUS_ONE: 12}
+
+	assert_eq(_texts(StateInformation.of(grown, _view())), [["+1/+1 counters", "Two +1/+1 counters are on it. It gets +2/+2."]])
+	assert_eq(_texts(StateInformation.of(shrunk, _view())), [["-1/-1 counters", "One -1/-1 counter is on it. It gets -1/-1."]])
+	assert_eq(_texts(StateInformation.of(huge, _view()))[0][1], "12 +1/+1 counters are on it. It gets +12/+12.")
+
+
 func test_a_pump_names_the_card_it_came_from() -> void:
 	var bears: MmObjectView = _bears()
 	bears.continuous_effects = [_locked(Scenario.modify_pt(3, 3, null), [3, 3])]
@@ -82,6 +95,7 @@ func test_the_entries_come_in_a_fixed_order() -> void:
 	var bears: MmObjectView = _bears()
 	bears.is_summoning_sick = true
 	bears.damage_marked = 1
+	bears.counters = {MmCounter.Kind.PLUS_ONE_PLUS_ONE: 1}
 	bears.continuous_effects = [_locked(Scenario.modify_pt(3, 3, null), [3, 3])]
 	bears.replacement_effects = [ActiveReplacementEffect.created(RegenerationReplacementEffect.new(), 5, HERO, HEALER, 108,
 		[MmReference.to_object(BEARS)] as Array[MmReference], 1, 0)]
@@ -89,7 +103,7 @@ func test_the_entries_come_in_a_fixed_order() -> void:
 	var titles: Array[String] = []
 	for entry: StateEntry in StateInformation.of(bears, _view()):
 		titles.append(entry.title)
-	assert_eq(titles, ["Summoning sick", "Damage", "Samite Healer", "Samite Healer"])
+	assert_eq(titles, ["Summoning sick", "+1/+1 counters", "Damage", "Samite Healer", "Samite Healer"])
 
 
 func _locked(effect: MmContinuousEffect, amounts: Array) -> ActiveContinuousEffect:

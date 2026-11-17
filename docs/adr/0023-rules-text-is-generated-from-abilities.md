@@ -6,6 +6,8 @@ The wording follows current Oracle templates (A343). A permanent calls itself "t
 
 Authored text on each Card Definition was rejected. It would have been quicker to make look right, and would have matched the printed cards word for word, but it drifts: every Modification would need to edit text as well as abilities, and nothing would notice a card whose text and abilities disagreed. The price of generating is that some real wordings cannot be reached. Howling Mine reads "that player draws a card", not "an additional card", because nothing in its abilities says "additional". We accept wording that is plainly correct over wording that is identical.
 
+One wording departs from Oracle on purpose. A printed "named Charmed Stray" reads "originally named Charmed Stray", because that is what it means here: a card goes by the name of its Original, whatever its Modded Name is (engine ADR 0004). The printed words would tell a player the wrong rule.
+
 Something `AbilityText` has no words for is written as its class name in square brackets rather than left out, so a gap is visible on the card. A test walks every authored card and fails if any of its text has a bracket in it, so a new effect, trigger, filter or keyword cannot ship without its words.
 
 Reminder text, what a keyword means, is not generated here. Card Faces go on leaving it off, and the Inspector lists a Reminder for each keyword from a table of its own, `Reminders` (13h, ADR 0033).

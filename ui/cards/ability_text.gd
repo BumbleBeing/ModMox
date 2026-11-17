@@ -29,6 +29,8 @@ const POTION_NOUN: String = "this potion"
 ## graveyard it is.
 const YOU_OWN: String = "you own"
 const OPPONENT_OWNS: String = "an opponent owns"
+## What a Filter leaving out the source says before its noun: "each other creature".
+const OTHER: String = "other"
 
 ## What the ability's source calls itself.
 var _noun: String
@@ -189,6 +191,8 @@ static func _keyword(ability: MmAbility) -> String:
 		return "Trample"
 	if ability is DeathtouchAbility:
 		return "Deathtouch"
+	if ability is LifelinkAbility:
+		return "Lifelink"
 	if ability is IndestructibleAbility:
 		return "Indestructible"
 	if ability is FlashAbility:
@@ -350,6 +354,9 @@ func _effect(effect: MmEffect) -> String:
 		return "regenerate " + _selection((effect as RegenerateEffect).selection)
 	if effect is PreventDamageEffect:
 		return _prevention(effect as PreventDamageEffect)
+	if effect is PutCountersEffect:
+		var put: PutCountersEffect = effect as PutCountersEffect
+		return "put %s on %s" % [_counters(put.amount, put.kind), _selection(put.recipients)]
 	if effect is CreateContinuousEffect:
 		return _continuous((effect as CreateContinuousEffect).continuous) + " until end of turn"
 	return _fallback(effect, "_effect")
@@ -506,6 +513,9 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 			choices.append(_noun_phrase(part, is_plural))
 		return " or ".join(choices)
 	var words: FilterWords = _filter_words(filter)
+	# "Each other white creature": "other" comes before the adjectives, with no comma.
+	var is_other: bool = words.adjectives.has(OTHER)
+	words.adjectives.erase(OTHER)
 	var adjectives: PackedStringArray = PackedStringArray(words.adjectives)
 	var noun: String = words.noun
 	var after: PackedStringArray = PackedStringArray(words.after)
@@ -520,6 +530,8 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 	var phrase: String = noun
 	if not adjectives.is_empty():
 		phrase = ", ".join(adjectives) + " " + phrase
+	if is_other:
+		phrase = OTHER + " " + phrase
 	if not after.is_empty():
 		phrase += " " + " ".join(after)
 	return phrase
@@ -592,6 +604,14 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		adjectives.append("non-" + subtype if is_negated else subtype)
 	elif filter is IsTappedFilter:
 		adjectives.append("untapped" if is_negated else "tapped")
+	elif filter is IsSourceFilter:
+		# "Each other creature": anything but the source.
+		if is_negated:
+			adjectives.append(OTHER)
+	elif filter is HasOriginalNameFilter:
+		# A printed "named" reads "originally named" here (ADR 0023's exception).
+		var original_name: String = (filter as HasOriginalNameFilter).original_name
+		after.append("not originally named " + original_name if is_negated else "originally named " + original_name)
 	elif filter is ControlledByFilter:
 		var whose: MmTrigger.Whose = (filter as ControlledByFilter).whose
 		if whose == MmTrigger.Whose.YOU:
@@ -630,6 +650,16 @@ func _cards(value: MmValue) -> String:
 	if constant == null:
 		return _amount(value) + " cards"
 	return "a card" if constant.value == 1 else _number_word(constant.value) + " cards"
+
+
+## "a +1/+1 counter", "two -1/-1 counters" or "X +1/+1 counters".
+func _counters(value: MmValue, kind: MmCounter.Kind) -> String:
+	var constant: ConstantValue = value as ConstantValue
+	if constant == null:
+		return "%s %s counters" % [_amount(value), MmCounter.label(kind)]
+	if constant.value == 1:
+		return "a %s counter" % MmCounter.label(kind)
+	return "%s %s counters" % [_number_word(constant.value), MmCounter.label(kind)]
 
 
 func _value_phrase(value: MmValue) -> String:

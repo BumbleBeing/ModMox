@@ -25,6 +25,8 @@ static func compute(state: MmGameState) -> Dictionary[int, MmCharacteristics]:
 		_apply_defining_abilities(state, game_object, current[game_object.id])
 	_apply_layer(state, objects, current, started, MmContinuousEffect.Layer.SETTING_POWER_TOUGHNESS)
 	_apply_layer(state, objects, current, started, MmContinuousEffect.Layer.MODIFYING_POWER_TOUGHNESS)
+	for game_object: MmGameObject in objects:
+		_apply_counters(game_object, current[game_object.id])
 	state.end_layer_computation()
 	return current
 
@@ -45,6 +47,16 @@ static func _apply_defining_abilities(state: MmGameState, game_object: MmGameObj
 			var context: MmEffectContext = MmEffectContext.new(game_object.controller_id, game_object.id)
 			characteristics.power = defining.power.evaluate(state, context)
 			characteristics.toughness = defining.toughness.evaluate(state, context)
+
+
+## Layer 7c (CR 613.4c): +1/+1 and -1/-1 counters change power and toughness along with
+## the effects that modify them. Everything in this layer adds, so the order among them
+## cannot matter and counters need no timestamp.
+static func _apply_counters(game_object: MmGameObject, characteristics: MmCharacteristics) -> void:
+	for kind: MmCounter.Kind in MmCounter.KINDS:
+		var change: int = MmCounter.power_toughness_change(kind) * game_object.counters_of(kind)
+		characteristics.power += change
+		characteristics.toughness += change
 
 
 static func _apply_layer(state: MmGameState, objects: Array[MmGameObject], current: Dictionary[int, MmCharacteristics],

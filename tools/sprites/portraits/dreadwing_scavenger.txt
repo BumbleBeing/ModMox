@@ -1,0 +1,78 @@
+; Dreadwing Scavenger's Portrait and Pain Portrait, facing front: a vulture with dark brown wings
+; raised in a V to splayed finger feathers, a bald rust-brown head under a heavy brow, a pale
+; hooked beak gaping in a screech over a red tongue, a bare neck rising from a fluffy cream ruff,
+; and a bulging bare crop ringed with feathers on a dark brown body.
+; Drawn after the art of Dreadwing Scavenger: Foundations (fdn) #118, by Xavier Ribeiro.
+; Scryfall ID: e24d838b-ab48-410a-9a50-dbfea5da089b
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= dreadwing_scavenger
+.1.1........................1.1.
+1l1l11......11111111......11l1l1
+1l1l1l111.11iiihghhh11.111l1l1l1
+1m1l1l1lk1iiiiihghhhhh1kl1l1l1l1
+1ml1l1lkl1iffhhhgggffh1lkl1l1ll1
+1mlkl1lkl1hy0fhhggf0xg1lkl1lkll1
+1mllklkll1hggyyyxxxffg1llklklll1
+1mllklklk1ghgxyyxxwfgf1klklklll1
+1mlllklkl1ghgaxyxwafgf1lklkllll1
+1mlllklkl1gghaayxaagff1lklkllll1
+1mllllklkl1ggxavuawff1lklklllll1
+1mllllklkl1ggxaccawff1lklklllll1
+1mlllllklkl1fgxaawff1lklkllllll1
+.1mllllklkl1ggfxwfff1lklklllll1.
+.1mlllll1o11gggfffff11n1llllll1.
+..1mll1onno1ggggffff1nmmn1lll1..
+..1mll1onnno1gggfff1nmmmn1lll1..
+...1m1onnmnno1ggff1nmmlmmn1l1...
+...1onnmnnmnno1gf1nmmlmmlmmn1...
+..1onnmnnmnnmnnonmmlmmlmmlmmn1..
+..1nnmnnmnnmnnmnmlmmlmmlmmlmm1..
+..1nmnnmnnmnnmnnmmlmmlmmlmmlm1..
+..1nmlnmlnmlnmlnmllmllmllmllm1..
+..1lnllnllnll111111llmllmllml1..
+..1llllkllln1hiihhg1mlllkllll1..
+..1lkllllkn1hiijihhg1mkllllkl1..
+..1llllklln1ghiihhgf1mllkllll1..
+..1lkllllkn1ghhihggf1mkllllkl1..
+..1llllklln1gghhggff1mllkllll1..
+..1lkllllkn1fghhggff1mkllllkl1..
+..1llllklln1fgghgfff1mllkllll1..
+..1lkllllkn1ffggffff1mkllllkl1..
+
+= dreadwing_scavenger_pain
+.1.1........................1.1.
+1l1l11.......11111111.....11l1l1
+1l1l1l111..11iiihghhh11111l1l1l1
+1m1l1l1lkk1iiiiihghhhhh1l1l1l1l1
+1ml1l1lkll1i0hhhhgggg0h1kl1l1ll1
+1mlkl1lkll1hh0hhhggg0gg1kl1lkll1
+1mllklklll1h0gyyyxxxg0g1lklklll1
+1mllklklkk1ghgxyyxxwfgf1lklklll1
+1mlllklkll1ghggxyxwffgf1klkllll1
+1mlllklkll1gghgxyxwfgff1klkllll1
+1mllllklkll1gggvxwufff1klklllll1
+1mllllklkll1gggwxwvfff1klklllll1
+1mlllllklkll1fgfvufff1klkllllll1
+.1mllllklkll1ggggffff1klklllll1.
+.1mlllll1o11gggfffff11n1llllll1.
+..1mll1onno1ggggffff1nmmn1lll1..
+..1mll1onnno1gggfff1nmmmn1lll1..
+...1m1onnmnno1ggff1nmmlmmn1l1...
+...1onnmnnmnno1gf1nmmlmmlmmn1...
+..1onnmnnmnnmnnonmmlmmlmmlmmn1..
+..1nnmnnmnnmnnmnmlmmlmmlmmlmm1..
+..1nmnnmnnmnnmnnmmlmmlmmlmmlm1..
+..1nmlnmlnmlnmlnmllmllmllmllm1..
+..1lnllnllnll111111llmllmllml1..
+..1llllkllln1hiihhg1mlllkllll1..
+..1lkllllkn1hiijihhg1mkllllkl1..
+..1llllklln1ghiihhgf1mllkllll1..
+..1lkllllkn1ghhihggf1mkllllkl1..
+..1llllklln1gghhggff1mllkllll1..
+..1lkllllkn1fghhggff1mkllllkl1..
+..1llllklln1fgghgfff1mllkllll1..
+..1lkllllkn1ffggffff1mkllllkl1..

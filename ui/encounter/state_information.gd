@@ -1,9 +1,8 @@
 class_name StateInformation
 extends RefCounted
-## The State Information of a permanent (13h and milestone 16, ADR 0033): summoning sickness, damage marked, and
+## The State Information of a permanent (13h and milestone 16, ADR 0033): summoning sickness, counters, damage marked, and
 ## each effect on it with the card it came from. The Encounter Presenter makes one for each
-## permanent and puts it on the snapshot. A new kind of state, such as counters when the
-## game has them, adds its entries here and changes nothing in the Inspector.
+## permanent and puts it on the snapshot. A new kind of state adds its entries here and changes nothing in the Inspector.
 
 
 ## The entries for the permanent [param seen] as [param view] shows it, in a fixed order.
@@ -12,6 +11,9 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 	if seen.is_creature and seen.is_summoning_sick:
 		entries.append(StateEntry.new("Summoning sick",
 			"It came under its controller's control this turn, so it can't attack or tap for a cost."))
+	for kind: MmCounter.Kind in MmCounter.KINDS:
+		if seen.counters_of(kind) > 0:
+			entries.append(StateEntry.new("%s counters" % MmCounter.label(kind), _counters_text(kind, seen.counters_of(kind))))
 	if seen.damage_marked > 0:
 		entries.append(StateEntry.new("Damage", "%d damage is marked on it until end of turn." % seen.damage_marked))
 	for active: ActiveContinuousEffect in seen.continuous_effects:
@@ -20,6 +22,14 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 	for active: ActiveReplacementEffect in seen.replacement_effects:
 		entries.append(StateEntry.new(ReplacementText.source_name(active, view), ReplacementText.effect_text(active, view, names)))
 	return entries
+
+
+## "Two +1/+1 counters are on it. It gets +2/+2.": the number in words up to ten.
+static func _counters_text(kind: MmCounter.Kind, count: int) -> String:
+	var number: String = AbilityText.NUMBER_WORDS[count].capitalize() if count < AbilityText.NUMBER_WORDS.size() else str(count)
+	var change: int = MmCounter.power_toughness_change(kind) * count
+	return "%s %s %s on it. It gets %+d/%+d." % [number, MmCounter.label(kind),
+		"counter is" if count == 1 else "counters are", change, change]
 
 
 ## What [param active] does to the permanent, without its full stop.

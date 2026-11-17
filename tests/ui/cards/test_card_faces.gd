@@ -129,6 +129,54 @@ func test_a_look_takes_its_damage_from_the_view_and_has_none_as_printed() -> voi
 	assert_eq(_look("grizzly_bears").damage_marked, 0)
 
 
+func test_a_permanent_with_counters_shows_them_on_a_chip_in_its_arts_top_left_corner() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.counters = {MmCounter.Kind.PLUS_ONE_PLUS_ONE: 2}
+	look.damage_marked = 1
+
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+
+	var place: Rect2 = CounterChip.box_in(BattlefieldFace.art_box(140.0), BattlefieldFace.power_toughness_box(140.0))
+	var chip: CounterChip = face.counter_chip()
+	assert_eq([chip.kind, chip.amount], [MmCounter.Kind.PLUS_ONE_PLUS_ONE, 2])
+	assert_almost_eq(chip.position, place.position, Vector2(0.001, 0.001))
+	assert_almost_eq(chip.size, place.size, Vector2(0.001, 0.001))
+	assert_eq(chip.get_parent(), face.card(), "It turns with the card when the permanent is tapped.")
+	assert_eq(face.damage_chip().get_index(), chip.get_index() + 1, "Just under the Damage Chip, over everything else.")
+	assert_false(Rect2(chip.position, chip.size).intersects(Rect2(face.damage_chip().position, face.damage_chip().size)))
+
+
+func test_minus_counters_show_as_their_own_kind_and_a_noncreature_shows_counters_too() -> void:
+	var bears: CardLook = _look("grizzly_bears")
+	bears.counters = {MmCounter.Kind.MINUS_ONE_MINUS_ONE: 1}
+	var land: CardLook = _look("forest")
+	land.counters = {MmCounter.Kind.PLUS_ONE_PLUS_ONE: 3}
+
+	var chip: CounterChip = _battlefield(bears, 140.0).counter_chip()
+
+	assert_eq([chip.kind, chip.amount], [MmCounter.Kind.MINUS_ONE_MINUS_ONE, 1])
+	assert_eq(_battlefield(land, 140.0).counter_chip().amount, 3)
+
+
+func test_a_permanent_with_no_counters_has_no_counter_chip() -> void:
+	var emptied: CardLook = _look("grizzly_bears")
+	emptied.counters = {MmCounter.Kind.PLUS_ONE_PLUS_ONE: 0}
+
+	assert_null(_battlefield(_look("grizzly_bears"), 140.0).counter_chip())
+	assert_null(_battlefield(emptied, 140.0).counter_chip())
+
+
+func test_a_look_takes_its_counters_from_the_view_and_has_none_as_printed() -> void:
+	var view: MmObjectView = MmObjectView.new()
+	view.counters = {MmCounter.Kind.MINUS_ONE_MINUS_ONE: 2}
+
+	var look: CardLook = CardLook.of_view(view)
+	view.counters[MmCounter.Kind.MINUS_ONE_MINUS_ONE] = 5
+
+	assert_eq(look.counters, {MmCounter.Kind.MINUS_ONE_MINUS_ONE: 2}, "Its own copy.")
+	assert_eq(_look("grizzly_bears").counters.size(), 0)
+
+
 func test_a_battlefield_face_cuts_a_long_name_short_with_an_ellipsis() -> void:
 	var look: CardLook = _look("merfolk_of_the_pearl_trident")
 

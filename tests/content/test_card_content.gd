@@ -329,6 +329,70 @@ func test_giant_growth_gives_plus_three_plus_three_until_end_of_turn() -> void:
 	assert_eq(Scenario.pt(engine, bears), [2, 2], "Back to normal after the turn.")
 
 
+func test_battlegrowth_puts_a_plus_one_plus_one_counter_that_stays() -> void:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("grizzly_bears"))], [],
+		[Scenario.free_copy(_card("mirrodin", "battlegrowth"))])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	Scenario.declare_attackers(engine, [bears])
+
+	Scenario.cast_and_resolve(engine, "Battlegrowth", [MmReference.to_object(bears)])
+	Scenario.play_until_game_turn(engine, 4)
+
+	assert_eq(engine.villain().life, 17, "A 3/3 attacked.")
+	assert_eq(Scenario.pt(engine, bears), [3, 3], "The counter is still there after the turn.")
+	assert_eq(Scenario.counters_on(engine, bears, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 1)
+
+
+func test_instill_infection_kills_a_one_toughness_creature_and_draws_a_card() -> void:
+	var engine: MmEngine = Scenario.combat_ready([], [Scenario.free_copy(_alpha("savannah_lions"))],
+		[Scenario.free_copy(_card("scars_of_mirrodin", "instill_infection"))])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var lions: int = Scenario.permanent_named(engine, engine.villain().id, "Savannah Lions")
+	var hand_before: int = engine.hero().hand.size()
+
+	Scenario.cast_and_resolve(engine, "Instill Infection", [MmReference.to_object(lions)])
+
+	assert_eq(Scenario.permanents_named(engine, engine.villain().id, "Savannah Lions").size(), 0, "A 2/1 with a -1/-1 counter.")
+	assert_eq(Scenario.last_reason_into(engine, MmZone.Kind.GRAVEYARD), ZoneChangeEvent.Reason.ZERO_TOUGHNESS)
+	assert_eq(engine.hero().hand.size(), hand_before, "One card cast, one drawn.")
+
+
+func test_instill_infection_cannot_target_a_player() -> void:
+	var engine: MmEngine = Scenario.combat_ready([], [Scenario.free_copy(_alpha("savannah_lions"))],
+		[Scenario.free_copy(_card("scars_of_mirrodin", "instill_infection"))])
+	assert_not_null(engine, "No seed gave the needed hand.")
+
+	var error: String = Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Instill Infection"),
+		[MmReference.to_player(engine.villain().id)])
+
+	assert_ne(error, "")
+
+
+func test_ornery_kudu_puts_a_minus_one_minus_one_counter_on_a_creature_of_its_controllers_only() -> void:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("grizzly_bears"))],
+		[Scenario.free_copy(_alpha("savannah_lions"))], [Scenario.free_copy(_card("amonkhet", "ornery_kudu"))])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	Scenario.declare_attackers(engine, [])
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+
+	Scenario.cast_and_resolve(engine, "Ornery Kudu")
+
+	var kudu: int = Scenario.permanent_named(engine, engine.hero().id, "Ornery Kudu")
+	var decision: ChooseTargetDecision = engine.pending_decision() as ChooseTargetDecision
+	assert_not_null(decision, "CR 603.3d: its target is chosen as the trigger is put on the stack.")
+	var candidates: Array[int] = []
+	for candidate: MmReference in decision.candidates:
+		candidates.append(candidate.id)
+	candidates.sort()
+	assert_eq(candidates, [bears, kudu], "Its controller's creatures, itself among them, and never the Villain's.")
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(kudu)), "")
+	Scenario.resolve_stack(engine)
+	assert_eq(Scenario.pt(engine, kudu), [2, 3])
+	assert_eq(Scenario.pt(engine, bears), [2, 2])
+
+
 func test_serra_angel_attacks_without_tapping_over_ground_blockers() -> void:
 	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("serra_angel"))], [Scenario.free_copy(_alpha("grizzly_bears"))])
 	var angel: int = Scenario.permanent_named(engine, engine.hero().id, "Serra Angel")

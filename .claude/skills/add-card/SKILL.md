@@ -46,7 +46,7 @@ For each missing primitive, show the user one proposal, and wait for a yes befor
 - the primitive: its class, folder and fields, and the Oracle sentence it expresses;
 - its engine test scenarios, and any ADR it touches or would change;
 - its words in `AbilityText`;
-- for a new keyword, its sentence in `Reminders` and a drafted Keyword Icon grid in `tools/sprites/keyword_icons.txt` for the user to touch up;
+- for a new keyword, its sentence in `Reminders` and a Keyword Icon drawn with `/draw-keyword-icon` (`.claude/skills/draw-keyword-icon/`) for the user to touch up;
 - the AI: why its derived Timing Tag and simulation already play it well, or the change the AI needs, with one Agent test that it is played when it should be;
 - for a refusal, the tool's change, with its test in `tests/tools/test_oracle_reading.gd`.
 
@@ -54,7 +54,7 @@ An approved primitive is built test-first, as `addons/modmox_rules/docs/conventi
 
 ## 5. Review the rules text
 
-Run `$TOOL review <file name> ...` for every card added. It prints each card's generated rules text under its Oracle text. Mark each difference as the same meaning (ADR 0023 accepts plainly correct wording) or a different meaning. A different meaning is a composition mistake: fix the card and review it again. Show the user the reviewed cards. Then add each card that has abilities to `PRINTED` in `tests/ui/cards/test_ability_text.gd`, with the text the review accepted.
+Run `$TOOL review <file name> ...` for every card added. It prints each card's generated rules text under its Oracle text. Mark each difference as the same meaning (ADR 0023 accepts plainly correct wording) or a different meaning. A printed "named X" is generated as "originally named X" on purpose (ADR 0023): accept it, and put the generated words in `PRINTED`. A different meaning is a composition mistake: fix the card and review it again. Show the user the reviewed cards. Then add each card that has abilities to `PRINTED` in `tests/ui/cards/test_ability_text.gd`, with the text the review accepted.
 
 Done when every added card reads with its Oracle text's meaning.
 

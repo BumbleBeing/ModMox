@@ -21,6 +21,12 @@ func test_white_knights_protection_chip_carries_black() -> void:
 	assert_eq(chips[1].protection_color, MmCardTypes.CardColor.BLACK)
 
 
+func test_lifelinks_chip_comes_after_deathtouch() -> void:
+	var abilities: Array[MmAbility] = [LifelinkAbility.new(), DefenderAbility.new(), DeathtouchAbility.new()]
+
+	assert_eq(_letters(KeywordChips.chips_for(abilities)), ["DT", "LL", "DF"])
+
+
 func test_abilities_that_are_not_keywords_get_no_chip() -> void:
 	assert_eq(KeywordChips.chips_for(CardLook.of_definition(_alpha("prodigal_sorcerer")).abilities).size(), 0)
 

@@ -16,6 +16,10 @@ _Avoid_: Deck card, upgraded card, card instance
 A single permanent change applied to a Run Card outside of an encounter, such as a new cost, name, or ability parameter.
 _Avoid_: Upgrade, buff, patch, mod
 
+**Original**:
+The base Card Definition a card in an encounter was made from, before any Modification. A card is "originally named" by its Original's name, whatever its own name has become. A token that is a copy has the Original of what it copied; any other token has none and goes by its current name.
+_Avoid_: Base card, printed card, source card
+
 **Game Object**:
 An object inside an encounter (a card in a zone, a spell on the stack, a permanent, a token, an ability on the stack), including everything currently affecting it in that game.
 _Avoid_: Card (when an in-game object is meant), entity
@@ -198,6 +202,10 @@ _Avoid_: Sick (on its own), fresh, exhausted
 Damage dealt to a creature, which stays on it until the cleanup step removes it.
 _Avoid_: Wounds, damage counters (counters are something else)
 
+**Counter**:
+A marker on a permanent that stays until the permanent leaves the battlefield or the counter is removed. There are two kinds so far, +1/+1 and -1/-1, each changing power and toughness by that much; a permanent with both loses the same number of each. A counter is not a characteristic, and never means countering a spell.
+_Avoid_: Token (a token is a permanent that is not a card), marker, buff, stack (for a number of counters)
+
 **Damage Division**:
 An attacker's controller choosing how its combat damage is split among the creatures blocking it, and with trample the player it attacks. There is no damage assignment order. The GUI shows it as a damage-split popup.
 _Avoid_: Damage assignment order (removed from the rules), damage ordering
@@ -243,7 +251,7 @@ What answers "if these attack and these block, what happens?" by running the eng
 _Avoid_: Combat math, damage predictor
 
 **Timing Tag**:
-When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, evasion (a trick that only grants abilities) from the declare attackers step so it can change who blocks whom, removal also in its controller's main phases and the other player's end step, a counter only with the other player's spell or ability on top of the stack. It never decides whether a play is good.
+When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, evasion (a trick that only grants abilities) from the declare attackers step so it can change who blocks whom, removal (damage, destruction and -1/-1 counters) also in its controller's main phases and the other player's end step, a counter only with the other player's spell or ability on top of the stack. It never decides whether a play is good.
 _Avoid_: AI hint, card flag, AILogic
 
 **AI Profile**:

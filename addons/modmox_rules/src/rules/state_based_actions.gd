@@ -41,6 +41,11 @@ static func _actions(state: MmGameState) -> Array[MmEvent]:
 		actions.append(_to_graveyard(state, creature, ZoneChangeEvent.Reason.DESTROY))
 	for creature: MmGameObject in _indestructible_creatures_dealt_deathtouch_damage(state):
 		actions.append(DeathtouchDamageClearedEvent.new(creature.id))
+	for permanent: MmGameObject in _permanents_with_both_kinds_of_counter(state):
+		var canceled: int = mini(permanent.counters_of(MmCounter.Kind.PLUS_ONE_PLUS_ONE),
+			permanent.counters_of(MmCounter.Kind.MINUS_ONE_MINUS_ONE))
+		actions.append(CountersRemovedEvent.new(permanent.id, MmCounter.Kind.PLUS_ONE_PLUS_ONE, canceled))
+		actions.append(CountersRemovedEvent.new(permanent.id, MmCounter.Kind.MINUS_ONE_MINUS_ONE, canceled))
 	return actions
 
 
@@ -88,6 +93,18 @@ static func _indestructible_creatures_dealt_deathtouch_damage(state: MmGameState
 		if creature.was_dealt_deathtouch_damage and characteristics.toughness > 0 \
 				and characteristics.has_ability(IndestructibleAbility):
 			found.append(creature)
+	return found
+
+
+## CR 704.5q: a permanent with both a +1/+1 counter and a -1/-1 counter on it loses the
+## same number of each, as many as it has of the fewer. In ID order.
+static func _permanents_with_both_kinds_of_counter(state: MmGameState) -> Array[MmGameObject]:
+	var found: Array[MmGameObject] = []
+	for permanent: MmGameObject in state.battlefield.objects():
+		if permanent.counters_of(MmCounter.Kind.PLUS_ONE_PLUS_ONE) > 0 \
+				and permanent.counters_of(MmCounter.Kind.MINUS_ONE_MINUS_ONE) > 0:
+			found.append(permanent)
+	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
 	return found
 
 

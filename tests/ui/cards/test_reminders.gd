@@ -21,6 +21,13 @@ func test_protection_names_what_it_protects_from() -> void:
 	assert_eq(reminders[1].icon, "protection")
 
 
+func test_lifelink_is_reminded_of_the_life_it_gains() -> void:
+	var reminders: Array[Reminder] = Reminders.of([LifelinkAbility.new()] as Array[MmAbility])
+
+	assert_eq(reminders.size(), 1)
+	assert_eq(reminders[0].text, "Damage it deals also causes you to gain that much life.")
+
+
 func test_a_card_with_no_keyword_has_no_reminder() -> void:
 	assert_eq(Reminders.of(_abilities("prodigal_sorcerer")).size(), 0)
 	assert_eq(Reminders.of(_abilities("forest")).size(), 0)

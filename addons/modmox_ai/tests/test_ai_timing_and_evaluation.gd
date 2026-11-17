@@ -57,6 +57,18 @@ func test_flying_is_worth_ten_per_point_of_power() -> void:
 	assert_eq(angel, 80 + 60 + 40 + 0 + 40 + 40)
 
 
+func test_lifelink_is_worth_ten_and_ten_per_point_of_power() -> void:
+	var engine: MmEngine = AiScenario.ready_with(
+		[Scenario.creature("Cleric", 3, 3, [LifelinkAbility.new(), LifelinkAbility.new()]), Scenario.creature("Guard", 3, 3)], [])
+	assert_not_null(engine)
+	var state: MmGameState = engine.game_state()
+
+	var cleric: int = AiBoardEvaluator.creature_value(state, state.object(Scenario.permanent_named(engine, engine.hero().id, "Cleric")))
+	var guard: int = AiBoardEvaluator.creature_value(state, state.object(Scenario.permanent_named(engine, engine.hero().id, "Guard")))
+
+	assert_eq(cleric - guard, 10 + 10 * 3, "Counted once however many times it has it.")
+
+
 func test_a_creature_that_cannot_attack_yet_is_worth_less() -> void:
 	var engine: MmEngine = AiScenario.ready_with([AiScenario.free_alpha("hill_giant")], [],
 		[AiScenario.free_alpha("hill_giant")])

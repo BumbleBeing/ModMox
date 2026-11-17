@@ -12,6 +12,7 @@ const TEXTS: Dictionary[String, String] = {
 	"vigilance": "Attacking doesn't cause it to tap.",
 	"haste": "It can attack and tap for a cost the turn it comes under your control.",
 	"deathtouch": "Any amount of damage it deals to a creature is enough to destroy that creature.",
+	"lifelink": "Damage it deals also causes you to gain that much life.",
 	"defender": "It can't attack.",
 	"first_strike": "It deals combat damage before creatures without first strike.",
 	"double_strike": "It deals both first-strike and regular combat damage.",

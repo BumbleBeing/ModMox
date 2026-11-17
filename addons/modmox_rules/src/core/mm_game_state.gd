@@ -431,6 +431,9 @@ func fingerprint() -> String:
 				game_object.triggering_object_id, ",".join(target_text)])
 			if game_object.was_dealt_deathtouch_damage:
 				entries.append("deathtouch damage on %d" % game_object.id)
+			for kind: MmCounter.Kind in MmCounter.KINDS:
+				if game_object.counters_of(kind) > 0:
+					entries.append("%d has %d %s" % [game_object.id, game_object.counters_of(kind), MmCounter.label(kind)])
 			if not game_object.spent_ability_indexes.is_empty():
 				entries.append("%d spent %s" % [game_object.id, game_object.spent_ability_indexes])
 			if game_object.source_potion_index != MmGameObject.NOT_A_POTION:

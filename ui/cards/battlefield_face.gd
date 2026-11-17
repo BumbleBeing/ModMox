@@ -3,7 +3,8 @@ extends Control
 ## How a permanent is drawn on the battlefield: the top of its Frame (name box or crown) and
 ## a border around its art, a large P/T box, and a chip for each keyword. It shows no other
 ## text, and turns sideways and darkens when tapped, with an upright tap symbol over its art.
-## A creature with damage marked on it shows a Damage Chip over its toughness.
+## A creature with damage marked on it shows a Damage Chip over its toughness, and a
+## permanent with counters on it a Counter Chip in the top left corner of its art.
 ##
 ## Its footprint is that of the card at rest, upright or sideways. show_turn() draws the
 ## card part-way between the two inside that footprint, for Face Motion.
@@ -25,6 +26,7 @@ var _shade: ColorRect
 var _tap_symbol: TextureRect
 var _turn: float = 0.0
 var _damage_chip: DamageChip = null
+var _counter_chip: CounterChip = null
 var _chips: Array[KeywordChip] = []
 
 
@@ -107,6 +109,11 @@ func setup(look: CardLook, height: float) -> void:
 		_add_power_toughness(shape, spec, height)
 	_add_chips(shape, height, spec.is_creature)
 	_add_tap_marks(shape, face_size, art)
+	for kind: MmCounter.Kind in MmCounter.KINDS:
+		# A permanent never keeps both kinds (CR 704.5q), so the first it has is all it has.
+		if _counter_chip == null and look.counters.get(kind, 0) > 0:
+			_counter_chip = CounterChip.make(art, power_toughness_box(height), kind, look.counters[kind])
+			_card.add_child(_counter_chip)
 	if spec.is_creature and look.damage_marked > 0:
 		_damage_chip = DamageChip.make(power_toughness_box(height), look.damage_marked)
 		_card.add_child(_damage_chip)
@@ -153,6 +160,11 @@ func shade_alpha() -> float:
 ## The upright tap symbol over a tapped face's art, or null when untapped.
 func tap_symbol() -> TextureRect:
 	return _tap_symbol if _tap_symbol.visible else null
+
+
+## The chip that says how many counters are on this permanent, or null for none.
+func counter_chip() -> CounterChip:
+	return _counter_chip
 
 
 ## The chip that says how much damage is marked on this creature, or null for none.

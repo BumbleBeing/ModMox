@@ -408,6 +408,25 @@ func test_marked_damage_shows_on_the_creature_until_it_wears_off() -> void:
 
 ## Opens a screen whose faces take MOVE seconds to move, with the Hero in their first main
 ## phase, auto-pass off.
+func test_counters_show_on_the_creature_and_stay_through_the_turn() -> void:
+	_open(_setup_of([_bear(), Scenario.free_counters("Grow", MmCounter.Kind.PLUS_ONE_PLUS_ONE, 2)]))
+	_cast("Bear")
+	_resolve()
+	var bear: int = _permanents("Bear")[0]
+	assert_null((_screen.face_of(bear) as BattlefieldFace).counter_chip())
+
+	_cast("Grow")
+	_target(bear)
+	_resolve()
+
+	var chip: CounterChip = (_screen.face_of(bear) as BattlefieldFace).counter_chip()
+	assert_eq([chip.kind, chip.amount], [MmCounter.Kind.PLUS_ONE_PLUS_ONE, 2])
+	assert_eq(_presenter.snapshot().look_of(bear).power_toughness_texts(), ["4", "/", "4"])
+	var turn: int = _presenter.snapshot().view.game_turn
+	_pass_until(func() -> bool: return _presenter.snapshot().view.game_turn > turn)
+	assert_eq((_screen.face_of(bear) as BattlefieldFace).counter_chip().amount, 2, "Counters do not wear off.")
+
+
 func _open(setup: MmEncounterSetup, agent: MmAgent = DefaultAnswerAgent.new()) -> void:
 	_screen = EncounterScreen.new()
 	_screen.starts_itself = false

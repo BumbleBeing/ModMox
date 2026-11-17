@@ -69,6 +69,8 @@ static func creature_value(state: MmGameState, creature: MmGameObject) -> int:
 			value += 10 * power
 		elif ability is DeathtouchAbility:
 			value += 25
+		elif ability is LifelinkAbility:
+			value += 10 + 10 * power
 		elif ability is DoubleStrikeAbility:
 			value += 10 + 15 * power
 		elif ability is FirstStrikeAbility:

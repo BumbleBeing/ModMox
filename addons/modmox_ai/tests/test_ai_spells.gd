@@ -380,3 +380,72 @@ func _engine_holding_a_ritual(game_turn: int, step: Step, also_held: Array[Strin
 			if Scenario.card_in_hand(running, running.hero(), card_name) == -1:
 				return false
 		return true)
+
+
+func test_a_minus_one_minus_one_counter_goes_on_the_opposing_creature_it_kills() -> void:
+	var wither: MmCardDefinition = Scenario.free_counters("Wither", MmCounter.Kind.MINUS_ONE_MINUS_ONE, 1)
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Scout", 1, 1)], [Scenario.creature("Imp", 1, 1)], [wither])
+	assert_not_null(engine)
+	_cast_every(engine, "Scout")
+	var agent: AiAgent = AiAgent.new()
+
+	var play: int = AiScenario.ask(engine, agent)
+	assert_eq(AiScenario.cast_name(engine, play), "Wither")
+	engine.submit(play)
+	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+
+	assert_eq(target.id, Scenario.permanent_named(engine, engine.villain().id, "Imp"))
+
+
+func test_a_plus_one_plus_one_counter_goes_on_its_own_creature() -> void:
+	var grow: MmCardDefinition = Scenario.free_counters("Grow", MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1)
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Scout", 2, 2)], [Scenario.creature("Imp", 2, 2)], [grow])
+	assert_not_null(engine)
+	_cast_every(engine, "Scout")
+	var agent: AiAgent = AiAgent.new()
+
+	var play: int = AiScenario.ask(engine, agent)
+	assert_eq(AiScenario.cast_name(engine, play), "Grow")
+	engine.submit(play)
+	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+
+	assert_eq(target.id, Scenario.permanent_named(engine, engine.hero().id, "Scout"))
+
+
+func test_plus_counters_are_played_whenever_and_minus_counters_as_removal() -> void:
+	var grow: Array[MmEffect] = [Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, Scenario.targeted(0))]
+	var wither: Array[MmEffect] = [Scenario.put_counters(MmCounter.Kind.MINUS_ONE_MINUS_ONE, 1, Scenario.targeted(0))]
+
+	assert_eq(AiTiming.tag_of_effects(grow), AiTiming.Tag.NONE, "It lasts, so it is no combat trick.")
+	assert_eq(AiTiming.tag_of_effects(wither), AiTiming.Tag.REMOVAL)
+
+
+## Casts every card named [param card_name] in the Hero's hand, so the Agent is left with
+## the spell under test.
+func _cast_every(engine: MmEngine, card_name: String) -> void:
+	while Scenario.card_in_hand(engine, engine.hero(), card_name) != -1:
+		assert_eq(Scenario.cast_and_resolve(engine, card_name), "")
+
+
+func test_removal_goes_at_the_lifelink_creature_of_two_otherwise_alike() -> void:
+	for villain_creatures: Array in [[_guard(), _cleric()], [_cleric(), _guard()]]:
+		var theirs: Array[MmCardDefinition] = []
+		theirs.assign(villain_creatures)
+		var engine: MmEngine = AiScenario.ready_with([], theirs, [AiScenario.free_alpha("terror")])
+		assert_not_null(engine)
+		var agent: AiAgent = AiAgent.new()
+		var play: int = AiScenario.ask(engine, agent)
+		assert_eq(AiScenario.cast_name(engine, play), "Terror")
+		engine.submit(play)
+
+		var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+
+		assert_eq(target.id, Scenario.permanent_named(engine, engine.villain().id, "Cleric"))
+
+
+func _guard() -> MmCardDefinition:
+	return Scenario.creature("Guard", 3, 3)
+
+
+func _cleric() -> MmCardDefinition:
+	return Scenario.creature("Cleric", 3, 3, [LifelinkAbility.new()])

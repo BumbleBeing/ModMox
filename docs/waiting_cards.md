@@ -7,4 +7,8 @@ The real cards `/add-card` triaged and has not added yet (ADR 0040), grouped by 
 - **Set Aside**: something new on screen, which starts with a GUI prototype.
 - **Unsuited**: can never mean anything here, and is never proposed.
 
-Nothing is waiting yet.
+## Blocked
+
+### Hybrid mana ({B/R})
+
+- **Cultbrand Cinder** ({4}{B/R}, Creature — Elemental Shaman, 3/3): "When this creature enters, put a -1/-1 counter on target creature." Its ability is Ready since counters; it waits on a mana symbol payable with either of two colors, which the engine's mana costs and the card tool's reading both lack.

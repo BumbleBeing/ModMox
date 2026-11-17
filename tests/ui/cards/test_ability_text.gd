@@ -13,7 +13,9 @@ const Whose := MmTrigger.Whose
 const PRINTED: Dictionary[String, String] = {
 	"ancestral_recall": "Target player draws three cards.",
 	"ankh_of_mishra": "Whenever a land enters, this artifact deals 2 damage to that land's controller.",
+	"battlegrowth": "Put a +1/+1 counter on target creature.",
 	"black_knight": "First strike\nProtection from white",
+	"charmed_stray": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each other creature you control originally named Charmed Stray.",
 	"counterspell": "Counter target spell.",
 	"dark_ritual": "Add {B}{B}{B}.",
 	"drudge_skeletons": "{B}: Regenerate this creature.",
@@ -24,13 +26,16 @@ const PRINTED: Dictionary[String, String] = {
 	"giant_growth": "Target creature gets +3/+3 until end of turn.",
 	"giant_spider": "Reach",
 	"goblin_balloon_brigade": "{R}: This creature gains flying until end of turn.",
+	"helpful_hunter": "When this creature enters, draw a card.",
 	"howling_mine": "At the beginning of each player's draw step, if this artifact is untapped, that player draws a card.",
+	"instill_infection": "Put a -1/-1 counter on target creature. Draw a card.",
 	"island": "({T}: Add {U}.)",
 	"ivory_tower": "At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.",
 	"keldon_warlord": "This creature's power and toughness are each equal to the number of non-Wall creatures you control.",
 	"lightning_bolt": "Lightning Bolt deals 3 damage to any target.",
 	"llanowar_elves": "{T}: Add {G}.",
 	"mountain": "({T}: Add {R}.)",
+	"ornery_kudu": "When this creature enters, put a -1/-1 counter on target creature you control.",
 	"plains": "({T}: Add {W}.)",
 	"raise_dead": "Return target creature card from your graveyard to your hand.",
 	"prodigal_sorcerer": "{T}: This creature deals 1 damage to any target.",
@@ -156,6 +161,9 @@ func test_the_trigger_kinds_are_worded() -> void:
 
 func test_the_effects_no_authored_card_uses_yet_are_worded() -> void:
 	var white_creatures: EachSelection = Scenario.each_creature(Scenario.of_color(MmCardTypes.CardColor.WHITE))
+	var you_control: ControlledByFilter = ControlledByFilter.new()
+	var other_strays: EachSelection = Scenario.each_creature(Scenario.all_of(
+		[Scenario.of_color(MmCardTypes.CardColor.WHITE), you_control, Scenario.is_not(IsSourceFilter.new()), Scenario.named("Charmed Stray")]))
 	var expected: Dictionary[String, MmEffect] = {
 		"Each player loses 2 life.": Scenario.lose_life(2, Scenario.each(IsPlayerFilter.new())),
 		"Each player draws two cards.": Scenario.draw_cards(2, Scenario.each(IsPlayerFilter.new())),
@@ -166,6 +174,10 @@ func test_the_effects_no_authored_card_uses_yet_are_worded() -> void:
 		"Target creature gets -2/-0 until end of turn.": Scenario.until_end_of_turn(Scenario.modify_pt(-2, 0, Scenario.targeted(0))),
 		"Prevent the next 3 damage that would be dealt to you this turn.": Scenario.prevent_next(3, Scenario.you()),
 		"Regenerate target creature.": Scenario.regenerate(Scenario.targeted(0)),
+		"Put a +1/+1 counter on target creature.": Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, Scenario.targeted(0)),
+		"Put two -1/-1 counters on each white creature.": Scenario.put_counters(MmCounter.Kind.MINUS_ONE_MINUS_ONE, 2, white_creatures),
+		"Destroy each other white creature you control originally named Charmed Stray.": Scenario.destroy(other_strays),
+		"Destroy each creature not originally named Bear.": Scenario.destroy(Scenario.each_creature(Scenario.is_not(Scenario.named("Bear")))),
 	}
 	for text: String in expected:
 		var spell: SpellAbility = SpellAbility.new()
@@ -198,6 +210,11 @@ func test_of_two_card_types_the_last_is_the_noun() -> void:
 
 	assert_eq(AbilityText.of_ability(spell, "Sample"), "Destroy target artifact creature.")
 	assert_eq(AbilityText.things(both), "artifact creatures")
+
+
+func test_lifelink_is_a_keyword() -> void:
+	assert_eq(AbilityText.of_ability(LifelinkAbility.new(), "Sample"), "Lifelink")
+	assert_true(AbilityText.is_keyword(LifelinkAbility.new()))
 
 
 func test_target_spell_is_worded_with_and_without_a_filter() -> void:

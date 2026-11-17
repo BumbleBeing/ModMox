@@ -54,6 +54,9 @@ var continuous_effects: Array[ActiveContinuousEffect] = []
 ## Identity (A140). Protection's prevention shows as the ability instead.
 var replacement_effects: Array[ActiveReplacementEffect] = []
 var damage_marked: int = 0
+## How many counters of each kind are on it (CR 122); a kind it has none of is not listed.
+## Public, like the permanent.
+var counters: Dictionary[MmCounter.Kind, int] = {}
 ## Its once-each-game abilities that have been activated, by their place in abilities, so
 ## the GUI can gray them (ADR 0036). Public, like the object.
 var spent_ability_indexes: Array[int] = []
@@ -106,6 +109,7 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 		if active.is_locked_to(MmReference.to_object(game_object.id)):
 			view.replacement_effects.append(active)
 	view.damage_marked = game_object.damage_marked
+	view.counters = game_object.counters.duplicate()
 	view.spent_ability_indexes = game_object.spent_ability_indexes.duplicate()
 	view.potion_index = game_object.potion_index
 	view.is_summoning_sick = state.is_summoning_sick(game_object)
@@ -117,3 +121,8 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 		view.is_blocked = view.is_attacking and state.combat.is_blocked(game_object.id)
 		view.blocking_ids = state.combat.attackers_blocked_by(state, game_object.id)
 	return view
+
+
+## How many counters of [param kind] are on it.
+func counters_of(kind: MmCounter.Kind) -> int:
+	return counters.get(kind, 0)

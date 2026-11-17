@@ -17,6 +17,15 @@
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Artifact"
 	},
+	"battlegrowth": {
+		"mana_cost": "{G}",
+		"name": "Battlegrowth",
+		"oracle_id": "650bf82e-7f83-470c-bf4a-34281bfe9341",
+		"oracle_text": "Put a +1/+1 counter on target creature.",
+		"rarity": "common",
+		"set_name": "Mirrodin",
+		"type_line": "Instant"
+	},
 	"black_knight": {
 		"mana_cost": "{B}{B}",
 		"name": "Black Knight",
@@ -27,6 +36,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "2",
 		"type_line": "Creature — Human Knight"
+	},
+	"charmed_stray": {
+		"mana_cost": "{W}",
+		"name": "Charmed Stray",
+		"oracle_id": "6781166b-f6ab-4076-8e97-0cd9342f1b41",
+		"oracle_text": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each other creature you control named Charmed Stray.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "War of the Spark",
+		"toughness": "1",
+		"type_line": "Creature — Cat"
 	},
 	"counterspell": {
 		"mana_cost": "{U}{U}",
@@ -161,6 +181,17 @@
 		"toughness": "2",
 		"type_line": "Creature — Bear"
 	},
+	"helpful_hunter": {
+		"mana_cost": "{1}{W}",
+		"name": "Helpful Hunter",
+		"oracle_id": "c0864adb-e9aa-40b6-91ff-a0646193e887",
+		"oracle_text": "When this creature enters, draw a card.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Foundations",
+		"toughness": "1",
+		"type_line": "Creature — Cat"
+	},
 	"hill_giant": {
 		"mana_cost": "{3}{R}",
 		"name": "Hill Giant",
@@ -191,6 +222,15 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "3",
 		"type_line": "Creature — Minotaur"
+	},
+	"instill_infection": {
+		"mana_cost": "{3}{B}",
+		"name": "Instill Infection",
+		"oracle_id": "0040db73-ac11-4c15-a1ac-5a2c4c085f09",
+		"oracle_text": "Put a -1/-1 counter on target creature.\nDraw a card.",
+		"rarity": "common",
+		"set_name": "Scars of Mirrodin",
+		"type_line": "Instant"
 	},
 	"ironroot_treefolk": {
 		"mana_cost": "{4}{G}",
@@ -271,6 +311,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Mountain"
+	},
+	"ornery_kudu": {
+		"mana_cost": "{2}{G}",
+		"name": "Ornery Kudu",
+		"oracle_id": "8abef87a-4a5c-412e-8137-827cee50bb8b",
+		"oracle_text": "When this creature enters, put a -1/-1 counter on target creature you control.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Amonkhet",
+		"toughness": "4",
+		"type_line": "Creature — Antelope"
 	},
 	"pearled_unicorn": {
 		"mana_cost": "{2}{W}",

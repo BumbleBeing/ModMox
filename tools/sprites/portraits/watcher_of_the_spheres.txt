@@ -1,0 +1,78 @@
+; Watcher of the Spheres' Portrait and Pain Portrait, facing front: a white barn owl with a
+; rust-rimmed heart-shaped face, dark eyes and a small ivory beak under a cream crown, white
+; wings raised in a V, a collar of stacked gold rings, gold pauldrons over blue sleeves, a white
+; robe marked with a blue constellation, and two gold scroll coils on its left shoulder.
+; Drawn after the art of Watcher of the Spheres: Core Set 2021 (m21) #227, by G-host Lee.
+; Scryfall ID: 354b9ea4-3d55-48cc-b426-c46b1d1bb397
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= watcher_of_the_spheres
+.11..........................11.
+1##111......11111111......111551
+1#61##1...11oooonnnn11...1551651
+1#61#61..1oooooonnnnnn1..1651651
+1#61#6511ohhhooonnngggn11+651651
+1#61#6511h###hhongg666g11+651651
+1#61#651h######hg666666g1+651651
+1#61#651h######ji666666g1+651651
+1#61#651h#######6666666g1+651651
+1#61#651h##i50##6650h66g1+651651
+1#61#651h##j00j#6i00i66g1+651651
+.1#61#61h###jj#sr6ii666g1651651.
+.1#61#61h######sr666666g1651651.
+.1#61#61h######rq666666g1651651.
+.1#61#651h######666666g1+651651.
+..1#61#651hh####6666gg1+651651..
+..1#61#6511hhh##66ggg11+6516111.
+..1#61#651y$11hhgg11xx1+6511y$x1
+..1#61#651y$$$$$xxxxxx1+6111$1w1
+...1#61#61vvvvvvuuuuuu161y$x1wv1
+...1#61#1y$$$$$$xxxxxxx11$1w111.
+...1#611#1xxxxxxwwwwww151xwv1...
+..1111###11vvvvvuuuuu116611111..
+.1y$$$$1########666666661$xxxx1.
+1y$$$$$x1#######6&T66661$xxxxxw1
+1$$$$$xw1#######T66T&661xxxxxwv1
+1$$$$xwv1###&TT&66666661xxxxwvu1
+1x$$xwvv1##T####66666661wxxwvuu1
+11wwwvv11#&#####666666611vvvuu11
+1RRRRRQ1#6######666666561QQQQQP1
+1SRRRRQ1#6######666666561RQQQQP1
+1SSRRQQ1#6######666666561RRQQPP1
+
+= watcher_of_the_spheres_pain
+.11..........................11.
+1##111.......11111111.....111551
+1#61##1....11oooonnnn11..1551651
+1#61#61...1oooooonnnnnn1.1651651
+1#61#65111ohhhooonnngggn1+651651
+1#61#65111h###hhongg666g1+651651
+1#61#6551h######hg666666g1651651
+1#61#6551h######ji666666g1651651
+1#61#6551h###0###6660666g1651651
+1#61#6551h##i#0##6606h66g1651651
+1#61#6551h##j0#j#6i60i66g1651651
+.1#61#651h###jj#sr6ii666g151651.
+.1#61#651h######qp666666g151651.
+.1#61#651h######rq666666g151651.
+.1#61#6551h######666666g1651651.
+..1#61#6551hh####6666gg1651651..
+..1#61#65111hhh##66ggg1+6516111.
+..1#61#651y$$11hhgg11x1+6511y$x1
+..1#61#651y$$$$$xxxxxx1+6111$1w1
+...1#61#61vvvvvvuuuuuu161y$x1wv1
+...1#61#1y$$$$$$xxxxxxx11$1w111.
+...1#611#1xxxxxxwwwwww151xwv1...
+..1111###11vvvvvuuuuu116611111..
+.1y$$$$1########666666661$xxxx1.
+1y$$$$$x1#######6&T66661$xxxxxw1
+1$$$$$xw1#######T66T&661xxxxxwv1
+1$$$$xwv1###&TT&66666661xxxxwvu1
+1x$$xwvv1##T####66666661wxxwvuu1
+11wwwvv11#&#####666666611vvvuu11
+1RRRRRQ1#6######666666561QQQQQP1
+1SRRRRQ1#6######666666561RQQQQP1
+1SSRRQQ1#6######666666561RRQQPP1

@@ -68,7 +68,7 @@ tests/           game-side tests, mirroring run/, ui/ and tools/ (tests/run/, te
 
 ## Naming classes
 
-- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`, `MmCombat`, `MmTrigger`, `MmCondition`, `MmContinuousEffect`, `MmReplacementEffect`.
+- **`Mm` prefix** only for the engine's core classes and the generic base classes (ADR 0005): `MmEngine`, `MmGameState`, `MmPlayer`, `MmZone`, `MmGameObject`, `MmEncounterSetup`, `MmPlayerSetup`, `MmCardDefinition`, `MmRunCard`, `MmPendingDecision`, `MmEvent`, `MmModification`, `MmCharacteristics`, `MmCardTypes`, `MmMana`, `MmManaCost`, `MmReference`, `MmSelection`, `MmEffectContext`, `MmRng`, `MmTurn`, `MmAction`, `MmPlayerView`, `MmObjectView`, `MmEffect`, `MmFilter`, `MmValue`, `MmAbility`, `MmCost`, `MmCombat`, `MmTrigger`, `MmCondition`, `MmContinuousEffect`, `MmReplacementEffect`, `MmCounter`.
 - **Specific subclasses** have no prefix and end with their base kind: `ChangeNameModification`, `ZoneChangeEvent`, `KeepOrMulliganDecision`, `DealDamageEffect`, `CreatureFilter`, `CountValue`, `ModifyPowerToughnessContinuousEffect`.
 - Test files and test helpers never declare `class_name`.
 - Never reuse a name Godot already has as a built-in type or class (`Color`, `Rect2`, `Timer`, ...), even inside a class. It fails to compile. That is why the color enum is `MmCardTypes.CardColor`.
@@ -149,6 +149,9 @@ These are what keep the engine predictable. A violation is a bug even if the tes
 - Anything leaving the stack is an undo barrier (ADR 0015), so a test can undo casting a counter but never the countering.
 - Put "target card in a graveyard" on a card with `Scenario.target_graveyard_card()` (`your_dead_creature()` for a creature card in its controller's) and "target activated or triggered ability" with `Scenario.target_ability()`; `free_raise()` and `free_stifle()` are the two as instants costing {0}, and `card_in_graveyard()` finds a card by name. A free raise is an instant, unlike Raise Dead, so that one can answer another.
 - A card that changes zones is a new object, so find it again after every move: `card_in_graveyard()` after it dies, the hand after it returns.
+- Put counters on a permanent with `Scenario.put_counters()`, or with a `Scenario.free_counters()` instant aimed at a creature, and count them with `Scenario.counters_on()`. Resolving the spell is an undo barrier, so counters are checked through a copy of the state and a replay, never through undo.
+- `combat_ready()` and the helpers under it let an ability that triggers as a creature arrives resolve before the next creature is cast, so a creature with an "enters" ability can start on the battlefield: count what its ability did during setup before the scenario's own step.
+- "Originally named [card name]" is `Scenario.named()`. Every card in a scenario is flattened from a Run Card, so each has an Original; rename one with a `ChangeNameModification` on its Run Card in the Encounter Setup, and set `definition.original` to null on a permanent to stand in for an object with none.
 - The engine asks which replacement effect applies first only when the effects differ: two shields with the same amount left are applied without asking, so give them different amounts.
 
 ## The AI addon

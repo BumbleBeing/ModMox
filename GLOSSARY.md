@@ -143,7 +143,7 @@ A Mod that harms the card it is on. The Hero never holds or applies one: it arri
 _Avoid_: Curse, bad mod, downgrade
 
 **Modded Name**:
-What a card with Mods or Hexes is called: the name of each one on it, in slot order, in front of the card's own. A Grizzly Bears with the Mod Violent is Violent Grizzly Bears. A fuller set of naming rules is still to be agreed.
+What a card with Mods or Hexes is called: the name of each one on it, in slot order, in front of the card's own. A Grizzly Bears with the Mod Violent is Violent Grizzly Bears. An effect that asks for cards "originally named" something goes by the Original's name, so a Violent Charmed Stray is still originally named Charmed Stray. A fuller set of naming rules is still to be agreed.
 _Avoid_: Prefix, title, nickname
 
 **Mod Slot**:
@@ -202,6 +202,10 @@ _Avoid_: Random seed, world seed
 The main menu's record of everything seen across runs, in four pages: Achievements, the Card Encyclopedia (every card collected or seen, with its Modded versions), the Stage Encyclopedia (every Stage and its Villains seen) and the Hall of Fame.
 _Avoid_: Hall of Fame (one of its pages), collection (the Collection is a run's cards), Card Gallery (a developer tool)
 
+**Credits**:
+The one screen that names who and what made the game: its makers, the artists of the card and Emblem art, Godot, and the notice that Magic belongs to Wizards of the Coast. It rolls after a won run, and the main menu opens it too.
+_Avoid_: Attributions, about screen, end roll
+
 ## Decks
 
 **Collection**:
@@ -221,7 +225,7 @@ The one Deck in the Deckbox that the Hero takes into encounters.
 _Avoid_: Current deck, equipped deck, main deck
 
 **Basic land**:
-A land the Hero never has to own: a Deck may hold any number of each type for free. One that takes a Mod stops being free: that copy becomes a Run Card in the Collection with a Modded Name, such as Ancient Plains, and no longer counts as a Plains.
+A land the Hero never has to own: a Deck may hold any number of each type for free. One that takes a Mod stops being free: that copy becomes a Run Card in the Collection with a Modded Name, such as Ancient Plains, and is no longer a free basic land.
 _Avoid_: Free land
 
 **Working Deck**:
@@ -355,6 +359,10 @@ _Avoid_: Stop key, full control
 A red bead on a creature with the damage marked on it this turn, resting on the top of its power and toughness box over the toughness. The box itself keeps showing the creature's power and toughness.
 _Avoid_: Damage counter, wound marker, remaining toughness
 
+**Counter Chip**:
+A bead in the top left corner of a permanent's art that says how many counters of one kind are on it, with their sign: green and "+2" for +1/+1 counters, violet and "-2" for -1/-1 counters. It is the Damage Chip's bead in another color and place. The power and toughness box shows what the counters add up to.
+_Avoid_: Counter bead, counter badge, gem, buff marker
+
 **Trigger Order**:
 The Hero's half-made answer when several of their triggers happen at once: the triggers in a list above the stack, the top one resolving first, each dragged to its place before the order is confirmed. Triggers that all read the same and have the same cause are ordered without asking.
 _Avoid_: Trigger queue, stacking order
@@ -452,7 +460,7 @@ The card a right-click puts in the Inspector, ringed where it is drawn. A right-
 _Avoid_: Selected card (the deckbuilder's), locked card, focused card
 
 **Original**:
-A card as its Card Definition has it: no Mods, no Hexes and nothing an encounter has done to it. The Inspector shows it in place of the card as it is now while View Original is pressed. A token or an Emblem has none.
+A card as its Card Definition has it: no Mods, no Hexes and nothing an encounter has done to it. The Inspector shows it in place of the card as it is now while View Original is pressed. An Emblem has none. A token that is a copy has the Original of the card it copied, and any other token has none.
 _Avoid_: Base card, printed card, unmodified card
 
 **State Information**:

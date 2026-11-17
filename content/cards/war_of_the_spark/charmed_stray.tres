@@ -1,0 +1,83 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_pj3p8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_dnmfl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/lifelink_ability.gd" id="2_ftt6r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_ddy6c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_eivvo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_md3f3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="5_3wcg7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="6_dlcwu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="7_pdxd3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_hgujk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="9_olxli"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_original_name_filter.gd" id="10_nnfap"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="11_mxgj1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="12_pyltl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="13_n0vee"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="14_b4jih"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="15_2ydiv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="16_du1o5"]
+
+[sub_resource type="Resource" id="Resource_sfbr0"]
+script = ExtResource("2_ftt6r")
+
+[sub_resource type="Resource" id="Resource_4yx70"]
+script = ExtResource("4_md3f3")
+value = 1
+
+[sub_resource type="Resource" id="Resource_gy88u"]
+script = ExtResource("6_dlcwu")
+
+[sub_resource type="Resource" id="Resource_20l0f"]
+script = ExtResource("7_pdxd3")
+
+[sub_resource type="Resource" id="Resource_3yn2o"]
+script = ExtResource("8_hgujk")
+
+[sub_resource type="Resource" id="Resource_e0d0l"]
+script = ExtResource("9_olxli")
+filter = SubResource("Resource_3yn2o")
+
+[sub_resource type="Resource" id="Resource_o4lfd"]
+script = ExtResource("10_nnfap")
+original_name = "Charmed Stray"
+
+[sub_resource type="Resource" id="Resource_v8udr"]
+script = ExtResource("11_mxgj1")
+filters = Array[ExtResource("5_3wcg7")]([SubResource("Resource_gy88u"), SubResource("Resource_20l0f"), SubResource("Resource_e0d0l"), SubResource("Resource_o4lfd")])
+
+[sub_resource type="Resource" id="Resource_lqrv3"]
+script = ExtResource("12_pyltl")
+filter = SubResource("Resource_v8udr")
+
+[sub_resource type="Resource" id="Resource_wu0l3"]
+script = ExtResource("13_n0vee")
+amount = SubResource("Resource_4yx70")
+recipients = SubResource("Resource_lqrv3")
+
+[sub_resource type="Resource" id="Resource_21h2m"]
+script = ExtResource("8_hgujk")
+
+[sub_resource type="Resource" id="Resource_qm41c"]
+script = ExtResource("16_du1o5")
+filter = SubResource("Resource_21h2m")
+
+[sub_resource type="Resource" id="Resource_5cee0"]
+script = ExtResource("14_b4jih")
+trigger = SubResource("Resource_qm41c")
+effects = Array[ExtResource("3_ddy6c")]([SubResource("Resource_wu0l3")])
+
+[sub_resource type="Resource" id="Resource_gx0ly"]
+script = ExtResource("2_dnmfl")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_eivvo")
+name = "Charmed Stray"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat"])
+mana_cost = SubResource("Resource_gx0ly")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_pj3p8")]([SubResource("Resource_sfbr0"), SubResource("Resource_5cee0")])

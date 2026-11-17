@@ -37,6 +37,17 @@ func test_flattened_copy_is_independent_of_later_edits() -> void:
 	assert_eq(run_card.base.name, "Goblin")
 
 
+func test_a_flattened_card_points_to_its_original() -> void:
+	var run_card: MmRunCard = _run_card("Goblin")
+	run_card.modifications.append(_rename("Hobgoblin"))
+
+	var flattened: MmCardDefinition = run_card.flatten()
+
+	assert_eq(flattened.original, run_card.base, "The base itself, not a copy of it.")
+	assert_eq(flattened.original.name, "Goblin")
+	assert_null(run_card.base.original, "A card that was never flattened has no Original.")
+
+
 func _run_card(card_name: String) -> MmRunCard:
 	var definition: MmCardDefinition = MmCardDefinition.new()
 	definition.name = card_name
