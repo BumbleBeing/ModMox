@@ -1,0 +1,76 @@
+; King of the Pride's Portrait and Pain Portrait, facing front: a pale lion with pale blue
+; eyes, a pink nose and a white chin, in a golden mane whose crest the wind sweeps right.
+; Drawn after the art of King of the Pride: Modern Horizons (mh1) #16, by Jonathan Kuo.
+; Scryfall ID: c4e83abd-6f15-491e-9253-90af9f6f1025
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= king_of_the_pride
+...............111....111...11..
+.............11$$1..11$y1.11$1..
+...........11$y$1.11$$y$11$$i1..
+........1$$$$y$$i$y$$$$i$$iih1..
+.....11$$11$y$$i$y$$i11i$ihihi1.
+....1$$i1on1$$i$$$ii1nm1$ihiiih1
+...1$$ih1nlnnooonnnmmkm1hiiihi1.
+...1$$$i$hfnoooonnnnmfghiiihii1.
+..1$i$$iignooooonnnnnmfhiihii$i1
+...1ihihhfnmllnonmkklmfghhghhh1.
+..1$$$i$gnl00nnonmm00kmfhiihii1.
+.1$i$iihgnnS00nonm00Smlghiihi$i1
+..1hihhgfnonnmnonmlmmmlfghghhg1.
+..1$$i$ignonnmnonmlmmmlfhiiihi1.
+.1i$iihhfnonn888844mmmlghihiihi1
+..1ihhghgnoon088440mnnmfghgghg1.
+..1$i$iihfn66oo4Znn55mfhi$iih1..
+.1iiihihgfn6m6m00m5m5mghihhiih1.
+..1hghhggfnn6l0000k5mmfgghggh1..
+...1i$iihgfnl6##665kmfghiiiih1..
+111ihihhighfn6#6665mfghhihhgh111
+1o1hghgghgfff6#6655ffgghgghgg1n1
+1on1hihghhghgf6#65fghgghghgg1mn1
+1onn1ihihghihgf65fghhghghgg1mmn1
+1onnn1$hiihg$hhgghghhghggh1mmmn1
+1onnnm1$ihhgiihghhghhgghg1lmmmn1
+1onnnmm1$hgiihgihghhgfhg1llmmmn1
+1onnnmm1ihg$hhgihgghgfhg1llmmmn1
+1onnmmm1ihgihhgihghhgfgg1lllmmn1
+1nnnmml1ihghihgihgghgfhg1kllmmm1
+1nnmmml1hhgihhghhghhgfhg1klllmm1
+1nnmmml1ihgiihgihghggfhg1klllmm1
+
+= king_of_the_pride_pain
+................111....111...11.
+..............11$$1..11$y1.11$1.
+............11$y$1.11$$y$11$$i1.
+.........1$$$$y$$i$y$$$$i$$iih1.
+......11$$11$y$$i$y$$i11i$ihihi1
+.....1$$i1on1$$i$$$ii1nm1$ihiii1
+....1$$ih1nlnnooonnnmmkm1hiiihi1
+....1$$$i$hfnoooonnnnmfghiiihii1
+...1$i$$iignooooonnnnnmfhiihii$1
+....1ihihhfnmllmnmlkklmfghhghhh1
+...1$$$i$gn00nnnonmmm00mfhiihii1
+..1$i$iihgnnm0nnonmm0lmlghiihi$1
+...1hihhgfn00nmnonmlm00lfghghhg1
+...1$$i$ignonnmnonmlmmmlfhiiihi1
+..1i$iihhfnonn888844mmmlghihiih1
+...1ihhghgnoon088440mnnmfghgghg1
+...1$i$iihfn6m6o4Zn5m5mfhi$iih1.
+..1iiihihgfn6000000005mghihhiih1
+...1hghhggfn60#+#6+605mfgghggh1.
+....1i$iihgfn06+65350mfghiiiih1.
+111iihihhighfn000000mfghhihhg111
+1o1hhghgghgfff6#6655ffgghgghg1n1
+1on1hhihghhghgf6#65fghgghghg1mn1
+1onn1ihihghihgf65fghhghghgg1mmn1
+1onnn1$hiihg$hhgghghhghggh1mmmn1
+1onnnm1$ihhgiihghhghhgghg1lmmmn1
+1onnnmm1$hgiihgihghhgfhg1llmmmn1
+1onnnmm1ihg$hhgihgghgfhg1llmmmn1
+1onnmmm1ihgihhgihghhgfgg1lllmmn1
+1nnnmml1ihghihgihgghgfhg1kllmmm1
+1nnmmml1hhgihhghhghhgfhg1klllmm1
+1nnmmml1ihgiihgihghggfhg1klllmm1

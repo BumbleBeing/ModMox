@@ -466,3 +466,19 @@ _Avoid_: Tier (a part of a run), quality, grade
 **Divider**:
 The bar in the deckbuilder between the Collection and the Deck's columns. Dragging it up or down gives one more height and the other less; it changes no card's size, which the two zoom sliders set. Neither side can be made smaller than one whole card, and a double-click puts it back where it started. It stays where it was left until the deckbuilder closes.
 _Avoid_: Slider (the zoom sliders), splitter, sash, handle
+
+**Menu Soldier**:
+The pixel-art soldier who stands left of the main menu's window and plays one Soldier Animation after another, each starting as the last one ends. The first, from the moment the menu opens, is a Transition Animation chosen at random; then an Effect Animation and a Transition Animation take turns, and he never plays the same Transition Animation, or the same Effect Animation, twice in a row. The next Effect Animation is chosen two animations ahead, so whatever brings it to him knows its color and the moment he will flash it.
+_Avoid_: Mascot, idle soldier
+
+**Soldier Animation**:
+Seven seconds of the Menu Soldier's frames, starting and ending on him standing still, as long at one end as at the other: a Transition Animation or an Effect Animation.
+_Avoid_: Section, clip
+
+**Transition Animation**:
+A Soldier Animation of the Menu Soldier being himself, played between Effect Animations: keeping lookout, dozing off or cheering.
+_Avoid_: Idle (its old name), interlude
+
+**Effect Animation**:
+A Soldier Animation that gives the Menu Soldier a keyword's look for a while, such as wings for flying or a goblin's face for menace. He flashes the effect's color on the way in and again on the way out.
+_Avoid_: Buff animation, keyword animation

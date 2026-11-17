@@ -1,0 +1,76 @@
+; Brimaz, King of Oreskos's Portrait and Pain Portrait, facing front: spiked gold crown with a blue
+; gem, golden mane, white tear marks, cream beard, gold pauldron and a blue cloak with gold zigzags.
+; Drawn after the art of Brimaz, King of Oreskos: Born of the Gods (bng) #5, by Peter Mohrbacher.
+; Scryfall ID: f54eb705-6326-4bac-bf0e-68d42db7a270
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= brimaz_king_of_oreskos
+...............11...............
+.......1....1.1y$1.1....1.......
+....1.1o11.1o11y$11n1.11n1.1....
+...1o1o11y1ox1yT&$1wn1$11n1n1...
+..11ox1y11y1x1y&Q$1w1$11$1wn11..
+.1ooxxx1y11y11y$w$11$11$1wwwnn1.
+.11wxxw1y$$y$$y$w$ww$ww$1vwwv11.
+1ooxxww1vwwwwwwwvvvvvvvu1vvwwnn1
+.1wxxxwx1111111111111111wvwwwv1.
+.1oxxwwxwlhiijjjiiihhgkvwvvwwn1.
+1ooxxxwwlhggiijjiihhffgkvvwwwnn1
+.1wxxxwwlh1$01ijih10$1gkvvwwwv1.
+1ooxxwwlhii11gijihf11hhgkvvwwnn1
+.1xxxwwlhii6igijihfh5hhgkvvwww1.
+1ooxxwwlhhi6ihijihgh5hggkvvwwnn1
+.1wxxxwlhhii61cdcb15hhggkvwwwv1.
+1ooxxwwlhhoooo1cb1nnnnggkvvwwnn1
+.1xxxwwlhho6ooo11nnn5nggkvvwww1.
+1ooxxwwxlho6ono11nmn5ngkwvvwwnn1
+11wxxxwxlhoono1on1nmnngkwvwwwv11
+1y1oxxwxwlhn11o65n11mgkvwvwwn1Q1
+1yy1oxwxnmnmnloonnkmlmlmwvwn1QQ1
+1y$$11xwnonmnonmlmnmlmnmvw11RQQ1
+1wwwww1wonmnonmnmlmnmlmnv1RwRwQ1
+1yy$$$$1onmnonmnmlmnmlmn1RRRwQQ1
+1y$$$$ww1nmnonmnmlmnmlm1RRRRRQP1
+1vwwwwvvi1monmnmlmlmnl1RRRRRRQP1
+1iiiiihii1mnonmnmlmnml1RRR$RRQP1
+1iiiiihiih1no1mnml1nm1R$R$RwRwP1
+1iiiiihihii11nmnmlm11RRR$RRRwQP1
+1iiiiihiiiiSR1m11l1RRRRRRRRRRQP1
+1iiiiihiiSRRRR1RR1RRRRRRRRRRRQP1
+
+= brimaz_king_of_oreskos_pain
+................11..............
+........1....1.1y$1.1....1......
+.....1.1o11.1o11y$11n1.11n1.1...
+....1o1o11y1ox1yT&$1wn1$11n1n1..
+...11ox1y11y1x1y&Q$1w1$11$1wn11.
+..1ooxxx1y11y11y$w$11$11$1wwwnn1
+..11wxxw1y$$y$$y$w$ww$ww$1vwwv11
+.1ooxxww1vwwwwwwwvvvvvvvu1vvwwn1
+..1wxxxwx1111111111111111wvwwwv1
+..1oxxwwxwlhiijjjiiihhgkvwvvwwn1
+.1ooxxxwwlh11giijihhf11gkvvwwwn1
+..1wxxxwwlhih11ijih11ghgkvvwwwv1
+.1ooxxwwlhi11hgijihfg11hgkvvwwn1
+..1xxxwwlhii6igijihfh5hhgkvvwww1
+.1ooxxwwlhhi6ihijihgh5hggkvvwwn1
+..1wxxxwlhhii61cdcb15hhggkvwwwv1
+.1ooxxwwlhhoooo1cb1nnnnggkvvwwn1
+..1xxxwwlhho6ooo11nnn5nggkvvwww1
+.1ooxxwwxlho6111111115ngkwvvwwn1
+111wxxxwxlhoo1#6++5#1nngkwvwwwv1
+1yy1oxxwxwlhn16+65+51mgkvwvwwn11
+1yyy1oxwxnmnm11111111lmlmwvwn1Q1
+1y$$$11xwnonmnonmlmnmlmnmvw11QQ1
+1wwwwww1wonmnonmnmlmnmlmnv1wRwQ1
+1yy$$$$w1onmnonmnmlmnmlmn1RRwQQ1
+1y$$$$wwv1nmnonmnmlmnmlm1RRRRQP1
+1vwwwwvvii1monmnmlmlmnl1RRRRRQP1
+1iiiiihiii1mnonmnmlmnml1RR$RRQP1
+1iiiiihiihh1no1mnml1nm1$R$RwRwP1
+1iiiiihihiii11nmnmlm11RR$RRRwQP1
+1iiiiihiiiiSRR1m11l1RRRRRRRRRQP1
+1iiiiihiiSRRRRR1RR1RRRRRRRRRRQP1

@@ -7,7 +7,10 @@ func test_it_shows_the_lines_it_is_given_and_replaces_them_with_the_next() -> vo
 	add_child_autofree(lines)
 	assert_eq(lines.line_count(), 0)
 
-	lines.show_lines([[Vector2(100, 500), Vector2(140, 440), true], [Vector2(300, 500), Vector2(140, 440), false]])
+	lines.show_lines([
+		_line(Vector2(100, 500), Vector2(140, 440), true),
+		_line(Vector2(300, 500), Vector2(140, 440), false),
+	])
 
 	assert_eq(lines.line_count(), 2)
 	assert_eq(lines.line_from(0), Vector2(100, 500))
@@ -23,7 +26,10 @@ func test_a_block_still_being_chosen_is_gold_and_a_declared_one_white() -> void:
 	var lines: BlockLines = BlockLines.new()
 	add_child_autofree(lines)
 
-	lines.show_lines([[Vector2(100, 500), Vector2(140, 440), true], [Vector2(300, 500), Vector2(140, 440), false]])
+	lines.show_lines([
+		_line(Vector2(100, 500), Vector2(140, 440), true),
+		_line(Vector2(300, 500), Vector2(140, 440), false),
+	])
 
 	assert_eq(lines.line_color(0), BlockLines.CHOSEN)
 	assert_eq(lines.line_color(1), BlockLines.DECLARED)
@@ -42,10 +48,10 @@ func test_it_covers_the_screen_and_never_takes_the_mouse() -> void:
 func test_changing_what_was_given_afterwards_does_not_change_what_is_shown() -> void:
 	var lines: BlockLines = BlockLines.new()
 	add_child_autofree(lines)
-	var given: Array = [[Vector2(100, 500), Vector2(140, 440), true]]
+	var given: Array[BlockLines.Line] = [_line(Vector2(100, 500), Vector2(140, 440), true)]
 
 	lines.show_lines(given)
-	(given[0] as Array)[0] = Vector2(999, 999)
+	given[0] = _line(Vector2(999, 999), Vector2(140, 440), true)
 	given.clear()
 
 	assert_eq(lines.line_count(), 1)
@@ -56,7 +62,14 @@ func test_it_draws_without_error_even_a_line_of_no_length() -> void:
 	var lines: BlockLines = BlockLines.new()
 	add_child_autofree(lines)
 
-	lines.show_lines([[Vector2(100, 500), Vector2(140, 440), true], [Vector2(50, 50), Vector2(50, 50), false]])
+	lines.show_lines([
+		_line(Vector2(100, 500), Vector2(140, 440), true),
+		_line(Vector2(50, 50), Vector2(50, 50), false),
+	])
 	await wait_process_frames(2)
 
 	assert_eq(lines.line_count(), 2)
+
+
+func _line(from: Vector2, to: Vector2, is_chosen: bool) -> BlockLines.Line:
+	return BlockLines.Line.new(from, to, is_chosen)

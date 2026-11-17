@@ -1,0 +1,78 @@
+; Akim, the Soaring Wind's Portrait and Pain Portrait, facing front: a bird-dragon with banded
+; tan wings raised in a V, swept violet horns framing a webbed red crest, slit-pupiled yellow eyes,
+; a scaly gold head, a hooked ivory beak over a fanged jaw, red wattles, a gold feathered ruff,
+; a plated throat and a mottled blue-gray breast.
+; Drawn after the art of Akim, the Soaring Wind: Commander 2020 (c20) #6, by Filip Burburan.
+; Scryfall ID: 23736c5f-bd1c-4505-8639-5fb92cd74b21
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= akim_the_soaring_wind
+1............1....1............1
+11...1...1..1!1..1c1..1...1...11
+1j1.1W1.1!1.1!c11bc1.1c1.1V1.1i1
+1j1.1WV11!c11!c11bc11bc11VV1.1i1
+12j11WV11!ccc!ccbbcbbbc11VV11i21
+1hj1.1WVcc!ccc!cbcbbbcbbVV1.1ig1
+1hj1.1WVbc!cbc!cbcbabcbaVV1.1ig1
+1h2j1.1WVbc!cxyyxxwbcbaVV1.1i2g1
+12ij1.1WVbc!xyyyxxxwcbaVV1.1ih21
+1hij1..1WVbxyyxyxwxxwaVV1..1ihg1
+1hihj1.1WVvxyxyyxxwxwvVV1.1ighg1
+1h22j1.1V111vxnonmwv111V1.1i22g1
+12ihj1.1v$0$1noonnm1$0$v1.1igh21
+1hihij11vw0$1noonnm1$0vv11ihghg1
+1hih2j11xyxwxnonmnmwvwxw11i2ghg1
+1h22ij11wxyxwm1nm1lvwxwv11ih22g1
+12ihihj1xwxy1ooonnn1xwvw1ighgh21
+1hihihj1wvvv1noonnm1vvvv1ighghg1
+.1ih22j11##a#1nonm16a6611i22gh1.
+..22ihij1a#aaa1nm1aaa6a1ihgh22..
+..1hihij1aaa#c1lk1b6aaa1ihghg1..
+...1ih2j11a##a#cb6a66a11i2gh1...
+....1hij11xyxxyxwxwwxw11ihg1....
+...11hij1!yxy1onmn1xwxc1ihg11...
+.11++1hj1!xyw1nnmm1vxwc1ig13311.
+1+3+331h1cwxy1mmll1xwvb1g1223231
+13+332311cxwx1onmn1wvwb112222321
+1+332+331bwxw1nnmm1vwva122322231
+13+3323+31w1w1mmll1v1v1232222321
+133+3323332+11onmn11322222223221
+1+3323+3323331nnmm12222223222231
+133+333233+3+1mmll13232222223221
+
+= akim_the_soaring_wind_pain
+1.............1....1...........1
+11....1...1..1!1..1c1..1...1..11
+1j1..1W1.1!1.1!c11bc1.1c1.1V11i1
+1j1..1WV11!c11!c11bc11bc11VV11i1
+12j1.1WV11!ccc!ccbbcbbbc11VV1i21
+1hj1..1WVcc!ccc!cbcbbbcbbVV11ig1
+1hj1..1WVbc!cbc!cbcbabcbaVV11ig1
+1h2j1..1WVbc!cxyyxxwbcbaVV11i2g1
+12ij1..1WVbc!xyyyxxxwcbaVV11ih21
+1hij1...1WVbxyyxyxwxxwaVV1.1ihg1
+1hihj1..1WVvxyxyyxxwxwvVV11ighg1
+1h22j1..1VxwvvxnonmwvvvwV11i22g1
+12ihj1..1v11xxnoonnmww11v11igh21
+1hihij1.1xyx1xnoonnmw1wxw1ihghg1
+1hih2j1.1x11xxnonmnmww11w1i2ghg1
+1h22ij1.1wxyxwm1nm1lvwxwv1ih22g1
+12ihihj1.xwxy1ooonnn1xwv1ighgh21
+1hihihj1.wv111noonnm111v1ighghg1
+.1ih22j1.1x1cc1nonm1bb1w1i22gh1.
+..22ihij1.x1###1nm166611ihgh22..
+..1hihij1.w15+51lk153511ihghg1..
+...1ih2j1.w1bbbbbaaaaa11i2gh1...
+....1hij131x1111111111w1ihg1....
+...11hij13!yxy1onmn1xwx1ihg11...
+.11++1hj13!xyw1nnmm1vxw1ig13311.
+1+3+331h13cwxy1mmll1xwv1g1223231
+13+3323131cxwx1onmn1wvwb12222321
+1+332+3331bwxw1nnmm1vwva12322231
+13+3323+331w1w1mmll1v1v132222321
+133+3323332+311onmn1122222223221
+1+3323+33233331nnmm1222223222231
+133+333233+3+31mmll1232222223221

@@ -8,6 +8,7 @@ extends Control
 ## debug run (--run-seed=N, --stage=red), for pictures, and --spoils the Spoils screen of
 ## a win in one (--rank=lesser, elite or boss). Start Run (debug) begins a debug
 ## run at the Deckbox, in Kitty Keep, the Stage being built first (milestones 16 and 17).
+## The Menu Soldier stands to the left of the window, playing his animations.
 
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
@@ -22,6 +23,8 @@ const MIN_WINDOW: Vector2i = Vector2i(1280, 720)
 const REFUSAL_COLOR: Color = Color("#e08a7a")
 ## The gap between the menu's rows: the Spoils screen's.
 const BUTTON_GAP: int = SpoilsScreen.ROW_GAP
+## The gap between the Menu Soldier's picture and the window, in pixels.
+const SOLDIER_GAP: int = 64
 
 ## How the menu opens another scene, and how it quits. Tests replace both. A scene asked
 ## for on the command line opens at once, so that a --screenshot is not taken mid-fade; one
@@ -36,6 +39,8 @@ var quit: Callable = func() -> void: get_tree().quit()
 var arguments: PackedStringArray = OS.get_cmdline_user_args()
 
 var _buttons: Dictionary[String, Button] = {}
+var _window: PanelContainer
+var _soldier: MenuSoldier
 var _refusal: String = ""
 ## Whether the menu is going straight to a scene the command line asked for.
 var _is_skipping: bool = false
@@ -82,6 +87,11 @@ func _ready() -> void:
 	window.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	window.resized.connect(func() -> void: _shade_window(window))
 	center.add_child(window)
+	# Each time the container lays the window out, wherever and however large it is.
+	center.sort_children.connect(_place_soldier)
+	_window = window
+	_soldier = MenuSoldier.new()
+	add_child(_soldier)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.custom_minimum_size = Vector2(360, 0)
 	column.add_theme_constant_override("separation", BUTTON_GAP)
@@ -114,6 +124,17 @@ func refusal() -> String:
 	return _refusal
 
 
+## The Menu Soldier, or null when the menu went straight to another scene. What brings him
+## his effects asks his sequence what comes next.
+func soldier() -> MenuSoldier:
+	return _soldier
+
+
+## The window the menu's buttons sit in, or null when the menu went straight to another scene.
+func window() -> PanelContainer:
+	return _window
+
+
 ## The button labeled [param text], or null.
 func button(text: String) -> Button:
 	return _buttons.get(text, null) as Button
@@ -137,6 +158,15 @@ func _add(column: VBoxContainer, text: String, on_press: Callable) -> void:
 	made.pressed.connect(on_press)
 	column.add_child(_shadowed(made))
 	_buttons[text] = made
+
+
+## Stands the Menu Soldier left of the window, his feet level with its foot, on whole pixels.
+func _place_soldier() -> void:
+	var window: Rect2 = _window.get_global_rect()
+	var side: float = MenuSoldier.SPRITE_SIZE * MenuSoldier.SCALE
+	# The sprite's bottom row is empty: his soles are one of its pixels above its foot.
+	var foot: float = window.end.y + MenuSoldier.SCALE
+	_soldier.global_position = Vector2(window.position.x - SOLDIER_GAP - side, foot - side).round()
 
 
 ## The window the menu sits in: the Spoils screen's, shaded over its own height.

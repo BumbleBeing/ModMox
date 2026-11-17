@@ -207,6 +207,26 @@ func test_the_window_is_never_smaller_than_four_times_a_backdrop() -> void:
 	assert_eq(get_window().min_size, MainMenu.MIN_WINDOW)
 
 
+func test_the_menu_soldier_stands_left_of_the_menu_in_whole_pixels() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+	await wait_process_frames(2)
+
+	var soldier: MenuSoldier = menu.soldier()
+	var his: Rect2 = soldier.get_global_rect()
+	var window: Rect2 = menu.window().get_global_rect()
+
+	assert_not_null(soldier)
+	assert_true(soldier.is_visible_in_tree())
+	assert_eq(his.size, Vector2.ONE * MenuSoldier.SPRITE_SIZE * MenuSoldier.SCALE)
+	assert_eq(his.position, his.position.round(), "on whole pixels")
+	assert_almost_eq(window.position.x - his.end.x, float(MainMenu.SOLDIER_GAP), 1.0, "beside the window")
+	assert_almost_eq(his.end.y - MenuSoldier.SCALE, window.end.y, 1.0,
+			"his soles, a sprite pixel above his picture's foot, level with the window's")
+	assert_eq(soldier.texture.resource_path, SoldierAnimations.SPRITES % SoldierAnimations.NEUTRAL,
+			"every animation opens standing still")
+	assert_not_null(soldier.sequence(), "what brings him his effects asks his sequence")
+
+
 func test_the_window_keeps_its_smallest_size_when_the_menu_is_skipped() -> void:
 	get_window().min_size = Vector2i.ZERO
 	_menu(PackedStringArray(["--seed=7"]))

@@ -1,0 +1,79 @@
+; Balmor, Battlemage Captain's Portrait and Pain Portrait, facing front: a pale, flecked raptor
+; head with a hooked beak, a violet scarf and its trailing end, a cream fur collar, a crimson coat
+; over a narrowing waist, and tawny wings raised behind. On the viewer's left the arm bends round
+; the side, its gloved fist and fur cuff gripping a staff with a glowing red gem partway down; on
+; the right an open gloved hand hangs a little away from the body.
+; Drawn after the art of Balmor, Battlemage Captain: Dominaria United (dmu) #196, by Bram Sels.
+; Scryfall ID: 959ba62e-bb3a-49ad-8b1b-e787e413e5d4
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= balmor_battlemage_captain
+......1.........................
+.11..1e1.....................11.
+1ij11e!c1..................11ih1
+1hiix1!1v....111111.......1ihhg1
+.1gi1xwv1..11ttnono11....1ihhf1.
+1hgii1w1..1ttonoonono1..1ihhhfg1
+1gihh1b111ttoooonoooon11ihhgghf1
+.1ihh1b1j1tommoooommnn1ihhfggh1.
+1ihhg1a1i1to#0moom#0nn1hhghfggh1
+1ihhg1b1i1on00nxwn00nm1hgghfggh1
+.1hgi1b1i1oonnmxwmnnnm1hfgghfg1.
+1hhgi1a1i1onmmnwvnmmnm1hfgghfgg1
+1hgih1b1XW1onnnvunnnm1WV1fgghfg1
+.1gih1b1XWW1111uu1111WVVU1gghf1.
+1gihh1b1WWVVVVV11VVVVVVVU1fgghf1
+1gihh1b1XXWVWXXWWWWVVWVVU1fgghf1
+.1hhg1b11WV11WW11WW11VW111hfgg1.
+1ihhg1b1t11tt11tt11ot11oo11fggh1
+1hhg11b1ttotttoottooonoonnn1fgg1
+.1h111b1ooonoooonoonnmnmmnm1fg1.
+.11411b1nnn1nn1nnn1nm1mm1mm1hf1.
+.144Z1b1111X11Z111Z11z11z11z1f1.
+14ZZZ1b1zz1XW1ZzZZZZzzzZzzzz11..
+1ZZZz1b1zZ1WV1ZzZZZZzzzZzzzz11..
+111111b11zZ1WV1zZZZZzz11Zzzzz1..
+14ZtRRRQQ1Z1WV1zZZZZzz11Zzzzz1..
+1ZzoRPQPQ1Z1VU1zZZZzz1.1Zzzzz1..
+1zznQQQQP1Z1W1ZzZZZzz1.1Zzzzz1..
+111111b111ZZ1ZZzZZZzz1.1oonnm1..
+.1zzz1b1zZZZZZZzZZZzz1.1RQQQP1..
+.14ZZ1b1ZZZZZZZzZZZzz1.1QQPQP1..
+.14ZZ1b1ZZZZZZZzZZZzz1.1Q1Q1P1..
+
+= balmor_battlemage_captain_pain
+......1.........................
+.11..1e1.....................11.
+1ij11e!c1..................11ih1
+1hiix1!1v.....111111......1ihhg1
+.1gi1xwv1...11ttnono11...1ihhf1.
+1hgii1w1...1ttonoonono1.1ihhhfg1
+1gihh1b11.1ttoooonoooon1ihhgghf1
+.1ihh1b1j11toommoommnnn1hhfggh1.
+1ihhg1a1ij1to0nmoomn0nn1hghfggh1
+1ihhg1b1ii1onn0nxwn0nnm1gghfggh1
+.1hgi1b1ii1on0nmxwmn0nm1fgghfg1.
+1hhgi1a1ih1onm11wv11mnm1fgghfgg1
+1hgih1b1XWW1onnnvunnnm1V1fgghfg1
+.1gih1b1XWWW1111uu1111VVU1gghf1.
+1gihh1b1WWVVVVVV11VVVVVVU1fgghf1
+1gihh1b1XXWVWXXWWWWVVWVVU1fgghf1
+.1hhg1b11WV11WW11WW11VW111hfgg1.
+1ihhg1b1t11tt11tt11ot11oo11fggh1
+1hhg11b1ttotttoottooonoonnn1fgg1
+.1h111b1ooonoooonoonnmnmmnm1fg1.
+.11411b1nnn1nn1nnn1nm1mm1mm1hf1.
+.144Z1b1111X11Z111Z11z11z11z1f1.
+14ZZZ1b1zz1XW1ZzZZZZzzzZzzzz11..
+1ZZZz1b1zZ1WV1ZzZZZZzzzZzzzz11..
+111111b11zZ1WV1zZZZZzz11Zzzzz1..
+14ZtRRRQQ1Z1WV1zZZZZzz11Zzzzz1..
+1ZzoRPQPQ1Z1VU1zZZZzz1.1Zzzzz1..
+1zznQQQQP1Z1W1ZzZZZzz1.1Zzzzz1..
+111111b111ZZ1ZZzZZZzz1.1oonnm1..
+.1zzz1b1zZZZZZZzZZZzz1.1RQQQP1..
+.14ZZ1b1ZZZZZZZzZZZzz1.1QQPQP1..
+.14ZZ1b1ZZZZZZZzZZZzz1.1Q1Q1P1..

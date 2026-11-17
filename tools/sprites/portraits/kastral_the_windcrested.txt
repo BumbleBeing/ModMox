@@ -1,0 +1,78 @@
+; Kastral, the Windcrested's Portrait and Pain Portrait, facing front: a white-faced bird with a
+; dark crown, a silver crest and an open hooked beak, a rounded brass breastplate crossed by a
+; rope over a white breast, dark violet wings raised behind, and a knotwork staff with glowing
+; orbs at the left.
+; Drawn after the art of Kastral, the Windcrested: Bloomburrow (blb) #221, by Jesper Ejsing.
+; Scryfall ID: ebf68793-22a2-4a59-9d37-6791584edca1
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= kastral_the_windcrested
+11............................11
+1XX1........................1WW1
+1XUX1..........11..........1WUW1
+1WXUX1......11165111......1WUWV1
+1VWXUX1...113226+22211...1WUWVU1
+1VVWXUX1.13322565+22221.1WUWVUU1
+.1VVWXUX1+5665565++55+31WUWVUU1.
+1XUVVWXU123###6#65666221UWVUUUW1
+1WXxVVWW12#6#6#326565621VVUUUWV1
+1VxQxVVW12+0#6+33256+021VUUUWVU1
+1VVxXUVW120061+332150021VUUWVUU1
+.1xRxXUW1326#1+322165221VUWVUU1.
+1xRRRwXUW13+61Z32Z15321VUWVUUUW1
+xR#R#RwXU1Q3+18324132P1UWVUUUWV1
+xRRxRRwWW1QQ231+2122PP1VVUUUWVU1
+x#xRw#wVW1PQ2231122PPP1VUUUWVUU1
+.xxRwwUW1PPQQ22322PPPPP1VUWVUU1.
+1WUVVW113QQPQ232232PPPP211VUUUV1
+1WWUV1nQ11112Q2332Q21111P21UUVV1
+1VWx13lnxyyy11111111xxxw1P21VVU1
+1VVx165lnxxxyyyywyyxwwwv1+51VUU1
+1UVx1#61lnyxxxxywxxwwxwv1561UUU1
+1VUx1561wlnxxwwywwwwwwwv15+1UUU1
+1VVx16#1wxlnwwwywwwvwwwv1651UUU1
+1VVx1#61wxxlnwwywwwvvwwv1561UUU1
+1VVx1561wxwwlnwywwwvvvwv15+1UUU1
+1UVx16#51uuwwlnywwwvvuu1+651UUU1
+1VUxV1#61vxuuulnwuuuuwu1561UUUU1
+1VVxV16651wxyxwlnwxxwv1+551UUUU1
+1VVxUV1651vwwwvxlnwvvu1+51UUUUU1
+1VVxVUV1651vvvvxvlnuu1+51UUUUUU1
+1UVxVVUV1+51uvuxvuln1+31UUUUUUU1
+
+= kastral_the_windcrested_pain
+11............................11
+1XX1........................1WW1
+1XUX1...........11.........1WUW1
+1WXUX1.......11165111.....1WUWV1
+1VWXUX1....113226+22211..1WUWVU1
+1VVWXUX1..13322565+222211WUWVUU1
+.1VVWXUX11+5665565++55+31UWVUU1.
+1XUVVWXUV123###6#65666221WVUUUW1
+1WXxVVWWU1206#6#326565021VUUUWV1
+1VxQxVVWX12#0#6+332560521UUUWVU1
+1VVxXUVWW120661+332155021UUWVUU1
+.1xRxXUWV1326#1+322165221UWVUU1.
+1xRRRwXUWV13+61132115321UWVUUUW1
+xR#R#RwXUV1Q3+1+322132P1WVUUUWV1
+xRRxRRwWWU1QQ23132122PP1VUUUWVU1
+x#xRw#wVWX1PQ2231122PPP1UUUWVUU1
+.xxRwwUWV1PPQQ22322PPPPP1UWVUU1.
+1WUVVW113QQPQ232232PPPP211VUUUV1
+1WWUV1nQ11112Q2332Q21111P21UUVV1
+1VWx13lnxyyy11111111xxxw1P21VVU1
+1VVx165lnxxxyyyywyyxwwwv1+51VUU1
+1UVx1#61lnyxxxxywxxwwxwv1561UUU1
+1VUx1561wlnxxwwywwwwwwwv15+1UUU1
+1VVx16#1wxlnwwwywwwvwwwv1651UUU1
+1VVx1#61wxxlnwwywwwvvwwv1561UUU1
+1VVx1561wxwwlnwywwwvvvwv15+1UUU1
+1UVx16#51uuwwlnywwwvvuu1+651UUU1
+1VUxV1#61vxuuulnwuuuuwu1561UUUU1
+1VVxV16651wxyxwlnwxxwv1+551UUUU1
+1VVxUV1651vwwwvxlnwvvu1+51UUUUU1
+1VVxVUV1651vvvvxvlnuu1+51UUUUUU1
+1UVxVVUV1+51uvuxvuln1+31UUUUUUU1

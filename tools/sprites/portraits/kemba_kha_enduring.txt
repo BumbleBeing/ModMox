@@ -1,0 +1,77 @@
+; Kemba, Kha Enduring's Portrait and Pain Portrait, facing front: a crest of silver blades,
+; a silver mane in falling locks, a roaring lion's face, plated gold pauldrons and a gold
+; breastplate with a silver ridge and blue glows.
+; Drawn after the art of Kemba, Kha Enduring: Phyrexia: All Will Be One (one) #19, by Zoltan Boros.
+; Scryfall ID: 945d283d-4592-485f-808a-6e5a721f3cf7
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= kemba_kha_enduring
+...............11...............
+..........1...1651...1..........
+.........161..1651..151.........
+......1..1651.1651.1+51..1......
+.....161.1651.1651.1+51.151.....
+....165+1665+1565+13+5513+51....
+...1+655+655+++5+333++53++531...
+..15+655+653hiiihhhg2+53++53+1..
+.15+655+653hiijjiihhg2+53++53+1.
+155+655+61hiiijjiihhhg153++53++1
+..1355+651hgggijihfffg1+53++21..
+.1+655+61hi$0gijihf0$hg153++531.
+1+655+651hihhijjiihgghg1+53++531
+..135+651hijihjihighihg1+53+21..
+.155+6551hjjifghgffhiig1++53++1.
+1655+6551hijjjffffiiihg1++53++51
+..13655+31hijhjffigihg123++521..
+.15+655+31hga6aaaa5afg123++53+1.
+15+655+6531ha5bbbb+ag12+53++53+1
+..1355+6531habcddcbag12+53++21..
+..135+655+1ha6cccc5ag13++53+21..
+.1111+655+1hhgaaaafgg13++531111.
+1yyx1655+631hijjiihg1253++51wxx1
+1yxxx1511+1y1hiihhg1x1311+1wwwx1
+1yxxxx1w11yxy1gfff1xwx11v1wwwwx1
+1xxxxvvv1yxxxy1gf1xwwwx1uuuwwww1
+1xvvvyyx1x55xxy11xww++w1wxxuuuw1
+1vyyyxxw1x++55xyxw++33w1vwwxxxu1
+1yxxxvvv1xxx++55++33&&w1uuuwwwx1
+1xvvvyxw1x&T&x++33wwT&w1vwxuuuw1
+1vyyxxww1xxxxxxwvwww&&w1vvwwxxu1
+1yxxxwwv1x&T&xxwvwwwwww1uvvwwwx1
+
+= kemba_kha_enduring_pain
+................11..............
+...........1...1651...1.........
+..........161..1651..151........
+.......1..1651.1651.1+51..1.....
+......161.1651.1651.1+51.151....
+.....165+1665+1565+13+5513+51...
+....1+655+655+++5+333++53++531..
+...15+655+653hiiihhhg2+53++53+1.
+..15+655+653hiijjiihhg2+53++53+1
+.155+655+61hiiijjiihhhg153++53+1
+...1355+651h0ggijihff0g1+53++21.
+..1+655+61hih0gijihf0ghg153++531
+.1+655+651hi0hijjiihg0hg1+53++51
+...135+651hijihjihighihg1+53+21.
+..155+6551hjjifghgffhiig1++53++1
+.1655+6551hijjjffffiiihg1++53++1
+...13655+31hijhjffigihg123++521.
+..15+655+31hgaaaaaaaafg123++53+1
+.15+655+6531a6+6++5+5a12+53++531
+...1355+6531a5+5+3+3+a12+53++21.
+...135+655+1haaaaaaaag13++53+21.
+.11111+655+1hiijiihhgg13++53111.
+1yyxx1655+631hijjiihg1253++51xx1
+1yxxxx1511+1y1hiihhg1x1311+1wwx1
+1yxxxxx11y1xy1gfff1xwxw1vv1wwwx1
+1xxxxvvv1yxxxy1gf1xwwwx1uuuwwww1
+1xvvvyyx1x55xxy11xww++w1wxxuuuw1
+1vyyyxxw1x++55xyxw++33w1vwwxxxu1
+1yxxxvvv1xxx++55++33&&w1uuuwwwx1
+1xvvvyxw1x&T&x++33wwT&w1vwxuuuw1
+1vyyxxww1xxxxxxwvwww&&w1vvwwxxu1
+1yxxxwwv1x&T&xxwvwwwwww1uvvwwwx1

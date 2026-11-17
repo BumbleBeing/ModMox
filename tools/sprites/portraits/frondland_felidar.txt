@@ -1,0 +1,76 @@
+; Frondland Felidar's Portrait and Pain Portrait, facing front: red-orange fur, violet horns,
+; spiked violet frills, a cream ruff and muzzle, green eyes and tabby-striped shoulders.
+; Drawn after the art of Frondland Felidar: Ikoria: Lair of Behemoths (iko) #186, by Steve Prescott.
+; Scryfall ID: ab220695-e1a9-45ec-a1b1-5a82c9c90a03
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= frondland_felidar
+....1......................1....
+...1W1....................1W1...
+...1XV1..................1WV1...
+....1XV1................1WV1....
+....1XWV1..............1WVV1....
+.1...1XWV1............1WVV1...1.
+1W1..1XWVV1..........1WVVV1..1V1
+1VW1..1XWVV1........1WVVV1..1VV1
+11VW1..1XWVV11111111WVVV1..1VV11
+.1VVW1.1XWVc!!!!cccbbWVV1.1VVV1.
+1VVVVW11c!!!!!!cccccccbb11VVVVV1
+1UVVVWV1c!!!!!cccccccbbb1VVVVVU1
+11UVVVW1cc!!!!cccccccccb1VVVVU11
+.1UVVV1c!aaab!!!cccbaaacb1VVVU1.
+.11UVV1cba%0%a!ccca%0%abb1VVU11.
+1W1UV1oocbaaaab!cbaaaabbnn1VU1V1
+1VW1oooooccccc!!ccbbbbbnnnnn1VV1
+1VVW1ooooocccb!!ccbbbbnnnnn1VVV1
+1U1ooooooooccb!!ccbbbnnnnnnnn1U1
+1UU1ooooooooob!!ccbonnnnnnnn1UU1
+.1UU1noooonooob!cbooomnnnnm1UU1.
+..1U1noooooooo0000oonnnnnnm1U1..
+..11c1noooooono00omnnnnnnm1b11..
+1c!!cc1noooooonmmnnnnnnnm1bbccb1
+1!!cccb1nooooooonnnnnnnm1abbbcc1
+1!cciicb1nnmmmmmmmmmmmm1abhhbbc1
+1cciccccbnoooooonnnnnnmabbbbhbb1
+1ciccccccboonooonnmnnmabbbbbbhb1
+1cicciiccbooonoonnnmnmabbhhbbhb1
+1bcciccccbonoooonmnnnmabbbbhbba1
+1bcicccccbooooonnnmnnmabbbbbhba1
+1bcicccccboonooonnnmnmabbbbbhba1
+
+= frondland_felidar_pain
+.....1......................1...
+....1W1....................1W1..
+....1XV1..................1WV1..
+.....1XV1................1WV1...
+.....1XWV1..............1WVV1...
+..1...1XWV1............1WVV1...1
+.1W1..1XWVV1..........1WVVV1..11
+.1VW1..1XWVV1........1WVVV1..1V1
+.11VW1..1XWVV11111111WVVV1..1VV1
+..1VVW1.1XWVc!!!!cccbbWVV1.1VVV1
+.1VVVVW11c!!!!!!cccccccbb11VVVV1
+.1UVVVWV1c!!!!!cccccccbbb1VVVVV1
+.11UVVVW1cc!!!!cccccccccb1VVVVU1
+..1UVVV1c!b00b!!!ccca00acb1VVVU1
+..11UVV1cc!cc0b!cccb0bbcbb1VVU11
+.1W1UV1oocb00bcb!cbca00abnn1VU11
+.1VW1oooooccccc!!ccbbbbbnnnnn1V1
+.1VVW1ooooocccb!!ccbbbbnnnnn1VV1
+.1U1ooooooooccb!!ccbbbnnnnnnnn11
+.1UU1oooooooooa!!ccaonnnnnnnn1U1
+..1UU1noooonooob!cbooomnnnnm1UU1
+...1U1noooooooo0000oonnnnnnm1U1.
+...11c1noooooono00omnnnnnnm1b11.
+1c!!cc1nnooo16#6##6#61nnnm1bccb1
+1!!cccb1nnoo1+5+55+5+1nnm1bbbcc1
+1!cciicb1nnnm11111111mmm1bhhbbc1
+1cciccccbnoooooonnnnnnmabbbbhbb1
+1ciccccccboonooonnmnnmabbbbbbhb1
+1cicciiccbooonoonnnmnmabbhhbbhb1
+1bcciccccbonoooonmnnnmabbbbhbba1
+1bcicccccbooooonnnmnnmabbbbbhba1
+1bcicccccboonooonnnmnmabbbbbhba1
