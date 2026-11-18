@@ -14,6 +14,36 @@ func test_an_untapped_battlefield_face_is_upright_and_not_darkened() -> void:
 	assert_null(face.tap_symbol())
 
 
+func test_a_dimmed_battlefield_face_is_grayed_over_in_its_own_rounded_shape() -> void:
+	# Game ADR 0055: its cast from the top of the library is Spent this turn.
+	var look: CardLook = _look("grizzly_bears")
+	look.is_dimmed = true
+
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+	var plain: BattlefieldFace = _battlefield(_look("grizzly_bears"), 140.0)
+
+	assert_null(plain.dim())
+	assert_not_null(face.dim())
+	assert_eq(face.dim().get_parent(), face.card(), "It turns with the card.")
+	assert_eq(face.dim().size, face.card().size)
+	assert_eq(face.dim().get_index(), face.card().get_child_count() - 1, "Over everything on the face.")
+	var style: StyleBoxFlat = face.dim().get_theme_stylebox("panel") as StyleBoxFlat
+	var shape: StyleBoxFlat = (face.card().get_child(0) as Panel).get_theme_stylebox("panel") as StyleBoxFlat
+	assert_gt(style.corner_radius_top_left, 0, "Its corners are rounded.")
+	assert_eq(style.corner_radius_top_left, shape.corner_radius_top_left, "As the card's are.")
+	assert_eq((face.dim().material as ShaderMaterial).shader, BattlefieldFace.DIMMED_SHADER)
+	assert_false(face.is_darkened(), "Not as a tapped one is.")
+
+
+func test_a_permanent_is_dimmed_while_a_permission_of_it_is_spent_this_turn() -> void:
+	var seen: MmObjectView = MmObjectView.new()
+	seen.name = "Assemble the Players"
+
+	assert_false(CardLook.of_view(seen).is_dimmed)
+	seen.permissions_used_this_turn = {1: "Savannah Lions"}
+	assert_true(CardLook.of_view(seen).is_dimmed)
+
+
 func test_a_tapped_battlefield_face_turns_sideways_darkens_and_keeps_its_tap_symbol_upright() -> void:
 	var look: CardLook = _look("grizzly_bears")
 	look.is_tapped = true

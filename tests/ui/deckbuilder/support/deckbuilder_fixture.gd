@@ -68,3 +68,15 @@ static func names(cards: Array[DeckbuilderCard]) -> Array[String]:
 	for card: DeckbuilderCard in cards:
 		result.append(DeckbuilderLooks.look_of(card).name)
 	return result
+
+
+## Scrolls the Collection pane of [param screen] until [param card]'s face is in view, as a
+## player would before pointing at it, and returns that face. The sample owns every Content
+## card, so where a card falls in the pane moves as Content grows.
+static func scroll_to(screen: DeckbuilderScreen, card: DeckbuilderCard) -> CardFace:
+	var face: CardFace = screen.collection_face(card)
+	var scroll: ScrollContainer = screen.collection_scroll()
+	scroll.ensure_control_visible(face)
+	# The scroll moves its grid on the next sort; sort now, so the face is where it shows.
+	scroll.notification(Container.NOTIFICATION_SORT_CHILDREN)
+	return face

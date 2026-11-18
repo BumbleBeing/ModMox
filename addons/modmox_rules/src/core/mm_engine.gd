@@ -321,7 +321,9 @@ func _advance() -> void:
 
 ## ADR 0015: a point that cannot fairly be undone past. Hidden information was revealed or
 ## randomness used (a draw, a shuffle), something left the stack, or the other player now
-## has a decision.
+## has a decision. A card cast from the top of a library is the exception: its owner sees
+## no new top card until it becomes cast (ADR 0054), so the barrier comes then, and the
+## cast can still be canceled or rewound (CR 728) while it is paid for.
 func _is_undo_barrier(answered: MmPendingDecision, events_before: int) -> bool:
 	if _pending == null or _pending.player_id != answered.player_id:
 		return true
@@ -329,10 +331,21 @@ func _is_undo_barrier(answered: MmPendingDecision, events_before: int) -> bool:
 		var event: MmEvent = _state.event_log[index]
 		if event is ShuffleEvent or event is AbilityLeftStackEvent:
 			return true
+		var cast: SpellCastEvent = event as SpellCastEvent
+		if cast != null and _was_cast_from_library(cast.spell_id):
+			return true
 		var moved: ZoneChangeEvent = event as ZoneChangeEvent
-		if moved != null and moved.from_zone_kind in [MmZone.Kind.LIBRARY, MmZone.Kind.STACK]:
+		if moved == null:
+			continue
+		var is_cast_from_library: bool = moved.from_zone_kind == MmZone.Kind.LIBRARY and moved.reason == ZoneChangeEvent.Reason.CAST
+		if moved.from_zone_kind == MmZone.Kind.STACK or (moved.from_zone_kind == MmZone.Kind.LIBRARY and not is_cast_from_library):
 			return true
 	return false
+
+
+func _was_cast_from_library(spell_id: int) -> bool:
+	var spell: MmGameObject = _state.object(spell_id)
+	return spell != null and spell.cast_from_library
 
 
 func _take_checkpoint() -> void:

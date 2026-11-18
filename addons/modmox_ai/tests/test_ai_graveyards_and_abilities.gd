@@ -156,6 +156,28 @@ func _hero_with_two_dead_creatures() -> MmEngine:
 	return engine
 
 
+func test_returning_a_card_to_the_battlefield_tapped_is_considered_whenever_it_may_be_cast() -> void:
+	var unearth: MmCardDefinition = Scenario.free_reanimate("Unearth", true)
+
+	assert_eq(AiTiming.tag_of_effects((unearth.abilities[0] as SpellAbility).effects), Tag.NONE)
+
+
+func test_a_full_agent_returns_its_best_creature_card_to_the_battlefield_tapped() -> void:
+	var giant: MmCardDefinition = Scenario.creature("Giant", 5, 5)
+	var runt: MmCardDefinition = Scenario.creature("Runt", 1, 1)
+	var wrath: MmCardDefinition = Scenario.instant("Wrath", Scenario.mana_cost(0), [], [Scenario.destroy(Scenario.each_creature())])
+	var engine: MmEngine = AiScenario.ready_with([runt, giant], [], [wrath, Scenario.free_reanimate("Unearth", true)])
+	Scenario.cast_and_resolve(engine, "Wrath")
+	var agent: AiAgent = AiAgent.new()
+
+	var play: int = AiScenario.ask(engine, agent)
+
+	assert_eq(AiScenario.cast_name(engine, play), "Unearth")
+	engine.submit(play)
+	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+	assert_eq(target.id, Scenario.card_in_graveyard(engine, engine.hero(), "Giant"), "Not the Runt.")
+
+
 # --- Flashback (card track) ------------------------------------------------------------
 
 

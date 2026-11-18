@@ -1,7 +1,7 @@
 class_name StateInformation
 extends RefCounted
 ## The State Information of a permanent (13h and milestone 16, ADR 0033): summoning sickness, counters, damage marked, and
-## what it is attached to and what is attached to it, what exiled it or what it exiled, and each effect on it with the card it came from. The Encounter Presenter makes one for each
+## what it is attached to and what is attached to it, what exiled it or what it exiled, a cast from the top of a library it allowed this turn, and each effect on it with the card it came from. The Encounter Presenter makes one for each
 ## permanent and puts it on the snapshot. A new kind of state adds its entries here and changes nothing in the Inspector.
 
 
@@ -16,6 +16,11 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 	for kind: MmCounter.Kind in MmCounter.KINDS:
 		if seen.counters_of(kind) > 0:
 			entries.append(StateEntry.new("%s Counters" % MmCounter.label(kind), _counters_text(kind, seen.counters_of(kind))))
+	if seen.chosen_creature_type != "":
+		entries.append(StateEntry.new("Chosen type: %s" % seen.chosen_creature_type, _chosen_type_text(seen)))
+	for index: int in seen.permissions_used_this_turn:
+		entries.append(StateEntry.new("Cast from the top this turn",
+			_cast_from_top_text(seen, view, seen.permissions_used_this_turn[index], names)))
 	entries.append_array(_attachment_entries(seen, view))
 	entries.append_array(_exile_entries(seen, view))
 	if seen.damage_marked > 0:
@@ -61,6 +66,29 @@ static func _exile_entries(seen: MmObjectView, view: MmPlayerView) -> Array[Stat
 	for card: MmObjectView in exiled:
 		entries.append(StateEntry.new("Exiled Card", "%s." % card.name))
 	return entries
+
+
+## What [param seen]'s chosen type does, each ability that reads it worded with the type
+## in its place, and when it was chosen (game ADR 0053): "Each Cat creature you control gets
+## +1/+1. Chosen as Rally the Ranks entered."
+static func _chosen_type_text(seen: MmObjectView) -> String:
+	var lines: PackedStringArray = []
+	for ability: MmAbility in seen.abilities:
+		var worded: String = AbilityText.with_chosen_type(ability, seen.chosen_creature_type, AbilityText.self_noun(seen.card_types, seen.name))
+		if worded != "":
+			lines.append(worded)
+	lines.append("Chosen as %s entered." % seen.name)
+	return " ".join(lines)
+
+
+## Who cast what with [param seen]'s permission this turn (game ADR 0055): "You cast
+## Savannah Lions from the top of your library.", or "The Villain cast Pearled Unicorn from
+## the top of their library." for the other player's.
+static func _cast_from_top_text(seen: MmObjectView, view: MmPlayerView, spell_name: String, names: PlayerNames) -> String:
+	if seen.controller_id == view.viewer_id:
+		return "You cast %s from the top of your library." % spell_name
+	var called: PlayerNames = names if names != null else PlayerNames.new()
+	return "%s cast %s from the top of their library." % [called.starting(seen.controller_id), spell_name]
 
 
 ## "Currently has 2 +1/+1 counters.": the number in digits.

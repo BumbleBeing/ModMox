@@ -71,7 +71,7 @@ A rule on an activated ability about when it may be activated, apart from its co
 _Avoid_: Limit cost, charge, cooldown
 
 **Spent**:
-Said of a once-each-game ability that has been activated this game, whether or not it resolved. The source's Game Object keeps the mark, and its Object View shows it.
+Said of a once-each-game ability that has been activated this game, whether or not it resolved, and of a once-each-turn permission to cast from the top of a library that has been used this turn, from the moment the cast began. The source's Game Object keeps the mark, and its Object View shows it. A Spent permission is ready again the next turn, whoever's it is.
 _Avoid_: Used up (a Potion is used up; an Emblem never is), exhausted, tapped
 
 **Hero**:
@@ -156,6 +156,10 @@ _Avoid_: Queued trigger, trigger instance
 Events that happen at the same moment, such as everything state-based actions do at once or all combat damage in a step. Triggers are looked for once, after the whole batch.
 _Avoid_: Transaction, group
 
+**Legend Rule**:
+A state-based action: a player who controls two or more legendary permanents with the same name chooses one to keep, and the rest are put into their owners' graveyards with the other state-based actions of that moment (CR 704.5j).
+_Avoid_: Legendary uniqueness, legend check
+
 **Known Card**:
 A card in a library that a player knows the identity of, because they saw it put there: one they put on the bottom from their hand, for instance. A shuffle of that library makes every card in it unknown again. A Player View shows a library's Known Cards to the players who know them and nothing of the rest.
 _Avoid_: Revealed card, seen card, tracked card
@@ -167,6 +171,10 @@ _Avoid_: Ghost, snapshot (in rules talk), LKI (in code)
 **Flashback**:
 A keyword that lets its card be cast from its owner's graveyard by paying its flashback cost instead of its mana cost, with its card type's usual timing; cast that way, it is exiled instead of going anywhere else as it leaves the stack (CR 702.34a). Its cost may have no mana in it, or parts that are not mana, such as "Pay 3 life" or "Tap three untapped creatures you control" (ADR 0048).
 _Avoid_: Recast, graveyard cast, rebuy
+
+**Cost Reduction**:
+A static ability of a spell that makes it cost less to cast, such as affinity ("This spell costs {1} less to cast for each Cat you control", CR 702.41a). What it takes off may be generic or colored mana, and comes off the mana cost or an alternative cost such as a flashback cost, by CR 118.7, as the cast begins (CR 601.2f). The spell's mana value never changes (ADR 0050).
+_Avoid_: Discount, cheaper cost, cost modifier
 
 **Linked Abilities**:
 Two abilities of one object where the second refers to what the first did, as Oblivion Ring's "exile another target nonland permanent" and "return the exiled card" are (CR 607). A card the first exiles remembers the object that exiled it, and the second finds only the cards that object exiled. An object that changes zones is a new object, so the link does not follow it.
@@ -211,6 +219,10 @@ _Avoid_: Buffer, barrier, charge
 **Protection**:
 "Protection from [quality]": a permanent with it can't be dealt damage, blocked, or targeted by anything with that quality, which is a Filter, such as "black" or "creatures".
 _Avoid_: Immunity, ward (a different keyword), hexproof (a different keyword)
+
+**Chosen Creature Type**:
+The creature type chosen for a permanent with "As this enters, choose a creature type" as it enters (ADR 0052), before it is on the battlefield, and kept on it from the moment it arrives, so its abilities that say "the chosen type" mean it at once. It is chosen from every creature type there is (CR 205.3m), is public, and is forgotten when the permanent leaves, since it becomes a new Game Object.
+_Avoid_: Named type, selected type, tribe
 
 **Suspended Batch**:
 A batch of events that stopped part-way because a player must choose which replacement effect applies first. It is kept in the game state until they answer, and then carries on.

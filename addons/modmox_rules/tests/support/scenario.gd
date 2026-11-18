@@ -189,7 +189,8 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 	if decision is OrderTriggersDecision:
 		return range((decision as OrderTriggersDecision).source_object_ids.size())
 	if decision is ChooseTargetDecision or decision is ChooseReplacementEffectDecision or decision is ChooseObjectDecision \
-			or decision is ChooseModeDecision:
+			or decision is ChooseModeDecision or decision is ChooseLegendToKeepDecision \
+			or decision is ChooseCreatureTypeDecision:
 		return 0
 	return null
 
@@ -1031,6 +1032,29 @@ static func free_destroy(card_name: String, can_be_regenerated: bool = true) -> 
 		[destroy(targeted(0), can_be_regenerated)])
 
 
+static func any_of(filters: Array[MmFilter]) -> AnyOfFilter:
+	var filter: AnyOfFilter = AnyOfFilter.new()
+	filter.filters = filters
+	return filter
+
+
+## "Attacking or blocking creature": AllOf(creature, AnyOf(attacking, blocking)).
+static func attacking_or_blocking_creature() -> AllOfFilter:
+	return all_of([of_type(MmCardTypes.CardType.CREATURE), any_of([IsAttackingFilter.new(), IsBlockingFilter.new()])])
+
+
+## Outflank as an instant costing {0}: "[param card_name] deals damage to target attacking
+## or blocking creature equal to the number of creatures you control."
+static func free_outflank(card_name: String) -> MmCardDefinition:
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var count: CountValue = CountValue.new()
+	count.selection = each_creature(mine)
+	var damage: DealDamageEffect = deal_damage(0, targeted(0))
+	damage.amount = count
+	return instant(card_name, mana_cost(0), [target(attacking_or_blocking_creature())], [damage])
+
+
 ## Activates the first ability of [param object_id] offered, choosing [param targets] in
 ## order, and pays automatically.
 static func activate(engine: MmEngine, object_id: int, targets: Array[MmReference] = []) -> String:
@@ -1173,6 +1197,22 @@ static func your_dead_creature() -> TargetRequirement:
 ## An instant, unlike Raise Dead, so that a test can answer one with another.
 static func free_raise(card_name: String) -> MmCardDefinition:
 	return instant(card_name, mana_cost(0), [your_dead_creature()], [return_to_hand(targeted(0))])
+
+
+## "With mana value [param amount] or less", or "or greater" (CR 202.3).
+static func mana_value(amount: int, comparison: ManaValueFilter.Comparison = ManaValueFilter.Comparison.OR_LESS) -> ManaValueFilter:
+	var filter: ManaValueFilter = ManaValueFilter.new()
+	filter.amount = amount
+	filter.comparison = comparison
+	return filter
+
+
+## An instant costing {0}: "Return target creature card from your graveyard to the
+## battlefield", "tapped" with [param tapped]. Helping Hand is this with a mana value filter.
+static func free_reanimate(card_name: String, tapped: bool = false) -> MmCardDefinition:
+	var back: ReturnToBattlefieldEffect = return_to_battlefield(targeted(0))
+	back.tapped = tapped
+	return instant(card_name, mana_cost(0), [your_dead_creature()], [back])
 
 
 ## An instant costing {0}: "Counter target activated or triggered ability."
@@ -1477,3 +1517,137 @@ static func card_in_exile(engine: MmEngine, player: MmPlayer, card_name: String)
 		if card.owner_id == player.id and engine.game_state().characteristics_of(card).name == card_name:
 			return card.id
 	return -1
+
+
+# --- Cost reductions ------------------------------------------------------------------
+
+
+## "Affinity for [param filter]" (CR 702.41a).
+static func affinity(filter: MmFilter) -> AffinityAbility:
+	var ability: AffinityAbility = AffinityAbility.new()
+	ability.filter = filter
+	return ability
+
+
+## A 1/1 Cat creature costing {0}: "{T}: Add {W}", so it can pay for what it makes cheaper.
+static func mouser(card_name: String = "Mouser") -> MmCardDefinition:
+	var definition: MmCardDefinition = creature(card_name, 1, 1, [tap_for_mana(MmMana.Type.WHITE, 1)])
+	definition.subtypes = ["Cat"]
+	return definition
+
+
+## An instant costing [param cost]: "Affinity for Cats. You gain 1 life."
+static func cat_affinity_instant(card_name: String, cost: MmManaCost) -> MmCardDefinition:
+	var definition: MmCardDefinition = instant(card_name, cost, [], [gain_life(1, you())])
+	definition.abilities.push_front(affinity(has_subtype("Cat")))
+	return definition
+
+
+# --- The legend rule ------------------------------------------------------------------
+
+
+## A legendary creature costing {0} ({2}{W} with [param costs_mana]), with [param abilities].
+static func legend(card_name: String = "Legend", power: int = 2, toughness: int = 2, abilities: Array[MmAbility] = [],
+		costs_mana: bool = false) -> MmCardDefinition:
+	var definition: MmCardDefinition = creature(card_name, power, toughness, abilities,
+		mana_cost(2, [MmMana.Type.WHITE]) if costs_mana else null)
+	definition.supertypes = [MmCardTypes.Supertype.LEGENDARY]
+	return definition
+
+
+## Keeps [param object_id] in the pending legend rule choice (CR 704.5j).
+static func keep_legend(engine: MmEngine, object_id: int) -> String:
+	var decision: ChooseLegendToKeepDecision = engine.pending_decision() as ChooseLegendToKeepDecision
+	if decision == null:
+		return "Not a legend rule choice."
+	var index: int = decision.candidate_ids.find(object_id)
+	return "Object %d is not a candidate." % object_id if index == -1 else engine.submit(index)
+
+
+# --- Choosing a creature type ---------------------------------------------------------
+
+
+## "Creatures you control of the chosen type": the chosen type of the ability's source.
+static func of_chosen_type_you_control() -> AllOfFilter:
+	var yours: ControlledByFilter = ControlledByFilter.new()
+	yours.whose = MmTrigger.Whose.YOU
+	return all_of([of_type(MmCardTypes.CardType.CREATURE), yours, IsOfChosenTypeFilter.new()])
+
+
+## An enchantment costing {0}, Rally the Ranks's two abilities: "As this enchantment enters,
+## choose a creature type. Creatures you control of the chosen type get +1/+1."
+static func rally(card_name: String = "Rally") -> MmCardDefinition:
+	return enchantment(card_name, [AsEntersChooseCreatureTypeAbility.new(),
+		continuous_static([modify_pt(1, 1, each(of_chosen_type_you_control()))])])
+
+
+## Answers the pending creature type choice with [param creature_type].
+static func choose_creature_type(engine: MmEngine, creature_type: String) -> String:
+	var decision: ChooseCreatureTypeDecision = engine.pending_decision() as ChooseCreatureTypeDecision
+	if decision == null:
+		return "Not a creature type choice."
+	var index: int = decision.creature_types.find(creature_type)
+	return "%s is not a creature type." % creature_type if index == -1 else engine.submit(index)
+
+
+## A creature costing {0} of [param subtypes].
+static func typed_creature(card_name: String, power: int, toughness: int, subtypes: Array[String]) -> MmCardDefinition:
+	var definition: MmCardDefinition = creature(card_name, power, toughness)
+	definition.subtypes = subtypes
+	return definition
+
+
+# --- Casting from the top of the library ----------------------------------------------
+
+
+## "With power [param amount] or less" (or greater).
+static func power(amount: int, comparison: PowerFilter.Comparison = PowerFilter.Comparison.OR_LESS) -> PowerFilter:
+	var filter: PowerFilter = PowerFilter.new()
+	filter.amount = amount
+	filter.comparison = comparison
+	return filter
+
+
+## "Once each turn, you may cast a creature spell with power 2 or less from the top of your
+## library."
+static func cast_from_top() -> CastFromTopOfLibraryAbility:
+	var ability: CastFromTopOfLibraryAbility = CastFromTopOfLibraryAbility.new()
+	ability.filter = all_of([of_type(MmCardTypes.CardType.CREATURE), power(2)])
+	return ability
+
+
+## An enchantment costing {0} with Assemble the Players's two abilities: "You may look at
+## the top card of your library any time. Once each turn, you may cast a creature spell
+## with power 2 or less from the top of your library."
+static func lookout(card_name: String = "Lookout") -> MmCardDefinition:
+	return enchantment(card_name, [LookAtTopOfLibraryAbility.new(), cast_from_top()])
+
+
+## The name of the top card of [param player]'s library, or "" for an empty one.
+static func top_name(engine: MmEngine, player: MmPlayer) -> String:
+	var top: MmGameObject = player.library.top()
+	return "" if top == null else engine.game_state().characteristics_of(top).name
+
+
+## Finds a seed for [param setup] where the Hero casts [param hero_permanents] (each costing
+## {0}) on Game Turn 1, then plays on to their first main phase of Game Turn 3 holding
+## [param hand], with the top of their library holding [param tops] in order. Returns null
+## if no seed deals them.
+static func top_ready(setup: MmEncounterSetup, hero_permanents: Array[MmCardDefinition], hand: Array[MmCardDefinition],
+		tops: Array[String]) -> MmEngine:
+	return find_engine(setup, func(running: MmEngine) -> bool:
+		if play_until_step(running, 1, MmTurn.Step.PRECOMBAT_MAIN) != "":
+			return false
+		for definition: MmCardDefinition in hero_permanents:
+			if cast_and_resolve(running, definition.name) != "" or resolve_stack(running) != "":
+				return false
+		if play_until_step(running, 3, MmTurn.Step.PRECOMBAT_MAIN) != "":
+			return false
+		for definition: MmCardDefinition in hand:
+			if card_in_hand(running, running.hero(), definition.name) == -1:
+				return false
+		var library: Array[MmGameObject] = running.hero().library.objects()
+		for index: int in tops.size():
+			if running.game_state().characteristics_of(library[index]).name != tops[index]:
+				return false
+		return true, 3000)

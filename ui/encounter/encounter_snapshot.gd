@@ -51,6 +51,10 @@ static func name_in(seen_by: MmPlayerView, object_id: int) -> String:
 		all.append_array(seen_by.graveyards[player_id])
 	for player_id: int in seen_by.exiles:
 		all.append_array(seen_by.exiles[player_id])
+	for player_id: int in seen_by.libraries:
+		for known: Variant in seen_by.libraries[player_id]:
+			if known != null:
+				all.append(known as MmObjectView)
 	for seen: MmObjectView in all:
 		if seen.id == object_id:
 			return seen.name

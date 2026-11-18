@@ -127,6 +127,64 @@ static func mode_text(spell: SpellAbility, mode_index: int, noun: String) -> Str
 	return writer._sentences(spell.modes[mode_index].effects, true)
 
 
+## [param ability] as of_ability() prints it, with each "of the chosen type" in it read as
+## [param creature_type] ("Each Cat creature you control gets +1/+1"), or "" when it does
+## not read a chosen type (game ADR 0053).
+static func with_chosen_type(ability: MmAbility, creature_type: String, noun: String) -> String:
+	var static_ability: ContinuousStaticAbility = ability as ContinuousStaticAbility
+	if static_ability == null:
+		return ""
+	var reads_it: bool = false
+	var named: ContinuousStaticAbility = static_ability.duplicate() as ContinuousStaticAbility
+	named.effects = []
+	for continuous: MmContinuousEffect in static_ability.effects:
+		var each: EachSelection = continuous.affected as EachSelection
+		var filter: MmFilter = _naming_chosen_type(each.filter, creature_type) if each != null else null
+		if filter == null or filter == each.filter:
+			named.effects.append(continuous)
+			continue
+		reads_it = true
+		var copy: MmContinuousEffect = continuous.duplicate() as MmContinuousEffect
+		var selection: EachSelection = EachSelection.new()
+		selection.filter = filter
+		copy.affected = selection
+		named.effects.append(copy)
+	return of_ability(named, noun) if reads_it else ""
+
+
+## [param filter] with each IsOfChosenTypeFilter in it made "a [param creature_type]", or
+## [param filter] itself when it has none. Card data is never changed: what differs is new.
+static func _naming_chosen_type(filter: MmFilter, creature_type: String) -> MmFilter:
+	if filter is IsOfChosenTypeFilter:
+		var subtype: HasSubtypeFilter = HasSubtypeFilter.new()
+		subtype.subtype = creature_type
+		return subtype
+	if filter is AllOfFilter or filter is AnyOfFilter:
+		var parts: Array[MmFilter] = (filter as AllOfFilter).filters if filter is AllOfFilter else (filter as AnyOfFilter).filters
+		var named: Array[MmFilter] = []
+		var changed: bool = false
+		for part: MmFilter in parts:
+			var made: MmFilter = _naming_chosen_type(part, creature_type)
+			changed = changed or made != part
+			named.append(made)
+		if not changed:
+			return filter
+		var copy: MmFilter = filter.duplicate() as MmFilter
+		if copy is AllOfFilter:
+			(copy as AllOfFilter).filters = named
+		else:
+			(copy as AnyOfFilter).filters = named
+		return copy
+	if filter is NotFilter:
+		var inner: MmFilter = _naming_chosen_type((filter as NotFilter).filter, creature_type)
+		if inner == (filter as NotFilter).filter:
+			return filter
+		var negated: NotFilter = NotFilter.new()
+		negated.filter = inner
+		return negated
+	return filter
+
+
 ## Everything [param filter] matches, in the plural: "black permanents", "creatures you
 ## control".
 static func things(filter: MmFilter) -> String:
@@ -176,6 +234,9 @@ func _ability(ability: MmAbility) -> String:
 		return "Equip " + _costs(ability as EquipAbility)
 	if ability is FlashbackAbility:
 		return _flashback(ability as FlashbackAbility)
+	if ability is AffinityAbility:
+		# CR 702.41a: what it counts, in the plural, with "you control" left to the keyword.
+		return "Affinity for " + _noun_phrase((ability as AffinityAbility).filter, true)
 	if ability is ActivatedAbility:
 		var activated: ActivatedAbility = ability as ActivatedAbility
 		_targets = activated.targets
@@ -194,13 +255,21 @@ func _ability(ability: MmAbility) -> String:
 		return "%s can block %s each combat." % [_capitalized(_noun), _additional((ability as BlockAdditionalAbility).count, "creature")]
 	if ability is DamageStaysAbility:
 		return "Damage isn't removed from %s during cleanup steps." % _noun
+	if ability is AsEntersChooseCreatureTypeAbility:
+		return "As %s enters, choose a creature type." % _noun
+	if ability is LookAtTopOfLibraryAbility:
+		return "You may look at the top card of your library any time."
+	if ability is CastFromTopOfLibraryAbility:
+		return "Once each turn, you may cast %s from the top of your library." \
+			% _with_article(_spell_phrase((ability as CastFromTopOfLibraryAbility).filter))
 	return _fallback(ability, "_ability")
 
 
 ## Whether [param ability] is a keyword, protection included: an ability a sentence names
 ## in lower case and without quotation marks.
 static func is_keyword(ability: MmAbility) -> bool:
-	return _keyword(ability) != "" or ability is ProtectionAbility or ability is EquipAbility or ability is FlashbackAbility
+	return _keyword(ability) != "" or ability is ProtectionAbility or ability is EquipAbility or ability is FlashbackAbility \
+		or ability is AffinityAbility
 
 
 ## The name of a keyword ability that needs no other words, or "".
@@ -439,6 +508,9 @@ func _sentences(effects: Array[MmEffect], starts_sentence: bool) -> String:
 func _effect(effect: MmEffect) -> String:
 	if effect is DealDamageEffect:
 		var damage: DealDamageEffect = effect as DealDamageEffect
+		if not damage.amount is ConstantValue:
+			# Oracle wording: "deals damage to target creature equal to the number of ...".
+			return "%s deals damage to %s equal to %s" % [_noun, _selection(damage.recipients), _value_phrase(damage.amount)]
 		return "%s deals %s damage to %s" % [_noun, _amount(damage.amount), _selection(damage.recipients)]
 	if effect is DrawCardsEffect:
 		var draw: DrawCardsEffect = effect as DrawCardsEffect
@@ -462,7 +534,10 @@ func _effect(effect: MmEffect) -> String:
 		return "exile " + _selection((effect as ExileEffect).selection)
 	if effect is ReturnToBattlefieldEffect:
 		var back: ReturnToBattlefieldEffect = effect as ReturnToBattlefieldEffect
-		var text: String = "return %s to the battlefield under its owner's control" % _selection(back.selection)
+		# A card that can only be your own returns under your control, so Oracle leaves out
+		# "under its owner's control", as Helping Hand does.
+		var text: String = "return %s to the battlefield%s%s" % [_selection(back.selection), " tapped" if back.tapped else "",
+			"" if _is_yours(back.selection) else " under its owner's control"]
 		return text if back.counters == null else text + " with %s on it" % _counters(back.counters, back.counter_kind)
 	if effect is ReturnToHandEffect:
 		var returned: MmSelection = (effect as ReturnToHandEffect).selection
@@ -680,13 +755,27 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 	# "Each other white creature": "other" comes before the adjectives, with no comma.
 	var is_other: bool = words.adjectives.has(OTHER)
 	words.adjectives.erase(OTHER)
-	var adjectives: PackedStringArray = PackedStringArray(words.adjectives)
+	# "Nontoken Cat creature": a subtype stands next to its noun, with no comma, after the
+	# other adjectives.
+	var adjectives: PackedStringArray = []
+	var subtypes: PackedStringArray = []
+	for adjective: String in words.adjectives:
+		if _is_subtype_word(adjective):
+			subtypes.append(adjective)
+		else:
+			adjectives.append(adjective)
 	var noun: String = words.noun
 	var after: PackedStringArray = PackedStringArray(words.after)
+	if noun == "" and not subtypes.is_empty():
+		# "Cats", not "Cat permanents": a subtype alone is its own noun (CR 205.3).
+		noun = subtypes[subtypes.size() - 1]
+		subtypes.remove_at(subtypes.size() - 1)
 	if noun == "":
 		noun = "permanent"
 	if is_plural:
 		noun += "s"
+	if not subtypes.is_empty():
+		noun = " ".join(subtypes) + " " + noun
 	if whose == MmTrigger.Whose.YOU:
 		after.append("you control")
 	elif whose == MmTrigger.Whose.OPPONENT:
@@ -713,7 +802,9 @@ func _spell_phrase(filter: MmFilter) -> String:
 	return phrase if after.is_empty() else phrase + " " + " ".join(after)
 
 
-## "Creature card from your graveyard", or "card from a graveyard" for no filter.
+## "Creature card from your graveyard", or "card from a graveyard" for no filter. What
+## else follows the noun comes before the graveyard: "creature card with mana value 3 or
+## less from your graveyard".
 func _graveyard_phrase(filter: MmFilter) -> String:
 	var words: FilterWords = _filter_words(filter)
 	var parts: PackedStringArray = PackedStringArray(words.adjectives)
@@ -728,9 +819,16 @@ func _graveyard_phrase(filter: MmFilter) -> String:
 		whose = "an opponent's graveyard"
 	after.erase(YOU_OWN)
 	after.erase(OPPONENT_OWNS)
-	parts.append("from " + whose)
 	parts.append_array(PackedStringArray(after))
+	parts.append("from " + whose)
 	return " ".join(parts)
+
+
+## Whether [param word], one of a filter's adjectives, is a subtype: the only adjectives
+## written with a capital, as _collect() writes them ("non-Wall" is not one).
+static func _is_subtype_word(word: String) -> bool:
+	var first: String = word.left(1)
+	return first != "" and first != first.to_lower()
 
 
 ## The words of [param filter]: its adjectives, its noun ("" for none) and what follows
@@ -768,12 +866,20 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		adjectives.append("non-" + subtype if is_negated else subtype)
 	elif filter is IsTappedFilter:
 		adjectives.append("untapped" if is_negated else "tapped")
+	elif filter is IsTokenFilter:
+		adjectives.append("nontoken" if is_negated else "token")
 	elif filter is IsAttackingFilter:
 		adjectives.append("nonattacking" if is_negated else "attacking")
+	elif filter is IsBlockingFilter:
+		adjectives.append("nonblocking" if is_negated else "blocking")
+	elif filter is AnyOfFilter and not is_negated and _either_adjective(filter as AnyOfFilter) != "":
+		adjectives.append(_either_adjective(filter as AnyOfFilter))
 	elif filter is IsSourceFilter:
 		# "Each other creature": anything but the source.
 		if is_negated:
 			adjectives.append(OTHER)
+	elif filter is IsOfChosenTypeFilter:
+		after.append("not of the chosen type" if is_negated else "of the chosen type")
 	elif filter is HasOriginalNameFilter:
 		# A printed "named" reads "originally named" here (ADR 0023's exception).
 		var original_name: String = (filter as HasOriginalNameFilter).original_name
@@ -802,12 +908,28 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 			after.append("without " + _counters_on(counted))
 		else:
 			after.append("with fewer than %s %s counters on it" % [_number_word(counted.at_least), MmCounter.label(counted.kind)])
+	elif filter is ManaValueFilter:
+		after.append("with mana value " + _mana_value_bound(filter as ManaValueFilter, is_negated))
+	elif filter is PowerFilter:
+		after.append("with power " + _power_bound(filter as PowerFilter, is_negated))
 	elif filter is IsPlayerFilter:
 		# Anything that is not a player is a permanent, the noun when none is named.
 		if not is_negated:
 			nouns.append("player")
 	else:
 		adjectives.append(_fallback(filter, "_filter"))
+
+
+## "Attacking or blocking": [param either] as one adjective, when each of its filters is
+## worded by adjectives alone. Otherwise "".
+func _either_adjective(either: AnyOfFilter) -> String:
+	var choices: PackedStringArray = []
+	for part: MmFilter in either.filters:
+		var words: FilterWords = _filter_words(part)
+		if words.noun != "" or not words.after.is_empty() or words.adjectives.is_empty():
+			return ""
+		choices.append(", ".join(PackedStringArray(words.adjectives)))
+	return " or ".join(choices)
 
 
 # --- Numbers -------------------------------------------------------------------------
@@ -836,6 +958,22 @@ func _counters(value: MmValue, kind: MmCounter.Kind) -> String:
 	if constant.value == 1:
 		return "a %s counter" % MmCounter.label(kind)
 	return "%s %s counters" % [_number_word(constant.value), MmCounter.label(kind)]
+
+
+## "3 or less" or "4 or greater"; negated, the other side: not 4 or greater is 3 or less.
+static func _mana_value_bound(filter: ManaValueFilter, is_negated: bool) -> String:
+	var or_less: bool = (filter.comparison == ManaValueFilter.Comparison.OR_LESS) != is_negated
+	if not is_negated:
+		return "%d %s" % [filter.amount, "or less" if or_less else "or greater"]
+	return "%d or less" % (filter.amount - 1) if or_less else "%d or greater" % (filter.amount + 1)
+
+
+## "2 or less" or "3 or greater"; negated, the other side, as _mana_value_bound() does.
+static func _power_bound(filter: PowerFilter, is_negated: bool) -> String:
+	var or_less: bool = (filter.comparison == PowerFilter.Comparison.OR_LESS) != is_negated
+	if not is_negated:
+		return "%d %s" % [filter.amount, "or less" if or_less else "or greater"]
+	return "%d or less" % (filter.amount - 1) if or_less else "%d or greater" % (filter.amount + 1)
 
 
 ## "a +1/+1 counter on it" or "three or more -1/-1 counters on it".

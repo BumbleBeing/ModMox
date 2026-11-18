@@ -8,6 +8,8 @@ extends SceneTree
 ##   --name TEXT      what the Villain is called on the screen (needed for a new Villain)
 ##   --sprite PATH    its 32 × 32 Portrait; a new Villain defaults to
 ##                    res://ui/sprites/portraits/VILLAIN.png when that exists
+##   --pain-sprite PATH  its 32 × 32 Pain Portrait; a new Villain defaults to
+##                    res://ui/sprites/portraits/VILLAIN_pain.png when that exists
 ##   --tier N         DECK is its setup at Tier N (1 to 5), written in Tier order; without
 ##                    it, DECK is its one setup at every Tier
 ##   --stage FILE     also put it in a list of content/stages/FILE.tres...
@@ -39,7 +41,7 @@ func _write(arguments: PackedStringArray) -> bool:
 	var index: int = 2
 	while index < arguments.size():
 		var flag: String = arguments[index]
-		if not flag in ["--name", "--sprite", "--tier", "--stage", "--rank"] or index + 1 >= arguments.size():
+		if not flag in ["--name", "--sprite", "--pain-sprite", "--tier", "--stage", "--rank"] or index + 1 >= arguments.size():
 			printerr("Unknown argument, or one without its value: %s" % flag)
 			return false
 		options[flag] = arguments[index + 1]
@@ -61,6 +63,9 @@ func _write(arguments: PackedStringArray) -> bool:
 		var default_sprite: String = PORTRAITS + file + ".png"
 		if not options.has("--sprite") and ResourceLoader.exists(default_sprite):
 			options["--sprite"] = default_sprite
+		var default_pain: String = PORTRAITS + file + "_pain.png"
+		if not options.has("--pain-sprite") and ResourceLoader.exists(default_pain):
+			options["--pain-sprite"] = default_pain
 		if not options.has("--name") or not options.has("--sprite"):
 			printerr("A new Villain needs --name, and --sprite unless %s exists." % default_sprite)
 			return false
@@ -72,6 +77,12 @@ func _write(arguments: PackedStringArray) -> bool:
 			printerr("%s is not a 32 × 32 Portrait." % options["--sprite"])
 			return false
 		villain.sprite = sprite
+	if options.has("--pain-sprite"):
+		var pain: Texture2D = load(options["--pain-sprite"]) as Texture2D
+		if pain == null or pain.get_size() != Vector2(32, 32):
+			printerr("%s is not a 32 × 32 Pain Portrait." % options["--pain-sprite"])
+			return false
+		villain.pain_sprite = pain
 
 	var deck: MmPlayerSetup = load(deck_path) as MmPlayerSetup
 	if options.has("--tier"):

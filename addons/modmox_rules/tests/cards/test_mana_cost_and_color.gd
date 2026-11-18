@@ -60,3 +60,30 @@ func test_printed_characteristics_match_the_in_game_query() -> void:
 	assert_eq(in_game.colors, printed.colors)
 	assert_eq(in_game.mana_value(), printed.mana_value())
 	assert_eq(in_game.abilities.size(), printed.abilities.size())
+
+
+func test_a_generic_reduction_takes_off_generic_mana_only_and_never_below_zero() -> void:
+	var cost: MmManaCost = Scenario.mana_cost(3, [Type.WHITE, Type.WHITE])
+
+	assert_eq(cost.reduced_by(Scenario.mana_cost(2)).describe(), "{1}{W}{W}", "CR 118.7a")
+	assert_eq(cost.reduced_by(Scenario.mana_cost(7)).describe(), "{W}{W}")
+	assert_eq(cost.describe(), "{3}{W}{W}", "The cost reduced is left as it was.")
+	assert_eq(cost.reduced_by(null).describe(), "{3}{W}{W}")
+
+
+func test_a_colored_reduction_takes_off_that_symbol_or_else_generic_mana() -> void:
+	var cost: MmManaCost = Scenario.mana_cost(2, [Type.BLUE, Type.BLUE])
+
+	assert_eq(cost.reduced_by(Scenario.mana_cost(0, [Type.BLUE])).describe(), "{2}{U}", "CR 118.7b")
+	assert_eq(cost.reduced_by(Scenario.mana_cost(0, [Type.RED])).describe(), "{1}{U}{U}", "CR 118.7b: it needs no red.")
+	assert_eq(cost.reduced_by(Scenario.mana_cost(0, [Type.BLUE, Type.BLUE, Type.BLUE])).describe(), "{1}",
+		"CR 118.7c: the blue beyond what it needs comes off generic mana.")
+	assert_eq(Scenario.mana_cost(0, [Type.COLORLESS]).reduced_by(Scenario.mana_cost(0, [Type.COLORLESS])).describe(), "{0}",
+		"CR 118.7d, and reduced to nothing it is {0} (CR 118.7).")
+
+
+func test_a_reduction_leaves_the_mana_value_of_the_card_alone() -> void:
+	var printed: MmCharacteristics = MmCharacteristics.printed(
+		Scenario.cat_affinity_instant("Claws", Scenario.mana_cost(3, [Type.WHITE, Type.WHITE])))
+
+	assert_eq(printed.mana_value(), 5, "CR 202.3")

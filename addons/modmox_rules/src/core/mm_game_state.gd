@@ -124,12 +124,53 @@ func duplicate_state() -> MmGameState:
 ## their IDs. The pool is sorted before shuffling, so two states that differ only in how
 ## those cards are arranged are re-dealt identically. This builds an imagined state rather
 ## than changing the game, so like the starting state (CR 103.2) it is not an event.
+## Only what the viewer's Player View hides is re-dealt: a Known Card, or a top card the
+## viewer may look at (ADR 0054), stays where it is, and the pool is the rest.
 func randomize_hidden_cards(viewer_id: int, rng: MmRng) -> void:
 	var other: MmPlayer = opponent_of(viewer_id)
 	var unseen: Array[MmGameObject] = other.hand.objects()
-	unseen.append_array(other.library.objects())
+	unseen.append_array(_unseen_in_library(other.id, viewer_id))
 	_redeal(unseen, rng)
-	_redeal(player(viewer_id).library.objects(), rng)
+	_redeal(_unseen_in_library(viewer_id, viewer_id), rng)
+
+
+## The IDs of the cards in [param owner_id]'s library that [param viewer_id] sees: their
+## Known Cards, and the top card while it is the viewer's own and they may look at it.
+func seen_library_ids(owner_id: int, viewer_id: int) -> Dictionary[int, bool]:
+	var seen: Dictionary[int, bool] = {}
+	var library: MmZone = player(owner_id).library
+	for card: MmGameObject in library.objects():
+		if card.is_known_to(viewer_id):
+			seen[card.id] = true
+	if owner_id == viewer_id and not library.is_empty() and sees_library_top(viewer_id):
+		seen[library.top().id] = true
+	return seen
+
+
+## Whether [param player_id] may look at the top card of their own library now: while they
+## control a permanent with LookAtTopOfLibraryAbility, except while a spell is being cast
+## from the top of that library, until it becomes cast (ADR 0054).
+func sees_library_top(player_id: int) -> bool:
+	var may_look: bool = false
+	for permanent: MmGameObject in battlefield.objects():
+		if permanent.controller_id == player_id and characteristics_of(permanent).has_ability(LookAtTopOfLibraryAbility):
+			may_look = true
+			break
+	if not may_look:
+		return false
+	for item: MmGameObject in stack.objects():
+		if item.is_being_cast_from_library and item.owner_id == player_id:
+			return false
+	return true
+
+
+func _unseen_in_library(owner_id: int, viewer_id: int) -> Array[MmGameObject]:
+	var seen: Dictionary[int, bool] = seen_library_ids(owner_id, viewer_id)
+	var unseen: Array[MmGameObject] = []
+	for card: MmGameObject in player(owner_id).library.objects():
+		if not seen.has(card.id):
+			unseen.append(card)
+	return unseen
 
 
 func player(id: int) -> MmPlayer:
@@ -457,6 +498,13 @@ func fingerprint() -> String:
 				entries.append("%d token" % game_object.id)
 			if game_object.cast_with_flashback:
 				entries.append("%d flashback" % game_object.id)
+			if game_object.cast_from_library:
+				entries.append("%d from library%s" % [game_object.id, " casting" if game_object.is_being_cast_from_library else ""])
+			for index: int in game_object.permission_used_game_turn:
+				entries.append("%d permission %d used turn %d for %s" % [game_object.id, index,
+					game_object.permission_used_game_turn[index], game_object.permission_used_spell_name[index]])
+			if game_object.chosen_creature_type != "":
+				entries.append("%d chose %s" % [game_object.id, game_object.chosen_creature_type])
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 

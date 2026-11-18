@@ -12,4 +12,6 @@ Tokens arrived with Prideful Parent, on the card track: "When this creature ente
 
 **A token that leaves the battlefield moves like a card and then ceases to exist.** A dying token goes to its owner's graveyard by an ordinary `ZoneChangeEvent`, which carries `is_token` to the new object, so "dies" and "leaves the battlefield" abilities see it (CR 111.7, 700.4). Then a state-based action removes every token that is anywhere but the battlefield, through `TokenCeasedEvent` (CR 704.5d); since state-based actions are checked before anyone has priority, no player ever sees a token in a graveyard, hand or exile. Making the zone change itself remove the token was rejected: "dies" triggers look back at the move (ADR 0017) and need it to be a real move to the graveyard.
 
+**"Nontoken" is a NotFilter of `IsTokenFilter`**, which reads `is_token` on the object or its last known information, so a token that has died is still seen as one (Arahbo, the First Fang: "another nontoken Cat you control").
+
 Left out until a card needs it (ADR 0001): a token that is a copy of something (CR 111.10, 707), predefined tokens such as Treasure (CR 111.10), a Token Definition with abilities in its rules text ("with flying"), and the number of tokens worked out by a Value.

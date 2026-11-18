@@ -12,8 +12,12 @@ func _init(spell_object_id: int, caster_id: int) -> void:
 	player_id = caster_id
 
 
-func apply(_state: MmGameState) -> void:
-	pass  # Nothing changes; the spell is already on the stack.
+## The spell is already on the stack. One cast from the top of a library is no longer being
+## cast, so its owner sees their new top card again (ADR 0054).
+func apply(state: MmGameState) -> void:
+	var spell: MmGameObject = state.object(spell_id)
+	if spell != null and spell.is_being_cast_from_library:
+		spell.finish_cast_from_library()
 
 
 func describe() -> String:

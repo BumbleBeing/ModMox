@@ -53,6 +53,9 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 			# CR 702.34a, game ADR 0049: both players see it, and where it will go.
 			item.first_line += " (flashback)"
 			item.full_text += " · Cast with flashback: exiled as it leaves the stack."
+		if seen.cast_from_library:
+			# Game ADR 0055: both players see where it came from.
+			item.first_line += " (top of library)"
 	item.second_line = called.of(seen.controller_id)
 	var target_names: PackedStringArray = []
 	for target: MmReference in seen.targets:

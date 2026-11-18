@@ -22,6 +22,8 @@ static func kinds() -> Dictionary[Script, String]:
 		ChooseCardsToBottomDecision: "the opening-hand overlay (CardPicks)",
 		ChooseCardsToDiscardDecision: "the hand's strip (CardPicks)",
 		ChoosePermanentsDecision: "the permanents on the battlefield and the pass button (CardPicks)",
+		ChooseLegendToKeepDecision: "the legends on the battlefield, clicked as a target is (DecisionClicks)",
+		ChooseCreatureTypeDecision: "the Creature Type Window, a search box and a row for each type (CreatureTypeChoice)",
 	}
 
 

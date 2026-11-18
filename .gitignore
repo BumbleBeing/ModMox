@@ -6,3 +6,6 @@
 /.gut_editor_config.json
 /.gut_editor_shortcuts.cfg
 /test_results*.xml
+
+# Agent worktrees (each is its own checkout)
+.claude/worktrees/

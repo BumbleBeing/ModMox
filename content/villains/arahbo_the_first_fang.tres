@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Villain" format=3]
+
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/arahbo_the_first_fang_pain.png" id="1_dvbhu"]
+[ext_resource type="Script" path="res://run/villain.gd" id="2_khnct"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="3_4vxim"]
+[ext_resource type="Resource" path="res://content/decks/arahbo_the_first_fang.tres" id="4_ebbuu"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/arahbo_the_first_fang.png" id="5_l0yfs"]
+
+[resource]
+script = ExtResource("2_khnct")
+name = "Arahbo, the First Fang"
+sprite = ExtResource("5_l0yfs")
+pain_sprite = ExtResource("1_dvbhu")
+setups = Array[ExtResource("3_4vxim")]([ExtResource("4_ebbuu")])

@@ -100,6 +100,13 @@ func test_a_choice_made_on_resolution_says_what_to_choose_and_for_what_and_canno
 	assert_null(prompt.owed)
 
 
+func test_the_legend_rule_asks_which_legend_to_keep_and_cannot_be_canceled() -> void:
+	var prompt: InfoPrompt = InfoPrompt.of(ChooseLegendToKeepDecision.new(HERO, "Arahbo, the First Fang", [1, 2] as Array[int]), _view())
+
+	assert_eq(prompt.text, "Choose which Arahbo, the First Fang to keep")
+	assert_false(prompt.can_cancel, "A state-based action: there is no cast to take back.")
+
+
 func test_choosing_a_mode_names_the_spell_and_can_be_canceled() -> void:
 	var view: MmPlayerView = _view()
 	view.stack = [_object(20, "Charm", 5)]
@@ -109,6 +116,16 @@ func test_choosing_a_mode_names_the_spell_and_can_be_canceled() -> void:
 
 	assert_eq(prompt.text, "Choose one for Charm")
 	assert_true(prompt.can_cancel, "The mode is a step of the cast (CR 601.2b).")
+
+
+func test_choosing_a_creature_type_names_the_spell_and_cannot_be_canceled() -> void:
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Rally the Ranks", 5)]
+
+	var prompt: InfoPrompt = InfoPrompt.of(ChooseCreatureTypeDecision.new(HERO, 20), view)
+
+	assert_eq(prompt.text, "Choose a creature type for Rally the Ranks")
+	assert_false(prompt.can_cancel, "It is chosen as the spell resolves, after the cast.")
 
 
 func test_an_ability_whose_source_is_out_of_sight_keeps_its_own_name() -> void:

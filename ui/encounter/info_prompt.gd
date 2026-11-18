@@ -58,6 +58,10 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		var pick: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
 		prompt.text = "Tap %s for %s" % [AbilityText.how_many_words(pick.count, pick.filter), stack_name(view, pick.stack_object_id)]
 		prompt.can_cancel = true
+	elif decision is ChooseCreatureTypeDecision:
+		prompt.text = "Choose a creature type for %s" % stack_name(view, (decision as ChooseCreatureTypeDecision).stack_object_id)
+	elif decision is ChooseLegendToKeepDecision:
+		prompt.text = "Choose which %s to keep" % (decision as ChooseLegendToKeepDecision).legend_name
 	elif decision is DeclareAttackersDecision:
 		prompt.text = "Declare attackers"
 		prompt.offers_all_attack = true

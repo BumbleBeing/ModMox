@@ -182,6 +182,31 @@ func test_a_snapshot_that_changes_nothing_here_rebuilds_nothing() -> void:
 	assert_not_same(window.face_of(9), face, "What answers changed, so it is drawn again.")
 
 
+func test_a_top_card_the_hero_may_look_at_is_shown_alone_with_a_caption() -> void:
+	# Game ADR 0055.
+	var window: PileWindow = _window(PileWindow.Arrangement.ROW)
+	var top: MmObjectView = _card(5)
+	_snapshot.view.libraries[HERO] = [top, null, null]
+	var clicks: DecisionClicks = DecisionClicks.of(PriorityDecision.new(HERO,
+		[PassAction.new(), CastSpellAction.new(5)] as Array[MmAction]), _snapshot.view)
+	var hovered: Array = []
+	window.card_hovered.connect(func(object_id: int, is_over: bool) -> void: hovered.append([object_id, is_over]))
+
+	window.show_top_card("Hero's Library", 38, top, _snapshot, clicks)
+
+	assert_eq(window.title_text(), "Hero's Library (38)", "Every card is counted.")
+	assert_eq(window.entries(), [5] as Array[int], "Only the top card.")
+	assert_eq(window.caption().text, "Top card · only you see it")
+	assert_eq(BorderEffects.glow_colors(window.face_of(5)), [Color("#7be36a")] as Array[Color])
+	window.catcher_of(5).clicked.emit()
+	assert_eq(_clicked, [5] as Array[int])
+	window.catcher_of(5).mouse_entered.emit()
+	window.catcher_of(5).mouse_exited.emit()
+	assert_eq(hovered, [[5, true], [5, false]])
+	window.show_cards("Hero's Library", [null, null], _snapshot, _none())
+	assert_null(window.caption(), "Gone once the window shows the whole library again.")
+
+
 func _window(arrangement: PileWindow.Arrangement) -> PileWindow:
 	var window: PileWindow = PileWindow.new(arrangement, Color.GRAY)
 	add_child_autofree(window)

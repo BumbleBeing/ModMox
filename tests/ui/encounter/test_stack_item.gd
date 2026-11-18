@@ -192,6 +192,19 @@ func test_a_spell_cast_with_flashback_says_so_and_that_it_will_be_exiled() -> vo
 	assert_eq(item.full_text, "Zap — Zap deals 3 damage to any target. · Cast with flashback: exiled as it leaves the stack.")
 
 
+func test_a_spell_cast_from_the_top_of_a_library_says_so_in_its_first_line() -> void:
+	# Game ADR 0055: both players see it, as "(flashback)".
+	var view: MmPlayerView = _view()
+	var lions: MmObjectView = _spell(21, "Savannah Lions", MmEncounterSetup.VILLAIN_PLAYER_ID, [])
+	lions.cast_from_library = true
+	view.stack = [lions]
+
+	var item: StackItem = StackItem.of(lions, view)
+
+	assert_eq(item.first_line, "Savannah Lions (top of library)")
+	assert_false(item.full_text.contains("library"), "Nothing more in its full text.")
+
+
 func _spell(id: int, spell_name: String, controller: int, targets: Array[MmReference]) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()
 	seen.id = id

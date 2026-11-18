@@ -1,11 +1,11 @@
 ---
 name: draw-portrait
-description: Draws a Villain's Portrait and Pain Portrait after a Magic card's art. Use when the user names a card to make a Portrait, sprite or character of.
+description: Draws a Villain's Portrait, Pain Portrait and Blink Portrait after a Magic card's art. Use when the user names a card to make a Portrait, sprite or character of, or asks for a Portrait's Blink Portrait.
 ---
 
 # Draw a Portrait
 
-From one card name to two 32 × 32 sprites: the **Portrait** and the **Pain Portrait** (game glossary), drawn by hand after the art of the card's first printing, turned to face the front. `tools/sprites/portraits/keldon_warlord.txt` is a finished example. `$GODOT` below is `~/Desktop/Godot_v4.7.2-stable_linux.x86_64`.
+From one card name to three 32 × 32 sprites: the **Portrait**, the **Pain Portrait** and the **Blink Portrait** (game glossary), drawn by hand after the art of the card's first printing, turned to face the front. `tools/sprites/portraits/keldon_warlord.txt` is a finished example. `$GODOT` below is `~/Desktop/Godot_v4.7.2-stable_linux.x86_64`.
 
 ## 1. Fetch the art
 
@@ -34,19 +34,25 @@ Draw it pixel by pixel; a shrunk copy of the art serves only to pick colors. A s
 
 Add `= <key>_pain`: the same character the moment after being hurt. The body stays where it is; the head is knocked one pixel aside, its eyes squeezed shut (`>` `<`) and its teeth gritted, or a non-humanoid's jaw clenched. It shows only the wince itself, so the game is free to add a flash or a shake later.
 
-## 5. Build and import
+## 5. Draw the Blink Portrait
+
+Add `= <key>_blink`: the Portrait with its eyes closed and nothing else changed, so that swapping the two reads as a blink, never a twitch. Each open eye becomes a shut lid: its pixels take the skin's or fur's color round it, with a one-pixel line where the lids meet, a step darker than the skin's shade. Eyes that are only glints, in a helm or under a hood, go dark. Scrunch the brows or cheeks only where a plain line does not read as shut. Done when a diff of the two grids shows only the eyes changed, and the scrunch where there is one.
+
+A Portrait drawn before Blink Portraits existed gets one with this step and the two after it, once its art is in `tools/sprites/reference/` (step 1 fetches it if not). When its `.aseprite` file was touched up by hand, start from its PNG, not from its grid rows, and sync those rows to the PNG.
+
+## 6. Build and import
 
 ```bash
 ASEPRITE=~/Projects/aseprite/build/bin/aseprite tools/sprites/build.sh tools/sprites/portraits/<key>.txt ui/sprites/portraits
 $GODOT --headless --path . --import
 ```
 
-Then set `mipmaps/generate=false` in both new `.import` files in `ui/sprites/portraits/` (pixel art imports without mipmaps) and import again. Redrawing a built sprite from its grid takes `--force=<key>,<key>_pain`, which replaces its `.aseprite` file; once the user has touched a sprite up in Aseprite, that file is the truth, so ask before forcing.
+Then set `mipmaps/generate=false` in every new `.import` file in `ui/sprites/portraits/` (pixel art imports without mipmaps) and import again. Redrawing a built sprite from its grid takes `--force=` with its name (`<key>`, `<key>_pain`, `<key>_blink`), which replaces its `.aseprite` file; once the user has touched a sprite up in Aseprite, that file is the truth, so ask before forcing.
 
-## 6. Review
+## 7. Review
 
 ```bash
 $GODOT --headless --path . -s res://tools/sprites/review_portrait.gd -- --key=<key>
 ```
 
-It draws `tools/sprites/preview/<key>_review.png`: the art, then both sprites at 6× (as the player's panel shows them), 2× and 1×, on the panel's color. Read it yourself and check each feature from step 2 against the art. Revise until it holds up. Then send the sheet to the user and revise until they sign off on both sprites.
+It draws `tools/sprites/preview/<key>_review.png`: the art, then the three sprites at 6× (as the player's panel shows them), 2× and 1×, on the panel's color. Read it yourself and check each feature from step 2 against the art. Revise until it holds up. Then send the sheet to the user and revise until they sign off on all three sprites.

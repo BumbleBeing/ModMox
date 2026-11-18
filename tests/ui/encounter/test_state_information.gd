@@ -58,6 +58,53 @@ func test_a_tucked_card_says_what_exiled_it_and_that_permanent_names_each_card_i
 	assert_eq(StateInformation.of(lost, view).size(), 0, "What exiled it has gone, and it is exiled for good.")
 
 
+func test_a_chosen_creature_type_says_what_it_does_with_the_type_named() -> void:
+	var rally: MmCardDefinition = Scenario.rally("Rally the Ranks")
+	var seen: MmObjectView = MmObjectView.new()
+	seen.id = 50
+	seen.name = rally.name
+	seen.card_types = rally.card_types
+	seen.abilities = rally.abilities
+	seen.chosen_creature_type = "Cat"
+
+	assert_eq(_texts(StateInformation.of(seen, _view())), [["Chosen type: Cat",
+		"Each Cat creature you control gets +1/+1. Chosen as Rally the Ranks entered."]],
+		"Game ADR 0053: the type is State Information, not rules text.")
+
+
+func test_a_permanent_with_no_chosen_type_says_nothing_of_one() -> void:
+	var rally: MmCardDefinition = Scenario.rally("Rally the Ranks")
+	var seen: MmObjectView = MmObjectView.new()
+	seen.id = 50
+	seen.name = rally.name
+	seen.abilities = rally.abilities
+
+	assert_eq(StateInformation.of(seen, _view()).size(), 0)
+
+
+func test_a_permission_spent_this_turn_says_what_was_cast_and_by_whom() -> void:
+	# Game ADR 0055: only what was done, nothing of next turn.
+	var view: MmPlayerView = _view()
+	var mine: MmObjectView = _assemble(40, HERO, "Savannah Lions")
+	var theirs: MmObjectView = _assemble(41, MmEncounterSetup.VILLAIN_PLAYER_ID, "Pearled Unicorn")
+	view.battlefield.append_array([mine, theirs])
+
+	assert_eq(_texts(StateInformation.of(mine, view)),
+		[["Cast from the top this turn", "You cast Savannah Lions from the top of your library."]])
+	assert_eq(_texts(StateInformation.of(theirs, view)),
+		[["Cast from the top this turn", "The Villain cast Pearled Unicorn from the top of their library."]])
+	assert_eq(_texts(StateInformation.of(theirs, view, PlayerNames.new("Jackson", "Arahbo"))),
+		[["Cast from the top this turn", "Arahbo cast Pearled Unicorn from the top of their library."]])
+
+
+func test_a_permission_not_spent_this_turn_says_nothing() -> void:
+	var view: MmPlayerView = _view()
+	var ready: MmObjectView = _assemble(40, HERO, "")
+	ready.permissions_used_this_turn.clear()
+
+	assert_eq(StateInformation.of(ready, view).size(), 0)
+
+
 func test_a_summoning_sick_creature_says_so_and_a_land_never_does() -> void:
 	var bears: MmObjectView = _bears()
 	bears.is_summoning_sick = true
@@ -182,6 +229,19 @@ func _locked(effect: MmContinuousEffect, amounts: Array) -> ActiveContinuousEffe
 	var numbers: Array[int] = []
 	numbers.assign(amounts)
 	return ActiveContinuousEffect.locked(effect, 5, HERO, HEALER, 108, [BEARS] as Array[int], numbers, END_OF_TURN)
+
+
+## Assemble the Players controlled by [param controller], its cast from the top this turn
+## Spent on [param cast].
+func _assemble(id: int, controller: int, cast: String) -> MmObjectView:
+	var assemble: MmObjectView = MmObjectView.new()
+	assemble.id = id
+	assemble.card_id = 100 + id
+	assemble.name = "Assemble the Players"
+	assemble.controller_id = controller
+	assemble.card_types = [MmCardTypes.CardType.ENCHANTMENT]
+	assemble.permissions_used_this_turn = {1: cast}
+	return assemble
 
 
 func _bears() -> MmObjectView:

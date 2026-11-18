@@ -53,6 +53,9 @@ const MENU: String = "res://ui/menu/main_menu.tscn"
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 ## The Glow of a card of the hand chosen to be discarded (A401).
 const PICKED_GLOW: Color = Color.WHITE
+## The Glow round the Hero's library while its top card shows, in the pile host's own
+## coordinates, as where it starts and how much bigger than a card it is.
+const SEEN_PILE_BOX: Rect2 = Rect2(Vector2(-2, -4), Vector2(7, 4))
 ## What the Tap Preview shows when the cursor asks for nothing.
 const NO_PREVIEW: int = -1
 ## The size of the window that asks which replacement effect applies first.
@@ -100,6 +103,9 @@ var _held_windows: HeldWindows = HeldWindows.new()
 ## and the window it is in. Inspection.NOTHING otherwise.
 var _menu_held_id: int = Inspection.NOTHING
 var _menu_held_window: HeldWindows.Kind = HeldWindows.Kind.EMBLEMS
+## The Hero's library's top card face up on its pile while they may look at it (game ADR
+## 0055), or null.
+var _library_top_face: CardFace = null
 ## The Zone Window of each graveyard, exile and library, by its pile's Region, which of
 ## them have been given a place, and which are open only to answer a target (13f).
 var _pile_windows: Dictionary[String, PileWindow] = {}
@@ -146,6 +152,8 @@ var _trigger_order: TriggerOrder = TriggerOrder.new()
 var _trigger_list: TriggerList = null
 var _choice_window: ZoneWindow
 var _choice_entries: Array[ZoneEntry] = []
+## Where the Hero chooses a creature type (game ADR 0053), kept through redraws.
+var _creature_type_window: CreatureTypeWindow
 ## What the entry under the cursor has marked on the board.
 var _marked: Array[Control] = []
 ## How long a Glow or mark takes to ease in or out: none until the game's pace is set.
@@ -296,6 +304,12 @@ func _ready() -> void:
 	_choice_window.size = REPLACEMENT_WINDOW_SIZE
 	_choice_window.hide()
 	add_child(_choice_window)
+	_creature_type_window = CreatureTypeWindow.new()
+	_creature_type_window.hide()
+	_creature_type_window.chosen.connect(_choose_creature_type)
+	_creature_type_window.pointed.connect(_on_creature_type_pointed)
+	_creature_type_window.escaped.connect(press_key.bind(KEY_ESCAPE))
+	add_child(_creature_type_window)
 	for player_id: int in [HERO, VILLAIN]:
 		var emblems: ZoneWindow = ZoneWindow.new("Emblems", true, PlayerPanel.GOLD)
 		emblems.size = Vector2(300, 220)
@@ -311,6 +325,7 @@ func _ready() -> void:
 		var pile_window: PileWindow = PileWindow.new(PileWindow.Arrangement.ROW if is_row else PileWindow.Arrangement.GRID,
 			Color("#6f7f9a") if key.begins_with("hero") else Color("#9a6f6f"))
 		pile_window.card_clicked.connect(_on_object_clicked)
+		pile_window.card_hovered.connect(_on_pile_card_hovered)
 		# Its Tucked Cards fly back behind their permanents (ADR 0043).
 		pile_window.close_button().pressed.connect(_on_pile_closed.bind(key))
 		pile_window.hide()
@@ -376,6 +391,8 @@ func _ready() -> void:
 	if request == null:
 		request = EncounterRequest.new()
 	is_in_run = request.run != null
+	_panels[VILLAIN].portrait_override = request.villain_portrait
+	_panels[VILLAIN].pain_override = request.villain_pain_portrait
 	show_backdrop(request.backdrop)
 	var setup: MmEncounterSetup = request.setup()
 	# Behind the Scene Fade's black, so the first card drawn costs no more than any other.
@@ -388,6 +405,8 @@ func _ready() -> void:
 		load_settings()
 		use_settings(presenter)
 		use_game_pace(presenter)
+		for panel: PlayerPanel in _panels.values():
+			panel.start_breathing(request.encounter_seed)
 	begin(presenter)
 	if picture != "":
 		for frame: int in 4:
@@ -539,7 +558,7 @@ func _apply_speed() -> void:
 ## in a real encounter). Tests and screenshots leave it at none.
 func set_ease_seconds(seconds: float) -> void:
 	_ease_seconds = seconds
-	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
+	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
 		window.ease_seconds = seconds
 	for key: String in _pile_windows:
 		_pile_windows[key].ease_seconds = seconds
@@ -785,7 +804,7 @@ func leave(scene: String) -> void:
 func _is_covered(cursor: Vector2) -> bool:
 	if _option_menu.is_open():
 		return true
-	var windows: Array[Control] = [_stack_window, _choice_window]
+	var windows: Array[Control] = [_stack_window, _choice_window, _creature_type_window]
 	if _overlay.is_open():
 		windows.append(_overlay)
 	windows.append_array(_emblem_windows.values())
@@ -919,6 +938,9 @@ func _inspectable_entries() -> Dictionary[int, Control]:
 		for object_id: int in pile.entries():
 			if object_id != PileWindow.UNKNOWN and pile.face_of(object_id) != null:
 				entries[object_id] = pile.face_of(object_id)
+	var top: MmObjectView = _seen_library_top(HERO) if _snapshot != null else null
+	if top != null and is_instance_valid(_library_top_face) and not entries.has(top.id):
+		entries[top.id] = _library_top_face
 	return entries
 
 
@@ -1126,6 +1148,11 @@ func choice_entries() -> Array[ZoneEntry]:
 	return _choice_entries
 
 
+## The window where the Hero chooses a creature type (game ADR 0053).
+func creature_type_window() -> CreatureTypeWindow:
+	return _creature_type_window
+
+
 ## What takes a click on the choice window's entry number [param index].
 func choice_catcher(index: int) -> ClickCatcher:
 	return ClickCatcher.of(_choice_entries[index])
@@ -1158,7 +1185,17 @@ func is_drawn_tapped(object_id: int) -> bool:
 ## The colors the pile in Region [param key] glows in: a target's, while a card in it can
 ## be chosen, and green while one can be cast from it.
 func pile_glow(key: String) -> Array[Color]:
-	return BorderEffects.glow_colors(_pile_hosts[key])
+	var host: Control = _pile_hosts[key]
+	var colors: Array[Color] = BorderEffects.glow_colors(host)
+	if colors.is_empty() and host.get_child_count() > 0:
+		# The Hero's library while its top card shows glows round the backs too.
+		colors = BorderEffects.glow_colors(host.get_child(0) as Control)
+	return colors
+
+
+## The top card of the Hero's library drawn face up on its pile, or null (game ADR 0055).
+func library_top_face() -> CardFace:
+	return _library_top_face if is_instance_valid(_library_top_face) else null
 
 
 func emblems_window(player_id: int) -> ZoneWindow:
@@ -1303,6 +1340,7 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	_snapshot = snapshot
 	_error = ""
 	_is_snapping = _is_snapping or snapshot.is_rewind
+	_wince_the_hurt(previous, snapshot)
 	# An answer means something else in a new snapshot, so the preview is asked for afresh,
 	# and shown at once: the cursor may not have moved.
 	_previewed = NO_PREVIEW
@@ -1319,6 +1357,18 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	if _has_taken_off:
 		_pose_faces()
 		_hide_landing_places()
+
+
+## Each player who lost life since [param previous] shows their Pain Portrait for as long as
+## what they lost asks, and one who lost the encounter by it keeps showing it.
+func _wince_the_hurt(previous: EncounterSnapshot, snapshot: EncounterSnapshot) -> void:
+	var losses: Dictionary[int, int] = PainHold.losses(previous, snapshot)
+	for player_id: int in losses:
+		if not _panels.has(player_id):
+			continue
+		var has_lost: bool = snapshot.view.is_over and snapshot.view.winner_id != player_id \
+			and snapshot.view.life_totals.has(snapshot.view.winner_id)
+		_panels[player_id].wince(PainHold.seconds(losses[player_id], _speed), has_lost)
 
 
 ## A pile was clicked: its window opens, or closes if it was open.
@@ -1509,7 +1559,22 @@ func _fill_pile_window(key: String) -> void:
 	elif key.ends_with("library"):
 		cards = view.libraries.get(player_id, [])
 		zone_name = "Library"
+		var top: MmObjectView = _seen_library_top(player_id)
+		if top != null:
+			# Game ADR 0055: only the top card the Hero may look at.
+			_pile_windows[key].show_top_card("%s %s" % [_snapshot.names.possessive(player_id), zone_name], cards.size(), top, _snapshot, _clicks)
+			return
 	_pile_windows[key].show_cards("%s %s" % [_snapshot.names.possessive(player_id), zone_name], cards, _snapshot, _clicks)
+
+
+## The top card of [param player_id]'s library while the Hero may look at it (game ADR
+## 0055): only ever the Hero's own, or null.
+func _seen_library_top(player_id: int) -> MmObjectView:
+	var view: MmPlayerView = _snapshot.view
+	if player_id != view.viewer_id or not view.looks_at_library_top:
+		return null
+	var library: Array = view.libraries.get(player_id, [])
+	return null if library.is_empty() else library[0] as MmObjectView
 
 
 ## Opens the pile windows a target is only to be found in, closes the ones that were open
@@ -1537,11 +1602,22 @@ func _add_pile_host(key: String, pile_rect: Rect2) -> void:
 	var host: Control = Control.new()
 	host.position = pile_rect.position + Vector2((pile_rect.size.x - card.x) / 2.0, 0)
 	host.size = card
+	var glow_box: Rect2 = Rect2(Vector2.ZERO, card)
+	if key == "hero_library" and _seen_library_top(HERO) != null:
+		# Round the top card and the backs peeking out above and to the right of it.
+		glow_box = SEEN_PILE_BOX
 	host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_board.add_child(host)
 	_pile_hosts[key] = host
 	if _clicks.piles().has(key):
-		BorderEffects.add_glow(host, card, DecisionClicks.color_of(_clicks.pile_kind_of(key)), _ease_seconds)
+		var glow: Control = host
+		if glow_box.size != card:
+			glow = Control.new()
+			glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			glow.position = glow_box.position
+			glow.size = card + glow_box.size
+			host.add_child(glow)
+		BorderEffects.add_glow(glow, glow.size, DecisionClicks.color_of(_clicks.pile_kind_of(key)), _ease_seconds)
 	ClickCatcher.add(host, card + Vector2(0, EncounterLayout.PILE_LABEL)).clicked.connect(_toggle_pile.bind(key))
 
 
@@ -1624,8 +1700,13 @@ func _on_object_clicked(object_id: int) -> void:
 	if _is_paused:
 		return
 	if _picks.is_picking_permanents():
+		# The click that makes the last pick answers at once: nothing is left to decide
+		# (game ADR 0049).
 		if _picks.toggle(object_id):
-			_redraw()
+			if _picks.is_complete():
+				_confirm_picks()
+			else:
+				_redraw()
 		return
 	if _selection.is_clickable(object_id):
 		if _selection.click(object_id):
@@ -1762,11 +1843,14 @@ func _redraw() -> void:
 	_show_held_windows()
 	_fill_stack_window(view)
 	_fill_choice_window(view)
+	_fill_creature_type_window(view, regions)
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
 	_info.show_undeclare(not _selection.attacker_ids().is_empty())
 	_hold_panel.place(regions["hold"])
 	_show_hand()
 	_info.show_option(_release_text())
+	if _snapshot.decision is ChooseCreatureTypeDecision:
+		_on_creature_type_pointed(_creature_type_window.pointing())
 	_move_faces(unseen)
 	_flight_layer.aim_put(_snapshot)
 	_tint_arrows()
@@ -1810,7 +1894,7 @@ func _place_windows(battlefield: Rect2) -> void:
 		_emblem_windows[HERO].position = Vector2(battlefield.position.x + 400, battlefield.end.y - 240)
 		_emblem_windows[VILLAIN].position = Vector2(battlefield.position.x + 400, battlefield.position.y + 10)
 		_potions_window.position = Vector2(battlefield.position.x + 720, battlefield.end.y - 180)
-	for window: ZoneWindow in [_stack_window, _choice_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
+	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
 		window.bounds = battlefield
 		window.fit()
 	for key: String in _pile_windows:
@@ -1843,7 +1927,7 @@ func _draw_row(permanents: Array[MmObjectView], row_rect: Rect2, glow: DecisionC
 	for index: int in permanents.size():
 		var permanent: MmObjectView = permanents[index]
 		var face: BattlefieldFace = BattlefieldFace.new()
-		face.setup(_snapshot.look_of(permanent.id), height)
+		face.setup(_board_look(permanent), height)
 		face.position = footprints[index].position
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_board.add_child(face)
@@ -1936,7 +2020,7 @@ func _draw_line(key: String, permanents: Array[MmObjectView], heights: Array[flo
 	for index: int in permanents.size():
 		var permanent: MmObjectView = permanents[index]
 		var face: BattlefieldFace = BattlefieldFace.new()
-		face.setup(_snapshot.look_of(permanent.id), heights[index])
+		face.setup(_board_look(permanent), heights[index])
 		face.position = footprints[index].position + Vector2(0, band_top)
 		if _is_in_combat(permanent):
 			face.position.y += EncounterLayout.combat_step(is_hero)
@@ -1978,6 +2062,18 @@ func _tapped(permanents: Array[MmObjectView]) -> Array[bool]:
 ## it will be once the pick is confirmed (game ADR 0049).
 func _is_drawn_tapped(permanent: MmObjectView) -> bool:
 	return permanent.is_tapped or (_picks.is_picking_permanents() and _picks.is_picked(permanent.id))
+
+
+## The look [param permanent]'s face is drawn from: the snapshot's, tapped for one picked to
+## be tapped, so the face turns and sizes itself as its place in the row does, and its Glow
+## stays on it.
+func _board_look(permanent: MmObjectView) -> CardLook:
+	var look: CardLook = _snapshot.look_of(permanent.id)
+	if look == null or look.is_tapped or not _is_drawn_tapped(permanent):
+		return look
+	var turned: CardLook = look.copy()
+	turned.is_tapped = true
+	return turned
 
 
 ## Whether [param permanent] stands forward in the lane: attacking or blocking, or chosen
@@ -2094,9 +2190,13 @@ func _hovered_answer() -> int:
 	else:
 		var cursor: Vector2 = get_local_mouse_position()
 		var held_id: int = _held_under(cursor)
+		var pile_card: int = _pile_card_under(cursor)
 		if held_id != Inspection.NOTHING:
 			# An Emblem's ability is paid for like a permanent's (ADR 0031).
 			answer = _only_answer(_clicks.options_of(held_id))
+		elif pile_card != Inspection.NOTHING:
+			# A card cast from a pile's window is paid for like one in hand (game ADR 0055).
+			answer = _only_answer(_clicks.options_of(pile_card))
 		elif _is_covered(cursor):
 			return NO_PREVIEW
 		else:
@@ -2116,6 +2216,22 @@ func _held_under(cursor: Vector2) -> int:
 		if entry != null and entry.is_visible_in_tree() and Easing.is_shown(_window_of(entry)) \
 				and Rect2(entry.global_position - global_position, entry.size).has_point(cursor):
 			return object_id
+	return Inspection.NOTHING
+
+
+## The card of an open pile window under [param cursor] that a click answers on, or
+## Inspection.NOTHING.
+func _pile_card_under(cursor: Vector2) -> int:
+	var at: Vector2 = get_global_transform() * cursor
+	for key: String in _pile_windows:
+		var pile: PileWindow = _pile_windows[key]
+		if not Easing.is_shown(pile):
+			continue
+		for object_id: int in pile.entries():
+			var face: CardFace = pile.face_of(object_id) if object_id != PileWindow.UNKNOWN else null
+			if face != null and face.is_visible_in_tree() and pile.catcher_of(object_id) != null \
+					and face.get_global_rect().has_point(at):
+				return object_id
 	return Inspection.NOTHING
 
 
@@ -2276,7 +2392,7 @@ func _move_faces(unseen: Array[int]) -> void:
 		_rest[permanent.id] = face.position
 		targets[permanent.id] = FacePose.of(_center_at(face, face.position), face.card().size.y, 1.0 if _is_drawn_tapped(permanent) else 0.0,
 				1.0, 1.0 if face.is_attached() else 0.0)
-		looks[permanent.id] = _snapshot.look_of(permanent.id)
+		looks[permanent.id] = _board_look(permanent)
 	_motion.show_faces(targets, looks, _is_snapping or size != _drawn_size)
 	_is_snapping = false
 	_drawn_size = size
@@ -2613,7 +2729,26 @@ func _confirm_picks() -> void:
 func _draw_library(count: int, key: String, pile_rect: Rect2) -> void:
 	var card: Vector2 = Vector2(EncounterLayout.PILE_HEIGHT * CardGeometry.ASPECT, EncounterLayout.PILE_HEIGHT)
 	var at: Vector2 = pile_rect.position + Vector2((pile_rect.size.x - card.x) / 2.0, 0)
-	if count > 0:
+	var top: MmObjectView = _seen_library_top(HERO) if key == "hero_library" else null
+	if key == "hero_library":
+		_library_top_face = null
+	if top != null:
+		# Game ADR 0055: the top card face up on the face-down pile, a little down and to the
+		# left so the backs show above it, with an eye: only the Hero sees it.
+		for offset: Vector2 in [Vector2(5, -4), Vector2(2, -2)]:
+			var peeking: Panel = CardBack.make(card.y)
+			peeking.position = at + offset
+			_board.add_child(peeking)
+		var face: CardFace = CardFace.new()
+		face.setup(_snapshot.look_of(top.id), card.y)
+		face.position = at + Vector2(-2, 0)
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_board.add_child(face)
+		var eye: SeenEye = SeenEye.new()
+		eye.position = Vector2(-10, card.y - 28)
+		face.add_child(eye)
+		_library_top_face = face
+	elif count > 0:
 		var back: Panel = CardBack.make(card.y)
 		back.position = at
 		_board.add_child(back)
@@ -2798,6 +2933,14 @@ func _show_trigger_order() -> void:
 ## The cursor came over a Stack Window entry, or left it: its source is marked with a solid
 ## border and its targets with a dashed one, in its color, and the Info Panel shows it in
 ## full (A336, A337, A342).
+## The cursor came onto or left a card of a pile window that answers: the Info Panel says
+## what a click on it does, "Cast Savannah Lions from the top of your library" (game ADR
+## 0055), for as long as it is there.
+func _on_pile_card_hovered(object_id: int, is_over: bool) -> void:
+	var options: Array[ClickOption] = _clicks.options_of(object_id) if _clicks != null else [] as Array[ClickOption]
+	_info.show_option(options[0].text if is_over and not options.is_empty() else "")
+
+
 func _on_stack_entry_hovered(is_over: bool, object_id: int) -> void:
 	_clear_marks()
 	_info.show_option("")
@@ -2868,6 +3011,50 @@ func _fill_choice_window(view: MmPlayerView) -> void:
 		catcher.mouse_entered.connect(_on_choice_hovered.bind(true, index))
 		catcher.mouse_exited.connect(_on_choice_hovered.bind(false, index))
 		_choice_entries.append(entry)
+
+
+## The Creature Type Window is open exactly while the Hero is asked for a creature type. It
+## is filled only for a new decision, so a redraw keeps what is typed, and opens with the
+## keyboard in its search box (game ADR 0053).
+func _fill_creature_type_window(view: MmPlayerView, regions: Dictionary) -> void:
+	var decision: ChooseCreatureTypeDecision = _snapshot.decision as ChooseCreatureTypeDecision
+	if decision == null or _snapshot.is_over():
+		_creature_type_window.forget()
+		_creature_type_window.set_open(false)
+		return
+	var choice: CreatureTypeChoice = _creature_type_window.choice()
+	if choice != null and choice.is_for(decision):
+		_creature_type_window.move_to_front()
+		return
+	var battlefield: Rect2 = regions["battlefield"]
+	var top: float = battlefield.position.y + 14.0
+	var bottom: float = (regions["hero_nonlands"] as Rect2).position.y - 12.0
+	_creature_type_window.size = Vector2(CreatureTypeWindow.WIDTH, maxf(ZoneWindow.SMALLEST.y, bottom - top))
+	_creature_type_window.position = Vector2(battlefield.get_center().x - CreatureTypeWindow.WIDTH / 2.0, top)
+	_creature_type_window.bounds = battlefield
+	_creature_type_window.fit()
+	_creature_type_window.show_choice(CreatureTypeChoice.new(decision, view, _snapshot.names))
+	_creature_type_window.move_to_front()
+	_creature_type_window.open_for_typing()
+
+
+func _choose_creature_type(answer: int) -> void:
+	if not _is_paused and _snapshot.decision is ChooseCreatureTypeDecision:
+		_answer(answer)
+
+
+## The cursor or the keyboard came to a creature type in the Creature Type Window, or left
+## them: the Hero's creatures of that type are marked as targets are. The Info Panel keeps
+## asking "Choose a creature type for [card]" and never says what the type would do.
+func _on_creature_type_pointed(creature_type: String) -> void:
+	_clear_marks()
+	_info.show_option("")
+	var choice: CreatureTypeChoice = _creature_type_window.choice()
+	if creature_type == "" or choice == null or not (_snapshot.decision is ChooseCreatureTypeDecision):
+		return
+	var color: Color = DecisionClicks.color_of(DecisionClicks.Kind.TARGET)
+	for id: int in choice.controlled_of(creature_type):
+		_mark_face(id, color, false)
 
 
 func _choose_replacement(index: int) -> void:

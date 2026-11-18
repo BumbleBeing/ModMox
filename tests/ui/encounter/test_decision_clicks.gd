@@ -418,6 +418,19 @@ func test_a_choice_made_on_resolution_glows_and_answers_as_a_target_does() -> vo
 	assert_eq(decision.validate(clicks.options_of(11)[0].answer), "")
 
 
+func test_each_legend_the_legend_rule_asks_about_glows_and_one_click_keeps_it() -> void:
+	var decision: ChooseLegendToKeepDecision = ChooseLegendToKeepDecision.new(HERO, "Legend", [11, 12] as Array[int])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, _view())
+
+	assert_eq(_kinds(clicks), {11: [DecisionClicks.Kind.TARGET], 12: [DecisionClicks.Kind.TARGET]})
+	assert_eq(clicks.options_of(12).size(), 1)
+	assert_eq(clicks.options_of(12)[0].answer, 1)
+	assert_eq(clicks.options_of(12)[0].text, "Keep")
+	assert_eq(clicks.options_of(LAND_ID).size(), 0, "A permanent that is not a candidate.")
+	assert_eq(decision.validate(clicks.options_of(11)[0].answer), "")
+
+
 func test_a_kind_with_no_input_of_its_own_glows_but_gives_no_click_answers() -> void:
 	var attackers: DecisionClicks = DecisionClicks.of(DeclareAttackersDecision.new(HERO, [3, 4] as Array[int]), _view())
 	var discard: DecisionClicks = DecisionClicks.of(ChooseCardsToDiscardDecision.new(HERO, 1, [1, 2] as Array[int]), _view())
@@ -502,6 +515,24 @@ func test_a_card_cast_from_the_graveyard_is_clicked_in_its_window_and_its_pile_g
 	assert_eq(clicks.options_of(30)[0].text, "Cast Daydream with flashback")
 	assert_eq(clicks.hand_options_of(30).size(), 0, "It is not in the hand.")
 	assert_eq(_kinds(clicks), {30: [DecisionClicks.Kind.PLAY]})
+
+
+func test_the_top_card_of_the_library_is_clicked_in_its_window_and_its_pile_glows_green() -> void:
+	# Game ADR 0055: cast with a permission, as flashback is from the graveyard.
+	var view: MmPlayerView = _view()
+	view.libraries[HERO] = [_card(31, "Savannah Lions"), null, null]
+	view.looks_at_library_top = true
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new(), CastSpellAction.new(31)] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(clicks.piles(), ["hero_library"] as Array[String])
+	assert_eq(clicks.pile_kind_of("hero_library"), DecisionClicks.Kind.PLAY)
+	assert_false(clicks.is_only_in_piles(), "Its window waits for a click on the pile.")
+	assert_eq(clicks.options_of(31).size(), 1)
+	assert_eq(clicks.options_of(31)[0].answer, 1)
+	assert_eq(clicks.options_of(31)[0].text, "Cast Savannah Lions from the top of your library")
+	assert_eq(clicks.hand_options_of(31).size(), 0, "It is not in the hand.")
 
 
 func test_a_target_in_a_graveyard_still_makes_its_pile_glow_as_a_target() -> void:

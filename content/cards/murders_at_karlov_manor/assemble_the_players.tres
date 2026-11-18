@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_05v7i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/look_at_top_of_library_ability.gd" id="2_5a3ac"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_vm2e7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ht0yt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="3_igi7x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_e54oo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/power_filter.gd" id="5_t6fe8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="6_h1kgv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/cast_from_top_of_library_ability.gd" id="7_yqy51"]
+
+[sub_resource type="Resource" id="Resource_17fud"]
+script = ExtResource("2_5a3ac")
+
+[sub_resource type="Resource" id="Resource_3hwl5"]
+script = ExtResource("4_e54oo")
+
+[sub_resource type="Resource" id="Resource_m34lu"]
+script = ExtResource("5_t6fe8")
+amount = 2
+
+[sub_resource type="Resource" id="Resource_luskt"]
+script = ExtResource("6_h1kgv")
+filters = Array[ExtResource("3_igi7x")]([SubResource("Resource_3hwl5"), SubResource("Resource_m34lu")])
+
+[sub_resource type="Resource" id="Resource_o7kyg"]
+script = ExtResource("7_yqy51")
+filter = SubResource("Resource_luskt")
+
+[sub_resource type="Resource" id="Resource_moggb"]
+script = ExtResource("2_vm2e7")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_ht0yt")
+name = "Assemble the Players"
+card_types = Array[int]([2])
+mana_cost = SubResource("Resource_moggb")
+abilities = Array[ExtResource("1_05v7i")]([SubResource("Resource_17fud"), SubResource("Resource_o7kyg")])
+rarity = 2

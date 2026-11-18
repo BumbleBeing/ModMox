@@ -39,6 +39,12 @@ var chosen_mode: int = SpellAbility.NO_MODE
 ## For a spell on the stack: cast with flashback, so it will be exiled as it leaves the
 ## stack (CR 702.34a). Both players see it.
 var cast_with_flashback: bool = false
+## For a spell on the stack: cast from the top of its owner's library (ADR 0054). Both
+## players see it.
+var cast_from_library: bool = false
+## The cast permissions of this permanent Spent this turn (ADR 0054), by their place among
+## its abilities, each with the name of the spell it cast. Public, like the permanent.
+var permissions_used_this_turn: Dictionary[int, String] = {}
 var is_creature: bool = false
 ## Current power and toughness; meaningful only for a creature (CR 208.3).
 var power: int = 0
@@ -79,6 +85,9 @@ var potion_index: int = MmGameObject.NOT_A_POTION
 ## Whether it is a token (CR 111.1), and the Token Definition it was made from, so the
 ## GUI can find its art; null for anything that is not a token.
 var is_token: bool = false
+## For a permanent with "As this enters, choose a creature type": the type chosen as it
+## entered, or "". Both players see it (ADR 0052).
+var chosen_creature_type: String = ""
 var token_definition: MmCardDefinition = null
 ## CR 302.6: a creature that cannot attack or pay {T} yet.
 var is_summoning_sick: bool = false
@@ -107,6 +116,10 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.targets = game_object.targets.duplicate()
 	view.chosen_mode = game_object.chosen_mode
 	view.cast_with_flashback = game_object.cast_with_flashback
+	view.cast_from_library = game_object.cast_from_library
+	for index: int in game_object.permission_used_game_turn:
+		if game_object.is_permission_used_in(index, state.game_turn):
+			view.permissions_used_this_turn[index] = game_object.permission_used_spell_name[index]
 	var characteristics: MmCharacteristics = state.characteristics_of(game_object)
 	view.colors = characteristics.colors.duplicate()
 	view.card_types = characteristics.card_types.duplicate()
@@ -134,6 +147,7 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.spent_ability_indexes = game_object.spent_ability_indexes.duplicate()
 	view.potion_index = game_object.potion_index
 	view.is_token = game_object.is_token
+	view.chosen_creature_type = game_object.chosen_creature_type
 	view.token_definition = game_object.definition if game_object.is_token else null
 	view.is_summoning_sick = state.is_summoning_sick(game_object)
 	if game_object.zone() == state.battlefield:

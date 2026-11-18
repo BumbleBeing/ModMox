@@ -31,6 +31,8 @@ const ATTACHED_SHOWN: float = 0.2
 const AS_DRAWN: float = -1.0
 ## The size the P/T box's image is resized to before it is drawn.
 const POWER_TOUGHNESS_PIXELS: Vector2i = Vector2i(377, 206)
+## What grays and darkens a dimmed face.
+const DIMMED_SHADER: Shader = preload("res://ui/cards/dimmed.gdshader")
 
 var _look: CardLook
 var _card: Control
@@ -41,8 +43,10 @@ var _turn: float = 0.0
 var _damage_chip: DamageChip = null
 var _counter_chip: CounterChip = null
 var _chips: Array[KeywordChip] = []
+var _chosen_type_chip: ChosenTypeChip = null
 var _is_attached: bool = false
 var _attached_mark: AttachedMark = null
+var _dim: Panel = null
 
 
 ## A Battlefield Face's size when untapped, [param height] pixels tall.
@@ -150,6 +154,15 @@ func setup(look: CardLook, height: float, is_drawn_attached: bool = false, is_tu
 				int(CardGeometry.CORNER * CardGeometry.BAKE_SIZE.x * scale_now))
 		shape.add_child(_attached_mark)
 		shape.move_child(_attached_mark, _shade.get_index())
+	if look.is_dimmed:
+		# Over the whole face, in the card's own rounded shape, so the board round its corners
+		# is drawn as it is (game ADR 0055).
+		_dim = CardShapes.rounded(face_size, CardGeometry.CORNER * CardGeometry.BAKE_SIZE.x * scale_now, Color.WHITE)
+		_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var gray: ShaderMaterial = ShaderMaterial.new()
+		gray.shader = DIMMED_SHADER
+		_dim.material = gray
+		_card.add_child(_dim)
 	_card.pivot_offset = face_size / 2.0
 	show_turn(1.0 if look.is_tapped else 0.0)
 
@@ -157,6 +170,11 @@ func setup(look: CardLook, height: float, is_drawn_attached: bool = false, is_tu
 ## The part that turns sideways when tapped.
 func card() -> Control:
 	return _card
+
+
+## The gray over a dimmed face (CardLook.is_dimmed), or null.
+func dim() -> Panel:
+	return _dim
 
 
 func name_text() -> AnchoredText:
@@ -226,6 +244,11 @@ func damage_chip() -> DamageChip:
 	return _damage_chip
 
 
+## The Chosen Type Chip as drawn, or null when the permanent has no chosen type.
+func chosen_type_chip() -> ChosenTypeChip:
+	return _chosen_type_chip
+
+
 func chip_letters() -> Array[String]:
 	var letters: Array[String] = []
 	for chip: KeywordChip in _chips:
@@ -277,14 +300,23 @@ func _add_power_toughness(shape: Panel, spec: FrameSpec, height: float) -> void:
 ## Chips run along the bottom of the art from the left toward the P/T box.
 func _add_chips(shape: Panel, height: float, is_creature: bool) -> void:
 	var all: Array[KeywordChip] = KeywordChips.chips_for(_look.abilities)
-	if all.is_empty():
+	if all.is_empty() and _look.chosen_creature_type == "":
 		return
 	var room: float = chip_room(height, is_creature)
 	var chip: float = KeywordChips.chip_size(height, room)
 	var gap: float = KeywordChips.gap(chip)
-	_chips = KeywordChips.shown(all, KeywordChips.fit_count(chip, room))
 	var art: Rect2 = art_box(height)
 	var at: Vector2 = Vector2(art.position.x + gap, art.end.y - chip - gap)
+	_chosen_type_chip = null
+	if _look.chosen_creature_type != "":
+		# Game ADR 0053: the chosen type comes first, leaving room for one keyword chip (or
+		# "+N") when there are keywords, and the keywords have what is left.
+		var widest: float = room - gap * 2.0 - (0.0 if all.is_empty() else chip + gap)
+		_chosen_type_chip = ChosenTypeChip.fit(_look.chosen_creature_type, chip, widest)
+		shape.add_child(_chosen_type_chip.make(at))
+		at.x += _chosen_type_chip.width + gap
+		room -= _chosen_type_chip.width + gap
+	_chips = KeywordChips.shown(all, KeywordChips.fit_count(chip, room))
 	for keyword: KeywordChip in _chips:
 		shape.add_child(CardShapes.chip(keyword, at, chip))
 		at.x += chip + gap

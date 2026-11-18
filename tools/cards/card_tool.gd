@@ -11,8 +11,10 @@ extends SceneTree
 ##                            card with anything it cannot read unless told --anyway
 ##   record                   fetches the Oracle Data of every card file that has none
 ##   review FILE...           each card file's generated rules text beside its Oracle text
+##   creature-types           rewrites the engine's CreatureTypes from Scryfall's catalog of
+##                            creature types (CR 205.3m), saying what was added or removed
 
-const USAGE: String = "Usage: card_tool.gd -- primitives | fetch NAME... | search QUERY | write [--anyway] NAME... | record | review FILE..."
+const USAGE: String = "Usage: card_tool.gd -- primitives | fetch NAME... | search QUERY | write [--anyway] NAME... | record | review FILE... | creature-types"
 const CONTENT: String = "res://content/cards/"
 const ENGINE_SOURCE: String = "res://addons/modmox_rules/src/"
 ## The engine's folders that cards are composed from.
@@ -50,10 +52,37 @@ func _run() -> void:
 			succeeded = await _record()
 		"review":
 			succeeded = _review(rest)
+		"creature-types":
+			succeeded = await _creature_types()
 		_:
 			printerr(USAGE)
 			succeeded = false
 	quit(0 if succeeded else 1)
+
+
+## Rewrites CreatureTypes from Scryfall's catalog (engine ADR 0052). A changed list is an
+## engine version change: a saved answer is an index into it (ADR 0010).
+func _creature_types() -> bool:
+	var types: Array[String] = CreatureTypesSource.types_in(await _scryfall.json_at(CreatureTypesSource.CATALOG_URL))
+	if types.is_empty():
+		printerr("Scryfall sent no catalog of creature types.")
+		return false
+	var before: Array[String] = CreatureTypes.ALL.duplicate()
+	var added: Array[String] = CreatureTypesSource.added(before, types)
+	var removed: Array[String] = CreatureTypesSource.added(types, before)
+	if added.is_empty() and removed.is_empty():
+		print("CreatureTypes already lists all %d creature types." % types.size())
+		return true
+	var file: FileAccess = FileAccess.open(CreatureTypesSource.PATH, FileAccess.WRITE)
+	if file == null:
+		printerr("Cannot write %s." % CreatureTypesSource.PATH)
+		return false
+	file.store_string(CreatureTypesSource.source_of(types))
+	file.close()
+	print("Wrote %d creature types to %s." % [types.size(), CreatureTypesSource.PATH])
+	print("Added: %s" % ", ".join(PackedStringArray(added)) if not added.is_empty() else "Added: none")
+	print("Removed: %s" % ", ".join(PackedStringArray(removed)) if not removed.is_empty() else "Removed: none")
+	return true
 
 
 func _fetch(card_names: PackedStringArray) -> bool:

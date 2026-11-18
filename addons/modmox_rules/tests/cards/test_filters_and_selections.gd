@@ -55,6 +55,58 @@ func test_swapping_target_for_each_turns_a_targeted_spell_into_one_that_hits_eve
 	assert_eq(engine.villain().life, 17)
 
 
+func test_a_mana_value_filter_compares_the_total_of_a_cards_mana_cost() -> void:
+	# CR 202.3: {2}{W} has mana value 3, and a land has none, so 0.
+	var three: MmCardDefinition = Scenario.creature("Three", 2, 2, [], Scenario.mana_cost(2, [MmMana.Type.WHITE]))
+	var four: MmCardDefinition = Scenario.creature("Four", 3, 3, [], Scenario.mana_cost(4))
+	var engine: MmEngine = MmEngine.start(Scenario.setup_with(Scenario.cycled([three, four, Scenario.basic_land("Plains")]),
+		Scenario.cycled([])))
+	var state: MmGameState = engine.game_state()
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var by_name: Dictionary[String, MmReference] = {}
+	for card: MmGameObject in engine.hero().library.objects():
+		by_name[state.characteristics_of(card).name] = MmReference.to_object(card.id)
+	var three_or_less: ManaValueFilter = Scenario.mana_value(3)
+	var four_or_greater: ManaValueFilter = Scenario.mana_value(4, ManaValueFilter.Comparison.OR_GREATER)
+
+	assert_true(three_or_less.matches(state, by_name["Three"], context), "In any zone, here a library.")
+	assert_false(three_or_less.matches(state, by_name["Four"], context))
+	assert_true(three_or_less.matches(state, by_name["Plains"], context))
+	assert_false(four_or_greater.matches(state, by_name["Three"], context))
+	assert_true(four_or_greater.matches(state, by_name["Four"], context))
+	assert_false(three_or_less.matches(state, MmReference.to_player(engine.hero().id), context), "A player has no mana value.")
+	assert_true(Scenario.is_not(four_or_greater).matches(state, by_name["Three"], context))
+
+
+func test_a_power_filter_compares_a_creatures_power_in_any_zone() -> void:
+	# CR 208.1: only a creature has power, so nothing else is "with power 2 or less".
+	var cub: MmCardDefinition = Scenario.creature("Cub", 2, 2)
+	var brute: MmCardDefinition = Scenario.creature("Brute", 3, 3)
+	var shifter: MmCardDefinition = Scenario.creature("Shifter", 0, 0)
+	var defining: CharacteristicDefiningAbility = CharacteristicDefiningAbility.new()
+	defining.power = Scenario.constant(5)
+	defining.toughness = Scenario.constant(5)
+	shifter.abilities = [defining]
+	var engine: MmEngine = MmEngine.start(Scenario.setup_with(Scenario.cycled([cub, brute, shifter, Scenario.basic_land("Plains")]),
+		Scenario.cycled([])))
+	var state: MmGameState = engine.game_state()
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var by_name: Dictionary[String, MmReference] = {}
+	for card: MmGameObject in engine.hero().library.objects():
+		by_name[state.characteristics_of(card).name] = MmReference.to_object(card.id)
+	var two_or_less: PowerFilter = Scenario.power(2)
+	var three_or_greater: PowerFilter = Scenario.power(3, PowerFilter.Comparison.OR_GREATER)
+
+	assert_true(two_or_less.matches(state, by_name["Cub"], context), "In any zone, here a library.")
+	assert_false(two_or_less.matches(state, by_name["Brute"], context))
+	assert_true(three_or_greater.matches(state, by_name["Brute"], context))
+	assert_false(three_or_greater.matches(state, by_name["Cub"], context))
+	assert_false(two_or_less.matches(state, by_name["Plains"], context), "A land has no power.")
+	assert_false(two_or_less.matches(state, by_name["Shifter"], context), "CR 604.3: its power is 5 in every zone.")
+	assert_true(three_or_greater.matches(state, by_name["Shifter"], context))
+	assert_false(two_or_less.matches(state, MmReference.to_player(engine.hero().id), context), "A player has no power.")
+
+
 func _engine_with_one_forest() -> MmEngine:
 	var forests: Array[MmCardDefinition] = Scenario.copies(Scenario.basic_land("Forest"), 40)
 	var engine: MmEngine = MmEngine.start(Scenario.setup_with(forests, forests.duplicate()))

@@ -112,6 +112,10 @@ func test_the_potions_flag_gives_the_hero_one_big_gulp_on_a_copy() -> void:
 	assert_eq(setup.validate(), "")
 
 
+func test_a_request_from_the_command_line_has_no_villain_portrait_of_its_own() -> void:
+	assert_null(EncounterRequest.from_arguments(PackedStringArray(["--villain=charmed_stray"])).villain_portrait)
+
+
 func test_a_request_without_the_flag_holds_no_potion() -> void:
 	assert_false(EncounterRequest.from_arguments(PackedStringArray(["--seed=3", "--emblems"])).has_sample_potions)
 
@@ -126,6 +130,8 @@ func test_the_encounter_is_against_the_villain_met_in_front_of_the_stages_backdr
 	assert_eq(request.villain_setup, villain.setup_for_tier(1))
 	assert_eq(request.setup().villain, villain.setups[0])
 	assert_eq(request.villain_name, villain.name)
+	assert_eq(request.villain_portrait, villain.sprite)
+	assert_eq(request.villain_pain_portrait, villain.pain_sprite)
 	assert_eq(request.backdrop, run.stage_visit.stage.backdrop())
 	assert_eq(request.setup().hero, request.hero_setup)
 	assert_eq(request.validate(), "")

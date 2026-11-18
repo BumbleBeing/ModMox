@@ -7,28 +7,37 @@ extends RefCounted
 
 ## Performs state-based actions until none apply, then ends the encounter if anyone lost.
 ## Stops while a batch waits for a replacement choice, such as which regeneration shield to
-## use; calling it again afterwards carries on (A143).
-static func check(state: MmGameState) -> void:
+## use; calling it again afterwards carries on (A143). Returns the legend rule's choice when
+## a player must make one before anything is performed (CR 704.5j): [param kept_ids] holds
+## the legends kept so far, and is used up as the batch is performed (ADR 0051).
+static func check(state: MmGameState, kept_ids: Array[int]) -> ChooseLegendToKeepDecision:
 	while not state.is_over and not state.is_batch_suspended():
 		for player: MmPlayer in state.players:
 			if player.has_lost:
 				_end_encounter(state)
-				return
-		var actions: Array[MmEvent] = _actions(state)
+				return null
+		var choice: ChooseLegendToKeepDecision = _next_legend_choice(state, kept_ids)
+		if choice != null:
+			return choice
+		var actions: Array[MmEvent] = _actions(state, kept_ids)
+		kept_ids.clear()
 		if actions.is_empty():
-			return
+			return null
 		# CR 704.3: all at once, so "dies" triggers see everything that died together
 		# (ADR 0017).
 		state.perform_resumably(actions)
+	return null
 
 
 ## Whether any state-based action would be performed right now (CR 514.3a asks this).
 static func any_apply(state: MmGameState) -> bool:
-	return not state.is_over and not _actions(state).is_empty()
+	var none_kept: Array[int] = []
+	return not state.is_over and (not _actions(state, none_kept).is_empty() or not _legend_groups(state).is_empty())
 
 
-## The events every state-based action that applies right now would perform.
-static func _actions(state: MmGameState) -> Array[MmEvent]:
+## The events every state-based action that applies right now would perform. A group of
+## legends none of [param kept_ids] is in is left for its choice.
+static func _actions(state: MmGameState, kept_ids: Array[int]) -> Array[MmEvent]:
 	var actions: Array[MmEvent] = []
 	var losers: Array[MmPlayer] = []
 	var reasons: Array[MmPlayer.LossReason] = []
@@ -50,7 +59,59 @@ static func _actions(state: MmGameState) -> Array[MmEvent]:
 		actions.append(UnattachedEvent.new(permanent.id))
 	for token: MmGameObject in _tokens_off_the_battlefield(state):
 		actions.append(TokenCeasedEvent.new(token))
+	for group: Array[int] in _legend_groups(state):
+		var kept: int = _kept_in(group, kept_ids)
+		if kept == -1:
+			continue
+		for id: int in group:
+			if id != kept:
+				# Later: an owner's graveyard other than the controller's, once something
+				# changes control.
+				actions.append(_to_graveyard(state, state.object(id), ZoneChangeEvent.Reason.LEGEND_RULE))
 	return actions
+
+
+## CR 704.5j: the choice for the first group of legends with no kept one among
+## [param kept_ids], or null when every group has one.
+static func _next_legend_choice(state: MmGameState, kept_ids: Array[int]) -> ChooseLegendToKeepDecision:
+	for group: Array[int] in _legend_groups(state):
+		if _kept_in(group, kept_ids) == -1:
+			var first: MmGameObject = state.object(group[0])
+			return ChooseLegendToKeepDecision.new(first.controller_id, state.characteristics_of(first).name, group)
+	return null
+
+
+## CR 704.5j: each set of two or more legendary permanents with the same name that one
+## player controls, each in ID order. The active player's come first (CR 101.4), and each
+## player's are in the order of their lowest IDs.
+static func _legend_groups(state: MmGameState) -> Array[Array]:
+	var groups: Array[Array] = []
+	for player_id: int in [state.active_player_id, state.opponent_of(state.active_player_id).id]:
+		var by_name: Dictionary[String, Array] = {}
+		var names: Array[String] = []
+		for permanent: MmGameObject in ManaPayment.sorted_permanents_of(state, player_id):
+			var characteristics: MmCharacteristics = state.characteristics_of(permanent)
+			if not characteristics.has_supertype(MmCardTypes.Supertype.LEGENDARY):
+				continue
+			if not by_name.has(characteristics.name):
+				by_name[characteristics.name] = []
+				names.append(characteristics.name)
+			by_name[characteristics.name].append(permanent.id)
+		for each_name: String in names:
+			if by_name[each_name].size() >= 2:
+				var group: Array[int] = []
+				group.assign(by_name[each_name])
+				group.sort()
+				groups.append(group)
+	return groups
+
+
+## The one of [param group] that is in [param kept_ids], or -1.
+static func _kept_in(group: Array[int], kept_ids: Array[int]) -> int:
+	for id: int in group:
+		if kept_ids.has(id):
+			return id
+	return -1
 
 
 ## CR 704.5a: 0 or less life. CR 704.5b: tried to draw from an empty library.

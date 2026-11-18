@@ -103,16 +103,201 @@ func test_a_step_with_a_stop_that_is_the_step_it_is_now_is_green_and_glows() -> 
 	assert_eq(BorderEffects.glow_color(hero.step_button(MAIN)), PlayerPanel.NOW_COLOR)
 
 
-func test_the_hero_is_the_white_wizard_and_the_villain_the_purple_demon_drawn_pixel_for_pixel() -> void:
+func test_the_hero_is_urza_and_the_villain_charmed_stray_drawn_pixel_for_pixel() -> void:
 	var hero: PlayerPanel = _panel(HERO)
 	var villain: PlayerPanel = _panel(VILLAIN)
 
-	assert_eq(hero.portrait_texture().resource_path, "res://ui/sprites/portraits/white_wizard.png")
-	assert_eq(villain.portrait_texture().resource_path, "res://ui/sprites/portraits/purple_demon.png")
-	var picture: TextureRect = hero.portrait().get_parent().get_children().filter(func(child: Node) -> bool: return child is TextureRect and (child as TextureRect).texture == hero.portrait_texture())[0]
+	assert_eq(hero.portrait_texture().resource_path, "res://ui/sprites/portraits/urza_academy_headmaster.png")
+	assert_eq(villain.portrait_texture().resource_path, "res://ui/sprites/portraits/charmed_stray.png",
+		"The placeholder, for testing.")
+	var picture: TextureRect = _picture_of(hero)
+	assert_eq(picture.texture, hero.portrait_texture())
 	assert_eq(picture.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
 	assert_eq(picture.size, hero.portrait().size)
-	assert_eq(picture.position, hero.portrait().position, "What glows and is clicked lies over the picture.")
+	assert_eq(picture.global_position, hero.portrait().global_position,
+		"What glows and is clicked lies over the picture.")
+
+
+func test_a_panel_given_its_players_own_portrait_draws_it_in_place_of_the_placeholder() -> void:
+	var stray: Texture2D = load("res://ui/sprites/portraits/charmed_stray.png")
+	var villain: PlayerPanel = PlayerPanel.new(VILLAIN, "VILLAIN")
+	villain.portrait_override = stray
+	add_child_autofree(villain)
+	villain.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, false, false)
+
+	assert_eq(villain.portrait_texture(), stray)
+
+
+func test_a_hurt_player_shows_their_pain_portrait_for_the_hold_then_their_portrait_again() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	var portrait: Texture2D = hero.portrait_texture()
+
+	hero.wince(0.5)
+
+	assert_true(hero.is_wincing())
+	assert_eq(hero.portrait_texture().resource_path, "res://ui/sprites/portraits/urza_academy_headmaster_pain.png")
+	assert_eq(_picture_of(hero).texture, hero.portrait_texture(), "The picture drawn is the Pain Portrait.")
+	hero.advance(0.4)
+	assert_true(hero.is_wincing())
+	hero.advance(0.2)
+	assert_false(hero.is_wincing())
+	assert_eq(hero.portrait_texture(), portrait)
+	assert_eq(_picture_of(hero).texture, portrait)
+
+
+func test_hurt_again_while_wincing_the_longer_hold_wins() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+
+	hero.wince(1.3)
+	hero.advance(0.2)
+	hero.wince(0.3)
+	hero.advance(0.5)
+	assert_true(hero.is_wincing(), "A ping does not cut a big hit's wince short.")
+	hero.advance(0.7)
+	assert_false(hero.is_wincing())
+
+	hero.wince(0.3)
+	hero.advance(0.2)
+	hero.wince(0.8)
+	hero.advance(0.5)
+	assert_true(hero.is_wincing(), "A big hit lengthens a short wince.")
+
+
+func test_a_player_who_lost_keeps_wincing() -> void:
+	var villain: PlayerPanel = _panel(VILLAIN)
+
+	villain.wince(0.3, true)
+	villain.advance(60.0)
+
+	assert_true(villain.is_wincing())
+
+
+func test_a_wince_outlasts_a_rebuilt_panel() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	hero.wince(0.5)
+
+	hero.show_snapshot(_snapshot, DecisionClicks.new(), _stops, Rect2(BOX.position, BOX.size + Vector2(0, 40)), true, false)
+
+	assert_eq(_picture_of(hero).texture, hero.portrait_texture())
+	assert_true(hero.portrait_texture().resource_path.ends_with("_pain.png"))
+
+
+func test_a_panel_not_told_to_breathe_keeps_its_portrait_at_rest() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+
+	hero.advance(1.0)
+
+	assert_eq(_picture_of(hero).size, hero.portrait().size)
+
+
+func test_a_breathing_portrait_grows_and_shrinks_inside_its_square() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	hero.start_breathing(7)
+	var sizes: Array[float] = []
+	for tick: int in 40:
+		hero.advance(0.1)
+		sizes.append(_picture_of(hero).size.y)
+
+	assert_gt(sizes.max(), hero.portrait().size.y, "It grows at the top of a breath.")
+	assert_eq(sizes.min(), hero.portrait().size.y, "It rests at its own size.")
+	assert_true(hero.breathing_portrait().clip_contents, "Cropped to its square.")
+
+
+func test_a_hurt_player_is_winded_until_their_pain_portrait_is_over() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	hero.start_breathing(7)
+	hero.advance(0.5)
+
+	hero.wince(1.0)
+	hero.advance(0.2)
+	assert_true(hero.breath().is_winded())
+	assert_eq(_picture_of(hero).size, hero.portrait().size, "Sunk to the bottom of the breath.")
+	hero.advance(0.9)
+	assert_false(hero.breath().is_winded(), "Breathing again once the wince is over.")
+	assert_almost_eq(hero.breath().phase, 0.0, 0.1, "From the start of a breath.")
+
+
+func test_a_player_who_lost_stops_breathing() -> void:
+	var villain: PlayerPanel = _panel(VILLAIN)
+	villain.start_breathing(7)
+	_snapshot.view.is_over = true
+	_snapshot.view.winner_id = HERO
+	_show(villain, VILLAIN)
+
+	villain.advance(3.0)
+
+	assert_true(villain.breath().is_stopped())
+	assert_eq(_picture_of(villain).size, villain.portrait().size)
+
+
+func test_breathing_is_faster_at_low_life() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	hero.start_breathing(7)
+	var calm: float = hero.breath().phase
+	hero.advance(0.2)
+	var calm_step: float = fposmod(hero.breath().phase - calm, 1.0)
+	_snapshot.view.life_totals = {HERO: 1, VILLAIN: 18}
+	_show(hero, HERO)
+	var low: float = hero.breath().phase
+	hero.advance(0.2)
+
+	assert_almost_eq(fposmod(hero.breath().phase - low, 1.0), calm_step * 2.0, 0.001)
+
+
+func test_a_breathing_portrait_blinks_now_and_then() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	var portrait: Texture2D = hero.portrait_texture()
+	hero.start_breathing(7)
+	var shown: Array[String] = []
+	for tick: int in 800:
+		hero.advance(0.01)
+		var path: String = hero.portrait_texture().resource_path
+		if not shown.has(path):
+			shown.append(path)
+
+	assert_has(shown, "res://ui/sprites/portraits/urza_academy_headmaster_blink.png")
+	assert_eq(_picture_of(hero).texture, hero.portrait_texture())
+	for tick: int in 30:
+		hero.advance(0.01)
+	if hero.portrait_texture() != portrait:
+		hero.advance(Blink.SHUT_SECONDS)
+	assert_eq(hero.portrait_texture(), portrait, "The eyes open again.")
+
+
+func test_a_wincing_player_does_not_blink() -> void:
+	var hero: PlayerPanel = _panel(HERO)
+	hero.start_breathing(7)
+	hero.wince(10.0)
+	for tick: int in 800:
+		hero.advance(0.01)
+		assert_true(hero.portrait_texture().resource_path.ends_with("_pain.png"))
+		if not hero.portrait_texture().resource_path.ends_with("_pain.png"):
+			return
+
+
+func test_a_portrait_with_no_blink_portrait_never_blinks() -> void:
+	var villain: PlayerPanel = PlayerPanel.new(VILLAIN, "VILLAIN")
+	var demon: Texture2D = load("res://ui/sprites/portraits/purple_demon.png")
+	villain.portrait_override = demon
+	add_child_autofree(villain)
+	villain.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, false, false)
+	villain.start_breathing(7)
+	for tick: int in 800:
+		villain.advance(0.01)
+
+	assert_eq(villain.portrait_texture(), demon)
+
+
+func test_a_portrait_with_no_pain_portrait_never_winces() -> void:
+	var villain: PlayerPanel = PlayerPanel.new(VILLAIN, "VILLAIN")
+	villain.portrait_override = load("res://ui/sprites/portraits/purple_demon.png")
+	add_child_autofree(villain)
+	villain.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, false, false)
+
+	villain.wince(0.5)
+
+	assert_false(villain.is_wincing())
+	assert_eq(villain.portrait_texture().resource_path, "res://ui/sprites/portraits/purple_demon.png")
 
 
 func test_a_player_with_no_portrait_has_a_plain_square() -> void:
@@ -445,6 +630,11 @@ func _panel(player_id: int) -> PlayerPanel:
 	add_child_autofree(panel)
 	_show(panel, player_id)
 	return panel
+
+
+## The picture drawn under the panel's portrait.
+func _picture_of(panel: PlayerPanel) -> TextureRect:
+	return panel.breathing_portrait().picture() if panel.breathing_portrait() != null else null
 
 
 func _plan(source_ids: Array[int], pool_types: Array[MmMana.Type]) -> PaymentPlan:

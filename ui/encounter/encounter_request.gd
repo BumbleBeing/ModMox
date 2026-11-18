@@ -15,6 +15,10 @@ var difficulty: String = "easy"
 ## What each player is called; "" for a player who goes by their part.
 var hero_name: String = ""
 var villain_name: String = ""
+## The Villain's own Portrait, from a run's Villain; null for the placeholder (PlayerPortraits).
+var villain_portrait: Texture2D = null
+## Its Pain Portrait, given with its Portrait; null for none.
+var villain_pain_portrait: Texture2D = null
 ## The Backdrop (game glossary) behind the encounter, one of Backdrops.NAMES: in a run, the
 ## color of the Stage it is met on (ADR 0035).
 var backdrop: String = Backdrops.PLAIN
@@ -41,6 +45,8 @@ static func for_run(run: Run) -> EncounterRequest:
 	var villain: Villain = run.stage_visit.meeting
 	request.villain_setup = villain.setup_for_tier(run.stage_visit.stage.tier)
 	request.villain_name = villain.name
+	request.villain_portrait = villain.sprite
+	request.villain_pain_portrait = villain.pain_sprite
 	request.backdrop = run.stage_visit.stage.backdrop()
 	request.hero_setup = run.hero_setup()
 	request.encounter_seed = run.next_encounter_seed()

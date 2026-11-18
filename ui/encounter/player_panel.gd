@@ -59,6 +59,24 @@ const BUTTON_SIDE: int = 2
 ## How long a Glow takes to ease in or out, the priority Glow among them; the Encounter
 ## Screen sets it.
 var glow_seconds: float = 0.0
+## The player's own Portrait, drawn in place of PlayerPortraits' placeholder; set before the
+## first snapshot. Screen sets it.
+var portrait_override: Texture2D = null
+## The Pain Portrait given with portrait_override; null for none, and then the player never
+## winces. Unread without portrait_override. Screen sets it.
+var pain_override: Texture2D = null
+## How much longer the Pain Portrait shows; INF for a player who lost the encounter to it.
+var _pain_left: float = 0.0
+## The Portrait's Breath once start_breathing() is called; until then it stays at rest, as
+## in tests and screenshots.
+var _breath: Breath = null
+## When the Blink Portrait shows, from start_breathing(); and the Blink Portrait, null for a
+## Portrait that has none, which then never blinks.
+var _blink: Blink = null
+var _blink_texture: Texture2D = null
+## The player's life now and on the first snapshot, which is what their Breath reads.
+var _life_now: int = 0
+var _starting_life: int = 0
 var _player_id: int
 var _title: String
 var _is_hero: bool = false
@@ -69,7 +87,7 @@ var _priority: Control = null
 var _undo_key: String = "Z"
 var _potions: Button = null
 var _has_potions: Variant = null
-var _picture: TextureRect = null
+var _picture: BreathingPortrait = null
 var _life: Label = null
 var _emblems: Button = null
 var _is_emblems_gold: Variant = null
@@ -122,6 +140,7 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 		Easing.disappear(_priority, glow_seconds)
 	_show_portrait(clicks)
 	_set_text(_life, str(view.life_totals.get(_player_id, 0)))
+	_read_life(view)
 
 	var pool: Array = view.mana_pools.get(_player_id, [])
 	_pay_answers = clicks.pool_answers.duplicate() if is_hero else ({} as Dictionary[MmMana.Type, int])
@@ -178,9 +197,130 @@ func priority_glow() -> Control:
 	return _priority
 
 
-## The Portrait the panel shows, or null for a player who has none.
+## The Portrait the panel shows, its Pain Portrait while the player winces, or null for a
+## player who has none.
 func portrait_texture() -> Texture2D:
-	return _picture.texture if _picture != null else null
+	return _picture.texture() if _picture != null else null
+
+
+## The Portrait in its square, as it breathes: null for a player who has none.
+func breathing_portrait() -> BreathingPortrait:
+	return _picture
+
+
+## The Portrait's Breath, or null until start_breathing().
+func breath() -> Breath:
+	return _breath
+
+
+## The Portrait starts to breathe, at its character's Breath Rate and Breath Intensity, and
+## to blink, both from where [param encounter_seed] says. The Encounter Screen calls it in a
+## real encounter.
+func start_breathing(encounter_seed: int, values: BreathValues = null) -> void:
+	if values == null:
+		values = BreathValues.load_from()
+	var key: String = BreathValues.key_of(_portrait_texture())
+	_breath = Breath.new(values.rate_of(key), values.intensity_of(key))
+	_breath.phase = Breath.start_phase(encounter_seed, _player_id)
+	_blink = Blink.new(encounter_seed, _player_id)
+	_blink_texture = blink_of(_portrait_texture())
+	_show_breath()
+	set_process(true)
+
+
+## The player was hurt: their Pain Portrait shows for [param seconds], or for as long as
+## it already had left if that is longer, or for good when [param stays] (they lost the
+## encounter). A player with no Pain Portrait does not wince.
+func wince(seconds: float, stays: bool = false) -> void:
+	if _pain_texture() == null:
+		return
+	_pain_left = INF if stays else maxf(_pain_left, seconds)
+	if _breath != null:
+		_breath.wind()
+	_show_picture()
+	set_process(true)
+
+
+## Whether the Pain Portrait is showing.
+func is_wincing() -> bool:
+	return _pain_left > 0.0
+
+
+## Lets [param seconds] of a wince and of a breath pass; the Portrait comes back when the
+## wince is over, and breathes again.
+func advance(seconds: float) -> void:
+	var breathed: float = seconds
+	if _pain_left > 0.0:
+		var pain_was: float = _pain_left
+		_pain_left = maxf(_pain_left - seconds, 0.0)
+		if _pain_left == 0.0:
+			_show_picture()
+			if _breath != null:
+				_breath.catch_breath()
+				# Only what is left after the wince is breathed.
+				breathed = seconds - pain_was
+	if _breath != null:
+		_breath.advance(breathed, _life_now, _starting_life)
+		_show_breath()
+		var was_shut: bool = _is_blinking()
+		_blink.advance(seconds)
+		if _is_blinking() != was_shut:
+			_show_picture()
+	elif _pain_left == 0.0:
+		set_process(false)
+
+
+## The life the Breath reads, and whether the player has lost, from [param view].
+func _read_life(view: MmPlayerView) -> void:
+	_life_now = view.life_totals.get(_player_id, 0)
+	if _starting_life == 0:
+		_starting_life = _life_now
+	var has_lost: bool = view.is_over and view.winner_id != _player_id and view.life_totals.has(view.winner_id)
+	if has_lost and _breath != null:
+		_breath.stop()
+		_show_breath()
+
+
+func _show_breath() -> void:
+	if _picture != null and _breath != null:
+		_picture.show_growth(_breath.growth())
+
+
+func _process(delta: float) -> void:
+	advance(delta)
+
+
+func _portrait_texture() -> Texture2D:
+	return portrait_override if portrait_override != null else PlayerPortraits.texture_of(_player_id)
+
+
+func _pain_texture() -> Texture2D:
+	return pain_override if portrait_override != null else PlayerPortraits.pain_of(_player_id)
+
+
+func _shown_portrait() -> Texture2D:
+	if is_wincing():
+		return _pain_texture()
+	return _blink_texture if _is_blinking() else _portrait_texture()
+
+
+## Whether the Blink Portrait shows: the eyes are shut, and the player has one and has not
+## lost.
+func _is_blinking() -> bool:
+	return _blink != null and _blink_texture != null and _blink.is_shut() and not _breath.is_stopped()
+
+
+## The Blink Portrait drawn beside [param portrait], named after it, or null for none.
+static func blink_of(portrait: Texture2D) -> Texture2D:
+	if portrait == null or portrait.resource_path == "":
+		return null
+	var path: String = portrait.resource_path.get_basename() + "_blink.png"
+	return load(path) as Texture2D if ResourceLoader.exists(path) else null
+
+
+func _show_picture() -> void:
+	if _picture != null:
+		_picture.set_texture(_shown_portrait())
 
 
 func yield_button() -> Button:
@@ -352,10 +492,11 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 
 
 ## A player's Portrait is drawn pixel for pixel, six screen pixels to each of its own, and
-## what glows and is clicked lies over it and draws nothing. A player with no Portrait has
+## grows a little as it breathes, cropped to its square (BreathingPortrait); what glows and
+## is clicked lies over it and draws nothing. A player with no Portrait has
 ## a plain gray square.
 func _add_portrait(box: Rect2) -> void:
-	var texture: Texture2D = PlayerPortraits.texture_of(_player_id)
+	var texture: Texture2D = _shown_portrait()
 	if texture == null:
 		_portrait = CardShapes.rounded(box.size, 8, Color("#444c5a"))
 	else:
@@ -364,10 +505,10 @@ func _add_portrait(box: Rect2) -> void:
 		_portrait_back.position = box.position
 		_portrait_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(_portrait_back)
-		_picture = CardShapes.image(texture, box)
-		_picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		_picture.stretch_mode = TextureRect.STRETCH_SCALE
+		_picture = BreathingPortrait.new(box)
+		_picture.set_texture(texture)
 		add_child(_picture)
+		_show_breath()
 		_portrait_edge = CardShapes.outline(box.size, 0, 2, Inspector.palette().edge)
 		_portrait_edge.position = box.position
 		add_child(_portrait_edge)

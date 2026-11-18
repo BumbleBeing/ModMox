@@ -39,7 +39,19 @@ func test_each_villain_has_a_name_a_sprite_and_at_least_one_setup() -> void:
 
 		assert_ne(villain.name, "", file)
 		assert_eq(villain.sprite.get_size(), Vector2(32, 32), file)
+		if villain.pain_sprite != null:
+			assert_eq(villain.pain_sprite.get_size(), Vector2(32, 32), file)
 		assert_between(villain.setups.size(), 1, Villain.TIERS, file)
+
+
+## A Villain drawn with /draw-portrait has its Pain Portrait beside its Portrait, for when
+## it is hurt. For testing, the placeholder Villains wear Charmed Stray's two.
+func test_every_villain_has_a_pain_portrait_and_the_placeholders_are_charmed_stray() -> void:
+	for file: String in ["charmed_stray", "white_black", "blue_red", "red_green"]:
+		var villain: Villain = load(VILLAINS + file + ".tres")
+
+		assert_eq(villain.sprite.resource_path, "res://ui/sprites/portraits/charmed_stray.png", file)
+		assert_eq(villain.pain_sprite.resource_path, "res://ui/sprites/portraits/charmed_stray_pain.png", file)
 
 
 func test_a_villain_with_one_setup_plays_it_at_every_tier() -> void:

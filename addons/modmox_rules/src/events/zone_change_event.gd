@@ -9,9 +9,10 @@ extends MmEvent
 ## DESTROY is CR 701.8 (indestructible and regeneration care); ZERO_TOUGHNESS is CR 704.5f,
 ## which is not destruction. COUNTER is CR 701.6: a spell countered on the stack.
 ## RETURN_TO_HAND is an effect putting a card into its owner's hand. EXILE is CR 701.13a,
-## and RETURN_TO_BATTLEFIELD an effect putting a card in exile onto the battlefield.
+## and RETURN_TO_BATTLEFIELD an effect putting a card in exile or a graveyard onto the
+## battlefield.
 enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND,
-	EXILE, RETURN_TO_BATTLEFIELD }
+	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -33,6 +34,12 @@ var cast_with_flashback: bool = false
 ## For a card entering the battlefield: the counters it enters with (CR 122.6), on it as it
 ## arrives so that its "enters" abilities see them.
 var counters_on_arrival: Dictionary[MmCounter.Kind, int] = {}
+## For a card entering the battlefield: true when it enters tapped (CR 110.5b), tapped as it
+## arrives so that its "enters" abilities see it tapped.
+var tapped_on_arrival: bool = false
+## For a card entering the battlefield: the creature type chosen as it enters (CR 614.12,
+## ADR 0052), or "". Recorded as it arrives, so its static abilities apply at once.
+var chosen_creature_type_on_arrival: String = ""
 ## The new object's ID, set when the event is applied.
 var new_object_id: int = 0
 ## For an object leaving the battlefield: its characteristics as it last existed there,
@@ -79,8 +86,14 @@ func apply(state: MmGameState) -> void:
 		arriving.make_known_to(from_owner_id)
 	if cast_with_flashback:
 		arriving.record_cast_with_flashback()
+	if reason == Reason.CAST and from_zone_kind == MmZone.Kind.LIBRARY:
+		arriving.record_cast_from_library()  # ADR 0054
 	for kind: MmCounter.Kind in counters_on_arrival:
 		arriving.put_counters(kind, counters_on_arrival[kind])
+	if tapped_on_arrival and to_zone_kind == MmZone.Kind.BATTLEFIELD:
+		arriving.set_tapped(true)
+	if chosen_creature_type_on_arrival != "" and to_zone_kind == MmZone.Kind.BATTLEFIELD:
+		arriving.record_chosen_creature_type(chosen_creature_type_on_arrival)
 	if to_zone_kind == MmZone.Kind.BATTLEFIELD:
 		# CR 302.6: summoning sickness counts from when its controller began controlling it.
 		arriving.record_control_since(state.game_turn)
@@ -90,7 +103,8 @@ func apply(state: MmGameState) -> void:
 
 func describe() -> String:
 	var exiled_with: String = "" if exiled_with_object_id == 0 else " with object %d" % exiled_with_object_id
-	return "%s%s: object %d (card %d) from %s to %s%s as object %d" % [
+	var chosen: String = "" if chosen_creature_type_on_arrival == "" else " choosing %s" % chosen_creature_type_on_arrival
+	return "%s%s: object %d (card %d) from %s to %s%s%s%s as object %d" % [
 		Reason.find_key(reason), "" if can_be_regenerated else " (can't be regenerated)", object_id, card_id,
-		MmZone.describe_zone(from_zone_kind, from_owner_id), MmZone.describe_zone(to_zone_kind, to_owner_id), exiled_with,
-		new_object_id]
+		MmZone.describe_zone(from_zone_kind, from_owner_id), MmZone.describe_zone(to_zone_kind, to_owner_id),
+		" tapped" if tapped_on_arrival else "", chosen, exiled_with, new_object_id]

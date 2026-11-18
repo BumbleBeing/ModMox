@@ -44,6 +44,12 @@ var chosen_mode: int = SpellAbility.NO_MODE
 ## For a spell on the stack: cast from a graveyard for its flashback cost, so it is exiled
 ## instead of going anywhere else as it leaves the stack (CR 702.34a).
 var cast_with_flashback: bool = false
+## For a spell on the stack: cast from the top of its owner's library with a
+## CastFromTopOfLibraryAbility's permission (ADR 0054). Both players see it.
+var cast_from_library: bool = false
+## For a spell cast from the top of a library: true from the moment it is put on the stack
+## until it becomes cast (CR 601.2i), while its owner does not yet see the new top card.
+var is_being_cast_from_library: bool = false
 ## For an ability on the stack: the ability, the object it came from, and that object's
 ## name when it was activated (the source may have left the battlefield since).
 var ability: MmAbility = null
@@ -71,6 +77,12 @@ var potion_index: int = NOT_A_POTION
 ## The once-each-game abilities of this object that have been activated (Spent), by their
 ## place among its abilities, in the order they were activated (CR 602.5b).
 var spent_ability_indexes: Array[int] = []
+## The once-each-turn cast permissions of this object that have been used, by their place
+## among its abilities: the Game Turn each was last used in, and the name of the spell it
+## cast, for presentation (ADR 0054). A permission is Spent while its Game Turn is the
+## current one, so nothing has to clear it as a turn begins.
+var permission_used_game_turn: Dictionary[int, int] = {}
+var permission_used_spell_name: Dictionary[int, String] = {}
 ## For a card in exile: the object whose ability exiled it, so that object's linked ability
 ## can find "the exiled card" (CR 607.2a); 0 for anything else. The object that exiled it
 ## may have left the battlefield since, and is then known only by this ID.
@@ -83,6 +95,9 @@ var attached_to_object_id: int = 0
 ## its [member definition]. It is never a card, so its card_id is NO_CARD, and it ceases to
 ## exist once it is anywhere but the battlefield (CR 704.5d).
 var is_token: bool = false
+## For a permanent with "As this enters, choose a creature type": the type chosen as it
+## entered (CR 614.12, ADR 0052), or "". Public, like the permanent.
+var chosen_creature_type: String = ""
 ## Weak, because the zone already holds this object strongly; a strong reference both ways
 ## is a cycle that reference counting never frees.
 var _zone_ref: WeakRef = null
@@ -108,6 +123,8 @@ func duplicate_object() -> MmGameObject:
 	copy.targets = targets.duplicate()  # MmReferences never change, so sharing them is safe.
 	copy.chosen_mode = chosen_mode
 	copy.cast_with_flashback = cast_with_flashback
+	copy.cast_from_library = cast_from_library
+	copy.is_being_cast_from_library = is_being_cast_from_library
 	copy.ability = ability
 	copy.source_object_id = source_object_id
 	copy.source_name = source_name
@@ -119,9 +136,12 @@ func duplicate_object() -> MmGameObject:
 	copy.known_to_player_ids = known_to_player_ids.duplicate()
 	copy.potion_index = potion_index
 	copy.spent_ability_indexes = spent_ability_indexes.duplicate()
+	copy.permission_used_game_turn = permission_used_game_turn.duplicate()
+	copy.permission_used_spell_name = permission_used_spell_name.duplicate()
 	copy.exiled_with_object_id = exiled_with_object_id
 	copy.attached_to_object_id = attached_to_object_id
 	copy.is_token = is_token
+	copy.chosen_creature_type = chosen_creature_type
 	return copy
 
 
@@ -139,6 +159,11 @@ func is_potion() -> bool:
 ## Whether the once-each-game ability at [param ability_index] has been activated.
 func is_ability_spent(ability_index: int) -> bool:
 	return spent_ability_indexes.has(ability_index)
+
+
+## Whether the cast permission at [param ability_index] was used in [param game_turn].
+func is_permission_used_in(ability_index: int, game_turn: int) -> bool:
+	return permission_used_game_turn.get(ability_index, -1) == game_turn
 
 
 ## The zone holding this object, or null while it is between zones.
@@ -225,6 +250,30 @@ func freeze_last_known(characteristics: MmCharacteristics) -> void:
 ## Event-only: marks a spell as cast with flashback (CR 702.34a), as it is put on the stack.
 func record_cast_with_flashback() -> void:
 	cast_with_flashback = true
+
+
+## Event-only: marks a spell as cast from the top of a library (ADR 0054), as it is put on
+## the stack; it is being cast until finish_cast_from_library().
+func record_cast_from_library() -> void:
+	cast_from_library = true
+	is_being_cast_from_library = true
+
+
+## Event-only: the spell cast from the top of a library has become cast (CR 601.2i).
+func finish_cast_from_library() -> void:
+	is_being_cast_from_library = false
+
+
+## Event-only: the cast permission at [param ability_index] was used in [param game_turn]
+## to cast [param spell_name].
+func record_permission_used(ability_index: int, game_turn: int, spell_name: String) -> void:
+	permission_used_game_turn[ability_index] = game_turn
+	permission_used_spell_name[ability_index] = spell_name
+
+
+## Event-only: records the creature type chosen as this permanent entered (CR 614.12).
+func record_chosen_creature_type(creature_type: String) -> void:
+	chosen_creature_type = creature_type
 
 
 ## Event-only: records the mode chosen for a modal spell (CR 601.2b).

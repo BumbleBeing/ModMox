@@ -2,6 +2,7 @@ extends GutTest
 ## Building a Deck with the mouse: dragging cards into, between and out of the columns,
 ## double-clicking them in and out, and the basic land and Sort buttons.
 
+const Fixture: GDScript = preload("res://tests/ui/deckbuilder/support/deckbuilder_fixture.gd")
 const OUTSIDE: Vector2 = Vector2(170, 900)
 
 var _sample: Run
@@ -191,7 +192,7 @@ func test_a_dropped_card_glides_to_its_place_in_the_column() -> void:
 
 func test_a_double_clicked_card_glides_from_the_collection_to_its_column() -> void:
 	var lions: DeckbuilderCard = _spare("Savannah Lions")
-	var from: Vector2 = _screen.collection_face(lions).global_position
+	var from: Vector2 = Fixture.scroll_to(_screen, lions).global_position
 	_screen.set_process(false)
 
 	_screen.double_click_at(_in_collection(lions))
@@ -465,8 +466,9 @@ func _middle_of_last(column: int) -> Vector2:
 	return _screen.column_face(_deck.cards_in(column)[-1]).get_global_rect().get_center()
 
 
+## Where [param card] shows in the Collection pane, scrolled into view first.
 func _in_collection(card: DeckbuilderCard) -> Vector2:
-	return _screen.collection_face(card).get_global_rect().get_center()
+	return Fixture.scroll_to(_screen, card).get_global_rect().get_center()
 
 
 ## A point low in [param column], under its cards.
@@ -475,8 +477,7 @@ func _column_point(column: int) -> Vector2:
 	return Vector2(place.get_center().x, place.end.y - 20.0)
 
 
-## A plain copy of the card named [param card_name] that is not in the Deck and is showing
-## in the first row of the Collection pane.
+## A plain copy of the card named [param card_name] that is not in the Deck.
 func _spare(card_name: String) -> DeckbuilderCard:
 	for card: DeckbuilderCard in _sample.collection.cards():
 		if card.run_card.base.name == card_name and card.mods.is_empty():

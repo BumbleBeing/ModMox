@@ -3,6 +3,8 @@ extends GutTest
 ## height the other loses, it stops at both limits, a double-click puts it back, and it
 ## leaves the cards alone.
 
+const Fixture: GDScript = preload("res://tests/ui/deckbuilder/support/deckbuilder_fixture.gd")
+
 var _sample: Run
 var _screen: DeckbuilderScreen
 var _deck: WorkingDeck
@@ -196,12 +198,12 @@ func _drag(from: Vector2, to: Vector2) -> void:
 	_screen.release_at(to)
 
 
+## Where [param card] shows in the Collection pane, scrolled into view first.
 func _in_collection(card: DeckbuilderCard) -> Vector2:
-	return _screen.collection_face(card).get_global_rect().get_center()
+	return Fixture.scroll_to(_screen, card).get_global_rect().get_center()
 
 
-## A plain copy of the card named [param card_name] that is not in the Deck and is showing
-## in the first row of the Collection pane.
+## A plain copy of the card named [param card_name] that is not in the Deck.
 func _spare(card_name: String) -> DeckbuilderCard:
 	for card: DeckbuilderCard in _sample.collection.cards():
 		if card.run_card.base.name == card_name and card.mods.is_empty():

@@ -20,6 +20,9 @@ var _stacking: TriggerProcedure = null
 ## The top of the stack resolving, while it waits for replacement choices.
 var _resolution: ResolutionProcedure = null
 var _needs_rewind: bool = false
+## The legends kept so far in the legend rule's choices, until the state-based actions that
+## wait for them are performed (CR 704.5j, ADR 0051).
+var _legends_kept: Array[int] = []
 
 
 func _init(state: MmGameState) -> void:
@@ -39,6 +42,7 @@ func copy_for(state: MmGameState) -> TurnProcedure:
 	copy._stacking = null if _stacking == null else _stacking.copy_for(state)
 	copy._resolution = null if _resolution == null else _resolution.copy_for(state)
 	copy._needs_rewind = _needs_rewind
+	copy._legends_kept = _legends_kept.duplicate()
 	return copy
 
 
@@ -109,7 +113,9 @@ func next_decision() -> MmPendingDecision:
 				return null
 			Stage.PRIORITY:
 				# CR 704.3: state-based actions are checked whenever a player would receive priority.
-				StateBasedActions.check(_state)
+				var legend_choice: ChooseLegendToKeepDecision = StateBasedActions.check(_state, _legends_kept)
+				if legend_choice != null:
+					return legend_choice
 				if _state.is_batch_suspended():
 					return _state.replacement_decision()
 				if _state.is_over:
@@ -126,9 +132,11 @@ func next_decision() -> MmPendingDecision:
 
 ## Applies an already-validated [param answer] to [param decision].
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
-	if decision is ChooseReplacementEffectDecision:
+	if decision is ChooseLegendToKeepDecision:
+		_legends_kept.append((decision as ChooseLegendToKeepDecision).candidate_ids[answer as int])  # next_decision() carries on.
+	elif decision is ChooseReplacementEffectDecision:
 		_state.choose_replacement_effect(answer as int)  # next_decision() carries on from here.
-	elif decision is ChooseObjectDecision:
+	elif decision is ChooseObjectDecision or decision is ChooseCreatureTypeDecision:
 		_resolution.apply_answer(decision, answer)
 	elif _cast != null:
 		_cast.apply_answer(decision, answer)
@@ -272,7 +280,8 @@ func _current_step() -> MmTurn.Step:
 
 ## The actions [param player_id] may take while holding priority, in a deterministic order
 ## (ADR 0012): Pass, then land plays, then spells from the hand, then spells from the
-## graveyard with flashback (CR 702.34a), then abilities of permanents, then
+## graveyard with flashback (CR 702.34a), then the top card of the library with a
+## permission (ADR 0054), then abilities of permanents, then
 ## abilities of Emblems and Potions (ADR 0036), each by object ID and abilities by their
 ## order on the object.
 func _legal_actions(player_id: int) -> Array[MmAction]:
@@ -289,6 +298,9 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 	for card: MmGameObject in _sorted_by_id(player.graveyard.objects()):
 		if _may_cast(player, card):
 			actions.append(CastSpellAction.new(card.id))
+	var top: MmGameObject = player.library.top()
+	if top != null and _may_cast(player, top):
+		actions.append(CastSpellAction.new(top.id))
 	# CR 113.6: an Emblem's abilities work from the command zone, and so does a Potion's.
 	for source: MmGameObject in ManaPayment.sorted_sources_of(_state, player_id):
 		var abilities: Array[MmAbility] = _state.characteristics_of(source).abilities
@@ -324,23 +336,27 @@ func _sorcery_timing(player: MmPlayer) -> bool:
 	return player.id == _state.active_player_id and in_main_phase and _state.stack.is_empty()
 
 
-## Whether [param card], in hand or in its owner's graveyard, could be cast right now from
-## start to finish: its timing, a legal target for every requirement (CR 601.2c), and a
-## cost that can be paid. From the hand that cost is its mana cost; from the graveyard only
-## a card with flashback may be cast, for its flashback cost (CR 702.34a). Any card but a
-## land may be cast, so permanent spells need no special case (CR 608.3).
+## Whether [param card], in hand, in its owner's graveyard or on top of their library,
+## could be cast right now from start to finish: its timing, a legal target for every
+## requirement (CR 601.2c), and a cost that can be paid. From the hand that cost is its
+## mana cost; from the graveyard only a card with flashback may be cast, for its flashback
+## cost (CR 702.34a); from the top of the library only with a permission not yet Spent
+## this turn (CR 601.3, ADR 0054), for its mana cost; each is less any cost reduction
+## (CR 601.2f). Any card but a land may be cast, so permanent spells need no special case
+## (CR 608.3).
 func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 	var characteristics: MmCharacteristics = _state.characteristics_of(card)
-	var mana: MmManaCost = characteristics.mana_cost
 	var costs: Array[MmCost] = []
 	if card.zone() == player.graveyard:
 		var flashback: FlashbackAbility = CastProcedure.flashback_of(characteristics)
 		if flashback == null:
 			return false
-		mana = flashback.mana_cost
 		costs = flashback.costs
-	elif mana == null:
-		return false  # CR 118.6: a card with no mana cost cannot be cast this way.
+	else:
+		if card.zone() == player.library and CastProcedure.top_of_library_permission(_state, player.id, card).is_empty():
+			return false
+		if characteristics.mana_cost == null:
+			return false  # CR 118.6: a card with no mana cost cannot be cast this way.
 	if characteristics.has_card_type(MmCardTypes.CardType.LAND):
 		return false  # CR 305.9: a land is played, never cast.
 	# CR 307.1 and 702.8a: only an instant, or a card with flash, ignores sorcery timing.
@@ -356,8 +372,10 @@ func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 	for cost: MmCost in costs:
 		if not cost.can_pay(_state, card, player.id):
 			return false
-	# A flashback cost with no mana in it needs none.
-	return mana == null or ManaPayment.can_afford(_state, player.id, mana)
+	# A flashback cost with no mana in it needs none. What is paid is less any cost
+	# reduction (CR 601.2f).
+	var to_pay: MmManaCost = CastProcedure.mana_to_pay(_state, player.id, card)
+	return to_pay == null or ManaPayment.can_afford(_state, player.id, to_pay)
 
 
 ## Mana abilities whenever their cost can be paid; other abilities also need a legal

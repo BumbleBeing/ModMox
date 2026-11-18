@@ -3,10 +3,12 @@
 [ext_resource type="Script" path="res://run/villain.gd" id="1_b13t7"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="2_8pbmd"]
 [ext_resource type="Resource" path="res://content/decks/red_green.tres" id="3_dpgku"]
-[ext_resource type="Texture2D" path="res://ui/sprites/portraits/purple_demon.png" id="4_jsr8i"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/charmed_stray_pain.png" id="5_pain"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/charmed_stray.png" id="4_jsr8i"]
 
 [resource]
 script = ExtResource("1_b13t7")
 name = "Red-Green"
 sprite = ExtResource("4_jsr8i")
+pain_sprite = ExtResource("5_pain")
 setups = Array[ExtResource("2_8pbmd")]([ExtResource("3_dpgku")])

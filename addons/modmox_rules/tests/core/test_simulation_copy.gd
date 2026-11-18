@@ -63,6 +63,41 @@ func test_a_copy_redeals_only_what_the_viewer_cannot_see() -> void:
 		"The viewer does not know their own library's order either.")
 
 
+func test_a_known_card_stays_where_it_is_when_its_viewer_redeals() -> void:
+	# ADR 0020: only what the viewer's Player View hides is re-dealt.
+	var engine: MmEngine = MmEngine.start(Scenario.setup())
+	for answer: KeepOrMulliganDecision.Choice in [KeepOrMulliganDecision.Choice.MULLIGAN, KeepOrMulliganDecision.Choice.KEEP,
+			KeepOrMulliganDecision.Choice.KEEP]:
+		engine.submit(answer)
+	var bottom: ChooseCardsToBottomDecision = engine.pending_decision() as ChooseCardsToBottomDecision
+	engine.submit([bottom.candidate_ids[3]])
+	var known: MmGameObject = engine.hero().library.objects().back()
+
+	for rng_seed: int in range(1, 6):
+		var copy: MmGameState = engine.simulation_copy(engine.hero().id, MmRng.new(rng_seed)).game_state()
+		assert_eq((copy.player(0).library.objects().back() as MmGameObject).card_id, known.card_id, "Seed %d" % rng_seed)
+
+
+func test_a_top_card_its_viewer_may_look_at_stays_on_top_and_only_for_them() -> void:
+	var lookout: MmCardDefinition = Scenario.lookout()
+	var setup: MmEncounterSetup = Scenario.setup_with(Scenario.cycled([lookout, Scenario.creature("Cub", 2, 2),
+		Scenario.creature("Brute", 3, 3)]), Scenario.cycled([]))
+	var engine: MmEngine = Scenario.find_engine(setup, func(running: MmEngine) -> bool:
+		return Scenario.play_until_step(running, 1, Step.PRECOMBAT_MAIN) == "" \
+			and Scenario.cast_and_resolve(running, "Lookout") == "" \
+			and Scenario.play_until_step(running, 3, Step.PRECOMBAT_MAIN) == "")
+	var top: int = engine.hero().library.top().card_id
+
+	var redealt_by_the_villain: bool = false
+	for rng_seed: int in range(1, 9):
+		var mine: MmGameState = engine.simulation_copy(engine.hero().id, MmRng.new(rng_seed)).game_state()
+		var theirs: MmGameState = engine.simulation_copy(engine.villain().id, MmRng.new(rng_seed)).game_state()
+		assert_eq(mine.player(0).library.top().card_id, top, "ADR 0054: the Hero looks at it.")
+		redealt_by_the_villain = redealt_by_the_villain or theirs.player(0).library.top().card_id != top
+
+	assert_true(redealt_by_the_villain, "The Villain never sees it, so it is re-dealt for them.")
+
+
 func test_a_redealt_card_keeps_its_own_definition() -> void:
 	var engine: MmEngine = _engine_in_main_phase()
 

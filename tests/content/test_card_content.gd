@@ -38,6 +38,16 @@ func test_the_sharing_check_catches_a_shared_ability() -> void:
 	assert_eq(conflicts, ["second shares a sub-resource with first"])
 
 
+func test_the_sharing_check_lets_cards_share_a_token_definition_file() -> void:
+	var cat: MmCardDefinition = load("res://content/tokens/cat_1_1_white.tres") as MmCardDefinition
+	var first: MmCardDefinition = MmCardDefinition.new()
+	first.abilities = [Scenario.triggered(Scenario.enters(null), [Scenario.create_tokens(cat)])]
+	var second: MmCardDefinition = MmCardDefinition.new()
+	second.abilities = [Scenario.triggered(Scenario.enters(null), [Scenario.create_tokens(cat)])]
+
+	assert_eq(_shared_sub_resources({"first": first, "second": second}), [])
+
+
 ## Describes every sub-resource that belongs to more than one of [param cards].
 func _shared_sub_resources(cards: Dictionary[String, MmCardDefinition]) -> Array[String]:
 	var conflicts: Array[String] = []
@@ -487,6 +497,112 @@ func test_whitemane_lion_is_cast_in_combat_and_returns_the_creature_its_controll
 	assert_eq(Scenario.permanent_named(engine, engine.hero().id, "Whitemane Lion"), lion)
 
 
+func test_arahbo_entering_makes_one_cat_token_that_makes_no_more() -> void:
+	var arahbo: MmCardDefinition = Scenario.free_copy(_card("foundations", "arahbo_the_first_fang"))
+	var legends: Array[MmCardDefinition] = [arahbo]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(legends, no_cards),
+		legends, no_cards, no_cards, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+
+	var tokens: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(tokens.size(), 1, "Arahbo's own arrival made one; the token's made none.")
+	assert_eq(Scenario.pt(engine, tokens[0]), [2, 2], "Other Cats get +1/+1.")
+	assert_eq(Scenario.pt(engine, Scenario.permanent_named(engine, engine.hero().id, arahbo.name)), [2, 2], "Not itself.")
+
+
+func test_a_second_arahbo_makes_cats_from_both_triggers_and_the_legend_rule_keeps_one() -> void:
+	var arahbo: MmCardDefinition = Scenario.free_copy(_card("foundations", "arahbo_the_first_fang"))
+	var legends: Array[MmCardDefinition] = [arahbo]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(legends, no_cards, legends),
+		legends, no_cards, legends, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero_id: int = engine.hero().id
+	var first: int = Scenario.permanent_named(engine, hero_id, arahbo.name)
+	assert_eq(Scenario.tokens_on_battlefield(engine).size(), 1)
+
+	assert_eq(Scenario.cast_and_resolve(engine, arahbo.name), "")
+	assert_true(engine.pending_decision() is ChooseLegendToKeepDecision, "CR 704.5j: two Arahbos.")
+	assert_eq(Scenario.keep_legend(engine, first), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(Scenario.permanents_named(engine, hero_id, arahbo.name), [first], "The legend rule kept exactly one.")
+	assert_eq(Scenario.names(engine, engine.hero().graveyard), [arahbo.name])
+	var tokens: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(tokens.size(), 3, "Both Arahbos saw the second enter (CR 603.2): two more Cats, and none from a token.")
+	for cat: int in tokens:
+		assert_eq(Scenario.pt(engine, cat), [2, 2])
+
+
+func test_helping_hand_returns_savannah_lions_from_your_graveyard_tapped_and_arahbo_makes_a_cat() -> void:
+	var arahbo: MmCardDefinition = Scenario.free_copy(_card("foundations", "arahbo_the_first_fang"))
+	var lions: MmCardDefinition = Scenario.free_copy(_alpha("savannah_lions"))
+	var helping: MmCardDefinition = Scenario.free_copy(_card("the_lost_caverns_of_ixalan", "helping_hand"))
+	var creatures: Array[MmCardDefinition] = [arahbo, lions]
+	var extras: Array[MmCardDefinition] = [helping, Scenario.free_destroy("Doom")]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(creatures, no_cards, extras),
+		creatures, no_cards, extras, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero: MmPlayer = engine.hero()
+	assert_eq(Scenario.cast_and_resolve(engine, "Doom",
+		[MmReference.to_object(Scenario.permanent_named(engine, hero.id, "Savannah Lions"))]), "")
+	var dead: int = Scenario.card_in_graveyard(engine, hero, "Savannah Lions")
+	assert_ne(dead, -1, "The Lions are in the Hero's graveyard.")
+	var cats: int = Scenario.tokens_on_battlefield(engine).size()
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Helping Hand", [MmReference.to_object(dead)]), "")
+	Scenario.resolve_stack(engine)
+
+	var returned: int = Scenario.permanent_named(engine, hero.id, "Savannah Lions")
+	assert_ne(returned, -1, "Back on the battlefield.")
+	assert_true(engine.game_state().object(returned).is_tapped, "CR 110.5b: it enters tapped.")
+	assert_eq(Scenario.card_in_graveyard(engine, hero, "Savannah Lions"), -1)
+	assert_eq(Scenario.tokens_on_battlefield(engine).size(), cats + 1, "Arahbo saw a nontoken Cat enter.")
+
+
+func test_rally_the_ranks_choosing_cat_pumps_savannah_lions_and_not_llanowar_elves() -> void:
+	var creatures: Array[MmCardDefinition] = [Scenario.free_copy(_alpha("savannah_lions")),
+		Scenario.free_copy(_alpha("llanowar_elves"))]
+	var extras: Array[MmCardDefinition] = [Scenario.free_copy(_card("kaldheim", "rally_the_ranks"))]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(creatures, no_cards, extras),
+		creatures, no_cards, extras, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var lions: int = Scenario.permanent_named(engine, engine.hero().id, "Savannah Lions")
+	var elves: int = Scenario.permanent_named(engine, engine.hero().id, "Llanowar Elves")
+
+	Scenario.cast_and_resolve(engine, "Rally the Ranks")
+	assert_eq(Scenario.choose_creature_type(engine, "Cat"), "")
+	Scenario.resolve_stack(engine)
+
+	assert_ne(Scenario.permanent_named(engine, engine.hero().id, "Rally the Ranks"), -1)
+	assert_eq(Scenario.pt(engine, lions), [3, 2], "A Cat you control gets +1/+1.")
+	assert_eq(Scenario.pt(engine, elves), [1, 1], "An Elf is not of the chosen type.")
+
+
+func test_assemble_the_players_casts_savannah_lions_from_the_top_once_each_turn() -> void:
+	var assemble: MmCardDefinition = Scenario.free_copy(_card("murders_at_karlov_manor", "assemble_the_players"))
+	var lions: MmCardDefinition = Scenario.free_copy(_alpha("savannah_lions"))
+	var elves: MmCardDefinition = Scenario.free_copy(_alpha("llanowar_elves"))
+	var setup: MmEncounterSetup = Scenario.setup_with(Scenario.cycled([assemble, lions, elves]), Scenario.cycled([]))
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.top_ready(setup, [assemble], no_cards, ["Savannah Lions", "Llanowar Elves"])
+	assert_not_null(engine, "No seed gave the needed cards.")
+	var hero: MmPlayer = engine.hero()
+	var top: int = hero.library.top().id
+
+	assert_true(Scenario.offers_cast(engine, top))
+	assert_eq(Scenario.cast(engine, top), "")
+	assert_true(engine.game_state().object(Scenario.stack_ids(engine)[0]).cast_from_library)
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.permanents_named(engine, hero.id, "Savannah Lions").size(), 1)
+	assert_eq(Scenario.top_name(engine, hero), "Llanowar Elves")
+	assert_false(Scenario.offers_cast(engine, hero.library.top().id), "Once each turn: a 1/1 on top waits for next turn.")
+
+
 func test_serra_angel_attacks_without_tapping_over_ground_blockers() -> void:
 	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("serra_angel"))], [Scenario.free_copy(_alpha("grizzly_bears"))])
 	var angel: int = Scenario.permanent_named(engine, engine.hero().id, "Serra Angel")
@@ -929,10 +1045,16 @@ func _sub_resources(root: Resource) -> Array[Resource]:
 		var value: Variant = root.get(property["name"])
 		var candidates: Array = value if value is Array else [value]
 		for candidate: Variant in candidates:
-			if candidate is Resource and not (candidate is Script):
+			if candidate is Resource and not (candidate is Script) and not _is_own_file(candidate as Resource):
 				found.append(candidate as Resource)
 				found.append_array(_sub_resources(candidate as Resource))
 	return found
+
+
+## Whether [param resource] is saved as a file of its own, such as a Token Definition in
+## content/tokens/, which cards share on purpose (engine ADR 0044).
+func _is_own_file(resource: Resource) -> bool:
+	return resource.resource_path != "" and not resource.resource_path.contains("::")
 
 
 func _find_cards(dir_path: String) -> PackedStringArray:

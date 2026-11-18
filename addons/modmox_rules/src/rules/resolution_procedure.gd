@@ -17,6 +17,8 @@ var _step: int = 0
 ## The current effect's numbers, worked out once as it began (CR 608.2h).
 var _numbers: Array[int] = []
 var _is_done: bool = false
+## The creature type chosen as a permanent spell enters (CR 614.12, ADR 0052), or "".
+var _chosen_creature_type: String = ""
 
 
 ## Begins resolving the top of the stack.
@@ -70,6 +72,7 @@ func copy_for(state: MmGameState) -> ResolutionProcedure:
 	copy._step = _step
 	copy._numbers = _numbers.duplicate()
 	copy._is_done = _is_done
+	copy._chosen_creature_type = _chosen_creature_type
 	return copy
 
 
@@ -80,6 +83,9 @@ func next_decision() -> MmPendingDecision:
 		if _state.is_batch_suspended():
 			return _state.replacement_decision()
 		if not _resolves or _effect_index >= _effects.size():
+			var entering: ChooseCreatureTypeDecision = _creature_type_choice()
+			if entering != null:
+				return entering
 			_leave_stack()
 			_is_done = true
 			return null
@@ -101,6 +107,10 @@ func next_decision() -> MmPendingDecision:
 
 ## Applies an already-validated answer to a choice this procedure asked.
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
+	var creature_type: ChooseCreatureTypeDecision = decision as ChooseCreatureTypeDecision
+	if creature_type != null:
+		_chosen_creature_type = creature_type.creature_types[answer as int]
+		return
 	var choice: ChooseObjectDecision = decision as ChooseObjectDecision
 	assert(choice != null, "A resolution cannot answer %s." % decision.describe())
 	_context = _context.with_choice(choice.choice_index, choice.candidates[answer as int])
@@ -122,12 +132,32 @@ func _next_choice(effect: MmEffect) -> ChooseObjectDecision:
 	return null
 
 
+## The creature type choice a resolving permanent spell needs before it enters, or null:
+## asked once its effects are done, as it leaves the stack (CR 614.12, ADR 0052). Its
+## characteristics on the stack stand for those it would have on the battlefield.
+# Later: every other way onto the battlefield (ReturnToBattlefieldEffect, a flicker) asks
+# too, once a card can put a permanent with this ability there that way.
+func _creature_type_choice() -> ChooseCreatureTypeDecision:
+	if not _resolves or _chosen_creature_type != "":
+		return null
+	var resolving: MmGameObject = _state.object(_object_id)
+	if not resolving.is_card():
+		return null
+	var characteristics: MmCharacteristics = _state.characteristics_of(resolving)
+	if not characteristics.is_permanent() or not characteristics.has_ability(AsEntersChooseCreatureTypeAbility):
+		return null
+	return ChooseCreatureTypeDecision.new(resolving.controller_id, _object_id)
+
+
 func _leave_stack() -> void:
 	var resolving: MmGameObject = _state.object(_object_id)
 	if resolving.is_card() and _resolves and _state.characteristics_of(resolving).is_permanent():
 		# CR 608.3: a permanent spell enters the battlefield. Its controller is its owner
 		# until control-changing effects exist (milestone 9), as CR 608.3a needs.
-		_state.perform(ZoneChangeEvent.new(resolving, _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED))
+		var entering: ZoneChangeEvent = ZoneChangeEvent.new(resolving, _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED)
+		# ADR 0052: the type chosen as it enters is on it as it arrives.
+		entering.chosen_creature_type_on_arrival = _chosen_creature_type
+		_state.perform(entering)
 	elif resolving.is_card():
 		# CR 608.2n: an instant or sorcery goes to its owner's graveyard.
 		var reason: ZoneChangeEvent.Reason = ZoneChangeEvent.Reason.RESOLVED if _resolves else ZoneChangeEvent.Reason.DID_NOT_RESOLVE

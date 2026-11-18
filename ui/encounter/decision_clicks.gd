@@ -11,7 +11,8 @@ extends RefCounted
 ## ability is purple and blue.
 ##
 ## A card in the Hero's graveyard that can be cast with flashback is clicked in the
-## Graveyard window, and its pile glows green (game ADR 0049).
+## Graveyard window, and its pile glows green (game ADR 0049); so is the top card of the
+## Hero's library, cast with a permission, in the Library window (game ADR 0055).
 ##
 ## A card in hand that can be cast or played, or has an ability used from there, glows too,
 ## but one click on it answers nothing (A371): what it offers is kept apart, in
@@ -103,6 +104,12 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 		for index: int in choices.size():
 			clicks.glow_as(choices[index].id, Kind.TARGET)
 			clicks._options[choices[index].id] = [ClickOption.new(index, "Choose")]
+	elif decision is ChooseLegendToKeepDecision:
+		# CR 704.5j: one click keeps that legend, and the rest go.
+		var legends: Array[int] = (decision as ChooseLegendToKeepDecision).candidate_ids
+		for index: int in legends.size():
+			clicks.glow_as(legends[index], Kind.TARGET)
+			clicks._options[legends[index]] = [ClickOption.new(index, "Keep")]
 	elif decision is DivideCombatDamageDecision:
 		clicks._add_references((decision as DivideCombatDamageDecision).recipients, Kind.TARGET)
 	elif decision is DeclareBlockersDecision:
@@ -281,20 +288,31 @@ func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView
 
 
 ## Casting a card or playing it as a land, which [param answer] does. A card in the
-## graveyard is cast with flashback, clicked in its window (game ADR 0049).
+## graveyard is cast with flashback, and the top card of the library with a permission,
+## each clicked in its pile's window (game ADR 0049, 0055).
 func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
 	var object_id: int = object_of(action)
 	var verb: String = "Play" if action is PlayLandAction else "Cast"
 	_add_kind(object_id, Kind.PLAY)
+	var card_name: String = EncounterSnapshot.name_in(view, object_id)
 	if _find(view.graveyards.get(view.viewer_id, []), object_id) != null:
-		_append(_options, object_id, ClickOption.new(answer, "Cast %s with flashback" % EncounterSnapshot.name_in(view, object_id)))
-		var key: String = EncounterLayout.pile_key(MmZone.Kind.GRAVEYARD, true)
-		if not _piles.has(key):
-			_piles.append(key)
-			_pile_kinds[key] = Kind.PLAY
-			_answers_elsewhere += 1  # Passing, at least: the window waits for a click on the pile.
+		_add_pile_play(answer, object_id, "Cast %s with flashback" % card_name, MmZone.Kind.GRAVEYARD)
 		return
-	_append(_hand_options, object_id, ClickOption.new(answer, "%s %s" % [verb, EncounterSnapshot.name_in(view, object_id)]))
+	if _find(view.libraries.get(view.viewer_id, []), object_id) != null:
+		_add_pile_play(answer, object_id, "Cast %s from the top of your library" % card_name, MmZone.Kind.LIBRARY)
+		return
+	_append(_hand_options, object_id, ClickOption.new(answer, "%s %s" % [verb, card_name]))
+
+
+## A card cast from the Hero's pile of [param zone_kind]: it is clicked in that pile's
+## window, and the pile glows green.
+func _add_pile_play(answer: int, object_id: int, text: String, zone_kind: MmZone.Kind) -> void:
+	_append(_options, object_id, ClickOption.new(answer, text))
+	var key: String = EncounterLayout.pile_key(zone_kind, true)
+	if not _piles.has(key):
+		_piles.append(key)
+		_pile_kinds[key] = Kind.PLAY
+		_answers_elsewhere += 1  # Passing, at least: the window waits for a click on the pile.
 
 
 ## Gives [param object_id] the Glow of [param kind] beside any it has, kept in the order
@@ -314,9 +332,12 @@ static func _append(options: Dictionary[int, Array], object_id: int, option: Cli
 	(options[object_id] as Array).append(option)
 
 
+## The card [param object_id] among [param zone]'s, which may hold nulls for cards unseen
+## (a library), or null.
 static func _find(zone: Array, object_id: int) -> MmObjectView:
-	for seen: MmObjectView in zone:
-		if seen.id == object_id:
+	for entry: Variant in zone:
+		var seen: MmObjectView = entry as MmObjectView
+		if seen != null and seen.id == object_id:
 			return seen
 	return null
 

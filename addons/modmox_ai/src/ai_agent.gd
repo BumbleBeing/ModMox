@@ -14,6 +14,8 @@ enum Mode { FULL, CHEAP }
 
 ## A FULL Agent simulates every pick of permanents for a cost up to this many (C(5, 3)).
 const MOST_PICKS_SIMULATED: int = 10
+## How many creature types a FULL Agent simulates choosing, the best ranked first.
+const MOST_TYPES_SIMULATED: int = 3
 
 ## Why the last answer was chosen (A165). For debugging and tests; never saved.
 enum Reason {
@@ -154,6 +156,10 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _choose_mode(decision as ChooseModeDecision, world, source, rng)
 	if decision is ChoosePermanentsDecision:
 		return _choose_permanents(decision as ChoosePermanentsDecision, world, source, rng)
+	if decision is ChooseLegendToKeepDecision:
+		return _choose_legend(decision as ChooseLegendToKeepDecision, world, source, rng)
+	if decision is ChooseCreatureTypeDecision:
+		return _choose_creature_type(decision as ChooseCreatureTypeDecision, world, source, rng)
 	assert(false, "AiAgent cannot answer %s." % decision.describe())
 	return null
 
@@ -362,7 +368,9 @@ func _play_key(action: MmAction) -> String:
 ## A CHEAP Agent's priority: with the other player's spell on top of the stack, counter it
 ## if it costs at least as much as the counter. Otherwise, in its own main phase with
 ## nothing on the stack, cast the most expensive spell that is neither a combat trick nor a
-## source of mana, removal only with something of the other player's to aim at. (A counter cannot be
+## source of mana, removal only with something of the other player's to aim at; of two that
+## cost the same, one cast from the top of the library, which keeps a card in hand
+## (ADR 0054). (A counter cannot be
 ## cast then: there is no spell to aim it at.) It never activates abilities, and never
 ## counters one.
 func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: int) -> int:
@@ -377,6 +385,7 @@ func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: in
 		return passing
 	var best: int = passing
 	var best_cost: int = -1
+	var best_from_library: bool = false
 	for index: int in decision.actions.size():
 		var cast: CastSpellAction = decision.actions[index] as CastSpellAction
 		if cast == null:
@@ -390,9 +399,11 @@ func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: in
 		if _life_it_would_pay(world, cast) >= world.player(me).life:
 			continue  # Never pay the life it has left.
 		var cost: int = world.characteristics_of(world.object(cast.object_id)).mana_value()
-		if cost > best_cost:
+		var from_library: bool = world.object(cast.object_id).zone().kind == MmZone.Kind.LIBRARY
+		if cost > best_cost or (cost == best_cost and from_library and not best_from_library):
 			best = index
 			best_cost = cost
+			best_from_library = from_library
 	_reason = Reason.NOTHING_WORTH_DOING if best == passing else Reason.BEST_SCORE
 	return best
 
@@ -623,6 +634,82 @@ func _choose_permanents(decision: ChoosePermanentsDecision, world: MmGameState, 
 	var least: Array[int] = ranked.slice(0, decision.count)
 	least.sort()
 	return least
+
+
+## The legend kept by the legend rule (CR 704.5j). FULL: simulates keeping each. CHEAP: its
+## most valuable, which keeps one that can attack over one with summoning sickness
+## (AiBoardEvaluator.permanent_value()); on a tie, the oldest.
+func _choose_legend(decision: ChooseLegendToKeepDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
+	_reason = Reason.BEST_SCORE
+	if mode == Mode.FULL:
+		var options: Array[int] = []
+		for index: int in decision.candidate_ids.size():
+			options.append(index)
+		return _best_option(options, _simulate_each(source, rng, options, decision.player_id), rng, 0)
+	var most: int = 0
+	var most_value: int = -1
+	for index: int in decision.candidate_ids.size():
+		var value: int = AiBoardEvaluator.permanent_value(world, world.object(decision.candidate_ids[index]), profile)
+		if value > most_value:
+			most = index
+			most_value = value
+	return most
+
+
+## The creature type chosen as a permanent enters (CR 614.12). Only the types of its own
+## creatures are worth anything to it, ranked by how many it controls, then how many creature
+## cards of the type it owns in its hand, graveyard and library (it knows its own deck), then
+## the list's order. FULL: simulates the best MOST_TYPES_SIMULATED. CHEAP: the best. With no
+## creature anywhere: the first type, with nothing simulated.
+func _choose_creature_type(decision: ChooseCreatureTypeDecision, world: MmGameState, source: MmSimulationSource,
+		rng: MmRng) -> int:
+	var ranked: Array[int] = _ranked_creature_types(decision, world)
+	if ranked.size() <= 1:
+		_reason = Reason.ONLY_CHOICE
+		return 0 if ranked.is_empty() else ranked[0]
+	_reason = Reason.BEST_SCORE
+	if mode == Mode.CHEAP:
+		return ranked[0]
+	var options: Array[int] = ranked.slice(0, MOST_TYPES_SIMULATED)
+	return _best_option(options, _simulate_each(source, rng, options, decision.player_id), rng, 0)
+
+
+## The answers to [param decision] naming a type of a creature the deciding player controls or
+## a creature card they own, best first (_choose_creature_type()).
+static func _ranked_creature_types(decision: ChooseCreatureTypeDecision, world: MmGameState) -> Array[int]:
+	var me: MmPlayer = world.player(decision.player_id)
+	var controlled: Dictionary[int, int] = {}
+	var elsewhere: Dictionary[int, int] = {}
+	for permanent: MmGameObject in world.battlefield.objects():
+		if permanent.controller_id == me.id:
+			_count_creature_types(decision, world, permanent, controlled)
+	for zone: MmZone in [me.hand, me.graveyard, me.library]:
+		for card: MmGameObject in zone.objects():
+			_count_creature_types(decision, world, card, elsewhere)
+	var ranked: Array[int] = []
+	for index: int in controlled.keys() + elsewhere.keys():
+		if not ranked.has(index):
+			ranked.append(index)
+	ranked.sort_custom(func(a: int, b: int) -> bool:
+		if controlled.get(a, 0) != controlled.get(b, 0):
+			return controlled.get(a, 0) > controlled.get(b, 0)
+		if elsewhere.get(a, 0) != elsewhere.get(b, 0):
+			return elsewhere.get(a, 0) > elsewhere.get(b, 0)
+		return a < b)
+	return ranked
+
+
+## Adds one to [param counts] for each creature type of [param game_object], if it is a
+## creature, keyed by the type's answer to [param decision].
+static func _count_creature_types(decision: ChooseCreatureTypeDecision, world: MmGameState, game_object: MmGameObject,
+		counts: Dictionary[int, int]) -> void:
+	var characteristics: MmCharacteristics = world.characteristics_of(game_object)
+	if not characteristics.has_card_type(MmCardTypes.CardType.CREATURE):
+		return
+	for subtype: String in characteristics.subtypes:
+		var index: int = decision.creature_types.find(subtype)
+		if index != -1:
+			counts[index] = counts.get(index, 0) + 1
 
 
 ## Every way to pick [param count] of [param ids], each in ID order, in a fixed order.

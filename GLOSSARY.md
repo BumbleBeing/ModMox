@@ -298,6 +298,10 @@ _Avoid_: Stack region, stack panel
 The window over the battlefield that asks which Mode of a Modal Spell is cast (game ADR 0047), titled "[spell]: choose one". It has an entry for every Mode, each only the card's art and the Mode's words; one that cannot be chosen is dimmed. Pointing at a Mode shows it in full in the Info Panel and marks what it could target. It opens only when two or more Modes can be chosen. It is the same window that asks which replacement effect applies first.
 _Avoid_: Mode menu, charm picker, choose-one dialog
 
+**Creature Type Window**:
+The window over the battlefield where the Hero chooses a Chosen Creature Type (game ADR 0053), titled "[card]: choose a creature type". A search box at its top has the keyboard as it opens; under it the Hero's own creatures' types are pinned, each just its name, then every other creature type as a compact row. Typing narrows both, names starting with what is typed first, and lights the top match, which Enter chooses; Up and Down move the light. Pointing at a type marks the Hero's creatures of it; the Info Panel only asks "Choose a creature type for [card]". Nothing in it glows, since every type can be chosen.
+_Avoid_: Type picker, type dialog, search window
+
 **Stack Color**:
 The color a spell or ability has for as long as it is on the stack: one of eight muted hues that leave out the Glow's colors and the Block Lines'. It is on the entry's border and the stripe down its left side, on the arrow to a spell it targets, and on what the entry marks on the board while the cursor is over it.
 _Avoid_: Entry tint, stack hue, highlight color
@@ -416,12 +420,32 @@ The gray, shaded button over the Info Panel and as wide, which is always there. 
 _Avoid_: Confirm button, OK button, next button
 
 **Portrait**:
-The 32 × 32 pixel picture of a player on their panel, drawn six screen pixels to each of its own with hard edges, with the life total in its corner. It is what glows and is clicked when its player can be chosen. Every Portrait has a Pain Portrait. A Villain's is drawn after a character in a Magic card's art, turned to face the front; the Hero's ten are a set of their own. Until Heroes and Villains have their own, the Hero's is a white wizard and the Villain's a purple demon.
+The 32 × 32 pixel picture of a player on their panel, drawn six screen pixels to each of its own with hard edges, with the life total in its corner. It is what glows and is clicked when its player can be chosen. Every Portrait but a placeholder has a Pain Portrait, and one drawn after a Magic character a Blink Portrait too. A Villain's is drawn after a character in a Magic card's art, turned to face the front; the Hero's ten are a set of their own. Until Heroes have their own, the Hero's is Urza, Academy Headmaster's; for testing, every Villain without a Portrait of its own, and one met outside a run, has Charmed Stray's.
 _Avoid_: Avatar, icon, face (a Card Face or Battlefield Face is a card's)
 
 **Pain Portrait**:
-The second picture of a Portrait: the same character the moment after being hurt, wincing and knocked a little aside.
+The second picture of a Portrait: the same character the moment after being hurt, wincing and knocked a little aside. A player is hurt when their life total goes down, by damage, by paying life or otherwise, counted as what they lost less what they gained at once. The Pain Portrait shows for longer the more life was lost.
 _Avoid_: Pain frame (a Frame is a card's), hurt portrait, damage sprite
+
+**Blink Portrait**:
+The third picture of a Portrait drawn after a Magic character: the same picture with its eyes closed and nothing else changed, shown for a moment every few seconds, now and then twice, so the character seems alive. Never while the Pain Portrait shows, nor once its player has lost.
+_Avoid_: Blink frame, eyes-closed sprite, idle frame
+
+**Breath**:
+The slow grow and shrink of a Portrait, so its player seems alive. A player breathes faster as their life gets low, and stops breathing when they lose the encounter.
+_Avoid_: Idle animation, bob, pulse
+
+**Breath Rate**:
+How fast a character breathes. At 1, a character at rest takes one breath every four seconds; at 2, twice as fast. Each character has their own, and low life raises it.
+_Avoid_: Breath speed, tempo
+
+**Breath Intensity**:
+How much a Portrait grows at the top of a Breath. At 1, it is one of its own pixels taller and wider; at 2, two. Each character has their own.
+_Avoid_: Depth, amplitude, size
+
+**Winded**:
+A hurt player is Winded: their Portrait sinks quickly to the bottom of its Breath and stays there while their Pain Portrait shows, then breathes again from the start of a breath.
+_Avoid_: Breathless, stunned
 
 **Key Binding**:
 The key that does one of the four actions that have a key: passing priority (Space), undo (Z), cancel (X) and holding priority (Control). Any single key can be bound to any of them, a modifier included; never Escape, which is the Pause Menu's, and never a combination or a mouse button. Two actions may share a key: a press of it does only the first of pass, undo and cancel bound to it, and holding priority goes with any of them. Buttons that name a key name the one bound. They are kept in the settings file.
@@ -478,6 +502,10 @@ _Avoid_: Mini card, tile, token (a token is a rules term)
 **Keyword Chip**:
 The small square on a Battlefield Face that stands for one keyword the permanent has.
 _Avoid_: Badge, tag
+
+**Chosen Type Chip**:
+A chip like a Keyword Chip holding a permanent's Chosen Creature Type by name, first in the chips' row of its Battlefield Face (game ADR 0053). Its words never shrink below a readable size: on a face too small for the whole name it is cut short with an ellipsis, and the Inspector's State Information says it in full.
+_Avoid_: Type badge, type tag, type plate
 
 **Keyword Icon**:
 The 16 × 16 pixel picture on a Keyword Chip that identifies its keyword.

@@ -27,8 +27,16 @@ var hand_sizes: Dictionary[int, int] = {}
 var library_sizes: Dictionary[int, int] = {}
 ## Each library top first, by player ID, with one entry for each card: an MmObjectView for
 ## a card this view's player knows, such as one they put on the bottom, and null for any
-## other. Libraries are hidden (CR 401.2).
+## other. Libraries are hidden (CR 401.2). The viewer's own top card is shown while they
+## may look at it (looks_at_library_top).
 var libraries: Dictionary[int, Array] = {}
+## Whether this view's player may look at the top card of their own library now, through a
+## LookAtTopOfLibraryAbility (ADR 0054), so their top entry is that card.
+var looks_at_library_top: bool = false
+## What is in this view's player's own library, never in what order: a player knows their
+## own deck list (ADR 0052, game ADR 0053). Sorted by name, with no object ID and no Card
+## Identity, so nothing in it says where a card is.
+var library_contents: Array[MmObjectView] = []
 var life_totals: Dictionary[int, int] = {}
 ## The shields and other replacement effects locked to each player, by player ID (A140).
 var player_replacement_effects: Dictionary[int, Array] = {}
@@ -81,9 +89,12 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		view.hand_sizes[player.id] = player.hand.size()
 		view.library_sizes[player.id] = player.library.size()
 		var library: Array[MmObjectView] = []
+		var seen: Dictionary[int, bool] = state.seen_library_ids(player.id, viewing_player_id)
 		for card: MmGameObject in player.library.objects():
-			library.append(MmObjectView.of(state, card) if card.is_known_to(viewing_player_id) else null)
+			library.append(MmObjectView.of(state, card) if seen.has(card.id) else null)
 		view.libraries[player.id] = library
+		if player.id == viewing_player_id:
+			view.library_contents = _contents_of(state, player.library)
 		view.life_totals[player.id] = player.life
 		view.mana_pools[player.id] = player.mana_pool()
 		var on_player: Array[ActiveReplacementEffect] = []
@@ -96,6 +107,7 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 	for active: ActiveReplacementEffect in state.replacement_effects:
 		if active.affected.is_empty():
 			view.game_replacement_effects.append(active)
+	view.looks_at_library_top = state.sees_library_top(viewing_player_id)
 	view.game_turn = state.game_turn
 	view.active_player_id = state.active_player_id
 	if state.active_player_id != MmGameState.NO_PLAYER:
@@ -106,3 +118,15 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 	view.winner_id = state.winner_id
 	view.is_first_strike_damage_step = state.step == MmTurn.Step.COMBAT_DAMAGE and state.combat.is_first_strike_damage_step
 	return view
+
+
+## What is in [param library], sorted by name, each with no object ID or Card Identity.
+static func _contents_of(state: MmGameState, library: MmZone) -> Array[MmObjectView]:
+	var contents: Array[MmObjectView] = []
+	for card: MmGameObject in library.objects():
+		var seen: MmObjectView = MmObjectView.of(state, card)
+		seen.id = 0
+		seen.card_id = MmGameObject.NO_CARD
+		contents.append(seen)
+	contents.sort_custom(func(a: MmObjectView, b: MmObjectView) -> bool: return a.name < b.name)
+	return contents

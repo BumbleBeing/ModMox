@@ -2,7 +2,8 @@ extends GutTest
 ## Casting with flashback on the Encounter Screen (game ADR 0049): the Hero's graveyard
 ## pile glows green while a card in it can be cast, the card glows in the Graveyard window
 ## and a click there casts it; creatures to tap for its cost glow green, a click picks one
-## (white, and drawn turned) or lets it go, and the pass button confirms the pick.
+## (white, and drawn turned in its place) or lets it go, and the click that makes the last
+## pick answers it.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const DefaultAnswerAgent := preload("res://addons/modmox_rules/tests/support/default_answer_agent.gd")
@@ -37,7 +38,7 @@ func test_the_pile_glows_green_and_its_window_casts_the_card() -> void:
 	assert_false(window.is_open(), "Closed with the click that began the cast.")
 
 
-func test_creatures_are_picked_turned_and_white_and_the_pass_button_taps_them() -> void:
+func test_a_picked_creature_is_drawn_turned_and_white_and_stays_in_its_row() -> void:
 	_open_with_echo_in_graveyard()
 	_screen.pile_catcher(MINE).clicked.emit()
 	_screen.pile_window(MINE).catcher_of(_in_graveyard("Echo")).clicked.emit()
@@ -45,19 +46,34 @@ func test_creatures_are_picked_turned_and_white_and_the_pass_button_taps_them() 
 	var bears: Array[int] = _bears()
 	assert_eq(BorderEffects.glow_colors(_screen.face_of(bears[0])), [PLAY] as Array[Color])
 	assert_true(_screen.info_panel().prompt_text().begins_with("Tap two untapped creatures you control for Echo"))
+	var row_center: float = _center_y(bears[1])
+
+	_screen.click_catcher(bears[0]).clicked.emit()
+
+	var picked: Control = _screen.face_of(bears[0])
+	assert_eq(BorderEffects.glow_colors(picked), [Color.WHITE] as Array[Color])
+	assert_true(_screen.is_drawn_tapped(bears[0]), "Drawn as it will be once tapped.")
+	var upright: Vector2 = _screen.face_of(bears[1]).size
+	assert_eq(picked.size, Vector2(upright.y, upright.x), "The face itself is turned, so its Glow is round it.")
+	assert_almost_eq(_center_y(bears[0]), row_center, 1.0, "It stays in its row, not lifted out of it.")
+	assert_true(_screen.info_panel().prompt_text().ends_with("(1 of 2)"))
+	assert_true(_presenter.snapshot().decision is ChoosePermanentsDecision, "One of two: nothing answered yet.")
+
+
+func test_the_click_that_makes_the_last_pick_casts_the_spell() -> void:
+	_open_with_echo_in_graveyard()
+	_screen.pile_catcher(MINE).clicked.emit()
+	_screen.pile_window(MINE).catcher_of(_in_graveyard("Echo")).clicked.emit()
+	_presenter.wait_until_idle()
+	var bears: Array[int] = _bears()
+	_presenter.is_hold_key_down = true  # So it stays on the stack to be seen.
 
 	_screen.click_catcher(bears[0]).clicked.emit()
 	_screen.click_catcher(bears[1]).clicked.emit()
-
-	assert_eq(BorderEffects.glow_colors(_screen.face_of(bears[0])), [Color.WHITE] as Array[Color])
-	assert_true(_screen.is_drawn_tapped(bears[0]), "Drawn as it will be once tapped.")
-	assert_true(_screen.info_panel().prompt_text().ends_with("(2 of 2)"))
-	assert_eq(_screen.pass_button().text.begins_with("Tap 2"), true)
-	_presenter.is_hold_key_down = true  # So it stays on the stack to be seen.
-	_screen.pass_priority()
 	_presenter.wait_until_idle()
+
 	var stack: Array[MmObjectView] = _presenter.snapshot().view.stack
-	assert_eq(stack.size(), 1)
+	assert_eq(stack.size(), 1, "Cast with no confirm.")
 	assert_true(stack[0].cast_with_flashback)
 	for id: int in bears.slice(0, 2):
 		assert_true(_permanent(id).is_tapped)
@@ -145,6 +161,12 @@ func _in_graveyard(card_name: String) -> int:
 		if seen.name == card_name:
 			return seen.id
 	return -1
+
+
+## The middle of Game Object [param object_id]'s face, up and down, on the screen.
+func _center_y(object_id: int) -> float:
+	var face: Control = _screen.face_of(object_id)
+	return face.get_global_rect().get_center().y
 
 
 func _bears() -> Array[int]:

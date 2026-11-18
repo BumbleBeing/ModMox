@@ -4,7 +4,8 @@ extends RefCounted
 ## announce it onto the stack, choose its mode if it is modal, choose its targets, make
 ## any choice a part of its cost asks (paying that part then), then pay its mana one step
 ## at a time and the rest of its cost. A card cast from its graveyard is cast for its
-## flashback cost (CR 702.34a).
+## flashback cost (CR 702.34a), and one cast from the top of its library uses up a
+## permission to (ADR 0054).
 ## When the payment can no longer be finished it reports itself stuck, and the engine
 ## rewinds the whole attempt (CR 728, ADR 0015).
 
@@ -30,8 +31,9 @@ var _next_cost: int = 0
 var _paid_cost_indexes: Array[int] = []
 
 
-## Begins casting [param card] from [param player_id]'s hand, or from their graveyard for its
-## flashback cost: CR 601.2a moves it to the stack.
+## Begins casting [param card] from [param player_id]'s hand, from their graveyard for its
+## flashback cost, or from the top of their library with a permission, which is used now
+## (CR 601.3, ADR 0054): CR 601.2a moves it to the stack.
 static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -> CastProcedure:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	var procedure: CastProcedure = CastProcedure.new(state, player_id)
@@ -41,17 +43,19 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -
 		procedure._stage = Stage.CHOOSE_MODE  # CR 601.2b: the mode comes before targets.
 	elif spell != null:
 		procedure._target_requirements = spell.targets
-	# Later: cost increases, reductions and additional costs (CR 601.2f).
-	var mana: MmManaCost = characteristics.mana_cost
+	# CR 601.2f: the total cost is fixed now. Choosing modes and targets first, as the rules
+	# order it, can change nothing it counts. Later: cost increases and additional costs.
+	var mana: MmManaCost = mana_to_pay(state, player_id, card)
 	var is_flashback: bool = card.zone().kind == MmZone.Kind.GRAVEYARD
 	if is_flashback:
-		# CR 118.9: an alternative cost, paid instead of its mana cost.
-		var flashback: FlashbackAbility = flashback_of(characteristics)
-		mana = flashback.mana_cost
-		procedure._costs = flashback.costs
+		procedure._costs = flashback_of(characteristics).costs
 	if mana != null:
 		procedure._remaining_generic = mana.generic
 		procedure._remaining_symbols = mana.symbols.duplicate()
+	if card.zone().kind == MmZone.Kind.LIBRARY:
+		var permission: Array[int] = top_of_library_permission(state, player_id, card)
+		assert(not permission.is_empty(), "Nothing lets player %d cast %s from their library." % [player_id, characteristics.name])
+		state.perform(CastPermissionUsedEvent.new(permission[0], permission[1], characteristics.name))
 	var move: ZoneChangeEvent = ZoneChangeEvent.new(card, state.stack, MmZone.BOTTOM, ZoneChangeEvent.Reason.CAST)
 	move.cast_with_flashback = is_flashback
 	state.perform(move)
@@ -77,6 +81,48 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	state.perform(put)
 	procedure._stack_object_id = put.new_object_id
 	return procedure
+
+
+## The mana [param player_id] pays to cast [param card] (CR 601.2f): its mana cost from the
+## hand or the top of the library, or its flashback cost from its graveyard (an alternative cost, CR 118.9), less
+## every cost reduction it has (CR 118.7, ADR 0050). Null when that cost has no mana in it.
+static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject) -> MmManaCost:
+	var characteristics: MmCharacteristics = state.characteristics_of(card)
+	var mana: MmManaCost = characteristics.mana_cost
+	if card.zone().kind == MmZone.Kind.GRAVEYARD:
+		var flashback: FlashbackAbility = flashback_of(characteristics)
+		mana = null if flashback == null else flashback.mana_cost
+	if mana == null:
+		return null
+	for ability: MmAbility in characteristics.abilities:
+		var reducing: CostReductionAbility = ability as CostReductionAbility
+		if reducing != null:
+			mana = mana.reduced_by(reducing.reduction(state, card, player_id))
+	return mana
+
+
+## What lets [param player_id] cast [param card] from the top of their own library now
+## (ADR 0054): the ID of the permanent or Emblem they control whose
+## CastFromTopOfLibraryAbility allows it and is not Spent this turn, and that ability's
+## place among its abilities. With several, the lowest object ID, then the lowest place.
+## Empty when [param card] is not the top card of that player's library, or nothing allows
+## it.
+static func top_of_library_permission(state: MmGameState, player_id: int, card: MmGameObject) -> Array[int]:
+	var library: MmZone = state.player(player_id).library
+	if card.zone() != library or library.top() != card:
+		return []
+	var candidate: MmReference = MmReference.to_object(card.id)
+	for source: MmGameObject in TriggerDetection.observers(state):
+		if source.controller_id != player_id:
+			continue
+		var abilities: Array[MmAbility] = state.characteristics_of(source).abilities
+		for index: int in abilities.size():
+			var permission: CastFromTopOfLibraryAbility = abilities[index] as CastFromTopOfLibraryAbility
+			if permission == null or source.is_permission_used_in(index, state.game_turn):
+				continue
+			if permission.filter == null or permission.filter.matches(state, candidate, MmEffectContext.new(player_id, source.id)):
+				return [source.id, index]
+	return []
 
 
 ## The card's flashback ability (CR 702.34a), or null for a card without flashback.

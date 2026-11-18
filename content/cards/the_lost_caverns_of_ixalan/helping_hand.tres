@@ -1,0 +1,60 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_ndi1l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_cyr5r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_qehek"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_n2asp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_battlefield_effect.gd" id="3_yqxim"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_a74g4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_mode.gd" id="5_vrat6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="6_bibp1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_mv5vs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="8_pwjgv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_ed1qj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/owned_by_filter.gd" id="10_g8hgw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mana_value_filter.gd" id="11_0mn5s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="12_15dtl"]
+
+[sub_resource type="Resource" id="Resource_y4oer"]
+script = ExtResource("4_a74g4")
+
+[sub_resource type="Resource" id="Resource_nj4y1"]
+script = ExtResource("3_yqxim")
+selection = SubResource("Resource_y4oer")
+tapped = true
+
+[sub_resource type="Resource" id="Resource_atika"]
+script = ExtResource("9_ed1qj")
+
+[sub_resource type="Resource" id="Resource_v0oen"]
+script = ExtResource("10_g8hgw")
+
+[sub_resource type="Resource" id="Resource_vdp16"]
+script = ExtResource("11_0mn5s")
+amount = 3
+
+[sub_resource type="Resource" id="Resource_h8cox"]
+script = ExtResource("12_15dtl")
+filters = Array[ExtResource("8_pwjgv")]([SubResource("Resource_atika"), SubResource("Resource_v0oen"), SubResource("Resource_vdp16")])
+
+[sub_resource type="Resource" id="Resource_2lnc4"]
+script = ExtResource("7_mv5vs")
+filter = SubResource("Resource_h8cox")
+among = 2
+
+[sub_resource type="Resource" id="Resource_jrtu3"]
+script = ExtResource("6_bibp1")
+targets = Array[ExtResource("7_mv5vs")]([SubResource("Resource_2lnc4")])
+effects = Array[ExtResource("2_cyr5r")]([SubResource("Resource_nj4y1")])
+
+[sub_resource type="Resource" id="Resource_xsfjf"]
+script = ExtResource("2_qehek")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_n2asp")
+name = "Helping Hand"
+card_types = Array[int]([5])
+mana_cost = SubResource("Resource_xsfjf")
+abilities = Array[ExtResource("1_ndi1l")]([SubResource("Resource_jrtu3")])
+rarity = 1

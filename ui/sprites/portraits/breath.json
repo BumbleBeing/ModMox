@@ -1,0 +1,86 @@
+{
+	"adorned_pouncer": {
+		"intensity": 0.8,
+		"rate": 1.3
+	},
+	"akim_the_soaring_wind": {
+		"intensity": 0.95,
+		"rate": 1.25
+	},
+	"arahbo_the_first_fang": {
+		"intensity": 1.1,
+		"rate": 0.95
+	},
+	"balmor_battlemage_captain": {
+		"intensity": 1.1,
+		"rate": 1.35
+	},
+	"brimaz_king_of_oreskos": {
+		"intensity": 0.75,
+		"rate": 1.15
+	},
+	"chandra_heart_of_fire": {
+		"intensity": 1.0,
+		"rate": 1.5
+	},
+	"charmed_stray": {
+		"intensity": 1.0,
+		"rate": 1.0
+	},
+	"dreadwing_scavenger": {
+		"intensity": 1.45,
+		"rate": 1.15
+	},
+	"empyrean_eagle": {
+		"intensity": 1.0,
+		"rate": 1.15
+	},
+	"fleecemane_lion": {
+		"intensity": 1.5,
+		"rate": 1.1
+	},
+	"frondland_felidar": {
+		"intensity": 1.0,
+		"rate": 0.65
+	},
+	"garruk_primal_hunter": {
+		"intensity": 1.25,
+		"rate": 1.0
+	},
+	"kastral_the_windcrested": {
+		"intensity": 1.15,
+		"rate": 1.05
+	},
+	"kemba_kha_enduring": {
+		"intensity": 1.35,
+		"rate": 1.0
+	},
+	"king_of_the_pride": {
+		"intensity": 1.4,
+		"rate": 0.75
+	},
+	"kishla_skimmer": {
+		"intensity": 1.15,
+		"rate": 1.15
+	},
+	"koth_of_the_hammer": {
+		"intensity": 1.0,
+		"rate": 1.2
+	},
+	"most_decrepit_old_bird_speak_secrets": {
+		"intensity": 1.0,
+		"rate": 1.0
+	},
+	"nimble_larcenist": {
+		"intensity": 1.0,
+		"rate": 1.25
+	},
+	"nissa_natures_artisan": {
+		"intensity": 1.2,
+		"rate": 1.0
+	},
+	"urza_academy_headmaster": {
+		"intensity": 1.0,
+		"rate": 1.15
+	}
+}

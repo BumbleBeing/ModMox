@@ -1,7 +1,8 @@
 extends SceneTree
 ## Developer tool: draws the review sheet of a Portrait drawn after a Magic character
-## (PortraitSheet), from its reference art in tools/sprites/reference/ and its two PNGs in
-## ui/sprites/portraits/, to tools/sprites/preview/<key>_review.png.
+## (PortraitSheet), from its reference art in tools/sprites/reference/ and its PNGs in
+## ui/sprites/portraits/ (the Portrait, the Pain Portrait, and the Blink Portrait when it
+## has one), to tools/sprites/preview/<key>_review.png.
 ##
 ## Run: godot --headless --path . -s res://tools/sprites/review_portrait.gd -- --key=keldon_warlord
 
@@ -24,7 +25,17 @@ func _initialize() -> void:
 	if art == null or portrait == null or pain == null:
 		quit(1)
 		return
-	var sheet: Image = PortraitSheet.compose(art, portrait, pain, Inspector.palette().panel)
+	var pictures: Array[Image] = [portrait, pain]
+	var blink_path: String = PORTRAITS + key + "_blink.png"
+	if FileAccess.file_exists(blink_path):
+		var blink: Image = _load(blink_path)
+		if blink == null:
+			quit(1)
+			return
+		pictures.append(blink)
+	else:
+		print("No Blink Portrait yet: the sheet shows two pictures.")
+	var sheet: Image = PortraitSheet.compose(art, pictures, Inspector.palette().panel)
 	var path: String = ProjectSettings.globalize_path(PREVIEW + key + "_review.png")
 	if sheet.save_png(path) != OK:
 		printerr("Cannot write %s" % path)

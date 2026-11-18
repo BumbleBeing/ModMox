@@ -19,6 +19,26 @@
 		"scryfall_id": "f594b7aa-d44e-47c4-989b-565f881e25f1",
 		"set": "lea"
 	},
+	"arahbo_the_first_fang": {
+		"artist": "Simon Dominic",
+		"collector_number": "2",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "524a5d93-26ed-436d-a437-dc9460acce98",
+		"set": "fdn"
+	},
+	"assemble_the_players": {
+		"artist": "Evyn Fong",
+		"collector_number": "3",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "f5bcb21a-8559-4791-8cd0-482e7b8dcfd2",
+		"set": "mkm"
+	},
 	"battlegrowth": {
 		"artist": "John Matson",
 		"collector_number": "113",
@@ -48,6 +68,16 @@
 		],
 		"scryfall_id": "357513b9-0505-4b67-9a29-36a705a175b1",
 		"set": "war"
+	},
+	"claws_out": {
+		"artist": "Warren Mahy",
+		"collector_number": "6",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "4396049c-b976-4b7f-8ecd-564e24ebd631",
+		"set": "fdn"
 	},
 	"coordinated_maneuver": {
 		"artist": "Wisnu Tan",
@@ -229,6 +259,16 @@
 		"scryfall_id": "1b9a0e91-80b5-428f-8f08-931d0631be14",
 		"set": "fdn"
 	},
+	"helping_hand": {
+		"artist": "Aldo Domínguez",
+		"collector_number": "17",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "b8aa7126-5df3-42dd-b4a3-0d0ea59eeebd",
+		"set": "lci"
+	},
 	"hill_giant": {
 		"artist": "Dan Frazier",
 		"collector_number": "157",
@@ -379,6 +419,16 @@
 		"scryfall_id": "8ba1d3a1-8c1b-4b77-b149-13d5ad9f125a",
 		"set": "akh"
 	},
+	"outflank": {
+		"artist": "Victor Adame Minguez",
+		"collector_number": "23",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "663e0208-81c3-4a76-bcc2-bc59cf8ca649",
+		"set": "eld"
+	},
 	"path_of_bravery": {
 		"artist": "Chris Rahn",
 		"collector_number": "26",
@@ -438,6 +488,16 @@
 		],
 		"scryfall_id": "ce07bede-2219-427c-a61a-56518751de42",
 		"set": "lea"
+	},
+	"rally_the_ranks": {
+		"artist": "Lie Setiawan",
+		"collector_number": "20",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "03595195-3be2-4d18-b5c0-43b2dcc1c0f5",
+		"set": "khm"
 	},
 	"samite_healer": {
 		"artist": "Tom Wänerstrand",

@@ -13,11 +13,14 @@ const Whose := MmTrigger.Whose
 const PRINTED: Dictionary[String, String] = {
 	"ancestral_recall": "Target player draws three cards.",
 	"ankh_of_mishra": "Whenever a land enters, this artifact deals 2 damage to that land's controller.",
+	"arahbo_the_first_fang": "Each other Cat creature you control gets +1/+1.\nWhenever a nontoken Cat creature you control enters, create a 1/1 white Cat creature token.",
+	"assemble_the_players": "You may look at the top card of your library any time.\nOnce each turn, you may cast a creature spell with power 2 or less from the top of your library.",
 	"battlegrowth": "Put a +1/+1 counter on target creature.",
 	"black_knight": "First strike\nProtection from white",
 	"charmed_stray": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each other creature you control originally named Charmed Stray.",
+	"claws_out": "Affinity for Cats\nEach creature you control gets +2/+2 until end of turn.",
 	"coordinated_maneuver": "Choose one —\n"
-		+ "• Coordinated Maneuver deals X damage to target creature, where X is the number of creatures you control.\n"
+		+ "• Coordinated Maneuver deals damage to target creature equal to the number of creatures you control.\n"
 		+ "• Destroy target enchantment.",
 	"counterspell": "Counter target spell.",
 	"dark_ritual": "Add {B}{B}{B}.",
@@ -33,6 +36,7 @@ const PRINTED: Dictionary[String, String] = {
 	"goblin_balloon_brigade": "{R}: This creature gains flying until end of turn.",
 	"group_project": "Create a 2/2 white and red Spirit creature token.\nFlashback—Tap three untapped creatures you control",
 	"helpful_hunter": "When this creature enters, draw a card.",
+	"helping_hand": "Return target creature card with mana value 3 or less from your graveyard to the battlefield tapped.",
 	"howling_mine": "At the beginning of each player's draw step, if this artifact is untapped, that player draws a card.",
 	"instill_infection": "Put a -1/-1 counter on target creature. Draw a card.",
 	"island": "({T}: Add {U}.)",
@@ -45,12 +49,14 @@ const PRINTED: Dictionary[String, String] = {
 	"oblivion_ring": "When this enchantment enters, exile another target nonland permanent.\n"
 		+ "When this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.",
 	"ornery_kudu": "When this creature enters, put a -1/-1 counter on target creature you control.",
+	"outflank": "Outflank deals damage to target attacking or blocking creature equal to the number of creatures you control.",
 	"path_of_bravery": "As long as your life total is greater than or equal to your starting life total, each creature you control gets +1/+1.\n"
 		+ "Whenever one or more creatures you control attack, you gain X life, where X is the number of attacking creatures.",
 	"plains": "({T}: Add {W}.)",
 	"raise_dead": "Return target creature card from your graveyard to your hand.",
 	"prideful_parent": "Vigilance\nWhen this creature enters, create a 1/1 white Cat creature token.",
 	"prodigal_sorcerer": "{T}: This creature deals 1 damage to any target.",
+	"rally_the_ranks": "As this enchantment enters, choose a creature type.\nEach creature you control of the chosen type gets +1/+1.",
 	"samite_healer": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
 	"serra_angel": "Flying, vigilance",
 	"shatter": "Destroy target artifact.",
@@ -89,6 +95,27 @@ func test_no_ability_of_any_authored_card_falls_back_to_a_class_name() -> void:
 		else:
 			assert_ne(look.rules_text, "", file)
 	assert_gt(checked, 40)
+
+
+func test_affinity_is_a_keyword_naming_what_it_counts() -> void:
+	var cats: AffinityAbility = Scenario.affinity(Scenario.has_subtype("Cat"))
+	var artifacts: AffinityAbility = Scenario.affinity(Scenario.of_type(CardType.ARTIFACT))
+	var claws: MmCardDefinition = Scenario.cat_affinity_instant("Claws Out", Scenario.mana_cost(3))
+	(claws.abilities[1] as SpellAbility).effects = [Scenario.until_end_of_turn(
+		Scenario.modify_pt(2, 2, Scenario.each_creature(ControlledByFilter.new())))]
+
+	assert_eq(AbilityText.of_ability(cats, "Claws Out"), "Affinity for Cats", "CR 702.41a, without its reminder text.")
+	assert_eq(AbilityText.of_ability(artifacts, "Frogmite"), "Affinity for artifacts")
+	assert_true(AbilityText.is_keyword(cats))
+	assert_eq(CardLook.of_definition(claws).rules_text,
+		"Affinity for Cats\nEach creature you control gets +2/+2 until end of turn.")
+
+
+func test_choosing_a_creature_type_as_it_enters_and_the_chosen_type_are_worded() -> void:
+	var rally: MmCardDefinition = Scenario.rally("Rally the Ranks")
+
+	assert_eq(AbilityText.of_card(rally.abilities, rally.card_types, rally.supertypes, rally.name),
+		"As this enchantment enters, choose a creature type.\nEach creature you control of the chosen type gets +1/+1.")
 
 
 func test_something_it_has_no_words_for_is_marked_as_a_fallback() -> void:
@@ -168,7 +195,7 @@ func test_a_mode_with_a_counted_amount_says_what_x_is() -> void:
 	]).abilities[0] as SpellAbility
 
 	assert_eq(AbilityText.mode_text(spell, 0, "Maneuver"),
-		"Maneuver deals X damage to target creature, where X is the number of creatures you control.")
+		"Maneuver deals damage to target creature equal to the number of creatures you control.")
 
 
 func test_a_free_ability_costs_zero() -> void:
@@ -270,6 +297,20 @@ func test_of_two_card_types_the_last_is_the_noun() -> void:
 
 	assert_eq(AbilityText.of_ability(spell, "Sample"), "Destroy target artifact creature.")
 	assert_eq(AbilityText.things(both), "artifact creatures")
+
+
+func test_token_and_nontoken_are_adjectives_and_a_subtype_stands_next_to_its_noun_with_no_comma() -> void:
+	var creature: MmFilter = Scenario.of_type(CardType.CREATURE)
+	var cat: MmFilter = Scenario.has_subtype("Cat")
+	var nontoken: MmFilter = Scenario.is_not(IsTokenFilter.new())
+	var maker: TriggeredAbility = Scenario.triggered(
+		Scenario.enters(Scenario.all_of([creature, cat, nontoken]), MmTrigger.Whose.YOU), [Scenario.create_tokens(Scenario.cat())])
+
+	assert_eq(AbilityText.of_ability(maker, "this creature"),
+		"Whenever a nontoken Cat creature you control enters, create a 1/1 white Cat creature token.", "CR 111.1.")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, IsTokenFilter.new()])), "token creatures")
+	assert_eq(AbilityText.things(Scenario.all_of([cat, nontoken, Scenario.is_not(IsSourceFilter.new())])), "other nontoken Cats")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, cat, Scenario.is_not(IsTappedFilter.new())])), "untapped Cat creatures")
 
 
 func test_lifelink_is_a_keyword() -> void:
@@ -379,6 +420,12 @@ func test_a_conditional_static_ability_is_one_sentence_that_calls_its_source_it_
 	assert_eq(AbilityText.things(Scenario.all_of([Scenario.of_type(CardType.CREATURE), IsAttackingFilter.new()])), "attacking creatures")
 	assert_eq(AbilityText.things(Scenario.all_of([Scenario.of_type(CardType.CREATURE), Scenario.is_not(IsAttackingFilter.new())])),
 		"nonattacking creatures")
+	assert_eq(AbilityText.things(Scenario.all_of([Scenario.of_type(CardType.CREATURE), IsBlockingFilter.new()])), "blocking creatures")
+	assert_eq(AbilityText.things(Scenario.all_of([Scenario.of_type(CardType.CREATURE), Scenario.is_not(IsBlockingFilter.new())])),
+		"nonblocking creatures")
+	assert_eq(AbilityText.things(Scenario.attacking_or_blocking_creature()), "attacking or blocking creatures")
+	assert_eq(AbilityText.of_ability(Scenario.free_outflank("Outflank").abilities[0], "Outflank"),
+		"Outflank deals damage to target attacking or blocking creature equal to the number of creatures you control.")
 
 
 func test_a_counter_filter_is_worded_after_its_noun() -> void:
@@ -505,3 +552,59 @@ func test_returning_with_a_counter_says_so() -> void:
 
 	assert_eq(AbilityText.of_ability(spell, "Daydream"),
 		"Return the exiled card to the battlefield under its owner's control with a +1/+1 counter on it.")
+
+
+func test_returning_your_own_card_tapped_leaves_out_its_owner_and_a_mana_value_comes_before_the_graveyard() -> void:
+	var helping: SpellAbility = SpellAbility.new()
+	helping.targets = [Scenario.target_graveyard_card(Scenario.all_of([Scenario.of_type(CardType.CREATURE), Scenario.mana_value(3),
+		Scenario.owned_by(Whose.YOU)]))]
+	var back: ReturnToBattlefieldEffect = Scenario.return_to_battlefield(Scenario.targeted(0))
+	back.tapped = true
+	helping.effects = [back]
+	var anyones: SpellAbility = SpellAbility.new()
+	anyones.targets = [Scenario.target_graveyard_card(Scenario.of_type(CardType.CREATURE))]
+	var tapped_with_counter: ReturnToBattlefieldEffect = Scenario.return_to_battlefield(Scenario.targeted(0))
+	tapped_with_counter.tapped = true
+	tapped_with_counter.counters = Scenario.constant(1)
+	anyones.effects = [tapped_with_counter]
+	var untapped: SpellAbility = SpellAbility.new()
+	untapped.targets = [Scenario.your_dead_creature()]
+	untapped.effects = [Scenario.return_to_battlefield(Scenario.targeted(0))]
+
+	assert_eq(AbilityText.of_ability(helping, "Helping Hand"),
+		"Return target creature card with mana value 3 or less from your graveyard to the battlefield tapped.")
+	assert_eq(AbilityText.of_ability(anyones, "Sample"),
+		"Return target creature card from a graveyard to the battlefield tapped under its owner's control with a +1/+1 counter on it.")
+	assert_eq(AbilityText.of_ability(untapped, "Sample"), "Return target creature card from your graveyard to the battlefield.")
+
+
+func test_a_power_filter_is_worded_after_its_noun() -> void:
+	var creature: MmFilter = Scenario.of_type(CardType.CREATURE)
+	var greater: PowerFilter = Scenario.power(3, PowerFilter.Comparison.OR_GREATER)
+
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.power(2)])), "creatures with power 2 or less")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, greater])), "creatures with power 3 or greater")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(greater)])), "creatures with power 2 or less",
+		"Not 3 or greater is 2 or less.")
+
+
+func test_looking_at_and_casting_from_the_top_of_the_library_are_worded_as_printed() -> void:
+	var look: LookAtTopOfLibraryAbility = LookAtTopOfLibraryAbility.new()
+	var any_spell: CastFromTopOfLibraryAbility = CastFromTopOfLibraryAbility.new()
+
+	assert_eq(AbilityText.of_ability(look, "Assemble the Players"), "You may look at the top card of your library any time.")
+	assert_eq(AbilityText.of_ability(Scenario.cast_from_top(), "Assemble the Players"),
+		"Once each turn, you may cast a creature spell with power 2 or less from the top of your library.")
+	assert_eq(AbilityText.of_ability(any_spell, "Sample"), "Once each turn, you may cast a spell from the top of your library.")
+
+
+func test_a_mana_value_filter_is_worded_after_its_noun() -> void:
+	var greater: ManaValueFilter = Scenario.mana_value(4, ManaValueFilter.Comparison.OR_GREATER)
+	var creature: MmFilter = Scenario.of_type(CardType.CREATURE)
+
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.mana_value(2)])), "creatures with mana value 2 or less")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, greater])), "creatures with mana value 4 or greater")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(greater)])), "creatures with mana value 3 or less",
+		"Not 4 or greater is 3 or less.")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(Scenario.mana_value(2))])),
+		"creatures with mana value 3 or greater")

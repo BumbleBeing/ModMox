@@ -4,9 +4,13 @@ extends ZoneWindow
 ## grid of Card Faces that wraps to the window's width, the newest card first. A library
 ## is one row scrolled sideways, its top card on the left, showing a card back for each
 ## card the Hero does not know and its face for one they do, such as a card they put on
-## the bottom. A card that answers the decision glows and is clicked here (ADR 0032).
+## the bottom. A card that answers the decision glows and is clicked here (ADR 0032). The
+## Hero's library while they may look at its top card holds only that card, with a caption
+## (game ADR 0055).
 
 signal card_clicked(object_id: int)
+## The cursor came onto ([param is_over]) or left a card that answers the decision.
+signal card_hovered(object_id: int, is_over: bool)
 
 enum Arrangement { GRID, ROW }
 
@@ -21,6 +25,10 @@ const GLOW_ROOM: int = 8
 const OPENING_SIZE: Vector2 = Vector2(4.0 * (CARD_HEIGHT * CardGeometry.ASPECT + GAP) + 24.0 + 2.0 * GLOW_ROOM,
 	CARD_HEIGHT + 78.0 + 2.0 * GLOW_ROOM)
 
+## What a top card shown alone says under it (game ADR 0055).
+const TOP_CARD_CAPTION: String = "Top card · only you see it"
+const CAPTION_COLOR: Color = Color("#9aa3af")
+
 ## How long a Glow takes to come up; the Encounter Screen sets it.
 var glow_seconds: float = 0.0
 
@@ -30,6 +38,7 @@ var _entries: Array[int] = []
 var _faces: Dictionary[int, CardFace] = {}
 ## What was last shown, so that a snapshot that changes nothing here rebuilds nothing.
 var _shown: String = ""
+var _caption: Label = null
 
 
 func _init(arrangement: Arrangement, tint: Color) -> void:
@@ -54,6 +63,7 @@ func show_cards(title: String, cards: Array, snapshot: EncounterSnapshot, clicks
 	if signature == _shown:
 		return
 	_shown = signature
+	_caption = null
 	clear()
 	_holders.clear()
 	_entries.clear()
@@ -74,6 +84,48 @@ func show_cards(title: String, cards: Array, snapshot: EncounterSnapshot, clicks
 		box.add_child(holder)
 		_holders.append(holder)
 		_entries.append(seen.id if seen != null else UNKNOWN)
+
+
+## Shows only [param top], the top card of a library of [param count] cards that the Hero
+## may look at (game ADR 0055), under [param title] and above a caption saying so. A card
+## [param clicks] has an answer on glows and takes a click, as in show_cards().
+func show_top_card(title: String, count: int, top: MmObjectView, snapshot: EncounterSnapshot, clicks: DecisionClicks) -> void:
+	show_title("%s (%d)" % [title, count])
+	var signature: String = "top " + _signature([top], clicks)
+	if signature == _shown:
+		return
+	_shown = signature
+	clear()
+	_holders.clear()
+	_entries.clear()
+	_faces.clear()
+	var room: MarginContainer = MarginContainer.new()
+	room.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for side: String in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
+		room.add_theme_constant_override(side, GLOW_ROOM)
+	body().add_child(room)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	room.add_child(column)
+	var holder: Control = _holder(top, snapshot, clicks)
+	holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(holder)
+	_holders.append(holder)
+	_entries.append(top.id)
+	var note: Label = Label.new()
+	note.text = TOP_CARD_CAPTION
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	note.add_theme_font_size_override("font_size", 14)
+	note.add_theme_color_override("font_color", CAPTION_COLOR)
+	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(note)
+	_caption = note
+
+
+## The caption under a top card shown alone, or null.
+func caption() -> Label:
+	return _caption if is_instance_valid(_caption) and _caption.is_inside_tree() else null
 
 
 ## The object ID of each card shown, in the order shown, or UNKNOWN for a card back.
@@ -153,7 +205,10 @@ func _holder(seen: MmObjectView, snapshot: EncounterSnapshot, clicks: DecisionCl
 	_faces[seen.id] = face
 	if not clicks.options_of(seen.id).is_empty():
 		BorderEffects.add_glow_of(face, card, clicks.colors_of(seen.id), glow_seconds)
-		ClickCatcher.add(face, card).clicked.connect(func() -> void: card_clicked.emit(seen.id))
+		var catcher: ClickCatcher = ClickCatcher.add(face, card)
+		catcher.clicked.connect(func() -> void: card_clicked.emit(seen.id))
+		catcher.mouse_entered.connect(func() -> void: card_hovered.emit(seen.id, true))
+		catcher.mouse_exited.connect(func() -> void: card_hovered.emit(seen.id, false))
 	return holder
 
 

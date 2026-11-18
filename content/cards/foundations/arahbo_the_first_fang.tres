@@ -1,0 +1,116 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_nxogb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="2_hw6ey"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_vk8t4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="3_otjfu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_x12k2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_mevlj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_subtype_filter.gd" id="5_oxyn2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="6_0ufvq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="7_ejrut"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="8_jri6f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="9_xtvp4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="10_es18v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="11_nc170"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="12_ad2w2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="13_dafo2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="14_ugxej"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="15_lu438"]
+[ext_resource type="Resource" path="res://content/tokens/cat_1_1_white.tres" id="16_it0bt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="17_ko42t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="18_4n5nv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_token_filter.gd" id="19_nlwvg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="20_yv5yx"]
+
+[sub_resource type="Resource" id="Resource_q1gfm"]
+script = ExtResource("4_mevlj")
+
+[sub_resource type="Resource" id="Resource_e2wch"]
+script = ExtResource("5_oxyn2")
+subtype = "Cat"
+
+[sub_resource type="Resource" id="Resource_6rf05"]
+script = ExtResource("6_0ufvq")
+
+[sub_resource type="Resource" id="Resource_3fu7m"]
+script = ExtResource("7_ejrut")
+
+[sub_resource type="Resource" id="Resource_0habo"]
+script = ExtResource("8_jri6f")
+filter = SubResource("Resource_3fu7m")
+
+[sub_resource type="Resource" id="Resource_3n17g"]
+script = ExtResource("9_xtvp4")
+filters = Array[ExtResource("3_otjfu")]([SubResource("Resource_q1gfm"), SubResource("Resource_e2wch"), SubResource("Resource_6rf05"), SubResource("Resource_0habo")])
+
+[sub_resource type="Resource" id="Resource_dgcxl"]
+script = ExtResource("10_es18v")
+filter = SubResource("Resource_3n17g")
+
+[sub_resource type="Resource" id="Resource_y60a5"]
+script = ExtResource("11_nc170")
+value = 1
+
+[sub_resource type="Resource" id="Resource_hqt74"]
+script = ExtResource("11_nc170")
+value = 1
+
+[sub_resource type="Resource" id="Resource_j3jva"]
+script = ExtResource("12_ad2w2")
+power = SubResource("Resource_y60a5")
+toughness = SubResource("Resource_hqt74")
+affected = SubResource("Resource_dgcxl")
+
+[sub_resource type="Resource" id="Resource_o6iax"]
+script = ExtResource("13_dafo2")
+effects = Array[ExtResource("2_hw6ey")]([SubResource("Resource_j3jva")])
+
+[sub_resource type="Resource" id="Resource_2tbgf"]
+script = ExtResource("15_lu438")
+token = ExtResource("16_it0bt")
+
+[sub_resource type="Resource" id="Resource_xrsbi"]
+script = ExtResource("4_mevlj")
+
+[sub_resource type="Resource" id="Resource_k16b2"]
+script = ExtResource("5_oxyn2")
+subtype = "Cat"
+
+[sub_resource type="Resource" id="Resource_bhxm1"]
+script = ExtResource("19_nlwvg")
+
+[sub_resource type="Resource" id="Resource_8pq64"]
+script = ExtResource("8_jri6f")
+filter = SubResource("Resource_bhxm1")
+
+[sub_resource type="Resource" id="Resource_co5as"]
+script = ExtResource("9_xtvp4")
+filters = Array[ExtResource("3_otjfu")]([SubResource("Resource_xrsbi"), SubResource("Resource_k16b2"), SubResource("Resource_8pq64")])
+
+[sub_resource type="Resource" id="Resource_dtrdg"]
+script = ExtResource("20_yv5yx")
+filter = SubResource("Resource_co5as")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_rt2np"]
+script = ExtResource("17_ko42t")
+trigger = SubResource("Resource_dtrdg")
+effects = Array[ExtResource("14_ugxej")]([SubResource("Resource_2tbgf")])
+
+[sub_resource type="Resource" id="Resource_sogkf"]
+script = ExtResource("2_vk8t4")
+generic = 2
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_x12k2")
+name = "Arahbo, the First Fang"
+card_types = Array[int]([1])
+supertypes = Array[int]([1])
+subtypes = Array[String](["Cat", "Avatar"])
+mana_cost = SubResource("Resource_sogkf")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_nxogb")]([SubResource("Resource_o6iax"), SubResource("Resource_rt2np")])
+rarity = 2

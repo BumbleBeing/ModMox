@@ -312,8 +312,9 @@ func _strip_of(card: DeckbuilderCard) -> Vector2:
 	return _screen.column_face(card).global_position + Vector2(40, 8)
 
 
+## Where [param card] shows in the Collection pane, scrolled into view first.
 func _in_collection(card: DeckbuilderCard) -> Vector2:
-	return _screen.collection_face(card).get_global_rect().get_center()
+	return Fixture.scroll_to(_screen, card).get_global_rect().get_center()
 
 
 ## A plain copy of the card named [param card_name] that is not in the Deck.

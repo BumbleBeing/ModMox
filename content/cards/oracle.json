@@ -17,6 +17,26 @@
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Artifact"
 	},
+	"arahbo_the_first_fang": {
+		"mana_cost": "{2}{W}",
+		"name": "Arahbo, the First Fang",
+		"oracle_id": "dfec65a0-6fb6-463d-aa62-e84a427db217",
+		"oracle_text": "Other Cats you control get +1/+1.\nWhenever Arahbo or another nontoken Cat you control enters, create a 1/1 white Cat creature token.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Foundations",
+		"toughness": "2",
+		"type_line": "Legendary Creature — Cat Avatar"
+	},
+	"assemble_the_players": {
+		"mana_cost": "{1}{W}",
+		"name": "Assemble the Players",
+		"oracle_id": "180ba940-2b11-4953-b7ce-74847e1aebfd",
+		"oracle_text": "You may look at the top card of your library any time.\nOnce each turn, you may cast a creature spell with power 2 or less from the top of your library.",
+		"rarity": "rare",
+		"set_name": "Murders at Karlov Manor",
+		"type_line": "Enchantment"
+	},
 	"battlegrowth": {
 		"mana_cost": "{G}",
 		"name": "Battlegrowth",
@@ -47,6 +67,15 @@
 		"set_name": "War of the Spark",
 		"toughness": "1",
 		"type_line": "Creature — Cat"
+	},
+	"claws_out": {
+		"mana_cost": "{3}{W}{W}",
+		"name": "Claws Out",
+		"oracle_id": "499d76c1-97ff-4006-922c-be1684a7754c",
+		"oracle_text": "Affinity for Cats (This spell costs {1} less to cast for each Cat you control.)\nCreatures you control get +2/+2 until end of turn.",
+		"rarity": "uncommon",
+		"set_name": "Foundations",
+		"type_line": "Instant"
 	},
 	"coordinated_maneuver": {
 		"mana_cost": "{1}{W}",
@@ -228,6 +257,15 @@
 		"toughness": "1",
 		"type_line": "Creature — Cat"
 	},
+	"helping_hand": {
+		"mana_cost": "{W}",
+		"name": "Helping Hand",
+		"oracle_id": "170a5dbc-6a43-4715-9501-178b1eb7b08c",
+		"oracle_text": "Return target creature card with mana value 3 or less from your graveyard to the battlefield tapped.",
+		"rarity": "uncommon",
+		"set_name": "The Lost Caverns of Ixalan",
+		"type_line": "Sorcery"
+	},
 	"hill_giant": {
 		"mana_cost": "{3}{R}",
 		"name": "Hill Giant",
@@ -379,6 +417,15 @@
 		"toughness": "4",
 		"type_line": "Creature — Antelope"
 	},
+	"outflank": {
+		"mana_cost": "{W}",
+		"name": "Outflank",
+		"oracle_id": "c3436d70-230c-4bda-b7da-935a270f135f",
+		"oracle_text": "Outflank deals damage to target attacking or blocking creature equal to the number of creatures you control.",
+		"rarity": "common",
+		"set_name": "Throne of Eldraine",
+		"type_line": "Instant"
+	},
 	"path_of_bravery": {
 		"mana_cost": "{2}{W}",
 		"name": "Path of Bravery",
@@ -438,6 +485,15 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Sorcery"
+	},
+	"rally_the_ranks": {
+		"mana_cost": "{1}{W}",
+		"name": "Rally the Ranks",
+		"oracle_id": "eeb07c8a-21d1-43fa-a5f3-ee3fe328a671",
+		"oracle_text": "As this enchantment enters, choose a creature type.\nCreatures you control of the chosen type get +1/+1.",
+		"rarity": "rare",
+		"set_name": "Kaldheim",
+		"type_line": "Enchantment"
 	},
 	"samite_healer": {
 		"mana_cost": "{1}{W}",

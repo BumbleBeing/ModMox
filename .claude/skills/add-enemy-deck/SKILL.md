@@ -25,7 +25,7 @@ ajani_2
 - **The deck's name** is the enemy's name in snake case (`ajani`). An enemy with several decks, such as a unique encounter, gets one per tier, `<enemy>_<tier>` (`ajani_2`). Ask for the name if it is missing or doesn't fit this form, and ask before you replace a deck that is already in `content/decks/`.
 - **The Villain** is `content/villains/<enemy>.tres`: one Villain plays a lone deck at every Tier, or plays five Tier decks, one per Tier (ADR 0024). Ask the user now, so the end of the run doesn't wait on them:
   - its name on screen, for a new Villain (`Charmed Stray`);
-  - its Portrait: `ui/sprites/portraits/<enemy>.png` if that exists, or else whether to draw one with `/draw-portrait <card name>` or use `purple_demon.png` for now;
+  - its Portrait and Pain Portrait: `ui/sprites/portraits/<enemy>.png` and `<enemy>_pain.png` if they exist, or else whether to draw both with `/draw-portrait <card name>` or use `purple_demon.png` with no Pain Portrait for now;
   - which Stage (`content/stages/`) lists it, and at which Rank (Lesser, Elite or Boss), or none. A Villain with five Tier decks can't go on a Stage until all five are written: `StageDefinition.validate()` refuses it.
 - **The list** has one `<count> <card name>` per line. Save it as it was given to `list.txt` in a folder for this deck in the session's scratchpad (`<scratchpad>/add-enemy-deck/<deck>/`); the ledger goes in the same folder. Tell the user the folder's full path so they can follow along.
 
@@ -73,7 +73,7 @@ $GODOT --headless --path . -s res://.claude/skills/add-enemy-deck/scripts/write_
 ```
 
 - A Tier deck adds `--tier <N>`. Tier decks are written in order, and the script refuses one that comes too soon.
-- Leave out `--name` and `--sprite` to keep what an existing Villain has. Without `--sprite`, a new Villain takes `ui/sprites/portraits/<enemy>.png`.
+- Leave out `--name`, `--sprite` and `--pain-sprite` to keep what an existing Villain has. Without them, a new Villain takes `ui/sprites/portraits/<enemy>.png` and `<enemy>_pain.png`, where those exist.
 - Leave out `--stage` and `--rank` for no Stage, and always for a Tier Villain that still lacks decks.
 
 The script creates or updates the Villain, and adds it to the Stage's list only if the Stage stays valid. `tests/content/test_villain_and_stage_content.gd` checks that every deck is a setup of exactly one Villain, named after it or as its `_<tier>` deck, so a deck with no Villain fails it.

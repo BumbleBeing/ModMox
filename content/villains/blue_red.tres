@@ -3,10 +3,12 @@
 [ext_resource type="Script" path="res://run/villain.gd" id="1_5vsra"]
 [ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="2_ifu3u"]
 [ext_resource type="Resource" path="res://content/decks/blue_red.tres" id="3_0qfa2"]
-[ext_resource type="Texture2D" path="res://ui/sprites/portraits/purple_demon.png" id="4_rr1hb"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/charmed_stray_pain.png" id="5_pain"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/charmed_stray.png" id="4_rr1hb"]
 
 [resource]
 script = ExtResource("1_5vsra")
 name = "Blue-Red"
 sprite = ExtResource("4_rr1hb")
+pain_sprite = ExtResource("5_pain")
 setups = Array[ExtResource("2_ifu3u")]([ExtResource("3_0qfa2")])

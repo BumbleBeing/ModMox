@@ -560,6 +560,31 @@ func test_clicking_a_permanent_activates_it_and_clicking_a_player_targets_them()
 	assert_null(_screen.player_panel(VILLAIN).click_catcher())
 
 
+func test_a_player_who_loses_life_winces_for_the_hold_and_an_undo_does_not() -> void:
+	_open(_setup_of([_wand()]))
+	_keep_and_reach_main()
+	_do(CastSpellAction, "Wand")
+	_presenter.wait_until_idle()
+	var villain: PlayerPanel = _screen.player_panel(VILLAIN)
+	assert_false(villain.is_wincing())
+
+	_click(_permanent("Wand"))
+	villain.click_catcher().clicked.emit()
+	_presenter.wait_until_idle()
+
+	assert_eq(_presenter.snapshot().view.life_totals[VILLAIN], 19)
+	assert_true(villain.is_wincing(), "1 life lost.")
+	assert_false(_screen.player_panel(HERO).is_wincing(), "The Hero was not hurt.")
+	villain.advance(PainHold.seconds(1, _screen.game_speed()) + 0.01)
+	assert_false(villain.is_wincing())
+
+	_screen.undo()
+	_presenter.wait_until_idle()
+	_screen.undo()
+	_presenter.wait_until_idle()
+	assert_false(villain.is_wincing(), "Life went back up, and an undo is never animated.")
+
+
 func test_holding_the_key_while_clicking_keeps_priority_and_the_hold_panel_shows_while_it_is_down() -> void:
 	_open(_setup_of([_wand()]))
 	_keep_and_reach_main()
@@ -620,6 +645,28 @@ func test_a_creature_chosen_as_an_ability_resolves_glows_is_asked_for_in_the_inf
 	_presenter.wait_until_idle()
 	assert_eq(_permanent("Bear"), -1)
 	assert_ne(_permanent("Lion"), -1)
+
+
+func test_two_copies_of_a_legend_glow_are_asked_about_in_the_info_panel_and_the_one_clicked_is_kept() -> void:
+	_open(_setup_of([Scenario.legend()]))
+	_keep_and_reach_main()
+	_do(CastSpellAction, "Legend")
+	_presenter.wait_until_idle()
+	var first: int = _permanent("Legend")
+
+	_do(CastSpellAction, "Legend")
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is ChooseLegendToKeepDecision, "Passed for the Hero until it resolved.")
+	assert_eq(_screen.info_panel().prompt_text(), "Choose which Legend to keep")
+	var legends: Array[int] = _permanents("Legend")
+	assert_eq(legends.size(), 2)
+	for legend: int in legends:
+		assert_eq(BorderEffects.glow_color(_screen.face_of(legend)), DecisionClicks.color_of(DecisionClicks.Kind.TARGET))
+	_click(legends[1])
+	_presenter.wait_until_idle()
+	assert_eq(_permanents("Legend"), [legends[1]] as Array[int])
+	assert_true(_presenter.snapshot().view.battlefield.all(func(seen: MmObjectView) -> bool: return seen.id != first))
 
 
 func test_mana_is_paid_by_clicking_sources_and_the_info_panel_says_what_is_owed() -> void:

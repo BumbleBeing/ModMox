@@ -18,6 +18,34 @@ func test_a_library_has_one_unknown_entry_for_each_card() -> void:
 			assert_eq(view.libraries[player.id].count(null), 33, "Nobody has seen a card of it.")
 
 
+func test_a_player_sees_what_is_in_their_own_library_but_not_its_order() -> void:
+	var engine: MmEngine = MmEngine.start(Scenario.setup())
+	var hero: MmPlayer = engine.hero()
+
+	var contents: Array[MmObjectView] = engine.view_for(hero).library_contents
+
+	assert_eq(contents.size(), hero.library.size(), "Game ADR 0053: a player knows their own deck list.")
+	var names: Array[String] = []
+	for seen: MmObjectView in contents:
+		names.append(seen.name)
+		assert_eq(seen.id, 0, "Nothing says where a card is.")
+		assert_eq(seen.card_id, MmGameObject.NO_CARD)
+	var sorted: Array[String] = names.duplicate()
+	sorted.sort()
+	assert_eq(names, sorted, "Sorted by name, not in library order.")
+	var actual: Array[String] = Scenario.names(engine, hero.library)
+	actual.sort()
+	assert_eq(names, actual)
+
+
+func test_nobody_sees_what_is_in_another_players_library() -> void:
+	var engine: MmEngine = MmEngine.start(Scenario.setup())
+
+	var villain_view: MmPlayerView = engine.view_for(engine.villain())
+
+	assert_eq(villain_view.library_contents.size(), engine.villain().library.size(), "Their own, not the Hero's.")
+
+
 func test_a_card_put_on_the_bottom_is_known_to_its_owner_alone() -> void:
 	var engine: MmEngine = _engine_with_one_card_on_the_bottom()
 	var hero: MmPlayer = engine.hero()

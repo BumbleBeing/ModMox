@@ -160,6 +160,32 @@ func test_fog_is_not_cast_against_damage_it_can_afford() -> void:
 	assert_true(AiScenario.action_at(engine, AiScenario.ask(engine, AiAgent.new())) is PassAction)
 
 
+func test_outflank_is_cast_at_an_attacker_once_blockers_are_declared() -> void:
+	# Removal aimed at "attacking or blocking": nothing to aim at before combat, the attacker
+	# once blocks are in.
+	var outflank: MmCardDefinition = Scenario.free_outflank("Outflank")
+	var engine: MmEngine = AiScenario.ready_with([AiScenario.free_alpha("grizzly_bears")],
+		[AiScenario.free_alpha("savannah_lions"), AiScenario.free_alpha("savannah_lions")], [], [outflank])
+	assert_not_null(engine)
+	var agent: AiAgent = AiAgent.new()
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	AiScenario.pass_to(engine, engine.villain().id, PriorityDecision)
+	assert_eq(engine.game_state().step, Step.PRECOMBAT_MAIN)
+	var outflank_id: int = Scenario.card_in_hand(engine, engine.villain(), "Outflank")
+	assert_false(Scenario.offers_cast(engine, outflank_id), "Nothing attacks or blocks in a main phase.")
+	Scenario.pass_until_step(engine, Step.DECLARE_ATTACKERS)
+	engine.submit([bears])
+	Scenario.autoplay(engine, func(running: MmEngine) -> bool:
+		return running.game_state().step == Step.DECLARE_BLOCKERS and running.pending_decision() is PriorityDecision \
+			and running.pending_decision().player_id == running.villain().id)
+
+	var play: int = AiScenario.ask(engine, agent)
+
+	assert_eq(AiScenario.cast_name(engine, play), "Outflank")
+	engine.submit(play)
+	assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, agent)).id, bears)
+
+
 func test_uthden_troll_regenerates_only_when_it_would_die() -> void:
 	for is_blocked: bool in [true, false]:
 		var engine: MmEngine = AiScenario.ready_with([AiScenario.free_alpha("uthden_troll")],

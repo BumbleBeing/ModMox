@@ -13,6 +13,9 @@ const TIERS: int = 5
 @export var name: String = ""
 ## Its 32 × 32 Portrait.
 @export var sprite: Texture2D
+## Its 32 × 32 Pain Portrait, the Portrait hurt, drawn beside it by /draw-portrait; null for
+## a Villain that has none. Nothing shows it yet.
+@export var pain_sprite: Texture2D
 ## One setup, played at every Tier, or five, one for each Tier. Each is the same resource a
 ## deck file is, so starting life and Emblems need no fields here (ADR 0011).
 @export var setups: Array[MmPlayerSetup] = []
