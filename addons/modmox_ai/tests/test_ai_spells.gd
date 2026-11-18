@@ -446,6 +446,35 @@ func test_plus_counters_are_played_whenever_and_minus_counters_as_removal() -> v
 	assert_eq(AiTiming.tag_of_effects(wither), AiTiming.Tag.REMOVAL)
 
 
+func test_on_the_second_landfall_the_doubling_goes_on_the_creature_with_counters_not_a_bigger_one_without() -> void:
+	# Scythecat Cub: "put a +1/+1 counter on target creature you control. If this is the
+	# second time this ability has resolved this turn, double the number of +1/+1 counters
+	# on that creature instead." Doubling none is nothing, so the Giant gains nothing.
+	var cub: MmCardDefinition = Scenario.free_copy(load("res://content/cards/foundations_jumpstart/scythecat_cub.tres"))
+	var rush: MmCardDefinition = Scenario.instant("Rush", Scenario.mana_cost(0), [], [Scenario.additional_land_plays(1, Scenario.you())])
+	var engine: MmEngine = AiScenario.ready_with([cub, Scenario.creature("Bear", 2, 2), Scenario.creature("Giant", 4, 4)], [],
+		[Scenario.basic_land("Forest"), Scenario.basic_land("Plains"), rush])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+	_play_land(engine, "Forest")
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(bear)), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Rush"), "")
+	_play_land(engine, "Plains")
+	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.normal())
+
+	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+
+	assert_eq(target.id, bear, "Its one counter doubles to two; the Giant has none to double.")
+
+
+## Plays the land named [param card_name] from the Hero's hand.
+func _play_land(engine: MmEngine, card_name: String) -> void:
+	var land: int = Scenario.card_in_hand(engine, engine.hero(), card_name)
+	assert_eq(engine.submit(Scenario.play_land_index(engine.pending_decision() as PriorityDecision, land)), "")
+	assert_true(engine.pending_decision() is ChooseTargetDecision, "The landfall trigger asks its target.")
+
+
 ## Casts every card named [param card_name] in the Hero's hand, so the Agent is left with
 ## the spell under test.
 func _cast_every(engine: MmEngine, card_name: String) -> void:

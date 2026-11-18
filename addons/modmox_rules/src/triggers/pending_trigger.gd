@@ -8,6 +8,8 @@ extends RefCounted
 var ability: TriggeredAbility
 var controller_id: int
 var source_object_id: int
+## The ability's place among its source's abilities as it triggered (ADR 0056).
+var ability_index: int
 ## The source's Card Identity, or MmGameObject.NO_CARD for an Emblem.
 var source_card_id: int
 var source_name: String
@@ -16,9 +18,10 @@ var triggering_player_id: int
 var triggering_object_id: int
 
 
-func _init(triggered: TriggeredAbility, source: MmGameObject, source_characteristics: MmCharacteristics,
+func _init(triggered: TriggeredAbility, index: int, source: MmGameObject, source_characteristics: MmCharacteristics,
 		player_id: int, object_id: int) -> void:
 	ability = triggered
+	ability_index = index
 	controller_id = source.controller_id
 	source_object_id = source.id
 	source_card_id = source.card_id
@@ -33,4 +36,5 @@ func context() -> MmEffectContext:
 
 
 func describe() -> String:
-	return "trigger of %s (object %d) for player %d, object %d" % [source_name, source_object_id, triggering_player_id, triggering_object_id]
+	return "trigger of %s (object %d, ability %d) for player %d, object %d" % [source_name, source_object_id, ability_index,
+		triggering_player_id, triggering_object_id]

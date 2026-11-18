@@ -1,4 +1,13 @@
 {
+	"adventuring_gear": {
+		"mana_cost": "{1}",
+		"name": "Adventuring Gear",
+		"oracle_id": "17042684-7af4-43a6-88c7-885032cfb27c",
+		"oracle_text": "Landfall — Whenever a land you control enters, equipped creature gets +2/+2 until end of turn.\nEquip {1} ({1}: Attach to target creature you control. Equip only as a sorcery.)",
+		"rarity": "common",
+		"set_name": "Zendikar",
+		"type_line": "Artifact — Equipment"
+	},
 	"ancestral_recall": {
 		"mana_cost": "{U}",
 		"name": "Ancestral Recall",
@@ -154,6 +163,24 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "1",
 		"type_line": "Creature — Elf Archer"
+	},
+	"explore": {
+		"mana_cost": "{1}{G}",
+		"name": "Explore",
+		"oracle_id": "b8f566ea-8283-4afa-9ac8-737e26419283",
+		"oracle_text": "You may play an additional land this turn.\nDraw a card.",
+		"rarity": "common",
+		"set_name": "Worldwake",
+		"type_line": "Sorcery"
+	},
+	"felidar_retreat": {
+		"mana_cost": "{3}{W}",
+		"name": "Felidar Retreat",
+		"oracle_id": "16629f59-bae8-4c19-bf50-443eb0ed6856",
+		"oracle_text": "Landfall — Whenever a land you control enters, choose one —\n• Create a 2/2 white Cat Beast creature token.\n• Put a +1/+1 counter on each creature you control. Those creatures gain vigilance until end of turn.",
+		"rarity": "rare",
+		"set_name": "Zendikar Rising",
+		"type_line": "Enchantment"
 	},
 	"fog": {
 		"mana_cost": "{G}",
@@ -477,6 +504,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Human Wizard Sorcerer"
 	},
+	"prowling_felidar": {
+		"mana_cost": "{3}{W}",
+		"name": "Prowling Felidar",
+		"oracle_id": "ed26f6bf-fcd6-4cf4-9b65-a492cb79f2df",
+		"oracle_text": "Vigilance\nLandfall — Whenever a land you control enters, put a +1/+1 counter on this creature.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Zendikar Rising",
+		"toughness": "3",
+		"type_line": "Creature — Cat Beast"
+	},
 	"raise_dead": {
 		"mana_cost": "{B}",
 		"name": "Raise Dead",
@@ -527,6 +565,28 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "2",
 		"type_line": "Creature — Zombie"
+	},
+	"scythe_leopard": {
+		"mana_cost": "{G}",
+		"name": "Scythe Leopard",
+		"oracle_id": "ab539b16-d2a0-404d-8ad3-7ff33f2f1abe",
+		"oracle_text": "Landfall — Whenever a land you control enters, this creature gets +1/+1 until end of turn.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Battle for Zendikar",
+		"toughness": "1",
+		"type_line": "Creature — Cat"
+	},
+	"scythecat_cub": {
+		"mana_cost": "{1}{G}",
+		"name": "Scythecat Cub",
+		"oracle_id": "929117cd-caa6-402b-9d7b-1f684d75695c",
+		"oracle_text": "Trample\nLandfall — Whenever a land you control enters, put a +1/+1 counter on target creature you control. If this is the second time this ability has resolved this turn, double the number of +1/+1 counters on that creature instead.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Foundations Jumpstart",
+		"toughness": "2",
+		"type_line": "Creature — Cat"
 	},
 	"serra_angel": {
 		"mana_cost": "{3}{W}{W}",
@@ -579,6 +639,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Cat Scout"
 	},
+	"steppe_lynx": {
+		"mana_cost": "{W}",
+		"name": "Steppe Lynx",
+		"oracle_id": "b16cef02-dcf8-4866-ac42-6ee929ddbea2",
+		"oracle_text": "Landfall — Whenever a land you control enters, this creature gets +2/+2 until end of turn.",
+		"power": "0",
+		"rarity": "common",
+		"set_name": "Zendikar",
+		"toughness": "1",
+		"type_line": "Creature — Cat"
+	},
 	"stifle": {
 		"mana_cost": "{U}",
 		"name": "Stifle",
@@ -596,6 +667,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Swamp"
+	},
+	"territorial_scythecat": {
+		"mana_cost": "{2}{G}",
+		"name": "Territorial Scythecat",
+		"oracle_id": "75d38954-6148-4d95-bf4b-cb82efcbe8df",
+		"oracle_text": "Trample (This creature can deal excess combat damage to the player or planeswalker it's attacking.)\nLandfall — Whenever a land you control enters, put a +1/+1 counter on this creature.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Zendikar Rising",
+		"toughness": "1",
+		"type_line": "Creature — Cat"
 	},
 	"terror": {
 		"mana_cost": "{1}{B}",

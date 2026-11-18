@@ -180,6 +180,30 @@ func test_a_modal_spell_says_in_full_only_the_mode_it_was_cast_with() -> void:
 	assert_eq(item.full_text, "Charm — Charm deals 2 damage to target creature.")
 
 
+func test_a_modal_trigger_leads_with_only_the_mode_it_was_put_on_the_stack_with() -> void:
+	var view: MmPlayerView = _view()
+	var retreat: MmObjectView = MmObjectView.new()
+	retreat.id = 8
+	retreat.name = "Retreat"
+	retreat.card_types = [MmCardTypes.CardType.ENCHANTMENT]
+	view.battlefield.append(retreat)
+	var trigger: MmObjectView = MmObjectView.new()
+	trigger.id = 22
+	trigger.card_id = MmGameObject.NO_CARD
+	trigger.name = "Retreat ability"
+	trigger.source_object_id = 8
+	trigger.controller_id = HERO
+	trigger.ability = Scenario.free_retreat("Retreat", Scenario.at_step(MmTurn.Step.UPKEEP, MmTrigger.Whose.YOU)).abilities[0]
+	trigger.chosen_mode = 0
+	view.stack = [trigger]
+
+	var item: StackItem = StackItem.of(trigger, view)
+
+	assert_eq(item.first_line, "Create a 2/2 white Cat Beast creature token.", "ADR 0046: only its chosen mode.")
+	assert_eq(item.full_text, "Retreat's ability — Create a 2/2 white Cat Beast creature token.")
+	assert_eq(item.source_object_id, 8)
+
+
 func test_a_spell_cast_with_flashback_says_so_and_that_it_will_be_exiled() -> void:
 	var view: MmPlayerView = _view()
 	var zap: MmObjectView = _spell(20, "Zap", HERO, [MmReference.to_object(BEARS)])

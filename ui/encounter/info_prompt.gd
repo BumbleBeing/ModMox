@@ -45,11 +45,13 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		prompt.owed = _owed(pay)
 		prompt.can_cancel = true
 	elif decision is ChooseModeDecision:
-		prompt.text = "Choose one for %s" % stack_name(view, (decision as ChooseModeDecision).stack_object_id)
-		prompt.can_cancel = true
+		var choosing: int = (decision as ChooseModeDecision).stack_object_id
+		prompt.text = "Choose one for %s" % stack_name(view, choosing)
+		prompt.can_cancel = not _is_trigger(view, choosing)
 	elif decision is ChooseTargetDecision:
-		prompt.text = "Choose a target for %s" % stack_name(view, (decision as ChooseTargetDecision).stack_object_id)
-		prompt.can_cancel = true
+		var targeting: int = (decision as ChooseTargetDecision).stack_object_id
+		prompt.text = "Choose a target for %s" % stack_name(view, targeting)
+		prompt.can_cancel = not _is_trigger(view, targeting)
 	elif decision is ChooseObjectDecision:
 		var choice: ChooseObjectDecision = decision as ChooseObjectDecision
 		prompt.text = "Choose %s for %s" % [AbilityText.chosen_words(choice.filter), stack_name(view, choice.stack_object_id)]
@@ -82,6 +84,15 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		prompt.text = decision.describe()
 		push_error("No input answers %s." % decision.describe())
 	return prompt
+
+
+## Whether [param stack_object_id] is a triggered ability. Putting one on the stack can't be
+## taken back (CR 603.3), so its mode and targets have no Cancel (game ADR 0047).
+static func _is_trigger(view: MmPlayerView, stack_object_id: int) -> bool:
+	for item: MmObjectView in view.stack:
+		if item.id == stack_object_id:
+			return item.ability is TriggeredAbility
+	return false
 
 
 static func _owed(payment: PayManaDecision) -> MmManaCost:

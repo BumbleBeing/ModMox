@@ -33,7 +33,8 @@ var subtypes: Array[String] = []
 var mana_cost: MmManaCost = null
 ## For a spell or ability on the stack: its chosen targets, in order (null if not chosen).
 var targets: Array[MmReference] = []
-## For a modal spell on the stack: its chosen mode, which both players see (CR 700.2).
+## For a modal spell or modal triggered ability on the stack: its chosen mode, which both
+## players see (CR 700.2).
 ## SpellAbility.NO_MODE otherwise.
 var chosen_mode: int = SpellAbility.NO_MODE
 ## For a spell on the stack: cast with flashback, so it will be exiled as it leaves the

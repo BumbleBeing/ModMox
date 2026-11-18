@@ -78,7 +78,7 @@ static func tag_of_spell(spell: SpellAbility) -> Tag:
 	if not spell.is_modal():
 		return tag_of_effects(spell.effects)
 	var shared: Tag = tag_of_effects(spell.modes[0].effects)
-	for mode: SpellMode in spell.modes:
+	for mode: AbilityMode in spell.modes:
 		if tag_of_effects(mode.effects) != shared:
 			return Tag.NONE
 	return shared
@@ -111,7 +111,7 @@ static func effects_of_action(state: MmGameState, action: MmAction) -> Array[MmE
 			if spell == null:
 				continue
 			effects.append_array(spell.effects)
-			for mode: SpellMode in spell.modes:
+			for mode: AbilityMode in spell.modes:
 				effects.append_array(mode.effects)
 		return effects
 	var activated: ActivatedAbility = activated_ability_of(state, action)

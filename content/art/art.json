@@ -1,4 +1,14 @@
 {
+	"adventuring_gear": {
+		"artist": "Howard Lyon",
+		"collector_number": "195",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "3aa395f2-656e-4bf3-bd9b-6240bd3e2774",
+		"set": "zen"
+	},
 	"ancestral_recall": {
 		"artist": "Mark Poole",
 		"collector_number": "47",
@@ -158,6 +168,26 @@
 		],
 		"scryfall_id": "1cb9d405-f2b5-4e10-a405-feafd2a87d90",
 		"set": "lea"
+	},
+	"explore": {
+		"artist": "John Avon",
+		"collector_number": "99",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "d8f81e8a-e309-4bac-81de-326756cd8901",
+		"set": "wwk"
+	},
+	"felidar_retreat": {
+		"artist": "Ralph Horsley",
+		"collector_number": "16",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "45340647-4d3e-4be1-b0e6-e40cc56a438b",
+		"set": "znr"
 	},
 	"fog": {
 		"artist": "Jesper Myrfors",
@@ -479,6 +509,16 @@
 		"scryfall_id": "e4dc1103-7bf1-47f6-9006-d3ed9ccd7a6a",
 		"set": "lea"
 	},
+	"prowling_felidar": {
+		"artist": "Ilse Gort",
+		"collector_number": "34",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "b9d1c11a-a32c-449c-95c6-450dce6c26d2",
+		"set": "znr"
+	},
 	"raise_dead": {
 		"artist": "Jeff A. Menges",
 		"collector_number": "122",
@@ -528,6 +568,26 @@
 		],
 		"scryfall_id": "e9be6dcf-5e25-4b8c-9cd0-badf3771f81e",
 		"set": "lea"
+	},
+	"scythe_leopard": {
+		"artist": "Daniel Ljunggren",
+		"collector_number": "188",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "89ef0054-a290-4c41-846d-12f8119c52ae",
+		"set": "bfz"
+	},
+	"scythecat_cub": {
+		"artist": "Gabor Szikszai",
+		"collector_number": "24",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "b3dd3c7d-4685-4579-b483-14ddaaaddf5b",
+		"set": "j25"
 	},
 	"serra_angel": {
 		"artist": "Douglas Shuler",
@@ -579,6 +639,16 @@
 		"scryfall_id": "fcfe4e62-c153-47b8-8e09-cedaf91f53d8",
 		"set": "fdn"
 	},
+	"steppe_lynx": {
+		"artist": "Nic Klein",
+		"collector_number": "36",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "b0aaec1c-8084-4468-82e7-2e4cc5ebe244",
+		"set": "zen"
+	},
 	"stifle": {
 		"artist": "Dany Orizio",
 		"collector_number": "52",
@@ -599,6 +669,16 @@
 		"scryfall_id": "6176936d-72e2-4205-8871-4c5a4f1cb2d8",
 		"set": "lea"
 	},
+	"territorial_scythecat": {
+		"artist": "Wisnu Tan",
+		"collector_number": "213",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "5e0f725c-8d1f-47ff-ad81-a5007199a5e2",
+		"set": "znr"
+	},
 	"terror": {
 		"artist": "Ron Spencer",
 		"collector_number": "130",
@@ -618,6 +698,16 @@
 		],
 		"scryfall_id": "2885d54c-9fb2-4f01-8937-54f8ac1ce5bc",
 		"set": "tfdn"
+	},
+	"tokens/cat_beast_2_2_white": {
+		"artist": "Bayard Wu",
+		"collector_number": "3",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "e2c91781-acf9-4cff-be1a-85148ad2a683",
+		"set": "tznr"
 	},
 	"tokens/spirit_2_2_red_white": {
 		"artist": "Filipe Pagliuso",

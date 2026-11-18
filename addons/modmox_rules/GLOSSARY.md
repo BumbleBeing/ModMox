@@ -95,7 +95,7 @@ An instant or sorcery that says "Choose one —" and lists its Modes (CR 700.2).
 _Avoid_: Charm (a card name, not a rule), choice spell
 
 **Mode**:
-One "•" line of a Modal Spell, with Target Requirements and effects of its own. The chosen Mode is all the spell does.
+One "•" line of a Modal Spell or of a modal triggered ability, with Target Requirements and effects of its own. The chosen Mode is all the spell or ability does. A modal triggered ability's controller chooses its Mode as they put it on the stack, before any target, by the same rules as a Modal Spell's; one with no Mode that can be chosen is removed instead.
 _Avoid_: Option (an Option Menu's row), branch, choice
 
 **Selection**:
@@ -181,7 +181,7 @@ Two abilities of one object where the second refers to what the first did, as Ob
 _Avoid_: Paired abilities, remembered card, hostage
 
 **Condition**:
-Something true or false about the game right now, such as "this permanent is untapped", used for an intervening "if" clause.
+Something true or false about the game right now, such as "this permanent is untapped", used for an intervening "if" clause, for "as long as", and for an effect that happens instead of another while it holds ("If this is the second time this ability has resolved this turn, ... instead", CR 608.2c).
 _Avoid_: Predicate, check (Filter is the word when a player or object either matches or not)
 
 ## Continuous effects
@@ -243,7 +243,7 @@ Damage dealt to a creature, which stays on it until the cleanup step removes it.
 _Avoid_: Wounds, damage counters (counters are something else)
 
 **Counter**:
-A marker on a permanent that stays until the permanent leaves the battlefield or the counter is removed. There are two kinds so far, +1/+1 and -1/-1, each changing power and toughness by that much; a permanent with both loses the same number of each. A counter is not a characteristic, and never means countering a spell.
+A marker on a permanent that stays until the permanent leaves the battlefield or the counter is removed. There are two kinds so far, +1/+1 and -1/-1, each changing power and toughness by that much; a permanent with both loses the same number of each. Doubling the number of a kind of counters on a permanent puts on as many more as it has (CR 701.10e). A counter is not a characteristic, and never means countering a spell.
 _Avoid_: Token (a token is a permanent that is not a card), marker, buff, stack (for a number of counters)
 
 **Attachment**:

@@ -9,6 +9,10 @@ extends RefCounted
 ## which a test over every authored card catches.
 
 const NUMBER_WORDS: Array[String] = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
+const ORDINAL_WORDS: Array[String] = ["zeroth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth",
+	"ninth", "tenth"]
+## The ending of an ordinal past "tenth", by its last digit: "21st", "22nd", "23rd", "24th".
+const ORDINAL_SUFFIXES: Array[String] = ["th", "st", "nd", "rd"]
 const STEP_NAMES: Dictionary[MmTurn.Step, String] = {
 	MmTurn.Step.UNTAP: "untap step", MmTurn.Step.UPKEEP: "upkeep", MmTurn.Step.DRAW: "draw step",
 	MmTurn.Step.PRECOMBAT_MAIN: "precombat main phase", MmTurn.Step.BEGINNING_OF_COMBAT: "beginning of combat step",
@@ -38,6 +42,10 @@ var _targets: Array[TargetRequirement] = []
 var _trigger: MmTrigger = null
 ## The target requirements already named, which are "it" from then on.
 var _named: Dictionary[int, bool] = {}
+## Whether a target already named is "that creature" rather than "it", as it is in what an
+## InsteadEffect does instead: "double the number of +1/+1 counters on that creature
+## instead".
+var _names_again_with_that: bool = false
 ## What "X" stands for in the sentence being written, or "".
 var _where: String = ""
 
@@ -98,13 +106,13 @@ static func of_ability(ability: MmAbility, noun: String) -> String:
 
 
 ## Only what [param ability] does, for a spell or ability on the stack: without the cost
-## that was paid or the trigger and condition that were met. A modal spell whose
-## [param mode_index] is chosen does only what that mode does.
+## that was paid or the trigger and condition that were met. A modal spell or triggered
+## ability whose [param mode_index] is chosen does only what that mode does; before then it
+## says every mode.
 static func effect_of(ability: MmAbility, noun: String, mode_index: int = SpellAbility.NO_MODE) -> String:
 	var writer: AbilityText = AbilityText.new(noun)
-	var spell: SpellAbility = ability as SpellAbility
-	if spell != null and spell.is_modal():
-		return writer._ability(spell) if mode_index == SpellAbility.NO_MODE else mode_text(spell, mode_index, noun)
+	if not ability.modes_or_none().is_empty():
+		return writer._choose_one(ability) if mode_index == SpellAbility.NO_MODE else mode_text(ability, mode_index, noun)
 	if ability is SpellAbility:
 		writer._targets = (ability as SpellAbility).targets
 		return writer._sentences((ability as SpellAbility).effects, true)
@@ -119,12 +127,15 @@ static func effect_of(ability: MmAbility, noun: String, mode_index: int = SpellA
 	return writer._ability(ability)
 
 
-## What mode [param mode_index] of the modal [param spell] does, as its "•" line says it,
-## without the bullet.
-static func mode_text(spell: SpellAbility, mode_index: int, noun: String) -> String:
+## What mode [param mode_index] of the modal spell or triggered ability [param ability]
+## does, as its "•" line says it, without the bullet.
+static func mode_text(ability: MmAbility, mode_index: int, noun: String) -> String:
 	var writer: AbilityText = AbilityText.new(noun)
-	writer._targets = spell.modes[mode_index].targets
-	return writer._sentences(spell.modes[mode_index].effects, true)
+	var mode: AbilityMode = ability.modes_or_none()[mode_index]
+	writer._targets = mode.targets
+	if ability is TriggeredAbility:
+		writer._trigger = (ability as TriggeredAbility).trigger  # "that creature" and the like.
+	return writer._sentences(mode.effects, true)
 
 
 ## [param ability] as of_ability() prints it, with each "of the chosen type" in it read as
@@ -221,11 +232,7 @@ func _ability(ability: MmAbility) -> String:
 	if ability is ProtectionAbility:
 		return "Protection from " + _protection((ability as ProtectionAbility).from)
 	if ability is SpellAbility and (ability as SpellAbility).is_modal():
-		# CR 700.2: "Choose one —", then a bullet for each mode.
-		var lines: PackedStringArray = ["Choose one —"]
-		for mode_index: int in (ability as SpellAbility).modes.size():
-			lines.append("• " + mode_text(ability as SpellAbility, mode_index, _noun))
-		return "\n".join(lines)
+		return _choose_one(ability)
 	if ability is SpellAbility:
 		_targets = (ability as SpellAbility).targets
 		return _sentences((ability as SpellAbility).effects, true)
@@ -373,7 +380,22 @@ func _triggered(ability: TriggeredAbility) -> String:
 	var text: String = _trigger_text(ability.trigger) + ", "
 	if ability.condition != null:
 		text += "if %s, " % _condition(ability.condition)
+	if ability.is_modal():
+		return _capitalized(text + "choose one —") + _bullets(ability)
 	return _capitalized(text + _sentences(ability.effects, false))
+
+
+## CR 700.2: "Choose one —", then a bullet for each mode of [param ability].
+func _choose_one(ability: MmAbility) -> String:
+	return "Choose one —" + _bullets(ability)
+
+
+## A new line and a "•" for each mode of [param ability].
+func _bullets(ability: MmAbility) -> String:
+	var text: String = ""
+	for mode_index: int in ability.modes_or_none().size():
+		text += "\n• " + mode_text(ability, mode_index, _noun)
+	return text
 
 
 func _trigger_text(trigger: MmTrigger) -> String:
@@ -423,6 +445,8 @@ func _move_verb(moved: ZoneChangeTrigger) -> String:
 func _condition(condition: MmCondition) -> String:
 	if condition is LifeAtLeastStartingCondition:
 		return "your life total is greater than or equal to your starting life total"
+	if condition is TimesResolvedThisTurnCondition:
+		return "this is the %s time this ability has resolved this turn" % _ordinal((condition as TimesResolvedThisTurnCondition).times)
 	var matches: SelectionMatchesCondition = condition as SelectionMatchesCondition
 	if matches == null:
 		return _fallback(condition, "_condition")
@@ -524,6 +548,9 @@ func _effect(effect: MmEffect) -> String:
 	if effect is LoseLifeEffect:
 		var lose: LoseLifeEffect = effect as LoseLifeEffect
 		return "%s %s %s life" % [_selection(lose.players), _verb(lose.players, "lose"), _amount(lose.amount)]
+	if effect is AdditionalLandPlaysEffect:
+		var lands: AdditionalLandPlaysEffect = effect as AdditionalLandPlaysEffect
+		return "%s may play %s this turn" % [_selection(lands.players), _additional_lands(lands.count)]
 	if effect is AddManaEffect:
 		return "add " + _mana(effect as AddManaEffect)
 	if effect is DestroyEffect:
@@ -551,11 +578,27 @@ func _effect(effect: MmEffect) -> String:
 	if effect is PutCountersEffect:
 		var put: PutCountersEffect = effect as PutCountersEffect
 		return "put %s on %s" % [_counters(put.amount, put.kind), _selection(put.recipients)]
+	if effect is DoubleCountersEffect:
+		var doubled: DoubleCountersEffect = effect as DoubleCountersEffect
+		return "double the number of %s counters on %s" % [MmCounter.label(doubled.kind), _selection(doubled.recipients)]
+	if effect is InsteadEffect:
+		return _instead(effect as InsteadEffect)
 	if effect is CreateContinuousEffect:
 		return _continuous((effect as CreateContinuousEffect).continuous, false) + " until end of turn"
 	if effect is CreateTokenEffect:
 		return "create " + _tokens(effect as CreateTokenEffect)
 	return _fallback(effect, "_effect")
+
+
+## CR 608.2c, as Oracle words it: "[effect]. If [condition], [other effect] instead", one
+## sentence and the start of the next, which _sentences() ends.
+func _instead(effect: InsteadEffect) -> String:
+	var usual: String = _effect(effect.effect)
+	var condition: String = _condition(effect.condition)
+	_names_again_with_that = true
+	var other: String = _effect(effect.instead)
+	_names_again_with_that = false
+	return "%s. If %s, %s instead" % [usual, condition, other]
 
 
 ## Oracle's token wording (CR 111.4): "a 1/1 white Cat creature token", "two ... tokens".
@@ -675,7 +718,10 @@ func _target(index: int) -> String:
 		return "that target"
 	var spec: TargetRequirement = _targets[index]
 	if _named.has(index):
-		return "that player" if spec.filter is IsPlayerFilter else "it"
+		if spec.filter is IsPlayerFilter:
+			return "that player"
+		var noun: String = _filter_words(spec.filter).noun if _names_again_with_that else ""
+		return "that " + noun if noun != "" else "it"
 	_named[index] = true
 	if spec.among == TargetRequirement.Among.SPELLS:
 		return "target " + _spell_phrase(spec.filter)
@@ -943,6 +989,14 @@ func _amount(value: MmValue) -> String:
 	return "X"
 
 
+## "an additional land", "two additional lands" or "X additional lands".
+func _additional_lands(value: MmValue) -> String:
+	var constant: ConstantValue = value as ConstantValue
+	if constant == null:
+		return _amount(value) + " additional lands"
+	return _additional(constant.value, "land")
+
+
 func _cards(value: MmValue) -> String:
 	var constant: ConstantValue = value as ConstantValue
 	if constant == null:
@@ -1002,6 +1056,16 @@ func _value_phrase(value: MmValue) -> String:
 
 static func _number_word(number: int) -> String:
 	return NUMBER_WORDS[number] if number >= 0 and number < NUMBER_WORDS.size() else str(number)
+
+
+## "first", "second", ..., "tenth", then "11th", "21st", "22nd".
+static func _ordinal(number: int) -> String:
+	if number >= 0 and number < ORDINAL_WORDS.size():
+		return ORDINAL_WORDS[number]
+	var suffix: String = "th"
+	if number % 100 < 11 or number % 100 > 13:
+		suffix = ORDINAL_SUFFIXES[number % 10] if number % 10 < ORDINAL_SUFFIXES.size() else "th"
+	return "%d%s" % [number, suffix]
 
 
 # --- Words ---------------------------------------------------------------------------

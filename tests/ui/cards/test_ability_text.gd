@@ -11,6 +11,7 @@ const Whose := MmTrigger.Whose
 
 ## What each authored card with abilities prints.
 const PRINTED: Dictionary[String, String] = {
+	"adventuring_gear": "Whenever a land you control enters, equipped creature gets +2/+2 until end of turn.\nEquip {1}",
 	"ancestral_recall": "Target player draws three cards.",
 	"ankh_of_mishra": "Whenever a land enters, this artifact deals 2 damage to that land's controller.",
 	"arahbo_the_first_fang": "Each other Cat creature you control gets +1/+1.\nWhenever a nontoken Cat creature you control enters, create a 1/1 white Cat creature token.",
@@ -28,6 +29,10 @@ const PRINTED: Dictionary[String, String] = {
 	"deep_analysis": "Target player draws two cards.\nFlashback—{1}{U}, Pay 3 life",
 	"drudge_skeletons": "{B}: Regenerate this creature.",
 	"elvish_archers": "First strike",
+	"explore": "You may play an additional land this turn. Draw a card.",
+	"felidar_retreat": "Whenever a land you control enters, choose one —\n"
+		+ "• Create a 2/2 white Cat Beast creature token.\n"
+		+ "• Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.",
 	"fog": "Prevent all combat damage that would be dealt this turn.",
 	"forest": "({T}: Add {G}.)",
 	"frozen_shade": "{B}: This creature gets +1/+1 until end of turn.",
@@ -56,16 +61,22 @@ const PRINTED: Dictionary[String, String] = {
 	"raise_dead": "Return target creature card from your graveyard to your hand.",
 	"prideful_parent": "Vigilance\nWhen this creature enters, create a 1/1 white Cat creature token.",
 	"prodigal_sorcerer": "{T}: This creature deals 1 damage to any target.",
+	"prowling_felidar": "Vigilance\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"rally_the_ranks": "As this enchantment enters, choose a creature type.\nEach creature you control of the chosen type gets +1/+1.",
 	"samite_healer": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
+	"scythe_leopard": "Whenever a land you control enters, this creature gets +1/+1 until end of turn.",
+	"scythecat_cub": "Trample\nWhenever a land you control enters, put a +1/+1 counter on target creature you control. "
+		+ "If this is the second time this ability has resolved this turn, double the number of +1/+1 counters on that creature instead.",
 	"serra_angel": "Flying, vigilance",
 	"shatter": "Destroy target artifact.",
 	"shivan_dragon": "Flying\n{R}: This creature gets +1/+0 until end of turn.",
 	"short_sword": "Equipped creature gets +1/+1.\nEquip {1}",
 	"skyknight_squire": "Whenever another creature you control enters, put a +1/+1 counter on this creature.\n"
 		+ "As long as this creature has three or more +1/+1 counters on it, it has flying and is a Knight in addition to its other types.",
+	"steppe_lynx": "Whenever a land you control enters, this creature gets +2/+2 until end of turn.",
 	"stifle": "Counter target activated or triggered ability.",
 	"swamp": "({T}: Add {B}.)",
+	"territorial_scythecat": "Trample\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"terror": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
 	"uthden_troll": "{R}: Regenerate this creature.",
 	"wall_of_stone": "Defender",
@@ -183,14 +194,45 @@ func test_a_mode_is_worded_alone_and_is_what_a_modal_spell_does_once_it_is_chose
 	assert_true(AbilityText.effect_of(spell, "Charm").begins_with("Choose one —"), "Before a mode is chosen, every mode.")
 
 
+func test_a_modal_triggered_ability_prints_its_trigger_then_choose_one_and_a_bullet_for_each_mode() -> void:
+	var retreat: MmCardDefinition = Scenario.free_retreat("Retreat", Scenario.enters(Scenario.of_type(CardType.LAND), Whose.YOU))
+
+	var text: String = AbilityText.of_card(retreat.abilities, retreat.card_types, retreat.supertypes, "Retreat")
+
+	assert_eq(text, "Whenever a land you control enters, choose one —\n"
+		+ "• Create a 2/2 white Cat Beast creature token.\n"
+		+ "• Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.")
+
+
+func test_a_modal_triggered_ability_on_the_stack_says_only_its_chosen_mode() -> void:
+	var retreat: MmAbility = Scenario.free_retreat("Retreat", Scenario.at_step(MmTurn.Step.UPKEEP, Whose.YOU)).abilities[0]
+
+	assert_eq(AbilityText.mode_text(retreat, 0, "this enchantment"), "Create a 2/2 white Cat Beast creature token.")
+	assert_eq(AbilityText.effect_of(retreat, "this enchantment", 1),
+		"Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.")
+	assert_eq(AbilityText.effect_of(retreat, "this enchantment"), "Choose one —\n"
+		+ "• Create a 2/2 white Cat Beast creature token.\n"
+		+ "• Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.",
+		"Before its mode is chosen, every mode and no trigger.")
+
+
+func test_the_cat_beast_token_is_worded_as_oracle_words_it() -> void:
+	var cat_beast: MmCardDefinition = load("res://content/tokens/cat_beast_2_2_white.tres") as MmCardDefinition
+	var maker: MmCardDefinition = Scenario.free_tokens("Maker", cat_beast)
+
+	var text: String = AbilityText.of_card(maker.abilities, maker.card_types, maker.supertypes, "Maker")
+
+	assert_eq(text, "Create a 2/2 white Cat Beast creature token.")
+
+
 func test_a_mode_with_a_counted_amount_says_what_x_is() -> void:
 	var count: CountValue = CountValue.new()
 	count.selection = Scenario.each(Scenario.all_of([Scenario.of_type(MmCardTypes.CardType.CREATURE), _yours()]))
 	var damage: DealDamageEffect = Scenario.deal_damage(0, Scenario.targeted(0))
 	damage.amount = count
 	var spell: SpellAbility = Scenario.free_modal("Maneuver", [
-		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))], [damage]),
-		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ENCHANTMENT))],
+		Scenario.ability_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))], [damage]),
+		Scenario.ability_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ENCHANTMENT))],
 			[Scenario.destroy(Scenario.targeted(0))]),
 	]).abilities[0] as SpellAbility
 
@@ -257,12 +299,14 @@ func test_the_effects_no_authored_card_uses_yet_are_worded() -> void:
 		"Regenerate target creature.": Scenario.regenerate(Scenario.targeted(0)),
 		"Put a +1/+1 counter on target creature.": Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, Scenario.targeted(0)),
 		"Put two -1/-1 counters on each white creature.": Scenario.put_counters(MmCounter.Kind.MINUS_ONE_MINUS_ONE, 2, white_creatures),
+		"Double the number of -1/-1 counters on each white creature.": Scenario.double_counters(MmCounter.Kind.MINUS_ONE_MINUS_ONE, white_creatures),
 		"Destroy each other white creature you control originally named Charmed Stray.": Scenario.destroy(other_strays),
 		"Destroy each creature not originally named Bear.": Scenario.destroy(Scenario.each_creature(Scenario.is_not(Scenario.named("Bear")))),
 		"Return a creature you control to its owner's hand.": Scenario.return_to_hand(Scenario.chosen(Scenario.all_of([Scenario.of_type(CardType.CREATURE), you_control]))),
 		"Return each creature to its owner's hand.": Scenario.return_to_hand(Scenario.each_creature()),
 		"Destroy an artifact.": Scenario.destroy(Scenario.chosen(Scenario.of_type(CardType.ARTIFACT))),
 		"Create a 1/1 white Cat creature token.": Scenario.create_tokens(Scenario.cat()),
+		"Each player may play two additional lands this turn.": Scenario.additional_land_plays(2, Scenario.each(IsPlayerFilter.new())),
 		"Create two 2/2 black and green Zombie Warrior creature tokens.": Scenario.create_tokens(
 			Scenario.token(2, 2, [MmCardTypes.CardColor.BLACK, MmCardTypes.CardColor.GREEN], ["Zombie", "Warrior"]), 2),
 	}
@@ -279,6 +323,42 @@ func test_a_spell_with_two_effects_prints_two_sentences_and_calls_its_target_it_
 	spell.effects = [Scenario.deal_damage(3, Scenario.targeted(0)), Scenario.deal_damage(1, Scenario.controller_of(Scenario.targeted(0)))]
 
 	assert_eq(AbilityText.of_ability(spell, "Sample"), "Sample deals 3 damage to target creature. Sample deals 1 damage to its controller.")
+
+
+func test_an_instead_effect_says_its_usual_effect_then_if_its_condition_what_happens_instead() -> void:
+	# Scythecat Cub's landfall ability, the target named again as "that creature".
+	var plus: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE
+	var landfall: TriggeredAbility = Scenario.triggered(Scenario.enters(Scenario.of_type(CardType.LAND), Whose.YOU),
+		[Scenario.instead(Scenario.times_resolved(2), Scenario.put_counters(plus, 1, Scenario.targeted(0)),
+			Scenario.double_counters(plus, Scenario.targeted(0)))],
+		[Scenario.target(Scenario.all_of([Scenario.of_type(CardType.CREATURE), _yours()]))])
+
+	assert_eq(AbilityText.of_ability(landfall, "this creature"), "Whenever a land you control enters, put a +1/+1 counter on "
+		+ "target creature you control. If this is the second time this ability has resolved this turn, double the number of "
+		+ "+1/+1 counters on that creature instead.")
+	assert_eq(AbilityText.effect_of(landfall, "Scythecat Cub"), "Put a +1/+1 counter on target creature you control. If this "
+		+ "is the second time this ability has resolved this turn, double the number of +1/+1 counters on that creature instead.")
+
+
+func test_the_times_an_ability_has_resolved_are_worded_as_ordinals() -> void:
+	var expected: Dictionary[int, String] = {1: "first", 2: "second", 3: "third", 4: "fourth"}
+	for times: int in expected:
+		var ability: ActivatedAbility = ActivatedAbility.new()
+		ability.effects = [Scenario.instead(Scenario.times_resolved(times), Scenario.gain_life(1, Scenario.you()),
+			Scenario.gain_life(10, Scenario.you()))]
+
+		assert_eq(AbilityText.of_ability(ability, "this creature"), "{0}: You gain 1 life. If this is the %s time this " % expected[times]
+			+ "ability has resolved this turn, you gain 10 life instead.")
+
+
+func test_a_player_named_again_in_an_instead_effect_is_that_player() -> void:
+	var spell: SpellAbility = SpellAbility.new()
+	spell.targets = [Scenario.target_player()]
+	spell.effects = [Scenario.instead(LifeAtLeastStartingCondition.new(), Scenario.draw_cards(1, Scenario.targeted(0)),
+		Scenario.draw_cards(2, Scenario.targeted(0)))]
+
+	assert_eq(AbilityText.of_ability(spell, "Sample"), "Target player draws a card. If your life total is greater than or "
+		+ "equal to your starting life total, that player draws two cards instead.")
 
 
 func test_a_player_targeted_once_is_that_player_the_second_time() -> void:

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Villain" format=3]
+
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/steppe_lynx_pain.png" id="1_sy4pb"]
+[ext_resource type="Script" path="res://run/villain.gd" id="2_1q813"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="3_ujy2w"]
+[ext_resource type="Resource" path="res://content/decks/steppe_lynx.tres" id="4_olr8e"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/steppe_lynx.png" id="5_n8xtf"]
+
+[resource]
+script = ExtResource("2_1q813")
+name = "Steppe Lynx"
+sprite = ExtResource("5_n8xtf")
+pain_sprite = ExtResource("1_sy4pb")
+setups = Array[ExtResource("3_ujy2w")]([ExtResource("4_olr8e")])

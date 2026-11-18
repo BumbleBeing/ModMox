@@ -1,7 +1,7 @@
 class_name TriggerRemovedEvent
 extends MmEvent
-## A pending trigger with no legal target for one of its requirements is removed instead of
-## being put on the stack (CR 603.3d).
+## A pending trigger with no legal target for one of its requirements, or a modal one with
+## no mode that can be chosen, is removed instead of being put on the stack (CR 603.3c-d).
 
 var pending: PendingTrigger
 

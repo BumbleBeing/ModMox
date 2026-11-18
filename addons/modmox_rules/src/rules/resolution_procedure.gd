@@ -35,8 +35,9 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 			procedure._effects = spell.effects_for(resolving.chosen_mode)
 	elif resolving.ability is TriggeredAbility:
 		var triggered: TriggeredAbility = resolving.ability as TriggeredAbility
-		specs = triggered.targets
-		procedure._effects = triggered.effects
+		# ADR 0046: a modal triggered ability does only what its chosen mode does.
+		specs = triggered.targets_for(resolving.chosen_mode)
+		procedure._effects = triggered.effects_for(resolving.chosen_mode)
 	else:
 		var activated: ActivatedAbility = resolving.ability as ActivatedAbility
 		specs = activated.targets

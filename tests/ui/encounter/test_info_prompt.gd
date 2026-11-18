@@ -118,6 +118,29 @@ func test_choosing_a_mode_names_the_spell_and_can_be_canceled() -> void:
 	assert_true(prompt.can_cancel, "The mode is a step of the cast (CR 601.2b).")
 
 
+func test_a_triggers_mode_and_targets_name_its_source_and_cannot_be_canceled() -> void:
+	var view: MmPlayerView = _view()
+	var trigger: MmObjectView = _object(21, "Wand ability", MmGameObject.NO_CARD)
+	trigger.source_object_id = 1
+	trigger.ability = TriggeredAbility.new()
+	var activated: MmObjectView = _object(22, "Wand ability", MmGameObject.NO_CARD)
+	activated.source_object_id = 1
+	activated.ability = ActivatedAbility.new()
+	view.stack = [trigger, activated]
+	var reach: Array[Array] = [[], []]
+	var candidates: Array[MmReference] = [MmReference.to_player(VILLAIN)]
+
+	var mode: InfoPrompt = InfoPrompt.of(ChooseModeDecision.new(HERO, 21, [0, 1] as Array[int], reach), view)
+	var target: InfoPrompt = InfoPrompt.of(ChooseTargetDecision.new(HERO, 21, 0, candidates), view)
+	var activated_target: InfoPrompt = InfoPrompt.of(ChooseTargetDecision.new(HERO, 22, 0, candidates), view)
+
+	assert_eq(mode.text, "Choose one for Wand's ability")
+	assert_false(mode.can_cancel, "CR 603.3c: there is no cast to take back, only a trigger going on the stack.")
+	assert_eq(target.text, "Choose a target for Wand's ability")
+	assert_false(target.can_cancel)
+	assert_true(activated_target.can_cancel, "An activation is a cast to take back (CR 602.2).")
+
+
 func test_choosing_a_creature_type_names_the_spell_and_cannot_be_canceled() -> void:
 	var view: MmPlayerView = _view()
 	view.stack = [_object(20, "Rally the Ranks", 5)]

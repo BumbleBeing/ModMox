@@ -27,19 +27,12 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 	var item: StackItem = StackItem.new()
 	item.id = seen.id
 	if seen.ability != null:
-		# The engine calls an ability on the stack "<its source's name> ability".
-		var source_name: String = seen.name.trim_suffix(" ability")
+		var source_name: String = name_of(seen)
 		var source: MmObjectView = _find(seen.source_object_id, view.battlefield + view.command)
-		var noun: String = source_name
 		if source != null:
 			item.source_object_id = source.id
-			# An Emblem has no card type to name itself by (ADR 0036).
-			noun = CardLook.noun_of(CardLook.Kind.EMBLEM) if _find(seen.source_object_id, view.command) != null \
-				else AbilityText.self_noun(source.card_types, source.name)
-		elif seen.source_potion_index != MmGameObject.NOT_A_POTION:
-			# Its Potion was used up to pay for it, so nothing is left to find.
-			noun = CardLook.noun_of(CardLook.Kind.POTION)
-		item.first_line = AbilityText.effect_of(seen.ability, noun)
+		# ADR 0046: a modal triggered ability does only what its chosen mode does.
+		item.first_line = AbilityText.effect_of(seen.ability, noun_of(seen, view), seen.chosen_mode)
 		item.full_text = "%s ability — %s" % [_possessive(source_name), item.first_line]
 	else:
 		item.first_line = seen.name
@@ -93,6 +86,37 @@ static func _find(object_id: int, among: Array) -> MmObjectView:
 
 static func _possessive(owner: String) -> String:
 	return owner + ("'" if owner.ends_with("s") else "'s")
+
+
+## What [param seen], a spell or ability on the stack, calls itself in its rules text: a
+## spell its name, and an ability what its source calls itself ("this enchantment").
+static func noun_of(seen: MmObjectView, view: MmPlayerView) -> String:
+	if seen.ability == null:
+		return seen.name
+	var source: MmObjectView = _find(seen.source_object_id, view.battlefield + view.command)
+	if source != null:
+		# An Emblem has no card type to name itself by (ADR 0036).
+		return CardLook.noun_of(CardLook.Kind.EMBLEM) if _find(seen.source_object_id, view.command) != null \
+			else AbilityText.self_noun(source.card_types, source.name)
+	if seen.source_potion_index != MmGameObject.NOT_A_POTION:
+		# Its Potion was used up to pay for it, so nothing is left to find.
+		return CardLook.noun_of(CardLook.Kind.POTION)
+	return name_of(seen)
+
+
+## The name of [param seen], a spell or ability on the stack: a spell's own, and an
+## ability's source's, since the engine calls it "<its source's name> ability".
+static func name_of(seen: MmObjectView) -> String:
+	return seen.name.trim_suffix(" ability") if seen.ability != null else seen.name
+
+
+## The ability of [param seen] that has modes: a modal spell's spell ability or a modal
+## triggered ability (ADR 0046), or null when it has none.
+static func modal_of(seen: MmObjectView) -> MmAbility:
+	if seen.ability != null:
+		return seen.ability if not seen.ability.modes_or_none().is_empty() else null
+	var spell: SpellAbility = spell_of(seen)
+	return spell if spell != null and spell.is_modal() else null
 
 
 ## The spell ability of [param seen], or null.

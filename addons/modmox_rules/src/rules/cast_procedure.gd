@@ -246,25 +246,9 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 
 
 ## The modes that may be chosen, each with what its targets could be, or null when none
-## may. CR 700.2a: a mode can't be chosen if any of its targets can't be.
+## may (CR 700.2a).
 func _mode_decision() -> ChooseModeDecision:
-	var spell: SpellAbility = _ability as SpellAbility
-	var choosable: Array[int] = []
-	var reach: Array[Array] = []
-	for mode_index: int in spell.modes.size():
-		var reachable: Array[MmReference] = []
-		var is_choosable: bool = true
-		for requirement: TargetRequirement in spell.modes[mode_index].targets:
-			var legal: Array[MmReference] = requirement.legal_targets(_state, _context())
-			if legal.is_empty():
-				is_choosable = false
-			reachable.append_array(legal)
-		if is_choosable:
-			choosable.append(mode_index)
-			reach.append(reachable)
-	if choosable.is_empty():
-		return null
-	return ChooseModeDecision.new(_player_id, _stack_object_id, choosable, reach)
+	return ChooseModeDecision.of(_state, _player_id, _stack_object_id, (_ability as SpellAbility).modes, _context())
 
 
 func _choose_mode(mode_index: int) -> void:

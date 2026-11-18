@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_avq8f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_8ywn7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_d28u5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_jxj5a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ogap2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_es5lc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/additional_land_plays_effect.gd" id="5_0u1se"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="6_iw7cw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_uv2hm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="8_4lrm5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_jh3w1"]
+
+[sub_resource type="Resource" id="Resource_p7yu2"]
+script = ExtResource("3_jxj5a")
+value = 1
+
+[sub_resource type="Resource" id="Resource_jrora"]
+script = ExtResource("4_es5lc")
+
+[sub_resource type="Resource" id="Resource_yqjf7"]
+script = ExtResource("5_0u1se")
+count = SubResource("Resource_p7yu2")
+players = SubResource("Resource_jrora")
+
+[sub_resource type="Resource" id="Resource_hdac7"]
+script = ExtResource("3_jxj5a")
+value = 1
+
+[sub_resource type="Resource" id="Resource_t8x1c"]
+script = ExtResource("4_es5lc")
+
+[sub_resource type="Resource" id="Resource_1y4hf"]
+script = ExtResource("6_iw7cw")
+amount = SubResource("Resource_hdac7")
+players = SubResource("Resource_t8x1c")
+
+[sub_resource type="Resource" id="Resource_sedy2"]
+script = ExtResource("8_4lrm5")
+effects = Array[ExtResource("2_d28u5")]([SubResource("Resource_yqjf7"), SubResource("Resource_1y4hf")])
+
+[sub_resource type="Resource" id="Resource_81tgh"]
+script = ExtResource("2_8ywn7")
+generic = 1
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_ogap2")
+name = "Explore"
+card_types = Array[int]([5])
+mana_cost = SubResource("Resource_81tgh")
+abilities = Array[ExtResource("1_avq8f")]([SubResource("Resource_sedy2")])

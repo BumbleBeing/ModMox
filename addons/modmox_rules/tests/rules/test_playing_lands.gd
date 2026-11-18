@@ -5,6 +5,8 @@ extends GutTest
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const Step := MmTurn.Step
 
+var _scouting_setup: MmEncounterSetup
+
 
 func test_playing_a_land_puts_it_onto_the_battlefield_untapped_under_your_control() -> void:
 	var engine: MmEngine = _forests_vs_forests()
@@ -122,3 +124,121 @@ func _offers_land_play(decision: PriorityDecision) -> bool:
 		if action is PlayLandAction:
 			return true
 	return false
+
+
+# --- "You may play an additional land this turn" (CR 305.2, 505.6b) ------------------
+# Scout is a sorcery costing {0}: "You may play an additional land this turn." Surveyor is
+# one costing {0}: "Target player may play an additional land this turn."
+
+
+func test_a_spell_granting_an_additional_land_play_allows_a_second_land_this_turn() -> void:
+	var engine: MmEngine = _scouting(1, 3)
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Scout"), "")
+
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_ne(Scenario.play_first_land(engine), -1, "The additional land play.")
+	assert_eq(Scenario.play_first_land(engine), -1, "Only one additional land.")
+
+
+func test_a_land_played_before_the_spell_still_leaves_the_additional_play() -> void:
+	var engine: MmEngine = _scouting(1, 3)
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_false(_offers_land_play(_priority(engine)))
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Scout"), "")
+
+	assert_ne(Scenario.play_first_land(engine), -1, "CR 305.2: the count of plays allowed, not the next land.")
+	assert_eq(Scenario.play_first_land(engine), -1)
+
+
+func test_the_additional_land_play_lasts_only_this_turn() -> void:
+	var engine: MmEngine = _scouting(1, 4)
+	assert_eq(Scenario.cast_and_resolve(engine, "Scout"), "")
+	assert_ne(Scenario.play_first_land(engine), -1)
+
+	assert_eq(Scenario.play_until_step(engine, 2, Step.PRECOMBAT_MAIN), "")
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_eq(Scenario.play_first_land(engine), -1, "The Villain got no additional land play.")
+	assert_eq(Scenario.play_until_step(engine, 3, Step.PRECOMBAT_MAIN), "")
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_eq(Scenario.play_first_land(engine), -1, "CR 514.2: the additional play ended with the turn it was for.")
+
+
+func test_two_additional_land_plays_in_one_turn_allow_three_lands() -> void:
+	var engine: MmEngine = _scouting(2, 4)
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Scout"), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Scout"), "")
+
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_eq(Scenario.play_first_land(engine), -1, "CR 305.2: each additional play adds one.")
+
+
+func test_an_additional_land_play_this_turn_adds_to_an_emblems() -> void:
+	var extra: AdditionalLandPlaysAbility = AdditionalLandPlaysAbility.new()
+	extra.count = 1
+	var engine: MmEngine = _scouting(1, 4, [Scenario.emblem("Explorer", [extra])])
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Scout"), "")
+
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_eq(Scenario.play_first_land(engine), -1)
+
+
+func test_only_the_player_it_selects_gets_the_additional_land_play() -> void:
+	var engine: MmEngine = _scouting(1, 3)
+	var surveyor: int = Scenario.card_in_hand(engine, engine.hero(), "Surveyor")
+
+	assert_eq(Scenario.cast(engine, surveyor, [MmReference.to_player(engine.villain().id)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_ne(Scenario.play_first_land(engine), -1)
+	assert_eq(Scenario.play_first_land(engine), -1, "The Villain was chosen, not the Hero.")
+
+
+func test_a_copy_and_a_replay_keep_the_additional_land_play() -> void:
+	var engine: MmEngine = _scouting(1, 3)
+	assert_eq(Scenario.cast_and_resolve(engine, "Scout"), "")
+
+	var copy: MmEngine = engine.simulation_copy(engine.hero().id, MmRng.new(1), true)
+	var replayed: MmEngine = MmEngine.replay(_scouting_setup, engine.decision_log())
+
+	assert_eq(replayed.fingerprint(), engine.fingerprint())
+	for each_engine: MmEngine in [copy, replayed]:
+		assert_ne(Scenario.play_first_land(each_engine), -1)
+		assert_ne(Scenario.play_first_land(each_engine), -1, "The additional land play was kept.")
+
+
+## The Hero in their main phase of Game Turn 1, holding at least [param scouts] Scouts, a
+## Surveyor and [param forests] Forests, with [param emblems].
+func _scouting(scouts: int, forests: int, emblems: Array[MmCardDefinition] = []) -> MmEngine:
+	var forest: MmCardDefinition = Scenario.basic_land("Forest")
+	var scout: MmCardDefinition = Scenario.sorcery("Scout", Scenario.mana_cost(0), [],
+		[Scenario.additional_land_plays(1, Scenario.you())])
+	var surveyor: MmCardDefinition = Scenario.sorcery("Surveyor", Scenario.mana_cost(0), [Scenario.target_player()],
+		[Scenario.additional_land_plays(1, Scenario.targeted(0))])
+	var hero_cards: Array[MmCardDefinition] = []
+	for index: int in 40:
+		hero_cards.append([forest, scout, forest, surveyor][index % 4])
+	_scouting_setup = Scenario.setup_with(hero_cards, Scenario.copies(forest, 40))
+	_scouting_setup.hero.emblems = emblems
+	var engine: MmEngine = Scenario.find_engine(_scouting_setup, func(running: MmEngine) -> bool:
+		if Scenario.play_until_step(running, 1, Step.PRECOMBAT_MAIN) != "":
+			return false
+		return _count_named(running, "Scout") >= scouts and _count_named(running, "Surveyor") >= 1 \
+			and _count_named(running, "Forest") >= forests)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	return engine
+
+
+func _count_named(engine: MmEngine, card_name: String) -> int:
+	var found: int = 0
+	for card: MmGameObject in engine.hero().hand.objects():
+		if engine.game_state().characteristics_of(card).name == card_name:
+			found += 1
+	return found

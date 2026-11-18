@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_hjyv1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_f88nm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_nrlbs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_2imv8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="3_58mli"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_utvul"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_tktaj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_dhaas"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_xal2c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_vp7hn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_x4fwd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_mpuf6"]
+
+[sub_resource type="Resource" id="Resource_gp4gw"]
+script = ExtResource("3_58mli")
+
+[sub_resource type="Resource" id="Resource_2f7li"]
+script = ExtResource("4_utvul")
+value = 1
+
+[sub_resource type="Resource" id="Resource_jab88"]
+script = ExtResource("4_utvul")
+value = 1
+
+[sub_resource type="Resource" id="Resource_n51pp"]
+script = ExtResource("5_tktaj")
+power = SubResource("Resource_2f7li")
+toughness = SubResource("Resource_jab88")
+affected = SubResource("Resource_gp4gw")
+
+[sub_resource type="Resource" id="Resource_2057i"]
+script = ExtResource("6_dhaas")
+continuous = SubResource("Resource_n51pp")
+
+[sub_resource type="Resource" id="Resource_2kbak"]
+script = ExtResource("9_x4fwd")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_muqfi"]
+script = ExtResource("10_mpuf6")
+filter = SubResource("Resource_2kbak")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_5fvgo"]
+script = ExtResource("7_xal2c")
+trigger = SubResource("Resource_muqfi")
+effects = Array[ExtResource("2_nrlbs")]([SubResource("Resource_2057i")])
+
+[sub_resource type="Resource" id="Resource_n0dk6"]
+script = ExtResource("2_f88nm")
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_2imv8")
+name = "Scythe Leopard"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat"])
+mana_cost = SubResource("Resource_n0dk6")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_hjyv1")]([SubResource("Resource_5fvgo")])
+rarity = 1

@@ -16,6 +16,7 @@ func apply(state: MmGameState) -> void:
 	var created: MmGameObject = state.create_object(MmGameObject.NO_CARD, pending.controller_id, null)
 	created.ability = pending.ability
 	created.source_object_id = pending.source_object_id
+	created.source_ability_index = pending.ability_index
 	created.source_card_id = pending.source_card_id
 	created.source_name = pending.source_name
 	created.triggering_player_id = pending.triggering_player_id

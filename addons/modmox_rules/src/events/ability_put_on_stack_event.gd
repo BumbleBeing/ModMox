@@ -22,6 +22,7 @@ func apply(state: MmGameState) -> void:
 	var created: MmGameObject = state.create_object(MmGameObject.NO_CARD, controller_id, null)
 	created.ability = source_characteristics.abilities[ability_index]
 	created.source_object_id = source_object_id
+	created.source_ability_index = ability_index
 	created.source_name = source_characteristics.name
 	created.source_card_id = source.card_id
 	created.source_potion_index = source.potion_index

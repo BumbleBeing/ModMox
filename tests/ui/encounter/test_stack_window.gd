@@ -498,9 +498,9 @@ func test_a_modal_spell_opens_the_choice_window_with_each_modes_art_and_words() 
 
 func test_a_mode_that_cannot_be_chosen_is_dimmed_and_takes_no_click() -> void:
 	var three: MmCardDefinition = Scenario.free_modal("Triad", [
-		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))], [Scenario.deal_damage(2, Scenario.targeted(0))]),
-		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ARTIFACT))], [Scenario.destroy(Scenario.targeted(0))]),
-		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ENCHANTMENT))], [Scenario.destroy(Scenario.targeted(0))]),
+		Scenario.ability_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))], [Scenario.deal_damage(2, Scenario.targeted(0))]),
+		Scenario.ability_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ARTIFACT))], [Scenario.destroy(Scenario.targeted(0))]),
+		Scenario.ability_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ENCHANTMENT))], [Scenario.destroy(Scenario.targeted(0))]),
 	])
 	_open([_free_bear(), Scenario.enchantment("Glory", []), three])
 	_cast("Bear")
@@ -580,6 +580,51 @@ func test_canceling_while_choosing_a_mode_puts_the_spell_back() -> void:
 	assert_true(_presenter.snapshot().decision is PriorityDecision)
 	assert_false(_screen.choice_window().visible)
 	assert_eq(_screen.choice_entries().size(), 0)
+
+
+func test_a_modal_trigger_opens_the_choice_window_titled_by_its_source_with_no_cancel() -> void:
+	_reach_retreat_mode()
+
+	var window: ZoneWindow = _screen.choice_window()
+	assert_true(window.visible)
+	assert_eq(window.title_text(), "Retreat: choose one")
+	assert_eq(_screen.info_panel().prompt_text(), "Choose one for Retreat's ability")
+	assert_null(_screen.info_panel().cancel_button(), "Game ADR 0047: putting a trigger on the stack can't be taken back.")
+	var entries: Array[ZoneEntry] = _screen.choice_entries()
+	assert_eq(entries.size(), 2)
+	assert_eq(entries[0].name_text(), "", "Only the art and the mode's words.")
+	assert_eq(entries[0].detail_text(), "Create a 2/2 white Cat Beast creature token.")
+	assert_eq(entries[1].detail_text(),
+		"Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.")
+	assert_not_null(_screen.choice_catcher(0))
+	assert_not_null(_screen.choice_catcher(1))
+
+
+func test_hovering_a_triggers_mode_shows_it_in_full() -> void:
+	_reach_retreat_mode()
+
+	_screen.choice_catcher(0).mouse_entered.emit()
+
+	assert_eq(_screen.info_panel().option_text(), "Create a 2/2 white Cat Beast creature token.")
+
+	_screen.choice_catcher(0).mouse_exited.emit()
+
+	assert_eq(_screen.info_panel().option_text(), "")
+
+
+func test_clicking_a_triggers_mode_puts_it_on_the_stack_saying_only_that_mode() -> void:
+	_reach_retreat_mode()
+	_presenter.is_hold_key_down = true
+
+	_screen.choice_catcher(1).clicked.emit()
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is PriorityDecision)
+	assert_false(_screen.choice_window().visible)
+	var ability: MmObjectView = _presenter.snapshot().view.stack.back()
+	assert_eq(ability.chosen_mode, 1)
+	assert_eq(_screen.stack_entries()[0].name_text(),
+		"Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.")
 
 
 # --- Choosing a replacement effect -------------------------------------------------------
@@ -766,6 +811,14 @@ func _reach_trigger_order(parent: Node = null) -> void:
 	_cast("Chime")
 	_cast("Bell")
 	_pass_until(func() -> bool: return _presenter.snapshot().decision is OrderTriggersDecision)
+
+
+## The Hero controls a Retreat, whose upkeep trigger is modal, and is asked its mode as it
+## goes on the stack on their next turn.
+func _reach_retreat_mode() -> void:
+	_open([Scenario.free_retreat("Retreat", Scenario.at_step(MmTurn.Step.UPKEEP, MmTrigger.Whose.YOU))])
+	_cast("Retreat")
+	_pass_until(func() -> bool: return _presenter.snapshot().decision is ChooseModeDecision)
 
 
 ## Drags the trigger at place [param from] and lets it go at place [param to], as the

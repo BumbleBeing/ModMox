@@ -33,6 +33,8 @@ var replacement_effects: Array[ActiveReplacementEffect] = []
 ## The batch waiting for a replacement choice, or null (A143). Nothing else can be
 ## performed until it is answered.
 var suspended_batch: SuspendedBatch = null
+## ADR 0056: each time an ability resolved this turn, in order. Cleared as each turn begins.
+var _ability_resolutions: Array[AbilityResolution] = []
 ## Every event performed, in order. Read-only outside perform(). Events never change once
 ## applied, so copies of the state share them.
 var event_log: Array[MmEvent] = []
@@ -107,6 +109,7 @@ func duplicate_state() -> MmGameState:
 	copy.winner_id = winner_id
 	copy.pending_triggers = pending_triggers.duplicate()  # Pending triggers never change.
 	copy._departed = _departed.duplicate()  # Departed objects are frozen.
+	copy._ability_resolutions = _ability_resolutions.duplicate()  # Resolutions never change.
 	copy._next_batch = _next_batch
 	copy.continuous_effects = continuous_effects.duplicate()  # Active effects never change.
 	copy.replacement_effects = replacement_effects.duplicate()  # Nor do these.
@@ -402,6 +405,27 @@ func remove_pending_trigger(pending: PendingTrigger) -> void:
 	pending_triggers.erase(pending)
 
 
+## How many times ability [param ability_index] of the object [param source_object_id] has
+## resolved this turn (ADR 0056). The object may have left the battlefield since.
+func times_resolved_this_turn(source_object_id: int, ability_index: int) -> int:
+	var count: int = 0
+	for resolution: AbilityResolution in _ability_resolutions:
+		if resolution.is_of(source_object_id, ability_index):
+			count += 1
+	return count
+
+
+## Event-only: ability [param ability_index] of the object [param source_object_id] has
+## resolved.
+func record_ability_resolution(source_object_id: int, ability_index: int) -> void:
+	_ability_resolutions.append(AbilityResolution.new(source_object_id, ability_index))
+
+
+## Event-only: a new turn forgets the abilities that resolved in the last one.
+func clear_ability_resolutions() -> void:
+	_ability_resolutions.clear()
+
+
 ## Event-only: keeps [param leaving], frozen, as it leaves the battlefield.
 func record_departure(leaving: MmGameObject) -> void:
 	_departed[leaving.id] = leaving
@@ -452,6 +476,8 @@ func fingerprint() -> String:
 	lines.append("over %s winner %d batch %d departed %d" % [is_over, winner_id, _next_batch, _departed.size()])
 	for pending: PendingTrigger in pending_triggers:
 		lines.append("pending " + pending.describe())
+	for resolution: AbilityResolution in _ability_resolutions:
+		lines.append("resolved " + resolution.describe())
 	for active: ActiveContinuousEffect in continuous_effects:
 		lines.append("continuous " + active.describe())
 	for active: ActiveReplacementEffect in replacement_effects:
@@ -463,9 +489,9 @@ func fingerprint() -> String:
 		var mana: PackedStringArray = PackedStringArray()
 		for unit: MmMana in each_player.mana_pool():
 			mana.append(unit.describe())
-		lines.append("player %d life %d mulligans %d turn %d since %d lands %d empty draw %s lost %s %d mana [%s]" % [
+		lines.append("player %d life %d mulligans %d turn %d since %d lands %d+%d empty draw %s lost %s %d mana [%s]" % [
 			each_player.id, each_player.life, each_player.mulligans_taken, each_player.turn_number,
-			each_player.latest_turn_game_turn, each_player.lands_played_this_turn,
+			each_player.latest_turn_game_turn, each_player.lands_played_this_turn, each_player.additional_land_plays_this_turn,
 			each_player.has_drawn_from_empty_library, each_player.has_lost, each_player.loss_reason, ", ".join(mana)])
 	for each_zone: MmZone in _all_zones():
 		var entries: PackedStringArray = PackedStringArray()
@@ -473,10 +499,10 @@ func fingerprint() -> String:
 			var target_text: PackedStringArray = PackedStringArray()
 			for target: MmReference in game_object.targets:
 				target_text.append("none" if target == null else target.describe())
-			entries.append("%d:%d:%s:%d:%s:%d:%d:%d:%d:%d:[%s]" % [game_object.id, game_object.card_id, characteristics_of(game_object).name,
+			entries.append("%d:%d:%s:%d:%s:%d:%d:%d:%d:%d:%d:[%s]" % [game_object.id, game_object.card_id, characteristics_of(game_object).name,
 				game_object.controller_id, "tapped" if game_object.is_tapped else "untapped", game_object.damage_marked,
-				game_object.controlled_since_game_turn, game_object.source_card_id, game_object.triggering_player_id,
-				game_object.triggering_object_id, ",".join(target_text)])
+				game_object.controlled_since_game_turn, game_object.source_card_id, game_object.source_ability_index,
+				game_object.triggering_player_id, game_object.triggering_object_id, ",".join(target_text)])
 			if game_object.was_dealt_deathtouch_damage:
 				entries.append("deathtouch damage on %d" % game_object.id)
 			for kind: MmCounter.Kind in MmCounter.KINDS:

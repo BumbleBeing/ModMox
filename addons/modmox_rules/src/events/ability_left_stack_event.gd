@@ -16,6 +16,9 @@ func _init(ability_object_id: int, resolved: bool, countered: bool = false) -> v
 
 func apply(state: MmGameState) -> void:
 	var leaving: MmGameObject = state.object(object_id)
+	if did_resolve:
+		# ADR 0056: it has resolved once it leaves having done so, whatever its source did.
+		state.record_ability_resolution(leaving.source_object_id, leaving.source_ability_index)
 	state.stack.remove(leaving)
 	state.retire_object(leaving)
 

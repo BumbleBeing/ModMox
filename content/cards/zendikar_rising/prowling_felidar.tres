@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_0mj32"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_6p08d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="2_axp2b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_lkn3l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_sxntt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_0paj1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_7d36c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="6_jc7ur"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_xee82"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_17eyd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_uqwyj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_fcpj2"]
+
+[sub_resource type="Resource" id="Resource_64v0e"]
+script = ExtResource("2_axp2b")
+
+[sub_resource type="Resource" id="Resource_kbb5e"]
+script = ExtResource("4_0paj1")
+value = 1
+
+[sub_resource type="Resource" id="Resource_o35sj"]
+script = ExtResource("5_7d36c")
+
+[sub_resource type="Resource" id="Resource_f1uwr"]
+script = ExtResource("6_jc7ur")
+amount = SubResource("Resource_kbb5e")
+recipients = SubResource("Resource_o35sj")
+
+[sub_resource type="Resource" id="Resource_wpd2r"]
+script = ExtResource("9_uqwyj")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_tjalr"]
+script = ExtResource("10_fcpj2")
+filter = SubResource("Resource_wpd2r")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_s30fp"]
+script = ExtResource("7_xee82")
+trigger = SubResource("Resource_tjalr")
+effects = Array[ExtResource("3_sxntt")]([SubResource("Resource_f1uwr")])
+
+[sub_resource type="Resource" id="Resource_jqwuv"]
+script = ExtResource("2_6p08d")
+generic = 3
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_lkn3l")
+name = "Prowling Felidar"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Beast"])
+mana_cost = SubResource("Resource_jqwuv")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_0mj32")]([SubResource("Resource_64v0e"), SubResource("Resource_s30fp")])

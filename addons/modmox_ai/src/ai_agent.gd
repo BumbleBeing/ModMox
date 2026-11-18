@@ -450,7 +450,7 @@ static func _target_lists(spell: SpellAbility) -> Array[Array]:
 	if not spell.is_modal():
 		return [spell.targets]
 	var lists: Array[Array] = []
-	for mode: SpellMode in spell.modes:
+	for mode: AbilityMode in spell.modes:
 		lists.append(mode.targets)
 	return lists
 
@@ -723,7 +723,8 @@ static func _combinations(ids: Array[int], count: int) -> Array:
 	return result
 
 
-## The mode of a modal spell being cast (CR 601.2b). FULL: simulates each mode. CHEAP:
+## The mode of a modal spell being cast (CR 601.2b), or of a modal triggered ability being
+## put on the stack (CR 603.3c). FULL: simulates each mode. CHEAP:
 ## the first mode that could reach a permanent or player of the other player's; with none,
 ## the first.
 func _choose_mode(decision: ChooseModeDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
@@ -955,7 +956,8 @@ func _effects_of_stack_object(world: MmGameState, object_id: int) -> Array[MmEff
 		effects.append_array((item.ability as ActivatedAbility).effects)
 		return effects
 	if item.ability is TriggeredAbility:
-		effects.append_array((item.ability as TriggeredAbility).effects)
+		# A modal triggered ability does what its chosen mode does (ADR 0046).
+		effects.append_array((item.ability as TriggeredAbility).effects_for(item.chosen_mode))
 		return effects
 	for ability: MmAbility in world.characteristics_of(item).abilities:
 		if ability is SpellAbility:

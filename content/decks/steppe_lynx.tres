@@ -1,0 +1,140 @@
+[gd_resource type="Resource" script_class="MmPlayerSetup" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_run_card.gd" id="1_prekr"]
+[ext_resource type="Resource" path="res://content/cards/zendikar/adventuring_gear.tres" id="2_kogpb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="3_i3f66"]
+[ext_resource type="Resource" path="res://content/cards/worldwake/explore.tres" id="4_k6qm2"]
+[ext_resource type="Resource" path="res://content/cards/zendikar_rising/felidar_retreat.tres" id="5_amf5f"]
+[ext_resource type="Resource" path="res://content/cards/alpha/forest.tres" id="6_n8478"]
+[ext_resource type="Resource" path="res://content/cards/alpha/plains.tres" id="7_22uec"]
+[ext_resource type="Resource" path="res://content/cards/zendikar_rising/prowling_felidar.tres" id="8_o8k2m"]
+[ext_resource type="Resource" path="res://content/cards/battle_for_zendikar/scythe_leopard.tres" id="9_kck4n"]
+[ext_resource type="Resource" path="res://content/cards/foundations_jumpstart/scythecat_cub.tres" id="10_wrv5b"]
+[ext_resource type="Resource" path="res://content/cards/zendikar/steppe_lynx.tres" id="11_w6ytk"]
+[ext_resource type="Resource" path="res://content/cards/zendikar_rising/territorial_scythecat.tres" id="12_hwivx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="13_cyy80"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="14_6eof5"]
+
+[sub_resource type="Resource" id="Resource_t4crw"]
+script = ExtResource("1_prekr")
+base = ExtResource("2_kogpb")
+
+[sub_resource type="Resource" id="Resource_r38tb"]
+script = ExtResource("1_prekr")
+base = ExtResource("2_kogpb")
+
+[sub_resource type="Resource" id="Resource_skpu7"]
+script = ExtResource("1_prekr")
+base = ExtResource("4_k6qm2")
+
+[sub_resource type="Resource" id="Resource_ai31a"]
+script = ExtResource("1_prekr")
+base = ExtResource("4_k6qm2")
+
+[sub_resource type="Resource" id="Resource_ulrnf"]
+script = ExtResource("1_prekr")
+base = ExtResource("5_amf5f")
+
+[sub_resource type="Resource" id="Resource_6f1hm"]
+script = ExtResource("1_prekr")
+base = ExtResource("6_n8478")
+
+[sub_resource type="Resource" id="Resource_tcu06"]
+script = ExtResource("1_prekr")
+base = ExtResource("6_n8478")
+
+[sub_resource type="Resource" id="Resource_f87bx"]
+script = ExtResource("1_prekr")
+base = ExtResource("6_n8478")
+
+[sub_resource type="Resource" id="Resource_ghltu"]
+script = ExtResource("1_prekr")
+base = ExtResource("6_n8478")
+
+[sub_resource type="Resource" id="Resource_cikiw"]
+script = ExtResource("1_prekr")
+base = ExtResource("6_n8478")
+
+[sub_resource type="Resource" id="Resource_ubqan"]
+script = ExtResource("1_prekr")
+base = ExtResource("6_n8478")
+
+[sub_resource type="Resource" id="Resource_1wtet"]
+script = ExtResource("1_prekr")
+base = ExtResource("6_n8478")
+
+[sub_resource type="Resource" id="Resource_y431r"]
+script = ExtResource("1_prekr")
+base = ExtResource("7_22uec")
+
+[sub_resource type="Resource" id="Resource_i87ai"]
+script = ExtResource("1_prekr")
+base = ExtResource("7_22uec")
+
+[sub_resource type="Resource" id="Resource_ocfgb"]
+script = ExtResource("1_prekr")
+base = ExtResource("7_22uec")
+
+[sub_resource type="Resource" id="Resource_dp2v4"]
+script = ExtResource("1_prekr")
+base = ExtResource("7_22uec")
+
+[sub_resource type="Resource" id="Resource_gki68"]
+script = ExtResource("1_prekr")
+base = ExtResource("7_22uec")
+
+[sub_resource type="Resource" id="Resource_1mja1"]
+script = ExtResource("1_prekr")
+base = ExtResource("7_22uec")
+
+[sub_resource type="Resource" id="Resource_x75vd"]
+script = ExtResource("1_prekr")
+base = ExtResource("7_22uec")
+
+[sub_resource type="Resource" id="Resource_7336g"]
+script = ExtResource("1_prekr")
+base = ExtResource("7_22uec")
+
+[sub_resource type="Resource" id="Resource_j6i5m"]
+script = ExtResource("1_prekr")
+base = ExtResource("8_o8k2m")
+
+[sub_resource type="Resource" id="Resource_by8n7"]
+script = ExtResource("1_prekr")
+base = ExtResource("8_o8k2m")
+
+[sub_resource type="Resource" id="Resource_n6lbj"]
+script = ExtResource("1_prekr")
+base = ExtResource("9_kck4n")
+
+[sub_resource type="Resource" id="Resource_n268v"]
+script = ExtResource("1_prekr")
+base = ExtResource("9_kck4n")
+
+[sub_resource type="Resource" id="Resource_rr2io"]
+script = ExtResource("1_prekr")
+base = ExtResource("10_wrv5b")
+
+[sub_resource type="Resource" id="Resource_cj1fc"]
+script = ExtResource("1_prekr")
+base = ExtResource("11_w6ytk")
+
+[sub_resource type="Resource" id="Resource_8khmo"]
+script = ExtResource("1_prekr")
+base = ExtResource("11_w6ytk")
+
+[sub_resource type="Resource" id="Resource_pcp05"]
+script = ExtResource("1_prekr")
+base = ExtResource("11_w6ytk")
+
+[sub_resource type="Resource" id="Resource_bc4ng"]
+script = ExtResource("1_prekr")
+base = ExtResource("12_hwivx")
+
+[sub_resource type="Resource" id="Resource_ensfi"]
+script = ExtResource("1_prekr")
+base = ExtResource("12_hwivx")
+
+[resource]
+script = ExtResource("14_6eof5")
+deck = Array[ExtResource("1_prekr")]([SubResource("Resource_t4crw"), SubResource("Resource_r38tb"), SubResource("Resource_skpu7"), SubResource("Resource_ai31a"), SubResource("Resource_ulrnf"), SubResource("Resource_6f1hm"), SubResource("Resource_tcu06"), SubResource("Resource_f87bx"), SubResource("Resource_ghltu"), SubResource("Resource_cikiw"), SubResource("Resource_ubqan"), SubResource("Resource_1wtet"), SubResource("Resource_y431r"), SubResource("Resource_i87ai"), SubResource("Resource_ocfgb"), SubResource("Resource_dp2v4"), SubResource("Resource_gki68"), SubResource("Resource_1mja1"), SubResource("Resource_x75vd"), SubResource("Resource_7336g"), SubResource("Resource_j6i5m"), SubResource("Resource_by8n7"), SubResource("Resource_n6lbj"), SubResource("Resource_n268v"), SubResource("Resource_rr2io"), SubResource("Resource_cj1fc"), SubResource("Resource_8khmo"), SubResource("Resource_pcp05"), SubResource("Resource_bc4ng"), SubResource("Resource_ensfi")])

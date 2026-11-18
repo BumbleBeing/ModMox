@@ -12,11 +12,13 @@ static func tokens_made_by(definition: MmCardDefinition) -> Array[MmCardDefiniti
 	for ability: MmAbility in definition.abilities:
 		var effects: Array[MmEffect] = []
 		if ability is SpellAbility:
-			effects = (ability as SpellAbility).effects
+			effects.append_array((ability as SpellAbility).effects)
 		elif ability is TriggeredAbility:
-			effects = (ability as TriggeredAbility).effects
+			effects.append_array((ability as TriggeredAbility).effects)
 		elif ability is ActivatedAbility:
-			effects = (ability as ActivatedAbility).effects
+			effects.append_array((ability as ActivatedAbility).effects)
+		for mode: AbilityMode in ability.modes_or_none():
+			effects.append_array(mode.effects)  # A modal spell's or triggered ability's (ADR 0046).
 		for effect: MmEffect in effects:
 			var create: CreateTokenEffect = effect as CreateTokenEffect
 			if create != null and create.token != null and create.token.resource_path != "" and not found.has(create.token):

@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_n38ge"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_7ft33"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_428s2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="3_1i6dc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_m6e6o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_b5exf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_fqiwr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_pntlb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_thnet"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_5h0i5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_qsb1n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_4uipy"]
+
+[sub_resource type="Resource" id="Resource_skxgj"]
+script = ExtResource("3_1i6dc")
+
+[sub_resource type="Resource" id="Resource_iyyok"]
+script = ExtResource("4_b5exf")
+value = 2
+
+[sub_resource type="Resource" id="Resource_o4eoc"]
+script = ExtResource("4_b5exf")
+value = 2
+
+[sub_resource type="Resource" id="Resource_c2nnx"]
+script = ExtResource("5_fqiwr")
+power = SubResource("Resource_iyyok")
+toughness = SubResource("Resource_o4eoc")
+affected = SubResource("Resource_skxgj")
+
+[sub_resource type="Resource" id="Resource_lblvn"]
+script = ExtResource("6_pntlb")
+continuous = SubResource("Resource_c2nnx")
+
+[sub_resource type="Resource" id="Resource_0cw4r"]
+script = ExtResource("9_qsb1n")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_wrdwv"]
+script = ExtResource("10_4uipy")
+filter = SubResource("Resource_0cw4r")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_68cyc"]
+script = ExtResource("7_thnet")
+trigger = SubResource("Resource_wrdwv")
+effects = Array[ExtResource("2_428s2")]([SubResource("Resource_lblvn")])
+
+[sub_resource type="Resource" id="Resource_m4qgi"]
+script = ExtResource("2_7ft33")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_m6e6o")
+name = "Steppe Lynx"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat"])
+mana_cost = SubResource("Resource_m4qgi")
+toughness = 1
+abilities = Array[ExtResource("1_n38ge")]([SubResource("Resource_68cyc")])

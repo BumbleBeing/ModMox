@@ -52,8 +52,8 @@ func test_a_mode_with_no_legal_target_is_left_out_and_the_only_other_is_chosen_w
 
 func test_a_modal_spell_with_no_mode_that_can_be_chosen_cannot_be_cast() -> void:
 	var nothing: MmCardDefinition = Scenario.free_modal("Nothing", [
-		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ENCHANTMENT))], [Scenario.destroy(Scenario.targeted(0))]),
-		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ARTIFACT))], [Scenario.destroy(Scenario.targeted(0))]),
+		Scenario.ability_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ENCHANTMENT))], [Scenario.destroy(Scenario.targeted(0))]),
+		Scenario.ability_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ARTIFACT))], [Scenario.destroy(Scenario.targeted(0))]),
 	])
 	var engine: MmEngine = Scenario.combat_ready([Scenario.creature("Bears", 2, 2)], [], [nothing])
 	assert_not_null(engine, "No seed gave the needed hand.")

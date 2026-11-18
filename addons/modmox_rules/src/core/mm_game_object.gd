@@ -9,6 +9,8 @@ extends RefCounted
 const NO_CARD: int = -1
 ## The potion_index of anything that is not a Potion.
 const NOT_A_POTION: int = -1
+## The source_ability_index of anything that is not an ability on the stack.
+const NO_ABILITY: int = -1
 
 ## This object's identity. Every stored, logged or answered reference uses it.
 var id: int
@@ -38,8 +40,9 @@ var definition: MmCardDefinition
 ## For a spell or ability on the stack: the chosen target of each target requirement, in
 ## order. An entry is null until that target is chosen.
 var targets: Array[MmReference] = []
-## For a modal spell on the stack: the chosen mode (CR 700.2), an index into its spell
-## ability's modes. SpellAbility.NO_MODE for anything else, or until it is chosen.
+## For a modal spell or modal triggered ability on the stack: the chosen mode (CR 700.2),
+## an index into its spell ability's or triggered ability's modes. SpellAbility.NO_MODE for
+## anything else, or until it is chosen.
 var chosen_mode: int = SpellAbility.NO_MODE
 ## For a spell on the stack: cast from a graveyard for its flashback cost, so it is exiled
 ## instead of going anywhere else as it leaves the stack (CR 702.34a).
@@ -55,6 +58,10 @@ var is_being_cast_from_library: bool = false
 var ability: MmAbility = null
 var source_object_id: int = 0
 var source_name: String = ""
+## For an ability on the stack: its place among its source's abilities as it was put on the
+## stack, so "this ability" is known after the source has left (ADR 0056); NO_ABILITY for
+## anything else.
+var source_ability_index: int = NO_ABILITY
 ## For an ability on the stack: its source's Card Identity, so the GUI can find the card
 ## even after it changed zones; NO_CARD for an Emblem's ability.
 var source_card_id: int = NO_CARD
@@ -128,6 +135,7 @@ func duplicate_object() -> MmGameObject:
 	copy.ability = ability
 	copy.source_object_id = source_object_id
 	copy.source_name = source_name
+	copy.source_ability_index = source_ability_index
 	copy.source_card_id = source_card_id
 	copy.source_potion_index = source_potion_index
 	copy.triggering_player_id = triggering_player_id
@@ -276,7 +284,8 @@ func record_chosen_creature_type(creature_type: String) -> void:
 	chosen_creature_type = creature_type
 
 
-## Event-only: records the mode chosen for a modal spell (CR 601.2b).
+## Event-only: records the mode chosen for a modal spell or triggered ability (CR 601.2b,
+## 603.3c).
 func set_chosen_mode(mode_index: int) -> void:
 	chosen_mode = mode_index
 

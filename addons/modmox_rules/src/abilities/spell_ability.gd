@@ -10,7 +10,12 @@ const NO_MODE: int = -1
 @export var targets: Array[TargetRequirement] = []
 @export var effects: Array[MmEffect] = []
 ## "Choose one —": one entry for each "•" line. Empty for a spell that is not modal.
-@export var modes: Array[SpellMode] = []
+@export var modes: Array[AbilityMode] = []
+
+
+## Its modes: empty when it is not modal.
+func modes_or_none() -> Array[AbilityMode]:
+	return modes
 
 
 ## Whether this is a modal spell (CR 700.2).

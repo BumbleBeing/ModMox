@@ -9,3 +9,5 @@ The Hero chooses a modal spell's mode (ADR 0046) in the window that asks which r
 **When only one mode can be chosen, no window opens**: the engine chooses it (ADR 0046), and the cast goes straight to that mode's target.
 
 **On the stack a modal spell says only the mode it was cast with.** Its entry leads with its name, as any spell's does, and its full text, shown while the cursor is on it, is the chosen mode's words.
+
+**A triggered ability's mode is chosen in the same window** (engine ADR 0046), when the Hero controls a modal trigger, such as Felidar Retreat's, as it goes on the stack. The window is titled with its source's name, "Felidar Retreat: choose one", each entry is the source's art and the mode's words, and the Info Panel asks "Choose one for Felidar Retreat's ability". It offers no Cancel: putting a trigger on the stack can't be taken back, so neither its mode nor its targets can be canceled. On the stack its entry leads with the chosen mode's words, as any ability's leads with what it does.

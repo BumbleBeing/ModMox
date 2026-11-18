@@ -37,8 +37,8 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 			continue
 		for observer: MmGameObject in everyone:
 			var characteristics: MmCharacteristics = state.characteristics_of(observer)
-			for ability: MmAbility in characteristics.abilities:
-				var triggered: TriggeredAbility = ability as TriggeredAbility
+			for ability_index: int in characteristics.abilities.size():
+				var triggered: TriggeredAbility = characteristics.abilities[ability_index] as TriggeredAbility
 				if triggered == null or triggered.trigger == null:
 					continue
 				var watching: bool = before_ids.has(observer.id) if triggered.trigger.looks_back() else after_ids.has(observer.id)
@@ -47,7 +47,7 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 				var context: MmEffectContext = MmEffectContext.new(observer.controller_id, observer.id)
 				if not triggered.trigger.matches(state, event, context):
 					continue
-				var pending: PendingTrigger = PendingTrigger.new(triggered, observer, characteristics,
+				var pending: PendingTrigger = PendingTrigger.new(triggered, ability_index, observer, characteristics,
 					triggered.trigger.triggering_player_id(state, event), triggered.trigger.triggering_object_id(event))
 				# CR 603.4: an intervening "if" must hold for the ability to trigger at all.
 				if triggered.condition_holds(state, pending.context()):

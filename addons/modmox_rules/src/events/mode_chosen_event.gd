@@ -1,6 +1,7 @@
 class_name ModeChosenEvent
 extends MmEvent
-## The mode of a modal spell on the stack is chosen (CR 601.2b, 700.2a).
+## The mode of a modal spell or modal triggered ability on the stack is chosen (CR 601.2b,
+## 603.3c, 700.2a).
 
 var object_id: int
 var mode_index: int

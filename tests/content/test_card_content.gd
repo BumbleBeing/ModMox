@@ -946,6 +946,44 @@ func test_short_sword_is_equipped_for_one_mana_and_gives_its_creature_plus_one_p
 	assert_eq(Scenario.activate_index(engine.pending_decision() as PriorityDecision, equipment), -1, "With no mana left it is not offered.")
 
 
+func test_adventuring_gear_pumps_the_creature_equipped_as_its_landfall_resolves_and_nothing_while_unattached() -> void:
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var lions: MmCardDefinition = Scenario.free_copy(_alpha("savannah_lions"))
+	var gear: MmCardDefinition = Scenario.free_copy(_card("zendikar", "adventuring_gear"))
+	var rock: MmCardDefinition = Scenario.artifact("Rock", [Scenario.tap_for_mana(MmMana.Type.COLORLESS, 1)])
+	var lands: Array[MmCardDefinition] = [_alpha("forest"), _alpha("plains")]
+	var permanents: Array[MmCardDefinition] = [bears, lions, gear, rock]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(permanents, no_cards, lands),
+		permanents, no_cards, lands, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	var lion: int = Scenario.permanent_named(engine, engine.hero().id, "Savannah Lions")
+	var equipment: int = Scenario.permanent_named(engine, engine.hero().id, "Adventuring Gear")
+
+	var forest: int = Scenario.card_in_hand(engine, engine.hero(), "Forest")
+	assert_eq(engine.submit(Scenario.play_land_index(engine.pending_decision() as PriorityDecision, forest)), "")
+	assert_eq(Scenario.stacked_abilities(engine).size(), 1, "It triggers while unattached.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.pt(engine, bear), [2, 2], "Unattached, it pumps nothing.")
+	assert_eq(Scenario.pt(engine, lion), [2, 1])
+
+	assert_eq(Scenario.play_until_step(engine, 5, MmTurn.Step.PRECOMBAT_MAIN), "")
+	assert_eq(Scenario.equip_and_resolve(engine, equipment, bear), "")
+	assert_eq(Scenario.pt(engine, bear), [2, 2], "On its own it gives nothing.")
+	var plains: int = Scenario.card_in_hand(engine, engine.hero(), "Plains")
+	assert_eq(engine.submit(Scenario.play_land_index(engine.pending_decision() as PriorityDecision, plains)), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.pt(engine, bear), [4, 4])
+
+	assert_eq(Scenario.equip_and_resolve(engine, equipment, lion), "")
+	assert_eq(Scenario.pt(engine, bear), [4, 4], "The creature equipped as it resolved keeps it (CR 611.2c).")
+	assert_eq(Scenario.pt(engine, lion), [2, 1])
+
+	assert_eq(Scenario.play_until_game_turn(engine, 6), "")
+	assert_eq(Scenario.pt(engine, bear), [2, 2], "Until end of turn.")
+
+
 func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:
 	for deck_name: String in ["red_green", "white_black", "blue_red"]:
 		var setup: MmPlayerSetup = load("res://content/decks/%s.tres" % deck_name) as MmPlayerSetup

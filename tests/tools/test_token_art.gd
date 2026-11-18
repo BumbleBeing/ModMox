@@ -4,6 +4,7 @@ extends GutTest
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const CAT: String = "res://content/tokens/cat_1_1_white.tres"
+const CAT_BEAST: String = "res://content/tokens/cat_beast_2_2_white.tres"
 
 
 func test_a_card_makes_each_token_its_abilities_create_once() -> void:
@@ -14,6 +15,18 @@ func test_a_card_makes_each_token_its_abilities_create_once() -> void:
 
 	assert_eq(TokenArt.tokens_made_by(parent), [cat] as Array[MmCardDefinition])
 	assert_eq(TokenArt.key_of(cat), "tokens/cat_1_1_white")
+
+
+func test_a_card_makes_the_tokens_its_modes_create() -> void:
+	var cat_beast: MmCardDefinition = load(CAT_BEAST) as MmCardDefinition
+	var retreat: MmCardDefinition = Scenario.enchantment("Retreat", [Scenario.modal_triggered(
+		Scenario.enters(Scenario.of_type(MmCardTypes.CardType.LAND), MmTrigger.Whose.YOU), [
+			Scenario.ability_mode([], [Scenario.create_tokens(cat_beast)]),
+			Scenario.ability_mode([], [Scenario.gain_life(1, Scenario.you())]),
+		])])
+
+	assert_eq(TokenArt.tokens_made_by(retreat), [cat_beast] as Array[MmCardDefinition], "ADR 0046: a mode's effects count too.")
+	assert_eq(TokenArt.key_of(cat_beast), "tokens/cat_beast_2_2_white")
 
 
 func test_a_token_made_in_code_has_no_file_and_no_art() -> void:

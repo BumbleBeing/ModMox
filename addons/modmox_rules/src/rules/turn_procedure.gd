@@ -318,9 +318,9 @@ func _may_play_land(player: MmPlayer) -> bool:
 
 
 ## One, plus any from AdditionalLandPlaysAbility on permanents or Emblems [param player]
-## controls.
+## controls, plus any granted this turn by AdditionalLandPlaysEffect.
 func _land_plays_allowed(player: MmPlayer) -> int:
-	var allowed: int = 1
+	var allowed: int = 1 + player.additional_land_plays_this_turn
 	for source: MmGameObject in TriggerDetection.observers(_state):
 		if source.controller_id != player.id:
 			continue
@@ -397,7 +397,7 @@ func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbi
 
 
 func _has_a_choosable_mode(spell: SpellAbility, player_id: int, source_id: int) -> bool:
-	for mode: SpellMode in spell.modes:
+	for mode: AbilityMode in spell.modes:
 		if _every_requirement_has_a_target(mode.targets, player_id, source_id):
 			return true
 	return false

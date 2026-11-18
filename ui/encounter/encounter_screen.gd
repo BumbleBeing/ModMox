@@ -2977,8 +2977,8 @@ func _clear_marks() -> void:
 
 
 ## The window that asks which replacement effect applies first (A340), or which mode of a
-## modal spell is cast (ADR 0046): there exactly while the Hero is asked, with an entry for
-## each, clicked to choose it.
+## modal spell or triggered ability is chosen (ADR 0046): there exactly while the Hero is
+## asked, with an entry for each, clicked to choose it.
 func _fill_choice_window(view: MmPlayerView) -> void:
 	var decision: ChooseReplacementEffectDecision = _snapshot.decision as ChooseReplacementEffectDecision
 	var modes: ChooseModeDecision = _snapshot.decision as ChooseModeDecision
@@ -3057,19 +3057,22 @@ func _choose_replacement(index: int) -> void:
 		_answer(index)
 
 
-## The mode window: an entry for every mode of the spell being cast, each only its art and
-## its words. A mode that cannot be chosen is dimmed and takes no click (CR 700.2a).
+## The mode window: an entry for every mode of the spell being cast, or of the triggered
+## ability being put on the stack, each only its art and its words. A mode that cannot be
+## chosen is dimmed and takes no click (CR 700.2a). A trigger's is titled with its source's
+## name and drawn with its source's art (game ADR 0047).
 func _fill_mode_window(decision: ChooseModeDecision, view: MmPlayerView) -> void:
-	var spell_view: MmObjectView = _seen(decision.stack_object_id)
-	var spell: SpellAbility = StackItem.spell_of(spell_view)
-	var look: CardLook = _snapshot.look_of(spell_view.id)
-	_choice_window.show_title("%s: choose one" % spell_view.name)
-	_choice_window.size = Vector2(MODE_WINDOW_WIDTH, ZoneWindow.BAR_HEIGHT + MODE_WINDOW_PAD + MODE_ENTRY_HEIGHT * spell.modes.size())
+	var seen: MmObjectView = _seen(decision.stack_object_id)
+	var modal: MmAbility = StackItem.modal_of(seen)
+	var mode_count: int = modal.modes_or_none().size()
+	var look: CardLook = _snapshot.look_of(seen.id)
+	_choice_window.show_title("%s: choose one" % StackItem.name_of(seen))
+	_choice_window.size = Vector2(MODE_WINDOW_WIDTH, ZoneWindow.BAR_HEIGHT + MODE_WINDOW_PAD + MODE_ENTRY_HEIGHT * mode_count)
 	_choice_window.fit()
 	_choice_window.move_to_front()
-	for mode_index: int in spell.modes.size():
+	for mode_index: int in mode_count:
 		var entry: ZoneEntry = ZoneEntry.new(look.art_key if look != null else "", "",
-			AbilityText.mode_text(spell, mode_index, spell_view.name), StackColors.PLAIN)
+			AbilityText.mode_text(modal, mode_index, StackItem.noun_of(seen, view)), StackColors.PLAIN)
 		_choice_window.body().add_child(entry)
 		_choice_entries.append(entry)
 		var answer: int = decision.modes.find(mode_index)
@@ -3090,8 +3093,8 @@ func _on_mode_hovered(is_over: bool, answer: int, mode_index: int) -> void:
 	var decision: ChooseModeDecision = _snapshot.decision as ChooseModeDecision
 	if not is_over or decision == null:
 		return
-	var spell_view: MmObjectView = _seen(decision.stack_object_id)
-	_info.show_option(AbilityText.mode_text(StackItem.spell_of(spell_view), mode_index, spell_view.name))
+	var seen: MmObjectView = _seen(decision.stack_object_id)
+	_info.show_option(AbilityText.mode_text(StackItem.modal_of(seen), mode_index, StackItem.noun_of(seen, _snapshot.view)))
 	var color: Color = DecisionClicks.color_of(DecisionClicks.Kind.TARGET)
 	for reached: MmReference in decision.mode_targets[answer]:
 		if reached.is_player():

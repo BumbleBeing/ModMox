@@ -295,7 +295,7 @@ The Zone Window for the stack. It is there while something is on the stack or tr
 _Avoid_: Stack region, stack panel
 
 **Mode Window**:
-The window over the battlefield that asks which Mode of a Modal Spell is cast (game ADR 0047), titled "[spell]: choose one". It has an entry for every Mode, each only the card's art and the Mode's words; one that cannot be chosen is dimmed. Pointing at a Mode shows it in full in the Info Panel and marks what it could target. It opens only when two or more Modes can be chosen. It is the same window that asks which replacement effect applies first.
+The window over the battlefield that asks which Mode of a Modal Spell is cast, or of a modal triggered ability the Hero is putting on the stack (game ADR 0047), titled "[spell or source]: choose one". It has an entry for every Mode, each only the card's art and the Mode's words; one that cannot be chosen is dimmed. Pointing at a Mode shows it in full in the Info Panel and marks what it could target. It opens only when two or more Modes can be chosen, and a trigger's offers no Cancel. It is the same window that asks which replacement effect applies first.
 _Avoid_: Mode menu, charm picker, choose-one dialog
 
 **Creature Type Window**:

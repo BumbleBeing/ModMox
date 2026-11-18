@@ -320,6 +320,14 @@ static func draw_cards(amount: int, players: MmSelection) -> DrawCardsEffect:
 	return effect
 
 
+## "[players] may play [amount] additional lands this turn."
+static func additional_land_plays(amount: int, players: MmSelection) -> AdditionalLandPlaysEffect:
+	var effect: AdditionalLandPlaysEffect = AdditionalLandPlaysEffect.new()
+	effect.count = constant(amount)
+	effect.players = players
+	return effect
+
+
 static func gain_life(amount: int, players: MmSelection) -> GainLifeEffect:
 	var effect: GainLifeEffect = GainLifeEffect.new()
 	effect.amount = constant(amount)
@@ -1418,16 +1426,16 @@ static func tokens_on_battlefield(engine: MmEngine) -> Array[int]:
 # --- Card track: modal spells ----------------------------------------------------------
 
 
-## One mode of a modal spell: "[effects]", with its own [param targets].
-static func spell_mode(targets: Array[TargetRequirement], effects: Array[MmEffect]) -> SpellMode:
-	var mode: SpellMode = SpellMode.new()
+## One mode of a modal spell or triggered ability: "[effects]", with its own [param targets].
+static func ability_mode(targets: Array[TargetRequirement], effects: Array[MmEffect]) -> AbilityMode:
+	var mode: AbilityMode = AbilityMode.new()
 	mode.targets = targets
 	mode.effects = effects
 	return mode
 
 
 ## An instant costing {0}: "Choose one — [modes]".
-static func free_modal(card_name: String, modes: Array[SpellMode]) -> MmCardDefinition:
+static func free_modal(card_name: String, modes: Array[AbilityMode]) -> MmCardDefinition:
 	var definition: MmCardDefinition = instant(card_name, mana_cost(0), [], [])
 	(definition.abilities[0] as SpellAbility).modes = modes
 	return definition
@@ -1437,12 +1445,34 @@ static func free_modal(card_name: String, modes: Array[SpellMode]) -> MmCardDefi
 ## • Destroy target enchantment."
 static func free_charm(card_name: String, amount: int = 2) -> MmCardDefinition:
 	return free_modal(card_name, [
-		spell_mode([target(of_type(MmCardTypes.CardType.CREATURE))], [deal_damage(amount, targeted(0))]),
-		spell_mode([target(of_type(MmCardTypes.CardType.ENCHANTMENT))], [destroy(targeted(0))]),
+		ability_mode([target(of_type(MmCardTypes.CardType.CREATURE))], [deal_damage(amount, targeted(0))]),
+		ability_mode([target(of_type(MmCardTypes.CardType.ENCHANTMENT))], [destroy(targeted(0))]),
 	])
 
 
-## Chooses mode [param mode_index] of the spell in the pending mode decision.
+## "[trigger], choose one — [modes]" (CR 603.3c, 700.2b).
+static func modal_triggered(trigger: MmTrigger, modes: Array[AbilityMode]) -> TriggeredAbility:
+	var ability: TriggeredAbility = TriggeredAbility.new()
+	ability.trigger = trigger
+	ability.modes = modes
+	return ability
+
+
+## An enchantment costing {0}, after Felidar Retreat: "[trigger], choose one — • Create a
+## 2/2 white Cat Beast creature token. • Put a +1/+1 counter on each creature you control.
+## Each creature you control gains vigilance until end of turn."
+static func free_retreat(card_name: String, trigger: MmTrigger) -> MmCardDefinition:
+	var yours: ControlledByFilter = ControlledByFilter.new()
+	yours.whose = MmTrigger.Whose.YOU
+	return enchantment(card_name, [modal_triggered(trigger, [
+		ability_mode([], [create_tokens(token(2, 2, [MmCardTypes.CardColor.WHITE], ["Cat", "Beast"]))]),
+		ability_mode([], [put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, each_creature(yours)),
+			until_end_of_turn(gain_abilities([VigilanceAbility.new()], each_creature(yours)))]),
+	])])
+
+
+## Chooses mode [param mode_index] of the spell or triggered ability in the pending mode
+## decision.
 static func choose_mode(engine: MmEngine, mode_index: int) -> String:
 	var decision: ChooseModeDecision = engine.pending_decision() as ChooseModeDecision
 	if decision == null:
@@ -1651,3 +1681,62 @@ static func top_ready(setup: MmEncounterSetup, hero_permanents: Array[MmCardDefi
 			if running.game_state().characteristics_of(library[index]).name != tops[index]:
 				return false
 		return true, 3000)
+
+
+# --- "Instead", doubling counters and counting resolutions ------------------------------
+
+
+## "[param effect]. If [param condition], [param instead] instead." (CR 608.2c)
+static func instead(condition: MmCondition, effect: MmEffect, instead_effect: MmEffect) -> InsteadEffect:
+	var chosen: InsteadEffect = InsteadEffect.new()
+	chosen.condition = condition
+	chosen.effect = effect
+	chosen.instead = instead_effect
+	return chosen
+
+
+## "Double the number of [param kind] counters on [param recipients]" (CR 701.10e).
+static func double_counters(kind: MmCounter.Kind, recipients: MmSelection) -> DoubleCountersEffect:
+	var effect: DoubleCountersEffect = DoubleCountersEffect.new()
+	effect.kind = kind
+	effect.recipients = recipients
+	return effect
+
+
+## "This is the [param times]th time this ability has resolved this turn."
+static func times_resolved(times: int) -> TimesResolvedThisTurnCondition:
+	var condition: TimesResolvedThisTurnCondition = TimesResolvedThisTurnCondition.new()
+	condition.times = times
+	return condition
+
+
+## "You gain 1 life. If this is the second time this ability has resolved this turn, you
+## gain 10 life instead.": what each of Scenario.ticker()'s abilities does.
+static func second_time_gains_ten() -> InsteadEffect:
+	return instead(times_resolved(2), gain_life(1, you()), gain_life(10, you()))
+
+
+## A 1/1 creature costing {0} with [param abilities] free activated abilities, each
+## "{0}: You gain 1 life. If this is the second time this ability has resolved this turn,
+## you gain 10 life instead."
+static func ticker(card_name: String = "Ticker", abilities: int = 1) -> MmCardDefinition:
+	var activated: Array[MmAbility] = []
+	for _index: int in abilities:
+		var ability: ActivatedAbility = ActivatedAbility.new()
+		ability.effects = [second_time_gains_ten()]
+		activated.append(ability)
+	return creature(card_name, 1, 1, activated)
+
+
+## Activates ability [param ability_index] of [param object_id] and pays automatically.
+static func activate_ability(engine: MmEngine, object_id: int, ability_index: int) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var index: int = action_index(decision, func(action: MmAction) -> bool:
+		var activate: ActivateAbilityAction = action as ActivateAbilityAction
+		return activate != null and activate.object_id == object_id and activate.ability_index == ability_index)
+	if index == -1:
+		return "Object %d has no ability %d to activate." % [object_id, ability_index]
+	var error: String = engine.submit(index)
+	return error if error != "" else auto_pay(engine)

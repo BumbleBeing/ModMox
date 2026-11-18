@@ -84,6 +84,23 @@ func test_without_monte_carlo_a_land_is_kept_only_when_it_would_lose_the_game() 
 			assert_true(play is PlayLandAction, "At 3 life one step cannot tell the land is a mistake.")
 
 
+func test_normal_casts_explore_and_plays_the_additional_land() -> void:
+	var engine: MmEngine = _exploring()
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.normal())
+
+	for answer: int in 60:
+		if engine.game_state().game_turn != 3 or engine.is_over():
+			break
+		var decision: MmPendingDecision = engine.pending_decision()
+		var given: Variant = AiScenario.ask(engine, agent) if decision.player_id == engine.hero().id \
+			else Scenario.default_answer(decision)
+		assert_eq(engine.submit(given), "")
+
+	assert_ne(Scenario.card_in_graveyard(engine, engine.hero(), "Explore"), -1, "Explore was cast.")
+	assert_eq(_lands_of(engine, engine.hero().id), 3, "A land on Game Turns 1 and 3, and the additional one.")
+
+
 ## The Hero in their precombat main phase on Game Turn 3 at [param life], holding a
 ## Mountain and [param extras], with "Sample Hex: Ankh's Curse", the sample Emblem with
 ## Ankh of Mishra's abilities, against a Villain with [param villain_creatures].
@@ -96,3 +113,31 @@ func _cursed(life: int, extras: Array[MmCardDefinition] = [], villain_creatures:
 		AiScenario.alpha("ankh_of_mishra").abilities.duplicate())] as Array[MmCardDefinition]
 	setup.hero.starting_life = life
 	return Scenario.permanents_ready_with(setup, no_creatures, villain_creatures, hand, [], 3, Step.PRECOMBAT_MAIN)
+
+
+## The Hero in their precombat main phase on Game Turn 3, having played a land on each of
+## their turns, controlling two Forests and holding Explore ({1}{G} sorcery: "You may play
+## an additional land this turn. Draw a card.") and another Forest. Half their deck is
+## Colossus, a 6/6 costing {6}, so what Explore draws is worth more in hand than Explore
+## (A179): with a deck mostly of lands, a card for a card scores worse than holding it.
+func _exploring() -> MmEngine:
+	var forest: MmCardDefinition = AiScenario.alpha("forest")
+	var explore: MmCardDefinition = Scenario.sorcery("Explore", Scenario.mana_cost(1, [MmMana.Type.GREEN]), [],
+		[Scenario.additional_land_plays(1, Scenario.you()), Scenario.draw_cards(1, Scenario.you())])
+	var colossus: MmCardDefinition = Scenario.creature("Colossus", 6, 6, [], Scenario.mana_cost(6))
+	var hero_cards: Array[MmCardDefinition] = []
+	for index: int in 40:
+		hero_cards.append([forest, explore, colossus, colossus][index % 4])
+	var setup: MmEncounterSetup = Scenario.setup_with(hero_cards, Scenario.copies(forest, 40))
+	return Scenario.find_engine(setup, func(running: MmEngine) -> bool:
+		return Scenario.ready_in_main(running, 3, 2, "Explore") and _lands_of(running, running.hero().id) == 2 \
+			and Scenario.card_in_hand(running, running.hero(), "Forest") != -1)
+
+
+func _lands_of(engine: MmEngine, player_id: int) -> int:
+	var lands: int = 0
+	for permanent: MmGameObject in engine.game_state().battlefield.objects():
+		if permanent.controller_id == player_id \
+				and engine.game_state().characteristics_of(permanent).has_card_type(MmCardTypes.CardType.LAND):
+			lands += 1
+	return lands
