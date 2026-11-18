@@ -9,6 +9,9 @@ const ASPECT: float = 2010.0 / 2814.0
 const BAKE_SIZE: Vector2i = Vector2i(1005, 1407)
 ## A card's rounded corner radius, as a fraction of its width.
 const CORNER: float = 0.044
+## The black border's width at a card's sides and top, as a fraction of its width. A Card
+## Back has it all round.
+const BORDER: float = 78.0 / 2010.0
 
 const CROWN: Rect2 = Rect2(44.0 / 2010.0, 53.0 / 2814.0, 1922.0 / 2010.0, 493.0 / 2814.0)
 ## The black strip that hides the frame's top edge under a crown.

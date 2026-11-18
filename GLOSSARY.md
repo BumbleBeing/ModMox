@@ -491,6 +491,10 @@ _Avoid_: Selection (a Combat Selection is the combat one), checklist, picked car
 A card drawn in full: its Frame, name, mana cost, type line, rules text and power/toughness. Used wherever a card is read rather than played on.
 _Avoid_: Full card, card image
 
+**Card Back**:
+The side of a card the Hero cannot see, drawn for each card in the Villain's hand and for each card in a library that the Hero does not know. It is the size and shape of a Card Face and edged in the same black border, as thick all round as a Card Face's is at its sides and top.
+_Avoid_: Back face, face-down card
+
 **Emblem Face**:
 An Emblem drawn in full, in the Inspector: its art in a border of its own, its name, a type line that reads "Emblem", its rules text with any spent ability gray and marked "(used)", and the artist's credit. It is the size of a Card Face and has no Rarity glow.
 _Avoid_: Emblem card, Boon card, Status card
