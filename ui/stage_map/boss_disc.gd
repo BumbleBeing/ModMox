@@ -41,9 +41,10 @@ static var _made: Dictionary[String, Texture2D] = {}
 
 ## Draws on [param canvas] the Boss [param portrait] in its disc of [param radius] round
 ## [param center], breathing as it is [param seconds] into the breath, all tinted by
-## [param tint].
+## [param tint]. A [param portrait_scale] above 1 draws the Portrait that much larger than
+## fits the clay, so that it may cross onto the ring.
 static func draw(canvas: CanvasItem, center: Vector2, radius: float, portrait: Texture2D, seconds: float,
-		tint: Color) -> void:
+		tint: Color, portrait_scale: float = 1.0) -> void:
 	var scale: int = ring_scale(radius)
 	var disc: Texture2D = pixel_disc()
 	var extent: Vector2 = disc.get_size() * scale
@@ -53,7 +54,7 @@ static func draw(canvas: CanvasItem, center: Vector2, radius: float, portrait: T
 	# What shows of the clay below the ring's shadow, its stepped edge allowed for.
 	var clay_radius: int = int((RING_OUTER - RING_WIDE - RING_SHADOW - 0.75) * scale)
 	var drop: float = shadow_drop(clay_radius)
-	var size: float = fit_scale(portrait, clay_radius - drop) * breath(seconds)
+	var size: float = fit_scale(portrait, clay_radius - drop) * portrait_scale * breath(seconds)
 	extent = portrait.get_size()
 	canvas.draw_set_transform(center + Vector2(0.0, drop), 0.0, Vector2.ONE * size)
 	canvas.draw_texture_rect(portrait, Rect2(-extent / 2.0, extent), false, Color(0, 0, 0, SHADOW_DARKEN * tint.a))

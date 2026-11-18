@@ -1559,11 +1559,6 @@ func _fill_pile_window(key: String) -> void:
 	elif key.ends_with("library"):
 		cards = view.libraries.get(player_id, [])
 		zone_name = "Library"
-		var top: MmObjectView = _seen_library_top(player_id)
-		if top != null:
-			# Game ADR 0055: only the top card the Hero may look at.
-			_pile_windows[key].show_top_card("%s %s" % [_snapshot.names.possessive(player_id), zone_name], cards.size(), top, _snapshot, _clicks)
-			return
 	_pile_windows[key].show_cards("%s %s" % [_snapshot.names.possessive(player_id), zone_name], cards, _snapshot, _clicks)
 
 

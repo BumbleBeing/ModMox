@@ -102,7 +102,7 @@ func test_duplicating_a_deck_keeps_the_same_cards_under_a_new_name_after_it() ->
 	var first: Deck = _deck_of("Bears", [bears], 3)
 	var after: Deck = _deck_of("After", [])
 	var copy: Deck = _deckbox.duplicate_deck(first)
-	assert_eq(copy.name, "Bears (copy)")
+	assert_eq(copy.name, "Bears (2)")
 	assert_eq(copy.card_ids, first.card_ids)
 	assert_eq(copy.basic_lands, first.basic_lands)
 	assert_eq(_deckbox.decks(), [first, copy, after] as Array[Deck])
@@ -112,8 +112,19 @@ func test_duplicating_a_deck_keeps_the_same_cards_under_a_new_name_after_it() ->
 
 func test_a_duplicate_of_a_duplicate_takes_a_free_name() -> void:
 	var first: Deck = _deck_of("Bears", [])
-	_deckbox.duplicate_deck(first)
-	assert_eq(_deckbox.duplicate_deck(first).name, "Bears (copy 2)")
+	var second: Deck = _deckbox.duplicate_deck(first)
+	assert_eq(_deckbox.duplicate_deck(first).name, "Bears (3)")
+	assert_eq(_deckbox.duplicate_deck(second).name, "Bears (4)", "A copy of a copy counts on in the same line.")
+
+
+func test_a_free_name_skips_taken_ones_ignoring_capitals_and_fills_gaps() -> void:
+	assert_eq(_deckbox.free_name("New Deck"), "New Deck")
+	_deck_of("new deck", [])
+	_deck_of("New Deck (3)", [])
+	assert_eq(_deckbox.free_name("New Deck"), "New Deck (2)")
+	_deck_of("New Deck (2)", [])
+	assert_eq(_deckbox.free_name("New Deck (2)"), "New Deck (4)")
+	assert_eq(_deckbox.free_name("Plan (B)"), "Plan (B)", "Only a number in brackets is taken off.")
 
 
 func test_duplicating_the_active_deck_leaves_the_original_active() -> void:

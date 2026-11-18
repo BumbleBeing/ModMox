@@ -32,7 +32,8 @@ var _next_basic_id: int = -1
 var _saved: String = ""
 
 
-## A Working Deck over [param deck], or a new empty one if it is null.
+## A Working Deck over [param deck], or a new empty one named "New Deck", or "New Deck (2)"
+## and so on, if it is null.
 func _init(collection: Collection, deckbox: Deckbox, basic_lands: Array[MmCardDefinition], deck: Deck = null) -> void:
 	_collection = collection
 	_deckbox = deckbox
@@ -51,6 +52,8 @@ func _init(collection: Collection, deckbox: Deckbox, basic_lands: Array[MmCardDe
 			for index: int in deck.basic_lands[land_name]:
 				add_basic_land(land_name)
 		sort()
+	else:
+		name = deckbox.free_name(Deckbox.NEW_DECK_NAME)
 	_saved = _signature()
 
 

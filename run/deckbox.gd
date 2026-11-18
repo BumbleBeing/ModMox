@@ -4,6 +4,9 @@ extends RefCounted
 ## Only the Deckbox screen's Start checks a Deck's legality; nothing here refuses an
 ## illegal one.
 
+## What a new Deck is called, or "New Deck (2)" and so on once that name is taken.
+const NEW_DECK_NAME: String = "New Deck"
+
 ## A Deck is legal at this many cards or more (A540).
 const MINIMUM_SIZE: int = 40
 
@@ -49,18 +52,33 @@ func is_legal(deck: Deck) -> bool:
 
 
 ## A copy of [param deck] with the same cards, kept right after it under the first free
-## name of "Name (copy)", "Name (copy 2)" and so on. The original stays active if it was.
+## name in its line: a copy of "Bears" or of "Bears (2)" is "Bears (2)", "Bears (3)" and so
+## on. The original stays active if it was.
 func duplicate_deck(deck: Deck) -> Deck:
 	var copy: Deck = Deck.new()
 	copy.card_ids = deck.card_ids.duplicate()
 	copy.basic_lands = deck.basic_lands.duplicate()
-	copy.name = "%s (copy)" % deck.name
-	var number: int = 2
-	while is_name_taken(copy.name):
-		copy.name = "%s (copy %d)" % [deck.name, number]
-		number += 1
+	copy.name = free_name(deck.name)
 	_decks.insert(_decks.find(deck) + 1, copy)
 	return copy
+
+
+## The first name no Deck has of [param name], "[param name] (2)", "[param name] (3)" and
+## so on, ignoring capitals. A number already on the end, as in "Bears (2)", is taken off
+## first, so every name in the line counts on from the same one.
+func free_name(name: String) -> String:
+	var base: String = _without_number(name)
+	if not is_name_taken(base):
+		return base
+	var number: int = 2
+	while is_name_taken("%s (%d)" % [base, number]):
+		number += 1
+	return "%s (%d)" % [base, number]
+
+
+func _without_number(name: String) -> String:
+	var found: RegExMatch = RegEx.create_from_string("^(.*\\S) \\((\\d+)\\)$").search(name)
+	return found.get_string(1) if found != null else name
 
 
 ## Throws [param deck] away; its cards stay in the Collection. Deleting the Active Deck

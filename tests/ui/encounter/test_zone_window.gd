@@ -29,6 +29,16 @@ func test_the_x_is_no_taller_than_the_title_bar() -> void:
 	assert_gt(window.close_button().offset_top, 0.0)
 
 
+func test_the_x_is_46_pixels_wide_and_red_with_a_dark_border() -> void:
+	var close: Button = _window("Emblems", true).close_button()
+
+	assert_eq(close.offset_right - close.offset_left, 46.0)
+	var style: StyleBoxFlat = close.get_theme_stylebox("normal") as StyleBoxFlat
+	assert_eq(style.bg_color, Color("#bb0a21"))
+	assert_eq(style.border_color, Color("#5e0510"), "A darker red border round it.")
+	assert_eq(style.border_width_left, 2)
+
+
 func test_dragging_cannot_take_it_out_of_its_bounds() -> void:
 	var window: ZoneWindow = _window("Stack", false)
 	window.bounds = Rect2(100, 100, 800, 600)

@@ -12,6 +12,17 @@ func before_each() -> void:
 	_fixture = Fixture.new()
 
 
+func test_a_new_deck_is_named_new_deck_or_the_first_free_number_after_it() -> void:
+	var first: WorkingDeck = _fixture.working_deck()
+	assert_eq(first.name, "New Deck")
+	assert_false(first.has_unsaved_changes(), "A new Deck's name is no change of its own.")
+	assert_eq(first.save(), "")
+	assert_eq(_fixture.working_deck().name, "New Deck (2)")
+	var second: WorkingDeck = _fixture.working_deck()
+	assert_eq(second.save(), "")
+	assert_eq(_fixture.working_deck().name, "New Deck (3)")
+
+
 func test_adding_a_card_puts_it_in_the_column_asked_for() -> void:
 	var bolt: DeckbuilderCard = _fixture.own("lightning_bolt")
 	var deck: WorkingDeck = _fixture.working_deck()

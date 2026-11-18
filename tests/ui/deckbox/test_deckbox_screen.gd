@@ -143,7 +143,7 @@ func test_duplicate_deck_adds_a_copy_after_it_and_selects_it() -> void:
 	await _open()
 	_screen.click_row(0)
 	_screen.button("Duplicate Deck").pressed.emit()
-	assert_eq(_screen.row_names(), ["Red-Green", "Red-Green (copy)"] as Array[String])
+	assert_eq(_screen.row_names(), ["Red-Green", "Red-Green (2)"] as Array[String])
 	assert_eq(_screen.selected(), _run.deckbox.decks()[1])
 	assert_true(_screen.row_has_star(0))
 

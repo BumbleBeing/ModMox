@@ -2,7 +2,8 @@ extends GutTest
 ## Assemble the Players on the Encounter Screen (game ADR 0055). While the Hero controls a
 ## permanent that lets them look at the top card of their library, their Library pile shows
 ## that card face up with an eye, to the Hero alone. While it can be cast the pile glows
-## green; its window holds only that card, captioned, and a click there casts it, the Info
+## green; its window holds the whole library with that card face up first, glowing, and a
+## click on it casts it, the Info
 ## Panel saying so while the cursor is on it. On the stack it reads "(top of library)", and
 ## once its cast is Spent the permanent is drawn dimmed. Lookout is the card as an
 ## enchantment costing {0}; Cub is a 2/2 costing {0}, and Kit a 1/1 costing {W}.
@@ -45,7 +46,7 @@ func test_the_top_card_shows_face_up_on_the_pile_with_an_eye_once_the_lookout_is
 		"The Villain's library stays face down.")
 
 
-func test_the_pile_glows_green_and_its_window_holds_only_the_top_card_and_casts_it() -> void:
+func test_the_pile_glows_green_and_its_window_holds_the_whole_library_and_casts_the_top_card() -> void:
 	_open([Scenario.lookout(), _cub(), Scenario.basic_land("Plains")], "Cub")
 	_cast("Lookout")
 	var top: int = _top_id()
@@ -55,9 +56,12 @@ func test_the_pile_glows_green_and_its_window_holds_only_the_top_card_and_casts_
 	_screen.pile_catcher(MINE).clicked.emit()
 	var window: PileWindow = _screen.pile_window(MINE)
 	assert_true(window.is_open())
-	assert_eq(window.entries(), [top] as Array[int], "Only the top card.")
-	assert_not_null(window.caption())
-	assert_eq(window.caption().text, "Top card · only you see it")
+	var backs: Array[int] = []
+	backs.resize(_presenter.snapshot().view.libraries[HERO].size() - 1)
+	backs.fill(PileWindow.UNKNOWN)
+	assert_eq(window.entries(), ([top] as Array[int]) + backs, "Every card, the top one face up and the rest face down.")
+	assert_gt(backs.size(), 0, "The scenario's library holds more than its top card.")
+	assert_eq(BorderEffects.glow_colors(window.face_of(top)), [PLAY] as Array[Color], "The top card glows: it can be cast.")
 	assert_eq(_screen.pile_glow(MINE), [PLAY] as Array[Color], "The pile keeps glowing while its window is open.")
 	assert_not_null(window.catcher_of(top), "The card takes the click.")
 	window.catcher_of(top).clicked.emit()

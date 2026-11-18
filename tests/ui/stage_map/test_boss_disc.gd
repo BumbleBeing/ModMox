@@ -32,13 +32,13 @@ func test_the_boss_breathes_four_percent_each_way_once_every_three_seconds() -> 
 
 
 ## The whole disc, clay and ring, is one 32 x 32 pixel picture, scaled by a whole number
-## to the disc's radius: four times on the Stage Map, eight in the Stage Intro.
+## to the disc's radius: four times on the Stage Map, ten in the Stage Intro.
 func test_the_disc_is_a_32_pixel_picture_scaled_whole() -> void:
 	var disc: Image = BossDisc.pixel_disc().get_image()
 
 	assert_eq(disc.get_size(), Vector2i(32, 32))
 	assert_eq(BossDisc.ring_scale(StageMapLayout.BOSS_RADIUS), 4)
-	assert_eq(BossDisc.ring_scale(StageIntro.RING_RADIUS), 8)
+	assert_eq(BossDisc.ring_scale(StageIntro.RING_RADIUS), 10)
 
 
 ## The ring is red edged dark, clear outside, shaded from light at the top to dark at the

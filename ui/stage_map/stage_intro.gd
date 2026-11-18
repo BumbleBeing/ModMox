@@ -19,8 +19,10 @@ const INK_MUTED: Color = Color8(108, 96, 84)
 ## How far a Stage's color is lightened at the top of the ground and darkened at its foot.
 const GROUND_LIGHTEN: float = 0.08
 const GROUND_DARKEN: float = 0.18
-## The Boss's disc and its ring.
-const RING_RADIUS: float = 104.0
+## The Boss's disc and its ring: ten times the disc's picture.
+const RING_RADIUS: float = 130.0
+## The Boss's Portrait is drawn this much larger than fits its clay.
+const PORTRAIT_SCALE: float = 1.125
 const BUTTON_FILL: Color = Color("#4b4e55")
 const BUTTON_HEIGHT: int = 56
 const CONTINUE: String = "Continue"
@@ -81,7 +83,8 @@ func begin(run: Run) -> void:
 	_ring = Control.new()
 	_ring.custom_minimum_size = Vector2.ONE * (RING_RADIUS * 2.0 + 40.0)
 	_ring.draw.connect(func() -> void:
-		BossDisc.draw(_ring, _ring.size / 2.0, RING_RADIUS, visit.boss.sprite, _time, Color.WHITE))
+		BossDisc.draw(_ring, _ring.size / 2.0, RING_RADIUS, visit.boss.sprite, _time, Color.WHITE,
+				PORTRAIT_SCALE))
 	column.add_child(_ring)
 	column.add_child(_text(visit.boss.name, 36, text, true))
 	column.add_child(_gap())

@@ -8,6 +8,11 @@ extends Panel
 
 const BAR_HEIGHT: float = 28.0
 const SMALLEST: Vector2 = Vector2(200, 120)
+## The close button's width and color.
+const CLOSE_WIDTH: float = 46.0
+const CLOSE_COLOR: Color = Color("#bb0a21")
+## The darker red of the close button's border.
+const CLOSE_BORDER_COLOR: Color = Color("#5e0510")
 
 ## Where the window may be: it is moved and shrunk to stay inside. Empty for anywhere.
 var bounds: Rect2 = Rect2()
@@ -57,15 +62,21 @@ func _init(zone_name: String, can_close: bool, tint: Color) -> void:
 		_close.focus_mode = Control.FOCUS_NONE
 		_close.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 		# Inside the bar, never taller than it.
-		_close.offset_left = -26
+		_close.offset_left = -3 - CLOSE_WIDTH
 		_close.offset_right = -3
 		_close.offset_top = 3
 		_close.offset_bottom = BAR_HEIGHT - 3
 		_close.add_theme_font_size_override("font_size", 14)
 		for state: String in ["normal", "hover", "pressed"]:
 			var flat: StyleBoxFlat = StyleBoxFlat.new()
-			flat.bg_color = Color(0, 0, 0, 0.35 if state == "normal" else 0.6)
+			flat.bg_color = CLOSE_COLOR
+			if state == "hover":
+				flat.bg_color = CLOSE_COLOR.lightened(0.15)
+			elif state == "pressed":
+				flat.bg_color = CLOSE_COLOR.darkened(0.2)
 			flat.set_corner_radius_all(3)
+			flat.border_color = CLOSE_BORDER_COLOR
+			flat.set_border_width_all(2)
 			_close.add_theme_stylebox_override(state, flat)
 		_close.pressed.connect(close)
 		bar.add_child(_close)

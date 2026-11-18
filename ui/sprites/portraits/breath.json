@@ -79,8 +79,20 @@
 		"intensity": 1.2,
 		"rate": 1.0
 	},
-	"urza_academy_headmaster": {
+	"solarium_sentry": {
+		"intensity": 1.45,
+		"rate": 1.0
+	},
+	"steppe_lynx": {
+		"intensity": 1.25,
+		"rate": 1.05
+	},
+	"the_goose_mother": {
 		"intensity": 1.0,
+		"rate": 1.1
+	},
+	"urza_academy_headmaster": {
+		"intensity": 1.1,
 		"rate": 1.15
 	}
 }
