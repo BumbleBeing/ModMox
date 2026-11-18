@@ -10,6 +10,9 @@ extends RefCounted
 ## between the colors of the first two: a permanent with a mana ability and another
 ## ability is purple and blue.
 ##
+## A card in the Hero's graveyard that can be cast with flashback is clicked in the
+## Graveyard window, and its pile glows green (game ADR 0049).
+##
 ## A card in hand that can be cast or played, or has an ability used from there, glows too,
 ## but one click on it answers nothing (A371): what it offers is kept apart, in
 ## hand_options_of(), for the Drag Card and a double-click.
@@ -45,6 +48,8 @@ var pool_marks: Array[MmMana.Type] = []
 ## many answers are not in any pile.
 var _piles: Array[String] = []
 var _answers_elsewhere: int = 0
+## The Region of each pile in _piles → the kind of its Glow.
+var _pile_kinds: Dictionary[String, Kind] = {}
 ## Game Object ID → the ClickOptions clicking it offers, in answer order.
 var _options: Dictionary[int, Array] = {}
 ## Game Object ID of a card in hand → the ClickOptions playing it offers, in answer order.
@@ -106,6 +111,9 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 		clicks._add_ids((decision as DeclareAttackersDecision).candidate_ids, Kind.COMBAT)
 	elif decision is ChooseCardsToDiscardDecision:
 		clicks._add_ids((decision as ChooseCardsToDiscardDecision).candidate_ids, Kind.OTHER)
+	elif decision is ChoosePermanentsDecision:
+		# Picked one click at a time with a CardPicks, and confirmed with the pass button.
+		clicks._add_ids((decision as ChoosePermanentsDecision).candidate_ids, Kind.OTHER)
 	return clicks
 
 
@@ -113,6 +121,12 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 ## "hero_graveyard": each glows, and its Zone Window is where the card is clicked.
 func piles() -> Array[String]:
 	return _piles
+
+
+## The kind of the Glow of the pile in Region [param key]: TARGET for a target there, PLAY
+## for a card to cast from there.
+func pile_kind_of(key: String) -> Kind:
+	return _pile_kinds.get(key, Kind.TARGET)
 
 
 ## Whether every answer is a card in a pile, so that nothing on the board can be clicked
@@ -148,6 +162,7 @@ func _find_piles(candidates: Array[MmReference], view: MmPlayerView) -> void:
 	for key: String in ["hero_graveyard", "villain_graveyard"]:
 		if found.has(key):
 			_piles.append(key)
+			_pile_kinds[key] = Kind.TARGET
 
 
 ## The Game Object [param action] is about, or -1 for one about none (passing, or spending
@@ -265,11 +280,20 @@ func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView
 		_append(_hand_abilities, action.object_id, ClickOption.new(answer, text, is_mana))
 
 
-## Casting a card or playing it as a land, which [param answer] does.
+## Casting a card or playing it as a land, which [param answer] does. A card in the
+## graveyard is cast with flashback, clicked in its window (game ADR 0049).
 func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
 	var object_id: int = object_of(action)
 	var verb: String = "Play" if action is PlayLandAction else "Cast"
 	_add_kind(object_id, Kind.PLAY)
+	if _find(view.graveyards.get(view.viewer_id, []), object_id) != null:
+		_append(_options, object_id, ClickOption.new(answer, "Cast %s with flashback" % EncounterSnapshot.name_in(view, object_id)))
+		var key: String = EncounterLayout.pile_key(MmZone.Kind.GRAVEYARD, true)
+		if not _piles.has(key):
+			_piles.append(key)
+			_pile_kinds[key] = Kind.PLAY
+			_answers_elsewhere += 1  # Passing, at least: the window waits for a click on the pile.
+		return
 	_append(_hand_options, object_id, ClickOption.new(answer, "%s %s" % [verb, EncounterSnapshot.name_in(view, object_id)]))
 
 

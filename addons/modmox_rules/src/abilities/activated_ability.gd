@@ -33,18 +33,22 @@ func is_mana_ability() -> bool:
 	return adds_mana
 
 
-## Whether every cost can be paid right now with [param source] as the ability's source.
+## Whether every cost can be paid right now with [param source] as the ability's source,
+## by its controller.
 func can_pay_costs(state: MmGameState, source: MmGameObject) -> bool:
 	for cost: MmCost in costs:
-		if not cost.can_pay(state, source):
+		if not cost.can_pay(state, source, source.controller_id):
 			return false
 	return true
 
 
-## Pays every cost, in order (CR 602.2b).
+## Pays every cost, in order (CR 602.2b), for an ability that never stops to ask: a mana
+## ability (CR 605.3a). One that uses the stack is paid by CastProcedure, which asks.
 func pay_costs(state: MmGameState, source: MmGameObject) -> void:
+	var nothing_chosen: Array[int] = []
 	for cost: MmCost in costs:
-		cost.pay(state, source)
+		assert(cost.choice(state, source, source.controller_id) == null, "A mana ability's cost cannot ask a choice yet.")
+		cost.pay(state, source, source.controller_id, nothing_chosen)
 
 
 ## Carries out every effect at once, in order, for a mana ability, which resolves

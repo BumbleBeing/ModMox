@@ -184,3 +184,21 @@ func _object(id: int, object_name: String, card_id: int) -> MmObjectView:
 	seen.name = object_name
 	seen.card_id = card_id
 	return seen
+
+
+func test_creatures_to_tap_for_a_cost_are_asked_for_by_the_cost_and_can_be_canceled() -> void:
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Group Project", 5)]
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var untapped: NotFilter = NotFilter.new()
+	untapped.filter = IsTappedFilter.new()
+	var creature: HasCardTypeFilter = HasCardTypeFilter.new()
+	creature.card_type = MmCardTypes.CardType.CREATURE
+	var all: AllOfFilter = AllOfFilter.new()
+	all.filters = [creature, untapped, mine]
+
+	var prompt: InfoPrompt = InfoPrompt.of(ChoosePermanentsDecision.new(HERO, 20, 3, [3, 4, 6] as Array[int], all), view)
+
+	assert_eq(prompt.text, "Tap three untapped creatures you control for Group Project")
+	assert_true(prompt.can_cancel, "A step of the cast.")

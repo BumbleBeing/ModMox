@@ -1,12 +1,14 @@
 class_name CastProcedure
 extends RefCounted
 ## Casting a spell (CR 601.2) or activating an ability that uses the stack (CR 602.2):
-## announce it onto the stack, choose its mode if it is modal, choose its targets, then
-## pay its cost one step at a time.
+## announce it onto the stack, choose its mode if it is modal, choose its targets, make
+## any choice a part of its cost asks (paying that part then), then pay its mana one step
+## at a time and the rest of its cost. A card cast from its graveyard is cast for its
+## flashback cost (CR 702.34a).
 ## When the payment can no longer be finished it reports itself stuck, and the engine
 ## rewinds the whole attempt (CR 728, ADR 0015).
 
-enum Stage { CHOOSE_MODE, CHOOSE_TARGETS, PAY_MANA, DONE, STUCK }
+enum Stage { CHOOSE_MODE, CHOOSE_TARGETS, PAY_MANA, DONE, STUCK, PAY_COSTS }
 
 var _state: MmGameState
 var _player_id: int
@@ -21,9 +23,15 @@ var _next_target: int = 0
 var _remaining_generic: int = 0
 var _remaining_symbols: Array[MmMana.Type] = []
 var _stage: Stage = Stage.CHOOSE_TARGETS
+## The parts of the cost that are not mana (CR 601.2h): an ability's costs, or a flashback
+## cost's. Those that ask a choice are paid as it is answered, the rest once the mana is.
+var _costs: Array[MmCost] = []
+var _next_cost: int = 0
+var _paid_cost_indexes: Array[int] = []
 
 
-## Begins casting [param card] from [param player_id]'s hand: CR 601.2a moves it to the stack.
+## Begins casting [param card] from [param player_id]'s hand, or from their graveyard for its
+## flashback cost: CR 601.2a moves it to the stack.
 static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -> CastProcedure:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	var procedure: CastProcedure = CastProcedure.new(state, player_id)
@@ -34,9 +42,18 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -
 	elif spell != null:
 		procedure._target_requirements = spell.targets
 	# Later: cost increases, reductions and additional costs (CR 601.2f).
-	procedure._remaining_generic = characteristics.mana_cost.generic
-	procedure._remaining_symbols = characteristics.mana_cost.symbols.duplicate()
+	var mana: MmManaCost = characteristics.mana_cost
+	var is_flashback: bool = card.zone().kind == MmZone.Kind.GRAVEYARD
+	if is_flashback:
+		# CR 118.9: an alternative cost, paid instead of its mana cost.
+		var flashback: FlashbackAbility = flashback_of(characteristics)
+		mana = flashback.mana_cost
+		procedure._costs = flashback.costs
+	if mana != null:
+		procedure._remaining_generic = mana.generic
+		procedure._remaining_symbols = mana.symbols.duplicate()
 	var move: ZoneChangeEvent = ZoneChangeEvent.new(card, state.stack, MmZone.BOTTOM, ZoneChangeEvent.Reason.CAST)
+	move.cast_with_flashback = is_flashback
 	state.perform(move)
 	procedure._stack_object_id = move.new_object_id
 	return procedure
@@ -49,6 +66,7 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	var ability: ActivatedAbility = state.characteristics_of(source).abilities[ability_index] as ActivatedAbility
 	procedure._ability = ability
 	procedure._target_requirements = ability.targets
+	procedure._costs = ability.costs
 	procedure._source_object_id = source.id
 	procedure._ability_index = ability_index
 	if ability.mana_cost != null:
@@ -59,6 +77,14 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	state.perform(put)
 	procedure._stack_object_id = put.new_object_id
 	return procedure
+
+
+## The card's flashback ability (CR 702.34a), or null for a card without flashback.
+static func flashback_of(characteristics: MmCharacteristics) -> FlashbackAbility:
+	for ability: MmAbility in characteristics.abilities:
+		if ability is FlashbackAbility:
+			return ability as FlashbackAbility
+	return null
 
 
 ## The spell ability of an instant or sorcery, or null, as for a creature with no spell
@@ -86,6 +112,9 @@ func copy_for(state: MmGameState) -> CastProcedure:
 	copy._next_target = _next_target
 	copy._remaining_generic = _remaining_generic
 	copy._remaining_symbols = _remaining_symbols.duplicate()
+	copy._costs = _costs
+	copy._next_cost = _next_cost
+	copy._paid_cost_indexes = _paid_cost_indexes.duplicate()
 	copy._stage = _stage
 	return copy
 
@@ -114,6 +143,17 @@ func next_decision() -> MmPendingDecision:
 				if _next_target < _target_requirements.size():
 					var legal: Array[MmReference] = _target_requirements[_next_target].legal_targets(_state, _context())
 					return ChooseTargetDecision.new(_player_id, _stack_object_id, _next_target, legal)
+				_stage = Stage.PAY_COSTS
+			Stage.PAY_COSTS:
+				while _next_cost < _costs.size():
+					var cost: MmCost = _costs[_next_cost]
+					if not cost.can_pay(_state, _cost_source(), _player_id):
+						_stage = Stage.STUCK  # Something since has made it unpayable.
+						return null
+					var choice: MmPendingDecision = cost.choice(_state, _cost_source(), _player_id)
+					if choice != null:
+						return choice
+					_next_cost += 1
 				_stage = Stage.PAY_MANA
 			Stage.PAY_MANA:
 				if _remaining_generic == 0 and _remaining_symbols.is_empty():
@@ -132,6 +172,16 @@ func next_decision() -> MmPendingDecision:
 
 ## Applies an already-validated [param answer] to [param decision].
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
+	if decision is ChoosePermanentsDecision:
+		var chosen: Array[int] = []
+		for id: Variant in answer as Array:
+			chosen.append(id as int)
+		chosen.sort()
+		# CR 601.2h: costs are paid in any order; this part now, as it is chosen.
+		_costs[_next_cost].pay(_state, _cost_source(), _player_id, chosen)
+		_paid_cost_indexes.append(_next_cost)
+		_next_cost += 1
+		return
 	var index: int = answer
 	if decision is ChooseModeDecision:
 		_choose_mode((decision as ChooseModeDecision).modes[index])
@@ -231,6 +281,19 @@ func _pay_with_mana_ability(action: ActivateAbilityAction) -> void:
 			_spend(unit_index)
 
 
+## What a part of the cost is paid for: the ability's source, or the spell itself.
+func _cost_source() -> MmGameObject:
+	return _state.object(_source_object_id if _source_object_id != 0 else _stack_object_id)
+
+
+## Pays every part of the cost not yet paid, in order.
+func _pay_remaining_costs() -> void:
+	var nothing_chosen: Array[int] = []
+	for index: int in _costs.size():
+		if not _paid_cost_indexes.has(index):
+			_costs[index].pay(_state, _cost_source(), _player_id, nothing_chosen)
+
+
 ## CR 601.2h and 602.2b: pay the remaining, non-mana costs. The spell or ability is now
 ## cast or activated.
 func _finish() -> void:
@@ -240,8 +303,9 @@ func _finish() -> void:
 			# CR 602.5b: it has been activated, whatever becomes of it on the stack. Marked
 			# before the costs are paid, since a cost may remove the source.
 			_state.perform(AbilitySpentEvent.new(_source_object_id, _ability_index))
-		activated.pay_costs(_state, _state.object(_source_object_id))
+		_pay_remaining_costs()
 	else:
+		_pay_remaining_costs()
 		# CR 601.2i: the spell is now cast, which "whenever a player casts" triggers wait for.
 		_state.perform(SpellCastEvent.new(_stack_object_id, _player_id))
 

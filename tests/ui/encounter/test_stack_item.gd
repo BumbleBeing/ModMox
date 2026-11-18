@@ -180,6 +180,18 @@ func test_a_modal_spell_says_in_full_only_the_mode_it_was_cast_with() -> void:
 	assert_eq(item.full_text, "Charm — Charm deals 2 damage to target creature.")
 
 
+func test_a_spell_cast_with_flashback_says_so_and_that_it_will_be_exiled() -> void:
+	var view: MmPlayerView = _view()
+	var zap: MmObjectView = _spell(20, "Zap", HERO, [MmReference.to_object(BEARS)])
+	zap.cast_with_flashback = true
+	view.stack = [zap]
+
+	var item: StackItem = StackItem.of(zap, view)
+
+	assert_eq(item.first_line, "Zap (flashback)")
+	assert_eq(item.full_text, "Zap — Zap deals 3 damage to any target. · Cast with flashback: exiled as it leaves the stack.")
+
+
 func _spell(id: int, spell_name: String, controller: int, targets: Array[MmReference]) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()
 	seen.id = id

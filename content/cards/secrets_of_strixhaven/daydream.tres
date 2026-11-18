@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_lge7b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_j21ve"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_xp48s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/exile_effect.gd" id="3_7ghgn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_mtf21"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_ofs2a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_n2fcp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_battlefield_effect.gd" id="6_egvhd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/exiled_with_source_selection.gd" id="7_3e427"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_mode.gd" id="8_aibcf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="9_46lqu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_i3xnu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_yop8w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_mnhlu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="13_h31ko"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="14_67d27"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="15_hm827"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flashback_ability.gd" id="17_3nhjv"]
+
+[sub_resource type="Resource" id="Resource_vjsgv"]
+script = ExtResource("4_ofs2a")
+
+[sub_resource type="Resource" id="Resource_q1ojd"]
+script = ExtResource("3_7ghgn")
+selection = SubResource("Resource_vjsgv")
+
+[sub_resource type="Resource" id="Resource_0w35n"]
+script = ExtResource("5_n2fcp")
+value = 1
+
+[sub_resource type="Resource" id="Resource_y34li"]
+script = ExtResource("7_3e427")
+
+[sub_resource type="Resource" id="Resource_r4j4b"]
+script = ExtResource("6_egvhd")
+selection = SubResource("Resource_y34li")
+counters = SubResource("Resource_0w35n")
+
+[sub_resource type="Resource" id="Resource_sbq5s"]
+script = ExtResource("12_mnhlu")
+
+[sub_resource type="Resource" id="Resource_0nhbg"]
+script = ExtResource("13_h31ko")
+
+[sub_resource type="Resource" id="Resource_pbfgy"]
+script = ExtResource("14_67d27")
+filters = Array[ExtResource("11_yop8w")]([SubResource("Resource_sbq5s"), SubResource("Resource_0nhbg")])
+
+[sub_resource type="Resource" id="Resource_o6u6w"]
+script = ExtResource("10_i3xnu")
+filter = SubResource("Resource_pbfgy")
+
+[sub_resource type="Resource" id="Resource_yojxv"]
+script = ExtResource("9_46lqu")
+targets = Array[ExtResource("10_i3xnu")]([SubResource("Resource_o6u6w")])
+effects = Array[ExtResource("2_j21ve")]([SubResource("Resource_q1ojd"), SubResource("Resource_r4j4b")])
+
+[sub_resource type="Resource" id="Resource_5mrld"]
+script = ExtResource("2_xp48s")
+generic = 2
+symbols = Array[int]([0])
+
+[sub_resource type="Resource" id="Resource_s0cpn"]
+script = ExtResource("17_3nhjv")
+mana_cost = SubResource("Resource_5mrld")
+
+[sub_resource type="Resource" id="Resource_6scp4"]
+script = ExtResource("2_xp48s")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_mtf21")
+name = "Daydream"
+card_types = Array[int]([5])
+mana_cost = SubResource("Resource_6scp4")
+abilities = Array[ExtResource("1_lge7b")]([SubResource("Resource_yojxv"), SubResource("Resource_s0cpn")])
+rarity = 1

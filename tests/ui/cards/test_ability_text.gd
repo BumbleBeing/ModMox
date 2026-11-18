@@ -21,6 +21,8 @@ const PRINTED: Dictionary[String, String] = {
 		+ "• Destroy target enchantment.",
 	"counterspell": "Counter target spell.",
 	"dark_ritual": "Add {B}{B}{B}.",
+	"daydream": "Exile target creature you control. Return the exiled card to the battlefield under its owner's control with a +1/+1 counter on it.\nFlashback {2}{W}",
+	"deep_analysis": "Target player draws two cards.\nFlashback—{1}{U}, Pay 3 life",
 	"drudge_skeletons": "{B}: Regenerate this creature.",
 	"elvish_archers": "First strike",
 	"fog": "Prevent all combat damage that would be dealt this turn.",
@@ -29,6 +31,7 @@ const PRINTED: Dictionary[String, String] = {
 	"giant_growth": "Target creature gets +3/+3 until end of turn.",
 	"giant_spider": "Reach",
 	"goblin_balloon_brigade": "{R}: This creature gains flying until end of turn.",
+	"group_project": "Create a 2/2 white and red Spirit creature token.\nFlashback—Tap three untapped creatures you control",
 	"helpful_hunter": "When this creature enters, draw a card.",
 	"howling_mine": "At the beginning of each player's draw step, if this artifact is untapped, that player draws a card.",
 	"instill_infection": "Put a -1/-1 counter on target creature. Draw a card.",
@@ -468,3 +471,37 @@ func _attack(whose: Whose) -> AttackersDeclaredTrigger:
 	var trigger: AttackersDeclaredTrigger = AttackersDeclaredTrigger.new()
 	trigger.whose = whose
 	return trigger
+
+
+func test_flashback_prints_its_cost_with_a_dash_when_it_is_more_than_mana() -> void:
+	var life: Array[MmCost] = [Scenario.pay_life(3)]
+	var creatures: Array[MmCost] = [Scenario.tap_creatures(3)]
+	var one_creature: Array[MmCost] = [Scenario.tap_creatures(1)]
+	var white: MmManaCost = Scenario.mana_cost(2, [MmMana.Type.WHITE])
+	var blue: MmManaCost = Scenario.mana_cost(1, [MmMana.Type.BLUE])
+
+	assert_eq(AbilityText.of_ability(Scenario.flashback(white), "Daydream"), "Flashback {2}{W}")
+	assert_eq(AbilityText.of_ability(Scenario.flashback(blue, life), "Deep Analysis"), "Flashback—{1}{U}, Pay 3 life")
+	assert_eq(AbilityText.of_ability(Scenario.flashback(null, creatures), "Group Project"),
+		"Flashback—Tap three untapped creatures you control")
+	assert_eq(AbilityText.of_ability(Scenario.flashback(null, one_creature), "Sample"), "Flashback—Tap an untapped creature you control")
+	assert_true(AbilityText.is_keyword(Scenario.flashback(white)))
+
+
+func test_an_activated_ability_can_cost_life() -> void:
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.mana_cost = Scenario.mana_cost(1)
+	ability.costs = [TapCost.new(), Scenario.pay_life(1)]
+	ability.effects = [Scenario.draw_cards(1, Scenario.you())]
+
+	assert_eq(AbilityText.of_ability(ability, "this artifact"), "{1}, {T}, Pay 1 life: Draw a card.")
+
+
+func test_returning_with_a_counter_says_so() -> void:
+	var back: ReturnToBattlefieldEffect = Scenario.return_to_battlefield(ExiledWithSourceSelection.new())
+	back.counters = Scenario.constant(1)
+	var spell: SpellAbility = SpellAbility.new()
+	spell.effects = [back]
+
+	assert_eq(AbilityText.of_ability(spell, "Daydream"),
+		"Return the exiled card to the battlefield under its owner's control with a +1/+1 counter on it.")

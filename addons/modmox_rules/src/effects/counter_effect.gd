@@ -17,7 +17,7 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, _number
 		if countered == null or countered.zone() != state.stack:
 			continue
 		if countered.is_card():
-			events.append(ZoneChangeEvent.new(countered, state.player(countered.owner_id).graveyard, MmZone.BOTTOM,
+			events.append(ZoneChangeEvent.new(countered, state.graveyard_from_stack(countered), MmZone.BOTTOM,
 				ZoneChangeEvent.Reason.COUNTER))
 		else:
 			events.append(AbilityLeftStackEvent.new(countered.id, false, true))

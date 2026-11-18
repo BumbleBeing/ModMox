@@ -89,6 +89,26 @@
 		"scryfall_id": "ebb6664d-23ca-456e-9916-afcd6f26aa7f",
 		"set": "lea"
 	},
+	"daydream": {
+		"artist": "Nia Kovalevski",
+		"collector_number": "9",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "e2b16cb2-b8b2-45df-9695-3c16e9d89e28",
+		"set": "sos"
+	},
+	"deep_analysis": {
+		"artist": "Daren Bader",
+		"collector_number": "36",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "01e3c2e9-d8df-4a7a-be86-7be8c6254fa2",
+		"set": "tor"
+	},
 	"drudge_skeletons": {
 		"artist": "Sandra Everingham",
 		"collector_number": "106",
@@ -188,6 +208,16 @@
 		],
 		"scryfall_id": "ce2d603a-3231-4a8c-bf39-1617586ea870",
 		"set": "lea"
+	},
+	"group_project": {
+		"artist": "Justine Cruz",
+		"collector_number": "17",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "e8abc1eb-6225-4b18-8502-b5324b818aed",
+		"set": "sos"
 	},
 	"helpful_hunter": {
 		"artist": "Xabi Gaztelua",
@@ -528,6 +558,16 @@
 		],
 		"scryfall_id": "2885d54c-9fb2-4f01-8937-54f8ac1ce5bc",
 		"set": "tfdn"
+	},
+	"tokens/spirit_2_2_red_white": {
+		"artist": "Filipe Pagliuso",
+		"collector_number": "11",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "d0f3bd3d-08cf-4783-ae31-03770c8be69c",
+		"set": "tsos"
 	},
 	"uthden_troll": {
 		"artist": "Douglas Shuler",

@@ -86,6 +86,24 @@
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Instant"
 	},
+	"daydream": {
+		"mana_cost": "{W}",
+		"name": "Daydream",
+		"oracle_id": "094c4486-6cae-4268-850e-ff0082e5ad10",
+		"oracle_text": "Exile target creature you control, then return that card to the battlefield under its owner's control with a +1/+1 counter on it.\nFlashback {2}{W} (You may cast this card from your graveyard for its flashback cost. Then exile it.)",
+		"rarity": "uncommon",
+		"set_name": "Secrets of Strixhaven",
+		"type_line": "Sorcery"
+	},
+	"deep_analysis": {
+		"mana_cost": "{3}{U}",
+		"name": "Deep Analysis",
+		"oracle_id": "579cbd92-797f-4cdf-91ed-fca7a523eae5",
+		"oracle_text": "Target player draws two cards.\nFlashback—{1}{U}, Pay 3 life. (You may cast this card from your graveyard for its flashback cost. Then exile it.)",
+		"rarity": "common",
+		"set_name": "Torment",
+		"type_line": "Sorcery"
+	},
 	"drudge_skeletons": {
 		"mana_cost": "{1}{B}",
 		"name": "Drudge Skeletons",
@@ -189,6 +207,15 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "2",
 		"type_line": "Creature — Bear"
+	},
+	"group_project": {
+		"mana_cost": "{1}{W}",
+		"name": "Group Project",
+		"oracle_id": "e1ce210e-2d1d-4ab4-bfb7-8e36884797fc",
+		"oracle_text": "Create a 2/2 red and white Spirit creature token.\nFlashback—Tap three untapped creatures you control. (You may cast this card from your graveyard for its flashback cost. Then exile it.)",
+		"rarity": "uncommon",
+		"set_name": "Secrets of Strixhaven",
+		"type_line": "Sorcery"
 	},
 	"helpful_hunter": {
 		"mana_cost": "{1}{W}",

@@ -177,6 +177,9 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 	if decision is ChooseCardsToDiscardDecision:
 		var discard: ChooseCardsToDiscardDecision = decision as ChooseCardsToDiscardDecision
 		return discard.candidate_ids.slice(0, discard.count)
+	if decision is ChoosePermanentsDecision:
+		var pick: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
+		return pick.candidate_ids.slice(0, pick.count)
 	if decision is ChoosePlayOrDrawDecision:
 		return ChoosePlayOrDrawDecision.Choice.PLAY
 	if decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
@@ -1425,3 +1428,52 @@ static func cast_mode(engine: MmEngine, object_id: int, mode_index: int, targets
 			return error
 		error = choose_target(engine, chosen)
 	return error if error != "" else auto_pay(engine)
+
+
+# --- Card track: flashback and costs that are not mana ------------------------------
+
+
+## "Flashback [mana] [, costs]" (CR 702.34a). Null mana means its cost has no mana in it.
+static func flashback(mana: MmManaCost, costs: Array[MmCost] = []) -> FlashbackAbility:
+	var ability: FlashbackAbility = FlashbackAbility.new()
+	ability.mana_cost = mana
+	ability.costs = costs
+	return ability
+
+
+## A sorcery costing {0}: "[effects]" and [param keyword].
+static func flashback_sorcery(card_name: String, targets: Array[TargetRequirement], effects: Array[MmEffect],
+		keyword: FlashbackAbility) -> MmCardDefinition:
+	var definition: MmCardDefinition = sorcery(card_name, mana_cost(0), targets, effects)
+	definition.abilities.append(keyword)
+	return definition
+
+
+## "Pay [param amount] life" (CR 119.4).
+static func pay_life(amount: int) -> PayLifeCost:
+	var cost: PayLifeCost = PayLifeCost.new()
+	cost.amount = amount
+	return cost
+
+
+## "Tap [param count] untapped creatures you control".
+static func tap_creatures(count: int) -> TapCreaturesCost:
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var cost: TapCreaturesCost = TapCreaturesCost.new()
+	cost.count = count
+	cost.filter = all_of([of_type(MmCardTypes.CardType.CREATURE), untapped(), mine])
+	return cost
+
+
+## A 1/1 creature costing {0}: "{T}: Add {W}."
+static func elf(card_name: String = "Elf") -> MmCardDefinition:
+	return creature(card_name, 1, 1, [tap_for_mana(MmMana.Type.WHITE, 1)])
+
+
+## The object ID of the first card named [param card_name] in [param player]'s exile, or -1.
+static func card_in_exile(engine: MmEngine, player: MmPlayer, card_name: String) -> int:
+	for card: MmGameObject in engine.game_state().exile.objects():
+		if card.owner_id == player.id and engine.game_state().characteristics_of(card).name == card_name:
+			return card.id
+	return -1

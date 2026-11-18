@@ -131,6 +131,6 @@ func _leave_stack() -> void:
 	elif resolving.is_card():
 		# CR 608.2n: an instant or sorcery goes to its owner's graveyard.
 		var reason: ZoneChangeEvent.Reason = ZoneChangeEvent.Reason.RESOLVED if _resolves else ZoneChangeEvent.Reason.DID_NOT_RESOLVE
-		_state.perform(ZoneChangeEvent.new(resolving, _state.player(resolving.owner_id).graveyard, MmZone.BOTTOM, reason))
+		_state.perform(ZoneChangeEvent.new(resolving, _state.graveyard_from_stack(resolving), MmZone.BOTTOM, reason))
 	else:
 		_state.perform(AbilityLeftStackEvent.new(resolving.id, _resolves))

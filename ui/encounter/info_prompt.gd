@@ -53,6 +53,11 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 	elif decision is ChooseObjectDecision:
 		var choice: ChooseObjectDecision = decision as ChooseObjectDecision
 		prompt.text = "Choose %s for %s" % [AbilityText.chosen_words(choice.filter), stack_name(view, choice.stack_object_id)]
+	elif decision is ChoosePermanentsDecision:
+		# Later: a pick for a cost other than tapping, when a card has one.
+		var pick: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
+		prompt.text = "Tap %s for %s" % [AbilityText.how_many_words(pick.count, pick.filter), stack_name(view, pick.stack_object_id)]
+		prompt.can_cancel = true
 	elif decision is DeclareAttackersDecision:
 		prompt.text = "Declare attackers"
 		prompt.offers_all_attack = true

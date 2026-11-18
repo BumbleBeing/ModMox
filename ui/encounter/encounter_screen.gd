@@ -1147,8 +1147,16 @@ func pile_catcher(key: String) -> ClickCatcher:
 	return ClickCatcher.of(_pile_hosts[key])
 
 
+## Whether the permanent [param object_id] is drawn turned: tapped, or picked to be tapped.
+func is_drawn_tapped(object_id: int) -> bool:
+	for permanent: MmObjectView in _snapshot.view.battlefield:
+		if permanent.id == object_id:
+			return _is_drawn_tapped(permanent)
+	return false
+
+
 ## The colors the pile in Region [param key] glows in: a target's, while a card in it can
-## be chosen.
+## be chosen, and green while one can be cast from it.
 func pile_glow(key: String) -> Array[Color]:
 	return BorderEffects.glow_colors(_pile_hosts[key])
 
@@ -1533,7 +1541,7 @@ func _add_pile_host(key: String, pile_rect: Rect2) -> void:
 	_board.add_child(host)
 	_pile_hosts[key] = host
 	if _clicks.piles().has(key):
-		BorderEffects.add_glow(host, card, DecisionClicks.color_of(DecisionClicks.Kind.TARGET), _ease_seconds)
+		BorderEffects.add_glow(host, card, DecisionClicks.color_of(_clicks.pile_kind_of(key)), _ease_seconds)
 	ClickCatcher.add(host, card + Vector2(0, EncounterLayout.PILE_LABEL)).clicked.connect(_toggle_pile.bind(key))
 
 
@@ -1614,6 +1622,10 @@ func _concede() -> void:
 ## and several open the Option Menu where the cursor is (A285, A286).
 func _on_object_clicked(object_id: int) -> void:
 	if _is_paused:
+		return
+	if _picks.is_picking_permanents():
+		if _picks.toggle(object_id):
+			_redraw()
 		return
 	if _selection.is_clickable(object_id):
 		if _selection.click(object_id):
@@ -1825,9 +1837,7 @@ func _permanents(view: MmPlayerView, player_id: int, are_lands: bool) -> Array[M
 
 
 func _draw_row(permanents: Array[MmObjectView], row_rect: Rect2, glow: DecisionClicks) -> void:
-	var is_tapped: Array[bool] = []
-	for permanent: MmObjectView in permanents:
-		is_tapped.append(permanent.is_tapped)
+	var is_tapped: Array[bool] = _tapped(permanents)
 	var footprints: Array[Rect2] = EncounterLayout.row(is_tapped, row_rect)
 	var height: float = EncounterLayout.row_face_height(is_tapped, row_rect)
 	for index: int in permanents.size():
@@ -1960,8 +1970,14 @@ func _draw_line(key: String, permanents: Array[MmObjectView], heights: Array[flo
 func _tapped(permanents: Array[MmObjectView]) -> Array[bool]:
 	var is_tapped: Array[bool] = []
 	for permanent: MmObjectView in permanents:
-		is_tapped.append(permanent.is_tapped)
+		is_tapped.append(_is_drawn_tapped(permanent))
 	return is_tapped
+
+
+## Whether [param permanent] is drawn turned: tapped, or picked to be tapped for a cost, as
+## it will be once the pick is confirmed (game ADR 0049).
+func _is_drawn_tapped(permanent: MmObjectView) -> bool:
+	return permanent.is_tapped or (_picks.is_picking_permanents() and _picks.is_picked(permanent.id))
 
 
 ## Whether [param permanent] stands forward in the lane: attacking or blocking, or chosen
@@ -2002,9 +2018,18 @@ func _remember_face(object_id: int, face: Control, face_size: Vector2, glow: Dec
 	_face_sizes[object_id] = face_size
 	_face_shown[object_id] = shown if shown.has_area() else Rect2(Vector2.ZERO, face_size)
 	var colors: Array[Color] = _glow_colors(object_id, glow)
+	var is_pickable: bool = _picks.is_picking_permanents() and _picks.is_candidate(object_id)
+	if is_pickable:
+		# Picked glows white; the rest green while more can be picked, and not at all once
+		# every pick is made (game ADR 0049).
+		colors = []
+		if _picks.is_picked(object_id):
+			colors.append(PICKED_GLOW)
+		elif _picks.can_pick(object_id):
+			colors.append(DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
 	if not colors.is_empty():
 		BorderEffects.add_glow_of(face, face_size, colors, _glow_seconds_for(object_id, colors))
-	if not glow.options_of(object_id).is_empty() or _selection.is_clickable(object_id):
+	if not glow.options_of(object_id).is_empty() or _selection.is_clickable(object_id) or is_pickable:
 		var catcher: ClickCatcher = ClickCatcher.add(face, _face_shown[object_id].size)
 		catcher.position = _face_shown[object_id].position
 		catcher.clicked.connect(_on_object_clicked.bind(object_id))
@@ -2249,7 +2274,7 @@ func _move_faces(unseen: Array[int]) -> void:
 		if face == null:
 			continue
 		_rest[permanent.id] = face.position
-		targets[permanent.id] = FacePose.of(_center_at(face, face.position), face.card().size.y, 1.0 if permanent.is_tapped else 0.0,
+		targets[permanent.id] = FacePose.of(_center_at(face, face.position), face.card().size.y, 1.0 if _is_drawn_tapped(permanent) else 0.0,
 				1.0, 1.0 if face.is_attached() else 0.0)
 		looks[permanent.id] = _snapshot.look_of(permanent.id)
 	_motion.show_faces(targets, looks, _is_snapping or size != _drawn_size)
@@ -2541,6 +2566,12 @@ func _show_hand() -> void:
 func _show_picks() -> void:
 	if not _picks.is_active() or _snapshot.is_over():
 		return
+	if _picks.is_picking_permanents():
+		_panels[HERO].show_undo(_picks.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
+		_show_confirm("Tap %d" % _picks.count(), _picks.is_complete(), _picks.can_undo())
+		_info.show_prompt("%s (%d of %d)" % [InfoPrompt.of(_snapshot.decision, _snapshot.view).text, _picks.picked().size(),
+			_picks.count()])
+		return
 	if not _picks.is_discarding():
 		# Keeping is final (A406): undo takes back cards put down and nothing before them.
 		_panels[HERO].show_undo(_picks.can_undo())
@@ -2555,7 +2586,7 @@ func _show_picks() -> void:
 ## The choice of cards changed by a click or an undo. Cards put on the bottom leave the
 ## overlay's row, which is drawn again; in the hand's strip nothing is rebuilt.
 func _show_picks_changed() -> void:
-	if _picks.is_bottoming():
+	if _picks.is_bottoming() or _picks.is_picking_permanents():
 		_redraw()
 	else:
 		_show_picks()

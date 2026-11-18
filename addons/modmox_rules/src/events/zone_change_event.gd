@@ -28,6 +28,11 @@ var can_be_regenerated: bool = true
 ## For an exile: the object whose ability exiled the card, which its linked ability later
 ## looks for (CR 607.2a), or 0.
 var exiled_with_object_id: int = 0
+## For a card cast from a graveyard for its flashback cost (CR 702.34a): marks the spell.
+var cast_with_flashback: bool = false
+## For a card entering the battlefield: the counters it enters with (CR 122.6), on it as it
+## arrives so that its "enters" abilities see them.
+var counters_on_arrival: Dictionary[MmCounter.Kind, int] = {}
 ## The new object's ID, set when the event is applied.
 var new_object_id: int = 0
 ## For an object leaving the battlefield: its characteristics as it last existed there,
@@ -72,6 +77,10 @@ func apply(state: MmGameState) -> void:
 		# Whoever held the card knows where it went, until the library is shuffled.
 		# Later: a card put there from a zone everyone sees, when a card does that.
 		arriving.make_known_to(from_owner_id)
+	if cast_with_flashback:
+		arriving.record_cast_with_flashback()
+	for kind: MmCounter.Kind in counters_on_arrival:
+		arriving.put_counters(kind, counters_on_arrival[kind])
 	if to_zone_kind == MmZone.Kind.BATTLEFIELD:
 		# CR 302.6: summoning sickness counts from when its controller began controlling it.
 		arriving.record_control_since(state.game_turn)

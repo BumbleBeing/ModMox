@@ -21,6 +21,7 @@ static func kinds() -> Dictionary[Script, String]:
 		KeepOrMulliganDecision: "the opening-hand overlay (OpeningHand)",
 		ChooseCardsToBottomDecision: "the opening-hand overlay (CardPicks)",
 		ChooseCardsToDiscardDecision: "the hand's strip (CardPicks)",
+		ChoosePermanentsDecision: "the permanents on the battlefield and the pass button (CardPicks)",
 	}
 
 

@@ -271,7 +271,8 @@ func _current_step() -> MmTurn.Step:
 
 
 ## The actions [param player_id] may take while holding priority, in a deterministic order
-## (ADR 0012): Pass, then land plays, then spells, then abilities of permanents, then
+## (ADR 0012): Pass, then land plays, then spells from the hand, then spells from the
+## graveyard with flashback (CR 702.34a), then abilities of permanents, then
 ## abilities of Emblems and Potions (ADR 0036), each by object ID and abilities by their
 ## order on the object.
 func _legal_actions(player_id: int) -> Array[MmAction]:
@@ -283,6 +284,9 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 			if _state.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND):
 				actions.append(PlayLandAction.new(card.id))
 	for card: MmGameObject in hand:
+		if _may_cast(player, card):
+			actions.append(CastSpellAction.new(card.id))
+	for card: MmGameObject in _sorted_by_id(player.graveyard.objects()):
 		if _may_cast(player, card):
 			actions.append(CastSpellAction.new(card.id))
 	# CR 113.6: an Emblem's abilities work from the command zone, and so does a Potion's.
@@ -320,12 +324,22 @@ func _sorcery_timing(player: MmPlayer) -> bool:
 	return player.id == _state.active_player_id and in_main_phase and _state.stack.is_empty()
 
 
-## Whether [param card] in hand could be cast right now from start to finish: its timing,
-## a legal target for every requirement (CR 601.2c), and a cost that can be paid. Any card
-## but a land may be cast, so permanent spells need no special case (CR 608.3).
+## Whether [param card], in hand or in its owner's graveyard, could be cast right now from
+## start to finish: its timing, a legal target for every requirement (CR 601.2c), and a
+## cost that can be paid. From the hand that cost is its mana cost; from the graveyard only
+## a card with flashback may be cast, for its flashback cost (CR 702.34a). Any card but a
+## land may be cast, so permanent spells need no special case (CR 608.3).
 func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 	var characteristics: MmCharacteristics = _state.characteristics_of(card)
-	if characteristics.mana_cost == null:
+	var mana: MmManaCost = characteristics.mana_cost
+	var costs: Array[MmCost] = []
+	if card.zone() == player.graveyard:
+		var flashback: FlashbackAbility = CastProcedure.flashback_of(characteristics)
+		if flashback == null:
+			return false
+		mana = flashback.mana_cost
+		costs = flashback.costs
+	elif mana == null:
 		return false  # CR 118.6: a card with no mana cost cannot be cast this way.
 	if characteristics.has_card_type(MmCardTypes.CardType.LAND):
 		return false  # CR 305.9: a land is played, never cast.
@@ -339,7 +353,11 @@ func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 		return false
 	if spell != null and spell.is_modal() and not _has_a_choosable_mode(spell, player.id, card.id):
 		return false  # CR 700.2a: a mode can't be chosen if its targets can't be.
-	return ManaPayment.can_afford(_state, player.id, characteristics.mana_cost)
+	for cost: MmCost in costs:
+		if not cost.can_pay(_state, card, player.id):
+			return false
+	# A flashback cost with no mana in it needs none.
+	return mana == null or ManaPayment.can_afford(_state, player.id, mana)
 
 
 ## Mana abilities whenever their cost can be paid; other abilities also need a legal

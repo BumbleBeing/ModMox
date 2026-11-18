@@ -36,6 +36,9 @@ var targets: Array[MmReference] = []
 ## For a modal spell on the stack: its chosen mode, which both players see (CR 700.2).
 ## SpellAbility.NO_MODE otherwise.
 var chosen_mode: int = SpellAbility.NO_MODE
+## For a spell on the stack: cast with flashback, so it will be exiled as it leaves the
+## stack (CR 702.34a). Both players see it.
+var cast_with_flashback: bool = false
 var is_creature: bool = false
 ## Current power and toughness; meaningful only for a creature (CR 208.3).
 var power: int = 0
@@ -103,6 +106,7 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.is_tapped = game_object.is_tapped
 	view.targets = game_object.targets.duplicate()
 	view.chosen_mode = game_object.chosen_mode
+	view.cast_with_flashback = game_object.cast_with_flashback
 	var characteristics: MmCharacteristics = state.characteristics_of(game_object)
 	view.colors = characteristics.colors.duplicate()
 	view.card_types = characteristics.card_types.duplicate()

@@ -49,6 +49,10 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 			# ADR 0046: a modal spell on the stack does only what its chosen mode does.
 			rules = AbilityText.mode_text(spell, seen.chosen_mode, seen.name)
 		item.full_text = seen.name if rules == "" else "%s — %s" % [seen.name, rules.replace("\n", " · ")]
+		if seen.cast_with_flashback:
+			# CR 702.34a, game ADR 0049: both players see it, and where it will go.
+			item.first_line += " (flashback)"
+			item.full_text += " · Cast with flashback: exiled as it leaves the stack."
 	item.second_line = called.of(seen.controller_id)
 	var target_names: PackedStringArray = []
 	for target: MmReference in seen.targets:

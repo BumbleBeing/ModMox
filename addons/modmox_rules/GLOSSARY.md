@@ -164,6 +164,10 @@ _Avoid_: Revealed card, seen card, tracked card
 What an object was like the last time it was on the battlefield, kept after it leaves so that "dies" triggers and "its power" still have an answer.
 _Avoid_: Ghost, snapshot (in rules talk), LKI (in code)
 
+**Flashback**:
+A keyword that lets its card be cast from its owner's graveyard by paying its flashback cost instead of its mana cost, with its card type's usual timing; cast that way, it is exiled instead of going anywhere else as it leaves the stack (CR 702.34a). Its cost may have no mana in it, or parts that are not mana, such as "Pay 3 life" or "Tap three untapped creatures you control" (ADR 0048).
+_Avoid_: Recast, graveyard cast, rebuy
+
 **Linked Abilities**:
 Two abilities of one object where the second refers to what the first did, as Oblivion Ring's "exile another target nonland permanent" and "return the exiled card" are (CR 607). A card the first exiles remembers the object that exiled it, and the second finds only the cards that object exiled. An object that changes zones is a new object, so the link does not follow it.
 _Avoid_: Paired abilities, remembered card, hostage

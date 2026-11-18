@@ -12,6 +12,9 @@ extends MmAgent
 
 enum Mode { FULL, CHEAP }
 
+## A FULL Agent simulates every pick of permanents for a cost up to this many (C(5, 3)).
+const MOST_PICKS_SIMULATED: int = 10
+
 ## Why the last answer was chosen (A165). For debugging and tests; never saved.
 enum Reason {
 	NONE,
@@ -149,6 +152,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _choose_object(decision as ChooseObjectDecision, world, source, rng)
 	if decision is ChooseModeDecision:
 		return _choose_mode(decision as ChooseModeDecision, world, source, rng)
+	if decision is ChoosePermanentsDecision:
+		return _choose_permanents(decision as ChoosePermanentsDecision, world, source, rng)
 	assert(false, "AiAgent cannot answer %s." % decision.describe())
 	return null
 
@@ -382,12 +387,28 @@ func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: in
 			continue
 		if tag == AiTiming.Tag.REMOVAL and not _has_something_to_remove(world, cast, me):
 			continue
+		if _life_it_would_pay(world, cast) >= world.player(me).life:
+			continue  # Never pay the life it has left.
 		var cost: int = world.characteristics_of(world.object(cast.object_id)).mana_value()
 		if cost > best_cost:
 			best = index
 			best_cost = cost
 	_reason = Reason.NOTHING_WORTH_DOING if best == passing else Reason.BEST_SCORE
 	return best
+
+
+## How much life casting [param cast] would cost: a flashback cost's "Pay N life" for a card
+## in a graveyard (CR 702.34a), and nothing from the hand.
+static func _life_it_would_pay(world: MmGameState, cast: CastSpellAction) -> int:
+	var card: MmGameObject = world.object(cast.object_id)
+	if card.zone().kind != MmZone.Kind.GRAVEYARD:
+		return 0
+	var flashback: FlashbackAbility = CastProcedure.flashback_of(world.characteristics_of(card))
+	var life: int = 0
+	for cost: MmCost in flashback.costs:
+		if cost is PayLifeCost:
+			life += (cost as PayLifeCost).amount
+	return life
 
 
 ## Whether removal cast by [param me] has something of the other player's to aim at: a
@@ -573,6 +594,46 @@ func _choose_object(decision: ChooseObjectDecision, world: MmGameState, source: 
 			least = index
 			least_value = value
 	return least
+
+
+## The permanents picked to pay part of a cost, such as creatures to tap (CR 601.2h).
+## FULL: simulates every pick while there are at most MOST_PICKS_SIMULATED of them. Otherwise,
+## and at CHEAP, its least valuable, which puts first a creature with summoning sickness,
+## since it could not attack this turn anyway (AiBoardEvaluator.permanent_value()).
+func _choose_permanents(decision: ChoosePermanentsDecision, world: MmGameState, source: MmSimulationSource,
+		rng: MmRng) -> Array[int]:
+	if decision.candidate_ids.size() == decision.count:
+		_reason = Reason.ONLY_CHOICE
+		return decision.candidate_ids.duplicate()
+	_reason = Reason.BEST_SCORE
+	if mode == Mode.FULL:
+		var picks: Array = _combinations(decision.candidate_ids, decision.count)
+		if picks.size() <= MOST_PICKS_SIMULATED:
+			var options: Array[int] = []
+			for index: int in picks.size():
+				options.append(index)
+			var chosen: Array[int] = []
+			chosen.assign(picks[_best_option(options, _simulate_each(source, rng, picks, decision.player_id), rng, 0)])
+			return chosen
+	var ranked: Array[int] = decision.candidate_ids.duplicate()
+	var values: Dictionary[int, int] = {}
+	for id: int in ranked:
+		values[id] = AiBoardEvaluator.permanent_value(world, world.object(id), profile)
+	ranked.sort_custom(func(a: int, b: int) -> bool: return values[a] < values[b] or (values[a] == values[b] and a < b))
+	var least: Array[int] = ranked.slice(0, decision.count)
+	least.sort()
+	return least
+
+
+## Every way to pick [param count] of [param ids], each in ID order, in a fixed order.
+static func _combinations(ids: Array[int], count: int) -> Array:
+	if count == 0:
+		return [[]]
+	var result: Array = []
+	for first: int in range(ids.size() - count + 1):
+		for rest: Variant in _combinations(ids.slice(first + 1), count - 1):
+			result.append([ids[first]] + (rest as Array))
+	return result
 
 
 ## The mode of a modal spell being cast (CR 601.2b). FULL: simulates each mode. CHEAP:

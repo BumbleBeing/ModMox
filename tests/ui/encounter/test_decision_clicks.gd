@@ -487,6 +487,41 @@ func _ping() -> ActivatedAbility:
 	return ability
 
 
+func test_a_card_cast_from_the_graveyard_is_clicked_in_its_window_and_its_pile_glows_green() -> void:
+	var view: MmPlayerView = _view()
+	view.graveyards[HERO] = [_card(30, "Daydream")]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new(), CastSpellAction.new(30)] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(clicks.piles(), ["hero_graveyard"] as Array[String], "Game ADR 0049: its pile glows.")
+	assert_eq(clicks.pile_kind_of("hero_graveyard"), DecisionClicks.Kind.PLAY, "Green, as a card to play is.")
+	assert_false(clicks.is_only_in_piles(), "Passing is an answer too, so its window waits for a click on the pile.")
+	assert_eq(clicks.options_of(30).size(), 1, "Clicked once in the window, it is cast.")
+	assert_eq(clicks.options_of(30)[0].answer, 1)
+	assert_eq(clicks.options_of(30)[0].text, "Cast Daydream with flashback")
+	assert_eq(clicks.hand_options_of(30).size(), 0, "It is not in the hand.")
+	assert_eq(_kinds(clicks), {30: [DecisionClicks.Kind.PLAY]})
+
+
+func test_a_target_in_a_graveyard_still_makes_its_pile_glow_as_a_target() -> void:
+	var view: MmPlayerView = _view()
+	view.graveyards[HERO] = [_card(30, "Bear")]
+	var decision: ChooseTargetDecision = ChooseTargetDecision.new(HERO, 20, 0, [MmReference.to_object(30)] as Array[MmReference])
+
+	assert_eq(DecisionClicks.of(decision, view).pile_kind_of("hero_graveyard"), DecisionClicks.Kind.TARGET)
+
+
+func test_permanents_to_pick_for_a_cost_glow_green_and_are_picked_on_the_board() -> void:
+	var decision: ChoosePermanentsDecision = ChoosePermanentsDecision.new(HERO, 20, 3, [3, 4, 6, 7] as Array[int], null)
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, _view())
+
+	assert_eq(_kinds(clicks), {3: [DecisionClicks.Kind.OTHER], 4: [DecisionClicks.Kind.OTHER],
+		6: [DecisionClicks.Kind.OTHER], 7: [DecisionClicks.Kind.OTHER]})
+	assert_eq(clicks.clickable_ids().size(), 0, "A click picks it (CardPicks), and answers nothing alone.")
+
+
 ## A creature on the battlefield with [param abilities].
 func _permanent(id: int, abilities: Array[MmAbility]) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()

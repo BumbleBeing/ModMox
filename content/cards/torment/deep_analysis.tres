@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_w8w68"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_hn2nf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_o4xgf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_exb27"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_g103c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_4fca0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_p5d6g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_mode.gd" id="6_joxat"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="7_fprm3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_de0pk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="9_cfs33"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="10_i0f5t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/pay_life_cost.gd" id="11_ml0uv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flashback_ability.gd" id="13_uk1tw"]
+
+[sub_resource type="Resource" id="Resource_gb3tm"]
+script = ExtResource("3_g103c")
+value = 2
+
+[sub_resource type="Resource" id="Resource_3qkvx"]
+script = ExtResource("4_4fca0")
+
+[sub_resource type="Resource" id="Resource_yu3i4"]
+script = ExtResource("5_p5d6g")
+amount = SubResource("Resource_gb3tm")
+players = SubResource("Resource_3qkvx")
+
+[sub_resource type="Resource" id="Resource_u32y1"]
+script = ExtResource("9_cfs33")
+
+[sub_resource type="Resource" id="Resource_okw8w"]
+script = ExtResource("8_de0pk")
+filter = SubResource("Resource_u32y1")
+
+[sub_resource type="Resource" id="Resource_0mi88"]
+script = ExtResource("7_fprm3")
+targets = Array[ExtResource("8_de0pk")]([SubResource("Resource_okw8w")])
+effects = Array[ExtResource("2_o4xgf")]([SubResource("Resource_yu3i4")])
+
+[sub_resource type="Resource" id="Resource_cebhw"]
+script = ExtResource("11_ml0uv")
+amount = 3
+
+[sub_resource type="Resource" id="Resource_u6xme"]
+script = ExtResource("2_hn2nf")
+generic = 1
+symbols = Array[int]([1])
+
+[sub_resource type="Resource" id="Resource_73nyr"]
+script = ExtResource("13_uk1tw")
+mana_cost = SubResource("Resource_u6xme")
+costs = Array[ExtResource("10_i0f5t")]([SubResource("Resource_cebhw")])
+
+[sub_resource type="Resource" id="Resource_7fsum"]
+script = ExtResource("2_hn2nf")
+generic = 3
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_exb27")
+name = "Deep Analysis"
+card_types = Array[int]([5])
+mana_cost = SubResource("Resource_7fsum")
+abilities = Array[ExtResource("1_w8w68")]([SubResource("Resource_0mi88"), SubResource("Resource_73nyr")])

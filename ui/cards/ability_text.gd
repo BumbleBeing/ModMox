@@ -139,6 +139,12 @@ static func chosen_words(filter: MmFilter) -> String:
 	return _with_article(AbilityText.new("this")._noun_phrase(filter, false))
 
 
+## [param count] of what [param filter] matches, as a cost says it: "an untapped creature
+## you control", "three untapped creatures you control".
+static func how_many_words(count: int, filter: MmFilter) -> String:
+	return AbilityText.new("it")._how_many(count, filter)
+
+
 ## Whether [param text] has something in it there were no words for.
 static func has_fallback(text: String) -> bool:
 	return text.contains("[")
@@ -168,6 +174,8 @@ func _ability(ability: MmAbility) -> String:
 	if ability is EquipAbility:
 		# A keyword prints its cost and nothing else (CR 702.6); what it does is its Reminder.
 		return "Equip " + _costs(ability as EquipAbility)
+	if ability is FlashbackAbility:
+		return _flashback(ability as FlashbackAbility)
 	if ability is ActivatedAbility:
 		var activated: ActivatedAbility = ability as ActivatedAbility
 		_targets = activated.targets
@@ -192,7 +200,7 @@ func _ability(ability: MmAbility) -> String:
 ## Whether [param ability] is a keyword, protection included: an ability a sentence names
 ## in lower case and without quotation marks.
 static func is_keyword(ability: MmAbility) -> bool:
-	return _keyword(ability) != "" or ability is ProtectionAbility or ability is EquipAbility
+	return _keyword(ability) != "" or ability is ProtectionAbility or ability is EquipAbility or ability is FlashbackAbility
 
 
 ## The name of a keyword ability that needs no other words, or "".
@@ -251,13 +259,43 @@ static func _restrictions(ability: ActivatedAbility) -> String:
 
 
 func _costs(ability: ActivatedAbility) -> String:
-	var costs: PackedStringArray = []
-	if ability.mana_cost != null:
-		costs.append(ability.mana_cost.describe())
-	for cost: MmCost in ability.costs:
-		if not cost is UseUpCost:
-			costs.append("{T}" if cost is TapCost else _fallback(cost, "_cost"))
+	var costs: PackedStringArray = _cost_parts(ability.mana_cost, ability.costs)
 	return ", ".join(costs) if not costs.is_empty() else "{0}"
+
+
+## Oracle's flashback (CR 702.34a): "Flashback {2}{W}" for a mana cost alone, and with a
+## dash otherwise, "Flashback—{1}{U}, Pay 3 life".
+func _flashback(ability: FlashbackAbility) -> String:
+	var parts: PackedStringArray = _cost_parts(ability.mana_cost, ability.costs)
+	if ability.costs.is_empty():
+		return "Flashback " + (", ".join(parts) if not parts.is_empty() else "{0}")
+	return "Flashback—" + ", ".join(parts)
+
+
+## The words of each part of a cost, its mana first. Using up a Potion has none (ADR 0036).
+func _cost_parts(mana: MmManaCost, costs: Array[MmCost]) -> PackedStringArray:
+	var parts: PackedStringArray = []
+	if mana != null:
+		parts.append(mana.describe())
+	for cost: MmCost in costs:
+		if cost is UseUpCost:
+			continue
+		if cost is TapCost:
+			parts.append("{T}")
+		elif cost is PayLifeCost:
+			parts.append("Pay %d life" % (cost as PayLifeCost).amount)
+		elif cost is TapCreaturesCost:
+			parts.append("Tap " + _how_many((cost as TapCreaturesCost).count, (cost as TapCreaturesCost).filter))
+		else:
+			parts.append(_fallback(cost, "_cost"))
+	return parts
+
+
+## "an untapped creature you control" or "three untapped creatures you control".
+func _how_many(count: int, filter: MmFilter) -> String:
+	if count == 1:
+		return _with_article(_noun_phrase(filter, false))
+	return "%s %s" % [_number_word(count), _noun_phrase(filter, true)]
 
 
 func _triggered(ability: TriggeredAbility) -> String:
@@ -423,7 +461,9 @@ func _effect(effect: MmEffect) -> String:
 	if effect is ExileEffect:
 		return "exile " + _selection((effect as ExileEffect).selection)
 	if effect is ReturnToBattlefieldEffect:
-		return "return %s to the battlefield under its owner's control" % _selection((effect as ReturnToBattlefieldEffect).selection)
+		var back: ReturnToBattlefieldEffect = effect as ReturnToBattlefieldEffect
+		var text: String = "return %s to the battlefield under its owner's control" % _selection(back.selection)
+		return text if back.counters == null else text + " with %s on it" % _counters(back.counters, back.counter_kind)
 	if effect is ReturnToHandEffect:
 		var returned: MmSelection = (effect as ReturnToHandEffect).selection
 		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]

@@ -20,6 +20,7 @@ const TEXTS: Dictionary[String, String] = {
 	"indestructible": "Damage and effects that say \"destroy\" don't destroy it.",
 	"protection": "It can't be blocked, targeted, dealt damage, enchanted or equipped by anything of that kind.",
 	"equip": "Pay its cost to attach it to target creature you control. Equip only as a sorcery.",
+	"flashback": "You may cast this card from your graveyard for its flashback cost. Then exile it.",
 }
 
 
@@ -44,7 +45,8 @@ static func _keyword(chip: KeywordChip, abilities: Array[MmAbility]) -> String:
 		var chips: Array[KeywordChip] = KeywordChips.chips_for([ability] as Array[MmAbility])
 		if chips.size() == 1 and chips[0].icon == chip.icon and chips[0].has_protection_color == chip.has_protection_color \
 				and chips[0].protection_color == chip.protection_color:
-			if ability is EquipAbility:
-				return "Equip"  # Its cost is a mana symbol, which a plain label cannot draw.
+			if ability is EquipAbility or ability is FlashbackAbility:
+				# Its cost may hold a mana symbol, which a plain label cannot draw.
+				return "Flashback" if ability is FlashbackAbility else "Equip"
 			return AbilityText.of_ability(ability, "it").trim_suffix(".")
 	return chip.icon.capitalize()

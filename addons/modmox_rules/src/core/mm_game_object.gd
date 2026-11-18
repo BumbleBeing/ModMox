@@ -41,6 +41,9 @@ var targets: Array[MmReference] = []
 ## For a modal spell on the stack: the chosen mode (CR 700.2), an index into its spell
 ## ability's modes. SpellAbility.NO_MODE for anything else, or until it is chosen.
 var chosen_mode: int = SpellAbility.NO_MODE
+## For a spell on the stack: cast from a graveyard for its flashback cost, so it is exiled
+## instead of going anywhere else as it leaves the stack (CR 702.34a).
+var cast_with_flashback: bool = false
 ## For an ability on the stack: the ability, the object it came from, and that object's
 ## name when it was activated (the source may have left the battlefield since).
 var ability: MmAbility = null
@@ -104,6 +107,7 @@ func duplicate_object() -> MmGameObject:
 	copy.controlled_since_game_turn = controlled_since_game_turn
 	copy.targets = targets.duplicate()  # MmReferences never change, so sharing them is safe.
 	copy.chosen_mode = chosen_mode
+	copy.cast_with_flashback = cast_with_flashback
 	copy.ability = ability
 	copy.source_object_id = source_object_id
 	copy.source_name = source_name
@@ -216,6 +220,11 @@ func record_control_since(game_turn: int) -> void:
 ## Event-only: freezes this object's last-known information as it leaves the battlefield.
 func freeze_last_known(characteristics: MmCharacteristics) -> void:
 	last_known_characteristics = characteristics
+
+
+## Event-only: marks a spell as cast with flashback (CR 702.34a), as it is put on the stack.
+func record_cast_with_flashback() -> void:
+	cast_with_flashback = true
 
 
 ## Event-only: records the mode chosen for a modal spell (CR 601.2b).

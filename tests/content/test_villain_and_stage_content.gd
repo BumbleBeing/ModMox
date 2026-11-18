@@ -13,23 +13,33 @@ const BOSSES: Dictionary[MmCardTypes.CardColor, String] = {
 }
 
 
-func test_there_is_a_villain_for_each_content_deck() -> void:
-	var names: Array[String] = []
+## Every deck in content/decks/ is a setup of exactly one Villain. A Villain's setups are its
+## decks: one named after it, or one for each Tier, named <villain>_<tier>, in Tier order. A
+## Villain whose Tier decks are not all written yet is invalid, so no Stage can list it.
+func test_every_content_deck_is_a_setup_of_one_villain() -> void:
+	var decks: Array[String] = []
 	for villain: Villain in ContentStages.all_villains():
-		names.append(villain.resource_path.get_file().get_basename())
+		var file: String = villain.resource_path.get_file().get_basename()
+		for index: int in villain.setups.size():
+			var path: String = villain.setups[index].resource_path
+			var deck: String = path.get_file().get_basename()
 
-	assert_eq(names, ContentDecks.names())
+			assert_eq(path, ContentDecks.path_of(deck), file)
+			assert_true(deck == "%s_%d" % [file, index + 1] or (deck == file and villain.setups.size() == 1),
+				"%s plays %s as setup %d" % [file, deck, index + 1])
+			decks.append(deck)
+
+	decks.sort()
+	assert_eq(decks, ContentDecks.names())
 
 
-func test_each_villain_has_a_name_a_sprite_and_its_deck_as_its_one_setup() -> void:
+func test_each_villain_has_a_name_a_sprite_and_at_least_one_setup() -> void:
 	for villain: Villain in ContentStages.all_villains():
-		var deck: String = villain.resource_path.get_file().get_basename()
+		var file: String = villain.resource_path.get_file().get_basename()
 
-		assert_ne(villain.name, "", deck)
-		assert_eq(villain.sprite.get_size(), Vector2(32, 32), deck)
-		assert_eq(villain.setups.size(), 1, deck)
-		assert_eq(villain.setups[0].resource_path, ContentDecks.path_of(deck))
-		assert_eq(villain.validate(), "", deck)
+		assert_ne(villain.name, "", file)
+		assert_eq(villain.sprite.get_size(), Vector2(32, 32), file)
+		assert_between(villain.setups.size(), 1, Villain.TIERS, file)
 
 
 func test_a_villain_with_one_setup_plays_it_at_every_tier() -> void:
@@ -67,22 +77,14 @@ func test_there_is_one_tier_one_placeholder_stage_of_each_color() -> void:
 		MmCardTypes.CardColor.RED, MmCardTypes.CardColor.GREEN] as Array[MmCardTypes.CardColor])
 
 
-## T10: every placeholder Stage is valid under ADR 0024.
-func test_each_placeholder_stage_has_its_colors_villain_as_boss_and_the_others_one_each() -> void:
+## T10: every Stage is valid under ADR 0024, and has its color's placeholder Villain as a
+## Boss. Villains added since are listed wherever they were put.
+func test_each_stage_is_valid_with_its_colors_placeholder_villain_as_a_boss() -> void:
 	for stage: StageDefinition in ContentStages.all():
 		var boss: String = BOSSES[stage.color]
 
 		assert_eq(stage.validate(), "", stage.name)
-		assert_eq(_files(stage.bosses), [boss] as Array[String], stage.name)
-		assert_eq(stage.lesser_villains.size(), 1, stage.name)
-		assert_eq(stage.elite_villains.size(), 1, stage.name)
-		var everyone: Array[Villain] = []
-		everyone.append_array(stage.bosses)
-		everyone.append_array(stage.elite_villains)
-		everyone.append_array(stage.lesser_villains)
-		var all: Array[String] = _files(everyone)
-		all.sort()
-		assert_eq(all, ContentDecks.names(), stage.name)
+		assert_has(_files(stage.bosses), boss, stage.name)
 
 
 func test_a_stage_with_a_villain_in_two_lists_is_invalid() -> void:

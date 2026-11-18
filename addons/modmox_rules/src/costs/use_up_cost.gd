@@ -5,10 +5,10 @@ extends MmCost
 
 
 ## Only a Potion still in the command zone can be used up.
-func can_pay(state: MmGameState, source: MmGameObject) -> bool:
+func can_pay(state: MmGameState, source: MmGameObject, _payer_id: int) -> bool:
 	return source.is_potion() and source.zone() == state.command
 
 
 ## Removes the Potion from the game.
-func pay(state: MmGameState, source: MmGameObject) -> void:
+func pay(state: MmGameState, source: MmGameObject, _payer_id: int, _chosen: Array[int]) -> void:
 	state.perform(PotionUsedEvent.new(source.id))

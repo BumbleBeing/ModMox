@@ -121,6 +121,24 @@ func test_only_several_cards_put_on_the_bottom_have_an_order_that_matters() -> v
 	assert_false(CardPicks.new().is_discarding())
 
 
+func test_permanents_for_a_cost_are_picked_and_unpicked_to_the_count() -> void:
+	var tapping: ChoosePermanentsDecision = ChoosePermanentsDecision.new(HERO, 20, 2, [3, 4, 6] as Array[int], null)
+	var picks: CardPicks = CardPicks.new(tapping)
+
+	assert_true(CardPicks.covers(tapping))
+	assert_true(picks.is_picking_permanents())
+	assert_false(picks.is_discarding())
+	assert_true(picks.toggle(6))
+	assert_true(picks.toggle(3))
+	assert_false(picks.can_pick(4), "Two is all it asks for.")
+	assert_true(picks.is_complete())
+	assert_eq(picks.answer(), [6, 3])
+	assert_true(picks.toggle(6), "Clicked again, it is let go.")
+	assert_false(picks.is_complete())
+	assert_true(picks.undo())
+	assert_eq(picks.picked(), [6, 3] as Array[int])
+
+
 func _bottom(count: int) -> ChooseCardsToBottomDecision:
 	return ChooseCardsToBottomDecision.new(HERO, count, HAND)
 

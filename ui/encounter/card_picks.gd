@@ -1,7 +1,8 @@
 class_name CardPicks
 extends RefCounted
 ## The Hero's half-made answer to a decision that chooses cards from their hand (13e-2):
-## which to put on the bottom after keeping, or which to discard. Cards are picked one
+## which to put on the bottom after keeping, or which to discard; or permanents on the
+## battlefield, such as creatures to tap for a cost (ChoosePermanentsDecision). Cards are picked one
 ## click at a time, and the answer lists them in the order picked, so the last card put on
 ## the bottom ends up lowest. Kept by the Encounter Screen outside the nodes it redraws, as
 ## a CombatSelection is, and confirmed with a button.
@@ -19,7 +20,8 @@ var _history: Array = []
 
 ## Whether [param decision] is answered by picking cards.
 static func covers(decision: MmPendingDecision) -> bool:
-	return decision is ChooseCardsToBottomDecision or decision is ChooseCardsToDiscardDecision
+	return decision is ChooseCardsToBottomDecision or decision is ChooseCardsToDiscardDecision \
+		or decision is ChoosePermanentsDecision
 
 
 func _init(decision: MmPendingDecision = null) -> void:
@@ -31,6 +33,10 @@ func _init(decision: MmPendingDecision = null) -> void:
 		_decision = decision
 		_candidates = (decision as ChooseCardsToDiscardDecision).candidate_ids.duplicate()
 		_count = (decision as ChooseCardsToDiscardDecision).count
+	elif decision is ChoosePermanentsDecision:
+		_decision = decision
+		_candidates = (decision as ChoosePermanentsDecision).candidate_ids.duplicate()
+		_count = (decision as ChoosePermanentsDecision).count
 
 
 ## Whether these are the picks being made for [param decision]: a new decision needs new ones.
@@ -50,6 +56,11 @@ func is_discarding() -> bool:
 	return _decision is ChooseCardsToDiscardDecision
 
 
+## Whether the picks are permanents on the battlefield, clicked there.
+func is_picking_permanents() -> bool:
+	return _decision is ChoosePermanentsDecision
+
+
 ## Whether the order picked changes anything: only for several cards put on the bottom.
 func is_ordered() -> bool:
 	return is_bottoming() and _count > 1
@@ -67,6 +78,11 @@ func picked() -> Array[int]:
 
 func is_picked(object_id: int) -> bool:
 	return _picked.has(object_id)
+
+
+## Whether [param object_id] is one of what may be picked.
+func is_candidate(object_id: int) -> bool:
+	return _candidates.has(object_id)
 
 
 ## Whether [param object_id] can be picked now: a card of the decision, not picked yet,

@@ -148,6 +148,13 @@ func turn_order() -> Array[MmPlayer]:
 
 
 ## The zone of [param kind] owned by [param owner_id] (MmZone.NO_OWNER for shared zones).
+## Where [param card], a spell, goes as it leaves the stack for its owner's graveyard: there,
+## or into exile if it was cast with flashback (CR 702.34a), which replaces every way it
+## could leave. Nothing else could apply instead, so no one is asked (CR 616.1).
+func graveyard_from_stack(card: MmGameObject) -> MmZone:
+	return exile if card.cast_with_flashback else player(card.owner_id).graveyard
+
+
 func zone(kind: MmZone.Kind, owner_id: int) -> MmZone:
 	match kind:
 		MmZone.Kind.LIBRARY:
@@ -448,6 +455,8 @@ func fingerprint() -> String:
 				entries.append("%d attached to %d" % [game_object.id, game_object.attached_to_object_id])
 			if game_object.is_token:
 				entries.append("%d token" % game_object.id)
+			if game_object.cast_with_flashback:
+				entries.append("%d flashback" % game_object.id)
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 
