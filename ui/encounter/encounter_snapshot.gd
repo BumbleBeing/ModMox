@@ -51,6 +51,8 @@ static func name_in(seen_by: MmPlayerView, object_id: int) -> String:
 		all.append_array(seen_by.graveyards[player_id])
 	for player_id: int in seen_by.exiles:
 		all.append_array(seen_by.exiles[player_id])
+	for player_id: int in seen_by.known_in_hands:
+		all.append_array(seen_by.known_in_hands[player_id])
 	for player_id: int in seen_by.libraries:
 		for known: Variant in seen_by.libraries[player_id]:
 			if known != null:
@@ -134,4 +136,7 @@ func visible_objects() -> Array[MmObjectView]:
 		for known: MmObjectView in view.libraries[player_id]:
 			if known != null:
 				all.append(known)
+	for player_id: int in view.known_in_hands:
+		# The other player's Known Cards in hand (game ADR 0058).
+		all.append_array(view.known_in_hands[player_id])
 	return all

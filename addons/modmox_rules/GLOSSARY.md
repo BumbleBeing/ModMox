@@ -161,7 +161,7 @@ A state-based action: a player who controls two or more legendary permanents wit
 _Avoid_: Legendary uniqueness, legend check
 
 **Known Card**:
-A card in a library that a player knows the identity of, because they saw it put there: one they put on the bottom from their hand, for instance. A shuffle of that library makes every card in it unknown again. A Player View shows a library's Known Cards to the players who know them and nothing of the rest.
+A card in a library or a hand that a player knows the identity of, because they saw it put there: one they put on the bottom from their hand, for instance, or one the other player found with a search and revealed (ADR 0057). A shuffle of that library makes every card in it unknown again. A Known Card in a hand stops being known when it leaves the hand, or when any card leaves a hand of two or more cards for the library without being revealed. A Player View shows Known Cards to the players who know them and nothing of the rest.
 _Avoid_: Revealed card, seen card, tracked card
 
 **Last-Known Information**:

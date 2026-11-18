@@ -93,3 +93,34 @@ func test_a_drawn_card_lands_where_its_back_will_be_once_those_before_it_have_la
 ## [param turn] about the middle of its top edge.
 func _middle(corner: Vector2, turn: float) -> Vector2:
 	return corner + Vector2(_card.x / 2.0, 0.0) + Vector2(0.0, _card.y / 2.0).rotated(turn)
+
+
+func test_a_known_card_is_drawn_face_up_with_an_eye_on_the_back_at_the_right_end() -> void:
+	_hand.show_hand(4, _rect, false)
+	var plains: CardLook = CardLook.of_definition(load("res://content/cards/alpha/plains.tres") as MmCardDefinition)
+
+	_hand.show_known([7], [plains])
+
+	assert_eq(_hand.known_count(), 1)
+	var face: CardFace = _hand.back(3).get_child(_hand.back(3).get_child_count() - 1) as CardFace
+	assert_not_null(face, "On the last back, so it fans and eases with it.")
+	assert_eq(face.title_text().shown_text(), "Plains")
+	var eyes: int = 0
+	for child: Node in face.get_children():
+		if child is SeenEye:
+			eyes += 1
+	assert_eq(eyes, 1, "The eye says the Hero sees it (game ADR 0058).")
+
+
+func test_the_same_known_card_is_not_rebuilt_and_one_that_leaves_is_taken_off() -> void:
+	_hand.show_hand(4, _rect, false)
+	var plains: CardLook = CardLook.of_definition(load("res://content/cards/alpha/plains.tres") as MmCardDefinition)
+	_hand.show_known([7], [plains])
+	var face: Node = _hand.back(3).get_child(_hand.back(3).get_child_count() - 1)
+
+	_hand.show_known([7], [plains])
+	assert_eq(_hand.back(3).get_child(_hand.back(3).get_child_count() - 1), face, "Not rebuilt.")
+
+	_hand.show_known([], [])
+	assert_eq(_hand.known_count(), 0)
+	assert_true(face.is_queued_for_deletion())

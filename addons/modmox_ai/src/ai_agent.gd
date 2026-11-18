@@ -16,6 +16,11 @@ enum Mode { FULL, CHEAP }
 const MOST_PICKS_SIMULATED: int = 10
 ## How many creature types a FULL Agent simulates choosing, the best ranked first.
 const MOST_TYPES_SIMULATED: int = 3
+## The color of mana each basic land type makes (CR 305.6), for ranking what a search finds.
+const BASIC_LAND_COLORS: Dictionary[String, MmMana.Type] = {
+	"Plains": MmMana.Type.WHITE, "Island": MmMana.Type.BLUE, "Swamp": MmMana.Type.BLACK,
+	"Mountain": MmMana.Type.RED, "Forest": MmMana.Type.GREEN,
+}
 
 ## Why the last answer was chosen (A165). For debugging and tests; never saved.
 enum Reason {
@@ -160,6 +165,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _choose_legend(decision as ChooseLegendToKeepDecision, world, source, rng)
 	if decision is ChooseCreatureTypeDecision:
 		return _choose_creature_type(decision as ChooseCreatureTypeDecision, world, source, rng)
+	if decision is ChooseCardsInLibraryDecision:
+		return _search(decision as ChooseCardsInLibraryDecision, world, source, rng)
 	assert(false, "AiAgent cannot answer %s." % decision.describe())
 	return null
 
@@ -744,6 +751,81 @@ func _choose_mode(decision: ChooseModeDecision, world: MmGameState, source: MmSi
 			if reached.is_object() and world.object(reached.id).controller_id != decision.player_id:
 				return index
 	return 0
+
+
+## The cards found by a search (ADR 0057), always as many as may be found. FULL: simulates
+## finding one card of each name it could find, and keeps the best; any more are found as
+## CHEAP finds them. CHEAP: ranks the cards with _search_rank().
+func _search(decision: ChooseCardsInLibraryDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> Array[int]:
+	var found: Array[int] = []
+	if decision.candidate_ids.is_empty() or decision.most <= 0:
+		_reason = Reason.ONLY_CHOICE
+		return found
+	var ranked: Array[int] = _search_rank(decision.candidate_ids, world, decision.player_id)
+	_reason = Reason.BEST_SCORE
+	if mode == Mode.FULL:
+		var one_of_each: Array[int] = []
+		var names: Dictionary[String, bool] = {}
+		for id: int in ranked:
+			var card_name: String = world.characteristics_of(world.object(id)).name
+			if not names.has(card_name):
+				names[card_name] = true
+				one_of_each.append(id)
+		if one_of_each.size() > 1:
+			var answers: Array = []
+			var options: Array[int] = []
+			for index: int in one_of_each.size():
+				answers.append([one_of_each[index]])
+				options.append(index)
+			var best: int = one_of_each[_best_option(options, _simulate_each(source, rng, answers, decision.player_id), rng, 0)]
+			ranked.erase(best)
+			ranked.push_front(best)
+	return ranked.slice(0, decision.most)
+
+
+## [param candidate_ids] best first for [param me] to find: a basic land of the color their
+## hand most lacks (the colored symbols of the nonland cards in their hand, less the lands
+## of that color they control), then other lands, then other cards by mana value, highest
+## first. Ties keep library order.
+func _search_rank(candidate_ids: Array[int], world: MmGameState, me: int) -> Array[int]:
+	var lacking: Dictionary[MmMana.Type, int] = {}
+	for card: MmGameObject in world.player(me).hand.objects():
+		var cost: MmManaCost = world.characteristics_of(card).mana_cost
+		if cost == null or world.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND):
+			continue
+		for symbol: MmMana.Type in cost.symbols:
+			lacking[symbol] = lacking.get(symbol, 0) + 1
+	for permanent: MmGameObject in world.battlefield.objects():
+		if permanent.controller_id != me:
+			continue
+		for made: MmMana.Type in _basic_colors(world.characteristics_of(permanent)):
+			lacking[made] = lacking.get(made, 0) - 1
+	var scores: Dictionary[int, int] = {}
+	for id: int in candidate_ids:
+		var characteristics: MmCharacteristics = world.characteristics_of(world.object(id))
+		if characteristics.has_card_type(MmCardTypes.CardType.LAND):
+			var need: int = 0
+			for made: MmMana.Type in _basic_colors(characteristics):
+				need = maxi(need, lacking.get(made, 0))
+			scores[id] = 1000 + need
+		else:
+			scores[id] = characteristics.mana_value()
+	var ranked: Array[int] = candidate_ids.duplicate()
+	var order: Dictionary[int, int] = {}
+	for index: int in ranked.size():
+		order[ranked[index]] = index
+	ranked.sort_custom(func(a: int, b: int) -> bool:
+		return scores[a] > scores[b] or (scores[a] == scores[b] and order[a] < order[b]))
+	return ranked
+
+
+## The colors of mana [param characteristics]'s basic land types make (CR 305.6).
+static func _basic_colors(characteristics: MmCharacteristics) -> Array[MmMana.Type]:
+	var made: Array[MmMana.Type] = []
+	for subtype: String in characteristics.subtypes:
+		if BASIC_LAND_COLORS.has(subtype):
+			made.append(BASIC_LAND_COLORS[subtype])
+	return made
 
 
 func _choose_replacement(decision: ChooseReplacementEffectDecision, source: MmSimulationSource, rng: MmRng) -> int:

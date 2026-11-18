@@ -121,6 +121,12 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 	elif decision is ChoosePermanentsDecision:
 		# Picked one click at a time with a CardPicks, and confirmed with the pass button.
 		clicks._add_ids((decision as ChoosePermanentsDecision).candidate_ids, Kind.OTHER)
+	elif decision is ChooseCardsInLibraryDecision:
+		# Selected in the Hero's Library window with a CardPicks, and confirmed with the
+		# pass button. The window opens by itself, even with nothing to find (game ADR 0058).
+		clicks._add_ids((decision as ChooseCardsInLibraryDecision).candidate_ids, Kind.OTHER)
+		clicks._piles.append("hero_library")
+		clicks._pile_kinds["hero_library"] = Kind.OTHER
 	return clicks
 
 

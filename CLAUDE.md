@@ -26,6 +26,8 @@ Godot is not on PATH. Run from the repo root:
 GODOT=~/Desktop/Godot_v4.7.2-stable_linux.x86_64 tools/test.sh
 ```
 
+That runs the whole suite in parallel processes (about 2 minutes). While building, run the tests near the change: `tools/test.sh --quick` (picked from `git status`), or one file with `-gtest=res://…/test_x.gd`. Run the whole suite before committing and before calling a milestone done. Don't run two whole suites at once; they share the cores. `--serial` runs it in one process as before.
+
 ## Keeping docs in sync
 
 Whenever the glossaries, an ADR, the roadmap or the conventions change, copy them into the user's Obsidian vault at `~/Documents/PrimaryVault/ModMox/`:

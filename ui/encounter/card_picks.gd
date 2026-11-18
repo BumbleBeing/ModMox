@@ -2,7 +2,9 @@ class_name CardPicks
 extends RefCounted
 ## The Hero's half-made answer to a decision that chooses cards from their hand (13e-2):
 ## which to put on the bottom after keeping, or which to discard; or permanents on the
-## battlefield, such as creatures to tap for a cost (ChoosePermanentsDecision). Cards are picked one
+## battlefield, such as creatures to tap for a cost (ChoosePermanentsDecision); or up to
+## some number of cards in the Hero's library, found by a search (ChooseCardsInLibraryDecision,
+## game ADR 0058), any number of which up to that answers. Cards are picked one
 ## click at a time, and the answer lists them in the order picked, so the last card put on
 ## the bottom ends up lowest. Kept by the Encounter Screen outside the nodes it redraws, as
 ## a CombatSelection is, and confirmed with a button.
@@ -21,7 +23,7 @@ var _history: Array = []
 ## Whether [param decision] is answered by picking cards.
 static func covers(decision: MmPendingDecision) -> bool:
 	return decision is ChooseCardsToBottomDecision or decision is ChooseCardsToDiscardDecision \
-		or decision is ChoosePermanentsDecision
+		or decision is ChoosePermanentsDecision or decision is ChooseCardsInLibraryDecision
 
 
 func _init(decision: MmPendingDecision = null) -> void:
@@ -37,6 +39,10 @@ func _init(decision: MmPendingDecision = null) -> void:
 		_decision = decision
 		_candidates = (decision as ChoosePermanentsDecision).candidate_ids.duplicate()
 		_count = (decision as ChoosePermanentsDecision).count
+	elif decision is ChooseCardsInLibraryDecision:
+		_decision = decision
+		_candidates = (decision as ChooseCardsInLibraryDecision).candidate_ids.duplicate()
+		_count = (decision as ChooseCardsInLibraryDecision).most
 
 
 ## Whether these are the picks being made for [param decision]: a new decision needs new ones.
@@ -54,6 +60,11 @@ func is_bottoming() -> bool:
 
 func is_discarding() -> bool:
 	return _decision is ChooseCardsToDiscardDecision
+
+
+## Whether the picks are cards found by a search, clicked in the Hero's Library window.
+func is_searching() -> bool:
+	return _decision is ChooseCardsInLibraryDecision
 
 
 ## Whether the picks are permanents on the battlefield, clicked there.
@@ -121,8 +132,21 @@ func undo() -> bool:
 	return true
 
 
+## Whether the picks answer: as many as asked for, or for a search any number up to that.
 func is_complete() -> bool:
+	if is_searching():
+		return _picked.size() <= _count
 	return is_active() and _picked.size() == _count
+
+
+## What confirming a search does, on the pass button: "Find nothing", "Find Forest" or
+## "Find 2 cards" (game ADR 0058). [param view] names the card.
+func search_confirm_text(view: MmPlayerView) -> String:
+	if _picked.is_empty():
+		return "Find nothing"
+	if _picked.size() == 1:
+		return "Find " + EncounterSnapshot.name_in(view, _picked[0])
+	return "Find %d cards" % _picked.size()
 
 
 ## The decision's answer: the picked cards' IDs, in the order picked.

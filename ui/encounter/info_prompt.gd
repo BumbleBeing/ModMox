@@ -60,6 +60,11 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		var pick: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
 		prompt.text = "Tap %s for %s" % [AbilityText.how_many_words(pick.count, pick.filter), stack_name(view, pick.stack_object_id)]
 		prompt.can_cancel = true
+	elif decision is ChooseCardsInLibraryDecision:
+		# Game ADR 0058: "Bushwhack: search your library for a basic land card".
+		var search: ChooseCardsInLibraryDecision = decision as ChooseCardsInLibraryDecision
+		prompt.text = "%s: search your library for %s" % [stack_name(view, search.stack_object_id),
+			AbilityText.searched_words(search.most, search.is_up_to, search.filter)]
 	elif decision is ChooseCreatureTypeDecision:
 		prompt.text = "Choose a creature type for %s" % stack_name(view, (decision as ChooseCreatureTypeDecision).stack_object_id)
 	elif decision is ChooseLegendToKeepDecision:

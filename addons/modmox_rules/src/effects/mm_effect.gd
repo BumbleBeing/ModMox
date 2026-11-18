@@ -11,6 +11,19 @@ func numbers(_state: MmGameState, _context: MmEffectContext) -> Array[int]:
 	return none
 
 
+## The decision this effect asks of its own as it begins, once its Selections' choices are
+## made, or null for none, such as a search's (ADR 0057). [param stack_object_id] is the
+## resolving spell or ability. Its answer comes back to numbers_with_answer().
+func decision_as_it_begins(_state: MmGameState, _context: MmEffectContext, _stack_object_id: int) -> MmPendingDecision:
+	return null
+
+
+## The numbers this effect works out as it begins, once decision_as_it_begins() has been
+## answered with [param answer].
+func numbers_with_answer(state: MmGameState, context: MmEffectContext, _answer: Variant) -> Array[int]:
+	return numbers(state, context)
+
+
 ## The events this effect proposes at [param step], counting from 0, as one simultaneous
 ## batch worked out from the game as it is now. An empty batch means the effect is done.
 ## Effects never perform events themselves: resolution performs each batch, and can stop

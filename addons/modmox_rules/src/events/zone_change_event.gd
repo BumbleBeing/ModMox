@@ -10,9 +10,9 @@ extends MmEvent
 ## which is not destruction. COUNTER is CR 701.6: a spell countered on the stack.
 ## RETURN_TO_HAND is an effect putting a card into its owner's hand. EXILE is CR 701.13a,
 ## and RETURN_TO_BATTLEFIELD an effect putting a card in exile or a graveyard onto the
-## battlefield.
+## battlefield. SEARCH is a card found by a search (CR 701.23).
 enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND,
-	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE }
+	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -40,6 +40,9 @@ var tapped_on_arrival: bool = false
 ## For a card entering the battlefield: the creature type chosen as it enters (CR 614.12,
 ## ADR 0052), or "". Recorded as it arrives, so its static abilities apply at once.
 var chosen_creature_type_on_arrival: String = ""
+## For a card found by a search and revealed (CR 701.20, ADR 0057): every player sees it,
+## so one put into a hand is a Known Card there.
+var revealed: bool = false
 ## The new object's ID, set when the event is applied.
 var new_object_id: int = 0
 ## For an object leaving the battlefield: its characteristics as it last existed there,
@@ -69,8 +72,14 @@ func apply(state: MmGameState) -> void:
 		last_known = state.characteristics_of(leaving)
 		leaving.freeze_last_known(last_known)
 		state.record_departure(leaving)
+	var hand_size_before: int = from_zone.size()
 	from_zone.remove(leaving)
 	state.retire_object(leaving)
+	if from_zone_kind == MmZone.Kind.HAND and to_zone_kind == MmZone.Kind.LIBRARY and not revealed and hand_size_before >= 2:
+		# ADR 0057: the other player cannot tell which card went, so nothing left in that
+		# hand is known any more.
+		for kept: MmGameObject in from_zone.objects():
+			kept.forget_who_knows()
 	var arriving: MmGameObject = state.create_object(leaving.card_id, leaving.owner_id, leaving.definition)
 	to_zone.insert(arriving, position)
 	new_object_id = arriving.id
@@ -84,6 +93,10 @@ func apply(state: MmGameState) -> void:
 		# Whoever held the card knows where it went, until the library is shuffled.
 		# Later: a card put there from a zone everyone sees, when a card does that.
 		arriving.make_known_to(from_owner_id)
+	if revealed and to_zone_kind == MmZone.Kind.HAND:
+		for player: MmPlayer in state.players:
+			if player.id != to_owner_id:
+				arriving.make_known_to(player.id)
 	if cast_with_flashback:
 		arriving.record_cast_with_flashback()
 	if reason == Reason.CAST and from_zone_kind == MmZone.Kind.LIBRARY:

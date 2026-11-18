@@ -297,13 +297,15 @@ func set_target(index: int, target: MmReference) -> void:
 	targets[index] = target
 
 
-## Event-only: [param player_id] saw this card go into a library.
+## Event-only: [param player_id] saw this card go into a library, or saw it revealed
+## as it went into a hand (ADR 0057).
 func make_known_to(player_id: int) -> void:
 	if not known_to_player_ids.has(player_id):
 		known_to_player_ids.append(player_id)
 
 
-## Event-only: its library was shuffled, so nobody knows which card it is.
+## Event-only: its library was shuffled, or a card left its hand for the library unseen
+## (ADR 0057), so nobody knows which card it is.
 func forget_who_knows() -> void:
 	known_to_player_ids.clear()
 

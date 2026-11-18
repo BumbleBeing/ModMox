@@ -145,3 +145,25 @@ func _bottom(count: int) -> ChooseCardsToBottomDecision:
 
 func _discard(count: int) -> ChooseCardsToDiscardDecision:
 	return ChooseCardsToDiscardDecision.new(HERO, count, HAND)
+
+
+func test_a_search_may_be_answered_with_any_number_up_to_the_most_and_says_what_it_finds() -> void:
+	var view: MmPlayerView = MmPlayerView.new()
+	var forest: MmObjectView = MmObjectView.new()
+	forest.id = 11
+	forest.name = "Forest"
+	view.libraries[0] = [forest, null]
+	var search: ChooseCardsInLibraryDecision = ChooseCardsInLibraryDecision.new(0, 5, [11, 12, 13] as Array[int], 2, null, true)
+	var picks: CardPicks = CardPicks.new(search)
+
+	assert_true(CardPicks.covers(search))
+	assert_true(picks.is_searching())
+	assert_true(picks.is_complete(), "Finding nothing answers (CR 701.23b).")
+	assert_eq(picks.search_confirm_text(view), "Find nothing")
+	assert_true(picks.toggle(11))
+	assert_eq(picks.search_confirm_text(view), "Find Forest")
+	assert_true(picks.toggle(12))
+	assert_false(picks.can_pick(13), "No more than two.")
+	assert_true(picks.is_complete())
+	assert_eq(picks.search_confirm_text(view), "Find 2 cards")
+	assert_eq(picks.answer(), [11, 12])

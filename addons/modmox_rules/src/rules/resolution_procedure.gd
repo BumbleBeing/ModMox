@@ -3,7 +3,8 @@ extends RefCounted
 ## CR 608.2: the top of the stack resolves. Targets are rechecked first: if every target is
 ## now illegal it does not resolve, and otherwise effects simply skip illegal targets. Each
 ## effect then performs its batches in order. Resolution stops as an effect begins for each
-## choice it offers (CR 608.2d), and whenever a batch is waiting for a replacement choice,
+## choice it offers (CR 608.2d) and for any decision it asks of its own, such as a search
+## (ADR 0057), and whenever a batch is waiting for a replacement choice,
 ## carrying on once it is answered (A143). The spell or ability leaves the stack only once
 ## every effect is done.
 
@@ -19,6 +20,10 @@ var _numbers: Array[int] = []
 var _is_done: bool = false
 ## The creature type chosen as a permanent spell enters (CR 614.12, ADR 0052), or "".
 var _chosen_creature_type: String = ""
+## The answer to the decision the current effect asked of its own as it began, such as a
+## search's (ADR 0057), and whether it has one yet.
+var _begin_answer: Variant = null
+var _has_begin_answer: bool = false
 
 
 ## Begins resolving the top of the stack.
@@ -74,6 +79,8 @@ func copy_for(state: MmGameState) -> ResolutionProcedure:
 	copy._numbers = _numbers.duplicate()
 	copy._is_done = _is_done
 	copy._chosen_creature_type = _chosen_creature_type
+	copy._begin_answer = _begin_answer  # Plain data, never changed.
+	copy._has_begin_answer = _has_begin_answer
 	return copy
 
 
@@ -95,11 +102,17 @@ func next_decision() -> MmPendingDecision:
 			var choice: ChooseObjectDecision = _next_choice(effect)
 			if choice != null:
 				return choice
-			_numbers = effect.numbers(_state, _context)
+			if not _has_begin_answer:
+				var asked: MmPendingDecision = effect.decision_as_it_begins(_state, _context, _object_id)
+				if asked != null:
+					return asked
+			_numbers = effect.numbers_with_answer(_state, _context, _begin_answer) if _has_begin_answer else effect.numbers(_state, _context)
 		var batch: Array[MmEvent] = effect.next_batch(_state, _context, _step, _numbers)
 		if batch.is_empty():
 			_effect_index += 1
 			_step = 0
+			_begin_answer = null
+			_has_begin_answer = false
 			continue
 		_step += 1
 		_state.perform_resumably(batch)
@@ -111,6 +124,10 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	var creature_type: ChooseCreatureTypeDecision = decision as ChooseCreatureTypeDecision
 	if creature_type != null:
 		_chosen_creature_type = creature_type.creature_types[answer as int]
+		return
+	if decision is ChooseCardsInLibraryDecision:
+		_begin_answer = (answer as Array).duplicate()
+		_has_begin_answer = true
 		return
 	var choice: ChooseObjectDecision = decision as ChooseObjectDecision
 	assert(choice != null, "A resolution cannot answer %s." % decision.describe())

@@ -33,6 +33,13 @@ var libraries: Dictionary[int, Array] = {}
 ## Whether this view's player may look at the top card of their own library now, through a
 ## LookAtTopOfLibraryAbility (ADR 0054), so their top entry is that card.
 var looks_at_library_top: bool = false
+## The cards of each player's hand that this view's player knows, by that player's ID: one
+## the other player found with a search and revealed, until something hides it again
+## (ADR 0057). Hands are hidden (CR 402.3); the viewer's own entry is always empty.
+var known_in_hands: Dictionary[int, Array] = {}
+## Whether this view's player is searching their own library now (ADR 0057), so every
+## entry of their library is that card.
+var is_searching_library: bool = false
 ## What is in this view's player's own library, never in what order: a player knows their
 ## own deck list (ADR 0052, game ADR 0053). Sorted by name, with no object ID and no Card
 ## Identity, so nothing in it says where a card is.
@@ -61,10 +68,12 @@ var loss_reasons: Dictionary[int, MmPlayer.LossReason] = {}
 
 
 ## Builds [param viewing_player_id]'s view of [param state]. [param priority_holder_id]
-## is the player currently holding priority, or MmGameState.NO_PLAYER.
-static func build(state: MmGameState, viewing_player_id: int, priority_holder_id: int) -> MmPlayerView:
+## is the player currently holding priority, or MmGameState.NO_PLAYER. With
+## [param is_searching], the viewer is searching their own library (ADR 0057).
+static func build(state: MmGameState, viewing_player_id: int, priority_holder_id: int, is_searching: bool = false) -> MmPlayerView:
 	var view: MmPlayerView = MmPlayerView.new()
 	view.viewer_id = viewing_player_id
+	view.is_searching_library = is_searching
 	for game_object: MmGameObject in state.player(viewing_player_id).hand.objects():
 		view.hand.append(MmObjectView.of(state, game_object))
 	for permanent: MmGameObject in state.battlefield.objects():
@@ -90,9 +99,16 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		view.library_sizes[player.id] = player.library.size()
 		var library: Array[MmObjectView] = []
 		var seen: Dictionary[int, bool] = state.seen_library_ids(player.id, viewing_player_id)
+		var sees_all: bool = is_searching and player.id == viewing_player_id
 		for card: MmGameObject in player.library.objects():
-			library.append(MmObjectView.of(state, card) if seen.has(card.id) else null)
+			library.append(MmObjectView.of(state, card) if sees_all or seen.has(card.id) else null)
 		view.libraries[player.id] = library
+		var known: Array[MmObjectView] = []
+		if player.id != viewing_player_id:
+			for card: MmGameObject in player.hand.objects():
+				if card.is_known_to(viewing_player_id):
+					known.append(MmObjectView.of(state, card))
+		view.known_in_hands[player.id] = known
 		if player.id == viewing_player_id:
 			view.library_contents = _contents_of(state, player.library)
 		view.life_totals[player.id] = player.life

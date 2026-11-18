@@ -127,14 +127,20 @@ func duplicate_state() -> MmGameState:
 ## their IDs. The pool is sorted before shuffling, so two states that differ only in how
 ## those cards are arranged are re-dealt identically. This builds an imagined state rather
 ## than changing the game, so like the starting state (CR 103.2) it is not an event.
-## Only what the viewer's Player View hides is re-dealt: a Known Card, or a top card the
-## viewer may look at (ADR 0054), stays where it is, and the pool is the rest.
-func randomize_hidden_cards(viewer_id: int, rng: MmRng) -> void:
+## Only what the viewer's Player View hides is re-dealt: a Known Card, in a library or the
+## other player's hand (ADR 0057), or a top card the viewer may look at (ADR 0054), stays
+## where it is, and the pool is the rest. With [param is_searching], the viewer is looking
+## through their own library (ADR 0057), so it is not re-dealt at all.
+func randomize_hidden_cards(viewer_id: int, rng: MmRng, is_searching: bool = false) -> void:
 	var other: MmPlayer = opponent_of(viewer_id)
-	var unseen: Array[MmGameObject] = other.hand.objects()
+	var unseen: Array[MmGameObject] = []
+	for card: MmGameObject in other.hand.objects():
+		if not card.is_known_to(viewer_id):
+			unseen.append(card)
 	unseen.append_array(_unseen_in_library(other.id, viewer_id))
 	_redeal(unseen, rng)
-	_redeal(_unseen_in_library(viewer_id, viewer_id), rng)
+	if not is_searching:
+		_redeal(_unseen_in_library(viewer_id, viewer_id), rng)
 
 
 ## The IDs of the cards in [param owner_id]'s library that [param viewer_id] sees: their

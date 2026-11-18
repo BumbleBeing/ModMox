@@ -177,6 +177,9 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 	if decision is ChooseCardsToDiscardDecision:
 		var discard: ChooseCardsToDiscardDecision = decision as ChooseCardsToDiscardDecision
 		return discard.candidate_ids.slice(0, discard.count)
+	if decision is ChooseCardsInLibraryDecision:
+		var search: ChooseCardsInLibraryDecision = decision as ChooseCardsInLibraryDecision
+		return search.candidate_ids.slice(0, search.most)
 	if decision is ChoosePermanentsDecision:
 		var pick: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
 		return pick.candidate_ids.slice(0, pick.count)
@@ -1740,3 +1743,54 @@ static func activate_ability(engine: MmEngine, object_id: int, ability_index: in
 		return "Object %d has no ability %d to activate." % [object_id, ability_index]
 	var error: String = engine.submit(index)
 	return error if error != "" else auto_pay(engine)
+
+
+# --- Searching a library (ADR 0057) ----------------------------------------------------
+
+
+## "Basic land card": HasSupertypeFilter for basic with a land Filter.
+static func basic_land_card() -> AllOfFilter:
+	var basic: HasSupertypeFilter = HasSupertypeFilter.new()
+	basic.supertype = MmCardTypes.Supertype.BASIC
+	return all_of([basic, of_type(MmCardTypes.CardType.LAND)])
+
+
+## "Search your library for up to [param amount] [param filter] cards, reveal them (with
+## [param reveal]), put them into [param destination], then shuffle."
+static func search(filter: MmFilter, amount: int = 1, destination: MmZone.Kind = MmZone.Kind.HAND,
+		reveal: bool = true, tapped: bool = false) -> SearchLibraryEffect:
+	var effect: SearchLibraryEffect = SearchLibraryEffect.new()
+	effect.filter = filter
+	effect.amount = constant(amount)
+	effect.destination = destination
+	effect.reveal = reveal
+	effect.tapped = tapped
+	return effect
+
+
+## A sorcery costing {0} that does [param effect], by default Bushwhack's first mode:
+## "Search your library for a basic land card, reveal it, put it into your hand, then
+## shuffle."
+static func free_seek(card_name: String = "Seek", effect: SearchLibraryEffect = null) -> MmCardDefinition:
+	var searching: SearchLibraryEffect = effect if effect != null else search(basic_land_card())
+	return sorcery(card_name, mana_cost(0), [], [searching])
+
+
+## An instant costing {0} that puts the first card of its controller's hand on the bottom
+## of their library without revealing it, as Brainstorm puts cards back (a test-only effect).
+static func free_put_back(card_name: String = "Put Back") -> MmCardDefinition:
+	var effect: MmEffect = load("res://addons/modmox_rules/tests/support/put_back_effect.gd").new()
+	return instant(card_name, mana_cost(0), [], [effect])
+
+
+## Passes priority until a search is asked, answering anything else with autoplay()
+## defaults.
+static func pass_to_search(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool:
+		return running.pending_decision() is ChooseCardsInLibraryDecision)
+
+
+## Casts [param card_name] from the Hero's hand and passes until its search is asked.
+static func cast_to_search(engine: MmEngine, card_name: String = "Seek") -> String:
+	var error: String = cast(engine, card_in_hand(engine, engine.hero(), card_name))
+	return error if error != "" else pass_to_search(engine)

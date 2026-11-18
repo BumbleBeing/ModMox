@@ -289,6 +289,15 @@ func test_the_effects_no_authored_card_uses_yet_are_worded() -> void:
 		[Scenario.of_color(MmCardTypes.CardColor.WHITE), you_control, Scenario.is_not(IsSourceFilter.new()), Scenario.named("Charmed Stray")]))
 	var expected: Dictionary[String, MmEffect] = {
 		"Each player loses 2 life.": Scenario.lose_life(2, Scenario.each(IsPlayerFilter.new())),
+		"Search your library for a basic land card, reveal it, put it into your hand, then shuffle.": Scenario.search(Scenario.basic_land_card()),
+		"Search your library for up to two Plains cards, reveal them, put them into your hand, then shuffle.":
+			Scenario.search(Scenario.has_subtype("Plains"), 2),
+		"Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.":
+			Scenario.search(Scenario.basic_land_card(), 1, MmZone.Kind.BATTLEFIELD, false, true),
+		"Search your library for an artifact card, put it into your graveyard, then shuffle.":
+			Scenario.search(Scenario.of_type(MmCardTypes.CardType.ARTIFACT), 1, MmZone.Kind.GRAVEYARD, false),
+		"Search your library for a nonbasic land card, exile it, then shuffle.":
+			Scenario.search(Scenario.all_of([Scenario.is_not(Scenario.basic_land_card().filters[0]), Scenario.of_type(MmCardTypes.CardType.LAND)]), 1, MmZone.Kind.EXILE, false),
 		"Each player draws two cards.": Scenario.draw_cards(2, Scenario.each(IsPlayerFilter.new())),
 		"Sample deals 1 damage to each white creature.": Scenario.deal_damage(1, white_creatures),
 		"Destroy each white creature.": Scenario.destroy(white_creatures),

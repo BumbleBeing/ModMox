@@ -1,0 +1,18 @@
+# A search opens the Library window as a sorted grid, and a card the Villain reveals stays face up in their hand
+
+Searching a library (engine ADR 0057) came with Bushwhack and three other cards of the Villain deck `steppe_lynx`. A prototype showed how the Hero searches and how they see the Villain's search (kept on the branch `prototype/library-search`): the usual Library window with every card face up, as a row or as a grid, in library order or sorted; and the Villain's found card shown either in a window of its own until the Hero next passes (R1) or face up in the Villain's hand (R2). The user chose the grid, sorted, and R2, and asked that no text be added under the window's cards.
+
+**A search opens the Hero's Library window by itself.** `DecisionClicks` puts the Hero's library among the piles a click answers in and nothing elsewhere, so `PileWindows` opens its window, even when nothing can be found: the Hero still looks through the library before it is shuffled. While the search is pending it is a grid (`PileWindow.Arrangement.GRID`) as wide as the board left of the piles, over the Hero's side and three cards high, scrolling down. Every card is face up, the cards the search may find first and then the rest, each group by name and one name in library order (`PileWindow.searched_order()`). Once the search is answered the window closes, and opens again at its usual size and place. Its title is the usual "[Name]'s Library (N)".
+
+**A click selects a card and a second click lets it go; only the pass button finds them.** The search is a `CardPicks`, as a choice of permanents for a cost is (game ADR 0049), but it is complete with any number of cards from none up to the most the search may find, and no click ever answers it. A selected card glows white, as a card chosen to discard does (A401); the others the search may find glow green, and none glows or takes a click once as many are selected as may be found. Cards it may not find never glow. Undo takes back the last click.
+
+**The words are the user's**, checked before they were built (the conventions now ask for this for any text in a window or the Info Panel):
+- the Pass Button reads "Find nothing [SPACE]" with nothing selected, "Find Forest [SPACE]" with one card, and "Find 2 cards [SPACE]" with more;
+- the Info Panel asks "Bushwhack: search your library for a basic land card", or "...for up to one Plains card" for a search of "up to X" (`AbilityText.searched_words()`);
+- with the cursor on a card the search may find, it says "Select Forest", or "Unselect Forest" for one selected.
+
+A "Shuffled" tag under the library's count after the search was shown in the prototype and rejected.
+
+**A card the Villain revealed into their hand is drawn face up there, with the eye, until it leaves the hand.** The Hero's Player View lists the Villain's Known Cards in hand (engine ADR 0057), and `VillainHand.show_known()` draws each on a back at the right end of the fan, as a child of that back so it fans and eases with it, with the `SeenEye` the Hero's own seen top card has (game ADR 0055). The view does not say where in the hand a Known Card is, so the right end stands for it. It is not rebuilt while it stays the same card on the same back. The window of its own (R1) was rejected: it says nothing once it closes, though the Hero still knows the card.
+
+Left out until a card needs them: the Villain searching shown in any way while they search (the Hero sees only the shuffle's result and the revealed card), revealing cards that are not found, and the Hero's own cards the Villain knows marked in the Hand Strip.

@@ -214,6 +214,15 @@ static func how_many_words(count: int, filter: MmFilter) -> String:
 	return AbilityText.new("it")._how_many(count, filter)
 
 
+## What a search asks for, as its prompt says it: "a basic land card", or with
+## [param is_up_to] "up to one Plains card" (ADR 0057).
+static func searched_words(most: int, is_up_to: bool, filter: MmFilter) -> String:
+	var words: AbilityText = AbilityText.new("it")
+	if not is_up_to:
+		return _with_article(words._card_phrase(filter, false))
+	return "up to %s %s" % [_number_word(most), words._card_phrase(filter, most != 1)]
+
+
 ## Whether [param text] has something in it there were no words for.
 static func has_fallback(text: String) -> bool:
 	return text.contains("[")
@@ -587,7 +596,47 @@ func _effect(effect: MmEffect) -> String:
 		return _continuous((effect as CreateContinuousEffect).continuous, false) + " until end of turn"
 	if effect is CreateTokenEffect:
 		return "create " + _tokens(effect as CreateTokenEffect)
+	if effect is SearchLibraryEffect:
+		return _search(effect as SearchLibraryEffect)
 	return _fallback(effect, "_effect")
+
+
+## CR 701.23, as Oracle words it: "search your library for a basic land card, reveal it,
+## put it into your hand, then shuffle", or "up to two Plains cards ... reveal them".
+func _search(effect: SearchLibraryEffect) -> String:
+	var constant: ConstantValue = effect.amount as ConstantValue
+	var is_one: bool = constant != null and constant.value == 1
+	var found: String = ""
+	if is_one:
+		found = _with_article(_card_phrase(effect.filter, false))
+	else:
+		var how_many: String = _number_word(constant.value) if constant != null else _amount(effect.amount)
+		found = "up to %s %s" % [how_many, _card_phrase(effect.filter, true)]
+	var them: String = "it" if is_one else "them"
+	var put: String = ""
+	match effect.destination:
+		MmZone.Kind.HAND:
+			put = "put %s into your hand" % them
+		MmZone.Kind.BATTLEFIELD:
+			put = "put %s onto the battlefield%s" % [them, " tapped" if effect.tapped else ""]
+		MmZone.Kind.GRAVEYARD:
+			put = "put %s into your graveyard" % them
+		MmZone.Kind.EXILE:
+			put = "exile " + them
+	var reveal: String = ("reveal %s, " % them) if effect.reveal else ""
+	return "search your library for %s, %s%s, then shuffle" % [found, reveal, put]
+
+
+## "Basic land card" or "Plains cards": a Filter's words as cards in a hidden zone.
+func _card_phrase(filter: MmFilter, is_plural: bool) -> String:
+	var words: FilterWords = _filter_words(filter)
+	var parts: PackedStringArray = PackedStringArray(words.adjectives)
+	if words.noun != "":
+		parts.append(words.noun)
+	parts.append("cards" if is_plural else "card")
+	var after: PackedStringArray = PackedStringArray(words.after)
+	return " ".join(parts) if after.is_empty() else " ".join(parts) + " " + " ".join(after)
+
 
 
 ## CR 608.2c, as Oracle words it: "[effect]. If [condition], [other effect] instead", one
@@ -910,6 +959,9 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 	elif filter is HasSubtypeFilter:
 		var subtype: String = (filter as HasSubtypeFilter).subtype
 		adjectives.append("non-" + subtype if is_negated else subtype)
+	elif filter is HasSupertypeFilter:
+		var supertype: String = str(MmCardTypes.Supertype.find_key((filter as HasSupertypeFilter).supertype)).to_lower()
+		adjectives.append("non" + supertype if is_negated else supertype)
 	elif filter is IsTappedFilter:
 		adjectives.append("untapped" if is_negated else "tapped")
 	elif filter is IsTokenFilter:

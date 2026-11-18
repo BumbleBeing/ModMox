@@ -5,7 +5,10 @@ extends ZoneWindow
 ## is one row scrolled sideways, its top card on the left, showing a card back for each
 ## card the Hero does not know and its face for one they do, such as a card they put on
 ## the bottom, or the top card they may look at (game ADR 0055). A card that answers the
-## decision glows and is clicked here (ADR 0032).
+## decision glows and is clicked here (ADR 0032). While the Hero searches their library
+## (game ADR 0058) it is a grid of every card face up, the cards the search may find first
+## and then the rest, each by name; a card selected glows white, the others that may be
+## selected green, and none once as many are selected as may be.
 
 signal card_clicked(object_id: int)
 ## The cursor came onto ([param is_over]) or left a card that answers the decision.
@@ -15,6 +18,8 @@ enum Arrangement { GRID, ROW }
 
 const CARD_HEIGHT: float = EncounterLayout.HAND_CARD_HEIGHT
 const GAP: int = 8
+## The Glow of a card selected in a search, white as a card chosen to discard is (A401).
+const PICKED_GLOW: Color = Color.WHITE
 ## What entries() gives for a card the Hero does not know.
 const UNKNOWN: int = 0
 ## The room left around the cards, so that a Glow, which reaches 7 pixels past its card, is
@@ -33,11 +38,16 @@ var _entries: Array[int] = []
 var _faces: Dictionary[int, CardFace] = {}
 ## What was last shown, so that a snapshot that changes nothing here rebuilds nothing.
 var _shown: String = ""
+## The arrangement it was made with, kept while a search lays it out as a grid.
+var _usual: Arrangement
+## The cards being selected in a search shown here, or null when it shows no search.
+var _picks: CardPicks = null
 
 
 func _init(arrangement: Arrangement, tint: Color) -> void:
 	super("", true, tint)
 	_arrangement = arrangement
+	_usual = arrangement
 	size = OPENING_SIZE
 	if arrangement == Arrangement.ROW:
 		# One row: it never scrolls down, only sideways.
@@ -48,10 +58,16 @@ func _init(arrangement: Arrangement, tint: Color) -> void:
 ## MmObjectView in the zone's own order, or null for a card the Hero does not know.
 ## [param snapshot] has each card's look, and a card [param clicks] has an answer on glows
 ## and takes a click.
-func show_cards(title: String, cards: Array, snapshot: EncounterSnapshot, clicks: DecisionClicks) -> void:
+## With [param picks] for a search, it shows the search instead (game ADR 0058).
+func show_cards(title: String, cards: Array, snapshot: EncounterSnapshot, clicks: DecisionClicks,
+		picks: CardPicks = null) -> void:
 	show_title("%s (%d)" % [title, cards.size()])
+	_picks = picks if picks != null and picks.is_searching() else null
+	_set_arrangement(Arrangement.GRID if _picks != null else _usual)
 	var ordered: Array = cards.duplicate()
-	if _arrangement == Arrangement.GRID:
+	if _picks != null:
+		ordered = searched_order(cards, _picks)
+	elif _arrangement == Arrangement.GRID:
 		ordered.reverse()
 	var signature: String = _signature(ordered, clicks)
 	if signature == _shown:
@@ -77,6 +93,26 @@ func show_cards(title: String, cards: Array, snapshot: EncounterSnapshot, clicks
 		box.add_child(holder)
 		_holders.append(holder)
 		_entries.append(seen.id if seen != null else UNKNOWN)
+
+
+## [param cards] as a search shows them: the cards [param picks] may find first, then the
+## rest, each by name, and in library order for one name (game ADR 0058).
+static func searched_order(cards: Array, picks: CardPicks) -> Array:
+	var order: Dictionary[int, int] = {}
+	var shown: Array = []
+	for index: int in cards.size():
+		var seen: MmObjectView = cards[index] as MmObjectView
+		if seen != null:
+			order[seen.id] = index
+			shown.append(seen)
+	shown.sort_custom(func(a: MmObjectView, b: MmObjectView) -> bool:
+		var a_found: bool = picks.is_candidate(a.id)
+		if a_found != picks.is_candidate(b.id):
+			return a_found
+		if a.name != b.name:
+			return a.name < b.name
+		return order[a.id] < order[b.id])
+	return shown
 
 
 ## The object ID of each card shown, in the order shown, or UNKNOWN for a card back.
@@ -154,6 +190,9 @@ func _holder(seen: MmObjectView, snapshot: EncounterSnapshot, clicks: DecisionCl
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holder.add_child(face)
 	_faces[seen.id] = face
+	if _picks != null:
+		_add_search_answer(seen.id, face, card)
+		return holder
 	if not clicks.options_of(seen.id).is_empty():
 		BorderEffects.add_glow_of(face, card, clicks.colors_of(seen.id), glow_seconds)
 		var catcher: ClickCatcher = ClickCatcher.add(face, card)
@@ -163,9 +202,35 @@ func _holder(seen: MmObjectView, snapshot: EncounterSnapshot, clicks: DecisionCl
 	return holder
 
 
+## A card a search may find: white while selected, green while it may be selected, and
+## nothing once as many are selected as may be; a click selects it or lets it go.
+func _add_search_answer(object_id: int, face: CardFace, card: Vector2) -> void:
+	var color: Color = Color.TRANSPARENT
+	if _picks.is_picked(object_id):
+		color = PICKED_GLOW
+	elif _picks.can_pick(object_id):
+		color = DecisionClicks.color_of(DecisionClicks.Kind.OTHER)
+	if color == Color.TRANSPARENT:
+		return
+	BorderEffects.add_glow_of(face, card, [color], glow_seconds)
+	var catcher: ClickCatcher = ClickCatcher.add(face, card)
+	catcher.clicked.connect(func() -> void: card_clicked.emit(object_id))
+	catcher.mouse_entered.connect(func() -> void: card_hovered.emit(object_id, true))
+	catcher.mouse_exited.connect(func() -> void: card_hovered.emit(object_id, false))
+
+
+## Lays the cards out as [param arrangement]: a row never scrolls down.
+func _set_arrangement(arrangement: Arrangement) -> void:
+	_arrangement = arrangement
+	var is_row: bool = arrangement == Arrangement.ROW
+	scroll().vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if is_row else ScrollContainer.SCROLL_MODE_AUTO
+
+
 ## Everything that decides what is drawn: which cards, in what order, and which answer.
 func _signature(ordered: Array, clicks: DecisionClicks) -> String:
 	var parts: PackedStringArray = PackedStringArray()
+	if _picks != null:
+		parts.append("search %s" % [_picks.picked()])
 	for entry: Variant in ordered:
 		var seen: MmObjectView = entry as MmObjectView
 		if seen == null:

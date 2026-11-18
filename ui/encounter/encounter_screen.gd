@@ -222,6 +222,8 @@ var _opening: OpeningHand = OpeningHand.new()
 var _overlay: OpeningHandOverlay
 ## The Hero's half-made choice of cards to put on the bottom or to discard, if one is asked.
 var _picks: CardPicks = CardPicks.new()
+## Whether the Hero's Library window was last opened for a search, at a search's size.
+var _searched_window: bool = false
 ## The answer whose payment the Tap Preview (game glossary) shows, or NO_PREVIEW. Kept
 ## outside the redrawn nodes, so a redraw draws the preview again.
 var _previewed: int = NO_PREVIEW
@@ -1534,11 +1536,36 @@ func follow_tuck_marks(cursor: Vector2, seconds: float) -> void:
 			_tuck_marked.append(object_id)
 
 
+## The Villain's Known Cards, face up in their hand (game ADR 0058).
+func _show_known_villain_cards(view: MmPlayerView) -> void:
+	var ids: Array[int] = []
+	var looks: Array[CardLook] = []
+	for known: MmObjectView in view.known_in_hands.get(VILLAIN, []):
+		ids.append(known.id)
+		looks.append(_snapshot.look_of(known.id))
+	_villain_hand.show_known(ids, looks)
+
+
 ## Opens the window of the pile in Region [param key], with what the zone holds now: beside
 ## its pile the first time, and where it was left after that.
 func _open_pile(key: String) -> void:
 	var window: PileWindow = _pile_windows[key]
-	if not _placed_piles.has(key):
+	if key == "hero_library" and _picks.is_searching():
+		# Game ADR 0058: a search's grid is as wide as the board left of the piles, over
+		# the Hero's side, and three cards high.
+		var battlefield: Rect2 = _regions["battlefield"]
+		var left: float = battlefield.position.x + 8.0
+		var card_height: float = PileWindow.CARD_HEIGHT + PileWindow.GAP
+		window.size = Vector2(_regions[key].position.x - 16.0 - left,
+			3.0 * card_height + 2.0 * PileWindow.GLOW_ROOM + ZoneWindow.BAR_HEIGHT + 36.0)
+		window.position = Vector2(left, battlefield.end.y - window.size.y - 8.0)
+		_searched_window = true
+	elif key == "hero_library" and _searched_window:
+		# Back to its usual size and place once a search is done.
+		window.size = PileWindow.OPENING_SIZE
+		window.position = EncounterLayout.pile_window_position(_regions[key], window.size, 0)
+		_searched_window = false
+	elif not _placed_piles.has(key):
 		window.position = EncounterLayout.pile_window_position(_regions[key], window.size, _placed_piles.size())
 		_placed_piles.append(key)
 	window.fit()
@@ -1559,7 +1586,8 @@ func _fill_pile_window(key: String) -> void:
 	elif key.ends_with("library"):
 		cards = view.libraries.get(player_id, [])
 		zone_name = "Library"
-	_pile_windows[key].show_cards("%s %s" % [_snapshot.names.possessive(player_id), zone_name], cards, _snapshot, _clicks)
+	var picks: CardPicks = _picks if key == "hero_library" and _picks.is_searching() else null
+	_pile_windows[key].show_cards("%s %s" % [_snapshot.names.possessive(player_id), zone_name], cards, _snapshot, _clicks, picks)
 
 
 ## The top card of [param player_id]'s library while the Hero may look at it (game ADR
@@ -1694,6 +1722,11 @@ func _concede() -> void:
 func _on_object_clicked(object_id: int) -> void:
 	if _is_paused:
 		return
+	if _picks.is_searching():
+		# Game ADR 0058: a click selects a card or lets it go; only the pass button finds.
+		if _picks.toggle(object_id):
+			_redraw()
+		return
 	if _picks.is_picking_permanents():
 		# The click that makes the last pick answers at once: nothing is left to decide
 		# (game ADR 0049).
@@ -1817,6 +1850,7 @@ func _redraw() -> void:
 	# Like the Hero's, the Villain's hand eases aside for a drawn card that has landed.
 	_villain_hand.show_hand(view.hand_sizes.get(VILLAIN, 0) - _flight_layer.drawn_in_air(VILLAIN).size(),
 			regions["villain_hand"], _is_hand_easing)
+	_show_known_villain_cards(view)
 	_draw_row(_permanents(view, VILLAIN, true), regions["villain_lands"], glow)
 	_draw_nonlands(view, VILLAIN, regions["villain_nonlands"], glow)
 	_draw_nonlands(view, HERO, regions["hero_nonlands"], glow)
@@ -2677,6 +2711,11 @@ func _show_hand() -> void:
 func _show_picks() -> void:
 	if not _picks.is_active() or _snapshot.is_over():
 		return
+	if _picks.is_searching():
+		_panels[HERO].show_undo(_picks.can_undo())
+		_show_confirm(_picks.search_confirm_text(_snapshot.view), true, _picks.can_undo())
+		_info.show_prompt(InfoPrompt.of(_snapshot.decision, _snapshot.view).text)
+		return
 	if _picks.is_picking_permanents():
 		_panels[HERO].show_undo(_picks.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
 		_show_confirm("Tap %d" % _picks.count(), _picks.is_complete(), _picks.can_undo())
@@ -2697,7 +2736,7 @@ func _show_picks() -> void:
 ## The choice of cards changed by a click or an undo. Cards put on the bottom leave the
 ## overlay's row, which is drawn again; in the hand's strip nothing is rebuilt.
 func _show_picks_changed() -> void:
-	if _picks.is_bottoming() or _picks.is_picking_permanents():
+	if _picks.is_bottoming() or _picks.is_picking_permanents() or _picks.is_searching():
 		_redraw()
 	else:
 		_show_picks()
@@ -2932,6 +2971,11 @@ func _show_trigger_order() -> void:
 ## what a click on it does, "Cast Savannah Lions from the top of your library" (game ADR
 ## 0055), for as long as it is there.
 func _on_pile_card_hovered(object_id: int, is_over: bool) -> void:
+	if _picks.is_searching() and _picks.is_candidate(object_id):
+		# Game ADR 0058: "Select Forest" or "Unselect Forest".
+		var verb: String = "Unselect" if _picks.is_picked(object_id) else "Select"
+		_info.show_option("%s %s" % [verb, EncounterSnapshot.name_in(_snapshot.view, object_id)] if is_over else "")
+		return
 	var options: Array[ClickOption] = _clicks.options_of(object_id) if _clicks != null else [] as Array[ClickOption]
 	_info.show_option(options[0].text if is_over and not options.is_empty() else "")
 
