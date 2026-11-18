@@ -95,6 +95,43 @@ func face_of(object_id: int) -> CardFace:
 	return _faces.get(object_id, null) as CardFace
 
 
+## Which way the card [param object_id] is scrolled out of sight: -1 above what the window
+## shows, 1 below it, 0 if its middle is in sight or it is not shown at all.
+func hidden_past(object_id: int) -> int:
+	var face: CardFace = face_of(object_id)
+	if face == null:
+		return 0
+	var seen: Rect2 = scroll().get_global_rect()
+	var middle: float = face.get_global_rect().get_center().y
+	if middle < seen.position.y:
+		return -1
+	return 1 if middle > seen.end.y else 0
+
+
+## Where a card flying to or from the card [param object_id] is drawn, in the window's own
+## coordinates, as its middle and its height: on the card, or, for one scrolled out of
+## sight, small on the nearest edge of what the window shows, above or below (game ADR
+## 0043). The middle of the window for a card it does not show.
+func flight_place(object_id: int) -> Rect2:
+	var face: CardFace = face_of(object_id)
+	if face == null:
+		return Rect2(size / 2.0, Vector2(0.0, CARD_HEIGHT))
+	var seen: Rect2 = scroll().get_global_rect()
+	var middle: Vector2 = face.get_global_rect().get_center() - global_position
+	var hidden: int = hidden_past(object_id)
+	if hidden == 0:
+		return Rect2(middle, Vector2(0.0, CARD_HEIGHT))
+	var edge: float = (seen.position.y if hidden < 0 else seen.end.y) - global_position.y
+	return Rect2(Vector2(middle.x, edge), Vector2(0.0, CARD_HEIGHT * EncounterLayout.UNSEEN_FLIGHT_SCALE))
+
+
+## Shows the card [param object_id] or, while its card is in the air, nothing of it.
+func show_face(object_id: int, is_shown: bool) -> void:
+	var face: CardFace = face_of(object_id)
+	if face != null:
+		face.modulate.a = 1.0 if is_shown else 0.0
+
+
 ## What takes a click on the card [param object_id], or null if a click answers nothing.
 func catcher_of(object_id: int) -> ClickCatcher:
 	var face: CardFace = face_of(object_id)

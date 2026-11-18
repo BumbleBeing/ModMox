@@ -134,6 +134,24 @@ func test_a_creature_that_dies_flies_to_its_owners_graveyard_and_leaves_no_ghost
 	assert_almost_eq(card.position, _pile("hero_graveyard"), NEAR)
 
 
+func test_a_token_that_dies_fades_where_it_stood_and_flies_nowhere() -> void:
+	# Game ADR 0045: a token ceases to exist (CR 704.5d), so it is a ghost, never a flight.
+	_open(_setup_of([Scenario.free_tokens("Kitten", Scenario.cat()), Scenario.free_shock("Zap", 2)]))
+	_cast("Kitten")
+	_resolve()
+	_settle()
+	var cat: int = _permanents("Cat Token")[0]
+
+	_cast("Zap")
+	_target(cat)
+	_resolve()
+
+	assert_not_null(_screen.ghost_of(cat), "It fades where it stood.")
+	assert_eq(_screen.pile_text("hero_graveyard"), "Graveyard (2)", "Kitten and Zap; the token is in no pile.")
+	_settle()
+	assert_null(_screen.ghost_of(cat))
+
+
 func test_a_pile_shows_the_card_under_the_one_still_in_the_air() -> void:
 	_open(_setup_of([_bear(), Scenario.free_shock("Zap", 2)]))
 	_cast("Bear")

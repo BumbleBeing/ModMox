@@ -76,6 +76,16 @@ func test_a_potions_art_or_a_gray_square_takes_the_arts_place() -> void:
 	assert_eq(emblem.picture().custom_minimum_size, Vector2(ZoneEntry.ART_SIZE, ZoneEntry.ART_SIZE))
 
 
+func test_an_entry_with_no_name_shows_only_its_detail_at_full_strength() -> void:
+	var entry: ZoneEntry = ZoneEntry.new("", "", "Destroy target enchantment.", PlayerPanel.GOLD)
+	add_child_autofree(entry)
+
+	assert_eq(entry.name_text(), "")
+	assert_false(entry.is_name_shown())
+	assert_eq(entry.detail_text(), "Destroy target enchantment.")
+	assert_true(entry.is_detail_full_strength())
+
+
 func _entry() -> ZoneEntry:
 	var entry: ZoneEntry = ZoneEntry.new("", "Boon", "", PlayerPanel.GOLD)
 	add_child_autofree(entry)

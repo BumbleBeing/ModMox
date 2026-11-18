@@ -393,6 +393,55 @@ func test_ornery_kudu_puts_a_minus_one_minus_one_counter_on_a_creature_of_its_co
 	assert_eq(Scenario.pt(engine, bears), [2, 2])
 
 
+func test_malamet_war_scribe_pumps_each_creature_its_controller_controls_until_end_of_turn() -> void:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("grizzly_bears"))],
+		[Scenario.free_copy(_alpha("savannah_lions"))],
+		[Scenario.free_copy(_card("the_lost_caverns_of_ixalan", "malamet_war_scribe"))])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	Scenario.declare_attackers(engine, [])
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	var lions: int = Scenario.permanent_named(engine, engine.villain().id, "Savannah Lions")
+
+	Scenario.cast_and_resolve(engine, "Malamet War Scribe")
+	Scenario.resolve_stack(engine)
+
+	var scribe: int = Scenario.permanent_named(engine, engine.hero().id, "Malamet War Scribe")
+	assert_eq(Scenario.pt(engine, scribe), [6, 4], "It gets the bonus itself.")
+	assert_eq(Scenario.pt(engine, bears), [4, 3])
+	assert_eq(Scenario.pt(engine, lions), [2, 1], "Never the Villain's creatures.")
+	Scenario.play_until_game_turn(engine, 4)
+	assert_eq(Scenario.pt(engine, bears), [2, 2], "Back to normal after the turn.")
+
+
+func test_coordinated_maneuver_deals_damage_equal_to_its_casters_creatures_or_destroys_an_enchantment() -> void:
+	var maneuver: MmCardDefinition = Scenario.free_copy(_card("tarkir_dragonstorm", "coordinated_maneuver"))
+	var engine: MmEngine = Scenario.combat_ready(
+		[Scenario.free_copy(_alpha("grizzly_bears")), Scenario.free_copy(_alpha("savannah_lions"))],
+		[Scenario.free_copy(_alpha("hill_giant")), Scenario.free_copy(_card("lorwyn", "oblivion_ring"))],
+		[maneuver, maneuver])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	Scenario.declare_attackers(engine, [])
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	var giant: int = Scenario.permanent_named(engine, engine.villain().id, "Hill Giant")
+	var ring: int = Scenario.permanent_named(engine, engine.villain().id, "Oblivion Ring")
+	var creatures: int = Scenario.permanents_named(engine, engine.hero().id, "Grizzly Bears").size() \
+		+ Scenario.permanents_named(engine, engine.hero().id, "Savannah Lions").size()
+	assert_eq(creatures, 1, "The Oblivion Ring exiled one of the Hero's two creatures as it entered.")
+
+	assert_eq(Scenario.cast_mode(engine, Scenario.card_in_hand(engine, engine.hero(), "Coordinated Maneuver"), 0,
+		[MmReference.to_object(giant)]), "")
+	Scenario.resolve_stack(engine)
+	assert_eq(Scenario.damage_on(engine, giant), 1, "One creature, so 1 damage.")
+	assert_eq(Scenario.cast_mode(engine, Scenario.card_in_hand(engine, engine.hero(), "Coordinated Maneuver"), 1,
+		[MmReference.to_object(ring)]), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(Scenario.permanent_named(engine, engine.villain().id, "Oblivion Ring"), -1, "The enchantment is destroyed.")
+	assert_eq(Scenario.permanents_named(engine, engine.hero().id, "Grizzly Bears").size()
+		+ Scenario.permanents_named(engine, engine.hero().id, "Savannah Lions").size(), 2, "And the exiled creature came back.")
+
+
 func test_skyknight_squire_becomes_a_flying_knight_once_three_other_creatures_enter() -> void:
 	var others: Array[MmCardDefinition] = [Scenario.free_copy(_alpha("grizzly_bears")),
 		Scenario.free_copy(_alpha("savannah_lions")), Scenario.free_copy(_alpha("hill_giant"))]
@@ -759,6 +808,26 @@ func test_oblivion_ring_exiles_a_noncreature_permanent_until_it_leaves() -> void
 
 	assert_ne(Scenario.permanent_named(engine, engine.villain().id, "Howling Mine"), -1, "Back under its owner's control.")
 	assert_eq(Scenario.exiled_by_owner(engine, engine.villain()).size(), 0)
+
+
+func test_short_sword_is_equipped_for_one_mana_and_gives_its_creature_plus_one_plus_one() -> void:
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var sword: MmCardDefinition = Scenario.free_copy(_card("dominaria", "short_sword"))
+	var rock: MmCardDefinition = Scenario.artifact("Rock", [Scenario.tap_for_mana(MmMana.Type.COLORLESS, 1)])
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup([bears, sword, rock], no_cards),
+		[bears, sword, rock], no_cards, no_cards, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var creature: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	var equipment: int = Scenario.permanent_named(engine, engine.hero().id, "Short Sword")
+	assert_eq(Scenario.pt(engine, creature), [2, 2], "On its own it gives nothing.")
+
+	assert_eq(Scenario.equip_and_resolve(engine, equipment, creature), "")
+
+	assert_eq(Scenario.attached_to(engine, equipment), creature)
+	assert_eq(Scenario.pt(engine, creature), [3, 3])
+	assert_true(engine.game_state().object(Scenario.permanent_named(engine, engine.hero().id, "Rock")).is_tapped, "Equip {1} was paid.")
+	assert_eq(Scenario.activate_index(engine.pending_decision() as PriorityDecision, equipment), -1, "With no mana left it is not offered.")
 
 
 func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:

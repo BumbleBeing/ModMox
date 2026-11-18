@@ -493,6 +493,18 @@ func test_with_no_other_permanents_the_creatures_have_the_whole_row() -> void:
 	assert_eq(groups["others"].size, Vector2.ZERO)
 
 
+func test_the_other_permanents_group_has_room_for_what_lies_behind_them() -> void:
+	var row_rect: Rect2 = Rect2(352, 472, 1386, 200)
+	var strip: float = EncounterLayout.attached_strip(EncounterLayout.others_height(row_rect))
+
+	var bare: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, [false] as Array[bool], true)
+	var tucked: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, [false] as Array[bool], true, [strip * 2.0] as Array[float])
+
+	assert_almost_eq(tucked["others"].size.x, bare["others"].size.x + strip * 2.0, 0.01)
+	assert_almost_eq(tucked["creatures"].size.x, bare["creatures"].size.x - strip * 2.0, 0.01, "Taken from the creatures.")
+	assert_almost_eq(tucked["others"].end.x, row_rect.end.x, 0.01)
+
+
 func test_other_permanents_sit_to_the_right_of_creatures_smaller_and_set_back() -> void:
 	var row_rect: Rect2 = Rect2(352, 472, 1386, 200)
 
@@ -922,3 +934,42 @@ func test_no_two_zone_plates_overlap_and_none_reaches_a_hand() -> void:
 				assert_false(plates[keys[first]].intersects(plates[keys[second]]), "%s and %s at %s." % [keys[first], keys[second], screen])
 			for hand: String in ["villain_hand", "hero_hand"]:
 				assert_false(plates[keys[first]].intersects(regions[hand]), "%s and the %s." % [keys[first], hand])
+
+
+func test_a_face_with_attachments_takes_the_room_of_their_name_strips_in_its_line() -> void:
+	var heights: Array[float] = [180.0, 180.0, 180.0]
+	var none: Array[bool] = [false, false, false]
+	var extras: Array[float] = [0.0, 62.0, 0.0]
+
+	var plain: Array[Rect2] = EncounterLayout.line(none, heights, 200.0)
+	var wider: Array[Rect2] = EncounterLayout.line(none, heights, 200.0, extras)
+
+	assert_eq(wider[1], plain[1], "The face itself stands where it stood.")
+	assert_almost_eq(wider[2].position.x, plain[2].position.x + 62.0, 0.01, "The next face stands that much further on,")
+	assert_almost_eq(wider[2].position.x - (wider[1].end.x + 62.0), EncounterLayout.ROW_GAP, 0.01, "the usual gap past the last strip.")
+	assert_almost_eq(EncounterLayout.line_width(none, heights, extras), EncounterLayout.line_width(none, heights) + 62.0, 0.01,
+		"So a line with attachments scrolls sooner (A278).")
+
+
+func test_an_attachment_lies_sideways_behind_its_permanent_with_one_name_strip_out_past_its_right_edge() -> void:
+	var host: Rect2 = Rect2(300, 40, 198, 180)
+	var strip: float = EncounterLayout.attached_strip(150.0)
+
+	var first: Rect2 = EncounterLayout.attached_place(host, 150.0, 0)
+	var second: Rect2 = EncounterLayout.attached_place(host, 150.0, 1)
+
+	assert_eq(strip, roundf(150.0 * EncounterLayout.ATTACHED_SHOWN))
+	assert_eq(first.size, Vector2(150.0, BattlefieldFace.size_for(150.0).x), "Sideways, as a tapped face stands.")
+	assert_almost_eq(first.end.x, host.end.x + strip, 0.01, "One strip shows past the permanent.")
+	assert_almost_eq(first.get_center().y, host.get_center().y, 0.01, "Centered on it from top to bottom.")
+	assert_almost_eq(second.end.x, host.end.x + strip * 2.0, 0.01, "A second shows past the first.")
+	assert_eq(EncounterLayout.attached_room(150.0, 2), strip * 2.0)
+	assert_eq(EncounterLayout.attached_room(150.0, 0), 0.0)
+
+
+func test_only_the_name_strip_of_an_attachment_takes_the_mouse() -> void:
+	var footprint: Vector2 = Vector2(150.0, 165.0)
+
+	var shown: Rect2 = EncounterLayout.attached_shown(footprint, 30.0)
+
+	assert_eq(shown, Rect2(120.0, 0.0, 30.0, 165.0), "The rest is behind the permanent it is attached to.")

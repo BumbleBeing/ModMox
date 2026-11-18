@@ -55,6 +55,14 @@ const START_FORM: String = "res://ui/encounter/start_form.tscn"
 const PICKED_GLOW: Color = Color.WHITE
 ## What the Tap Preview shows when the cursor asks for nothing.
 const NO_PREVIEW: int = -1
+## The size of the window that asks which replacement effect applies first.
+const REPLACEMENT_WINDOW_SIZE: Vector2 = Vector2(470, 260)
+## The mode window's width, the room each mode's entry takes, and the room round them.
+const MODE_WINDOW_WIDTH: float = 520.0
+const MODE_ENTRY_HEIGHT: float = 82.0
+const MODE_WINDOW_PAD: float = 20.0
+## How a mode that cannot be chosen is dimmed (CR 700.2a).
+const UNCHOOSABLE_MODE: Color = Color(1, 1, 1, 0.45)
 const LOSS_REASONS: Dictionary[MmPlayer.LossReason, String] = {
 	MmPlayer.LossReason.ZERO_LIFE: "ran out of life",
 	MmPlayer.LossReason.EMPTY_LIBRARY: "drew from an empty library",
@@ -101,6 +109,30 @@ var _pile_state: PileWindows = PileWindows.new()
 var _pile_hosts: Dictionary[String, Control] = {}
 var _faces: Dictionary[int, Control] = {}
 var _face_sizes: Dictionary[int, Vector2] = {}
+## The part of each face that shows and takes the mouse, in the face's own coordinates:
+## all of it, or only the name strip of an attachment lying behind another permanent.
+var _face_shown: Dictionary[int, Rect2] = {}
+## The Tucked Cards (game ADR 0043) as last drawn: the permanents a card can be tucked
+## behind, the cards behind each by its ID, the player whose exile each card is in, and
+## whether each is in that exile's open Pile Window or behind its permanent. A card that
+## was in its window when its permanent went is kept in the last two, though behind
+## nothing, until the window closes.
+var _tuck_hosts: Array[int] = []
+var _tucks: Dictionary[int, Array] = {}
+var _tuck_owners: Dictionary[int, int] = {}
+var _tuck_in_window: Dictionary[int, bool] = {}
+## The player whose exile pile each card in exile is in, by the card's object ID, as last
+## drawn. The engine's exile is one zone, so a zone change does not say whose pile it is.
+var _exile_owners: Dictionary[int, int] = {}
+## The Tuck Outline of each Tucked Card that is in its window, and the ones with a dashed
+## border, for the cursor last asked about.
+var _tuck_outlines: Dictionary[int, Control] = {}
+var _tuck_marked: Array[int] = []
+var _tuck_cursor: Vector2 = Vector2.ZERO
+## Where each Tucked Card was drawn before a click opened or closed its window, read
+## before the window changed; a redraw reads it for itself otherwise.
+var _tuck_before: Dictionary[int, FacePose] = {}
+var _has_tuck_before: bool = false
 ## The Villain's hand of card backs, kept outside the redrawn board like the Hand Strip.
 var _villain_hand: VillainHand
 var _stack_entries: Array[StackEntry] = []
@@ -261,7 +293,7 @@ func _ready() -> void:
 	_stack_window.hide()
 	add_child(_stack_window)
 	_choice_window = ZoneWindow.new("Replacement", false, StackColors.PLAIN)
-	_choice_window.size = Vector2(470, 260)
+	_choice_window.size = REPLACEMENT_WINDOW_SIZE
 	_choice_window.hide()
 	add_child(_choice_window)
 	for player_id: int in [HERO, VILLAIN]:
@@ -279,6 +311,8 @@ func _ready() -> void:
 		var pile_window: PileWindow = PileWindow.new(PileWindow.Arrangement.ROW if is_row else PileWindow.Arrangement.GRID,
 			Color("#6f7f9a") if key.begins_with("hero") else Color("#9a6f6f"))
 		pile_window.card_clicked.connect(_on_object_clicked)
+		# Its Tucked Cards fly back behind their permanents (ADR 0043).
+		pile_window.close_button().pressed.connect(_on_pile_closed.bind(key))
 		pile_window.hide()
 		add_child(pile_window)
 		_pile_windows[key] = pile_window
@@ -315,7 +349,7 @@ func _ready() -> void:
 	# of the hand that is raised.
 	_flight_layer = FlightLayer.new()
 	_flight_layer.z_index = 2
-	_flight_layer.setup(_flight_place)
+	_flight_layer.setup(_flight_place, _flight_kind)
 	_flight_layer.took_off.connect(_on_took_off)
 	_flight_layer.landed.connect(_on_landed)
 	add_child(_flight_layer)
@@ -533,6 +567,7 @@ func _process(delta: float) -> void:
 	_hand_strip.frame(delta, get_local_mouse_position())
 	_villain_hand.frame(delta)
 	follow_preview(_ease_seconds)
+	follow_tuck_marks(get_local_mouse_position(), _ease_seconds)
 
 
 ## A press on a card of the hand is taken here, before anything under the card can have it:
@@ -847,7 +882,7 @@ func inspectable_at(cursor: Vector2) -> int:
 	for object_id: int in _faces:
 		var face: Control = _faces[object_id]
 		if _snapshot.looks.has(object_id) and is_instance_valid(face) and face.is_visible_in_tree() \
-				and Rect2(Vector2.ZERO, _face_sizes[object_id]).has_point(face.get_global_transform().affine_inverse() * at):
+				and _face_shown[object_id].has_point(face.get_global_transform().affine_inverse() * at):
 			return object_id
 	return Inspection.NOTHING
 
@@ -1101,6 +1136,12 @@ func pile_window(key: String) -> PileWindow:
 	return _pile_windows[key]
 
 
+## The Tuck Outline of the Tucked Card [param object_id], or null while it is not in its
+## Pile Window.
+func tuck_outline_of(object_id: int) -> Control:
+	return _tuck_outlines.get(object_id, null) as Control
+
+
 ## What takes a click on the pile in Region [param key].
 func pile_catcher(key: String) -> ClickCatcher:
 	return ClickCatcher.of(_pile_hosts[key])
@@ -1277,11 +1318,162 @@ func _toggle_pile(key: String) -> void:
 	if _is_paused:
 		return
 	var window: PileWindow = _pile_windows[key]
+	# Its Tucked Cards fly to the window or back (ADR 0043), from where they are drawn now.
+	var has_tucks: bool = _has_tucks_in(key)
+	if has_tucks:
+		_tuck_before = _tuck_poses()
+		_has_tuck_before = true
 	if window.is_open():
 		window.close()
 	else:
 		_open_pile(key)
 	_pile_state.toggled(key, window.is_open(), _clicks)
+	if has_tucks:
+		_redraw()
+
+
+## The window of the pile in Region [param key] was closed with its own button.
+func _on_pile_closed(key: String) -> void:
+	if _has_tucks_in(key):
+		_redraw()
+
+
+## Whether the pile in Region [param key] is an exile with a Tucked Card in it.
+func _has_tucks_in(key: String) -> bool:
+	for object_id: int in _tuck_owners:
+		if _exile_key(_tuck_owners[object_id]) == key:
+			return true
+	return false
+
+
+## The Region of the exile pile of [param player_id].
+func _exile_key(player_id: int) -> String:
+	return EncounterLayout.pile_key(MmZone.Kind.EXILE, player_id == HERO)
+
+
+## The permanents a card can be tucked behind: the ones that stand in a line of nonland
+## permanents, which leaves out an attachment lying behind its creature.
+func _standing_ids(view: MmPlayerView) -> Array[int]:
+	var standing: Array[int] = []
+	for player_id: int in [VILLAIN, HERO]:
+		var nonlands: Array[MmObjectView] = _permanents(view, player_id, false)
+		var creature_ids: Array[int] = []
+		for permanent: MmObjectView in nonlands:
+			if permanent.is_creature:
+				creature_ids.append(permanent.id)
+		for permanent: MmObjectView in nonlands:
+			if permanent.is_creature or not Attachments.is_drawn_attached(permanent, creature_ids):
+				standing.append(permanent.id)
+	return standing
+
+
+## Reads from the snapshot which cards are tucked behind which permanents, and from the
+## Pile Windows which of them are in a window now (ADR 0043).
+func _read_tucks() -> void:
+	_exile_owners.clear()
+	for player_id: int in _snapshot.view.exiles:
+		for card: MmObjectView in _snapshot.view.exiles[player_id]:
+			_exile_owners[card.id] = player_id
+	_tuck_hosts = _standing_ids(_snapshot.view)
+	_tucks = Tucks.by_host(_snapshot.view, _tuck_hosts)
+	var owners: Dictionary[int, int] = Tucks.owners(_snapshot.view, _tuck_hosts)
+	# A card that was in its window when its permanent went stays there while the window is
+	# open, and leaves exile from there.
+	for object_id: int in _tuck_in_window:
+		var owner_id: int = _tuck_owners[object_id]
+		if _tuck_in_window[object_id] and not owners.has(object_id) and _is_in_exile(object_id, owner_id):
+			owners[object_id] = owner_id
+	_tuck_owners = owners
+	_tuck_in_window.clear()
+	for object_id: int in _tuck_owners:
+		_tuck_in_window[object_id] = _pile_windows[_exile_key(_tuck_owners[object_id])].is_open()
+	for object_id: int in _tuck_owners.keys():
+		if not _tuck_in_window[object_id] and not Tucks.owners(_snapshot.view, _tuck_hosts).has(object_id):
+			_tuck_owners.erase(object_id)
+			_tuck_in_window.erase(object_id)
+
+
+## Where each Tucked Card is drawn right now: in the air, in its window, or behind its
+## permanent.
+func _tuck_poses() -> Dictionary[int, FacePose]:
+	var poses: Dictionary[int, FacePose] = {}
+	for object_id: int in _tuck_in_window:
+		var flying: FacePose = _flight_layer.pose_of(object_id)
+		if flying != null:
+			poses[object_id] = flying
+		elif _tuck_in_window[object_id]:
+			poses[object_id] = _window_place(_exile_key(_tuck_owners[object_id]), object_id)
+		elif _rest.has(object_id):
+			poses[object_id] = _field_flight_place(object_id, false)
+	return poses
+
+
+## Puts in the air each Tucked Card that is drawn somewhere else now than at
+## [param before], though it changed no zone: into its window as that opened, back behind
+## its permanent as it closed, or onto its pile because its permanent has gone and it is
+## exiled for good (ADR 0043). [param was_in_window] and [param owners] are how they were
+## drawn then. Called before the board is rebuilt.
+func _fly_tucks(before: Dictionary[int, FacePose], was_in_window: Dictionary[int, bool], owners: Dictionary[int, int]) -> void:
+	for object_id: int in before:
+		var was_there: bool = was_in_window[object_id]
+		var is_still_tucked: bool = _tuck_in_window.has(object_id)
+		if is_still_tucked and _tuck_in_window[object_id] == was_there:
+			continue
+		# One that left exile has a Card Flight of its own, and one in the window stays there.
+		if not is_still_tucked and (was_there or not _is_in_exile(object_id, owners[object_id])):
+			continue
+		if not was_there:
+			_motion.forget(object_id)
+		if _is_snapping:
+			continue
+		var route: CardFlights.Route = CardFlights.Route.new()
+		route.first_object_id = object_id
+		route.object_id = object_id
+		route.from_zone_kind = MmZone.Kind.EXILE
+		route.to_zone_kind = MmZone.Kind.EXILE
+		route.from_owner_id = owners[object_id]
+		route.to_owner_id = owners[object_id]
+		_flight_layer.put_in_air(route, before[object_id], FlightCard.Kind.CARD if was_there else FlightCard.Kind.FIELD,
+				_snapshot.look_of(object_id))
+
+
+func _is_in_exile(object_id: int, player_id: int) -> bool:
+	for card: MmObjectView in _snapshot.view.exiles.get(player_id, []):
+		if card.id == object_id:
+			return true
+	return false
+
+
+## Where a card flying to or from the card [param object_id] in the window of the pile in
+## Region [param key] is drawn: on the card, or small and unseen at the nearest edge of
+## what the window shows for a card scrolled out of sight, where it fades.
+func _window_place(key: String, object_id: int) -> FacePose:
+	var window: PileWindow = _pile_windows[key]
+	var place: Rect2 = window.flight_place(object_id)
+	return FacePose.of(window.global_position + place.position - global_position, place.size.y, 0.0,
+			0.0 if window.hidden_past(object_id) != 0 else 1.0)
+
+
+## Gives the Tuck Outline of the card under [param cursor] in a Pile Window, and that of
+## the Pinned card, a white dashed border, easing over [param seconds], and takes it off
+## any other (ADR 0043). Called every frame.
+func follow_tuck_marks(cursor: Vector2, seconds: float) -> void:
+	_tuck_cursor = cursor
+	if _snapshot == null:
+		return
+	var wanted: Array[int] = []
+	if not _tuck_outlines.is_empty():
+		for object_id: int in [inspectable_at(cursor), _inspection.shown()]:
+			if _tuck_outlines.has(object_id) and not wanted.has(object_id):
+				wanted.append(object_id)
+	for object_id: int in _tuck_marked.duplicate():
+		if not wanted.has(object_id):
+			BorderEffects.remove_mark(_tuck_outlines[object_id], seconds)
+			_tuck_marked.erase(object_id)
+	for object_id: int in wanted:
+		if not _tuck_marked.has(object_id):
+			BorderEffects.add_mark(_tuck_outlines[object_id], _tuck_outlines[object_id].size, Color.WHITE, true, seconds)
+			_tuck_marked.append(object_id)
 
 
 ## Opens the window of the pile in Region [param key], with what the zone holds now: beside
@@ -1463,6 +1655,12 @@ func _redraw() -> void:
 		if is_instance_valid(_faces[object_id]) and BorderEffects.glow_color(_faces[object_id]) != null:
 			_glowed_before[object_id] = BorderEffects.glow_colors(_faces[object_id])
 	_is_redrawing = true
+	# Where each Tucked Card is drawn, before anything moves (ADR 0043).
+	var tucks_before: Dictionary[int, FacePose] = _tuck_before if _has_tuck_before else _tuck_poses()
+	var tucks_were_in_window: Dictionary[int, bool] = _tuck_in_window.duplicate()
+	var tuck_owners_before: Dictionary[int, int] = _tuck_owners.duplicate()
+	_has_tuck_before = false
+	_tuck_before = {}
 	if _is_snapping or size != _drawn_size:
 		# A rewind or a window of another size: every card in the air is where it lands.
 		_flight_layer.land_all()
@@ -1475,6 +1673,9 @@ func _redraw() -> void:
 		child.queue_free()
 	_faces.clear()
 	_face_sizes.clear()
+	_face_shown.clear()
+	_tuck_outlines.clear()
+	_tuck_marked.clear()
 	_lines.clear()
 	_line_ids.clear()
 	_steppers.clear()
@@ -1498,6 +1699,11 @@ func _redraw() -> void:
 	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(size)
 	_regions = regions
 	_place_windows(regions["battlefield"])
+	# The Pile Windows first: a Tucked Card is drawn in its exile's window while that is
+	# open and behind its permanent otherwise, and flies from one to the other (ADR 0043).
+	_show_pile_windows()
+	_read_tucks()
+	_fly_tucks(tucks_before, tucks_were_in_window, tuck_owners_before)
 	var plates: Array[Rect2] = []
 	plates.assign(EncounterLayout.zone_plates(regions).values())
 	_zone_plates.place(plates)
@@ -1530,8 +1736,11 @@ func _redraw() -> void:
 	for player_id: int in [VILLAIN, HERO]:
 		var who: String = "hero" if player_id == HERO else "villain"
 		_draw_library(view.library_sizes.get(player_id, 0), who + "_library", regions[who + "_library"])
-		_draw_pile("Graveyard", view.graveyards.get(player_id, []), who + "_graveyard", regions[who + "_graveyard"])
-		_draw_pile("Exile", view.exiles.get(player_id, []), who + "_exile", regions[who + "_exile"])
+		var graveyard: Array = view.graveyards.get(player_id, [])
+		var exile: Array = view.exiles.get(player_id, [])
+		_draw_pile("Graveyard", graveyard, graveyard, who + "_graveyard", regions[who + "_graveyard"])
+		# The pile counts its Tucked Cards and does not show them (ADR 0043).
+		_draw_pile("Exile", exile, Tucks.loose(exile, _tuck_hosts), who + "_exile", regions[who + "_exile"])
 		for zone: String in ["library", "graveyard", "exile"]:
 			_add_pile_host("%s_%s" % [who, zone], regions["%s_%s" % [who, zone]])
 	_held_entries.clear()
@@ -1541,13 +1750,13 @@ func _redraw() -> void:
 	_show_held_windows()
 	_fill_stack_window(view)
 	_fill_choice_window(view)
-	_show_pile_windows()
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
 	_info.show_undeclare(not _selection.attacker_ids().is_empty())
 	_hold_panel.place(regions["hold"])
 	_show_hand()
 	_info.show_option(_release_text())
 	_move_faces(unseen)
+	_flight_layer.aim_put(_snapshot)
 	_tint_arrows()
 	_show_block_lines()
 	if _snapshot.is_over():
@@ -1560,6 +1769,7 @@ func _redraw() -> void:
 	_is_redrawing = false
 	_glowed_before.clear()
 	_redraw_inspector()
+	follow_tuck_marks(_tuck_cursor, 0.0)
 
 
 ## How long [param object_id]'s Glow takes to become [param color] (null for none, or the
@@ -1642,20 +1852,35 @@ func _draw_nonlands(view: MmPlayerView, player_id: int, row_rect: Rect2, glow: D
 	var is_combat_on: bool = false
 	for permanent: MmObjectView in view.battlefield:
 		is_combat_on = is_combat_on or permanent.is_attacking
-	for permanent: MmObjectView in _permanents(view, player_id, false):
+	var nonlands: Array[MmObjectView] = _permanents(view, player_id, false)
+	var creature_ids: Array[int] = []
+	for permanent: MmObjectView in nonlands:
 		if permanent.is_creature:
 			creatures.append(permanent)
-		else:
+			creature_ids.append(permanent.id)
+	# An attachment lies behind its creature and leaves the other permanents (ADR 0042).
+	var attached: Dictionary[int, Array] = Attachments.by_host(nonlands, creature_ids)
+	for permanent: MmObjectView in nonlands:
+		if not permanent.is_creature and not Attachments.is_drawn_attached(permanent, creature_ids):
 			others.append(permanent)
+	# A Tucked Card lies behind the permanent that exiled it, past its attachments (ADR 0043).
+	for host_id: int in _tucks:
+		var behind: Array = (attached.get(host_id, []) as Array).duplicate()
+		behind.append_array(_tucks[host_id])
+		attached[host_id] = behind
 	creatures = _fighting_first(creatures)
-	var groups: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, _tapped(others), is_hero)
-	var creature_heights: Array[float] = []
-	for creature: MmObjectView in creatures:
-		creature_heights.append(roundf(EncounterLayout.creature_height(row_rect)
-				* EncounterLayout.bystander_scale(is_combat_on, _is_in_combat(creature))))
 	var other_heights: Array[float] = []
+	var other_extras: Array[float] = []
 	for other: MmObjectView in others:
 		other_heights.append(EncounterLayout.others_height(row_rect))
+		other_extras.append(EncounterLayout.attached_room(EncounterLayout.others_height(row_rect), (attached.get(other.id, []) as Array).size()))
+	var groups: Dictionary[String, Rect2] = EncounterLayout.nonland_groups(row_rect, _tapped(others), is_hero, other_extras)
+	var creature_heights: Array[float] = []
+	var attachment_heights: Array[float] = []
+	for creature: MmObjectView in creatures:
+		var scale_now: float = EncounterLayout.bystander_scale(is_combat_on, _is_in_combat(creature))
+		creature_heights.append(roundf(EncounterLayout.creature_height(row_rect) * scale_now))
+		attachment_heights.append(roundf(EncounterLayout.others_height(row_rect) * scale_now))
 	# The creatures' line reaches COMBAT_STEP past its Region toward the middle, so a
 	# creature that steps forward is not cut off.
 	var creature_rect: Rect2 = groups["creatures"]
@@ -1663,17 +1888,28 @@ func _draw_nonlands(view: MmPlayerView, player_id: int, row_rect: Rect2, glow: D
 		creature_rect.position.y -= EncounterLayout.COMBAT_STEP
 	creature_rect.size.y += EncounterLayout.COMBAT_STEP
 	var creature_top: float = EncounterLayout.COMBAT_STEP if is_hero else 0.0
-	_draw_line(who + "_creatures", creatures, creature_heights, creature_rect, groups["creatures"].size.y, creature_top, glow, is_hero)
+	_draw_line(who + "_creatures", creatures, creature_heights, creature_rect, groups["creatures"].size.y, creature_top, glow, is_hero,
+			attached, attachment_heights)
 	if not others.is_empty():
-		_draw_line(who + "_others", others, other_heights, groups["others"], groups["others"].size.y, 0.0, glow, is_hero)
+		_draw_line(who + "_others", others, other_heights, groups["others"], groups["others"].size.y, 0.0, glow, is_hero,
+				attached, other_heights)
 
 
 ## Draws one scrolling line. Its faces are centered in a band [param band_height] tall that
-## starts [param band_top] below the line's top.
+## starts [param band_top] below the line's top. The permanents in [param attached], by the
+## ID of the one each lies behind, its attachments and then its Tucked Cards, lie behind
+## it, each [param attachment_heights] tall for that permanent's place in the line, and the
+## line gives it the room of their name strips (ADR 0042). A Tucked Card that is in its
+## Pile Window leaves a Tuck Outline in its place (ADR 0043).
 func _draw_line(key: String, permanents: Array[MmObjectView], heights: Array[float], line_rect: Rect2,
-		band_height: float, band_top: float, glow: DecisionClicks, is_hero: bool) -> void:
+		band_height: float, band_top: float, glow: DecisionClicks, is_hero: bool,
+		attached: Dictionary[int, Array] = {}, attachment_heights: Array[float] = []) -> void:
 	var is_tapped: Array[bool] = _tapped(permanents)
-	var line: ScrollRow = ScrollRow.new(line_rect, EncounterLayout.line_width(is_tapped, heights), _line_offsets.get(key, 0.0))
+	var extras: Array[float] = []
+	for index: int in permanents.size():
+		var count: int = (attached.get(permanents[index].id, []) as Array).size()
+		extras.append(EncounterLayout.attached_room(attachment_heights[index], count) if count > 0 else 0.0)
+	var line: ScrollRow = ScrollRow.new(line_rect, EncounterLayout.line_width(is_tapped, heights, extras), _line_offsets.get(key, 0.0))
 	line.scrolled.connect(func(offset: float) -> void: _line_offsets[key] = offset)
 	line.scrolled.connect(func(_offset: float) -> void:
 		_carry_faces()
@@ -1686,7 +1922,7 @@ func _draw_line(key: String, permanents: Array[MmObjectView], heights: Array[flo
 	for permanent: MmObjectView in permanents:
 		ids.append(permanent.id)
 	_line_ids[key] = ids
-	var footprints: Array[Rect2] = EncounterLayout.line(is_tapped, heights, band_height)
+	var footprints: Array[Rect2] = EncounterLayout.line(is_tapped, heights, band_height, extras)
 	for index: int in permanents.size():
 		var permanent: MmObjectView = permanents[index]
 		var face: BattlefieldFace = BattlefieldFace.new()
@@ -1695,6 +1931,28 @@ func _draw_line(key: String, permanents: Array[MmObjectView], heights: Array[flo
 		if _is_in_combat(permanent):
 			face.position.y += EncounterLayout.combat_step(is_hero)
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# The outermost attachment is drawn first and the permanent last, over them all.
+		var behind: Array = attached.get(permanent.id, [])
+		for place: int in range(behind.size() - 1, -1, -1):
+			var attachment: MmObjectView = behind[place]
+			var lying: Rect2 = EncounterLayout.attached_place(Rect2(face.position, footprints[index].size), attachment_heights[index], place)
+			var is_tucked: bool = _tuck_owners.has(attachment.id)
+			if is_tucked and _tuck_in_window[attachment.id]:
+				var outline: Panel = CardShapes.outline(lying.size, 6, 2, Color(1, 1, 1, 0.25))
+				outline.position = lying.position
+				outline.size = lying.size
+				outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				line.content().add_child(outline)
+				_tuck_outlines[attachment.id] = outline
+				continue
+			var attached_face: BattlefieldFace = BattlefieldFace.new()
+			attached_face.setup(_snapshot.look_of(attachment.id), attachment_heights[index], true, is_tucked)
+			attached_face.position = lying.position
+			attached_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			line.content().add_child(attached_face)
+			ids.append(attachment.id)
+			_remember_face(attachment.id, attached_face, lying.size, glow,
+					EncounterLayout.attached_shown(lying.size, EncounterLayout.attached_strip(attachment_heights[index])))
 		line.content().add_child(face)
 		_remember_face(permanent.id, face, footprints[index].size, glow)
 
@@ -1735,14 +1993,21 @@ func _fighting_first(creatures: Array[MmObjectView]) -> Array[MmObjectView]:
 	return ordered
 
 
-func _remember_face(object_id: int, face: Control, face_size: Vector2, glow: DecisionClicks) -> void:
+## Keeps [param face] as the face of [param object_id], with its Glow and, if it answers
+## anything, its ClickCatcher. Only [param shown] of it takes the mouse, when that is given:
+## the rest lies behind another face.
+func _remember_face(object_id: int, face: Control, face_size: Vector2, glow: DecisionClicks,
+		shown: Rect2 = Rect2()) -> void:
 	_faces[object_id] = face
 	_face_sizes[object_id] = face_size
+	_face_shown[object_id] = shown if shown.has_area() else Rect2(Vector2.ZERO, face_size)
 	var colors: Array[Color] = _glow_colors(object_id, glow)
 	if not colors.is_empty():
 		BorderEffects.add_glow_of(face, face_size, colors, _glow_seconds_for(object_id, colors))
 	if not glow.options_of(object_id).is_empty() or _selection.is_clickable(object_id):
-		ClickCatcher.add(face, face_size).clicked.connect(_on_object_clicked.bind(object_id))
+		var catcher: ClickCatcher = ClickCatcher.add(face, _face_shown[object_id].size)
+		catcher.position = _face_shown[object_id].position
+		catcher.clicked.connect(_on_object_clicked.bind(object_id))
 	_add_combat_marks(object_id, face, face_size)
 
 
@@ -1841,7 +2106,7 @@ func _permanent_under(cursor: Vector2) -> int:
 	for object_id: int in _clicks.clickable_ids():
 		var face: Control = _faces.get(object_id)
 		if face != null and is_instance_valid(face) and face.is_visible_in_tree() \
-				and Rect2(Vector2.ZERO, _face_sizes[object_id]).has_point(face.get_global_transform().affine_inverse() * at):
+				and _face_shown[object_id].has_point(face.get_global_transform().affine_inverse() * at):
 			return object_id
 	return -1
 
@@ -1929,8 +2194,12 @@ func _block_line_end(object_id: int) -> Vector2:
 ## Which end of [param line] the place of Game Object [param object_id] is scrolled past:
 ## -1 the left, 1 the right, 0 neither. Its place, not where it is drawn on the way there.
 func _hidden_past(line: ScrollRow, object_id: int) -> int:
+	# Nothing is out of sight in a line that shows all of itself, however near its end: the
+	# name strip of what lies behind the last permanent is.
+	if not line.can_scroll():
+		return 0
 	var place: Vector2 = _rest.get(object_id, _faces[object_id].position)
-	var middle: float = place.x + line.content().position.x + _face_sizes[object_id].x / 2.0
+	var middle: float = place.x + line.content().position.x + _face_shown[object_id].get_center().x
 	return EncounterLayout.hidden_past(middle, line.size.x, ScrollRow.ARROW_WIDTH)
 
 
@@ -1971,12 +2240,17 @@ func _move_faces(unseen: Array[int]) -> void:
 	var targets: Dictionary[int, FacePose] = {}
 	var looks: Dictionary[int, CardLook] = {}
 	_rest.clear()
-	for permanent: MmObjectView in _snapshot.view.battlefield:
+	# A Tucked Card's face moves as a permanent's does (ADR 0043).
+	var moving: Array[MmObjectView] = _snapshot.view.battlefield.duplicate()
+	for host_id: int in _tucks:
+		moving.append_array(_tucks[host_id])
+	for permanent: MmObjectView in moving:
 		var face: BattlefieldFace = _faces.get(permanent.id, null) as BattlefieldFace
 		if face == null:
 			continue
 		_rest[permanent.id] = face.position
-		targets[permanent.id] = FacePose.of(_center_at(face, face.position), face.card().size.y, 1.0 if permanent.is_tapped else 0.0)
+		targets[permanent.id] = FacePose.of(_center_at(face, face.position), face.card().size.y, 1.0 if permanent.is_tapped else 0.0,
+				1.0, 1.0 if face.is_attached() else 0.0)
 		looks[permanent.id] = _snapshot.look_of(permanent.id)
 	_motion.show_faces(targets, looks, _is_snapping or size != _drawn_size)
 	_is_snapping = false
@@ -1998,7 +2272,7 @@ func _pose_faces() -> void:
 		face.position = _rest[object_id] + pose.center - rest.center
 		face.scale = Vector2.ONE * (pose.height / rest.height)
 		face.modulate.a = 0.0 if _flight_layer.is_flying(object_id) else pose.alpha
-		face.show_turn(pose.turn)
+		face.show_turn(pose.turn, pose.lean)
 	var fading: Array[int] = _motion.ghost_ids()
 	for object_id: int in _ghosts.keys():
 		if not fading.has(object_id):
@@ -2011,7 +2285,7 @@ func _pose_faces() -> void:
 			ghost.setup(_motion.ghost_look(object_id), pose.height)
 			ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			ghost.position = pose.center - ghost.size / 2.0
-			ghost.show_turn(pose.turn)
+			ghost.show_turn(pose.turn, pose.lean)
 			_ghost_layer.add_child(ghost)
 			_ghosts[object_id] = ghost
 		_ghosts[object_id].modulate.a = pose.alpha
@@ -2021,7 +2295,9 @@ func _pose_faces() -> void:
 ## are posed again once the snapshot is shown.
 func _on_took_off(route: CardFlights.Route) -> void:
 	_has_taken_off = true
-	if route.from_zone_kind == MmZone.Kind.BATTLEFIELD:
+	# A Tucked Card that leaves exile was a face behind its permanent too (ADR 0043).
+	var was_tucked: bool = route.from_zone_kind == MmZone.Kind.EXILE and route.first_object_id != route.object_id
+	if route.from_zone_kind == MmZone.Kind.BATTLEFIELD or was_tucked:
 		_motion.forget(route.first_object_id)
 
 
@@ -2035,6 +2311,8 @@ func _on_landed(route: CardFlights.Route) -> void:
 	if _faces.has(route.object_id) and is_instance_valid(_faces[route.object_id]):
 		var pose: FacePose = _motion.pose_of(route.object_id)
 		_faces[route.object_id].modulate.a = pose.alpha if pose != null else 1.0
+	if route.to_zone_kind == MmZone.Kind.EXILE and _exile_owners.has(route.object_id):
+		_pile_windows[_exile_key(_exile_owners[route.object_id])].show_face(route.object_id, true)
 	if not is_drawn and route.to_zone_kind == MmZone.Kind.HAND and route.to_owner_id == HERO and not _is_redrawing:
 		_show_hand()
 
@@ -2045,6 +2323,10 @@ func _hide_landing_places() -> void:
 	for object_id: int in _faces:
 		if _flight_layer.is_flying(object_id) and is_instance_valid(_faces[object_id]):
 			_faces[object_id].modulate.a = 0.0
+	# A Tucked Card that lands in its window shows nothing there either.
+	for object_id: int in _tuck_owners:
+		if _flight_layer.is_flying(object_id):
+			_pile_windows[_exile_key(_tuck_owners[object_id])].show_face(object_id, false)
 
 
 ## Where the zone of [param route] is drawn, read from what is on the screen right now, or
@@ -2056,6 +2338,16 @@ func _flight_place(route: CardFlights.Route, is_landing: bool) -> FacePose:
 	var owner_id: int = route.to_owner_id if is_landing else route.from_owner_id
 	var object_id: int = route.object_id if is_landing else route.first_object_id
 	var is_drawn: bool = is_landing and route.from_zone_kind == MmZone.Kind.LIBRARY and route.to_zone_kind == MmZone.Kind.HAND
+	if zone_kind == MmZone.Kind.EXILE:
+		# The one exile is drawn as a pile for each player, the card's owner's.
+		owner_id = _exile_owners.get(object_id, owner_id)
+	if zone_kind == MmZone.Kind.EXILE and _tuck_in_window.has(object_id):
+		# A Tucked Card is in its window or behind its permanent, not on its pile (ADR 0043).
+		if _tuck_in_window[object_id]:
+			return _window_place(_exile_key(owner_id), object_id)
+		var tucked: FacePose = _field_flight_place(object_id, is_landing)
+		if tucked != null:
+			return tucked
 	match zone_kind:
 		MmZone.Kind.BATTLEFIELD:
 			return _field_flight_place(object_id, is_landing)
@@ -2077,6 +2369,17 @@ func _flight_place(route: CardFlights.Route, is_landing: bool) -> FacePose:
 	return null
 
 
+## How the card of [param route] is drawn where it leaves, or where it lands with
+## [param is_landing]: as its zone says, but a Tucked Card behind its permanent is a
+## Battlefield Face though it is in exile (ADR 0043).
+func _flight_kind(route: CardFlights.Route, is_landing: bool) -> FlightCard.Kind:
+	var zone_kind: MmZone.Kind = route.to_zone_kind if is_landing else route.from_zone_kind
+	var object_id: int = route.object_id if is_landing else route.first_object_id
+	if zone_kind == MmZone.Kind.EXILE and _tuck_in_window.get(object_id, true) == false:
+		return FlightCard.Kind.FIELD
+	return FlightCard.kind_in(zone_kind)
+
+
 ## The middle of the art at the left of the Stack Window's entry for [param object_id], in
 ## this screen's coordinates: where a card put on the stack flies to, and a card leaving it
 ## flies from. Read from the entry once it has found its place, and otherwise where it was
@@ -2093,7 +2396,7 @@ func _stack_art_place(object_id: int) -> Vector2:
 func _field_flight_place(object_id: int, is_landing: bool) -> FacePose:
 	if is_landing:
 		var rest: FacePose = _motion.rest_of(object_id)
-		return FacePose.of(rest.center, rest.height, rest.turn) if rest != null else null
+		return FacePose.of(rest.center, rest.height, rest.turn, 1.0, rest.lean) if rest != null else null
 	if not _rest.has(object_id):
 		return null
 	var pose: FacePose = _motion.pose_of(object_id)
@@ -2102,8 +2405,10 @@ func _field_flight_place(object_id: int, is_landing: bool) -> FacePose:
 		var hidden: int = _hidden_past(_lines[key], object_id) if ids.has(object_id) else 0
 		if hidden != 0:
 			var arrow: Button = _lines[key].left_arrow() if hidden < 0 else _lines[key].right_arrow()
-			return FacePose.of(arrow.get_global_rect().get_center() - global_position, pose.height * EncounterLayout.UNSEEN_FLIGHT_SCALE, pose.turn)
-	return FacePose.of(pose.center, pose.height, pose.turn)
+			return FacePose.of(arrow.get_global_rect().get_center() - global_position, pose.height * EncounterLayout.UNSEEN_FLIGHT_SCALE,
+					pose.turn, 1.0, pose.lean)
+	# An attachment takes off lying as it lay, and stands up on the way (ADR 0042).
+	return FacePose.of(pose.center, pose.height, pose.turn, 1.0, pose.lean)
 
 
 ## A glowing permanent scrolled off the end of its line colors that line's arrow, so a
@@ -2288,15 +2593,16 @@ func _draw_library(count: int, key: String, pile_rect: Rect2) -> void:
 
 ## A graveyard or exile pile: its top card and how many cards it holds. While its top card
 ## is still in the air, the last card that has landed is drawn under it, and the top card
-## shows nothing until it lands (Card Flights).
-func _draw_pile(zone_name: String, cards: Array, key: String, pile_rect: Rect2) -> void:
+## shows nothing until it lands (Card Flights). It counts every card in [param cards] and
+## shows only [param loose], the ones not drawn somewhere else.
+func _draw_pile(zone_name: String, cards: Array, loose: Array, key: String, pile_rect: Rect2) -> void:
 	var card: Vector2 = Vector2(EncounterLayout.PILE_HEIGHT * CardGeometry.ASPECT, EncounterLayout.PILE_HEIGHT)
 	var at: Vector2 = pile_rect.position + Vector2((pile_rect.size.x - card.x) / 2.0, 0)
-	var top: MmObjectView = cards.back() as MmObjectView if not cards.is_empty() else null
+	var top: MmObjectView = loose.back() as MmObjectView if not loose.is_empty() else null
 	var landed: MmObjectView = null
-	for index: int in range(cards.size() - 1, -1, -1):
-		if not _flight_layer.is_flying((cards[index] as MmObjectView).id):
-			landed = cards[index] as MmObjectView
+	for index: int in range(loose.size() - 1, -1, -1):
+		if not _flight_layer.is_flying((loose[index] as MmObjectView).id):
+			landed = loose[index] as MmObjectView
 			break
 	if landed == null:
 		_draw_empty_pile(at, card)
@@ -2310,6 +2616,7 @@ func _draw_pile(zone_name: String, cards: Array, key: String, pile_rect: Rect2) 
 		_board.add_child(face)
 		_faces[shown.id] = face
 		_face_sizes[shown.id] = card
+		_face_shown[shown.id] = Rect2(Vector2.ZERO, card)
 	_draw_pile_label("%s (%d)" % [zone_name, cards.size()], key, pile_rect)
 
 
@@ -2500,15 +2807,22 @@ func _clear_marks() -> void:
 	_marked.clear()
 
 
-## The window that asks which replacement effect applies first (A340): there exactly while
-## the Hero is asked, with an entry for each effect, clicked to choose it.
+## The window that asks which replacement effect applies first (A340), or which mode of a
+## modal spell is cast (ADR 0046): there exactly while the Hero is asked, with an entry for
+## each, clicked to choose it.
 func _fill_choice_window(view: MmPlayerView) -> void:
 	var decision: ChooseReplacementEffectDecision = _snapshot.decision as ChooseReplacementEffectDecision
+	var modes: ChooseModeDecision = _snapshot.decision as ChooseModeDecision
 	_choice_window.clear()
 	_choice_entries.clear()
-	_choice_window.set_open(decision != null)
+	_choice_window.set_open(decision != null or modes != null)
+	if modes != null:
+		_fill_mode_window(modes, view)
+		return
 	if decision == null:
 		return
+	_choice_window.size = REPLACEMENT_WINDOW_SIZE
+	_choice_window.fit()
 	_choice_window.show_title(ReplacementText.title(decision, view, _snapshot.names))
 	_choice_window.move_to_front()
 	for index: int in decision.options.size():
@@ -2528,6 +2842,51 @@ func _fill_choice_window(view: MmPlayerView) -> void:
 func _choose_replacement(index: int) -> void:
 	if not _is_paused:
 		_answer(index)
+
+
+## The mode window: an entry for every mode of the spell being cast, each only its art and
+## its words. A mode that cannot be chosen is dimmed and takes no click (CR 700.2a).
+func _fill_mode_window(decision: ChooseModeDecision, view: MmPlayerView) -> void:
+	var spell_view: MmObjectView = _seen(decision.stack_object_id)
+	var spell: SpellAbility = StackItem.spell_of(spell_view)
+	var look: CardLook = _snapshot.look_of(spell_view.id)
+	_choice_window.show_title("%s: choose one" % spell_view.name)
+	_choice_window.size = Vector2(MODE_WINDOW_WIDTH, ZoneWindow.BAR_HEIGHT + MODE_WINDOW_PAD + MODE_ENTRY_HEIGHT * spell.modes.size())
+	_choice_window.fit()
+	_choice_window.move_to_front()
+	for mode_index: int in spell.modes.size():
+		var entry: ZoneEntry = ZoneEntry.new(look.art_key if look != null else "", "",
+			AbilityText.mode_text(spell, mode_index, spell_view.name), StackColors.PLAIN)
+		_choice_window.body().add_child(entry)
+		_choice_entries.append(entry)
+		var answer: int = decision.modes.find(mode_index)
+		if answer == -1:
+			entry.modulate = UNCHOOSABLE_MODE
+			continue
+		var catcher: ClickCatcher = entry.make_usable()
+		catcher.clicked.connect(_choose_replacement.bind(answer))
+		catcher.mouse_entered.connect(_on_mode_hovered.bind(true, answer, mode_index))
+		catcher.mouse_exited.connect(_on_mode_hovered.bind(false, answer, mode_index))
+
+
+## The cursor came over a mode in the mode window, or left it: everything the mode could
+## target is marked, and the Info Panel shows the mode in full.
+func _on_mode_hovered(is_over: bool, answer: int, mode_index: int) -> void:
+	_clear_marks()
+	_info.show_option("")
+	var decision: ChooseModeDecision = _snapshot.decision as ChooseModeDecision
+	if not is_over or decision == null:
+		return
+	var spell_view: MmObjectView = _seen(decision.stack_object_id)
+	_info.show_option(AbilityText.mode_text(StackItem.spell_of(spell_view), mode_index, spell_view.name))
+	var color: Color = DecisionClicks.color_of(DecisionClicks.Kind.TARGET)
+	for reached: MmReference in decision.mode_targets[answer]:
+		if reached.is_player():
+			var portrait: Control = _panels[reached.id].portrait()
+			BorderEffects.add_mark(portrait, portrait.size, color, false, _ease_seconds)
+			_marked.append(portrait)
+		else:
+			_mark_face(reached.id, color, false)
 
 
 ## The cursor came over one of the choice window's entries, or left it: the card it came

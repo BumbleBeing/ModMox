@@ -14,17 +14,18 @@ func test_a_debug_run_starts_with_three_hearts_and_no_gold() -> void:
 	assert_false(run.is_lost())
 
 
-func test_a_debug_run_owns_every_nonland_card_of_the_content_decks() -> void:
+func test_a_debug_run_owns_four_of_every_nonland_card_in_content() -> void:
 	var run: Run = Run.debug(7)
-	var expected: int = 0
-	for deck_name: String in ContentDecks.names():
-		var setup: MmPlayerSetup = ContentDecks.load_deck(deck_name)
-		for run_card: MmRunCard in setup.deck:
-			if not run_card.base.supertypes.has(MmCardTypes.Supertype.BASIC):
-				expected += 1
-	assert_eq(run.collection.cards().size(), expected)
+	var expected: Dictionary[MmCardDefinition, int] = {}
+	for definition: MmCardDefinition in ContentCards.all():
+		if not definition.supertypes.has(MmCardTypes.Supertype.BASIC):
+			expected[definition] = Run.DEBUG_COPIES
+	assert_eq(Run.DEBUG_COPIES, 4)
+	var owned: Dictionary[MmCardDefinition, int] = {}
 	for card: DeckbuilderCard in run.collection.cards():
 		assert_false(card.is_basic_land(), card.card_name())
+		owned[card.run_card.base] = owned.get(card.run_card.base, 0) + 1
+	assert_eq(owned, expected)
 
 
 func test_a_debug_run_has_a_legal_active_deck_built_from_red_green() -> void:

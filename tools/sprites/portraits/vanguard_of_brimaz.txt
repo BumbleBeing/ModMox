@@ -1,6 +1,6 @@
 ; Vanguard of Brimaz's Portrait and Pain Portrait, facing front: a lion with a wild, windswept
-; golden mane, pale blue eyes, a blood smear on the cheek running into two red braids, and a
-; violet-black fur mantle over a bare chest.
+; golden mane of fine hairs, pale blue eyes, a blood smear on the cheek running into two red
+; braids, a bare right shoulder under a purple fur top and a violet-black mantle over the left.
 ; Drawn after the art of Vanguard of Brimaz: Born of the Gods (bng) #29, by Mark Zug.
 ; Scryfall ID: adb38717-97d5-4763-9e6c-46251df704ed
 ; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
@@ -9,69 +9,69 @@
 @ size 32
 
 = vanguard_of_brimaz
-.......1....1...1....1..........
-......1y1..1y1.1$1..1x1..1......
-...1.1y$1.1y$11$x1.1xh1.1h1.1...
-..1y1y$$x1y$$x1$xh1xxhg1xhg1h1..
-.1y$y$$xhy$$xh$$xhhxxhghxhghgh11
-1y$$y$xhy$$xhijjiiihhxhxghxhgxg1
-1hy$xhy$xg$hijjjiiihhhxghx$ghx$1
-1hy$xhy$hghijjjjiiiihgxfhx$ghx$1
-1hy$xhyxhhijjjjjiiiiihgxfhx$ghx1
-1y$xhy$hghjjjhjjiihiihgxfhx$ghx1
-1y$xhy$hghi111jjii111hghxghx$gh1
-1y$xhyxhhi1S01jjii10S1hgxfhx$gh1
-1$xhy$hghcd11hjjiih11iighxghx$g1
-1$xhy$hghbcjihjjiihiiihghxghx$g1
-1$xhy$hghcjji1dccb1iiihggh$ghx$1
-1xhy$xgcbijjj61ba16jjihggh$ghx$1
-1xhy$xgbhij6h6j11i5h5ihgfgx$ghx1
-1hg$xhgchhj6611661155ighfghxfgh1
-1g$xhg$cgchij666655jhgfgxfghxfg1
-11$xhgcxhbxhij6655ihgffhxfghxf11
-1V$xhgbxhcxhhhi55ihgghfghxfghxV1
-1VWhg$cxhbhghiijjiihghfghxfghVU1
-1WVhWgcg1chhiiijjiiihgg1fVgUgUV1
-1VVVWVbQ1bijjjjiiiiiihg1PUUUVUU1
-1WVVWcVQ1cijjjjhhjiiihg1PUVUUVU1
-1WVVQbVQ1bijjjihhjiiihg1PUVUPUU1
-1QVVVcVQ1ciijjihhiiiihg1PUPUUUU1
-1VWVVVWQ1hiiiihhhiiihhg1PUVUUUV1
-1VWVVVWQ1hhhhhhhhhhhhhg1PUVUUUV1
-1VQVWVQQ1hiijjihhjjiihg1PUPUVUP1
-1VVVWVVQ1hiiiihhhiiiihg1PUVUUUV1
-1VVWQVVQ1hhhhhhghhhhhhg1PUPVUUV1
+................................
+...........11...1.1.............
+......1..11yy111y1y11111........
+.....1y11$$yy$xyyy$hhxyx111.....
+....1y$y$x$y$xxxxxxg$yxx$$$1....
+...1xxx$$xxxhijjiiihhh$$hhhh11..
+.11$$$xyyhxhijjjiiihhxhxxx$$$x1.
+1yy$yy$$$xhijjjjiiiihghgh$hggg1.
+.1$$$$$$xhijjjjjiiiiihghhxhggh1.
+.1$xxxyyxhjjjhjjiihiihggx$$xxhx1
+.1xyy$$xxhi111jjii111hgghxx$xhx1
+1y$y$yxhhi1S01jjii10S1hghxgxxx1.
+.1yyxx$xhcd11hjjiih11iigghhgggx1
+1yxhhx$xhbcjihjjiihiiihghxxxhh1.
+.1hh$$$$hcjji1dccb1iiihgghhxxxx1
+.1hx$$ycbijjj61ba16jjihggggghhx1
+.1x$$hybhij6h6j11i5h5ihgghhggg1.
+.1$$hh$chhj6611661155iggghxxhg1.
+.1yxh$$chchij666655jhggghghxx1..
+..1g$xcghbhhij6655ihghgghxghgx1.
+.1XWxxbghchghhi55ihghgghxhggVV1.
+.1WXWhcghbxghiijjiihgxghghgVWV1.
+.1VXWVc11c11hhiiiihh1111VWVVWV1.
+.1VWVUbhhbhhijjjiiiiihg1UWVVWV1.
+.1UjUcjihcjjjjjhhjiiihg1UVVVUV1.
+.1hjhbjihbjjjjihhjiiihg1UVWVVV1.
+.1jjjciigcijjiihhiiiihg1UVWVVW1.
+.1ijiihhgiiiiihhhhiiihg1UVUVVW1.
+..1hiihg1hhhhiihhiihhhg1UVVWV1..
+..1ijihg1hiiijihhiiiihg1UVWVV1..
+...1ijihg1hiiijhhiiihg1UVVWV1...
+...1ijihg1hiiiihhiiihg1UVWVV1...
 
 = vanguard_of_brimaz_pain
-........1....1...1....1.........
-.......1y1..1y1.1$1..1x1..1.....
-....1.1y$1.1y$11$x1.1xh1.1h1.1..
-...1y1y$$x1y$$x1$xh1xxhg1xhg1h1.
-..1y$y$$xhy$$xh$$xhhxxhghxhghgh1
-.1y$$y$xhy$$xhijjiiihhxhxghxhgx1
-.1hy$xhy$xg$hijjjiiihhhxghx$ghx1
-1xhy$xhy$hghijjjjiiiihgxfhx$ghx1
-.1hy$xhyxhhijjjjjiiiiihgxfhx$gh1
-.1y$xhy$hghjjhhjjiihhihgxfhx$gh1
-1hy$xhy$hgh11ihjjiihi11ghxghx$g1
-.1y$xhyxhhiji11jjii11ihhgxfhx$g1
-.1$xhy$hghc11jhjjiihi11ighxghx$1
-1y$xhy$hghbcjihjjiihiiihghxghx$1
-.1$xhy$hghcjji1dccb1iiihggh$ghx1
-.1xhy$xgcbijjj61ba16jjihggh$ghx1
-1$xhy$xgbhij6h6j11i5h5ihgfgx$gh1
-.1hg$xhgchhj6111111115ighfghxfg1
-.1g$xhg$cgch61#6++5#15gfgxfghxf1
-111$xhgcxhbxh1+#65#+1gffhxfghxf1
-1VW$xhgbxhcxh11111111ghfghxfghx1
-1VWVhg$cxhbhghij55jihghfghxfghU1
-1VWVhWcg1chhiiijjiiihgg1VfVgUgU1
-1VVVWVbQ1bijjjjiiiiiihg1PUUUVUU1
-1WVVWcVQ1cijjjjhhjiiihg1PUVUUVU1
-1WVVQbVQ1bijjjihhjiiihg1PUVUPUU1
-1QVVVcVQ1ciijjihhiiiihg1PUPUUUU1
-1VWVVVWQ1hiiiihhhiiihhg1PUVUUUV1
-1VWVVVWQ1hhhhhhhhhhhhhg1PUVUUUV1
-1VQVWVQQ1hiijjihhjjiihg1PUPUVUP1
-1VVVWVVQ1hiiiihhhiiiihg1PUVUUUV1
-1VVWQVVQ1hhhhhhghhhhhhg1PUPVUUV1
+................................
+............11...1.1............
+.......1..11yy111y1y11111.......
+......1y11$$yy$xyyy$hhxyx111....
+.....1y$y$x$y$xxxxxxg$yxx$$$1...
+....1xxx$$xxxhijjiiihhh$$hhhh11.
+..11$$$xyyhxhijjjiiihhxhxxx$$$x1
+.1yy$yy$$$xhijjjjiiiihghgh$hggg1
+..1$$$$$$xhijjjjjiiiiihghhxhggh1
+..1$xxxyyxhjjhhjjiihhihggx$$xxh1
+..1xyy$$xxh11ihjjiihi11gghxx$xh1
+.1y$y$yxhhiji11jjii11ihhghxgxxx1
+..1yyxx$xhc11jhjjiihi11igghhggg1
+.1yxhhx$xhbcjihjjiihiiihghxxxhh1
+..1hh$$$$hcjji1dccb1iiihgghhxxx1
+..1hx$$ycbijjj61ba16jjihggggghh1
+..1x$$hybhij6h6j11i5h5ihgghhggg1
+..1$$hh$chhj6111111115iggghxxhg1
+..1yxh$$chch61#6++5#15ggghghxx1.
+..11g$xcghbhh1+#65#+1ghgghxghgx1
+.1XWVxxbghchg11111111hgghxhggV1.
+.1WXWVhcghbxghij55jihgxghghgWV1.
+.1VXWVch11c11hhiiiihh111VWVVWV1.
+.1VWVUbhhbhhijjjiiiiihg1UWVVWV1.
+.1UjUcjihcjjjjjhhjiiihg1UVVVUV1.
+.1hjhbjihbjjjjihhjiiihg1UVWVVV1.
+.1jjjciigcijjiihhiiiihg1UVWVVW1.
+.1ijiihhgiiiiihhhhiiihg1UVUVVW1.
+..1hiihg1hhhhiihhiihhhg1UVVWV1..
+..1ijihg1hiiijihhiiiihg1UVWVV1..
+...1ijihg1hiiijhhiiihg1UVVWV1...
+...1ijihg1hiiiihhiiihg1UVWVV1...

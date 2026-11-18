@@ -21,6 +21,8 @@ Each card prints its Oracle text, the file it would be written to, its Rarity, a
 
 Run `$TOOL primitives`: every class cards are composed from, with its doc comment and fields, read from the engine's source. Read `ui/cards/ability_text.gd` too when a wording matters. Put each card in exactly one group:
 
+Planeswalkers never exist here (ADR 0001, game ADR 0040): drop a card's planeswalker words before triaging it, so "target creature or planeswalker" is "target creature". Only a card with nothing left without them, such as a Planeswalker card or "destroy target planeswalker", is Unsuited. This is not a Rebalance.
+
 - **Ready**: the existing primitives give its exact current Oracle behavior. A near miss is not Ready: "can't be blocked except by Walls" is never "can't be blocked". Reminder text in parentheses is not rules.
 - **Blocked**: it needs new primitives, or a refusal the tool must learn to read (an `{X}` cost is both). A `*` power, or a "special" or "bonus" Rarity, is not a block: the first is a characteristic-defining ability composed in step 3, the second a Rarity the user chooses.
 - **Set Aside**: it needs something new on screen, which starts with a GUI prototype the user signs off on: a new kind of decision ("choose one —", "choose a color"), something new drawn on a face (counters, tokens), or two faces.
@@ -54,7 +56,7 @@ An approved primitive is built test-first, as `addons/modmox_rules/docs/conventi
 
 ## 5. Review the rules text
 
-Run `$TOOL review <file name> ...` for every card added. It prints each card's generated rules text under its Oracle text. Mark each difference as the same meaning (ADR 0023 accepts plainly correct wording) or a different meaning. A printed "named X" is generated as "originally named X" on purpose (ADR 0023): accept it, and put the generated words in `PRINTED`. A different meaning is a composition mistake: fix the card and review it again. Show the user the reviewed cards. Then add each card that has abilities to `PRINTED` in `tests/ui/cards/test_ability_text.gd`, with the text the review accepted.
+Run `$TOOL review <file name> ...` for every card added. It prints each card's generated rules text under its Oracle text. Mark each difference as the same meaning (ADR 0023 accepts plainly correct wording) or a different meaning. A printed "named X" is generated as "originally named X" on purpose (ADR 0023): accept it, and put the generated words in `PRINTED`. Dropped planeswalker words are the same meaning too. A different meaning is a composition mistake: fix the card and review it again. Show the user the reviewed cards. Then add each card that has abilities to `PRINTED` in `tests/ui/cards/test_ability_text.gd`, with the text the review accepted.
 
 Done when every added card reads with its Oracle text's meaning.
 

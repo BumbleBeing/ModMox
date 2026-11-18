@@ -317,3 +317,31 @@ func _wait(seconds: float) -> void:
 	for frame: int in frames:
 		_motion.advance(seconds / frames)
 	_motion.advance(0.000001)
+
+
+func test_a_pose_says_how_far_a_face_lies_sideways_for_being_attached_and_that_eases_too() -> void:
+	var loose: FacePose = FacePose.of(HERE, 200.0, 0.0)
+	var attached: FacePose = FacePose.of(THERE, 200.0, 0.0, 1.0, 1.0)
+
+	assert_eq(loose.lean, 0.0)
+	assert_almost_eq(loose.blend(attached, 0.25).lean, 0.25, 0.0001)
+	assert_false(attached.is_at(FacePose.of(THERE, 200.0, 0.0)), "Lying down is a move like any other.")
+	assert_true(attached.is_at(FacePose.of(THERE, 200.0, 0.0, 0.4, 1.0)))
+
+
+func test_a_face_that_becomes_attached_eases_over_and_a_new_one_or_a_ghost_keeps_how_it_lay() -> void:
+	var motion: FaceMotion = FaceMotion.new()
+	motion.seconds = 1.0
+	var look: CardLook = CardLook.new()
+	motion.show_faces({1: FacePose.of(HERE, 200.0, 0.0)}, {1: look}, true)
+
+	motion.show_faces({1: FacePose.of(THERE, 200.0, 0.0, 1.0, 1.0), 2: FacePose.of(HERE, 200.0, 0.0, 1.0, 1.0)}, {1: look, 2: look}, false)
+	motion.advance(1.0 / 30.0)
+
+	assert_gt(motion.pose_of(1).lean, 0.0)
+	assert_lt(motion.pose_of(1).lean, 1.0, "Part of the way over, part of the way there.")
+	assert_eq(motion.pose_of(2).lean, 1.0, "One that arrives attached fades in already lying down.")
+	motion.rebase(1, HERE)
+	assert_eq(motion.rest_of(1).lean, 1.0, "A scrolled line carries how it lies with it.")
+	motion.show_faces({}, {}, false)
+	assert_eq(motion.ghost_pose(2).lean, 1.0, "And its ghost fades where and as it lay.")

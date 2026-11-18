@@ -44,6 +44,9 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		prompt.text = "Pay for %s" % stack_name(view, view.stack.back().id if not view.stack.is_empty() else -1)
 		prompt.owed = _owed(pay)
 		prompt.can_cancel = true
+	elif decision is ChooseModeDecision:
+		prompt.text = "Choose one for %s" % stack_name(view, (decision as ChooseModeDecision).stack_object_id)
+		prompt.can_cancel = true
 	elif decision is ChooseTargetDecision:
 		prompt.text = "Choose a target for %s" % stack_name(view, (decision as ChooseTargetDecision).stack_object_id)
 		prompt.can_cancel = true

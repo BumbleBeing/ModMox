@@ -100,6 +100,17 @@ func test_a_choice_made_on_resolution_says_what_to_choose_and_for_what_and_canno
 	assert_null(prompt.owed)
 
 
+func test_choosing_a_mode_names_the_spell_and_can_be_canceled() -> void:
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Charm", 5)]
+	var reach: Array[Array] = [[MmReference.to_object(1)], [MmReference.to_object(1)]]
+
+	var prompt: InfoPrompt = InfoPrompt.of(ChooseModeDecision.new(HERO, 20, [0, 1] as Array[int], reach), view)
+
+	assert_eq(prompt.text, "Choose one for Charm")
+	assert_true(prompt.can_cancel, "The mode is a step of the cast (CR 601.2b).")
+
+
 func test_an_ability_whose_source_is_out_of_sight_keeps_its_own_name() -> void:
 	var view: MmPlayerView = _view()
 	var ability: MmObjectView = _object(21, "Boon ability", MmGameObject.NO_CARD)

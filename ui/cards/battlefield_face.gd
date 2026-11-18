@@ -6,6 +6,14 @@ extends Control
 ## A creature with damage marked on it shows a Damage Chip over its toughness, and a
 ## permanent with counters on it a Counter Chip in the top left corner of its art.
 ##
+## An attachment, such as an Equipment on a creature, is drawn attached (game ADR 0042):
+## sideways whether tapped or not, so that its name runs down the strip of it that shows
+## past the permanent it lies behind, with an Attached Mark in the corner past the end of
+## its name. Tapped, it is darkened like any tapped permanent, with no tap symbol, since
+## its art is hidden. A Tucked Card, a card in exile behind the permanent that exiled it
+## (game ADR 0043), lies the same way with no Attached Mark, its name running the whole
+## strip.
+##
 ## Its footprint is that of the card at rest, upright or sideways. show_turn() draws the
 ## card part-way between the two inside that footprint, for Face Motion.
 
@@ -16,6 +24,11 @@ signal rules_scroll_requested(steps: float)
 const TAPPED_SHADE: float = 0.45
 ## A P/T box's height on the Card Face, as a fraction of the card's height.
 const CARD_FACE_BOX: float = 0.14
+## How much of an attached face shows past the permanent it lies behind, of its height:
+## its name.
+const ATTACHED_SHOWN: float = 0.2
+## For show_turn(): the face lies as it is drawn, all the way over if drawn attached.
+const AS_DRAWN: float = -1.0
 ## The size the P/T box's image is resized to before it is drawn.
 const POWER_TOUGHNESS_PIXELS: Vector2i = Vector2i(377, 206)
 
@@ -28,11 +41,18 @@ var _turn: float = 0.0
 var _damage_chip: DamageChip = null
 var _counter_chip: CounterChip = null
 var _chips: Array[KeywordChip] = []
+var _is_attached: bool = false
+var _attached_mark: AttachedMark = null
 
 
 ## A Battlefield Face's size when untapped, [param height] pixels tall.
 static func size_for(height: float) -> Vector2:
 	return Vector2(roundf(height * CardGeometry.FIELD_ASPECT), height)
+
+
+## How wide the part of an attached face [param height] pixels tall that shows is.
+static func attached_strip(height: float) -> float:
+	return roundf(height * ATTACHED_SHOWN)
 
 
 ## Where the art sits on a face [param height] pixels tall.
@@ -78,11 +98,15 @@ static func wheel_steps(event: InputEvent) -> float:
 	return 0.0
 
 
-## Draws [param look] [param height] pixels tall (before any turn for being tapped).
-func setup(look: CardLook, height: float) -> void:
+## Draws [param look] [param height] pixels tall (before any turn for being tapped), drawn
+## attached with [param is_drawn_attached], and as a Tucked Card, which has no Attached
+## Mark, with [param is_tucked] as well.
+func setup(look: CardLook, height: float, is_drawn_attached: bool = false, is_tucked: bool = false) -> void:
 	_look = look
+	_is_attached = is_drawn_attached
+	var has_mark: bool = _is_attached and not is_tucked
 	var face_size: Vector2 = size_for(height)
-	custom_minimum_size = Vector2(face_size.y, face_size.x) if look.is_tapped else face_size
+	custom_minimum_size = Vector2(face_size.y, face_size.x) if look.is_tapped or _is_attached else face_size
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	_card = Control.new()
@@ -100,8 +124,10 @@ func setup(look: CardLook, height: float) -> void:
 	shape.add_child(_border(spec, face_size, scale_now))
 	var inset: float = CardGeometry.TITLE.position.x * CardGeometry.BAKE_SIZE.x * scale_now
 	_name = AnchoredText.new()
+	# The name of a face drawn attached stops short of its Attached Mark.
+	var name_end: float = face_size.x - attached_strip(height) if has_mark else face_size.x - inset
 	_name.setup(Rect2(inset, CardGeometry.TITLE.position.y * CardGeometry.BAKE_SIZE.y * scale_now,
-			face_size.x - inset * 2.0, CardGeometry.TITLE.size.y * CardGeometry.BAKE_SIZE.y * scale_now),
+			name_end - inset, CardGeometry.TITLE.size.y * CardGeometry.BAKE_SIZE.y * scale_now),
 			[look.name] as Array[String], [Color.BLACK] as Array[Color], CardFonts.title(), 0.78,
 			HORIZONTAL_ALIGNMENT_LEFT, AnchoredText.Fit.ELLIPSIS)
 	shape.add_child(_name)
@@ -117,6 +143,13 @@ func setup(look: CardLook, height: float) -> void:
 	if spec.is_creature and look.damage_marked > 0:
 		_damage_chip = DamageChip.make(power_toughness_box(height), look.damage_marked)
 		_card.add_child(_damage_chip)
+	if has_mark:
+		# The card's black border is as thick as the gap above a crown.
+		_attached_mark = AttachedMark.make(face_size, attached_strip(height),
+				roundi(CardGeometry.CROWN.position.y * CardGeometry.BAKE_SIZE.y * scale_now),
+				int(CardGeometry.CORNER * CardGeometry.BAKE_SIZE.x * scale_now))
+		shape.add_child(_attached_mark)
+		shape.move_child(_attached_mark, _shade.get_index())
 	_card.pivot_offset = face_size / 2.0
 	show_turn(1.0 if look.is_tapped else 0.0)
 
@@ -130,17 +163,38 @@ func name_text() -> AnchoredText:
 	return _name
 
 
-## Draws the card [param turn] of the way from upright (0) to sideways (1), about the middle
-## of its footprint, darkened that much, with the tap symbol that solid and kept upright.
-func show_turn(turn: float) -> void:
+## Whether this face is drawn lying behind another permanent: attached to it, or tucked.
+func is_attached() -> bool:
+	return _is_attached
+
+
+## The Attached Mark of a face drawn attached, or null.
+func attached_mark() -> AttachedMark:
+	return _attached_mark
+
+
+## Draws the card [param turn] of the way from upright (0) to sideways (1) for being
+## tapped, darkened that much, about the middle of its footprint. [param lean] is how far
+## it lies sideways for being attached (0 standing, 1 lying behind its permanent), which is
+## all the way for a face drawn attached unless something else is said, as Face Motion
+## says while the face is on its way. Tapped and lying down are the same quarter turn, so
+## the card is turned by the larger of the two. The tap symbol is kept upright and is as
+## solid as the card is tapped and not lying down; the Attached Mark is as solid as the card
+## lies down.
+func show_turn(turn: float, lean: float = AS_DRAWN) -> void:
 	_turn = turn
+	var lying: float = lean if lean != AS_DRAWN else (1.0 if _is_attached else 0.0)
+	var turned: float = maxf(turn, lying)
 	_card.position = (size - _card.size) / 2.0
-	_card.rotation_degrees = 90.0 * turn
+	_card.rotation_degrees = 90.0 * turned
 	_shade.visible = turn > 0.0
 	_shade.color.a = TAPPED_SHADE * turn
-	_tap_symbol.visible = turn > 0.0
-	_tap_symbol.modulate.a = 0.5 * turn
-	_tap_symbol.rotation_degrees = -90.0 * turn
+	var symbol: float = turn * (1.0 - lying)
+	_tap_symbol.visible = symbol > 0.0
+	_tap_symbol.modulate.a = 0.5 * symbol
+	_tap_symbol.rotation_degrees = -90.0 * turned
+	if _attached_mark != null:
+		_attached_mark.modulate.a = lying
 
 
 ## How far the card is turned toward sideways, from 0 to 1.

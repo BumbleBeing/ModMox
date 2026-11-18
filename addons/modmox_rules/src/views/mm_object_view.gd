@@ -33,6 +33,9 @@ var subtypes: Array[String] = []
 var mana_cost: MmManaCost = null
 ## For a spell or ability on the stack: its chosen targets, in order (null if not chosen).
 var targets: Array[MmReference] = []
+## For a modal spell on the stack: its chosen mode, which both players see (CR 700.2).
+## SpellAbility.NO_MODE otherwise.
+var chosen_mode: int = SpellAbility.NO_MODE
 var is_creature: bool = false
 ## Current power and toughness; meaningful only for a creature (CR 208.3).
 var power: int = 0
@@ -57,12 +60,23 @@ var damage_marked: int = 0
 ## How many counters of each kind are on it (CR 122); a kind it has none of is not listed.
 ## Public, like the permanent.
 var counters: Dictionary[MmCounter.Kind, int] = {}
+## For a permanent attached to another, such as an Equipment (CR 301.5): the ID of the
+## permanent it is attached to; 0 for anything else. Public, like the permanent.
+var attached_to_object_id: int = 0
+## For a card in exile that an object's ability exiled (CR 607.2a): the ID of that object;
+## 0 for anything else. That object may have left the battlefield since. Public, like the
+## exile zone.
+var exiled_with_object_id: int = 0
 ## Its once-each-game abilities that have been activated, by their place in abilities, so
 ## the GUI can gray them (ADR 0036). Public, like the object.
 var spent_ability_indexes: Array[int] = []
 ## For a Potion: its place in its owner's list of Potions in the Encounter Setup;
 ## MmGameObject.NOT_A_POTION for anything else.
 var potion_index: int = MmGameObject.NOT_A_POTION
+## Whether it is a token (CR 111.1), and the Token Definition it was made from, so the
+## GUI can find its art; null for anything that is not a token.
+var is_token: bool = false
+var token_definition: MmCardDefinition = null
 ## CR 302.6: a creature that cannot attack or pay {T} yet.
 var is_summoning_sick: bool = false
 var is_attacking: bool = false
@@ -88,6 +102,7 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.controller_id = game_object.controller_id
 	view.is_tapped = game_object.is_tapped
 	view.targets = game_object.targets.duplicate()
+	view.chosen_mode = game_object.chosen_mode
 	var characteristics: MmCharacteristics = state.characteristics_of(game_object)
 	view.colors = characteristics.colors.duplicate()
 	view.card_types = characteristics.card_types.duplicate()
@@ -110,8 +125,12 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 			view.replacement_effects.append(active)
 	view.damage_marked = game_object.damage_marked
 	view.counters = game_object.counters.duplicate()
+	view.attached_to_object_id = game_object.attached_to_object_id
+	view.exiled_with_object_id = game_object.exiled_with_object_id
 	view.spent_ability_indexes = game_object.spent_ability_indexes.duplicate()
 	view.potion_index = game_object.potion_index
+	view.is_token = game_object.is_token
+	view.token_definition = game_object.definition if game_object.is_token else null
 	view.is_summoning_sick = state.is_summoning_sick(game_object)
 	if game_object.zone() == state.battlefield:
 		# CR 604.3: a permanent's numbers are worked out, so it no longer reads "*".

@@ -8,6 +8,8 @@ extends RefCounted
 const STARTING_HEARTS: int = 3
 const DEBUG_DECK: String = "red_green"
 const DEBUG_DECK_NAME: String = "Red-Green"
+## How many copies of each nonland card in Content a debug run owns.
+const DEBUG_COPIES: int = 4
 const BASIC_LANDS: String = "res://content/cards/alpha/%s.tres"
 const BASIC_LAND_FILES: Array[String] = ["plains", "island", "swamp", "mountain", "forest"]
 ## The Emblem the Hero holds in every debug run, to end encounters quickly when playtesting.
@@ -41,26 +43,28 @@ func _init(seed_of_run: int) -> void:
 		basic_lands.append(load(BASIC_LANDS % land) as MmCardDefinition)
 
 
-## The run the main menu's Start Run (debug) begins: every nonland card of the Content
-## decks, one Deck built from red_green as the Active Deck, the Playtest Bolt, and a Tier 1
-## Stage rolled from the Run Seed, entered; or [param stage], when given.
+## The run the main menu's Start Run (debug) begins, for playtesting: [constant DEBUG_COPIES]
+## copies of every nonland card in Content, one Deck built from red_green as the Active
+## Deck, the Playtest Bolt, and a Tier 1 Stage rolled from the Run Seed, entered; or
+## [param stage], when given.
 static func debug(seed_of_run: int, stage: StageDefinition = null) -> Run:
 	var run: Run = Run.new(seed_of_run)
-	var active: Deck = null
-	for deck_name: String in ContentDecks.names():
-		var setup: MmPlayerSetup = ContentDecks.load_deck(deck_name)
-		var deck: Deck = Deck.new()
-		for run_card: MmRunCard in setup.deck:
-			if run_card.base.supertypes.has(MmCardTypes.Supertype.BASIC):
-				deck.basic_lands[run_card.base.name] = deck.basic_lands.get(run_card.base.name, 0) + 1
-				continue
-			var copy: MmRunCard = MmRunCard.new()
-			copy.base = run_card.base
-			copy.modifications = run_card.modifications.duplicate()
-			deck.card_ids.append(run.collection.add(copy).id)
-		if deck_name == DEBUG_DECK:
-			deck.name = DEBUG_DECK_NAME
-			active = deck
+	var unused: Dictionary[MmCardDefinition, Array] = {}
+	for definition: MmCardDefinition in ContentCards.all():
+		if definition.supertypes.has(MmCardTypes.Supertype.BASIC):
+			continue
+		unused[definition] = []
+		for copy: int in DEBUG_COPIES:
+			var run_card: MmRunCard = MmRunCard.new()
+			run_card.base = definition
+			unused[definition].append(run.collection.add(run_card).id)
+	var active: Deck = Deck.new()
+	active.name = DEBUG_DECK_NAME
+	for run_card: MmRunCard in ContentDecks.load_deck(DEBUG_DECK).deck:
+		if run_card.base.supertypes.has(MmCardTypes.Supertype.BASIC):
+			active.basic_lands[run_card.base.name] = active.basic_lands.get(run_card.base.name, 0) + 1
+		else:
+			active.card_ids.append(unused[run_card.base].pop_front())
 	run.deckbox.put(active)
 	run.deckbox.set_active(active)
 	run.hero_emblems.append(load(PLAYTEST_EMBLEM) as MmCardDefinition)

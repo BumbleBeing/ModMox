@@ -34,7 +34,9 @@ static func routes(events: Array[MmEvent]) -> Array[Route]:
 	var found: Array[Route] = []
 	for event: MmEvent in events:
 		var change: ZoneChangeEvent = event as ZoneChangeEvent
-		if change == null:
+		# Game ADR 0045: a token that leaves the battlefield ceases to exist, so it flies
+		# nowhere and Face Motion's ghost fades it where it stood. A token is no card.
+		if change == null or change.card_id == MmGameObject.NO_CARD:
 			continue
 		var route: Route = null
 		for known: Route in found:

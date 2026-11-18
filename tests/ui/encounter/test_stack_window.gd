@@ -470,6 +470,118 @@ func test_triggers_that_are_all_alike_are_ordered_without_asking() -> void:
 	assert_eq(_screen.stack_entries()[0].name_text(), "You gain 1 life.")
 
 
+# --- Choosing a mode ------------------------------------------------------------------
+
+func test_a_modal_spell_opens_the_choice_window_with_each_modes_art_and_words() -> void:
+	_open([_free_bear(), Scenario.enchantment("Glory", []), Scenario.free_charm("Charm")])
+	_cast("Bear")
+	_cast("Glory")
+
+	_do(CastSpellAction, "Charm")
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is ChooseModeDecision)
+	var window: ZoneWindow = _screen.choice_window()
+	assert_true(window.visible)
+	assert_null(window.close_button(), "It is canceled as a cast is, not closed.")
+	assert_eq(window.title_text(), "Charm: choose one")
+	assert_true(window.bounds.encloses(Rect2(window.position, window.size)))
+	assert_eq(_screen.info_panel().prompt_text(), "Choose one for Charm")
+	var entries: Array[ZoneEntry] = _screen.choice_entries()
+	assert_eq(entries.size(), 2)
+	assert_eq(entries[0].name_text(), "", "Only the art and the mode's words.")
+	assert_eq(entries[0].detail_text(), "Charm deals 2 damage to target creature.")
+	assert_eq(entries[1].detail_text(), "Destroy target enchantment.")
+	assert_not_null(_screen.choice_catcher(0))
+	assert_not_null(_screen.choice_catcher(1))
+
+
+func test_a_mode_that_cannot_be_chosen_is_dimmed_and_takes_no_click() -> void:
+	var three: MmCardDefinition = Scenario.free_modal("Triad", [
+		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))], [Scenario.deal_damage(2, Scenario.targeted(0))]),
+		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ARTIFACT))], [Scenario.destroy(Scenario.targeted(0))]),
+		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ENCHANTMENT))], [Scenario.destroy(Scenario.targeted(0))]),
+	])
+	_open([_free_bear(), Scenario.enchantment("Glory", []), three])
+	_cast("Bear")
+	_cast("Glory")
+
+	_do(CastSpellAction, "Triad")
+	_presenter.wait_until_idle()
+
+	var entries: Array[ZoneEntry] = _screen.choice_entries()
+	assert_eq(entries.size(), 3, "Every mode is shown, so the Hero sees why one cannot be chosen.")
+	assert_lt(entries[1].modulate.a, 1.0, "No artifact to destroy.")
+	assert_null(_screen.choice_catcher(1))
+	assert_eq(entries[2].modulate, Color.WHITE)
+	assert_not_null(_screen.choice_catcher(2))
+
+
+func test_clicking_a_mode_chooses_it_and_its_target_is_asked_next() -> void:
+	_open([_free_bear(), Scenario.enchantment("Glory", []), Scenario.free_charm("Charm")])
+	_cast("Bear")
+	_cast("Glory")
+	_do(CastSpellAction, "Charm")
+	_presenter.wait_until_idle()
+
+	_screen.choice_catcher(1).clicked.emit()
+	_presenter.wait_until_idle()
+
+	var decision: ChooseTargetDecision = _presenter.snapshot().decision as ChooseTargetDecision
+	assert_not_null(decision)
+	assert_eq(decision.candidates.size(), 1)
+	assert_eq(decision.candidates[0].id, _permanent("Glory"))
+	assert_false(_screen.choice_window().visible)
+	assert_eq(_view_of(decision.stack_object_id).chosen_mode, 1)
+
+
+func test_hovering_a_mode_shows_it_in_full_and_marks_what_it_could_target() -> void:
+	_open([_free_bear(), Scenario.enchantment("Glory", []), Scenario.free_charm("Charm")])
+	_cast("Bear")
+	_cast("Glory")
+	_do(CastSpellAction, "Charm")
+	_presenter.wait_until_idle()
+	var glory: Control = _screen.face_of(_permanent("Glory"))
+	var bear: Control = _screen.face_of(_permanent("Bear"))
+
+	_screen.choice_catcher(1).mouse_entered.emit()
+
+	assert_eq(BorderEffects.mark_color(glory), TARGET)
+	assert_null(BorderEffects.mark_color(bear), "The Bear is not an enchantment.")
+	assert_eq(_screen.info_panel().option_text(), "Destroy target enchantment.")
+
+	_screen.choice_catcher(1).mouse_exited.emit()
+
+	assert_null(BorderEffects.mark_color(glory))
+	assert_eq(_screen.info_panel().option_text(), "")
+
+
+func test_with_only_one_mode_that_can_be_chosen_no_window_opens() -> void:
+	_open([_free_bear(), Scenario.free_charm("Charm")])
+	_cast("Bear")
+
+	_do(CastSpellAction, "Charm")
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is ChooseTargetDecision, "No enchantment: the damage mode is chosen for the Hero.")
+	assert_false(_screen.choice_window().visible)
+
+
+func test_canceling_while_choosing_a_mode_puts_the_spell_back() -> void:
+	_open([_free_bear(), Scenario.enchantment("Glory", []), Scenario.free_charm("Charm")])
+	_cast("Bear")
+	_cast("Glory")
+	_do(CastSpellAction, "Charm")
+	_presenter.wait_until_idle()
+
+	assert_eq(_presenter.cancel_cast(), "")
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is PriorityDecision)
+	assert_false(_screen.choice_window().visible)
+	assert_eq(_screen.choice_entries().size(), 0)
+
+
 # --- Choosing a replacement effect -------------------------------------------------------
 
 func test_the_choice_window_is_there_only_while_the_hero_is_asked() -> void:

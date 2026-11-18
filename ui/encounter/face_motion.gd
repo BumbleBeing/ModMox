@@ -41,7 +41,7 @@ func show_faces(targets: Dictionary[int, FacePose], looks: Dictionary[int, CardL
 			continue
 		if not is_still:
 			var shown: FacePose = pose_of(object_id)
-			_ghosts[object_id] = Track.new(shown, FacePose.of(shown.center, shown.height, shown.turn, 0.0), _clock, _faces[object_id].look)
+			_ghosts[object_id] = Track.new(shown, FacePose.of(shown.center, shown.height, shown.turn, 0.0, shown.lean), _clock, _faces[object_id].look)
 		_faces.erase(object_id)
 	for object_id: int in targets:
 		var target: FacePose = targets[object_id]
@@ -49,7 +49,7 @@ func show_faces(targets: Dictionary[int, FacePose], looks: Dictionary[int, CardL
 		if is_still:
 			_faces[object_id] = Track.new(target, target, _clock - seconds, looks[object_id])
 		elif not _faces.has(object_id):
-			_faces[object_id] = Track.new(FacePose.of(target.center, target.height, target.turn, 0.0), target, _clock, looks[object_id])
+			_faces[object_id] = Track.new(FacePose.of(target.center, target.height, target.turn, 0.0, target.lean), target, _clock, looks[object_id])
 		elif not _faces[object_id].to.is_at(target):
 			_faces[object_id] = Track.new(pose_of(object_id), target, _clock, looks[object_id])
 		else:
@@ -64,8 +64,8 @@ func rebase(object_id: int, center: Vector2) -> void:
 		return
 	var track: Track = _faces[object_id]
 	var carried: Vector2 = center - track.to.center
-	_faces[object_id] = Track.new(FacePose.of(track.from.center + carried, track.from.height, track.from.turn, track.from.alpha),
-			FacePose.of(center, track.to.height, track.to.turn, track.to.alpha), track.started, track.look)
+	_faces[object_id] = Track.new(FacePose.of(track.from.center + carried, track.from.height, track.from.turn, track.from.alpha, track.from.lean),
+			FacePose.of(center, track.to.height, track.to.turn, track.to.alpha, track.to.lean), track.started, track.look)
 
 
 ## Drops the face of Game Object [param object_id] and its ghost: it was out of sight when

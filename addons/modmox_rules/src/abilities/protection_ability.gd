@@ -5,8 +5,9 @@ extends StaticAbility
 ## creatures" (A135). The protected permanent can't be:
 ## - dealt damage by a matching source: the damage is prevented (CR 702.16e);
 ## - blocked by a matching creature (CR 702.16c);
-## - targeted by a matching spell or an ability from a matching source (CR 702.16b).
-## Later: can't be enchanted or equipped (CR 702.16d), once Auras and Equipment exist.
+## - targeted by a matching spell or an ability from a matching source (CR 702.16b);
+## - equipped by a matching Equipment (CR 702.16d, asked by AttachmentRules).
+## Later: can't be enchanted (CR 702.16d), once Auras exist.
 
 @export var from: MmFilter
 

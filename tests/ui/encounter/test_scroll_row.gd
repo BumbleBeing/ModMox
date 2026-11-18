@@ -4,6 +4,21 @@ extends GutTest
 const GREEN: Color = Color("#7be36a")
 
 
+
+func test_a_glow_above_or_below_the_line_is_not_cut_off_and_one_past_its_ends_is() -> void:
+	var row: ScrollRow = ScrollRow.new(Rect2(100, 200, 300, 120), 900.0, 0.0)
+	add_child_autofree(row)
+
+	var cut: Control = row.content().get_parent_control()
+
+	assert_true(cut.clip_contents)
+	assert_eq(cut.get_global_rect().position.x, 100.0, "Cut at the line's ends,")
+	assert_eq(cut.get_global_rect().size.x, 300.0)
+	assert_eq(cut.get_global_rect().position.y, 200.0 - ScrollRow.GLOW_ROOM, "with room above")
+	assert_eq(cut.get_global_rect().end.y, 320.0 + ScrollRow.GLOW_ROOM, "and below for a Glow on a face as tall as the line.")
+	assert_gte(ScrollRow.GLOW_ROOM, 7.0, "A Glow reaches 7 pixels past its face.")
+	assert_eq(row.content().global_position.y, 200.0, "The faces stand where they stood.")
+
 func test_arrows_are_plain_until_tinted_and_plain_again_when_cleared() -> void:
 	var row: ScrollRow = ScrollRow.new(Rect2(0, 0, 400, 200), 900.0, 0.0)
 	add_child_autofree(row)

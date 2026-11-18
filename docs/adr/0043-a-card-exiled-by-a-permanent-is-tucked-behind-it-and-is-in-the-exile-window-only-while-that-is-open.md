@@ -1,0 +1,23 @@
+# A card exiled by a permanent is tucked behind it, and is in the exile window only while that is open
+
+Oblivion Ring exiles a permanent and returns it when the Ring leaves (Linked Abilities, CR 607). Until now the exiled card sat in its owner's exile pile like any other, and nothing on the board said which permanent held it or that it would come back. It is now drawn as a Tucked Card behind the permanent that exiled it. Leaving it in the pile with a line to its permanent, and showing it in both places at once, were the other ways considered: the first puts a line across the board for the whole game, and the second shows one card twice.
+
+**A Tucked Card is drawn as an attachment is, without the Attached Mark.** It lies sideways behind the permanent that exiled it with its name strip out past the right edge, the permanent is that much wider to its line, and the card turns onto its side as it arrives (ADR 0042). Its name runs the whole strip, and nothing else sets it apart. The Attached Mark is left for what is attached, so the plus still means one thing.
+
+**Tucked Cards lie behind every attachment.** A permanent's attachments are nearest it, in object ID order, and then its Tucked Cards in object ID order, so their strips are furthest right. This holds for Auras when they come.
+
+**A card is tucked only while the object that exiled it is on the battlefield.** The engine says which object exiled a card (`MmObjectView.exiled_with_object_id`); the screen never works it out, and only looks for that object among the permanents of the snapshot. If the Ring left before its first trigger resolved, or left and came back as a new object (engine ADR 0008), the card is exiled for good and is in the pile like any other, and flies there from behind the permanent when the link breaks. So a Tucked Card always means "this comes back when the permanent in front leaves". This shows whenever the permanent is destroyed: its "leaves the battlefield" trigger waits on the stack with the permanent already gone, so the card drops to its pile and comes back from there when the trigger resolves. `Tucks` says which cards are tucked behind which permanents; a permanent can have one behind it if it stands in a line of nonland permanents.
+
+**The pile counts it and does not show it.** The card is in its owner's exile by the rules, so the pile's count and the window's title include it. The face on top of the closed pile is the newest card that is not tucked.
+
+**While that exile's Pile Window is open, the card is in the window.** Opening the window, by a click or to choose a target (ADR 0032), flies each of that player's Tucked Cards to its usual place in the grid, newest first, and closing it flies them back. A card whose place is scrolled out of sight flies to the nearest top or bottom edge of the grid and fades there. If the permanent leaves while the window is open, the card stays in the window, and flies from there to the battlefield.
+
+**A Tuck Outline keeps its place.** While the card is in the window a faint outline stays where its strip was, and the line keeps the strip's room: closing up would move every permanent to the right of it each time the window opened or closed. The outline takes no clicks and pins nothing. While the cursor is on the card in the window, or the card is pinned, the outline has a glowing white dashed border, drawn as a Stack Mark's is; white because the Glow's colors each mean a kind of choice and the Stack Colors mean a stack entry.
+
+**It is clicked and read as an attachment is.** Only the strip takes the mouse, a right-click there pins the Tucked Card, and a decision that can choose it glows the strip and takes the click there. State Information has "Exiled by [name]" on the card and an entry named for each card on the permanent that exiled it.
+
+**These flights change no zone, so the screen starts them.** The Flight Layer works out a Card Flight from a zone change (ADR 0027), and opening a window is none. The screen reads where each Tucked Card is drawn before a redraw and, where it is drawn somewhere else after, hands the Flight Layer a route whose two ends are the same Game Object (`FlightLayer.put_in_air()`). The Flight Layer also asks the screen how a card is drawn where it leaves or lands, because a Tucked Card is a Battlefield Face though its zone is exile.
+
+**An exile pile is found by the card's owner.** The engine's exile is one zone, so a zone change into or out of it names no player. The screen keeps whose pile each card in exile is drawn in, and a flight to or from exile uses that; before this, every such flight went to the Villain's pile.
+
+Left for when a card needs it: a Tucked Card that is face down, and a permanent in the land rows with a card behind it.

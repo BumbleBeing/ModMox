@@ -65,6 +65,104 @@ func test_a_face_turned_all_the_way_back_is_as_if_it_had_never_been_tapped() -> 
 	assert_eq(face.tap_symbol().modulate.a, 0.5)
 
 
+func test_an_attached_face_lies_sideways_without_being_darkened_and_carries_the_attached_mark() -> void:
+	var face: BattlefieldFace = _attached(_look("ivory_tower"), 140.0)
+
+	var upright: Vector2 = BattlefieldFace.size_for(140.0)
+	assert_true(face.is_attached())
+	assert_eq(face.custom_minimum_size, Vector2(upright.y, upright.x), "Its sideways footprint.")
+	assert_eq(face.card().rotation_degrees, 90.0, "Its name runs down its right side.")
+	assert_false(face.is_darkened(), "Sideways is not tapped here.")
+	assert_null(face.tap_symbol(), "Its art is behind the permanent it is attached to.")
+	var mark: AttachedMark = face.attached_mark()
+	assert_not_null(mark)
+	var strip: float = BattlefieldFace.attached_strip(140.0)
+	assert_eq(Rect2(mark.position, mark.size), Rect2(upright.x - strip, 0.0, strip, strip),
+		"A square as wide as the strip that shows, in the corner past the end of its name.")
+	assert_null(_battlefield(_look("ivory_tower"), 140.0).attached_mark(), "A face on its own has none.")
+	assert_almost_eq(face.name_text().position.x + face.name_text().size.x, mark.position.x, 0.01, "Its name stops short of the mark.")
+
+
+func test_a_tucked_face_lies_as_an_attached_one_does_with_no_attached_mark_and_its_name_the_whole_strip() -> void:
+	var face: BattlefieldFace = BattlefieldFace.new()
+	add_child_autofree(face)
+	face.setup(_look("ivory_tower"), 140.0, true, true)
+
+	var upright: Vector2 = BattlefieldFace.size_for(140.0)
+	assert_true(face.is_attached())
+	assert_eq(face.custom_minimum_size, Vector2(upright.y, upright.x))
+	assert_eq(face.card().rotation_degrees, 90.0)
+	assert_false(face.is_darkened())
+	assert_null(face.attached_mark(), "The plus is for what is attached (ADR 0043).")
+	var free: BattlefieldFace = _battlefield(_look("ivory_tower"), 140.0)
+	assert_almost_eq(face.name_text().size.x, free.name_text().size.x, 0.01, "Its name runs as far as on a face on its own.")
+
+
+func test_a_tapped_attached_face_is_darkened_like_any_tapped_permanent_and_eases_there() -> void:
+	var look: CardLook = _look("ivory_tower")
+	look.is_tapped = true
+
+	var face: BattlefieldFace = _attached(look, 140.0)
+
+	assert_eq(face.card().rotation_degrees, 90.0)
+	assert_true(face.is_darkened())
+	assert_almost_eq(face.shade_alpha(), BattlefieldFace.TAPPED_SHADE, 0.0001)
+	assert_null(face.tap_symbol())
+	face.show_turn(0.5)
+	assert_eq(face.card().rotation_degrees, 90.0, "It stays sideways while it untaps;")
+	assert_almost_eq(face.shade_alpha(), BattlefieldFace.TAPPED_SHADE / 2.0, 0.0001, "only the shade eases.")
+	face.show_turn(0.0)
+	assert_false(face.is_darkened())
+	assert_eq(face.card().rotation_degrees, 90.0)
+
+
+func test_a_face_part_way_to_lying_attached_is_turned_that_far_with_its_mark_that_solid() -> void:
+	var face: BattlefieldFace = _attached(_look("ivory_tower"), 140.0)
+
+	face.show_turn(0.0, 0.5)
+
+	assert_eq(face.card().rotation_degrees, 45.0, "Half-way over on its way behind its creature.")
+	assert_false(face.is_darkened(), "Lying down is not tapping.")
+	assert_almost_eq(face.attached_mark().modulate.a, 0.5, 0.0001)
+	assert_almost_eq(face.card().get_global_transform() * (face.card().size / 2.0), face.global_position + face.size / 2.0,
+			Vector2(0.01, 0.01), "About the middle of its footprint.")
+	face.show_turn(0.0)
+	assert_eq(face.card().rotation_degrees, 90.0, "Told nothing else, an attached face lies all the way over.")
+	assert_eq(face.attached_mark().modulate.a, 1.0)
+
+
+func test_a_face_standing_up_again_from_being_attached_is_turned_that_far_and_shows_its_tap_symbol_as_it_stands() -> void:
+	var look: CardLook = _look("ivory_tower")
+	look.is_tapped = true
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+
+	face.show_turn(0.0, 0.5)
+	assert_eq(face.card().rotation_degrees, 45.0)
+	assert_false(face.is_darkened())
+
+	face.show_turn(1.0, 1.0)
+	assert_eq(face.card().rotation_degrees, 90.0, "Tapped and lying down are the same quarter turn, never two.")
+	assert_null(face.tap_symbol(), "No tap symbol while it lies behind a permanent.")
+	face.show_turn(1.0, 0.5)
+	assert_eq(face.tap_symbol().modulate.a, 0.25, "It shows as the face comes out.")
+
+
+func test_the_attached_mark_is_white_inside_and_black_where_the_cards_border_runs_under_it() -> void:
+	var mark: AttachedMark = AttachedMark.make(Vector2(154.0, 140.0), 28.0, 4, 6)
+	add_child_autofree(mark)
+
+	assert_eq(mark.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+	assert_eq(AttachedMark.box_on(Vector2(154.0, 140.0), 28.0), Rect2(126.0, 0.0, 28.0, 28.0))
+	var look: StyleBoxFlat = mark.get_theme_stylebox("panel") as StyleBoxFlat
+	assert_eq(look.bg_color, Color.WHITE)
+	assert_eq(look.border_color, Color.BLACK)
+	assert_eq([look.border_width_top, look.border_width_right], [4, 4], "The card's own border, along its top and right edges.")
+	assert_eq([look.border_width_left, look.border_width_bottom], [AttachedMark.EDGE, AttachedMark.EDGE], "A thin edge on the other two.")
+	assert_eq(look.corner_radius_top_right, 6, "The card's own rounded corner.")
+	assert_eq(mark.plus_color(), Color.BLACK)
+	assert_almost_eq(mark.plus_center(), AttachedMark.inside(28.0, 4).get_center(), Vector2(0.5, 0.5), "The plus is in the middle of the white.")
+
+
 func test_the_shade_covers_the_card_and_the_tap_symbol_sits_in_the_middle_of_its_art() -> void:
 	var look: CardLook = _look("grizzly_bears")
 	look.is_tapped = true
@@ -274,6 +372,13 @@ func _battlefield(look: CardLook, height: float) -> BattlefieldFace:
 	var face: BattlefieldFace = BattlefieldFace.new()
 	add_child_autofree(face)
 	face.setup(look, height)
+	return face
+
+
+func _attached(look: CardLook, height: float) -> BattlefieldFace:
+	var face: BattlefieldFace = BattlefieldFace.new()
+	add_child_autofree(face)
+	face.setup(look, height, true)
 	return face
 
 

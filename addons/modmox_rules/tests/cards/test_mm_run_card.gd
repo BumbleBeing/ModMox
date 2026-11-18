@@ -37,6 +37,22 @@ func test_flattened_copy_is_independent_of_later_edits() -> void:
 	assert_eq(run_card.base.name, "Goblin")
 
 
+func test_flattening_copies_the_cards_own_parts_and_shares_a_token_definition_file() -> void:
+	var cat: MmCardDefinition = load("res://content/tokens/cat_1_1_white.tres") as MmCardDefinition
+	var create: CreateTokenEffect = CreateTokenEffect.new()
+	create.token = cat
+	var spell: SpellAbility = SpellAbility.new()
+	spell.effects = [create] as Array[MmEffect]
+	var run_card: MmRunCard = _run_card("Kitten")
+	run_card.base.abilities = [spell] as Array[MmAbility]
+
+	var flattened: MmCardDefinition = run_card.flatten()
+
+	var copied: SpellAbility = flattened.abilities[0] as SpellAbility
+	assert_ne(copied, spell, "The card's own ability is a private copy.")
+	assert_eq((copied.effects[0] as CreateTokenEffect).token, cat, "ADR 0044: the Token Definition is shared, file and all.")
+
+
 func test_a_flattened_card_points_to_its_original() -> void:
 	var run_card: MmRunCard = _run_card("Goblin")
 	run_card.modifications.append(_rename("Hobgoblin"))

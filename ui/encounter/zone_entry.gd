@@ -2,7 +2,8 @@ class_name ZoneEntry
 extends PanelContainer
 ## One thing in a Zone Window: a rectangle with art on its left, a name, and a line under
 ## it. Everything on the stack is drawn this way, spell or ability, and so is an Emblem and
-## a Potion. One that can be used now is made usable: it glows green as a card that can be
+## a Potion. An entry with no name is its art and its words alone, as a mode of a modal
+## spell is. One that can be used now is made usable: it glows green as a card that can be
 ## played does, brightens under the cursor, and takes a click (ADR 0032, A537).
 
 const ART_SIZE: float = 64.0
@@ -60,6 +61,12 @@ func _init(art_key: String, entry_name: String, detail: String, tint: Color) -> 
 	_detail.add_theme_font_size_override("font_size", 15)
 	_detail.modulate = Color(1, 1, 1, 0.75)
 	_lines.add_child(_detail)
+	if entry_name == "":
+		_name.hide()
+		_detail.modulate = Color.WHITE
+		_detail.add_theme_font_size_override("font_size", 17)
+		_lines.alignment = BoxContainer.ALIGNMENT_CENTER
+		_row.add_theme_constant_override("separation", 10)
 
 
 ## Keeps the line under the name to one line, cut with an ellipsis where the entry ends.
@@ -74,6 +81,15 @@ func is_detail_cut() -> bool:
 
 func name_text() -> String:
 	return _name.text
+
+
+func is_name_shown() -> bool:
+	return _name.visible
+
+
+## Whether the line under the name is drawn as brightly as a name, as it is with no name.
+func is_detail_full_strength() -> bool:
+	return _detail.modulate == Color.WHITE
 
 
 ## The line under the name; after show_lines(), every line, joined as an Emblem's abilities

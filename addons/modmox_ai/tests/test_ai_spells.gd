@@ -472,3 +472,15 @@ func test_an_enchantment_that_exiles_as_it_enters_is_cast_and_aimed_at_the_oppos
 	var giant: int = Scenario.permanent_named(engine, engine.villain().id, "Hill Giant")
 	assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, agent)).id, giant)
 	assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP))).id, giant)
+
+
+func test_of_two_free_two_twos_the_one_that_also_makes_a_token_is_cast_first() -> void:
+	# Prideful Parent: its enters trigger has no choice to make, and the token it makes is a
+	# creature the Board Evaluator counts like any other, so nothing new is needed.
+	var parent: MmCardDefinition = Scenario.free_copy(load("res://content/cards/foundations/prideful_parent.tres") as MmCardDefinition)
+	var cub: MmCardDefinition = Scenario.creature("Cub", 2, 2, [VigilanceAbility.new()])
+	var no_creatures: Array[MmCardDefinition] = []
+	var engine: MmEngine = AiScenario.ready_with(no_creatures, no_creatures, [cub, parent])
+	assert_not_null(engine)
+
+	assert_eq(AiScenario.cast_name(engine, AiScenario.ask(engine, AiAgent.new())), "Prideful Parent")

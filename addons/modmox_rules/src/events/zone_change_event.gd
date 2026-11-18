@@ -1,6 +1,7 @@
 class_name ZoneChangeEvent
 extends MmEvent
-## A card moves from one zone to another and becomes a new Game Object (CR 400.7, ADR 0008).
+## A card or token moves from one zone to another and becomes a new Game Object (CR 400.7,
+## ADR 0008).
 ## Zones are named by kind and owner rather than referenced, so the event stays plain data
 ## that a copied game state can share.
 
@@ -61,6 +62,10 @@ func apply(state: MmGameState) -> void:
 	var arriving: MmGameObject = state.create_object(leaving.card_id, leaving.owner_id, leaving.definition)
 	to_zone.insert(arriving, position)
 	new_object_id = arriving.id
+	if leaving.is_token:
+		# CR 111.7: a token that leaves the battlefield moves like a card, and is still a
+		# token where it lands until state-based actions see it there (CR 704.5d).
+		arriving.become_token()
 	if to_zone_kind == MmZone.Kind.EXILE and exiled_with_object_id != 0:
 		arriving.record_exiled_with(exiled_with_object_id)
 	if to_zone_kind == MmZone.Kind.LIBRARY and from_zone_kind == MmZone.Kind.HAND:

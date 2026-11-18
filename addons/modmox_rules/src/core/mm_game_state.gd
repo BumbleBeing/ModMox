@@ -444,6 +444,10 @@ func fingerprint() -> String:
 				entries.append("%d known to %s" % [game_object.id, game_object.known_to_player_ids])
 			if game_object.exiled_with_object_id != 0:
 				entries.append("%d exiled with %d" % [game_object.id, game_object.exiled_with_object_id])
+			if game_object.attached_to_object_id != 0:
+				entries.append("%d attached to %d" % [game_object.id, game_object.attached_to_object_id])
+			if game_object.is_token:
+				entries.append("%d token" % game_object.id)
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 

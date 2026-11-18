@@ -16,6 +16,9 @@ const PRINTED: Dictionary[String, String] = {
 	"battlegrowth": "Put a +1/+1 counter on target creature.",
 	"black_knight": "First strike\nProtection from white",
 	"charmed_stray": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each other creature you control originally named Charmed Stray.",
+	"coordinated_maneuver": "Choose one —\n"
+		+ "• Coordinated Maneuver deals X damage to target creature, where X is the number of creatures you control.\n"
+		+ "• Destroy target enchantment.",
 	"counterspell": "Counter target spell.",
 	"dark_ritual": "Add {B}{B}{B}.",
 	"drudge_skeletons": "{B}: Regenerate this creature.",
@@ -34,17 +37,22 @@ const PRINTED: Dictionary[String, String] = {
 	"keldon_warlord": "This creature's power and toughness are each equal to the number of non-Wall creatures you control.",
 	"lightning_bolt": "Lightning Bolt deals 3 damage to any target.",
 	"llanowar_elves": "{T}: Add {G}.",
+	"malamet_war_scribe": "When this creature enters, each creature you control gets +2/+1 until end of turn.",
 	"mountain": "({T}: Add {R}.)",
 	"oblivion_ring": "When this enchantment enters, exile another target nonland permanent.\n"
 		+ "When this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.",
 	"ornery_kudu": "When this creature enters, put a -1/-1 counter on target creature you control.",
+	"path_of_bravery": "As long as your life total is greater than or equal to your starting life total, each creature you control gets +1/+1.\n"
+		+ "Whenever one or more creatures you control attack, you gain X life, where X is the number of attacking creatures.",
 	"plains": "({T}: Add {W}.)",
 	"raise_dead": "Return target creature card from your graveyard to your hand.",
+	"prideful_parent": "Vigilance\nWhen this creature enters, create a 1/1 white Cat creature token.",
 	"prodigal_sorcerer": "{T}: This creature deals 1 damage to any target.",
 	"samite_healer": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
 	"serra_angel": "Flying, vigilance",
 	"shatter": "Destroy target artifact.",
 	"shivan_dragon": "Flying\n{R}: This creature gets +1/+0 until end of turn.",
+	"short_sword": "Equipped creature gets +1/+1.\nEquip {1}",
 	"skyknight_squire": "Whenever another creature you control enters, put a +1/+1 counter on this creature.\n"
 		+ "As long as this creature has three or more +1/+1 counters on it, it has flying and is a Knight in addition to its other types.",
 	"stifle": "Counter target activated or triggered ability.",
@@ -129,6 +137,37 @@ func test_what_a_spell_does_is_its_whole_text() -> void:
 	assert_eq(AbilityText.effect_of(bolt, "Lightning Bolt"), "Lightning Bolt deals 3 damage to any target.")
 
 
+func test_a_modal_spell_prints_choose_one_and_a_bullet_for_each_mode() -> void:
+	var charm: MmCardDefinition = Scenario.free_charm("Charm")
+
+	var text: String = AbilityText.of_card(charm.abilities, charm.card_types, charm.supertypes, "Charm")
+
+	assert_eq(text, "Choose one —\n• Charm deals 2 damage to target creature.\n• Destroy target enchantment.")
+
+
+func test_a_mode_is_worded_alone_and_is_what_a_modal_spell_does_once_it_is_chosen() -> void:
+	var spell: SpellAbility = Scenario.free_charm("Charm").abilities[0] as SpellAbility
+
+	assert_eq(AbilityText.mode_text(spell, 1, "Charm"), "Destroy target enchantment.")
+	assert_eq(AbilityText.effect_of(spell, "Charm", 0), "Charm deals 2 damage to target creature.")
+	assert_true(AbilityText.effect_of(spell, "Charm").begins_with("Choose one —"), "Before a mode is chosen, every mode.")
+
+
+func test_a_mode_with_a_counted_amount_says_what_x_is() -> void:
+	var count: CountValue = CountValue.new()
+	count.selection = Scenario.each(Scenario.all_of([Scenario.of_type(MmCardTypes.CardType.CREATURE), _yours()]))
+	var damage: DealDamageEffect = Scenario.deal_damage(0, Scenario.targeted(0))
+	damage.amount = count
+	var spell: SpellAbility = Scenario.free_modal("Maneuver", [
+		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))], [damage]),
+		Scenario.spell_mode([Scenario.target(Scenario.of_type(MmCardTypes.CardType.ENCHANTMENT))],
+			[Scenario.destroy(Scenario.targeted(0))]),
+	]).abilities[0] as SpellAbility
+
+	assert_eq(AbilityText.mode_text(spell, 0, "Maneuver"),
+		"Maneuver deals X damage to target creature, where X is the number of creatures you control.")
+
+
 func test_a_free_ability_costs_zero() -> void:
 	var ability: ActivatedAbility = ActivatedAbility.new()
 	ability.effects = [Scenario.gain_life(1, Scenario.you())]
@@ -163,6 +202,9 @@ func test_the_trigger_kinds_are_worded() -> void:
 		"Whenever you cast a creature spell, you gain 1 life.": Scenario.casts(creature, Whose.YOU),
 		"Whenever an opponent casts a spell, you gain 1 life.": Scenario.casts(null, Whose.OPPONENT),
 		"Whenever a player casts an artifact spell, you gain 1 life.": Scenario.casts(Scenario.of_type(CardType.ARTIFACT), Whose.ANY),
+		"Whenever one or more creatures you control attack, you gain 1 life.": _attack(Whose.YOU),
+		"Whenever one or more creatures an opponent controls attack, you gain 1 life.": _attack(Whose.OPPONENT),
+		"Whenever one or more creatures a player controls attack, you gain 1 life.": _attack(Whose.ANY),
 	}
 	for text: String in expected:
 		assert_eq(AbilityText.of_ability(Scenario.triggered(expected[text], gain), "this creature"), text)
@@ -190,6 +232,9 @@ func test_the_effects_no_authored_card_uses_yet_are_worded() -> void:
 		"Return a creature you control to its owner's hand.": Scenario.return_to_hand(Scenario.chosen(Scenario.all_of([Scenario.of_type(CardType.CREATURE), you_control]))),
 		"Return each creature to its owner's hand.": Scenario.return_to_hand(Scenario.each_creature()),
 		"Destroy an artifact.": Scenario.destroy(Scenario.chosen(Scenario.of_type(CardType.ARTIFACT))),
+		"Create a 1/1 white Cat creature token.": Scenario.create_tokens(Scenario.cat()),
+		"Create two 2/2 black and green Zombie Warrior creature tokens.": Scenario.create_tokens(
+			Scenario.token(2, 2, [MmCardTypes.CardColor.BLACK, MmCardTypes.CardColor.GREEN], ["Zombie", "Warrior"]), 2),
 	}
 	for text: String in expected:
 		var spell: SpellAbility = SpellAbility.new()
@@ -324,6 +369,13 @@ func test_a_conditional_static_ability_is_one_sentence_that_calls_its_source_it_
 	assert_eq(AbilityText.of_ability(squire, "this creature"),
 		"As long as this creature has three or more +1/+1 counters on it, it has flying and is a Knight in addition to its other types.")
 	assert_eq(AbilityText.of_ability(one_counter, "this creature"), "As long as this creature has a +1/+1 counter on it, it gets +1/+0.")
+	var brave: ContinuousStaticAbility = Scenario.continuous_static(
+		[Scenario.modify_pt(1, 1, SourceSelection.new())], LifeAtLeastStartingCondition.new())
+	assert_eq(AbilityText.of_ability(brave, "this creature"),
+		"As long as your life total is greater than or equal to your starting life total, it gets +1/+1.")
+	assert_eq(AbilityText.things(Scenario.all_of([Scenario.of_type(CardType.CREATURE), IsAttackingFilter.new()])), "attacking creatures")
+	assert_eq(AbilityText.things(Scenario.all_of([Scenario.of_type(CardType.CREATURE), Scenario.is_not(IsAttackingFilter.new())])),
+		"nonattacking creatures")
 
 
 func test_a_counter_filter_is_worded_after_its_noun() -> void:
@@ -385,7 +437,34 @@ func test_an_ability_restricted_only_to_sorcery_timing_says_so() -> void:
 	assert_eq(AbilityText.of_ability(ability, "this creature"), "{1}: Regenerate this creature. Activate only as a sorcery.")
 
 
+func test_equip_prints_as_a_keyword_with_its_cost_and_on_the_stack_as_what_it_does() -> void:
+	var equip: EquipAbility = EquipAbility.new()
+	equip.mana_cost = Scenario.mana_cost(1)
+
+	assert_eq(AbilityText.of_ability(equip, "this artifact"), "Equip {1}")
+	assert_true(AbilityText.is_keyword(equip))
+	assert_eq(AbilityText.effect_of(equip, "this artifact"), "Attach this artifact to target creature you control.")
+
+
+func test_what_an_equipment_is_attached_to_is_the_equipped_creature() -> void:
+	var bonus: ModifyPowerToughnessContinuousEffect = Scenario.modify_pt(1, 1, AttachedToSelection.new())
+
+	assert_eq(AbilityText.of_ability(Scenario.continuous_static([bonus]), "this artifact"), "Equipped creature gets +1/+1.")
+
+
 func test_on_the_stack_an_emblems_ability_reads_without_its_cost_or_restrictions() -> void:
 	var electromancers: MmCardDefinition = load("res://content/emblems/electromancers_boon.tres")
 
 	assert_eq(AbilityText.effect_of(electromancers.abilities[0], AbilityText.EMBLEM_NOUN), "This emblem deals 3 damage to any target.")
+
+
+func _yours() -> ControlledByFilter:
+	var yours: ControlledByFilter = ControlledByFilter.new()
+	yours.whose = Whose.YOU
+	return yours
+
+
+func _attack(whose: Whose) -> AttackersDeclaredTrigger:
+	var trigger: AttackersDeclaredTrigger = AttackersDeclaredTrigger.new()
+	trigger.whose = whose
+	return trigger

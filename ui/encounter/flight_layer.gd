@@ -35,6 +35,12 @@ var gap_seconds: float:
 var _timing: CardFlights = CardFlights.new()
 ## Where the zone of a route is drawn: place_of(route, is_landing) -> FacePose or null.
 var _place_of: Callable = func(_route: CardFlights.Route, _is_landing: bool) -> FacePose: return null
+## How the card of a route is drawn where it leaves or lands, when the zone alone does not
+## say: kind_of(route, is_landing) -> FlightCard.Kind.
+var _kind_of: Callable = func(route: CardFlights.Route, is_landing: bool) -> FlightCard.Kind:
+	return FlightCard.kind_in(route.to_zone_kind if is_landing else route.from_zone_kind)
+## The routes put in the air by put_in_air() and not yet aimed.
+var _put: Array[CardFlights.Route] = []
 ## Each card in the air's way, and the Flight Card drawn for it, by the Game Object that lands.
 var _routes: Dictionary[int, CardFlights.Route] = {}
 var _cards: Dictionary[int, FlightCard] = {}
@@ -50,8 +56,13 @@ func _init() -> void:
 ## now: place_of(route: CardFlights.Route, is_landing: bool) -> FacePose, or null when
 ## nothing shows it. Leaving, it is where the Game Object that left is drawn, on its way if
 ## it is moving; landing, where the one it became belongs.
-func setup(place_of: Callable) -> void:
+## [param kind_of] says how the card is drawn there, for a screen that draws some cards of
+## a zone another way, as a Tucked Card is a Battlefield Face in exile (game ADR 0043):
+## kind_of(route, is_landing) -> FlightCard.Kind. Without it the zone says.
+func setup(place_of: Callable, kind_of: Callable = Callable()) -> void:
 	_place_of = place_of
+	if kind_of.is_valid():
+		_kind_of = kind_of
 
 
 ## Shows the cards that changed zones between [param previous] and [param next] flying,
@@ -63,6 +74,41 @@ func show_snapshot(previous: EncounterSnapshot, next: EncounterSnapshot, redraw:
 	var begun: Array[CardFlights.Route] = _launch(previous, next)
 	redraw.call()
 	_aim(begun, next)
+
+
+## Puts a card in the air that changed no zone but is drawn somewhere else now, as a
+## Tucked Card is when its Pile Window opens (game ADR 0043): the card of [param route],
+## whose two ends are the same Game Object, from [param start], drawn there as
+## [param kind] from [param look]. Called before the board is rebuilt; aim_put() aims it
+## after. Nothing flies with no speed. One already in the air carries on from where it has
+## got to, which [param start] should then be (pose_of()).
+func put_in_air(route: CardFlights.Route, start: FacePose, kind: FlightCard.Kind, look: CardLook) -> void:
+	if seconds <= 0.0 or start == null:
+		return
+	route.leaving_kind = kind
+	route.leaving_look = look
+	if _timing.is_flying(route.object_id):
+		if _cards.has(route.object_id):
+			route.leaving_kind = _cards[route.object_id].landing_kind
+			route.leaving_look = _cards[route.object_id].landing_look
+		_take_down(route.object_id, false)
+	_timing.launch(route.object_id, start, start)
+	_routes[route.object_id] = route
+	_put.append(route)
+
+
+## Aims each card put_in_air() put there at where it belongs on the board as it is drawn
+## now, for [param next], and draws it.
+func aim_put(next: EncounterSnapshot) -> void:
+	var begun: Array[CardFlights.Route] = _put.duplicate()
+	_put.clear()
+	_aim(begun, next)
+
+
+## Where the card that lands as Game Object [param object_id] is drawn right now, or null
+## if it is not in the air.
+func pose_of(object_id: int) -> FacePose:
+	return _timing.pose_of(object_id)
 
 
 ## Lets [param delta] seconds go by: each card in the air flies on, aimed again at where it
@@ -122,7 +168,7 @@ func _launch(previous: EncounterSnapshot, next: EncounterSnapshot) -> Array[Card
 	if seconds <= 0.0 or next.is_rewind or previous == null:
 		return begun
 	for route: CardFlights.Route in CardFlights.routes(next.events):
-		var kind: FlightCard.Kind = FlightCard.kind_in(route.from_zone_kind)
+		var kind: FlightCard.Kind = _kind_of.call(route, false)
 		var look: CardLook = previous.look_of(route.first_object_id)
 		var start: FacePose = _timing.pose_of(route.first_object_id)
 		var is_carrying_on: bool = start != null
@@ -162,7 +208,7 @@ func _aim(begun: Array[CardFlights.Route], next: EncounterSnapshot) -> void:
 			continue
 		_timing.aim(route.object_id, landing)
 		var card: FlightCard = FlightCard.new(route.leaving_kind, route.leaving_look,
-				FlightCard.kind_in(route.to_zone_kind), next.look_of(route.object_id))
+				_kind_of.call(route, true), next.look_of(route.object_id))
 		add_child(card)
 		_cards[route.object_id] = card
 		took_off.emit(route)

@@ -185,7 +185,8 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 		return all_to_first(decision as DivideCombatDamageDecision)
 	if decision is OrderTriggersDecision:
 		return range((decision as OrderTriggersDecision).source_object_ids.size())
-	if decision is ChooseTargetDecision or decision is ChooseReplacementEffectDecision or decision is ChooseObjectDecision:
+	if decision is ChooseTargetDecision or decision is ChooseReplacementEffectDecision or decision is ChooseObjectDecision \
+			or decision is ChooseModeDecision:
 		return 0
 	return null
 
@@ -1286,3 +1287,141 @@ static func exiled_by_owner(engine: MmEngine, player: MmPlayer) -> Array[int]:
 		if card.owner_id == player.id:
 			ids.append(card.id)
 	return ids
+
+
+# --- Card track: Equipment -------------------------------------------------------------
+
+
+## "Equipped creature": what the ability's source is attached to.
+static func attached() -> AttachedToSelection:
+	return AttachedToSelection.new()
+
+
+## "Equip [cost]".
+static func equip(cost: MmManaCost) -> EquipAbility:
+	var ability: EquipAbility = EquipAbility.new()
+	ability.mana_cost = cost
+	return ability
+
+
+## An Equipment costing {0}: "Equipped creature gets +[bonus]/+[bonus]. Equip [equip_cost]",
+## with equip costing {0} unless [param equip_cost] is given.
+static func sword(card_name: String, bonus: int = 1, equip_cost: MmManaCost = null) -> MmCardDefinition:
+	var definition: MmCardDefinition = artifact(card_name, [
+		continuous_static([modify_pt(bonus, bonus, attached())]),
+		equip(mana_cost(0) if equip_cost == null else equip_cost)])
+	definition.subtypes = ["Equipment"]
+	return definition
+
+
+## The ID of what [param object_id] is attached to, or 0.
+static func attached_to(engine: MmEngine, object_id: int) -> int:
+	return engine.game_state().object(object_id).attached_to_object_id
+
+
+## Activates equip on [param equipment_id] for [param creature_id] and lets it resolve.
+static func equip_and_resolve(engine: MmEngine, equipment_id: int, creature_id: int) -> String:
+	var error: String = activate(engine, equipment_id, [MmReference.to_object(creature_id)])
+	return error if error != "" else resolve_stack(engine)
+
+
+# --- Tokens ---------------------------------------------------------------------------
+
+
+## A Token Definition: a [param power]/[param toughness] creature token of [param colors]
+## and [param subtypes], with [param abilities]. CR 111.4: named for its subtypes plus the
+## word "Token".
+static func token(power: int, toughness: int, colors: Array[MmCardTypes.CardColor], subtypes: Array[String],
+		abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var definition: MmCardDefinition = MmCardDefinition.new()
+	definition.name = " ".join(subtypes) + " Token"
+	definition.card_types = [MmCardTypes.CardType.CREATURE]
+	definition.subtypes = subtypes
+	definition.color_indicator = colors
+	definition.power = power
+	definition.toughness = toughness
+	definition.abilities = abilities
+	return definition
+
+
+## A 1/1 white Cat creature token.
+static func cat() -> MmCardDefinition:
+	return token(1, 1, [MmCardTypes.CardColor.WHITE], ["Cat"])
+
+
+## "Create [param amount] [param made]".
+static func create_tokens(made: MmCardDefinition, amount: int = 1) -> CreateTokenEffect:
+	var effect: CreateTokenEffect = CreateTokenEffect.new()
+	effect.token = made
+	effect.amount = amount
+	return effect
+
+
+## An instant costing {0}: "Create [param amount] [param made]".
+static func free_tokens(card_name: String, made: MmCardDefinition, amount: int = 1) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [], [create_tokens(made, amount)])
+
+
+## The IDs of the tokens on the battlefield, in ID order.
+static func tokens_on_battlefield(engine: MmEngine) -> Array[int]:
+	var ids: Array[int] = []
+	for permanent: MmGameObject in engine.game_state().battlefield.objects():
+		if permanent.is_token:
+			ids.append(permanent.id)
+	ids.sort()
+	return ids
+
+
+# --- Card track: modal spells ----------------------------------------------------------
+
+
+## One mode of a modal spell: "[effects]", with its own [param targets].
+static func spell_mode(targets: Array[TargetRequirement], effects: Array[MmEffect]) -> SpellMode:
+	var mode: SpellMode = SpellMode.new()
+	mode.targets = targets
+	mode.effects = effects
+	return mode
+
+
+## An instant costing {0}: "Choose one — [modes]".
+static func free_modal(card_name: String, modes: Array[SpellMode]) -> MmCardDefinition:
+	var definition: MmCardDefinition = instant(card_name, mana_cost(0), [], [])
+	(definition.abilities[0] as SpellAbility).modes = modes
+	return definition
+
+
+## An instant costing {0}: "Choose one — • [param amount] damage to target creature.
+## • Destroy target enchantment."
+static func free_charm(card_name: String, amount: int = 2) -> MmCardDefinition:
+	return free_modal(card_name, [
+		spell_mode([target(of_type(MmCardTypes.CardType.CREATURE))], [deal_damage(amount, targeted(0))]),
+		spell_mode([target(of_type(MmCardTypes.CardType.ENCHANTMENT))], [destroy(targeted(0))]),
+	])
+
+
+## Chooses mode [param mode_index] of the spell in the pending mode decision.
+static func choose_mode(engine: MmEngine, mode_index: int) -> String:
+	var decision: ChooseModeDecision = engine.pending_decision() as ChooseModeDecision
+	if decision == null:
+		return "Not a mode decision."
+	var index: int = decision.modes.find(mode_index)
+	return "Mode %d is not offered." % mode_index if index == -1 else engine.submit(index)
+
+
+## Casts [param object_id] choosing mode [param mode_index] (when asked), then
+## [param targets] in order, and pays automatically.
+static func cast_mode(engine: MmEngine, object_id: int, mode_index: int, targets: Array[MmReference] = []) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var index: int = cast_index(decision, object_id)
+	if index == -1:
+		return "Object %d cannot be cast." % object_id
+	var error: String = engine.submit(index)
+	if error == "" and engine.pending_decision() is ChooseModeDecision:
+		error = choose_mode(engine, mode_index)
+	for chosen: MmReference in targets:
+		if error != "":
+			return error
+		error = choose_target(engine, chosen)
+	return error if error != "" else auto_pay(engine)

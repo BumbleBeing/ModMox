@@ -64,7 +64,7 @@ func test_a_permanent_has_state_information_and_a_card_in_hand_has_none() -> voi
 	var snapshot: EncounterSnapshot = presenter.snapshot()
 	var bear: MmObjectView = snapshot.view.battlefield[0]
 	assert_eq(snapshot.state_information_of(bear.id).size(), 1)
-	assert_eq(snapshot.state_information_of(bear.id)[0].title, "Summoning sick")
+	assert_eq(snapshot.state_information_of(bear.id)[0].title, "Summoning Sick")
 	assert_eq(snapshot.state_information_of(snapshot.view.hand[0].id).size(), 0)
 
 
@@ -85,6 +85,30 @@ func test_an_ability_on_the_stack_has_the_original_and_rarity_of_its_source() ->
 	assert_not_null(ability.ability)
 	assert_eq(snapshot.original_of(ability.id).name, "Life Land")
 	assert_true(snapshot.has_rarity(ability.id))
+
+
+func test_a_token_has_its_token_definitions_art_a_token_type_line_and_no_original() -> void:
+	var cat: MmCardDefinition = load("res://content/tokens/cat_1_1_white.tres") as MmCardDefinition
+	var setup: MmEncounterSetup = Scenario.setup_with(Scenario.copies(Scenario.free_tokens("Kitten", cat), 40),
+		Scenario.copies(Scenario.vanilla("Card"), 40))
+	var presenter: EncounterPresenter = _started(setup)
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	_pass_until(presenter, func() -> bool: return _cast_index(presenter) != -1)
+
+	presenter.answer(_cast_index(presenter))
+	presenter.wait_until_idle()
+
+	var snapshot: EncounterSnapshot = presenter.snapshot()
+	assert_eq(snapshot.view.battlefield.size(), 1)
+	var token: MmObjectView = snapshot.view.battlefield[0]
+	assert_eq(snapshot.look_of(token.id).art_key, "tokens/cat_1_1_white")
+	assert_eq(snapshot.look_of(token.id).type_line(), "Token Creature — Cat")
+	assert_null(snapshot.original_of(token.id), "ADR 0033: a token has no Original.")
+	var titles: Array[String] = []
+	for entry: StateEntry in snapshot.state_information_of(token.id):
+		titles.append(entry.title)
+	assert_eq(titles, ["Token", "Summoning Sick"])
 
 
 func _started(setup: MmEncounterSetup, is_auto_passing: bool = true) -> EncounterPresenter:

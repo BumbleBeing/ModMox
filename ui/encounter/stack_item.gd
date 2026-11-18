@@ -44,6 +44,10 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 	else:
 		item.first_line = seen.name
 		var rules: String = AbilityText.of_card(seen.abilities, seen.card_types, seen.supertypes, seen.name)
+		var spell: SpellAbility = spell_of(seen)
+		if spell != null and spell.is_modal() and seen.chosen_mode != SpellAbility.NO_MODE:
+			# ADR 0046: a modal spell on the stack does only what its chosen mode does.
+			rules = AbilityText.mode_text(spell, seen.chosen_mode, seen.name)
 		item.full_text = seen.name if rules == "" else "%s — %s" % [seen.name, rules.replace("\n", " · ")]
 	item.second_line = called.of(seen.controller_id)
 	var target_names: PackedStringArray = []
@@ -82,3 +86,11 @@ static func _find(object_id: int, among: Array) -> MmObjectView:
 
 static func _possessive(owner: String) -> String:
 	return owner + ("'" if owner.ends_with("s") else "'s")
+
+
+## The spell ability of [param seen], or null.
+static func spell_of(seen: MmObjectView) -> SpellAbility:
+	for ability: MmAbility in seen.abilities:
+		if ability is SpellAbility:
+			return ability as SpellAbility
+	return null

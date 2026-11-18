@@ -657,10 +657,14 @@ func _emit() -> void:
 	for seen: MmObjectView in made.visible_objects():
 		_add_look(made, seen)
 		_add_original(made, seen)
-	for permanent: MmObjectView in made.view.battlefield:
-		var state: Array[StateEntry] = StateInformation.of(permanent, made.view, names)
+	# A Tucked Card says what exiled it (game ADR 0043), so the cards in exile are asked too.
+	var stated: Array[MmObjectView] = made.view.battlefield.duplicate()
+	for player_id: int in made.view.exiles:
+		stated.append_array(made.view.exiles[player_id])
+	for seen: MmObjectView in stated:
+		var state: Array[StateEntry] = StateInformation.of(seen, made.view, names)
 		if not state.is_empty():
-			made.state_information[permanent.id] = state
+			made.state_information[seen.id] = state
 	_snapshot = made
 	_plans.clear()
 
@@ -735,8 +739,11 @@ func _add_original(made: EncounterSnapshot, seen: MmObjectView) -> void:
 	made.rarities[seen.id] = run_card.base.rarity
 
 
-## The art of the card [param seen] is, or for an ability, of the card it came from.
+## The art of the card [param seen] is, or for an ability, of the card it came from, or for
+## a token, of its Token Definition.
 func _art_key(seen: MmObjectView) -> String:
+	if seen.is_token:
+		return ArtLibrary.token_key(_file_name(seen.token_definition)) if seen.token_definition != null else ""
 	var card_id: int = seen.card_id if seen.card_id != MmGameObject.NO_CARD else seen.source_card_id
 	var run_card: MmRunCard = _engine.run_card(card_id)
 	if run_card == null or run_card.base == null:

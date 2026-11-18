@@ -147,6 +147,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _choose_replacement(decision as ChooseReplacementEffectDecision, source, rng)
 	if decision is ChooseObjectDecision:
 		return _choose_object(decision as ChooseObjectDecision, world, source, rng)
+	if decision is ChooseModeDecision:
+		return _choose_mode(decision as ChooseModeDecision, world, source, rng)
 	assert(false, "AiAgent cannot answer %s." % decision.describe())
 	return null
 
@@ -375,7 +377,7 @@ func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: in
 		if cast == null:
 			continue
 		var effects: Array[MmEffect] = AiTiming.effects_of_action(world, cast)
-		var tag: AiTiming.Tag = AiTiming.tag_of_effects(effects)
+		var tag: AiTiming.Tag = AiTiming.tag_of_action(world, cast)
 		if AiTiming.is_trick(tag) or _adds_mana(effects):
 			continue
 		if tag == AiTiming.Tag.REMOVAL and not _has_something_to_remove(world, cast, me):
@@ -394,13 +396,31 @@ func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: in
 func _has_something_to_remove(world: MmGameState, cast: CastSpellAction, me: int) -> bool:
 	for ability: MmAbility in world.characteristics_of(world.object(cast.object_id)).abilities:
 		var spell: SpellAbility = ability as SpellAbility
-		if spell == null or spell.targets.is_empty():
+		if spell == null:
 			continue
-		for found: MmReference in spell.targets[0].legal_targets(world, MmEffectContext.new(me, cast.object_id)):
-			if found.is_object() and world.object(found.id).controller_id != me:
-				return true
+		var first_targets: Array[TargetRequirement] = []
+		for requirements: Array[TargetRequirement] in _target_lists(spell):
+			if not requirements.is_empty():
+				first_targets.append(requirements[0])
+		if first_targets.is_empty():
+			continue
+		# A modal spell has something to remove when any mode has.
+		for requirement: TargetRequirement in first_targets:
+			for found: MmReference in requirement.legal_targets(world, MmEffectContext.new(me, cast.object_id)):
+				if found.is_object() and world.object(found.id).controller_id != me:
+					return true
 		return false
 	return not _creatures_of(world, 1 - me).is_empty()
+
+
+## The target requirements of [param spell]: its own, or each of its modes'.
+static func _target_lists(spell: SpellAbility) -> Array[Array]:
+	if not spell.is_modal():
+		return [spell.targets]
+	var lists: Array[Array] = []
+	for mode: SpellMode in spell.modes:
+		lists.append(mode.targets)
+	return lists
 
 
 ## The cheapest counter worth casting at the other player's spell on top of the stack: one
@@ -432,9 +452,10 @@ func _targets_spells(world: MmGameState, cast: CastSpellAction) -> bool:
 		var spell: SpellAbility = ability as SpellAbility
 		if spell == null:
 			continue
-		for requirement: TargetRequirement in spell.targets:
-			if requirement.among == TargetRequirement.Among.SPELLS:
-				return true
+		for requirements: Array[TargetRequirement] in _target_lists(spell):
+			for requirement: TargetRequirement in requirements:
+				if requirement.among == TargetRequirement.Among.SPELLS:
+					return true
 	return false
 
 
@@ -552,6 +573,28 @@ func _choose_object(decision: ChooseObjectDecision, world: MmGameState, source: 
 			least = index
 			least_value = value
 	return least
+
+
+## The mode of a modal spell being cast (CR 601.2b). FULL: simulates each mode. CHEAP:
+## the first mode that could reach a permanent or player of the other player's; with none,
+## the first.
+func _choose_mode(decision: ChooseModeDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
+	if decision.modes.size() == 1:
+		_reason = Reason.ONLY_CHOICE
+		return 0
+	_reason = Reason.BEST_SCORE
+	if mode == Mode.FULL:
+		var options: Array[int] = []
+		for index: int in decision.modes.size():
+			options.append(index)
+		return _best_option(options, _simulate_each(source, rng, options, decision.player_id), rng, 0)
+	for index: int in decision.modes.size():
+		for reached: MmReference in decision.mode_targets[index]:
+			if reached.is_player() and reached.id != decision.player_id:
+				return index
+			if reached.is_object() and world.object(reached.id).controller_id != decision.player_id:
+				return index
+	return 0
 
 
 func _choose_replacement(decision: ChooseReplacementEffectDecision, source: MmSimulationSource, rng: MmRng) -> int:
@@ -768,7 +811,8 @@ func _effects_of_stack_object(world: MmGameState, object_id: int) -> Array[MmEff
 		return effects
 	for ability: MmAbility in world.characteristics_of(item).abilities:
 		if ability is SpellAbility:
-			effects.append_array((ability as SpellAbility).effects)
+			# A modal spell does what its chosen mode does (ADR 0046).
+			effects.append_array((ability as SpellAbility).effects_for(item.chosen_mode))
 	return effects
 
 

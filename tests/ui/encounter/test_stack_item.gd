@@ -167,6 +167,19 @@ func _view() -> MmPlayerView:
 	return view
 
 
+func test_a_modal_spell_says_in_full_only_the_mode_it_was_cast_with() -> void:
+	var view: MmPlayerView = _view()
+	var charm: MmObjectView = _spell(20, "Charm", HERO, [MmReference.to_object(BEARS)])
+	charm.abilities = [Scenario.free_charm("Charm").abilities[0]]
+	charm.chosen_mode = 0
+	view.stack = [charm]
+
+	var item: StackItem = StackItem.of(charm, view)
+
+	assert_eq(item.first_line, "Charm")
+	assert_eq(item.full_text, "Charm — Charm deals 2 damage to target creature.")
+
+
 func _spell(id: int, spell_name: String, controller: int, targets: Array[MmReference]) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()
 	seen.id = id

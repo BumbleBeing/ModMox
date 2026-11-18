@@ -46,6 +46,10 @@ _Avoid_: Level, act, world, biome
 The screen that opens a Stage before its Stage Map: the Stage's name, its Tier and its Boss, who is introduced here, on a ground of the Stage's own color.
 _Avoid_: Cutscene, title card, splash
 
+**Tier Track**:
+The row of five medallions on the Stage Intro, one for each Tier: each Stage already played shows its color, the one being entered is lit, and those ahead are empty.
+_Avoid_: Tier graphic, progress bar, breadcrumbs
+
 **Node**:
 One stop on a Stage's map. Its kind is one of Start Node, Store, Workshop, Trove, Lesser Encounter, Elite Encounter, Boss Encounter or Chaos Node.
 _Avoid_: Event (an engine term for a change to the game), room, space
@@ -211,8 +215,12 @@ The main menu's record of everything seen across runs, in four pages: Achievemen
 _Avoid_: Hall of Fame (one of its pages), collection (the Collection is a run's cards), Card Gallery (a developer tool)
 
 **Credits**:
-The one screen that names who and what made the game: its makers, the artists of the card and Emblem art, Godot, and the notice that Magic belongs to Wizards of the Coast. It rolls after a won run, and the main menu opens it too.
+The one screen that names who and what made the game: its makers, Godot, and the notice that Magic belongs to Wizards of the Coast. It rolls after a won run, and the main menu opens it too. The artists are named on its Art Attribution page.
 _Avoid_: Attributions, about screen, end roll
+
+**Art Attribution**:
+The Credits' page that names the artist of every picture the game borrows: each card's art, each Emblem's, and the card art each Portrait was drawn after.
+_Avoid_: Art credits, artist list, Credits (the screen it belongs to)
 
 ## Decks
 
@@ -286,6 +294,10 @@ _Avoid_: Nickname, handle, display name
 The Zone Window for the stack. It is there while something is on the stack or triggers are being put in order, lists what resolves first at the top, and cannot be closed. Each entry has two lines, each cut short with an ellipsis: an ability leads with what it does and a spell with its name, then comes who controls it and what it targets.
 _Avoid_: Stack region, stack panel
 
+**Mode Window**:
+The window over the battlefield that asks which Mode of a Modal Spell is cast (game ADR 0047), titled "[spell]: choose one". It has an entry for every Mode, each only the card's art and the Mode's words; one that cannot be chosen is dimmed. Pointing at a Mode shows it in full in the Info Panel and marks what it could target. It opens only when two or more Modes can be chosen. It is the same window that asks which replacement effect applies first.
+_Avoid_: Mode menu, charm picker, choose-one dialog
+
 **Stack Color**:
 The color a spell or ability has for as long as it is on the stack: one of eight muted hues that leave out the Glow's colors and the Block Lines'. It is on the entry's border and the stripe down its left side, on the arrow to a spell it targets, and on what the entry marks on the board while the cursor is over it.
 _Avoid_: Entry tint, stack hue, highlight color
@@ -318,7 +330,7 @@ _Avoid_: Tween, animation system, transition
 The fading face of a permanent that has left the battlefield, drawn where it was for a quarter of a second. It takes no clicks and nothing points at it. A permanent that flies to another zone leaves none.
 
 **Card Flight**:
-A card drawn in the air on its way from one zone to another, in place of fading out in one place and in at another. It starts where the card was drawn and lands where it now belongs, over every window, and what it lands on shows nothing of it until it arrives. A card that passes through a zone on the way makes one flight. Cards a player draws together fly one after another, and each joins the hand when it lands.
+A card drawn in the air on its way from one zone to another, in place of fading out in one place and in at another. It starts where the card was drawn and lands where it now belongs, over every window, and what it lands on shows nothing of it until it arrives. A card that passes through a zone on the way makes one flight. Cards a player draws together fly one after another, and each joins the hand when it lands. A Tucked Card also flies though it changes no zone: to its Pile Window and back, and to its pile once its permanent has gone.
 
 **Flight Card**:
 The card drawn for a Card Flight. It is drawn as what the card was where it left and as what it is where it lands, one fading into the other: a Card Face becomes a Battlefield Face, and a card back turns face up. At the Stack Window, which shows an entry and no card, it flies to the entry's art and fades out, or fades in there.
@@ -366,6 +378,18 @@ _Avoid_: Stop key, full control
 **Damage Chip**:
 A red bead on a creature with the damage marked on it this turn, resting on the top of its power and toughness box over the toughness. The box itself keeps showing the creature's power and toughness.
 _Avoid_: Damage counter, wound marker, remaining toughness
+
+**Attached Mark**:
+A white square with a black plus in the corner of an attachment's Battlefield Face, past the end of its name. It says the permanent is attached to the one it lies behind. An attachment, such as an Equipment on a creature, is drawn sideways behind that permanent with only its name strip showing past the right edge, and the mark is at the bottom of that strip.
+_Avoid_: Plus icon, attach badge, link icon, equip mark (it is for any attachment)
+
+**Tucked Card**:
+A card in exile drawn behind the permanent that exiled it, for as long as that permanent is on the battlefield: the card Oblivion Ring will return when it leaves. It lies sideways as an attachment does, with only its name strip showing past the right edge, but has no Attached Mark, and lies behind every attachment of that permanent. It is still in its owner's exile and that pile counts it, but the pile does not show it. While that exile's Pile Window is open the card is in the window instead, and flies there and back as the window opens and closes. A card whose permanent has gone is exiled for good and is in the pile like any other.
+_Avoid_: Exiled under, hostage, captive, attached card (an attachment is on the battlefield)
+
+**Tuck Outline**:
+The faint outline left behind a permanent where its Tucked Card lay, while that card is in its Pile Window. It keeps the card's room in the line and is where the card flies back to. It takes no clicks and pins nothing. While the cursor is on the card in the window, or the card is pinned, the outline has a glowing white dashed border.
+_Avoid_: Ghost (the fading face of a permanent that has left), placeholder, shadow
 
 **Counter Chip**:
 A bead in the top left corner of a permanent's art that says how many counters of one kind are on it, with their sign: green and "+2" for +1/+1 counters, violet and "-2" for -1/-1 counters. It is the Damage Chip's bead in another color and place. The power and toughness box shows what the counters add up to.

@@ -1,7 +1,7 @@
 class_name MmGameObject
 extends RefCounted
-## An object inside an encounter: a card in a zone, a spell or ability on the stack, and in
-## later milestones a token. A card that changes zones becomes a new Game Object with a new
+## An object inside an encounter: a card in a zone, a spell or ability on the stack, or a
+## token (CR 111), which is not a card and has no Card Identity. A card that changes zones becomes a new Game Object with a new
 ## [member id] (ADR 0008, CR 400.7). An ability on the stack is a Game Object that is not a
 ## card (CR 113.7a): it has no definition and no Card Identity.
 
@@ -38,6 +38,9 @@ var definition: MmCardDefinition
 ## For a spell or ability on the stack: the chosen target of each target requirement, in
 ## order. An entry is null until that target is chosen.
 var targets: Array[MmReference] = []
+## For a modal spell on the stack: the chosen mode (CR 700.2), an index into its spell
+## ability's modes. SpellAbility.NO_MODE for anything else, or until it is chosen.
+var chosen_mode: int = SpellAbility.NO_MODE
 ## For an ability on the stack: the ability, the object it came from, and that object's
 ## name when it was activated (the source may have left the battlefield since).
 var ability: MmAbility = null
@@ -69,6 +72,14 @@ var spent_ability_indexes: Array[int] = []
 ## can find "the exiled card" (CR 607.2a); 0 for anything else. The object that exiled it
 ## may have left the battlefield since, and is then known only by this ID.
 var exiled_with_object_id: int = 0
+## For a permanent attached to another, such as an Equipment (CR 301.5): the ID of the
+## permanent it is attached to; 0 when it is attached to nothing. That permanent may have
+## left the battlefield since, until state-based actions unattach this one (CR 704.5n).
+var attached_to_object_id: int = 0
+## Whether this is a token (CR 111.1): made by an effect from a Token Definition, which is
+## its [member definition]. It is never a card, so its card_id is NO_CARD, and it ceases to
+## exist once it is anywhere but the battlefield (CR 704.5d).
+var is_token: bool = false
 ## Weak, because the zone already holds this object strongly; a strong reference both ways
 ## is a cycle that reference counting never frees.
 var _zone_ref: WeakRef = null
@@ -92,6 +103,7 @@ func duplicate_object() -> MmGameObject:
 	copy.was_dealt_deathtouch_damage = was_dealt_deathtouch_damage
 	copy.controlled_since_game_turn = controlled_since_game_turn
 	copy.targets = targets.duplicate()  # MmReferences never change, so sharing them is safe.
+	copy.chosen_mode = chosen_mode
 	copy.ability = ability
 	copy.source_object_id = source_object_id
 	copy.source_name = source_name
@@ -104,10 +116,13 @@ func duplicate_object() -> MmGameObject:
 	copy.potion_index = potion_index
 	copy.spent_ability_indexes = spent_ability_indexes.duplicate()
 	copy.exiled_with_object_id = exiled_with_object_id
+	copy.attached_to_object_id = attached_to_object_id
+	copy.is_token = is_token
 	return copy
 
 
-## Whether this object is a card (as opposed to an ability on the stack).
+## Whether this object is a card: not an ability on the stack, a token, an Emblem or a
+## Potion.
 func is_card() -> bool:
 	return card_id != NO_CARD
 
@@ -140,6 +155,16 @@ func counters_of(kind: MmCounter.Kind) -> int:
 ## Zone-only: records which zone now holds this object (null when removed).
 func attach_to_zone(holder: MmZone) -> void:
 	_zone_ref = null if holder == null else weakref(holder)
+
+
+## Event-only: makes this object a token (CR 111.1).
+func become_token() -> void:
+	is_token = true
+
+
+## Event-only: attaches this permanent to [param object_id], or to nothing for 0.
+func attach_to(object_id: int) -> void:
+	attached_to_object_id = object_id
 
 
 ## Event-only: taps or untaps this permanent.
@@ -191,6 +216,11 @@ func record_control_since(game_turn: int) -> void:
 ## Event-only: freezes this object's last-known information as it leaves the battlefield.
 func freeze_last_known(characteristics: MmCharacteristics) -> void:
 	last_known_characteristics = characteristics
+
+
+## Event-only: records the mode chosen for a modal spell (CR 601.2b).
+func set_chosen_mode(mode_index: int) -> void:
+	chosen_mode = mode_index
 
 
 ## Event-only: records the target chosen for requirement [param index].

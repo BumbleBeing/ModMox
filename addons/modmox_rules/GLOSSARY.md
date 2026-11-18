@@ -32,6 +32,14 @@ _Avoid_: Base stats, card data
 The identity of a physical card, which survives every zone change even though each move creates a new Game Object. Used only to relate Game Objects back to their Run Card, never by the rules.
 _Avoid_: Card ID (when an object is meant), instance ID
 
+**Token**:
+A permanent that is not a card, made by an effect from a Token Definition and owned and controlled by the player whose spell or ability made it. It has no Card Identity and is never a Run Card. It enters the battlefield like any permanent and, if it dies, goes to the graveyard long enough to be seen dying; once it is anywhere but the battlefield, it ceases to exist.
+_Avoid_: Card (a token never is one), copy (a token that copies something is a later kind), counter (a counter is a marker on a permanent)
+
+**Token Definition**:
+The Card Definition a token is made from: its name (its subtypes plus "Token"), color, types, power, toughness and abilities. Each is its own file in `content/tokens/`, so several cards can make the same token and its art is found by the file's name. A token's color comes from the definition's color indicator, since a token has no mana cost.
+_Avoid_: Token card, token template
+
 ## Play
 
 **Encounter**:
@@ -41,6 +49,10 @@ _Avoid_: Match, battle, duel
 **Encounter Setup**:
 The starting conditions of an encounter: both decks, each player's Emblems and Potions, starting life totals, opening hand sizes, free mulligans, who goes first, and the encounter seed.
 _Avoid_: Game config, match settings
+
+**Starting Life**:
+The life total a player begins an encounter with, from the Encounter Setup (CR 103.4). It never changes during the encounter, so "your starting life total" means the same at any moment. A Hero's life does not carry from one encounter to the next.
+_Avoid_: Max life, base life, initial health
 
 **Free Mulligan**:
 A mulligan that puts no cards on the bottom of the library. A player's first mulligans are free, up to the number granted in the Encounter Setup. Free Mulligans never count toward a hand owing every card it holds: a player who has paid a mulligan for each card in their hand is not asked again, keeps it, and puts all of it on the bottom in the order they choose.
@@ -77,6 +89,14 @@ _Avoid_: Controller, input, brain
 **Target Requirement**:
 One instance of the word "target" on a spell or ability, with a Filter saying what may be chosen for it.
 _Avoid_: Target slot, targeting rule
+
+**Modal Spell**:
+An instant or sorcery that says "Choose one —" and lists its Modes (CR 700.2). Its controller chooses the Mode as it is cast, before any target; a Mode whose targets could not all be chosen can't be, and when only one can, it is chosen without asking.
+_Avoid_: Charm (a card name, not a rule), choice spell
+
+**Mode**:
+One "•" line of a Modal Spell, with Target Requirements and effects of its own. The chosen Mode is all the spell does.
+_Avoid_: Option (an Option Menu's row), branch, choice
 
 **Selection**:
 Who or what an effect applies to: the target chosen for a Target Requirement, each player or permanent matching a Filter, a permanent the controller chooses as the effect resolves ("a creature you control", not a target), or the controller.
@@ -209,6 +229,10 @@ _Avoid_: Wounds, damage counters (counters are something else)
 **Counter**:
 A marker on a permanent that stays until the permanent leaves the battlefield or the counter is removed. There are two kinds so far, +1/+1 and -1/-1, each changing power and toughness by that much; a permanent with both loses the same number of each. A counter is not a characteristic, and never means countering a spell.
 _Avoid_: Token (a token is a permanent that is not a card), marker, buff, stack (for a number of counters)
+
+**Attachment**:
+A permanent attached to another, as an Equipment is to the creature it equips. It stays on the battlefield in its own right: when what it is attached to leaves, or may no longer have it, it becomes unattached and stays. "Equipped creature" is what an Equipment is attached to. Equip is the keyword that attaches one, to a creature its controller controls and only as a sorcery.
+_Avoid_: Gear, item (an Item is a Potion or a Boon), child, parent, host; "the equipment's owner" for the creature it is on
 
 **Damage Division**:
 An attacker's controller choosing how its combat damage is split among the creatures blocking it, and with trample the player it attacks. There is no damage assignment order. The GUI shows it as a damage-split popup.

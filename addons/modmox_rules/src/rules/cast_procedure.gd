@@ -1,11 +1,12 @@
 class_name CastProcedure
 extends RefCounted
 ## Casting a spell (CR 601.2) or activating an ability that uses the stack (CR 602.2):
-## announce it onto the stack, choose its targets, then pay its cost one step at a time.
+## announce it onto the stack, choose its mode if it is modal, choose its targets, then
+## pay its cost one step at a time.
 ## When the payment can no longer be finished it reports itself stuck, and the engine
 ## rewinds the whole attempt (CR 728, ADR 0015).
 
-enum Stage { CHOOSE_TARGETS, PAY_MANA, DONE, STUCK }
+enum Stage { CHOOSE_MODE, CHOOSE_TARGETS, PAY_MANA, DONE, STUCK }
 
 var _state: MmGameState
 var _player_id: int
@@ -28,7 +29,9 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -
 	var procedure: CastProcedure = CastProcedure.new(state, player_id)
 	var spell: SpellAbility = spell_ability_of(characteristics)
 	procedure._ability = spell
-	if spell != null:
+	if spell != null and spell.is_modal():
+		procedure._stage = Stage.CHOOSE_MODE  # CR 601.2b: the mode comes before targets.
+	elif spell != null:
 		procedure._target_requirements = spell.targets
 	# Later: cost increases, reductions and additional costs (CR 601.2f).
 	procedure._remaining_generic = characteristics.mana_cost.generic
@@ -99,6 +102,14 @@ func is_stuck() -> bool:
 func next_decision() -> MmPendingDecision:
 	while true:
 		match _stage:
+			Stage.CHOOSE_MODE:
+				var decision: ChooseModeDecision = _mode_decision()
+				if decision == null:
+					_stage = Stage.STUCK
+					return null
+				if decision.modes.size() > 1:
+					return decision
+				_choose_mode(decision.modes[0])  # The only mode that can be chosen needs no asking.
 			Stage.CHOOSE_TARGETS:
 				if _next_target < _target_requirements.size():
 					var legal: Array[MmReference] = _target_requirements[_next_target].legal_targets(_state, _context())
@@ -122,7 +133,9 @@ func next_decision() -> MmPendingDecision:
 ## Applies an already-validated [param answer] to [param decision].
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	var index: int = answer
-	if decision is ChooseTargetDecision:
+	if decision is ChooseModeDecision:
+		_choose_mode((decision as ChooseModeDecision).modes[index])
+	elif decision is ChooseTargetDecision:
 		var chosen: MmReference = (decision as ChooseTargetDecision).candidates[index]
 		_state.perform(TargetChosenEvent.new(_stack_object_id, _next_target, chosen))
 		_next_target += 1
@@ -134,6 +147,34 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 			_pay_with_mana_ability(action as ActivateAbilityAction)
 	else:
 		assert(false, "Casting cannot answer %s." % decision.describe())
+
+
+## The modes that may be chosen, each with what its targets could be, or null when none
+## may. CR 700.2a: a mode can't be chosen if any of its targets can't be.
+func _mode_decision() -> ChooseModeDecision:
+	var spell: SpellAbility = _ability as SpellAbility
+	var choosable: Array[int] = []
+	var reach: Array[Array] = []
+	for mode_index: int in spell.modes.size():
+		var reachable: Array[MmReference] = []
+		var is_choosable: bool = true
+		for requirement: TargetRequirement in spell.modes[mode_index].targets:
+			var legal: Array[MmReference] = requirement.legal_targets(_state, _context())
+			if legal.is_empty():
+				is_choosable = false
+			reachable.append_array(legal)
+		if is_choosable:
+			choosable.append(mode_index)
+			reach.append(reachable)
+	if choosable.is_empty():
+		return null
+	return ChooseModeDecision.new(_player_id, _stack_object_id, choosable, reach)
+
+
+func _choose_mode(mode_index: int) -> void:
+	_state.perform(ModeChosenEvent.new(_stack_object_id, mode_index))
+	_target_requirements = (_ability as SpellAbility).modes[mode_index].targets
+	_stage = Stage.CHOOSE_TARGETS
 
 
 ## Unit spends from the pool first, then mana abilities, each in a fixed order (ADR 0012).

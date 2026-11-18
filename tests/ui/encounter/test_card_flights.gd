@@ -184,6 +184,21 @@ func test_events_that_move_no_card_make_no_route() -> void:
 	assert_eq(CardFlights.routes(presenter.snapshot().events).size(), 0)
 
 
+func test_a_token_that_leaves_the_battlefield_makes_no_route() -> void:
+	# Game ADR 0045: a token fades where it stood; it ceases to exist, so it flies nowhere.
+	var doom: MmCardDefinition = Scenario.instant("Doom", Scenario.mana_cost(0), [],
+		[Scenario.create_tokens(Scenario.cat()), Scenario.destroy(Scenario.each_creature())])
+	var presenter: EncounterPresenter = _at_main([doom])
+	var events: Array[MmEvent] = []
+	presenter.changed.connect(func(snapshot: EncounterSnapshot) -> void: events.append_array(snapshot.events))
+
+	_act(presenter, CastSpellAction)
+
+	var routes: Array[CardFlights.Route] = CardFlights.routes(events)
+	assert_eq(routes.size(), 1, "Only Doom, from the hand to the graveyard.")
+	assert_ne(routes[0].card_id, MmGameObject.NO_CARD)
+
+
 ## A presenter whose Hero, with a deck of [param cards] over and over, has priority in their
 ## first main phase.
 func _at_main(cards: Array[MmCardDefinition]) -> EncounterPresenter:

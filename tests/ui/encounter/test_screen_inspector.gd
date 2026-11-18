@@ -74,7 +74,7 @@ func test_a_permanent_is_inspected_with_its_state_information() -> void:
 
 	assert_eq(_screen.inspector().shown_key(), bear)
 	assert_eq(_screen.inspector().panel_titles(), ["Card Text", "State Information"] as Array[String])
-	assert_eq(_screen.inspector().state_texts()[0][0], "Summoning sick")
+	assert_eq(_screen.inspector().state_texts()[0][0], "Summoning Sick")
 
 
 func test_letting_the_card_go_and_pinning_it_again_lets_both_buttons_up() -> void:

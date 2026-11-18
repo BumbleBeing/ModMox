@@ -49,6 +49,16 @@
 		"scryfall_id": "357513b9-0505-4b67-9a29-36a705a175b1",
 		"set": "war"
 	},
+	"coordinated_maneuver": {
+		"artist": "Wisnu Tan",
+		"collector_number": "6",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "c6569487-53c5-4b91-877d-e4e31bfa90c0",
+		"set": "tdm"
+	},
 	"counterspell": {
 		"artist": "Mark Poole",
 		"collector_number": "54",
@@ -289,6 +299,16 @@
 		"scryfall_id": "d4f1cc9e-4f99-4c26-ac1b-8ef069fa8ceb",
 		"set": "lea"
 	},
+	"malamet_war_scribe": {
+		"artist": "Nicholas Gregory",
+		"collector_number": "21",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "b92a6ba0-cea0-4084-92f1-2bd60ea25fb0",
+		"set": "lci"
+	},
 	"merfolk_of_the_pearl_trident": {
 		"artist": "Jeff A. Menges",
 		"collector_number": "66",
@@ -329,6 +349,16 @@
 		"scryfall_id": "8ba1d3a1-8c1b-4b77-b149-13d5ad9f125a",
 		"set": "akh"
 	},
+	"path_of_bravery": {
+		"artist": "Chris Rahn",
+		"collector_number": "26",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "5222e200-df1b-46c6-a194-c341e8c1d516",
+		"set": "m14"
+	},
 	"pearled_unicorn": {
 		"artist": "Cornelius Brudi",
 		"collector_number": "30",
@@ -348,6 +378,16 @@
 		],
 		"scryfall_id": "b1623d57-4729-4796-b3f7-f1837a05c6ed",
 		"set": "lea"
+	},
+	"prideful_parent": {
+		"artist": "Leonardo Santanna",
+		"collector_number": "21",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "b742117a-8a72-43b9-b05d-274829d138a2",
+		"set": "fdn"
 	},
 	"prodigal_sorcerer": {
 		"artist": "Douglas Shuler",
@@ -429,6 +469,16 @@
 		"scryfall_id": "fefbf149-f988-4f8b-9f53-56f5878116a6",
 		"set": "lea"
 	},
+	"short_sword": {
+		"artist": "John Severin Brassell",
+		"collector_number": "229",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "cb79a623-21c3-4310-bc76-310935511d45",
+		"set": "dom"
+	},
 	"skyknight_squire": {
 		"artist": "Alexander Mokhov",
 		"collector_number": "23",
@@ -468,6 +518,16 @@
 		],
 		"scryfall_id": "21004958-2c7e-4a55-bc80-411c4d780106",
 		"set": "lea"
+	},
+	"tokens/cat_1_1_white": {
+		"artist": "Leonardo Santanna",
+		"collector_number": "1",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "2885d54c-9fb2-4f01-8937-54f8ac1ce5bc",
+		"set": "tfdn"
 	},
 	"uthden_troll": {
 		"artist": "Douglas Shuler",

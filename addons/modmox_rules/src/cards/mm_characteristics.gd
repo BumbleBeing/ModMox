@@ -16,7 +16,8 @@ var supertypes: Array[MmCardTypes.Supertype] = []
 var subtypes: Array[String] = []
 ## Null for a card with no mana cost.
 var mana_cost: MmManaCost = null
-## CR 202.2: worked out from the mana cost, in WUBRG order. Empty means colorless.
+## CR 105.2: worked out from the mana cost (CR 202.2) and the color indicator (CR 204), in
+## WUBRG order. Empty means colorless.
 var colors: Array[MmCardTypes.CardColor] = []
 ## The printed power and toughness (CR 208.1), before any effect.
 var base_power: int = 0
@@ -41,8 +42,12 @@ static func printed(definition: MmCardDefinition) -> MmCharacteristics:
 	result.supertypes = definition.supertypes.duplicate()
 	result.subtypes = definition.subtypes.duplicate()
 	result.mana_cost = definition.mana_cost
+	var from_cost: Array[MmCardTypes.CardColor] = []
 	if definition.mana_cost != null:
-		result.colors = definition.mana_cost.colors()
+		from_cost = definition.mana_cost.colors()
+	for color: MmCardTypes.CardColor in MmCardTypes.CardColor.values():
+		if from_cost.has(color) or definition.color_indicator.has(color):
+			result.colors.append(color)
 	result.base_power = definition.power
 	result.base_toughness = definition.toughness
 	# The layer engine changes these in an encounter (CR 613.4).

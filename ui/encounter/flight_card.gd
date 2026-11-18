@@ -55,7 +55,7 @@ func show_pose(pose: FacePose, along: float) -> void:
 		face.scale = Vector2.ONE * (pose.height / BUILD_HEIGHT)
 		var field: BattlefieldFace = face as BattlefieldFace
 		if field != null:
-			field.show_turn(pose.turn)
+			field.show_turn(pose.turn, pose.lean)
 	if _landing != null:
 		# Both are solid half-way, so the card is never see-through.
 		_leaving.modulate.a = clampf(2.0 - 2.0 * along, 0.0, 1.0)

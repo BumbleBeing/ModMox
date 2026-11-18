@@ -12,6 +12,10 @@ const MANIFEST: String = "res://content/art/art.json"
 ## name after EMBLEMS, "emblems/diviners_boon", so the same code finds its image.
 const EMBLEMS: String = "emblems/"
 const EMBLEM_MANIFEST: String = "res://content/art/emblems/art.json"
+## Token art is fetched like card art, into content/art/tokens/, named after the Token
+## Definition's file in content/tokens/ and kept in the card manifest under that key (game
+## ADR 0045): "tokens/cat_1_1_white".
+const TOKENS: String = "tokens/"
 const MIDDLE: Vector2 = Vector2(0.5, 0.5)
 
 ## Card file name → {"set", "collector_number", "artist", "scryfall_id", "focus": [x, y]}.
@@ -49,6 +53,11 @@ func has_image(key: String) -> bool:
 ## The art key of the Emblem authored in the file named [param file_name].
 static func emblem_key(file_name: String) -> String:
 	return EMBLEMS + file_name
+
+
+## The art key of the token made from the Token Definition in the file [param file_name].
+static func token_key(file_name: String) -> String:
+	return TOKENS + file_name
 
 
 func artist(key: String) -> String:

@@ -16,6 +16,7 @@ static func kinds() -> Dictionary[Script, String]:
 		DivideCombatDamageDecision: "steppers on the recipients (CombatSelection)",
 		OrderTriggersDecision: "the Stack Window (TriggerOrder)",
 		ChooseReplacementEffectDecision: "the choice window",
+		ChooseModeDecision: "the choice window, an entry for each mode",
 		ChoosePlayOrDrawDecision: "the opening-hand overlay (OpeningHand)",
 		KeepOrMulliganDecision: "the opening-hand overlay (OpeningHand)",
 		ChooseCardsToBottomDecision: "the opening-hand overlay (CardPicks)",

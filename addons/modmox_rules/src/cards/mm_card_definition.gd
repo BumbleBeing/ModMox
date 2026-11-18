@@ -18,6 +18,9 @@ enum Rarity { COMMON, UNCOMMON, RARE, MYTHIC, POWER_NINE }
 ## Null for a card with no mana cost, such as a land (CR 202.1b). That is different from a
 ## cost of {0}.
 @export var mana_cost: MmManaCost = null
+## A color indicator (CR 204): colors the object has besides those of its mana cost. A
+## Token Definition gives its token's color here, since a token has no mana cost (CR 111.4).
+@export var color_indicator: Array[MmCardTypes.CardColor] = []
 ## Printed power and toughness (CR 208). Only meaningful while the object is a creature
 ## (CR 208.3), so a Modification that makes a noncreature card a creature fills these in.
 ## A "*" power or toughness is a characteristic-defining ability instead (CR 604.3).

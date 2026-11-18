@@ -9,6 +9,8 @@ enum LossReason { NONE = -1, ZERO_LIFE, EMPTY_LIBRARY, CONCEDED }
 
 var id: int
 var life: int
+## The life this player began the encounter with (CR 103.4).
+var starting_life: int
 var opening_hand_size: int
 ## MmPlayerSetup.NO_MAXIMUM_HAND_SIZE when there is no maximum.
 var maximum_hand_size: int
@@ -32,6 +34,7 @@ var _mana_pool: Array[MmMana] = []
 func _init(player_id: int, setup: MmPlayerSetup) -> void:
 	id = player_id
 	life = setup.starting_life
+	starting_life = setup.starting_life
 	opening_hand_size = setup.opening_hand_size
 	maximum_hand_size = setup.maximum_hand_size
 	free_mulligans = setup.free_mulligans
@@ -46,6 +49,7 @@ func duplicate_without_objects() -> MmPlayer:
 	var setup: MmPlayerSetup = MmPlayerSetup.new()
 	var copy: MmPlayer = MmPlayer.new(id, setup)
 	copy.life = life
+	copy.starting_life = starting_life
 	copy.opening_hand_size = opening_hand_size
 	copy.maximum_hand_size = maximum_hand_size
 	copy.free_mulligans = free_mulligans

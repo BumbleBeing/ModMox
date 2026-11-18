@@ -1,0 +1,21 @@
+# An attachment lies sideways behind its permanent, with its name strip showing
+
+Equipment came on the card track with Short Sword (engine ADR 0041), and an attached Equipment is something new on the screen. A prototype (`prototypes/equipment/`, deleted once this was built) showed three ways to draw one: tucked behind its creature, left in the artifact row with a line to its creature, or shrunk to a chip on the creature's corner. The user chose tucked behind, and then turned it sideways.
+
+**An attachment is drawn behind the permanent it is attached to, sideways.** Its Battlefield Face is drawn attached: turned a quarter clockwise whether it is tapped or not, so its name runs down the one strip of it that shows, out past the right edge of the permanent in front. That strip is `BattlefieldFace.ATTACHED_SHOWN` of the attachment's height, a fifth, which is its name bar. A second attachment lies behind the first with its own strip past the first's, lowest object ID nearest. The attachment keeps the size it had among the other permanents, and gets smaller with its creature when that is a bystander in combat. Upright behind the creature with its name above was the first try: it needed headroom in the row, where sideways needs none.
+
+**Sideways no longer means tapped for an attachment, so the shade alone says so.** A tapped attachment is darkened by the same amount as any tapped permanent, and eases there as one does. It has no tap symbol, because its art is hidden.
+
+**The Attached Mark says it is attached.** A white square with a black plus sits in the corner of the attachment past the end of its name: the bottom of the strip as it lies. It is as wide as the strip, so it is flush with the permanent in front, and it is black where the card's own black border runs under it, so that border goes round the corner unbroken. The name stops short of it. It is drawn from shapes, not a sprite, because it is sized to the card and is never a whole multiple of 16 pixels.
+
+**A permanent with attachments is that much wider to its line.** `EncounterLayout.line()` and `line_width()` take the room of the strips after each face, so the next permanent stands the usual gap past the last strip, and a line with many attachments scrolls sooner, as every line does (A278). Nothing shrinks.
+
+**An attachment leaves the other permanents only while it is drawn attached.** `Attachments` says which permanents are drawn behind which: one attached to a creature standing in the line being drawn. Unattached, it stands among the other permanents like any artifact. The engine says what is attached to what (`MmObjectView.attached_to_object_id`); the screen never works it out.
+
+**Only the strip takes the mouse.** The rest of the attachment is under another face, so its ClickCatcher covers the strip alone, and a right-click pins the attachment on its strip and the permanent in front everywhere else. The screen keeps the part of each face that shows (`_face_shown`), and both "what is under the cursor" questions ask it. A click on the creature therefore never reaches the Equipment beneath it. The Glow, the pin ring and a target's mark are still drawn round the whole face, and show round the strip.
+
+**The Inspector says both ends.** State Information has "Attached: Attached to [name]." on the attachment, and an "Attachment: [name]." entry for each attachment on the permanent it is attached to.
+
+**It turns as it moves.** A Face Pose says how far a face lies over for being attached (`lean`, 0 to 1) beside how far it is turned for being tapped, and Face Motion eases it with the face's place and size. So an Equipment turns onto its side on its way behind its creature, stands up again on its way back to the other permanents, and takes off lying as it lay when it leaves the battlefield. Tapped and lying down are the same quarter turn, so the card is turned by the larger of the two, and only the tapped part darkens it. The Attached Mark fades in as the card lies down.
+
+Left for when it is wanted: an attachment on another player's permanent, which no card can make yet, is drawn among its own controller's other permanents.

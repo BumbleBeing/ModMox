@@ -28,6 +28,19 @@ func test_lifelink_is_reminded_of_the_life_it_gains() -> void:
 	assert_eq(reminders[0].text, "Damage it deals also causes you to gain that much life.")
 
 
+func test_equip_is_reminded_of_what_it_does_and_named_without_its_cost() -> void:
+	var equip: EquipAbility = EquipAbility.new()
+	equip.mana_cost = MmManaCost.new()
+	equip.mana_cost.generic = 1
+
+	var reminders: Array[Reminder] = Reminders.of([equip] as Array[MmAbility])
+
+	assert_eq(reminders.size(), 1)
+	assert_eq(reminders[0].icon, "equip")
+	assert_eq(reminders[0].keyword, "Equip", "A plain label draws it, so it has no mana symbol.")
+	assert_eq(reminders[0].text, "Pay its cost to attach it to target creature you control. Equip only as a sorcery.")
+
+
 func test_a_card_with_no_keyword_has_no_reminder() -> void:
 	assert_eq(Reminders.of(_abilities("prodigal_sorcerer")).size(), 0)
 	assert_eq(Reminders.of(_abilities("forest")).size(), 0)

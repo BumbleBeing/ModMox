@@ -14,6 +14,9 @@ const LOWERED: Color = Color("#b3261e")
 enum Kind { CARD, EMBLEM, POTION }
 
 var kind: Kind = Kind.CARD
+## A token (CR 111) is drawn as any card is (game ADR 0045); only its type line, "Token
+## Creature — Cat", and the Inspector say what it is.
+var is_token: bool = false
 var name: String = ""
 ## In WUBRG order; empty means colorless.
 var colors: Array[MmCardTypes.CardColor] = []
@@ -89,6 +92,7 @@ static func of_view(view: MmObjectView, card_art_key: String = "") -> CardLook:
 	look.is_tapped = view.is_tapped
 	look.damage_marked = view.damage_marked
 	look.counters = view.counters.duplicate()
+	look.is_token = view.is_token
 	look.art_key = card_art_key
 	look.rules_text = AbilityText.of_card(look.abilities, look.card_types, look.supertypes, look.name)
 	return look
@@ -168,6 +172,8 @@ func is_permanent() -> bool:
 ## The type line: supertypes, card types, then " — " and the subtypes.
 func type_line() -> String:
 	var words: PackedStringArray = []
+	if is_token:
+		words.append("Token")
 	for supertype: MmCardTypes.Supertype in supertypes:
 		words.append((MmCardTypes.Supertype.keys()[supertype] as String).capitalize())
 	for card_type: MmCardTypes.CardType in card_types:

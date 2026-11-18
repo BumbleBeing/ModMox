@@ -4,7 +4,9 @@ extends MmTrigger
 ## "enters the battlefield", "dies" (battlefield to graveyard, CR 700.4) and, with any
 ## destination, "leaves the battlefield" (CR 603.6c). The Filter and whose see the object as
 ## it was before it moved when it left the battlefield, and as it is now otherwise. "That
-## creature" is the moving object, as it was before it moved.
+## creature" is the moving object, as it was before it moved. A token created on the
+## battlefield enters it from no zone (CR 111.2, 603.6a), so it is seen only by a trigger
+## that takes any zone it came from.
 
 @export var any_from_zone: bool = true
 @export var from_zone: MmZone.Kind = MmZone.Kind.BATTLEFIELD
@@ -18,16 +20,16 @@ extends MmTrigger
 
 
 func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bool:
+	var created: TokenCreatedEvent = event as TokenCreatedEvent
+	if created != null:
+		return any_from_zone and (any_to_zone or to_zone == MmZone.Kind.BATTLEFIELD) \
+			and _matches_object(state, created.new_object_id, context)
 	var moved: ZoneChangeEvent = event as ZoneChangeEvent
 	if moved == null or (not any_to_zone and moved.to_zone_kind != to_zone):
 		return false
 	if not any_from_zone and moved.from_zone_kind != from_zone:
 		return false
-	var seen_id: int = _seen_object_id(moved)
-	var seen: MmGameObject = state.object_or_last_known(seen_id)
-	if seen == null or not is_whose(whose, seen.controller_id, context):
-		return false
-	return filter == null or filter.matches(state, MmReference.to_object(seen_id), context)
+	return _matches_object(state, _seen_object_id(moved), context)
 
 
 func looks_back() -> bool:
@@ -35,6 +37,8 @@ func looks_back() -> bool:
 
 
 func triggering_object_id(event: MmEvent) -> int:
+	if event is TokenCreatedEvent:
+		return (event as TokenCreatedEvent).new_object_id
 	var moved: ZoneChangeEvent = event as ZoneChangeEvent
 	return 0 if moved == null else _seen_object_id(moved)
 
@@ -48,3 +52,10 @@ func triggering_player_id(state: MmGameState, event: MmEvent) -> int:
 ## new object otherwise.
 func _seen_object_id(moved: ZoneChangeEvent) -> int:
 	return moved.object_id if moved.from_zone_kind == MmZone.Kind.BATTLEFIELD else moved.new_object_id
+
+
+func _matches_object(state: MmGameState, seen_id: int, context: MmEffectContext) -> bool:
+	var seen: MmGameObject = state.object_or_last_known(seen_id)
+	if seen == null or not is_whose(whose, seen.controller_id, context):
+		return false
+	return filter == null or filter.matches(state, MmReference.to_object(seen_id), context)

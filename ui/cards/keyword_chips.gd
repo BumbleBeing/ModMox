@@ -20,12 +20,12 @@ static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
 	var order: Array[Script] = [
 		FlyingAbility, ReachAbility, VigilanceAbility, HasteAbility, DeathtouchAbility,
 		LifelinkAbility, DefenderAbility, FirstStrikeAbility, DoubleStrikeAbility, TrampleAbility,
-		IndestructibleAbility, ProtectionAbility,
+		IndestructibleAbility, ProtectionAbility, EquipAbility,
 	]
-	var letters: Array[String] = ["F", "R", "V", "H", "DT", "LL", "DF", "FS", "DS", "T", "I", "P"]
+	var letters: Array[String] = ["F", "R", "V", "H", "DT", "LL", "DF", "FS", "DS", "T", "I", "P", "EQ"]
 	var icons: Array[String] = [
 		"flying", "reach", "vigilance", "haste", "deathtouch", "lifelink", "defender",
-		"first_strike", "double_strike", "trample", "indestructible", "protection",
+		"first_strike", "double_strike", "trample", "indestructible", "protection", "equip",
 	]
 	var chips: Array[KeywordChip] = []
 	var seen: Dictionary[String, bool] = {}

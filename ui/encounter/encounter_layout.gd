@@ -32,6 +32,9 @@ const ROW_GAP: float = 8.0
 ## share of their row (A276, A277).
 const OTHERS_SCALE: float = 0.85
 const OTHERS_SHARE: float = 1.0 / 3.0
+## How much of an attachment shows past the permanent it lies behind, of its height: its
+## name (game ADR 0042). The face itself says how much that is.
+const ATTACHED_SHOWN: float = BattlefieldFace.ATTACHED_SHOWN
 ## Room at each end of a line of permanents, so a Glow at the end is not cut off.
 const LINE_PAD: float = 8.0
 ## Once attackers are declared, creatures not in combat are drawn this much smaller, and
@@ -247,12 +250,14 @@ static func creature_height(row_rect: Rect2) -> float:
 ## middle, and "others" (noncreature permanents) to their right, smaller and set back toward
 ## that player's own edge of the board. The others take only the width their faces need,
 ## [param others_tapped] saying which are tapped, and never more than OTHERS_SHARE of the
-## row. With no others, the creatures have the whole row and "others" is empty.
-static func nonland_groups(row_rect: Rect2, others_tapped: Array[bool], is_hero: bool) -> Dictionary[String, Rect2]:
+## row. With no others, the creatures have the whole row and "others" is empty. What lies
+## behind each of the others takes [param others_extras] more after it (attached_room()).
+static func nonland_groups(row_rect: Rect2, others_tapped: Array[bool], is_hero: bool,
+		others_extras: Array[float] = []) -> Dictionary[String, Rect2]:
 	var groups: Dictionary[String, Rect2] = {}
 	var others_width: float = 0.0
 	if not others_tapped.is_empty():
-		var needed: float = line_width(others_tapped, _same_heights(others_tapped.size(), others_height(row_rect)))
+		var needed: float = line_width(others_tapped, _same_heights(others_tapped.size(), others_height(row_rect)), others_extras)
 		others_width = minf(needed, row_rect.size.x * OTHERS_SHARE)
 	groups["creatures"] = Rect2(row_rect.position, Vector2(row_rect.size.x - others_width, row_rect.size.y))
 	var set_back: float = row_rect.size.y * OTHERS_SCALE
@@ -281,25 +286,52 @@ static func combat_step(is_hero: bool) -> float:
 ## The width of a line of permanents, each [param heights] tall and sideways if tapped, with
 ## LINE_PAD at each end. A line keeps its faces' size and scrolls when it is wider than its
 ## group (A278).
-static func line_width(is_tapped: Array[bool], heights: Array[float]) -> float:
+static func line_width(is_tapped: Array[bool], heights: Array[float], extras: Array[float] = []) -> float:
 	if is_tapped.is_empty():
 		return 0.0
 	var total: float = LINE_PAD * 2.0 - ROW_GAP
 	for index: int in is_tapped.size():
-		total += _footprint(is_tapped[index], heights[index]).x + ROW_GAP
+		total += _footprint(is_tapped[index], heights[index]).x + _extra(extras, index) + ROW_GAP
 	return total
 
 
 ## Where each permanent of a line stands inside its group, [param box_height] tall, before
-## any scrolling: from LINE_PAD at the left, each centered from top to bottom.
-static func line(is_tapped: Array[bool], heights: Array[float], box_height: float) -> Array[Rect2]:
+## any scrolling: from LINE_PAD at the left, each centered from top to bottom. A permanent
+## with attachments takes the room of their name strips as well, [param extras] wide after
+## each face (attached_room()), so the next stands the usual gap past the last strip.
+static func line(is_tapped: Array[bool], heights: Array[float], box_height: float, extras: Array[float] = []) -> Array[Rect2]:
 	var footprints: Array[Rect2] = []
 	var x: float = LINE_PAD
 	for index: int in is_tapped.size():
 		var footprint: Vector2 = _footprint(is_tapped[index], heights[index])
 		footprints.append(Rect2(Vector2(x, (box_height - footprint.y) / 2.0), footprint))
-		x += footprint.x + ROW_GAP
+		x += footprint.x + _extra(extras, index) + ROW_GAP
 	return footprints
+
+
+## How wide the part of an attachment [param height] pixels tall that shows is: its name.
+static func attached_strip(height: float) -> float:
+	return BattlefieldFace.attached_strip(height)
+
+
+## The room [param count] attachments [param height] pixels tall take past their permanent.
+static func attached_room(height: float, count: int) -> float:
+	return attached_strip(height) * count
+
+
+## Where an attachment [param height] pixels tall lies behind the permanent at
+## [param host]: sideways, centered on it from top to bottom, with one name strip out past
+## its right edge, and one more for each attachment before it ([param place], from 0).
+static func attached_place(host: Rect2, height: float, place: int) -> Rect2:
+	var footprint: Vector2 = _footprint(true, height)
+	var right: float = host.end.x + attached_strip(height) * (place + 1)
+	return Rect2(Vector2(right - footprint.x, host.get_center().y - footprint.y / 2.0), footprint)
+
+
+## The part of an attachment's sideways footprint, [param footprint] in size, that shows
+## and takes the mouse: its name strip, [param strip] wide, at its right edge.
+static func attached_shown(footprint: Vector2, strip: float) -> Rect2:
+	return Rect2(footprint.x - strip, 0.0, strip, footprint.y)
 
 
 ## How far a line [param content_width] wide can scroll in a group [param view_width] wide.
@@ -760,6 +792,10 @@ static func _same_heights(count: int, height: float) -> Array[float]:
 	for index: int in count:
 		heights.append(height)
 	return heights
+
+
+static func _extra(extras: Array[float], index: int) -> float:
+	return extras[index] if index < extras.size() else 0.0
 
 
 static func _footprint(is_tapped: bool, height: float) -> Vector2:

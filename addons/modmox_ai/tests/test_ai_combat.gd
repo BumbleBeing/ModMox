@@ -96,6 +96,18 @@ func test_does_not_attack_into_an_even_trade_when_the_race_is_even() -> void:
 	assert_eq(agent.explain_detail(), "aggression %d" % AiAttackPlanner.Aggression.SAFE)
 
 
+func test_attacks_into_an_even_trade_that_path_of_bravery_turns_into_a_win() -> void:
+	# The Combat Oracle plays the engine's own combat, so it sees the conditional +1/+1 and
+	# the life its trigger gains.
+	var path: MmCardDefinition = Scenario.free_copy(load("res://content/cards/magic_2014/path_of_bravery.tres") as MmCardDefinition)
+	var engine: MmEngine = Scenario.combat_ready([path, AiScenario.free_alpha("grizzly_bears")], [AiScenario.free_alpha("grizzly_bears")])
+	assert_not_null(engine)
+
+	var attackers: Array = AiScenario.ask(engine, AiAgent.new())
+
+	assert_eq(attackers.size(), 1, "A 3/3 Bears kills a 2/2 blocker and survives.")
+
+
 func test_trampling_damage_kills_the_blockers_and_the_rest_goes_to_the_player() -> void:
 	var trampler: MmCardDefinition = Scenario.creature("Trampler", 6, 6, [TrampleAbility.new()])
 	var engine: MmEngine = _villain_to_block([trampler],

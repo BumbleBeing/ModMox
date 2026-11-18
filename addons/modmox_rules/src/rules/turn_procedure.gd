@@ -335,8 +335,10 @@ func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 	if not instant_speed and not _sorcery_timing(player):
 		return false
 	var spell: SpellAbility = CastProcedure.spell_ability_of(characteristics)
-	if spell != null and not _every_requirement_has_a_target(spell.targets, player.id, card.id):
+	if spell != null and not spell.is_modal() and not _every_requirement_has_a_target(spell.targets, player.id, card.id):
 		return false
+	if spell != null and spell.is_modal() and not _has_a_choosable_mode(spell, player.id, card.id):
+		return false  # CR 700.2a: a mode can't be chosen if its targets can't be.
 	return ManaPayment.can_afford(_state, player.id, characteristics.mana_cost)
 
 
@@ -356,6 +358,13 @@ func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbi
 		if not ManaPayment.can_afford(_state, player.id, ability.mana_cost):
 			return false
 	return ability.is_mana_ability() or _every_requirement_has_a_target(ability.targets, player.id, source.id)
+
+
+func _has_a_choosable_mode(spell: SpellAbility, player_id: int, source_id: int) -> bool:
+	for mode: SpellMode in spell.modes:
+		if _every_requirement_has_a_target(mode.targets, player_id, source_id):
+			return true
+	return false
 
 
 func _every_requirement_has_a_target(requirements: Array[TargetRequirement], player_id: int, source_id: int) -> bool:

@@ -48,6 +48,15 @@
 		"toughness": "1",
 		"type_line": "Creature — Cat"
 	},
+	"coordinated_maneuver": {
+		"mana_cost": "{1}{W}",
+		"name": "Coordinated Maneuver",
+		"oracle_id": "6ff39311-565e-4414-b32b-eb24c70b3090",
+		"oracle_text": "Choose one —\n• Coordinated Maneuver deals damage equal to the number of creatures you control to target creature or planeswalker.\n• Destroy target enchantment.",
+		"rarity": "common",
+		"set_name": "Tarkir: Dragonstorm",
+		"type_line": "Instant"
+	},
 	"counterspell": {
 		"mana_cost": "{U}{U}",
 		"name": "Counterspell",
@@ -292,6 +301,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Elf Druid"
 	},
+	"malamet_war_scribe": {
+		"mana_cost": "{3}{W}{W}",
+		"name": "Malamet War Scribe",
+		"oracle_id": "8978a30a-7918-4851-92ef-f40fdf90c379",
+		"oracle_text": "When this creature enters, creatures you control get +2/+1 until end of turn.",
+		"power": "4",
+		"rarity": "uncommon",
+		"set_name": "The Lost Caverns of Ixalan",
+		"toughness": "3",
+		"type_line": "Creature — Cat Warrior"
+	},
 	"merfolk_of_the_pearl_trident": {
 		"mana_cost": "{U}",
 		"name": "Merfolk of the Pearl Trident",
@@ -332,6 +352,15 @@
 		"toughness": "4",
 		"type_line": "Creature — Antelope"
 	},
+	"path_of_bravery": {
+		"mana_cost": "{2}{W}",
+		"name": "Path of Bravery",
+		"oracle_id": "fc04bfa9-a8f9-478d-8164-34b1e6c85417",
+		"oracle_text": "As long as your life total is greater than or equal to your starting life total, creatures you control get +1/+1.\nWhenever one or more creatures you control attack, you gain life equal to the number of attacking creatures.",
+		"rarity": "rare",
+		"set_name": "Magic 2014",
+		"type_line": "Enchantment"
+	},
 	"pearled_unicorn": {
 		"mana_cost": "{2}{W}",
 		"name": "Pearled Unicorn",
@@ -351,6 +380,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Plains"
+	},
+	"prideful_parent": {
+		"mana_cost": "{2}{W}",
+		"name": "Prideful Parent",
+		"oracle_id": "a90d1d35-6d67-43b3-8256-b0318b3a4b07",
+		"oracle_text": "Vigilance (Attacking doesn't cause this creature to tap.)\nWhen this creature enters, create a 1/1 white Cat creature token.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Foundations",
+		"toughness": "2",
+		"type_line": "Creature — Cat"
 	},
 	"prodigal_sorcerer": {
 		"mana_cost": "{2}{U}",
@@ -435,6 +475,15 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "5",
 		"type_line": "Creature — Dragon"
+	},
+	"short_sword": {
+		"mana_cost": "{1}",
+		"name": "Short Sword",
+		"oracle_id": "e842a4e5-ea0b-43ae-9ed8-93e30f4e7b8a",
+		"oracle_text": "Equipped creature gets +1/+1.\nEquip {1} ({1}: Attach to target creature you control. Equip only as a sorcery.)",
+		"rarity": "common",
+		"set_name": "Dominaria",
+		"type_line": "Artifact — Equipment"
 	},
 	"skyknight_squire": {
 		"mana_cost": "{1}{W}",

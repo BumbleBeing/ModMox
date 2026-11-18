@@ -28,8 +28,9 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 	if resolving.is_card():
 		var spell: SpellAbility = CastProcedure.spell_ability_of(state.characteristics_of(resolving))
 		if spell != null:
-			specs = spell.targets
-			procedure._effects = spell.effects
+			# ADR 0046: a modal spell does only what its chosen mode does.
+			specs = spell.targets_for(resolving.chosen_mode)
+			procedure._effects = spell.effects_for(resolving.chosen_mode)
 	elif resolving.ability is TriggeredAbility:
 		var triggered: TriggeredAbility = resolving.ability as TriggeredAbility
 		specs = triggered.targets

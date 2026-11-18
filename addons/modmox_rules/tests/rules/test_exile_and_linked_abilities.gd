@@ -28,6 +28,22 @@ func test_it_exiles_another_target_nonland_permanent_into_its_owners_exile() -> 
 		"CR 607.2a: the card remembers what exiled it.")
 
 
+func test_both_players_see_which_object_exiled_a_card() -> void:
+	var engine: MmEngine = _hero_main([], [_ogre()], [Scenario.free_prison("Prison")])
+	var ogre: int = Scenario.permanent_named(engine, engine.villain().id, "Ogre")
+
+	_ring(engine, "Prison", ogre)
+
+	var prison: int = Scenario.permanent_named(engine, engine.hero().id, "Prison")
+	for player: MmPlayer in [engine.hero(), engine.villain()]:
+		var view: MmPlayerView = engine.view_for(player)
+		var exiled: Array = view.exiles[engine.villain().id]
+		assert_eq(exiled.size(), 1)
+		assert_eq((exiled[0] as MmObjectView).exiled_with_object_id, prison)
+		for permanent: MmObjectView in view.battlefield:
+			assert_eq(permanent.exiled_with_object_id, 0, "Nothing exiled a permanent.")
+
+
 func test_its_trigger_never_offers_itself_or_a_land() -> void:
 	var engine: MmEngine = _hero_main([_bear()], [_ogre()], [Scenario.free_prison("Prison"), Scenario.basic_land("Plains")])
 	var plains: int = Scenario.play_first_land(engine)

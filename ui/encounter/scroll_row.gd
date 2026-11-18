@@ -13,6 +13,10 @@ const ARROW_WIDTH: float = 26.0
 const SPEED: float = 1100.0
 const NUDGE: float = 60.0
 const BAR_HEIGHT: float = 8.0
+## How far above and below the line its faces are still drawn: a Glow reaches 7 pixels past
+## its face, and a face lying sideways is as tall as the line (a tapped permanent, or the
+## card tucked behind one), so a line that cut at its own top and bottom cut that Glow off.
+const GLOW_ROOM: float = 8.0
 ## How wide and how tall the triangle on an arrow is.
 const ARROWHEAD: Vector2 = Vector2(10.0, 14.0)
 
@@ -31,11 +35,14 @@ func _init(view_rect: Rect2, content_width: float, offset: float) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_content_width = content_width
 	var window: Control = Control.new()
-	window.size = view_rect.size
+	# It cuts the line off at its two ends only, with room above and below for a Glow.
+	window.position = Vector2(0.0, -GLOW_ROOM)
+	window.size = view_rect.size + Vector2(0.0, GLOW_ROOM * 2.0)
 	window.clip_contents = true
 	window.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(window)
 	_content = Control.new()
+	_content.position.y = GLOW_ROOM
 	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	window.add_child(_content)
 	_left = _arrow(0.0, -1.0)
@@ -65,6 +72,11 @@ func content() -> Control:
 
 func offset() -> float:
 	return _offset
+
+
+## How wide the whole line is, shown or not.
+func content_width() -> float:
+	return _content_width
 
 
 ## Whether the line is wider than its view.

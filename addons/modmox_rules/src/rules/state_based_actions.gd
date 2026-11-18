@@ -46,6 +46,10 @@ static func _actions(state: MmGameState) -> Array[MmEvent]:
 			permanent.counters_of(MmCounter.Kind.MINUS_ONE_MINUS_ONE))
 		actions.append(CountersRemovedEvent.new(permanent.id, MmCounter.Kind.PLUS_ONE_PLUS_ONE, canceled))
 		actions.append(CountersRemovedEvent.new(permanent.id, MmCounter.Kind.MINUS_ONE_MINUS_ONE, canceled))
+	for permanent: MmGameObject in _permanents_attached_illegally(state):
+		actions.append(UnattachedEvent.new(permanent.id))
+	for token: MmGameObject in _tokens_off_the_battlefield(state):
+		actions.append(TokenCeasedEvent.new(token))
 	return actions
 
 
@@ -104,6 +108,33 @@ static func _permanents_with_both_kinds_of_counter(state: MmGameState) -> Array[
 		if permanent.counters_of(MmCounter.Kind.PLUS_ONE_PLUS_ONE) > 0 \
 				and permanent.counters_of(MmCounter.Kind.MINUS_ONE_MINUS_ONE) > 0:
 			found.append(permanent)
+	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return found
+
+
+## CR 704.5n: an Equipment attached to an illegal permanent, or to something that is no
+## longer on the battlefield, becomes unattached and stays on the battlefield. In ID order.
+static func _permanents_attached_illegally(state: MmGameState) -> Array[MmGameObject]:
+	var found: Array[MmGameObject] = []
+	for permanent: MmGameObject in state.battlefield.objects():
+		if permanent.attached_to_object_id != 0 \
+				and not AttachmentRules.can_be_attached(state, permanent, state.object(permanent.attached_to_object_id)):
+			found.append(permanent)
+	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return found
+
+
+## CR 704.5d: a token in a zone other than the battlefield ceases to exist. In ID order.
+static func _tokens_off_the_battlefield(state: MmGameState) -> Array[MmGameObject]:
+	var found: Array[MmGameObject] = []
+	for player: MmPlayer in state.players:
+		for each_zone: MmZone in [player.hand, player.library, player.graveyard]:
+			for game_object: MmGameObject in each_zone.objects():
+				if game_object.is_token:
+					found.append(game_object)
+	for game_object: MmGameObject in state.exile.objects() + state.stack.objects():
+		if game_object.is_token:
+			found.append(game_object)
 	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
 	return found
 

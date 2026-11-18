@@ -98,9 +98,13 @@ static func of_ability(ability: MmAbility, noun: String) -> String:
 
 
 ## Only what [param ability] does, for a spell or ability on the stack: without the cost
-## that was paid or the trigger and condition that were met.
-static func effect_of(ability: MmAbility, noun: String) -> String:
+## that was paid or the trigger and condition that were met. A modal spell whose
+## [param mode_index] is chosen does only what that mode does.
+static func effect_of(ability: MmAbility, noun: String, mode_index: int = SpellAbility.NO_MODE) -> String:
 	var writer: AbilityText = AbilityText.new(noun)
+	var spell: SpellAbility = ability as SpellAbility
+	if spell != null and spell.is_modal():
+		return writer._ability(spell) if mode_index == SpellAbility.NO_MODE else mode_text(spell, mode_index, noun)
 	if ability is SpellAbility:
 		writer._targets = (ability as SpellAbility).targets
 		return writer._sentences((ability as SpellAbility).effects, true)
@@ -113,6 +117,14 @@ static func effect_of(ability: MmAbility, noun: String) -> String:
 		writer._trigger = triggered.trigger
 		return writer._sentences(triggered.effects, true)
 	return writer._ability(ability)
+
+
+## What mode [param mode_index] of the modal [param spell] does, as its "•" line says it,
+## without the bullet.
+static func mode_text(spell: SpellAbility, mode_index: int, noun: String) -> String:
+	var writer: AbilityText = AbilityText.new(noun)
+	writer._targets = spell.modes[mode_index].targets
+	return writer._sentences(spell.modes[mode_index].effects, true)
 
 
 ## Everything [param filter] matches, in the plural: "black permanents", "creatures you
@@ -144,9 +156,18 @@ func _ability(ability: MmAbility) -> String:
 		return keyword
 	if ability is ProtectionAbility:
 		return "Protection from " + _protection((ability as ProtectionAbility).from)
+	if ability is SpellAbility and (ability as SpellAbility).is_modal():
+		# CR 700.2: "Choose one —", then a bullet for each mode.
+		var lines: PackedStringArray = ["Choose one —"]
+		for mode_index: int in (ability as SpellAbility).modes.size():
+			lines.append("• " + mode_text(ability as SpellAbility, mode_index, _noun))
+		return "\n".join(lines)
 	if ability is SpellAbility:
 		_targets = (ability as SpellAbility).targets
 		return _sentences((ability as SpellAbility).effects, true)
+	if ability is EquipAbility:
+		# A keyword prints its cost and nothing else (CR 702.6); what it does is its Reminder.
+		return "Equip " + _costs(ability as EquipAbility)
 	if ability is ActivatedAbility:
 		var activated: ActivatedAbility = ability as ActivatedAbility
 		_targets = activated.targets
@@ -171,7 +192,7 @@ func _ability(ability: MmAbility) -> String:
 ## Whether [param ability] is a keyword, protection included: an ability a sentence names
 ## in lower case and without quotation marks.
 static func is_keyword(ability: MmAbility) -> bool:
-	return _keyword(ability) != "" or ability is ProtectionAbility
+	return _keyword(ability) != "" or ability is ProtectionAbility or ability is EquipAbility
 
 
 ## The name of a keyword ability that needs no other words, or "".
@@ -265,6 +286,14 @@ func _trigger_text(trigger: MmTrigger) -> String:
 		elif cast.whose == MmTrigger.Whose.OPPONENT:
 			caster = "an opponent casts"
 		return "whenever %s %s" % [caster, _with_article(_spell_phrase(cast.filter))]
+	var attack: AttackersDeclaredTrigger = trigger as AttackersDeclaredTrigger
+	if attack != null:
+		var whose: String = "a player controls"
+		if attack.whose == MmTrigger.Whose.YOU:
+			whose = "you control"
+		elif attack.whose == MmTrigger.Whose.OPPONENT:
+			whose = "an opponent controls"
+		return "whenever one or more creatures %s attack" % whose
 	var moved: ZoneChangeTrigger = trigger as ZoneChangeTrigger
 	if moved != null:
 		var is_self: bool = moved.filter is IsSourceFilter
@@ -285,6 +314,8 @@ func _move_verb(moved: ZoneChangeTrigger) -> String:
 
 
 func _condition(condition: MmCondition) -> String:
+	if condition is LifeAtLeastStartingCondition:
+		return "your life total is greater than or equal to your starting life total"
 	var matches: SelectionMatchesCondition = condition as SelectionMatchesCondition
 	if matches == null:
 		return _fallback(condition, "_condition")
@@ -396,6 +427,8 @@ func _effect(effect: MmEffect) -> String:
 	if effect is ReturnToHandEffect:
 		var returned: MmSelection = (effect as ReturnToHandEffect).selection
 		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]
+	if effect is AttachEffect:
+		return "attach %s to %s" % [_selection((effect as AttachEffect).attachment), _selection((effect as AttachEffect).to)]
 	if effect is RegenerateEffect:
 		return "regenerate " + _selection((effect as RegenerateEffect).selection)
 	if effect is PreventDamageEffect:
@@ -405,7 +438,32 @@ func _effect(effect: MmEffect) -> String:
 		return "put %s on %s" % [_counters(put.amount, put.kind), _selection(put.recipients)]
 	if effect is CreateContinuousEffect:
 		return _continuous((effect as CreateContinuousEffect).continuous, false) + " until end of turn"
+	if effect is CreateTokenEffect:
+		return "create " + _tokens(effect as CreateTokenEffect)
 	return _fallback(effect, "_effect")
+
+
+## Oracle's token wording (CR 111.4): "a 1/1 white Cat creature token", "two ... tokens".
+func _tokens(effect: CreateTokenEffect) -> String:
+	if effect.token == null or not effect.token.abilities.is_empty():
+		# Later: "with flying" and the like, once a Token Definition has abilities.
+		return _fallback(effect, "_tokens")
+	var printed: MmCharacteristics = MmCharacteristics.printed(effect.token)
+	var words: PackedStringArray = PackedStringArray()
+	if printed.has_card_type(MmCardTypes.CardType.CREATURE):
+		words.append("%d/%d" % [printed.base_power, printed.base_toughness])
+	var colors: PackedStringArray = PackedStringArray()
+	for color: MmCardTypes.CardColor in printed.colors:
+		colors.append(_color_word(color))
+	words.append(" and ".join(colors) if not colors.is_empty() else "colorless")
+	for subtype: String in printed.subtypes:
+		words.append(subtype)
+	for card_type: MmCardTypes.CardType in printed.card_types:
+		words.append(_type_word(card_type))
+	var phrase: String = " ".join(words)
+	if effect.amount == 1:
+		return _with_article(phrase + " token")
+	return "%s %s tokens" % [_number_word(effect.amount), phrase]
 
 
 func _mana(effect: AddManaEffect) -> String:
@@ -491,6 +549,9 @@ func _selection(selection: MmSelection) -> String:
 		return _target((selection as TargetSelection).target_index)
 	if selection is ExiledWithSourceSelection:
 		return "the exiled card"
+	if selection is AttachedToSelection:
+		# Later: "enchanted creature", once an Aura is what is attached.
+		return "equipped creature"
 	return _fallback(selection, "_selection")
 
 
@@ -667,6 +728,8 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		adjectives.append("non-" + subtype if is_negated else subtype)
 	elif filter is IsTappedFilter:
 		adjectives.append("untapped" if is_negated else "tapped")
+	elif filter is IsAttackingFilter:
+		adjectives.append("nonattacking" if is_negated else "attacking")
 	elif filter is IsSourceFilter:
 		# "Each other creature": anything but the source.
 		if is_negated:

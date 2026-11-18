@@ -63,6 +63,48 @@ func test_a_grid_wraps_its_cards_to_the_windows_width() -> void:
 	assert_almost_eq(rects[2].position.x, rects[0].position.x, 0.5)
 
 
+func test_a_card_flies_to_its_own_place_in_the_window_while_that_is_in_sight() -> void:
+	var window: PileWindow = _window(PileWindow.Arrangement.GRID)
+	window.size = Vector2(2.0 * CARD.x + 60.0, CARD.y + 100.0)
+	window.show_cards("Hero's Exile", _cards([1, 2, 3, 4, 5, 6]), _snapshot, _none())
+	await wait_process_frames(2)
+
+	var place: Rect2 = window.flight_place(6)
+
+	assert_eq(window.hidden_past(6), 0, "The newest card is first.")
+	assert_almost_eq(place.position, window.card_rects()[0].get_center(), Vector2(0.5, 0.5))
+	assert_eq(place.size.y, PileWindow.CARD_HEIGHT)
+
+
+func test_a_card_scrolled_out_of_sight_flies_to_the_nearest_edge_above_or_below() -> void:
+	var window: PileWindow = _window(PileWindow.Arrangement.GRID)
+	window.size = Vector2(2.0 * CARD.x + 60.0, CARD.y + 100.0)
+	window.show_cards("Hero's Exile", _cards([1, 2, 3, 4, 5, 6]), _snapshot, _none())
+	await wait_process_frames(2)
+	var seen: Rect2 = Rect2(window.scroll().global_position - window.global_position, window.scroll().size)
+
+	assert_eq(window.hidden_past(1), 1, "The oldest card is in the third row, below.")
+	var below: Rect2 = window.flight_place(1)
+	assert_almost_eq(below.position.y, seen.end.y, 0.5, "On the bottom edge of what the window shows,")
+	assert_almost_eq(below.position.x, window.card_rects()[5].get_center().x, 0.5, "under its own column,")
+	assert_lt(below.size.y, PileWindow.CARD_HEIGHT, "and small.")
+
+	window.scroll().scroll_vertical = 100000
+	await wait_process_frames(2)
+
+	assert_eq(window.hidden_past(1), 0)
+	assert_eq(window.hidden_past(6), -1, "Now the newest is above.")
+	assert_almost_eq(window.flight_place(6).position.y, seen.position.y, 0.5)
+
+
+func test_a_card_the_window_does_not_show_is_nowhere_out_of_sight_and_flies_to_its_middle() -> void:
+	var window: PileWindow = _window(PileWindow.Arrangement.GRID)
+	window.show_cards("Hero's Exile", _cards([1]), _snapshot, _none())
+
+	assert_eq(window.hidden_past(99), 0)
+	assert_eq(window.flight_place(99).position, window.size / 2.0)
+
+
 func test_a_window_first_opens_with_room_for_four_cards_across() -> void:
 	var window: PileWindow = _window(PileWindow.Arrangement.GRID)
 

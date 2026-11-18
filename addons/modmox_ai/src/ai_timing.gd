@@ -64,12 +64,41 @@ static func is_trick(tag: Tag) -> bool:
 
 ## The tag of a priority [param action], read from [param state].
 static func tag_of_action(state: MmGameState, action: MmAction) -> Tag:
+	var spell: SpellAbility = modal_spell_of_action(state, action)
+	if spell != null:
+		return tag_of_spell(spell)
 	var effects: Array[MmEffect] = effects_of_action(state, action)
 	return tag_of_effects(effects)
 
 
-## What [param action] would do: a spell's effects, or an activated ability's. A permanent
-## spell does nothing when it resolves but enter, so it has none.
+## The tag of [param spell]. A modal spell's modes share their tag when they agree;
+## otherwise it is considered whenever it may be cast (NONE), since some mode may be worth
+## it at any time.
+static func tag_of_spell(spell: SpellAbility) -> Tag:
+	if not spell.is_modal():
+		return tag_of_effects(spell.effects)
+	var shared: Tag = tag_of_effects(spell.modes[0].effects)
+	for mode: SpellMode in spell.modes:
+		if tag_of_effects(mode.effects) != shared:
+			return Tag.NONE
+	return shared
+
+
+## The modal spell [param action] casts, or null if it casts none.
+static func modal_spell_of_action(state: MmGameState, action: MmAction) -> SpellAbility:
+	var cast: CastSpellAction = action as CastSpellAction
+	if cast == null:
+		return null
+	for ability: MmAbility in state.characteristics_of(state.object(cast.object_id)).abilities:
+		var spell: SpellAbility = ability as SpellAbility
+		if spell != null and spell.is_modal():
+			return spell
+	return null
+
+
+## What [param action] would do: a spell's effects (every mode's, for a modal spell), or an
+## activated ability's. A permanent spell does nothing when it resolves but enter, so it
+## has none.
 static func effects_of_action(state: MmGameState, action: MmAction) -> Array[MmEffect]:
 	var effects: Array[MmEffect] = []
 	var cast: CastSpellAction = action as CastSpellAction
@@ -78,8 +107,12 @@ static func effects_of_action(state: MmGameState, action: MmAction) -> Array[MmE
 		if characteristics.is_permanent():
 			return effects
 		for ability: MmAbility in characteristics.abilities:
-			if ability is SpellAbility:
-				effects.append_array((ability as SpellAbility).effects)
+			var spell: SpellAbility = ability as SpellAbility
+			if spell == null:
+				continue
+			effects.append_array(spell.effects)
+			for mode: SpellMode in spell.modes:
+				effects.append_array(mode.effects)
 		return effects
 	var activated: ActivatedAbility = activated_ability_of(state, action)
 	if activated != null:

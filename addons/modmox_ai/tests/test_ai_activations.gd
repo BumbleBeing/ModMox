@@ -405,3 +405,51 @@ func test_the_authored_electromancers_boon_is_paid_for_and_aimed_for_lethal() ->
 	assert_true(engine.is_over(), "It activated the Boon at the Villain, paid {R} and won.")
 	assert_eq(engine.outcome(), MmEngine.Outcome.HERO_WON)
 	assert_eq(Scenario.events_of(engine, AbilitySpentEvent).size(), 1)
+
+
+# --- Equipment ---------------------------------------------------------------------
+
+func test_an_equipment_is_equipped_to_a_creature() -> void:
+	# An attach effect has the Timing Tag NONE, so it is weighed in the main phase, and the
+	# Board Evaluator sees the bigger creature. The hand holds more free copies, which are
+	# worth more to cast first, so the Agent plays its whole main phase.
+	for difficulty: AiDifficulty in [AiDifficulty.easy(), AiDifficulty.normal()]:
+		var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), Scenario.sword("Sword")], [])
+		assert_not_null(engine)
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		_let_play_the_main_phase(engine, agent)
+
+		var equipped: int = 0
+		for sword: int in Scenario.permanents_named(engine, engine.hero().id, "Sword"):
+			equipped += 1 if Scenario.attached_to(engine, sword) != 0 else 0
+		assert_gt(equipped, 0, "It equips rather than leaving every Sword loose.")
+
+
+func test_an_equipment_is_not_equipped_again_to_the_creature_it_is_on() -> void:
+	# CR 701.3b: that would change nothing, so it is never worth the activation.
+	for difficulty: AiDifficulty in [AiDifficulty.easy(), AiDifficulty.normal()]:
+		var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), Scenario.sword("Sword")], [])
+		assert_not_null(engine)
+		var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+		assert_eq(Scenario.equip_and_resolve(engine, sword, Scenario.permanent_named(engine, engine.hero().id, "Bear")), "")
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		var action: ActivateAbilityAction = AiScenario.action_at(engine, AiScenario.ask(engine, agent)) as ActivateAbilityAction
+
+		assert_true(action == null or action.object_id != sword, "Nothing to gain from equipping the same creature.")
+
+
+## Lets [param agent] answer every decision of the Hero's until the precombat main phase of
+## this Game Turn is over.
+func _let_play_the_main_phase(engine: MmEngine, agent: AiAgent) -> void:
+	var game_turn: int = engine.game_state().game_turn
+	for _answer: int in 80:
+		var state: MmGameState = engine.game_state()
+		var pending: MmPendingDecision = engine.pending_decision()
+		if pending == null or state.game_turn != game_turn or state.step != Step.PRECOMBAT_MAIN:
+			return
+		if pending.player_id == engine.hero().id:
+			assert_eq(AiScenario.let_answer(engine, agent), "")
+		else:
+			engine.submit(Scenario.default_answer(pending))

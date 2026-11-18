@@ -13,25 +13,80 @@ func test_a_permanent_with_nothing_on_it_has_an_empty_list() -> void:
 	assert_eq(StateInformation.of(_bears(), _view()).size(), 0)
 
 
+func test_an_attachment_says_what_it_is_attached_to_and_that_permanent_says_what_is_attached_to_it() -> void:
+	var view: MmPlayerView = _view()
+	var bears: MmObjectView = _bears()
+	var sword: MmObjectView = MmObjectView.new()
+	sword.id = 31
+	sword.name = "Short Sword"
+	sword.attached_to_object_id = BEARS
+	var axe: MmObjectView = MmObjectView.new()
+	axe.id = 30
+	axe.name = "Axe"
+	axe.attached_to_object_id = BEARS
+	view.battlefield.append_array([sword, axe])
+
+	assert_eq(_texts(StateInformation.of(sword, view)), [["Attached", "Attached to %s." % bears.name]])
+	assert_eq(_texts(StateInformation.of(bears, view)), [["Attachment", "Axe."], ["Attachment", "Short Sword."]],
+		"In object ID order, as they are drawn.")
+
+
+func test_a_tucked_card_says_what_exiled_it_and_that_permanent_names_each_card_it_exiled() -> void:
+	var view: MmPlayerView = _view()
+	var ring: MmObjectView = MmObjectView.new()
+	ring.id = 40
+	ring.name = "Oblivion Ring"
+	view.battlefield.append(ring)
+	var ogre: MmObjectView = MmObjectView.new()
+	ogre.id = 52
+	ogre.name = "Ogre"
+	ogre.exiled_with_object_id = 40
+	var bear: MmObjectView = MmObjectView.new()
+	bear.id = 51
+	bear.name = "Bear"
+	bear.exiled_with_object_id = 40
+	var lost: MmObjectView = MmObjectView.new()
+	lost.id = 53
+	lost.name = "Lost"
+	lost.exiled_with_object_id = 999
+	view.exiles[HERO] = [ogre, lost]
+	view.exiles[MmEncounterSetup.VILLAIN_PLAYER_ID] = [bear]
+
+	assert_eq(_texts(StateInformation.of(ogre, view)), [["Exiled", "Exiled by Oblivion Ring."]])
+	assert_eq(_texts(StateInformation.of(ring, view)), [["Exiled Card", "Bear."], ["Exiled Card", "Ogre."]],
+		"In object ID order, as they are drawn.")
+	assert_eq(StateInformation.of(lost, view).size(), 0, "What exiled it has gone, and it is exiled for good.")
+
+
 func test_a_summoning_sick_creature_says_so_and_a_land_never_does() -> void:
 	var bears: MmObjectView = _bears()
 	bears.is_summoning_sick = true
 	var land: MmObjectView = MmObjectView.new()
 	land.is_summoning_sick = true
 
-	assert_eq(_texts(StateInformation.of(bears, _view())), [["Summoning sick",
-		"It came under its controller's control this turn, so it can't attack or tap for a cost."]])
+	assert_eq(_texts(StateInformation.of(bears, _view())), [["Summoning Sick",
+		"Can't attack or tap until its controller's next turn."]])
 	assert_eq(StateInformation.of(land, _view()).size(), 0)
+
+
+func test_a_token_says_it_ceases_to_exist_if_it_leaves_and_comes_first() -> void:
+	var cat: MmObjectView = _bears()
+	cat.is_token = true
+	cat.is_summoning_sick = true
+
+	assert_eq(_texts(StateInformation.of(cat, _view())), [
+		["Token", "Ceases to exist if it leaves the battlefield."],
+		["Summoning Sick", "Can't attack or tap until its controller's next turn."]])
 
 
 func test_damage_marked_is_counted() -> void:
 	var bears: MmObjectView = _bears()
 	bears.damage_marked = 2
 
-	assert_eq(_texts(StateInformation.of(bears, _view())), [["Damage", "2 damage is marked on it until end of turn."]])
+	assert_eq(_texts(StateInformation.of(bears, _view())), [["Damaged", "Has 2 damage marked on it."]])
 
 
-func test_counters_are_counted_in_words_with_what_they_add_up_to() -> void:
+func test_counters_are_counted_in_digits() -> void:
 	var grown: MmObjectView = _bears()
 	grown.counters = {MmCounter.Kind.PLUS_ONE_PLUS_ONE: 2}
 	var shrunk: MmObjectView = _bears()
@@ -39,23 +94,23 @@ func test_counters_are_counted_in_words_with_what_they_add_up_to() -> void:
 	var huge: MmObjectView = _bears()
 	huge.counters = {MmCounter.Kind.PLUS_ONE_PLUS_ONE: 12}
 
-	assert_eq(_texts(StateInformation.of(grown, _view())), [["+1/+1 counters", "Two +1/+1 counters are on it. It gets +2/+2."]])
-	assert_eq(_texts(StateInformation.of(shrunk, _view())), [["-1/-1 counters", "One -1/-1 counter is on it. It gets -1/-1."]])
-	assert_eq(_texts(StateInformation.of(huge, _view()))[0][1], "12 +1/+1 counters are on it. It gets +12/+12.")
+	assert_eq(_texts(StateInformation.of(grown, _view())), [["+1/+1 Counters", "Currently has 2 +1/+1 counters."]])
+	assert_eq(_texts(StateInformation.of(shrunk, _view())), [["-1/-1 Counters", "Currently has 1 -1/-1 counter."]])
+	assert_eq(_texts(StateInformation.of(huge, _view()))[0][1], "Currently has 12 +1/+1 counters.")
 
 
 func test_a_pump_names_the_card_it_came_from() -> void:
 	var bears: MmObjectView = _bears()
 	bears.continuous_effects = [_locked(Scenario.modify_pt(3, 3, null), [3, 3])]
 
-	assert_eq(_texts(StateInformation.of(bears, _view())), [["Samite Healer", "It gets +3/+3 until end of turn."]])
+	assert_eq(_texts(StateInformation.of(bears, _view())), [["Samite Healer's Effect", "+3/+3 until end of turn."]])
 
 
 func test_a_shrink_is_signed() -> void:
 	var bears: MmObjectView = _bears()
 	bears.continuous_effects = [_locked(Scenario.modify_pt(-1, 0, null), [-1, 0])]
 
-	assert_eq(_texts(StateInformation.of(bears, _view()))[0][1], "It gets -1/+0 until end of turn.")
+	assert_eq(_texts(StateInformation.of(bears, _view()))[0][1], "-1/+0 until end of turn.")
 
 
 func test_set_power_and_toughness_gained_and_lost_abilities_are_worded() -> void:
@@ -68,9 +123,26 @@ func test_set_power_and_toughness_gained_and_lost_abilities_are_worded() -> void
 	]
 
 	var texts: Array = _texts(StateInformation.of(bears, _view()))
-	assert_eq(texts[0][1], "Its base power and toughness are 0/1 until end of turn.")
-	assert_eq(texts[1][1], "It has flying and first strike until end of turn.")
-	assert_eq(texts[2][1], "It loses all abilities until end of turn.")
+	assert_eq(texts[0][1], "Has base power and toughness 0/1 until end of turn.")
+	assert_eq(texts[1][1], "Has flying and first strike until end of turn.")
+	assert_eq(texts[2][1], "Loses all abilities until end of turn.")
+
+
+func test_three_abilities_gained_are_listed_with_a_serial_comma() -> void:
+	var bears: MmObjectView = _bears()
+	var gained: Array[MmAbility] = [FlyingAbility.new(), FirstStrikeAbility.new(), TrampleAbility.new()]
+	bears.continuous_effects = [_locked(Scenario.gain_abilities(gained, null), [])]
+
+	assert_eq(_texts(StateInformation.of(bears, _view()))[0][1], "Has flying, first strike, and trample until end of turn.")
+
+
+func test_a_source_whose_name_ends_in_s_takes_only_an_apostrophe() -> void:
+	var view: MmPlayerView = _view()
+	view.battlefield[1].name = "Llanowar Elves"
+	var bears: MmObjectView = view.battlefield[0]
+	bears.continuous_effects = [_locked(Scenario.modify_pt(1, 1, null), [1, 1])]
+
+	assert_eq(_texts(StateInformation.of(bears, view))[0][0], "Llanowar Elves' Effect")
 
 
 func test_an_effect_whose_source_is_gone_is_an_effect() -> void:
@@ -79,7 +151,7 @@ func test_an_effect_whose_source_is_gone_is_an_effect() -> void:
 		[BEARS] as Array[int], [1, 1] as Array[int], END_OF_TURN)
 	bears.continuous_effects = [active]
 
-	assert_eq(_texts(StateInformation.of(bears, _view()))[0][0], "An effect")
+	assert_eq(_texts(StateInformation.of(bears, _view()))[0][0], "Effect")
 
 
 func test_a_shield_is_listed_with_what_it_has_left() -> void:
@@ -87,7 +159,7 @@ func test_a_shield_is_listed_with_what_it_has_left() -> void:
 	bears.replacement_effects = [ActiveReplacementEffect.created(PreventDamageReplacementEffect.new(), 5, HERO, HEALER, 108,
 		[MmReference.to_object(BEARS)] as Array[MmReference], 1, 0)]
 
-	assert_eq(_texts(StateInformation.of(bears, _view())), [["Samite Healer",
+	assert_eq(_texts(StateInformation.of(bears, _view())), [["Samite Healer's Effect",
 		"Prevent the next 1 damage that would be dealt to Grizzly Bears this turn."]])
 
 
@@ -103,7 +175,7 @@ func test_the_entries_come_in_a_fixed_order() -> void:
 	var titles: Array[String] = []
 	for entry: StateEntry in StateInformation.of(bears, _view()):
 		titles.append(entry.title)
-	assert_eq(titles, ["Summoning sick", "+1/+1 counters", "Damage", "Samite Healer", "Samite Healer"])
+	assert_eq(titles, ["Summoning Sick", "+1/+1 Counters", "Damaged", "Samite Healer's Effect", "Samite Healer's Effect"])
 
 
 func _locked(effect: MmContinuousEffect, amounts: Array) -> ActiveContinuousEffect:

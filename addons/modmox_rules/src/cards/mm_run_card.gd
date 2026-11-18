@@ -12,7 +12,10 @@ extends Resource
 ## base as its Original. The base is never changed.
 func flatten() -> MmCardDefinition:
 	assert(base != null, "A Run Card needs a base Card Definition.")
-	var result: MmCardDefinition = base.duplicate_deep(Resource.DEEP_DUPLICATE_ALL) as MmCardDefinition
+	# Only the card's own parts are copied. A resource in a file of its own, such as a Token
+	# Definition (ADR 0044), is shared as it was loaded: it is never changed (ADR 0004), and
+	# its file is how the GUI finds its art.
+	var result: MmCardDefinition = base.duplicate_deep(Resource.DEEP_DUPLICATE_INTERNAL) as MmCardDefinition
 	for modification: MmModification in modifications:
 		modification.apply_to(result)
 	result.original = base
