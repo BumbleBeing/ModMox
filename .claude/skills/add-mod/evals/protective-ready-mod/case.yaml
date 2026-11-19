@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: protective-ready-mod
+expected_outcome: |
+  content/mods/protective.tres is saved as an Uncommon creature Mod costing {W} more, reads "Modified card gets +0/+1 and gains vigilance and lifelink. It costs {W} more to cast.", and is listed in ACCEPTED.

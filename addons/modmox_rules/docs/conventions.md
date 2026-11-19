@@ -51,6 +51,7 @@ content/emblems/ authored Emblems (.tres): Card Definitions with abilities and n
 content/tokens/  Token Definitions (.tres): what a token is made from, named for it ("cat_1_1_white"),
                  its name its subtypes plus "Token" (CR 111.4) and its color a color indicator
 content/potions/ authored Potions (.tres): a name, a rarity and one activated ability
+content/mods/    authored Mods and Hexes (.tres), added with /add-mod (game ADR 0029)
 assets/          third-party art and fonts, each folder with its credits or license
 run/             a run's state (game-side, no Nodes): the Run, its Collection, Deckbox and Decks,
                  the Mods held, the Run Seed's streams, ContentDecks, and RunFlow, which says where

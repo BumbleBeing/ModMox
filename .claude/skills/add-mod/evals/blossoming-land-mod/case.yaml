@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: blossoming-land-mod
+expected_outcome: |
+  content/mods/blossoming.tres is a Common land Mod with no Mod Cost whose Augmentation adds an enters trigger gaining its controller 1 life; the wording difference from the user text is shown and accepted as the same meaning; it is listed in ACCEPTED.

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: slippery-blocked-mod
+expected_outcome: |
+  Slippery is triaged as Blocked on two missing primitives, the hexproof keyword and hybrid mana in a Mod Cost; a proposal is shown for each and the run stops for the user's yes without writing engine code or the Mod file.
