@@ -314,6 +314,26 @@ func test_ivory_tower_gains_life_for_each_card_in_hand_beyond_four() -> void:
 
 ## The Hero's second turn (Game Turn 3) after casting the Alpha artifact in
 ## [param file_name] with two lands from [param land_file].
+## The Hero casts Leonin Snarecaster in their second main phase, with the Villain's untapped
+## Savannah Lions as its trigger's target, and passes until the trigger asks yes or no; null
+## when no seed gives the hand.
+func _snarecaster_asked() -> MmEngine:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.free_copy(_alpha("grizzly_bears"))],
+		[Scenario.free_copy(_alpha("savannah_lions"))],
+		[Scenario.free_copy(_card("theros", "leonin_snarecaster"))])
+	if engine == null:
+		return null
+	Scenario.declare_attackers(engine, [])
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	var lions: int = Scenario.permanent_named(engine, engine.villain().id, "Savannah Lions")
+	assert_false(engine.game_state().object(lions).is_tapped)
+	assert_eq(Scenario.cast_and_resolve(engine, "Leonin Snarecaster"), "")
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(lions)), "")
+	assert_eq(Scenario.pass_to_yes_or_no(engine), "")
+	assert_true(engine.pending_decision() is ChooseYesOrNoDecision, "CR 608.2d: asked as it resolves.")
+	return engine
+
+
 func _artifact_cast_on_turn_three(file_name: String, land_file: String) -> MmEngine:
 	var artifact: MmCardDefinition = _alpha(file_name)
 	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha(land_file), 20, artifact, 20)
@@ -401,6 +421,27 @@ func test_ornery_kudu_puts_a_minus_one_minus_one_counter_on_a_creature_of_its_co
 	Scenario.resolve_stack(engine)
 	assert_eq(Scenario.pt(engine, kudu), [2, 3])
 	assert_eq(Scenario.pt(engine, bears), [2, 2])
+
+
+func test_leonin_snarecaster_taps_the_creature_it_targets_on_yes() -> void:
+	var engine: MmEngine = _snarecaster_asked()
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var lions: int = Scenario.permanent_named(engine, engine.villain().id, "Savannah Lions")
+
+	assert_eq(engine.submit(ChooseYesOrNoDecision.Choice.YES), "")
+
+	assert_true(engine.game_state().object(lions).is_tapped)
+
+
+func test_leonin_snarecaster_leaves_the_creature_it_targets_untapped_on_no() -> void:
+	var engine: MmEngine = _snarecaster_asked()
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var lions: int = Scenario.permanent_named(engine, engine.villain().id, "Savannah Lions")
+
+	assert_eq(engine.submit(ChooseYesOrNoDecision.Choice.NO), "")
+
+	assert_false(engine.game_state().object(lions).is_tapped)
+	assert_true(engine.game_state().stack.is_empty(), "Saying no still resolves the trigger.")
 
 
 func test_malamet_war_scribe_pumps_each_creature_its_controller_controls_until_end_of_turn() -> void:

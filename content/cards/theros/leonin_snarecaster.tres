@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_bflg1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_3kia5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_eax4x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/tap_effect.gd" id="3_m552a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_odj2k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_5psho"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_effect.gd" id="5_4t245"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_rh0kr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_ovckb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_wlffc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_cbhbg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="10_8lf8t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="11_gntu4"]
+
+[sub_resource type="Resource" id="Resource_4251o"]
+script = ExtResource("4_5psho")
+
+[sub_resource type="Resource" id="Resource_nbq1u"]
+script = ExtResource("3_m552a")
+selection = SubResource("Resource_4251o")
+
+[sub_resource type="Resource" id="Resource_f8t23"]
+script = ExtResource("5_4t245")
+effect = SubResource("Resource_nbq1u")
+
+[sub_resource type="Resource" id="Resource_7umqm"]
+script = ExtResource("9_cbhbg")
+
+[sub_resource type="Resource" id="Resource_6mlq2"]
+script = ExtResource("8_wlffc")
+filter = SubResource("Resource_7umqm")
+
+[sub_resource type="Resource" id="Resource_7ob1i"]
+script = ExtResource("10_8lf8t")
+
+[sub_resource type="Resource" id="Resource_40jod"]
+script = ExtResource("11_gntu4")
+filter = SubResource("Resource_7ob1i")
+
+[sub_resource type="Resource" id="Resource_ym7fr"]
+script = ExtResource("7_ovckb")
+trigger = SubResource("Resource_40jod")
+targets = Array[ExtResource("8_wlffc")]([SubResource("Resource_6mlq2")])
+effects = Array[ExtResource("2_eax4x")]([SubResource("Resource_f8t23")])
+
+[sub_resource type="Resource" id="Resource_42t31"]
+script = ExtResource("2_3kia5")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_odj2k")
+name = "Leonin Snarecaster"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Soldier"])
+mana_cost = SubResource("Resource_42t31")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_bflg1")]([SubResource("Resource_ym7fr")])

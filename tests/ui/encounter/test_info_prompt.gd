@@ -1,6 +1,7 @@
 extends GutTest
 ## The Info Panel's prompt says, in one line, what the Hero is being asked.
 
+const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
 const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 
@@ -261,3 +262,23 @@ func test_creatures_to_tap_for_a_cost_are_asked_for_by_the_cost_and_can_be_cance
 
 	assert_eq(prompt.text, "Tap three untapped creatures you control for Group Project")
 	assert_true(prompt.can_cancel, "A step of the cast.")
+
+
+func test_a_you_may_asks_with_its_words_and_offers_no() -> void:
+	# Game ADR 0060: "[stack name]: [what yes does]?", with no "you may".
+	var view: MmPlayerView = _view()
+	var tap: TapEffect = Scenario.tap(Scenario.targeted(0))
+	var snare: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.may(tap)],
+		[Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))])
+	var ability: MmObjectView = _object(21, "Wand ability", MmGameObject.NO_CARD)
+	ability.source_object_id = 1
+	ability.ability = snare
+	view.stack = [ability]
+
+	var prompt: InfoPrompt = InfoPrompt.of(ChooseYesOrNoDecision.new(HERO, 21, tap), view)
+
+	assert_eq(prompt.text, "Wand's ability: tap target creature?")
+	assert_true(prompt.offers_no)
+	assert_false(prompt.can_cancel, "The ability is resolving: nothing is being cast.")
+	assert_false(InfoPrompt.of(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int]), view).offers_no)
+

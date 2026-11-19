@@ -188,6 +188,10 @@ _Avoid_: Paired abilities, remembered card, hostage
 Something true or false about the game right now, such as "this permanent is untapped", used for an intervening "if" clause, for "as long as", and for an effect that happens instead of another while it holds ("If this is the second time this ability has resolved this turn, ... instead", CR 608.2c).
 _Avoid_: Predicate, check (Filter is the word when a player or object either matches or not)
 
+**May Effect**:
+An effect its controller may choose not to do, "You may [effect]." (CR 603.5, 608.2d). The spell or ability is put on the stack and its targets chosen whatever its controller means to do (CR 603.3d); as the effect begins they are asked yes or no, and the effect happens only on yes. Saying no is not failing to resolve, so the effects after it still happen.
+_Avoid_: Optional trigger (the ability is not optional, only the effect is), may ability
+
 ## Continuous effects
 
 **Continuous Effect**:

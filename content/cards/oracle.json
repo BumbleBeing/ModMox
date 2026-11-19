@@ -391,6 +391,17 @@
 		"set_name": "Scars of Mirrodin",
 		"type_line": "Instant"
 	},
+	"ironpaw_aspirant": {
+		"mana_cost": "{1}{W}",
+		"name": "Ironpaw Aspirant",
+		"oracle_id": "fab5f694-4a9c-4e72-b164-f236e8212ff7",
+		"oracle_text": "When this creature enters, put a +1/+1 counter on target creature.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "The Lost Caverns of Ixalan",
+		"toughness": "2",
+		"type_line": "Creature — Cat Warrior"
+	},
 	"ironroot_treefolk": {
 		"mana_cost": "{4}{G}",
 		"name": "Ironroot Treefolk",
@@ -430,6 +441,28 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "*",
 		"type_line": "Creature — Human Barbarian"
+	},
+	"king_of_the_pride": {
+		"mana_cost": "{2}{W}",
+		"name": "King of the Pride",
+		"oracle_id": "96d0e4dd-6cc2-4349-ac44-785b50f8dd90",
+		"oracle_text": "Other Cats you control get +2/+1.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Modern Horizons",
+		"toughness": "1",
+		"type_line": "Creature — Cat"
+	},
+	"leonin_snarecaster": {
+		"mana_cost": "{1}{W}",
+		"name": "Leonin Snarecaster",
+		"oracle_id": "75f269df-ee49-44db-b256-4d005e3022fb",
+		"oracle_text": "When this creature enters, you may tap target creature.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Theros",
+		"toughness": "1",
+		"type_line": "Creature — Cat Soldier"
 	},
 	"lightning_bolt": {
 		"mana_cost": "{R}",

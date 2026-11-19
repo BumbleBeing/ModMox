@@ -1,0 +1,183 @@
+[gd_resource type="Resource" script_class="MmPlayerSetup" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_run_card.gd" id="1_y5tpb"]
+[ext_resource type="Resource" path="res://content/cards/murders_at_karlov_manor/assemble_the_players.tres" id="2_0rdfm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="3_w5nyh"]
+[ext_resource type="Resource" path="res://content/cards/foundations/felidar_savior.tres" id="4_l2hq4"]
+[ext_resource type="Resource" path="res://content/cards/foundations/helpful_hunter.tres" id="5_rauew"]
+[ext_resource type="Resource" path="res://content/cards/the_lost_caverns_of_ixalan/helping_hand.tres" id="6_qqv0h"]
+[ext_resource type="Resource" path="res://content/cards/the_lost_caverns_of_ixalan/ironpaw_aspirant.tres" id="7_acxsq"]
+[ext_resource type="Resource" path="res://content/cards/modern_horizons/king_of_the_pride.tres" id="8_1uu10"]
+[ext_resource type="Resource" path="res://content/cards/theros/leonin_snarecaster.tres" id="9_mqfcg"]
+[ext_resource type="Resource" path="res://content/cards/lorwyn/oblivion_ring.tres" id="10_6toxi"]
+[ext_resource type="Resource" path="res://content/cards/throne_of_eldraine/outflank.tres" id="11_5nels"]
+[ext_resource type="Resource" path="res://content/cards/alpha/plains.tres" id="12_l27af"]
+[ext_resource type="Resource" path="res://content/cards/foundations/prideful_parent.tres" id="13_vosbh"]
+[ext_resource type="Resource" path="res://content/cards/dark_ascension/sanctuary_cat.tres" id="14_wq8jo"]
+[ext_resource type="Resource" path="res://content/cards/alpha/savannah_lions.tres" id="15_ijltb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="16_duua7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="17_c1qh4"]
+
+[sub_resource type="Resource" id="Resource_d0moq"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("2_0rdfm")
+
+[sub_resource type="Resource" id="Resource_rhc8c"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("2_0rdfm")
+
+[sub_resource type="Resource" id="Resource_57dk3"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("4_l2hq4")
+
+[sub_resource type="Resource" id="Resource_ygr5k"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("5_rauew")
+
+[sub_resource type="Resource" id="Resource_sm626"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("5_rauew")
+
+[sub_resource type="Resource" id="Resource_2k31g"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("5_rauew")
+
+[sub_resource type="Resource" id="Resource_ln8im"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("6_qqv0h")
+
+[sub_resource type="Resource" id="Resource_vkof3"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("6_qqv0h")
+
+[sub_resource type="Resource" id="Resource_lqou8"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("7_acxsq")
+
+[sub_resource type="Resource" id="Resource_1165r"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("7_acxsq")
+
+[sub_resource type="Resource" id="Resource_ynvl2"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("8_1uu10")
+
+[sub_resource type="Resource" id="Resource_dbg0m"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("8_1uu10")
+
+[sub_resource type="Resource" id="Resource_rkmxq"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("8_1uu10")
+
+[sub_resource type="Resource" id="Resource_qc851"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("9_mqfcg")
+
+[sub_resource type="Resource" id="Resource_mbrte"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("10_6toxi")
+
+[sub_resource type="Resource" id="Resource_jkqbn"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("10_6toxi")
+
+[sub_resource type="Resource" id="Resource_7olrj"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("11_5nels")
+
+[sub_resource type="Resource" id="Resource_gcu2k"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("11_5nels")
+
+[sub_resource type="Resource" id="Resource_nk6hs"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_tp363"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_cdhdl"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_ik25v"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_dm0ew"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_oouhk"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_qpwug"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_jtbel"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_xl1jp"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_p51i7"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_crrxf"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_hyfdt"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_dm2fc"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_kj2dt"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_fr204"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_8t60k"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("12_l27af")
+
+[sub_resource type="Resource" id="Resource_af2y0"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("13_vosbh")
+
+[sub_resource type="Resource" id="Resource_bpns1"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("13_vosbh")
+
+[sub_resource type="Resource" id="Resource_eabyf"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("14_wq8jo")
+
+[sub_resource type="Resource" id="Resource_ixid2"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("14_wq8jo")
+
+[sub_resource type="Resource" id="Resource_xksnb"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("15_ijltb")
+
+[sub_resource type="Resource" id="Resource_bkpt0"]
+script = ExtResource("1_y5tpb")
+base = ExtResource("15_ijltb")
+
+[resource]
+script = ExtResource("17_c1qh4")
+deck = Array[ExtResource("1_y5tpb")]([SubResource("Resource_d0moq"), SubResource("Resource_rhc8c"), SubResource("Resource_57dk3"), SubResource("Resource_ygr5k"), SubResource("Resource_sm626"), SubResource("Resource_2k31g"), SubResource("Resource_ln8im"), SubResource("Resource_vkof3"), SubResource("Resource_lqou8"), SubResource("Resource_1165r"), SubResource("Resource_ynvl2"), SubResource("Resource_dbg0m"), SubResource("Resource_rkmxq"), SubResource("Resource_qc851"), SubResource("Resource_mbrte"), SubResource("Resource_jkqbn"), SubResource("Resource_7olrj"), SubResource("Resource_gcu2k"), SubResource("Resource_nk6hs"), SubResource("Resource_tp363"), SubResource("Resource_cdhdl"), SubResource("Resource_ik25v"), SubResource("Resource_dm0ew"), SubResource("Resource_oouhk"), SubResource("Resource_qpwug"), SubResource("Resource_jtbel"), SubResource("Resource_xl1jp"), SubResource("Resource_p51i7"), SubResource("Resource_crrxf"), SubResource("Resource_hyfdt"), SubResource("Resource_dm2fc"), SubResource("Resource_kj2dt"), SubResource("Resource_fr204"), SubResource("Resource_8t60k"), SubResource("Resource_af2y0"), SubResource("Resource_bpns1"), SubResource("Resource_eabyf"), SubResource("Resource_ixid2"), SubResource("Resource_xksnb"), SubResource("Resource_bkpt0")])

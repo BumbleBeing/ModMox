@@ -29,15 +29,15 @@ func test_every_snapshot_carries_the_presenters_names() -> void:
 func test_the_panels_are_headed_with_the_players_names() -> void:
 	_open(PlayerNames.new("Jackson", "Mishra"))
 
-	assert_eq(_screen.player_panel(HERO).name_text(), "JACKSON")
-	assert_eq(_screen.player_panel(VILLAIN).name_text(), "MISHRA")
+	assert_eq(_screen.player_panel(HERO).name_text(), "Jackson")
+	assert_eq(_screen.player_panel(VILLAIN).name_text(), "Mishra")
 
 
 func test_players_with_no_names_go_by_their_parts() -> void:
 	_open(null)
 
-	assert_eq(_screen.player_panel(HERO).name_text(), "HERO")
-	assert_eq(_screen.player_panel(VILLAIN).name_text(), "VILLAIN")
+	assert_eq(_screen.player_panel(HERO).name_text(), "Hero")
+	assert_eq(_screen.player_panel(VILLAIN).name_text(), "Villain")
 
 
 func test_the_end_of_the_encounter_names_the_loser() -> void:

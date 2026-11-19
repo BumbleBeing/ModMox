@@ -399,6 +399,16 @@
 		"scryfall_id": "82ef2567-f798-4447-9735-c7c0d88aba85",
 		"set": "som"
 	},
+	"ironpaw_aspirant": {
+		"artist": "Dan Murayama Scott",
+		"collector_number": "18",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "f70689a0-ac69-4052-84fc-9055e9e1c54b",
+		"set": "lci"
+	},
 	"ironroot_treefolk": {
 		"artist": "Jesper Myrfors",
 		"collector_number": "203",
@@ -438,6 +448,26 @@
 		],
 		"scryfall_id": "8fe3fd83-969c-4add-888f-86f4306b067c",
 		"set": "lea"
+	},
+	"king_of_the_pride": {
+		"artist": "Jonathan Kuo",
+		"collector_number": "16",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "c4e83abd-6f15-491e-9253-90af9f6f1025",
+		"set": "mh1"
+	},
+	"leonin_snarecaster": {
+		"artist": "Kev Walker",
+		"collector_number": "23",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "ade9b739-122c-4659-b1b2-ea0510d96dbc",
+		"set": "ths"
 	},
 	"lightning_bolt": {
 		"artist": "Christopher Rush",

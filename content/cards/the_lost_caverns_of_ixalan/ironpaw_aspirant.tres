@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_07o46"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ppelw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_try11"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_kmnt1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_knxve"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_ilrje"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="5_uy4jv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_piu1x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_oyyyb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_shmcc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_c62a4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="10_25ft3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="11_ahqqg"]
+
+[sub_resource type="Resource" id="Resource_iufgo"]
+script = ExtResource("3_kmnt1")
+value = 1
+
+[sub_resource type="Resource" id="Resource_d46j1"]
+script = ExtResource("4_ilrje")
+
+[sub_resource type="Resource" id="Resource_yabnb"]
+script = ExtResource("5_uy4jv")
+amount = SubResource("Resource_iufgo")
+recipients = SubResource("Resource_d46j1")
+
+[sub_resource type="Resource" id="Resource_vv8js"]
+script = ExtResource("9_c62a4")
+
+[sub_resource type="Resource" id="Resource_l8j68"]
+script = ExtResource("8_shmcc")
+filter = SubResource("Resource_vv8js")
+
+[sub_resource type="Resource" id="Resource_fgjb3"]
+script = ExtResource("10_25ft3")
+
+[sub_resource type="Resource" id="Resource_5ehvi"]
+script = ExtResource("11_ahqqg")
+filter = SubResource("Resource_fgjb3")
+
+[sub_resource type="Resource" id="Resource_xoi4g"]
+script = ExtResource("7_oyyyb")
+trigger = SubResource("Resource_5ehvi")
+targets = Array[ExtResource("8_shmcc")]([SubResource("Resource_l8j68")])
+effects = Array[ExtResource("2_try11")]([SubResource("Resource_yabnb")])
+
+[sub_resource type="Resource" id="Resource_cfh82"]
+script = ExtResource("2_ppelw")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_knxve")
+name = "Ironpaw Aspirant"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Warrior"])
+mana_cost = SubResource("Resource_cfh82")
+power = 1
+toughness = 2
+abilities = Array[ExtResource("1_07o46")]([SubResource("Resource_xoi4g")])

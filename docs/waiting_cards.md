@@ -29,4 +29,4 @@ The real cards `/add-card` triaged and has not added yet (ADR 0040), grouped by 
 
 ### Paying life as a land enters
 
-- **Temple Garden** (Land — Forest Plains): "As this land enters, you may pay 2 life. If you don't, it enters tapped." The yes/no choice is new on screen (ADR 0052's as-enters choice is the closest); after it, it still needs a replacement that makes it enter tapped unless the life is paid. Its mana already comes from its Forest and Plains subtypes.
+- **Temple Garden** (Land — Forest Plains): "As this land enters, you may pay 2 life. If you don't, it enters tapped." A yes/no decision now exists, `ChooseYesOrNoDecision`, asked on screen as game ADR 0060 says, but only for a `MayEffect` as it resolves: this one is asked as the land is played, before it enters (ADR 0052's as-enters choice is the closest), and is a cost, not an effect; after it, it still needs a replacement that makes it enter tapped unless the life is paid. Its mana already comes from its Forest and Plains subtypes.

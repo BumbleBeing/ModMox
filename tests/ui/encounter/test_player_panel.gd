@@ -8,6 +8,8 @@ const VILLAIN: int = MmEncounterSetup.VILLAIN_PLAYER_ID
 const BOX: Rect2 = Rect2(10, 10, 300, 520)
 const UPKEEP: MmTurn.Step = MmTurn.Step.UPKEEP
 const MAIN: MmTurn.Step = MmTurn.Step.PRECOMBAT_MAIN
+const LONG_VILLAIN: String = "Arahbo, the First Fang"
+const LONG_HERO: String = "Aurelianna Thistledown-V"
 
 var _stops: StepStops
 var _snapshot: EncounterSnapshot
@@ -120,7 +122,7 @@ func test_the_hero_is_urza_and_the_villain_charmed_stray_drawn_pixel_for_pixel()
 
 func test_a_panel_given_its_players_own_portrait_draws_it_in_place_of_the_placeholder() -> void:
 	var stray: Texture2D = load("res://ui/sprites/portraits/charmed_stray.png")
-	var villain: PlayerPanel = PlayerPanel.new(VILLAIN, "VILLAIN")
+	var villain: PlayerPanel = PlayerPanel.new(VILLAIN, "Villain")
 	villain.portrait_override = stray
 	add_child_autofree(villain)
 	villain.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, false, false)
@@ -276,7 +278,7 @@ func test_a_wincing_player_does_not_blink() -> void:
 
 
 func test_a_portrait_with_no_blink_portrait_never_blinks() -> void:
-	var villain: PlayerPanel = PlayerPanel.new(VILLAIN, "VILLAIN")
+	var villain: PlayerPanel = PlayerPanel.new(VILLAIN, "Villain")
 	var demon: Texture2D = load("res://ui/sprites/portraits/purple_demon.png")
 	villain.portrait_override = demon
 	add_child_autofree(villain)
@@ -289,7 +291,7 @@ func test_a_portrait_with_no_blink_portrait_never_blinks() -> void:
 
 
 func test_a_portrait_with_no_pain_portrait_never_winces() -> void:
-	var villain: PlayerPanel = PlayerPanel.new(VILLAIN, "VILLAIN")
+	var villain: PlayerPanel = PlayerPanel.new(VILLAIN, "Villain")
 	villain.portrait_override = load("res://ui/sprites/portraits/purple_demon.png")
 	add_child_autofree(villain)
 	villain.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, false, false)
@@ -301,7 +303,7 @@ func test_a_portrait_with_no_pain_portrait_never_winces() -> void:
 
 
 func test_a_player_with_no_portrait_has_a_plain_square() -> void:
-	var panel: PlayerPanel = PlayerPanel.new(77, "STRANGER")
+	var panel: PlayerPanel = PlayerPanel.new(77, "Stranger")
 	add_child_autofree(panel)
 	panel.show_snapshot(_snapshot, DecisionClicks.new(), _stops, BOX, false, false)
 
@@ -610,23 +612,132 @@ func test_a_panel_that_changes_sides_is_built_afresh() -> void:
 	assert_null(panel.undo_button())
 
 
-func test_a_panel_is_headed_with_its_players_name_in_capitals() -> void:
+func test_a_panel_is_headed_with_its_players_name_as_it_is_written() -> void:
 	var panel: PlayerPanel = _panel(VILLAIN)
-	assert_eq(panel.name_text(), "VILLAIN")
+	assert_eq(panel.name_text(), "Villain")
 
 	_snapshot.names = PlayerNames.new("Jackson", "Mishra")
 	_snapshot.is_villain_thinking = true
 	_show(panel, VILLAIN)
 
-	assert_eq(panel.name_text(), "MISHRA")
+	assert_eq(panel.name_text(), "Mishra", "Not put in capitals.")
 	assert_eq(panel.thinking_text(), "Mishra is thinking…")
 	var mine: PlayerPanel = _panel(HERO)
 	_show(mine, HERO)
-	assert_eq(mine.name_text(), "JACKSON")
+	assert_eq(mine.name_text(), "Jackson")
+
+
+# --- Long Player Names -------------------------------------------------------------------
+
+func test_a_name_that_fits_is_centered_and_still() -> void:
+	_snapshot.names = PlayerNames.new("Jackson", "Mishra")
+	var panel: PlayerPanel = _panel(HERO)
+	var name_label: Label = panel.name_label()
+
+	assert_false(panel.is_name_gliding())
+	assert_eq(name_label.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER)
+	assert_eq(name_label.position, Vector2.ZERO)
+	assert_eq(name_label.size, panel.name_box().size, "It fills its box, so it is centered in it.")
+	panel.advance(10.0)
+	assert_eq(name_label.position, Vector2.ZERO, "And never moves.")
+
+
+func test_a_name_too_long_for_its_box_glides_to_its_end_and_back() -> void:
+	_snapshot.names = PlayerNames.new("Jackson", LONG_VILLAIN)
+	var panel: PlayerPanel = _panel(VILLAIN)
+	var name_label: Label = panel.name_label()
+	var box: Control = panel.name_box()
+
+	assert_true(panel.is_name_gliding())
+	assert_eq(name_label.position.x, 0.0, "It starts at its start.")
+	assert_gt(name_label.size.x, box.size.x, "As wide as its words.")
+	panel.advance(1.0)
+	assert_eq(name_label.position.x, 0.0, "Resting.")
+
+	var glide_seconds: float = (name_label.size.x - box.size.x) / NameGlide.PIXELS_PER_SECOND
+	panel.advance(NameGlide.REST_SECONDS - 1.0 + glide_seconds + 0.01)
+	assert_almost_eq(name_label.position.x + name_label.size.x, box.size.x, 1.0, "Its end meets the box's end.")
+	panel.advance(NameGlide.REST_SECONDS + glide_seconds)
+	assert_eq(name_label.position.x, 0.0, "And back.")
+
+
+func test_a_long_name_never_draws_outside_its_box() -> void:
+	_snapshot.names = PlayerNames.new("Jackson", LONG_VILLAIN)
+	var panel: PlayerPanel = _panel(VILLAIN)
+	var box: Control = panel.name_box()
+
+	assert_true(box.clip_contents)
+	assert_eq(panel.name_label().get_parent(), box)
+	assert_eq(Rect2(box.position, box.size), EncounterLayout.panel(Rect2(Vector2.ZERO, BOX.size))["name"])
+
+
+func test_a_long_name_replaced_by_a_short_one_is_centered_and_still() -> void:
+	_snapshot.names = PlayerNames.new("Jackson", LONG_VILLAIN)
+	var panel: PlayerPanel = _panel(VILLAIN)
+	panel.advance(NameGlide.REST_SECONDS + 1.0)
+
+	_snapshot.names = PlayerNames.new("Jackson", "Mishra")
+	_show(panel, VILLAIN)
+
+	assert_false(panel.is_name_gliding())
+	assert_eq(panel.name_label().position, Vector2.ZERO)
+	assert_eq(panel.name_label().size, panel.name_box().size)
+
+
+func test_a_name_starts_over_only_when_it_changes() -> void:
+	_snapshot.names = PlayerNames.new("Jackson", LONG_VILLAIN)
+	var panel: PlayerPanel = _panel(VILLAIN)
+	panel.advance(NameGlide.REST_SECONDS + 1.0)
+	var glided: float = panel.name_label().position.x
+	assert_lt(glided, 0.0)
+
+	_show(panel, VILLAIN)
+	assert_eq(panel.name_label().position.x, glided, "The same name keeps gliding where it was.")
+	_snapshot.names = PlayerNames.new("Jackson", "Arahbo, the Second Fang")
+	_show(panel, VILLAIN)
+	assert_eq(panel.name_label().position.x, 0.0, "Another starts over.")
+
+
+func test_a_long_heros_name_glides_too() -> void:
+	_snapshot.names = PlayerNames.new(LONG_HERO, "Mishra")
+	var panel: PlayerPanel = _panel(HERO)
+
+	assert_eq(LONG_HERO.length(), 24, "As long as Choose your Hero allows.")
+	assert_true(panel.is_name_gliding())
+
+
+func test_the_villain_thinking_wraps_downward_inside_the_panel() -> void:
+	_snapshot.names = PlayerNames.new("Jackson", LONG_VILLAIN)
+	_snapshot.is_villain_thinking = true
+	var panel: PlayerPanel = _panel(VILLAIN)
+	var thinking: Label = panel.thinking_label()
+	var parts: Dictionary[String, Rect2] = EncounterLayout.panel(Rect2(Vector2.ZERO, BOX.size))
+
+	assert_eq(panel.thinking_text(), LONG_VILLAIN + " is thinking…")
+	assert_gte(thinking.get_line_count(), 2, "Wrapped.")
+	assert_eq(thinking.get_visible_line_count(), thinking.get_line_count(), "Every line shows.")
+	assert_eq(thinking.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER)
+	assert_eq(thinking.position.x, parts["potions"].position.x)
+	assert_eq(thinking.size.x, parts["potions"].size.x, "As wide as the column.")
+	assert_gte(thinking.position.y, parts["emblems"].end.y, "Under the Emblems button.")
+	assert_lte(thinking.position.y + thinking.get_line_count() * thinking.get_line_height(), BOX.size.y,
+		"Never past the panel's bottom.")
+
+
+func test_a_short_villain_thinking_stays_where_it_was() -> void:
+	_snapshot.names = PlayerNames.new("Jackson", "Mishra")
+	_snapshot.is_villain_thinking = true
+	var panel: PlayerPanel = _panel(VILLAIN)
+	var thinking: Label = panel.thinking_label()
+	var potions: Rect2 = EncounterLayout.panel(Rect2(Vector2.ZERO, BOX.size))["potions"]
+
+	assert_eq(thinking.get_line_count(), 1)
+	var middle: float = thinking.position.y + thinking.get_line_height() / 2.0
+	assert_almost_eq(middle, potions.position.y + 17.0, 1.0, "Centered on its old 34-pixel line.")
 
 
 func _panel(player_id: int) -> PlayerPanel:
-	var panel: PlayerPanel = PlayerPanel.new(player_id, "HERO" if player_id == HERO else "VILLAIN")
+	var panel: PlayerPanel = PlayerPanel.new(player_id, "Hero" if player_id == HERO else "Villain")
 	add_child_autofree(panel)
 	_show(panel, player_id)
 	return panel

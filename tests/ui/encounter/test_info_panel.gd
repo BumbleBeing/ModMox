@@ -2,6 +2,7 @@ extends GutTest
 ## The Info Panel shows the prompt, what is owed, a refused answer's reason, whether priority
 ## is held and the Cancel button, and gives way to an Option Menu row while one is pointed at.
 
+const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
 const BOX: Rect2 = Rect2(352, 904, 300, 170)
 
@@ -227,3 +228,23 @@ func test_all_attack_reads_undeclare_all_once_told_an_attacker_is_declared_and_t
 	panel.all_attack_button().pressed.emit()
 	assert_eq(events, ["none", "all"] as Array[String])
 	_panel(_snapshot(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int])), "").show_undeclare(true)
+
+
+func test_a_you_may_offers_no_where_the_cancel_button_goes() -> void:
+	# Game ADR 0060: "No" by the mouse alone; the Pass Button says yes.
+	var said: Array[String] = []
+	var panel: InfoPanel = _panel(_snapshot(ChooseYesOrNoDecision.new(HERO, 21, Scenario.draw_cards(1, Scenario.you()))), "")
+	panel.no_pressed.connect(func() -> void: said.append("no"))
+
+	assert_not_null(panel.no_button())
+	assert_eq(panel.no_button().text, "No")
+	assert_true(BOX.encloses(panel.no_button().get_global_rect()))
+	assert_eq(panel.no_button().focus_mode, Control.FOCUS_NONE, "No key presses it.")
+	assert_null(panel.cancel_button())
+	panel.no_button().pressed.emit()
+
+	assert_eq(said, ["no"] as Array[String])
+	assert_null(_panel(_snapshot(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int])), "").no_button())
+	panel.show_option("{T}: Something")
+	assert_false(panel.no_button().visible, "An option replaces it like everything else.")
+

@@ -189,6 +189,8 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 		return range(mini(targeting.most, targeting.candidates.size()))
 	if decision is ChoosePlayOrDrawDecision:
 		return ChoosePlayOrDrawDecision.Choice.PLAY
+	if decision is ChooseYesOrNoDecision:
+		return ChooseYesOrNoDecision.Choice.YES
 	if decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
 		return []
 	if decision is DivideCombatDamageDecision:
@@ -1189,6 +1191,18 @@ static func free_bounce(card_name: String) -> MmCardDefinition:
 	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))], [return_to_hand(targeted(0))])
 
 
+## "Tap [param selection]."
+static func tap(selection: MmSelection) -> TapEffect:
+	var effect: TapEffect = TapEffect.new()
+	effect.selection = selection
+	return effect
+
+
+## An instant costing {0}: "Tap target creature."
+static func free_tap(card_name: String) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))], [tap(targeted(0))])
+
+
 ## "A [param filter]", chosen as the effect resolves (CR 608.2d), as choice [param index].
 static func chosen(filter: MmFilter, index: int = 0) -> ChosenSelection:
 	var selection: ChosenSelection = ChosenSelection.new()
@@ -1929,3 +1943,27 @@ static func landcycler(card_name: String = "Landcycler", mana: MmManaCost = null
 	var definition: MmCardDefinition = instant(card_name, mana_cost(0), [], [gain_life(1, you())])
 	definition.abilities.append(landcycling(mana if mana != null else mana_cost(2)))
 	return definition
+
+
+# --- Card track: "you may" ------------------------------------------------------------
+
+
+## "You may [param effect]." (CR 603.5, 608.2d): asked yes or no as it begins.
+static func may(effect: MmEffect) -> MayEffect:
+	var optional: MayEffect = MayEffect.new()
+	optional.effect = effect
+	return optional
+
+
+## A 2/1 creature costing {0}, Leonin Snarecaster's ability alone: "When this creature
+## enters, you may tap target creature", or target [param filter].
+static func snarer(card_name: String = "Snarer", filter: MmFilter = null) -> MmCardDefinition:
+	var targeted_filter: MmFilter = filter if filter != null else of_type(MmCardTypes.CardType.CREATURE)
+	return creature(card_name, 2, 1, [triggered(enters(IsSourceFilter.new()), [may(tap(targeted(0)))],
+		[target(targeted_filter)])])
+
+
+## Passes priority and answers everything else as autoplay() does, until a "you may" is
+## asked.
+static func pass_to_yes_or_no(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is ChooseYesOrNoDecision)

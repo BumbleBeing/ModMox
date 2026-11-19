@@ -127,6 +127,24 @@ static func effect_of(ability: MmAbility, noun: String, mode_index: int = SpellA
 	return writer._ability(ability)
 
 
+## What [param effect], one of [param ability]'s, does, alone and in lower case, as a
+## "you may" asks it (game ADR 0060): "tap target creature". [param mode_index] is the
+## chosen mode of a modal one.
+static func offered_words(ability: MmAbility, effect: MmEffect, noun: String, mode_index: int = SpellAbility.NO_MODE) -> String:
+	var writer: AbilityText = AbilityText.new(noun)
+	if not ability.modes_or_none().is_empty() and mode_index != SpellAbility.NO_MODE:
+		writer._targets = ability.modes_or_none()[mode_index].targets
+	elif ability is SpellAbility:
+		writer._targets = (ability as SpellAbility).targets
+	elif ability is ActivatedAbility:
+		writer._targets = (ability as ActivatedAbility).targets
+	elif ability is TriggeredAbility:
+		writer._targets = (ability as TriggeredAbility).targets
+	if ability is TriggeredAbility:
+		writer._trigger = (ability as TriggeredAbility).trigger
+	return writer._effect(effect)
+
+
 ## What mode [param mode_index] of the modal spell or triggered ability [param ability]
 ## does, as its "•" line says it, without the bullet.
 static func mode_text(ability: MmAbility, mode_index: int, noun: String) -> String:
@@ -608,6 +626,8 @@ func _effect(effect: MmEffect) -> String:
 	if effect is ReturnToHandEffect:
 		var returned: MmSelection = (effect as ReturnToHandEffect).selection
 		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]
+	if effect is TapEffect:
+		return "tap " + _selection((effect as TapEffect).selection)
 	if effect is AttachEffect:
 		return "attach %s to %s" % [_selection((effect as AttachEffect).attachment), _selection((effect as AttachEffect).to)]
 	if effect is RegenerateEffect:
@@ -624,6 +644,9 @@ func _effect(effect: MmEffect) -> String:
 		return "double the number of %s counters on %s" % [MmCounter.label(doubled.kind), _selection(doubled.recipients)]
 	if effect is InsteadEffect:
 		return _instead(effect as InsteadEffect)
+	if effect is MayEffect:
+		# CR 603.5: "you may tap target creature".
+		return "you may " + _effect((effect as MayEffect).effect)
 	if effect is CreateContinuousEffect:
 		return _continuous((effect as CreateContinuousEffect).continuous, false) + " until end of turn"
 	if effect is CreateTokenEffect:

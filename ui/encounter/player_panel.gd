@@ -1,6 +1,6 @@
 class_name PlayerPanel
 extends Control
-## One player's panel in the sidebar: their name, their Portrait with their life total in
+## One player's Player Panel in the sidebar: their name as it is written, their Portrait with their life total in
 ## its corner, a button for each color of mana in their pool, the Emblems button, and every
 ## step of the turn down the right side. Green steps have a stop; the step it is now has a
 ## pale Glow on the active player's panel, and the panel of the player with priority has
@@ -8,7 +8,9 @@ extends Control
 ## glows and takes the click, never the whole panel. The Hero's panel has the Potions
 ## button under the Emblems button, which opens the Potions window, and under that Undo
 ## and Yield Turn; the Pass Button is not here but over the Info Panel (A489). The
-## Villain's panel says when the Villain is thinking, under its Emblems button (A294).
+## Villain's panel says when the Villain is thinking, under its Emblems button (A294),
+## wrapped downward to as many lines as it takes. A name too long for its box glides from
+## one end to the other and back (NameGlide), clipped to the box.
 ##
 ## It takes the Inspector's treatment, in the Inspector's colors (ADR 0033): an edged panel
 ## with Dither Shading, dithered buttons, and the Hero's controls on an entry's plate. The
@@ -44,6 +46,8 @@ const PLAIN_COLOR: Color = Color("#3a414d")
 const NOW_COLOR: Color = Color("#f3e9a0")
 ## What the Villain's panel says while they think, with the Villain as they are named.
 const THINKING_FORMAT: String = "%s is thinking…"
+## The height the first line of it is centered on; more lines go on down the panel.
+const THINKING_LINE: float = 34.0
 const UNDO_FORMAT: String = "Undo [%s]"
 const POTIONS_FORMAT: String = "⚗  Potions (%d)"
 const POTION_COLOR: Color = Color("#9a63d8")
@@ -104,7 +108,10 @@ var _step_looks: Array[int] = []
 var _undo: Button = null
 var _yield: Button = null
 var _thinking: Label = null
+## What the name is clipped to, and the name in it.
+var _name_box: Control = null
 var _name: Label = null
+var _name_glide: NameGlide = NameGlide.new(0.0)
 var _portrait: Panel = null
 var _backing: Panel = null
 var _controls: Panel = null
@@ -152,7 +159,7 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 				amount += 1
 		_show_mana(type, amount)
 
-	_set_label(_name, snapshot.names.of(_player_id).to_upper())
+	_show_name(snapshot.names.of(_player_id))
 	var emblems: Array[MmObjectView] = snapshot.emblems_of(_player_id)
 	_show_emblems(emblems.size(), HeldState.emblems_look(emblems, clicks))
 
@@ -165,7 +172,7 @@ func show_snapshot(snapshot: EncounterSnapshot, clicks: DecisionClicks, stops: S
 		_set_text(_yield, ("☑" if is_yielding else "☐") + "  Yield Turn")
 	else:
 		_thinking.visible = snapshot.is_villain_thinking
-		_set_label(_thinking, THINKING_FORMAT % snapshot.names.starting(_player_id))
+		_show_thinking(THINKING_FORMAT % snapshot.names.starting(_player_id))
 
 
 ## Opens or closes the undo button, for a half-made choice whose clicks can be taken back
@@ -249,6 +256,7 @@ func is_wincing() -> bool:
 ## Lets [param seconds] of a wince and of a breath pass; the Portrait comes back when the
 ## wince is over, and breathes again.
 func advance(seconds: float) -> void:
+	_glide_name(seconds)
 	var breathed: float = seconds
 	if _pain_left > 0.0:
 		var pain_was: float = _pain_left
@@ -266,7 +274,7 @@ func advance(seconds: float) -> void:
 		_blink.advance(seconds)
 		if _is_blinking() != was_shut:
 			_show_picture()
-	elif _pain_left == 0.0:
+	elif _pain_left == 0.0 and not _name_glide.is_gliding():
 		set_process(false)
 
 
@@ -351,6 +359,20 @@ func name_label() -> Label:
 	return _name
 
 
+## The box the name is clipped to.
+func name_box() -> Control:
+	return _name_box
+
+
+## Whether the name is too long for its box, and so glides.
+func is_name_gliding() -> bool:
+	return _name_glide.is_gliding()
+
+
+func thinking_label() -> Label:
+	return _thinking
+
+
 ## The color [param button], a step or the Emblems, Potions or Undo button, is drawn in.
 static func tint_of(button: Button) -> Color:
 	return button.get_meta(TINT)
@@ -361,7 +383,7 @@ static func held_fill(tint: Color) -> Color:
 	return Inspector.palette().panel.lerp(tint, HELD_SHARE)
 
 
-## The player's name as the panel shows it, in capitals.
+## The player's name as the panel shows it.
 func name_text() -> String:
 	return _name.text
 
@@ -461,8 +483,15 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 	_priority.size = panel_size
 	BorderEffects.add_glow(_priority, panel_size, NOW_COLOR)
 	add_child(_priority)
-	_name = _label(_title, parts["name"], 22)
-	add_child(_name)
+	_name_box = Control.new()
+	_name_box.clip_contents = true
+	_name_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_name_box.position = parts["name"].position
+	_name_box.size = parts["name"].size
+	add_child(_name_box)
+	_name = _label("", Rect2(Vector2.ZERO, parts["name"].size), 22)
+	_name_box.add_child(_name)
+	_show_name(_title)
 	_add_portrait(parts["portrait"])
 	var life_box: Panel = CardShapes.rounded(parts["life"].size, 8, Color(0.05, 0.05, 0.07, 0.6))
 	life_box.position = parts["life"].position
@@ -486,9 +515,18 @@ func _build(panel_size: Vector2, is_hero: bool) -> void:
 		_add_potions(parts["potions"])
 		_add_controls(parts)
 	else:
-		_thinking = _label("", Rect2(parts["potions"].position, Vector2(parts["potions"].size.x, 34)), 16)
+		var thinking_top: float = parts["potions"].position.y
+		_thinking = _label("", Rect2(parts["potions"].position.x, thinking_top, parts["potions"].size.x,
+			panel_size.y - thinking_top - EncounterLayout.PANEL_PAD), 16)
+		_thinking.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_thinking.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 		_thinking.modulate = Color(1, 0.85, 0.4)
 		add_child(_thinking)
+		# One line sits where it always has, centered on THINKING_LINE. Measured in the tree,
+		# where the label has the game's font.
+		var shift: float = (THINKING_LINE - _thinking.get_line_height()) / 2.0
+		_thinking.position.y += shift
+		_thinking.size.y -= shift
 
 
 ## A player's Portrait is drawn pixel for pixel, six screen pixels to each of its own, and
@@ -741,6 +779,37 @@ func _add_step_button(box: Rect2, step: int) -> void:
 
 
 ## Changes a label's text only when it differs, since laying text out is not free.
+## Heads the panel with [param player_name]: centered and still if it fits its box, and
+## otherwise as wide as its words, gliding from its start. The same name keeps gliding
+## where it was; another starts over.
+func _show_name(player_name: String) -> void:
+	if _name.text == player_name and _name.get_meta(&"box_width", -1.0) == _name_box.size.x:
+		return
+	_name.text = player_name
+	_name.set_meta(&"box_width", _name_box.size.x)
+	# As the label shapes it, kerning and all.
+	var width: float = _name.get_minimum_size().x
+	_name_glide = NameGlide.new(width - _name_box.size.x)
+	if _name_glide.is_gliding():
+		_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		_name.size = Vector2(ceilf(width), _name_box.size.y)
+		set_process(true)
+	else:
+		_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_name.size = _name_box.size
+	_name.position = Vector2.ZERO
+
+
+func _glide_name(seconds: float) -> void:
+	if _name_glide.is_gliding():
+		_name_glide.advance(seconds)
+		_name.position.x = _name_glide.offset()
+
+
+func _show_thinking(text: String) -> void:
+	_set_label(_thinking, text)
+
+
 static func _set_label(label: Label, text: String) -> void:
 	if label.text != text:
 		label.text = text

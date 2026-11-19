@@ -9,6 +9,8 @@ signal cancel_pressed
 signal all_attack_pressed
 ## "Undeclare All" was pressed: the same button, while an attacker is declared (A496).
 signal undeclare_all_pressed
+## "No" was pressed: the answer to a "you may" (game ADR 0060).
+signal no_pressed
 
 const BORDER: Color = Color("#8a93a6")
 const DIM: float = 0.45
@@ -16,6 +18,8 @@ const DIM: float = 0.45
 const CANCEL_FORMAT: String = "Cancel [%s]"
 const ALL_ATTACK: String = "Declare All"
 const UNDECLARE_ALL: String = "Undeclare All"
+## A "you may" is answered no with it, by the mouse alone; the Pass Button says yes.
+const NO: String = "No"
 ## The room the Cancel or "Declare All" button takes at the panel's bottom right.
 const BUTTON_ROOM: float = 142.0
 
@@ -28,6 +32,7 @@ var _cancel: Button = null
 ## The key that cancels, as the Cancel button names it.
 var _cancel_key: String = "X"
 var _all_attack: Button = null
+var _no: Button = null
 var _hint: Label = null
 var _pips: Array[TextureRect] = []
 var _pip_names: Array[String] = []
@@ -47,6 +52,7 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 	_pips.clear()
 	_cancel = null
 	_all_attack = null
+	_no = null
 	position = box.position
 	size = box.size
 	# A payment Auto-tap is making asks nothing, but says what is owed and can be canceled.
@@ -71,7 +77,7 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 	add_child(_hint)
 	# The reason sits along the bottom, beside the Cancel or "Declare All" button if there
 	# is one: the panel is too short for a row of its own (A489).
-	var beside: float = BUTTON_ROOM if prompt.can_cancel or prompt.offers_all_attack else 0.0
+	var beside: float = BUTTON_ROOM if prompt.can_cancel or prompt.offers_all_attack or prompt.offers_no else 0.0
 	_error = _label(error, Rect2(12, box.size.y - 50, inside - beside, 44), 13, Color(1, 0.45, 0.4))
 	_error.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	add_child(_error)
@@ -97,6 +103,15 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 			else:
 				all_attack_pressed.emit())
 		add_child(_all_attack)
+	if prompt.offers_no:
+		_no = Button.new()
+		_no.text = NO
+		_no.focus_mode = Control.FOCUS_NONE
+		_no.position = Vector2(box.size.x - BUTTON_ROOM, box.size.y - 40)
+		_no.size = Vector2(BUTTON_ROOM - 12, 32)
+		_no.add_theme_font_size_override("font_size", 18)
+		_no.pressed.connect(func() -> void: no_pressed.emit())
+		add_child(_no)
 	_option = _label("", Rect2(12, 8, inside, box.size.y - 16), 18, Color.WHITE)
 	add_child(_option)
 	_arrange()
@@ -167,6 +182,11 @@ func all_attack_button() -> Button:
 	return _all_attack
 
 
+## The "No" button, or null while no "you may" is asked.
+func no_button() -> Button:
+	return _no
+
+
 ## The Cancel button, or null when the decision is not a step of a cast.
 func cancel_button() -> Button:
 	return _cancel
@@ -197,6 +217,8 @@ func _arrange() -> void:
 		_cancel.visible = not is_option
 	if _all_attack != null:
 		_all_attack.visible = not is_option
+	if _no != null:
+		_no.visible = not is_option
 
 
 func _label(text: String, box: Rect2, font_size: int, color: Color) -> Label:

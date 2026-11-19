@@ -169,6 +169,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _choose_creature_type(decision as ChooseCreatureTypeDecision, world, source, rng)
 	if decision is ChooseCardsInLibraryDecision:
 		return _search(decision as ChooseCardsInLibraryDecision, world, source, rng)
+	if decision is ChooseYesOrNoDecision:
+		return _yes_or_no(decision as ChooseYesOrNoDecision, world, source, rng)
 	assert(false, "AiAgent cannot answer %s." % decision.describe())
 	return null
 
@@ -525,22 +527,30 @@ func _best_land(decision: PriorityDecision, world: MmGameState) -> int:
 
 # --- Targets, triggers and replacement effects --------------------------------------
 
-## FULL: simulates each target. CHEAP: harmful effects at the most valuable opposing
-## creature they would kill, else the opponent; helpful ones at its own best creature; a
-## counter at the other player's most expensive spell.
+## FULL: simulates each target; a tap, through the turn, with the CHEAP pick the default.
+## CHEAP: harmful effects at the most valuable opposing creature they would kill, else the
+## opponent; a tap at the most valuable untapped one; helpful ones at its own best
+## creature; a counter at the other player's most expensive spell.
 func _target(decision: ChooseTargetDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	if decision.candidates.size() == 1:
 		_reason = Reason.ONLY_CHOICE
 		return 0
 	if mode == Mode.FULL:
+		var effects: Array[MmEffect] = _effects_of_stack_object(world, decision.stack_object_id)
+		var taps: bool = AiTiming.taps(effects)
 		var options: Array[int] = []
+		# A tap often changes nothing the turn can show, as after combat, so the Cheap pick
+		# is the default and another target must score better.
+		if taps:
+			options.append(_cheap_target(decision, world))
 		for index: int in decision.candidates.size():
-			options.append(index)
-		var is_trick: bool = AiTiming.is_trick(AiTiming.tag_of_effects(_effects_of_stack_object(world, decision.stack_object_id)))
+			if not options.has(index):
+				options.append(index)
+		var lasts_the_turn: bool = AiTiming.is_trick(AiTiming.tag_of_effects(effects)) or taps
 		var scores: Array[int] = _simulate_each(source, rng, options, decision.player_id,
-			is_trick and difficulty.judges_tricks_after_the_turn)
+			lasts_the_turn and difficulty.judges_tricks_after_the_turn)
 		_reason = Reason.BEST_SCORE
-		return _best_option(options, scores, rng, 0)
+		return _best_option(options, scores, rng, 1 if taps else 0)
 	return _cheap_target(decision, world)
 
 
@@ -548,7 +558,8 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 	var me: int = decision.player_id
 	var effects: Array[MmEffect] = _effects_of_stack_object(world, decision.stack_object_id)
 	var tag: AiTiming.Tag = AiTiming.tag_of_effects(effects)
-	var harmful: bool = tag == AiTiming.Tag.REMOVAL or tag == AiTiming.Tag.COUNTER
+	var harmful: bool = AiTiming.is_harmful(effects)
+	var taps: bool = AiTiming.taps(effects)
 	var damage: int = _constant_damage(effects)
 	var best: int = -1
 	var best_value: int = -1
@@ -563,6 +574,8 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 		if (target.controller_id != me) != harmful:
 			continue
 		if harmful and damage > 0 and world.characteristics_of(target).toughness - target.damage_marked > damage:
+			continue
+		if taps and target.is_tapped:
 			continue
 		var value: int = AiBoardEvaluator.creature_value(world, target)
 		if tag == AiTiming.Tag.COUNTER:
@@ -585,7 +598,8 @@ func _up_to_targets(decision: ChooseTargetsDecision, world: MmGameState, source:
 	var most: int = mini(decision.most, decision.candidates.size())
 	if mode == Mode.CHEAP:
 		return _cheap_up_to_targets(decision, world).slice(0, most)
-	var is_trick: bool = AiTiming.is_trick(AiTiming.tag_of_effects(_effects_of_stack_object(world, decision.stack_object_id)))
+	var effects: Array[MmEffect] = _effects_of_stack_object(world, decision.stack_object_id)
+	var lasts_the_turn: bool = AiTiming.is_trick(AiTiming.tag_of_effects(effects)) or AiTiming.taps(effects)
 	var chosen: Array = []
 	while chosen.size() < most:
 		var answers: Array = [chosen.duplicate()]
@@ -598,7 +612,7 @@ func _up_to_targets(decision: ChooseTargetsDecision, world: MmGameState, source:
 		for index: int in answers.size():
 			options.append(index)
 		var scores: Array[int] = _simulate_each(source, rng, answers, decision.player_id,
-			is_trick and difficulty.judges_tricks_after_the_turn)
+			lasts_the_turn and difficulty.judges_tricks_after_the_turn)
 		# Stopping is the default: another target must score better to be added.
 		var best: int = _best_option(options, scores, rng, 1)
 		if best == 0:
@@ -611,13 +625,14 @@ func _up_to_targets(decision: ChooseTargetsDecision, world: MmGameState, source:
 ## harmful effects at the other player's creatures, helpful ones at its own.
 func _cheap_up_to_targets(decision: ChooseTargetsDecision, world: MmGameState) -> Array:
 	var me: int = decision.player_id
-	var tag: AiTiming.Tag = AiTiming.tag_of_effects(_effects_of_stack_object(world, decision.stack_object_id))
-	var harmful: bool = tag == AiTiming.Tag.REMOVAL or tag == AiTiming.Tag.COUNTER
+	var effects: Array[MmEffect] = _effects_of_stack_object(world, decision.stack_object_id)
+	var harmful: bool = AiTiming.is_harmful(effects)
+	var taps: bool = AiTiming.taps(effects)
 	var ranked: Array[int] = []
 	var values: Dictionary[int, int] = {}
 	for index: int in decision.candidates.size():
 		var target: MmGameObject = world.object(decision.candidates[index].id)
-		if (target.controller_id != me) != harmful:
+		if (target.controller_id != me) != harmful or (taps and target.is_tapped):
 			continue
 		values[index] = AiBoardEvaluator.creature_value(world, target)
 		ranked.append(index)
@@ -804,6 +819,46 @@ func _choose_mode(decision: ChooseModeDecision, world: MmGameState, source: MmSi
 			if reached.is_object() and world.object(reached.id).controller_id != decision.player_id:
 				return index
 	return 0
+
+
+## Whether to do what a "you may" offers (CR 603.5). CHEAP: a harmful effect, such as a
+## tap, only when it reaches something of the other player's; any other only when it
+## reaches something of its own or nothing chosen at all. FULL: simulates both, a tap
+## through the turn, with the CHEAP answer the default that the other must beat.
+func _yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
+	_reason = Reason.BEST_SCORE
+	var cheap: int = _cheap_yes_or_no(decision, world)
+	if mode == Mode.CHEAP:
+		return cheap
+	var offered: Array[MmEffect] = [decision.effect]
+	var other: int = ChooseYesOrNoDecision.Choice.NO if cheap == ChooseYesOrNoDecision.Choice.YES \
+		else ChooseYesOrNoDecision.Choice.YES
+	var options: Array[int] = [cheap, other]
+	var scores: Array[int] = _simulate_each(source, rng, options, decision.player_id,
+		AiTiming.taps(offered) and difficulty.judges_tricks_after_the_turn)
+	return _best_option(options, scores, rng, 1)
+
+
+func _cheap_yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState) -> int:
+	var me: int = decision.player_id
+	var harmful: bool = AiTiming.is_harmful([decision.effect])
+	var reaches_theirs: bool = false
+	var reaches_mine: bool = false
+	var item: MmGameObject = world.object(decision.stack_object_id)
+	var chosen_targets: Array[MmReference] = item.targets if item != null else [] as Array[MmReference]
+	for chosen: MmReference in chosen_targets:
+		if chosen == null:
+			continue
+		var whose: int = chosen.id
+		if chosen.is_object():
+			var reached: MmGameObject = world.object(chosen.id)
+			whose = reached.controller_id if reached != null else me
+		if whose == me:
+			reaches_mine = true
+		else:
+			reaches_theirs = true
+	var says_yes: bool = reaches_theirs if harmful else (reaches_mine or not reaches_theirs)
+	return ChooseYesOrNoDecision.Choice.YES if says_yes else ChooseYesOrNoDecision.Choice.NO
 
 
 ## The cards found by a search (ADR 0057), always as many as may be found. FULL: simulates
@@ -1082,6 +1137,8 @@ func _pass_index(decision: PriorityDecision) -> int:
 	return 0
 
 
+## What the spell or ability [param object_id] on the stack does, each "you may" read as
+## what it offers (CR 603.5).
 func _effects_of_stack_object(world: MmGameState, object_id: int) -> Array[MmEffect]:
 	var effects: Array[MmEffect] = []
 	var item: MmGameObject = world.object(object_id)
@@ -1089,16 +1146,16 @@ func _effects_of_stack_object(world: MmGameState, object_id: int) -> Array[MmEff
 		return effects
 	if item.ability is ActivatedAbility:
 		effects.append_array((item.ability as ActivatedAbility).effects)
-		return effects
+		return AiTiming.unwrapped(effects)
 	if item.ability is TriggeredAbility:
 		# A modal triggered ability does what its chosen mode does (ADR 0046).
 		effects.append_array((item.ability as TriggeredAbility).effects_for(item.chosen_mode))
-		return effects
+		return AiTiming.unwrapped(effects)
 	for ability: MmAbility in world.characteristics_of(item).abilities:
 		if ability is SpellAbility:
 			# A modal spell does what its chosen mode does (ADR 0046).
 			effects.append_array((ability as SpellAbility).effects_for(item.chosen_mode))
-	return effects
+	return AiTiming.unwrapped(effects)
 
 
 ## The damage a spell's effects deal, when it is a fixed number; 0 otherwise.

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Villain" format=3]
+
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/king_of_the_pride_pain.png" id="1_82vsd"]
+[ext_resource type="Script" path="res://run/villain.gd" id="2_gkptg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="3_1uy61"]
+[ext_resource type="Resource" path="res://content/decks/king_of_the_pride.tres" id="4_7btqd"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/king_of_the_pride.png" id="5_5vg2p"]
+
+[resource]
+script = ExtResource("2_gkptg")
+name = "King of the Pride"
+sprite = ExtResource("5_5vg2p")
+pain_sprite = ExtResource("1_82vsd")
+setups = Array[ExtResource("3_1uy61")]([ExtResource("4_7btqd")])

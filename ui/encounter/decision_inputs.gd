@@ -26,6 +26,7 @@ static func kinds() -> Dictionary[Script, String]:
 		ChooseLegendToKeepDecision: "the legends on the battlefield, clicked as a target is (DecisionClicks)",
 		ChooseCreatureTypeDecision: "the Creature Type Window, a search box and a row for each type (CreatureTypeChoice)",
 		ChooseCardsInLibraryDecision: "the Hero's Library window, opened by itself, and the pass button (CardPicks)",
+		ChooseYesOrNoDecision: "the Info Panel's No button and the pass button, which says Yes (game ADR 0060)",
 	}
 
 

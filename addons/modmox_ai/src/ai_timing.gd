@@ -33,8 +33,21 @@ const COMBAT_STEPS: Array[MmTurn.Step] = [
 ]
 
 
+## [param effects] with each "you may" (MayEffect) replaced by the effect it offers, so a
+## spell or ability is read as doing what it may do (CR 603.5).
+static func unwrapped(effects: Array[MmEffect]) -> Array[MmEffect]:
+	var found: Array[MmEffect] = []
+	for effect: MmEffect in effects:
+		var offered: MmEffect = effect
+		while offered is MayEffect:
+			offered = (offered as MayEffect).effect
+		found.append(offered)
+	return found
+
+
 ## The tag of a spell or ability whose effects are [param effects].
-static func tag_of_effects(effects: Array[MmEffect]) -> Tag:
+static func tag_of_effects(wrapped: Array[MmEffect]) -> Tag:
+	var effects: Array[MmEffect] = unwrapped(wrapped)
 	if effects.is_empty():
 		return Tag.NONE
 	var is_trick: bool = true
@@ -54,6 +67,23 @@ static func tag_of_effects(effects: Array[MmEffect]) -> Tag:
 	if not is_trick:
 		return Tag.NONE
 	return Tag.EVASION if is_evasion else Tag.COMBAT_TRICK
+
+
+## Whether [param effects] harm what they reach, so they are aimed at the other player's
+## permanents: removal, a counter, or a tap, which keeps a creature from blocking or
+## attacking. A tap keeps its tag: it is not removal.
+static func is_harmful(effects: Array[MmEffect]) -> bool:
+	var tag: Tag = tag_of_effects(effects)
+	return tag == Tag.REMOVAL or tag == Tag.COUNTER or taps(effects)
+
+
+## Whether any of [param effects] taps: worth something only in a fight this turn or the
+## next, so its targets are scored once the turn is over.
+static func taps(effects: Array[MmEffect]) -> bool:
+	for effect: MmEffect in unwrapped(effects):
+		if effect is TapEffect:
+			return true
+	return false
 
 
 ## Whether [param effect] puts -1/-1 counters: harm that lasts, aimed like removal.
@@ -115,8 +145,8 @@ static func modal_spell_of_action(state: MmGameState, action: MmAction) -> Spell
 
 
 ## What [param action] would do: a spell's effects (every mode's, for a modal spell), or an
-## activated ability's. A permanent spell does nothing when it resolves but enter, so it
-## has none.
+## activated ability's, each "you may" read as what it offers. A permanent spell does
+## nothing when it resolves but enter, so it has none.
 static func effects_of_action(state: MmGameState, action: MmAction) -> Array[MmEffect]:
 	var effects: Array[MmEffect] = []
 	var cast: CastSpellAction = action as CastSpellAction
@@ -131,11 +161,11 @@ static func effects_of_action(state: MmGameState, action: MmAction) -> Array[MmE
 			effects.append_array(spell.effects)
 			for mode: AbilityMode in spell.modes:
 				effects.append_array(mode.effects)
-		return effects
+		return unwrapped(effects)
 	var activated: ActivatedAbility = activated_ability_of(state, action)
 	if activated != null:
 		effects.append_array(activated.effects)
-	return effects
+	return unwrapped(effects)
 
 
 ## The ability [param action] activates, or null if it activates none.

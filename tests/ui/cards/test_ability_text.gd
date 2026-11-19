@@ -52,9 +52,12 @@ const PRINTED: Dictionary[String, String] = {
 	"hero_of_the_pride": "Whenever you cast a spell that targets this creature, each creature you control gets +1/+0 until end of turn.",
 	"howling_mine": "At the beginning of each player's draw step, if this artifact is untapped, that player draws a card.",
 	"instill_infection": "Put a -1/-1 counter on target creature. Draw a card.",
+	"ironpaw_aspirant": "When this creature enters, put a +1/+1 counter on target creature.",
 	"island": "({T}: Add {U}.)",
 	"ivory_tower": "At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.",
 	"keldon_warlord": "This creature's power and toughness are each equal to the number of non-Wall creatures you control.",
+	"king_of_the_pride": "Each other Cat creature you control gets +2/+1.",
+	"leonin_snarecaster": "When this creature enters, you may tap target creature.",
 	"lightning_bolt": "Lightning Bolt deals 3 damage to any target.",
 	"lightshield_parry": "Target creature gets +2/+2 until end of turn.\nCycling {2}",
 	"llanowar_elves": "{T}: Add {G}.",
@@ -357,6 +360,8 @@ func test_the_effects_no_authored_card_uses_yet_are_worded() -> void:
 		"Destroy each creature not originally named Bear.": Scenario.destroy(Scenario.each_creature(Scenario.is_not(Scenario.named("Bear")))),
 		"Return a creature you control to its owner's hand.": Scenario.return_to_hand(Scenario.chosen(Scenario.all_of([Scenario.of_type(CardType.CREATURE), you_control]))),
 		"Return each creature to its owner's hand.": Scenario.return_to_hand(Scenario.each_creature()),
+		"Tap target creature.": Scenario.tap(Scenario.targeted(0)),
+		"Tap each white creature.": Scenario.tap(white_creatures),
 		"Destroy an artifact.": Scenario.destroy(Scenario.chosen(Scenario.of_type(CardType.ARTIFACT))),
 		"Create a 1/1 white Cat creature token.": Scenario.create_tokens(Scenario.cat()),
 		"Each player may play two additional lands this turn.": Scenario.additional_land_plays(2, Scenario.each(IsPlayerFilter.new())),
@@ -391,6 +396,27 @@ func test_an_instead_effect_says_its_usual_effect_then_if_its_condition_what_hap
 		+ "+1/+1 counters on that creature instead.")
 	assert_eq(AbilityText.effect_of(landfall, "Scythecat Cub"), "Put a +1/+1 counter on target creature you control. If this "
 		+ "is the second time this ability has resolved this turn, double the number of +1/+1 counters on that creature instead.")
+
+
+func test_a_may_effect_says_you_may_then_what_it_does() -> void:
+	# Leonin Snarecaster's ability (CR 603.5).
+	var snare: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()),
+		[Scenario.may(Scenario.tap(Scenario.targeted(0)))], [Scenario.target(Scenario.of_type(CardType.CREATURE))])
+	var spell: SpellAbility = SpellAbility.new()
+	spell.effects = [Scenario.gain_life(2, Scenario.you()), Scenario.may(Scenario.draw_cards(1, Scenario.you()))]
+
+	assert_eq(AbilityText.of_ability(snare, "this creature"), "When this creature enters, you may tap target creature.")
+	assert_eq(AbilityText.effect_of(snare, "Leonin Snarecaster"), "You may tap target creature.")
+	assert_eq(AbilityText.of_ability(spell, "Sample"), "You gain 2 life. You may draw a card.")
+
+
+func test_what_a_may_effect_offers_is_worded_alone_for_the_question() -> void:
+	# Game ADR 0060: "Leonin Snarecaster's ability: tap target creature?"
+	var may: MayEffect = Scenario.may(Scenario.tap(Scenario.targeted(0)))
+	var snare: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [may],
+		[Scenario.target(Scenario.of_type(CardType.CREATURE))])
+
+	assert_eq(AbilityText.offered_words(snare, may.effect, "Leonin Snarecaster"), "tap target creature")
 
 
 func test_the_times_an_ability_has_resolved_are_worded_as_ordinals() -> void:

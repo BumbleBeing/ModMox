@@ -4,7 +4,7 @@ extends RefCounted
 ## now illegal it does not resolve, and otherwise effects simply skip illegal targets. Each
 ## effect then performs its batches in order. Resolution stops as an effect begins for each
 ## choice it offers (CR 608.2d) and for any decision it asks of its own, such as a search
-## (ADR 0057), and whenever a batch is waiting for a replacement choice,
+## (ADR 0057) or a "you may" (CR 603.5), and whenever a batch is waiting for a replacement choice,
 ## carrying on once it is answered (A143). The spell or ability leaves the stack only once
 ## every effect is done.
 
@@ -21,7 +21,7 @@ var _is_done: bool = false
 ## The creature type chosen as a permanent spell enters (CR 614.12, ADR 0052), or "".
 var _chosen_creature_type: String = ""
 ## The answer to the decision the current effect asked of its own as it began, such as a
-## search's (ADR 0057), and whether it has one yet.
+## search's (ADR 0057) or a "you may"'s, and whether it has one yet.
 var _begin_answer: Variant = null
 var _has_begin_answer: bool = false
 
@@ -134,6 +134,10 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		return
 	if decision is ChooseCardsInLibraryDecision:
 		_begin_answer = (answer as Array).duplicate()
+		_has_begin_answer = true
+		return
+	if decision is ChooseYesOrNoDecision:
+		_begin_answer = answer as int
 		_has_begin_answer = true
 		return
 	var choice: ChooseObjectDecision = decision as ChooseObjectDecision

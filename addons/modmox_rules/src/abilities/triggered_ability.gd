@@ -6,7 +6,9 @@ extends MmAbility
 ## effects are empty: what it does is the mode chosen as it is put on the stack (CR 603.3c,
 ## ADR 0046).
 ##
-## Later: optional ("you may") triggers, and "you may pay" costs during resolution (CR 603.5).
+## An optional ("you may") one has a MayEffect among its effects (CR 603.5).
+##
+## Later: "you may pay" costs during resolution (CR 603.5).
 
 @export var trigger: MmTrigger
 ## An intervening "if" clause (CR 603.4), or null. Checked when it triggers and again on

@@ -276,14 +276,14 @@ _Avoid_: Background (the plain slate behind a screen), wallpaper, scene, biome
 
 **Zone Plate**:
 A rounded, mostly see-through gray rectangle behind a row of the battlefield or a pile, which shows where the zone is and sets it off from the Backdrop. Each player's lands and their other permanents have one each, and so has each library, graveyard and exile. The hands have none.
-_Avoid_: Panel (a player's panel is in the sidebar), slot, tray, zone box
+_Avoid_: Panel (see Player Panel), slot, tray, zone box
 
 **Encounter Presenter**:
 The one part of the GUI that owns the rules engine for an encounter. It runs the Villain's Agent, takes the Hero's answers, and after every change hands the Encounter Screen a snapshot of what the Hero may see and is being asked.
 _Avoid_: Controller, game manager, view model
 
 **Region**:
-One rectangle of the Encounter Screen's layout, such as a player's panel in the sidebar, a row of lands, the Hero's hand, or a library, graveyard or exile pile. No two Regions overlap. The stack is not a Region: see Stack Window.
+One rectangle of the Encounter Screen's layout, such as a Player Panel, a row of lands, the Hero's hand, or a library, graveyard or exile pile. No two Regions overlap. The stack is not a Region: see Stack Window.
 _Avoid_: Area, zone (a rules term), slot
 
 **Zone Window**:
@@ -293,6 +293,10 @@ _Avoid_: Popup, dialog, zone viewer
 **Pile Window**:
 The Zone Window of a pile: a graveyard, an exile or a library. A click on the pile opens it and a second closes it. A graveyard or exile is a grid of Card Faces, the newest card first; a library is one row, its top card on the left, with a card back for each card the Hero does not know. A card in one that a decision can choose glows and is clicked there, and while one can be, its pile glows too. A Pile Window opened to choose a target closes once the target is chosen.
 _Avoid_: Zone viewer, graveyard viewer, pile popup
+
+**Player Panel**:
+One player's panel in the Encounter Screen's sidebar, the Villain's above the Hero's: their Player Name over their Portrait, with their life total, their mana pool, the Emblems button and a button for each step of the turn. The Hero's also has the Potions button, Undo and Yield Turn; the Villain's says when the Villain is thinking, by name, wrapped to as many lines as it takes. A Player Name too long for its panel glides slowly from one end to the other and back, pausing at each end, for as long as it is shown; one that fits stands still.
+_Avoid_: Inspector (that reads a card), player card, sidebar card
 
 **Player Name**:
 What a player of an encounter is called on the screen. The Hero's is the name chosen on Choose your Hero. A player given no name goes by their part, "Hero" or "Villain", and only then takes "the" in a sentence: "the Villain's turn", but "Mishra's turn".
@@ -420,11 +424,11 @@ The colored outline on everything a Pending Decision can choose: orange-red for 
 _Avoid_: Highlight, selection, halo
 
 **Info Panel**:
-The bordered box at the bottom left of the battlefield, between the Hero's panel and the Hero's hand. It says what the Hero is being asked, what is still owed while paying and why their last answer was refused, and holds the Cancel button for a cast in progress, which names the key that cancels. While attackers are declared it holds "Declare All", which reads "Undeclare All" and puts every attacker back for as long as any is declared (A496). The Pass Button is directly above it.
+The bordered box at the bottom left of the battlefield, between the Hero's panel and the Hero's hand. It says what the Hero is being asked, what is still owed while paying and why their last answer was refused, and holds the Cancel button for a cast in progress, which names the key that cancels. While attackers are declared it holds "Declare All", which reads "Undeclare All" and puts every attacker back for as long as any is declared (A496). While a "you may" is asked it reads "[ability]: [what yes does]?" and holds "No", pressed with the mouse alone (ADR 0060). The Pass Button is directly above it.
 _Avoid_: Prompt bar, status line, message box
 
 **Pass Button**:
-The gray, shaded button over the Info Panel and as wide, which is always there. With priority it reads "Pass Priority" with the key that passes, and passes; while attackers, blockers, a division of damage, an order of triggers or cards to discard are being chosen it confirms that choice instead ("Attack with 2"); at any other time it cannot be pressed. Whatever it reads, it ends with the key that presses it: "Attack with 2 [SPACE]" (A495). It was on the Hero's panel until 13g.
+The gray, shaded button over the Info Panel and as wide, which is always there. With priority it reads "Pass Priority" with the key that passes, and passes; while attackers, blockers, a division of damage, an order of triggers or cards to discard are being chosen it confirms that choice instead ("Attack with 2"); while a "you may" is asked it reads "Yes" and answers yes (ADR 0060); at any other time it cannot be pressed. Whatever it reads, it ends with the key that presses it: "Attack with 2 [SPACE]" (A495). It was on the Hero's panel until 13g.
 _Avoid_: Confirm button, OK button, next button
 
 **Portrait**:

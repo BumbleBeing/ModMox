@@ -136,7 +136,8 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_legends_kept.append((decision as ChooseLegendToKeepDecision).candidate_ids[answer as int])  # next_decision() carries on.
 	elif decision is ChooseReplacementEffectDecision:
 		_state.choose_replacement_effect(answer as int)  # next_decision() carries on from here.
-	elif decision is ChooseObjectDecision or decision is ChooseCreatureTypeDecision or decision is ChooseCardsInLibraryDecision:
+	elif decision is ChooseObjectDecision or decision is ChooseCreatureTypeDecision or decision is ChooseCardsInLibraryDecision \
+			or decision is ChooseYesOrNoDecision:
 		_resolution.apply_answer(decision, answer)
 	elif _cast != null:
 		_cast.apply_answer(decision, answer)

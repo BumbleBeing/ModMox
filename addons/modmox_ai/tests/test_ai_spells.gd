@@ -529,6 +529,59 @@ func test_an_enchantment_that_exiles_as_it_enters_is_cast_and_aimed_at_the_oppos
 	assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP))).id, giant)
 
 
+func test_tapping_is_harmful_but_keeps_its_timing_tag() -> void:
+	var tap: Array[MmEffect] = [Scenario.tap(Scenario.targeted(0))]
+
+	assert_true(AiTiming.is_harmful(tap))
+	assert_eq(AiTiming.tag_of_effects(tap), AiTiming.Tag.NONE)
+	assert_false(AiTiming.is_harmful([Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, Scenario.targeted(0))]))
+
+
+func test_an_enters_trigger_that_taps_goes_at_the_blocker_in_the_way() -> void:
+	# A tap only matters in this turn's combat, so the Full Agent scores each target once the
+	# turn is over: with the Wall tapped, the Scout attacks for 2. Easy scores as soon as the
+	# trigger resolves, when every target ties, and keeps the Cheap pick.
+	for difficulty: AiDifficulty in [AiDifficulty.normal(), AiDifficulty.easy()]:
+		var engine: MmEngine = _snarecaster_target_asked()
+		var wall: int = Scenario.permanent_named(engine, engine.villain().id, "Wall")
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, agent)).id, wall)
+		assert_eq(agent.explain(), AiAgent.Reason.BEST_SCORE)
+
+
+func test_a_cheap_agent_taps_the_most_valuable_untapped_opposing_creature() -> void:
+	var engine: MmEngine = _snarecaster_target_asked(true)
+	var giant: int = Scenario.permanent_named(engine, engine.villain().id, "Hill Giant")
+	assert_true(engine.game_state().object(giant).is_tapped)
+
+	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP)))
+
+	assert_eq(target.id, Scenario.permanent_named(engine, engine.villain().id, "Wall"), "The Giant is tapped already.")
+
+
+## The Hero's Scout and the Villain's 0/4 Wall (and a Hill Giant, tapped with
+## [param giant_tapped]) on the battlefield, with Snarecaster ("When this creature enters,
+## tap target creature") just cast and its target asked.
+func _snarecaster_target_asked(giant_tapped: bool = false) -> MmEngine:
+	var snarecaster: MmCardDefinition = Scenario.creature("Snarecaster", 2, 1, [Scenario.triggered(
+		Scenario.enters(IsSourceFilter.new()), [Scenario.tap(Scenario.targeted(0))],
+		[Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))])])
+	var theirs: Array[MmCardDefinition] = [Scenario.creature("Wall", 0, 4)]
+	if giant_tapped:
+		theirs.append(AiScenario.free_alpha("hill_giant"))
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Scout", 2, 2)], theirs,
+		[snarecaster, Scenario.free_tap("Snare")])
+	assert_not_null(engine)
+	if giant_tapped:
+		var giant: int = Scenario.permanent_named(engine, engine.villain().id, "Hill Giant")
+		assert_eq(Scenario.cast_and_resolve(engine, "Snare", [MmReference.to_object(giant)]), "")
+	var card: int = Scenario.card_in_hand(engine, engine.hero(), "Snarecaster")
+	assert_eq(engine.submit(Scenario.cast_index(engine.pending_decision() as PriorityDecision, card)), "")
+	assert_eq(AiScenario.pass_to(engine, engine.hero().id, ChooseTargetDecision), "")
+	return engine
+
+
 func test_of_two_free_two_twos_the_one_that_also_makes_a_token_is_cast_first() -> void:
 	# Prideful Parent: its enters trigger has no choice to make, and the token it makes is a
 	# creature the Board Evaluator counts like any other, so nothing new is needed.

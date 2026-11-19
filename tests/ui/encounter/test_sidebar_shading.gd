@@ -211,7 +211,7 @@ func _box(player_id: int) -> Rect2:
 
 
 func _panel(player_id: int) -> PlayerPanel:
-	var panel: PlayerPanel = PlayerPanel.new(player_id, "HERO" if player_id == HERO else "VILLAIN")
+	var panel: PlayerPanel = PlayerPanel.new(player_id, "Hero" if player_id == HERO else "Villain")
 	add_child_autofree(panel)
 	_show(panel, player_id)
 	return panel

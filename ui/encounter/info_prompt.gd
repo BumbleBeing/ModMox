@@ -11,6 +11,9 @@ var owed: MmManaCost = null
 var can_cancel: bool = false
 ## While declaring attackers: the panel offers "Declare All" (A311).
 var offers_all_attack: bool = false
+## While a "you may" is asked: the panel offers "No", and the Pass Button says yes
+## (game ADR 0060).
+var offers_no: bool = false
 
 
 ## What the panel says while a card is held where letting go would play it, from the
@@ -70,6 +73,11 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		var search: ChooseCardsInLibraryDecision = decision as ChooseCardsInLibraryDecision
 		prompt.text = "%s: search your library for %s" % [stack_name(view, search.stack_object_id),
 			AbilityText.searched_words(search.most, search.is_up_to, search.filter)]
+	elif decision is ChooseYesOrNoDecision:
+		# Game ADR 0060: "Leonin Snarecaster's ability: tap target creature?"
+		var asked: ChooseYesOrNoDecision = decision as ChooseYesOrNoDecision
+		prompt.text = "%s: %s?" % [stack_name(view, asked.stack_object_id), offered_words(view, asked)]
+		prompt.offers_no = true
 	elif decision is ChooseCreatureTypeDecision:
 		prompt.text = "Choose a creature type for %s" % stack_name(view, (decision as ChooseCreatureTypeDecision).stack_object_id)
 	elif decision is ChooseLegendToKeepDecision:
@@ -94,6 +102,18 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		prompt.text = decision.describe()
 		push_error("No input answers %s." % decision.describe())
 	return prompt
+
+
+## What a "you may" offers, in the words of the spell or ability asking it: "tap target
+## creature".
+static func offered_words(view: MmPlayerView, asked: ChooseYesOrNoDecision) -> String:
+	for item: MmObjectView in view.stack:
+		if item.id != asked.stack_object_id:
+			continue
+		var ability: MmAbility = item.ability if item.ability != null else StackItem.spell_of(item)
+		if ability != null:
+			return AbilityText.offered_words(ability, asked.effect, StackItem.noun_of(item, view), item.chosen_mode)
+	return AbilityText.offered_words(SpellAbility.new(), asked.effect, "this")
 
 
 ## Whether [param stack_object_id] is a triggered ability. Putting one on the stack can't be
