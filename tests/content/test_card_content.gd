@@ -1017,6 +1017,30 @@ func test_short_sword_is_equipped_for_one_mana_and_gives_its_creature_plus_one_p
 	assert_eq(Scenario.activate_index(engine.pending_decision() as PriorityDecision, equipment), -1, "With no mana left it is not offered.")
 
 
+func test_kemba_attaches_the_equipment_its_controller_targets_to_a_cat_that_enters_and_pumps_it() -> void:
+	var kemba: MmCardDefinition = Scenario.free_copy(_card("phyrexia_all_will_be_one", "kemba_kha_enduring"))
+	var sword: MmCardDefinition = Scenario.free_copy(_card("dominaria", "short_sword"))
+	var lions: MmCardDefinition = Scenario.free_copy(_alpha("savannah_lions"))
+	var permanents: Array[MmCardDefinition] = [kemba, sword]
+	var hand: Array[MmCardDefinition] = [lions]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(permanents, no_cards, hand),
+		permanents, no_cards, hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero_id: int = engine.hero().id
+	var equipment: int = Scenario.permanent_named(engine, hero_id, "Short Sword")
+	assert_eq(Scenario.attached_to(engine, equipment), 0, "Kemba entered before the Sword, with nothing to attach.")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Savannah Lions"), "")
+	assert_eq(Scenario.choose_targets(engine, [MmReference.to_object(equipment)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var cat: int = Scenario.permanent_named(engine, hero_id, "Savannah Lions")
+	assert_eq(Scenario.attached_to(engine, equipment), cat, "Attached to that creature, with no equip cost paid.")
+	assert_eq(Scenario.pt(engine, cat), [4, 3], "+1/+1 from the Sword and +1/+1 from Kemba.")
+	assert_eq(Scenario.pt(engine, Scenario.permanent_named(engine, hero_id, kemba.name)), [2, 2], "Kemba is unequipped.")
+
+
 func test_adventuring_gear_pumps_the_creature_equipped_as_its_landfall_resolves_and_nothing_while_unattached() -> void:
 	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
 	var lions: MmCardDefinition = Scenario.free_copy(_alpha("savannah_lions"))

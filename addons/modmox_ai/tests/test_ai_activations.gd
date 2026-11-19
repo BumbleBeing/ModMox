@@ -440,6 +440,160 @@ func test_an_equipment_is_not_equipped_again_to_the_creature_it_is_on() -> void:
 		assert_true(action == null or action.object_id != sword, "Nothing to gain from equipping the same creature.")
 
 
+func test_an_equipment_goes_on_the_creature_that_gains_most_from_being_equipped() -> void:
+	# Sunspear Shikari: "As long as this creature is equipped, it has first strike and
+	# lifelink." The Board Evaluator reads its abilities from the layers, so it sees an
+	# equipped Shikari as a 3/3 with both, and an equipped Bear as a vanilla 3/3.
+	for difficulty: AiDifficulty in [AiDifficulty.easy(), AiDifficulty.normal()]:
+		var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), Scenario.shikari(), Scenario.sword("Sword")], [])
+		assert_not_null(engine)
+		var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+		var shikari: int = Scenario.permanent_named(engine, engine.hero().id, "Shikari")
+		assert_eq(engine.submit(Scenario.activate_index(engine.pending_decision() as PriorityDecision, sword)), "")
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+
+		assert_eq(target.id, shikari, "Equipped, it also has first strike and lifelink.")
+
+
+func test_an_instant_speed_equip_is_a_combat_trick_outside_sorcery_timing() -> void:
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), _leonin(), Scenario.sword("Sword")], [])
+	assert_not_null(engine)
+	var action: ActivateAbilityAction = ActivateAbilityAction.new(Scenario.permanent_named(engine, engine.hero().id, "Sword"), 1)
+
+	assert_eq(AiTiming.tag_of_action(engine.game_state(), action), Tag.NONE, "In its main phase, as any equip.")
+	Scenario.pass_until_step(engine, Step.DECLARE_ATTACKERS)
+	assert_eq(AiTiming.tag_of_action(engine.game_state(), action), Tag.COMBAT_TRICK)
+
+
+func test_a_blocked_attacker_is_equipped_at_instant_speed_to_win_its_fight() -> void:
+	# Leonin Shikari: "You may activate equip abilities any time you could cast an instant."
+	# Once blockers are declared, the Sword makes the Bear a 3/3 that kills its blocker and
+	# lives.
+	for difficulty: AiDifficulty in [AiDifficulty.easy(), AiDifficulty.normal()]:
+		var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), _leonin(), Scenario.sword("Sword")],
+			[AiScenario.free_alpha("grizzly_bears")])
+		assert_not_null(engine)
+		var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+		Scenario.pass_until_step(engine, Step.DECLARE_ATTACKERS)
+		engine.submit([bear])
+		Scenario.pass_to_blockers(engine)
+		engine.submit([[Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears"), bear]])
+		_pass_to_hero_after_blocks(engine)
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		var action: ActivateAbilityAction = AiScenario.action_at(engine, AiScenario.ask(engine, agent)) as ActivateAbilityAction
+
+		assert_not_null(action, "It equips after blocks.")
+		assert_eq(action.object_id if action != null else 0, Scenario.permanent_named(engine, engine.hero().id, "Sword"))
+
+
+func test_an_instant_speed_equip_is_held_in_the_other_players_upkeep() -> void:
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), _leonin(), Scenario.sword("Sword")], [])
+	assert_not_null(engine)
+	Scenario.autoplay(engine, func(running: MmEngine) -> bool:
+		var pending: PriorityDecision = running.pending_decision() as PriorityDecision
+		return pending != null and pending.player_id == running.hero().id and running.game_state().step == Step.UPKEEP \
+			and running.game_state().active_player_id != running.hero().id)
+	var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+	assert_ne(Scenario.activate_index(engine.pending_decision() as PriorityDecision, sword), -1, "Equip is offered.")
+
+	var play: int = AiScenario.ask(engine, AiAgent.new())
+
+	assert_true(AiScenario.action_at(engine, play) is PassAction, "Nothing is fighting yet.")
+
+
+func test_an_equipment_with_reconfigure_is_attached_when_its_bonus_is_worth_more_than_its_body() -> void:
+	# Reconfigure's attach has the Timing Tag NONE, as equip does, and simulation weighs a
+	# 1/1 body against +3/+3 on the Bear.
+	for difficulty: AiDifficulty in [AiDifficulty.easy(), AiDifficulty.normal()]:
+		var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), Scenario.sash("Sash", 3)], [])
+		assert_not_null(engine)
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		_let_play_the_main_phase(engine, agent)
+
+		var attached: int = 0
+		for sash: int in Scenario.permanents_named(engine, engine.hero().id, "Sash"):
+			attached += 1 if Scenario.attached_to(engine, sash) != 0 else 0
+		assert_gt(attached, 0, "It reconfigures a Sash onto a creature.")
+
+
+func test_an_equipment_with_reconfigure_is_not_unattached_again_in_the_same_main_phase() -> void:
+	# Unattaching only undoes what was paid for: no score gains from it.
+	for difficulty: AiDifficulty in [AiDifficulty.easy(), AiDifficulty.normal()]:
+		var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), Scenario.sash("Sash", 3)], [])
+		assert_not_null(engine)
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		_let_play_the_main_phase(engine, agent)
+
+		assert_gt(Scenario.events_of(engine, AttachedEvent).size(), 0, "It reconfigured.")
+		assert_eq(Scenario.events_of(engine, UnattachedEvent).size(), 0)
+
+
+func test_lion_sash_s_bonus_from_its_counters_is_valued_on_the_creature_it_is_attached_to() -> void:
+	# "Equipped creature gets +X/+X, where X is the number of +1/+1 counters on this
+	# permanent": the Board Evaluator reads power and toughness from the layers, which count
+	# them. With one other creature, a 4/4 Sash and a 2/2 are worth more than a 5/5, so the
+	# Agent is not made to reconfigure here.
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), Scenario.lion_sash()], [],
+		[Scenario.free_counters("Grow", MmCounter.Kind.PLUS_ONE_PLUS_ONE, 3)])
+	assert_not_null(engine)
+	var sash: int = Scenario.permanent_named(engine, engine.hero().id, "Lion Sash")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+	assert_eq(Scenario.cast_and_resolve(engine, "Grow", [MmReference.to_object(sash)]), "")
+	var loose: int = AiBoardEvaluator.creature_value(engine.game_state(), engine.game_state().object(bear))
+
+	assert_eq(Scenario.equip_and_resolve(engine, sash, bear), "")
+
+	var equipped: int = AiBoardEvaluator.creature_value(engine.game_state(), engine.game_state().object(bear))
+	assert_eq(equipped - loose, 25 * 3, "+3/+3 at 15 a power and 10 a toughness.")
+
+
+# --- Exiling from graveyards ------------------------------------------------------------
+
+func test_exiling_a_card_from_a_graveyard_is_removal() -> void:
+	# Considered in its main phases, after blocks, in response and in the other player's end
+	# step, where Lion Sash's {W} would otherwise go unused.
+	var engine: MmEngine = _graveyards_filled()
+	var action: ActivateAbilityAction = ActivateAbilityAction.new(Scenario.permanent_named(engine, engine.hero().id, "Scavenger"), 0)
+
+	assert_eq(AiTiming.tag_of_action(engine.game_state(), action), Tag.REMOVAL)
+
+
+func test_a_permanent_card_in_the_other_players_graveyard_is_exiled_for_its_counter() -> void:
+	# Only the Ogre card is a permanent card: the Doom and the Shock give no counter.
+	for mode: AiAgent.Mode in [AiAgent.Mode.FULL, AiAgent.Mode.CHEAP]:
+		var engine: MmEngine = _graveyards_filled()
+		var scavenger: int = Scenario.permanent_named(engine, engine.hero().id, "Scavenger")
+		assert_eq(engine.submit(Scenario.activate_index(engine.pending_decision() as PriorityDecision, scavenger)), "")
+		var agent: AiAgent = AiAgent.new(null, mode)
+
+		var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+
+		assert_eq(target.id, Scenario.card_in_graveyard(engine, engine.villain(), "Ogre"))
+
+
+## The Hero's main phase with a Scavenger (Lion Sash's first ability at {0}) on the
+## battlefield, a Doom and a Shock in the Hero's graveyard and an Ogre in the Villain's.
+func _graveyards_filled() -> MmEngine:
+	var engine: MmEngine = AiScenario.ready_with([Scenario.scavenger()], [Scenario.creature("Ogre", 2, 2)],
+		[Scenario.free_destroy("Doom"), Scenario.free_shock("Shock", 2)])
+	assert_not_null(engine)
+	assert_eq(Scenario.cast_and_resolve(engine, "Doom",
+		[MmReference.to_object(Scenario.permanent_named(engine, engine.villain().id, "Ogre"))]), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Shock", [MmReference.to_player(engine.villain().id)]), "")
+	return engine
+
+
+## Leonin Shikari: a 2/2 with "You may activate equip abilities any time you could cast an
+## instant."
+func _leonin() -> MmCardDefinition:
+	return Scenario.creature("Leonin", 2, 2, [Scenario.instant_speed_equip()])
+
+
 ## Lets [param agent] answer every decision of the Hero's until the precombat main phase of
 ## this Game Turn is over.
 func _let_play_the_main_phase(engine: MmEngine, agent: AiAgent) -> void:

@@ -21,8 +21,8 @@ var _ability_index: int = 0
 var _ability: MmAbility
 var _target_requirements: Array[TargetRequirement] = []
 var _next_target: int = 0
-var _remaining_generic: int = 0
-var _remaining_symbols: Array[MmMana.Type] = []
+## The mana still owed (CR 601.2g-h), nothing until the cost is known.
+var _payment: ManaPaymentProgress
 var _stage: Stage = Stage.CHOOSE_TARGETS
 ## The parts of the cost that are not mana (CR 601.2h): an ability's costs, or a flashback
 ## cost's. Those that ask a choice are paid as it is answered, the rest once the mana is.
@@ -49,9 +49,7 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -
 	var is_flashback: bool = card.zone().kind == MmZone.Kind.GRAVEYARD
 	if is_flashback:
 		procedure._costs = flashback_of(characteristics).costs
-	if mana != null:
-		procedure._remaining_generic = mana.generic
-		procedure._remaining_symbols = mana.symbols.duplicate()
+	procedure._payment = ManaPaymentProgress.of_cost(player_id, mana)
 	if card.zone().kind == MmZone.Kind.LIBRARY:
 		var permission: Array[int] = top_of_library_permission(state, player_id, card)
 		assert(not permission.is_empty(), "Nothing lets player %d cast %s from their library." % [player_id, characteristics.name])
@@ -73,10 +71,8 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	procedure._costs = ability.costs
 	procedure._source_object_id = source.id
 	procedure._ability_index = ability_index
-	if ability.mana_cost != null:
-		# CR 602.2b: an activation's mana is paid like a spell's (CR 601.2g-h).
-		procedure._remaining_generic = ability.mana_cost.generic
-		procedure._remaining_symbols = ability.mana_cost.symbols.duplicate()
+	# CR 602.2b: an activation's mana is paid like a spell's (CR 601.2g-h).
+	procedure._payment = ManaPaymentProgress.of_cost(player_id, ability.mana_cost)
 	var put: AbilityPutOnStackEvent = AbilityPutOnStackEvent.new(source.id, ability_index, player_id)
 	state.perform(put)
 	procedure._stack_object_id = put.new_object_id
@@ -145,6 +141,7 @@ static func spell_ability_of(characteristics: MmCharacteristics) -> SpellAbility
 func _init(state: MmGameState, player_id: int) -> void:
 	_state = state
 	_player_id = player_id
+	_payment = ManaPaymentProgress.new(player_id)
 
 
 ## A copy of this procedure working on [param state], a copy of the original state.
@@ -156,8 +153,7 @@ func copy_for(state: MmGameState) -> CastProcedure:
 	copy._ability = _ability
 	copy._target_requirements = _target_requirements
 	copy._next_target = _next_target
-	copy._remaining_generic = _remaining_generic
-	copy._remaining_symbols = _remaining_symbols.duplicate()
+	copy._payment = _payment.copy()
 	copy._costs = _costs
 	copy._next_cost = _next_cost
 	copy._paid_cost_indexes = _paid_cost_indexes.duplicate()
@@ -206,15 +202,14 @@ func next_decision() -> MmPendingDecision:
 					_next_cost += 1
 				_stage = Stage.PAY_MANA
 			Stage.PAY_MANA:
-				if _remaining_generic == 0 and _remaining_symbols.is_empty():
+				if _payment.is_paid():
 					_finish()
 					_stage = Stage.DONE
 					return null
-				var options: Array[MmAction] = _payment_options()
-				if options.is_empty():
+				var paying: PayManaDecision = _payment.decision(_state)
+				if paying == null:
 					_stage = Stage.STUCK
-					return null
-				return PayManaDecision.new(_player_id, options, _remaining_generic, _remaining_symbols)
+				return paying
 			_:
 				return null
 	return null
@@ -243,11 +238,7 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		TargetChoice.perform_answer(_state, decision, answer, _target_requirements)
 		_next_target += 1
 	elif decision is PayManaDecision:
-		var action: MmAction = (decision as PayManaDecision).actions[index]
-		if action is PayWithManaAction:
-			_spend((action as PayWithManaAction).unit_index)
-		elif action is ActivateAbilityAction:
-			_pay_with_mana_ability(action as ActivateAbilityAction)
+		_payment.apply_answer(_state, decision as PayManaDecision, index)
 	else:
 		assert(false, "Casting cannot answer %s." % decision.describe())
 
@@ -262,60 +253,6 @@ func _choose_mode(mode_index: int) -> void:
 	_state.perform(ModeChosenEvent.new(_stack_object_id, mode_index))
 	_target_requirements = (_ability as SpellAbility).modes[mode_index].targets
 	_stage = Stage.CHOOSE_TARGETS
-
-
-## Unit spends from the pool first, then mana abilities, each in a fixed order (ADR 0012).
-func _payment_options() -> Array[MmAction]:
-	var options: Array[MmAction] = []
-	var pool: Array[MmMana] = _state.player(_player_id).mana_pool()
-	for unit_index: int in pool.size():
-		if ManaPayment.symbol_paid_by(pool[unit_index].type, _remaining_symbols, _remaining_generic) != ManaPayment.CANNOT_PAY:
-			options.append(PayWithManaAction.new(unit_index))
-	for source: MmGameObject in ManaPayment.sorted_sources_of(_state, _player_id):
-		var abilities: Array[MmAbility] = _state.characteristics_of(source).abilities
-		for ability_index: int in abilities.size():
-			var ability: ActivatedAbility = abilities[ability_index] as ActivatedAbility
-			if ability == null or not ManaPayment.pays_while_paying(_state, source, ability, ability_index):
-				continue
-			if ability.mana_cost != null:
-				continue  # Later: mana abilities with mana in their cost.
-			var context: MmEffectContext = MmEffectContext.new(_player_id, source.id)
-			for type: MmMana.Type in ManaPayment.mana_made_by(_state, ability, context):
-				if ManaPayment.symbol_paid_by(type, _remaining_symbols, _remaining_generic) != ManaPayment.CANNOT_PAY:
-					options.append(ActivateAbilityAction.new(source.id, ability_index))
-					break
-	return options
-
-
-## Spends the pool unit at [param unit_index] on whatever it should pay.
-func _spend(unit_index: int) -> void:
-	var type: MmMana.Type = _state.player(_player_id).mana_pool()[unit_index].type
-	var paid: int = ManaPayment.symbol_paid_by(type, _remaining_symbols, _remaining_generic)
-	assert(paid != ManaPayment.CANNOT_PAY, "That mana cannot pay anything still owed.")
-	_state.perform(ManaSpentEvent.new(_player_id, unit_index))
-	if paid == ManaPayment.PAYS_GENERIC:
-		_remaining_generic -= 1
-	else:
-		_remaining_symbols.remove_at(paid)
-
-
-## CR 605.3a: mana abilities may be activated while paying. The new mana goes straight to
-## the cost; whatever the cost no longer needs stays in the pool.
-func _pay_with_mana_ability(action: ActivateAbilityAction) -> void:
-	var source: MmGameObject = _state.object(action.object_id)
-	var ability: ActivatedAbility = _state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
-	var pool_size_before: int = _state.player(_player_id).mana_pool().size()
-	if ability.is_once_each_game:
-		_state.perform(AbilitySpentEvent.new(source.id, action.ability_index))  # CR 602.5b
-	ability.pay_costs(_state, source)
-	ability.resolve_effects(_state, MmEffectContext.new(source.controller_id, source.id))
-	var unit_index: int = pool_size_before
-	while unit_index < _state.player(_player_id).mana_pool().size():
-		var type: MmMana.Type = _state.player(_player_id).mana_pool()[unit_index].type
-		if ManaPayment.symbol_paid_by(type, _remaining_symbols, _remaining_generic) == ManaPayment.CANNOT_PAY:
-			unit_index += 1
-		else:
-			_spend(unit_index)
 
 
 ## What a part of the cost is paid for: the ability's source, or the spell itself.

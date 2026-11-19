@@ -1,0 +1,186 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_wjh0s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_j5rts"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_mcd64"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_afteq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_jyfil"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/exile_effect.gd" id="4_tgias"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="5_3h1ji"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_permanent_filter.gd" id="6_oou10"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/selection_matches_condition.gd" id="7_yqy3c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="8_gcl1q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="9_2y060"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="10_vvm33"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/if_effect.gd" id="11_oqa4w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="13_q675s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="14_3vowb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="15_ls8wj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/attached_to_selection.gd" id="16_l16oo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/counter_count_value.gd" id="17_otmu8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="18_vp0re"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="19_qv1xe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/attach_effect.gd" id="20_2b5c1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/reconfigure_ability.gd" id="21_f3wkf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="22_a0ig1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="23_tvajx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="24_cfl4k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="25_wftns"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="26_a5ijy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="27_gj4hy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/unattach_effect.gd" id="28_fe4fw"]
+
+[sub_resource type="Resource" id="Resource_alcq0"]
+script = ExtResource("5_3h1ji")
+
+[sub_resource type="Resource" id="Resource_5lq7c"]
+script = ExtResource("4_tgias")
+selection = SubResource("Resource_alcq0")
+links_to_source = false
+
+[sub_resource type="Resource" id="Resource_tmnus"]
+script = ExtResource("6_oou10")
+
+[sub_resource type="Resource" id="Resource_vwkg4"]
+script = ExtResource("5_3h1ji")
+
+[sub_resource type="Resource" id="Resource_6uwsq"]
+script = ExtResource("7_yqy3c")
+selection = SubResource("Resource_vwkg4")
+filter = SubResource("Resource_tmnus")
+
+[sub_resource type="Resource" id="Resource_fdgwy"]
+script = ExtResource("8_gcl1q")
+value = 1
+
+[sub_resource type="Resource" id="Resource_1dh5g"]
+script = ExtResource("9_2y060")
+
+[sub_resource type="Resource" id="Resource_dqkui"]
+script = ExtResource("10_vvm33")
+amount = SubResource("Resource_fdgwy")
+recipients = SubResource("Resource_1dh5g")
+
+[sub_resource type="Resource" id="Resource_30r5c"]
+script = ExtResource("11_oqa4w")
+condition = SubResource("Resource_6uwsq")
+effect = SubResource("Resource_dqkui")
+
+[sub_resource type="Resource" id="Resource_wwb1p"]
+script = ExtResource("2_j5rts")
+symbols = Array[int]([0])
+
+[sub_resource type="Resource" id="Resource_d2kuy"]
+script = ExtResource("14_3vowb")
+among = 2
+
+[sub_resource type="Resource" id="Resource_0m7wo"]
+script = ExtResource("13_q675s")
+mana_cost = SubResource("Resource_wwb1p")
+targets = Array[ExtResource("14_3vowb")]([SubResource("Resource_d2kuy")])
+effects = Array[ExtResource("3_afteq")]([SubResource("Resource_5lq7c"), SubResource("Resource_30r5c")])
+
+[sub_resource type="Resource" id="Resource_j1rp2"]
+script = ExtResource("16_l16oo")
+
+[sub_resource type="Resource" id="Resource_inr4q"]
+script = ExtResource("9_2y060")
+
+[sub_resource type="Resource" id="Resource_0f1c5"]
+script = ExtResource("17_otmu8")
+selection = SubResource("Resource_inr4q")
+
+[sub_resource type="Resource" id="Resource_kqsqd"]
+script = ExtResource("9_2y060")
+
+[sub_resource type="Resource" id="Resource_vwq44"]
+script = ExtResource("17_otmu8")
+selection = SubResource("Resource_kqsqd")
+
+[sub_resource type="Resource" id="Resource_gfrcf"]
+script = ExtResource("18_vp0re")
+power = SubResource("Resource_0f1c5")
+toughness = SubResource("Resource_vwq44")
+affected = SubResource("Resource_j1rp2")
+
+[sub_resource type="Resource" id="Resource_kpodx"]
+script = ExtResource("19_qv1xe")
+effects = Array[ExtResource("15_ls8wj")]([SubResource("Resource_gfrcf")])
+
+[sub_resource type="Resource" id="Resource_jr5b0"]
+script = ExtResource("9_2y060")
+
+[sub_resource type="Resource" id="Resource_2oc6p"]
+script = ExtResource("5_3h1ji")
+
+[sub_resource type="Resource" id="Resource_ke3c1"]
+script = ExtResource("20_2b5c1")
+attachment = SubResource("Resource_jr5b0")
+to = SubResource("Resource_2oc6p")
+
+[sub_resource type="Resource" id="Resource_hkwpv"]
+script = ExtResource("2_j5rts")
+generic = 2
+
+[sub_resource type="Resource" id="Resource_ex0f8"]
+script = ExtResource("23_tvajx")
+
+[sub_resource type="Resource" id="Resource_io63q"]
+script = ExtResource("24_cfl4k")
+
+[sub_resource type="Resource" id="Resource_ta40y"]
+script = ExtResource("25_wftns")
+
+[sub_resource type="Resource" id="Resource_4m8eh"]
+script = ExtResource("26_a5ijy")
+filter = SubResource("Resource_ta40y")
+
+[sub_resource type="Resource" id="Resource_eryv4"]
+script = ExtResource("27_gj4hy")
+filters = Array[ExtResource("22_a0ig1")]([SubResource("Resource_ex0f8"), SubResource("Resource_io63q"), SubResource("Resource_4m8eh")])
+
+[sub_resource type="Resource" id="Resource_ywkm2"]
+script = ExtResource("14_3vowb")
+filter = SubResource("Resource_eryv4")
+
+[sub_resource type="Resource" id="Resource_r0sf6"]
+script = ExtResource("21_f3wkf")
+mana_cost = SubResource("Resource_hkwpv")
+targets = Array[ExtResource("14_3vowb")]([SubResource("Resource_ywkm2")])
+effects = Array[ExtResource("3_afteq")]([SubResource("Resource_ke3c1")])
+is_sorcery_speed = true
+
+[sub_resource type="Resource" id="Resource_5ouiq"]
+script = ExtResource("9_2y060")
+
+[sub_resource type="Resource" id="Resource_23e57"]
+script = ExtResource("28_fe4fw")
+selection = SubResource("Resource_5ouiq")
+
+[sub_resource type="Resource" id="Resource_8vymg"]
+script = ExtResource("2_j5rts")
+generic = 2
+
+[sub_resource type="Resource" id="Resource_djsiq"]
+script = ExtResource("21_f3wkf")
+unattaches = true
+mana_cost = SubResource("Resource_8vymg")
+effects = Array[ExtResource("3_afteq")]([SubResource("Resource_23e57")])
+is_sorcery_speed = true
+is_only_while_attached = true
+
+[sub_resource type="Resource" id="Resource_urs6b"]
+script = ExtResource("2_j5rts")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_jyfil")
+name = "Lion Sash"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Equipment", "Cat"])
+mana_cost = SubResource("Resource_urs6b")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_wjh0s")]([SubResource("Resource_0m7wo"), SubResource("Resource_kpodx"), SubResource("Resource_r0sf6"), SubResource("Resource_djsiq")])
+rarity = 2

@@ -20,6 +20,8 @@ static func compute(state: MmGameState) -> Dictionary[int, MmCharacteristics]:
 	# CR 613.6: the static abilities whose effects have started applying, by source.
 	var started: Dictionary[int, Array] = {}
 	# Later: layers 1-3 and 5.
+	for game_object: MmGameObject in objects:
+		_apply_reconfigure(game_object, current[game_object.id])
 	_apply_layer(state, objects, current, started, MmContinuousEffect.Layer.TYPE)
 	_apply_layer(state, objects, current, started, MmContinuousEffect.Layer.ABILITY)
 	for game_object: MmGameObject in objects:
@@ -38,6 +40,22 @@ static func outside_the_battlefield(state: MmGameState, game_object: MmGameObjec
 	var characteristics: MmCharacteristics = MmCharacteristics.printed(game_object.definition)
 	_apply_defining_abilities(state, game_object, characteristics)
 	return characteristics
+
+
+## Layer 4 (CR 702.151b): an Equipment with reconfigure attached to something isn't a
+## creature, and so has no creature types (CR 205.1b, 205.3d). It applies before the
+## layer's continuous effects, as if its timestamp were earlier than all of theirs.
+# Later: the timestamp it gets as it becomes attached (CR 613.7e), once a card's type
+# change could meet it.
+static func _apply_reconfigure(game_object: MmGameObject, characteristics: MmCharacteristics) -> void:
+	if game_object.attached_to_object_id == 0 or not characteristics.has_ability(ReconfigureAbility):
+		return
+	characteristics.card_types.erase(MmCardTypes.CardType.CREATURE)
+	var kept: Array[String] = []
+	for subtype: String in characteristics.subtypes:
+		if not CreatureTypes.is_creature_type(subtype):
+			kept.append(subtype)
+	characteristics.subtypes = kept
 
 
 ## Layer 7a.

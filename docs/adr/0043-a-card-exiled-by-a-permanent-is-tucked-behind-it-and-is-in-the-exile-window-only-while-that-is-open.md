@@ -20,4 +20,6 @@ Oblivion Ring exiles a permanent and returns it when the Ring leaves (Linked Abi
 
 **An exile pile is found by the card's owner.** The engine's exile is one zone, so a zone change into or out of it names no player. The screen keeps whose pile each card in exile is drawn in, and a flight to or from exile uses that; before this, every such flight went to the Villain's pile.
 
+**Only a linked exile tucks a card.** Lion Sash exiles a card from a graveyard with an activated ability, and nothing brings it back. Had the engine remembered Lion Sash as what exiled it, every card it took would have lain behind it, saying it would return. So an `ExileEffect` remembers its source only with `links_to_source`, as Oblivion Ring's and Daydream's do; Lion Sash's turns it off and its cards go to their owner's exile pile like any other (Linked Abilities in the engine glossary, CR 607.2a). The screen still never works out a link: it tucks exactly what the engine says was exiled with a permanent.
+
 Left for when a card needs it: a Tucked Card that is face down, and a permanent in the land rows with a card behind it.

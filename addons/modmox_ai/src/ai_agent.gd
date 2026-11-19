@@ -171,6 +171,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _search(decision as ChooseCardsInLibraryDecision, world, source, rng)
 	if decision is ChooseYesOrNoDecision:
 		return _yes_or_no(decision as ChooseYesOrNoDecision, world, source, rng)
+	if decision is ChooseXToPayDecision:
+		return _choose_x_to_pay(decision as ChooseXToPayDecision, world, source, rng)
 	assert(false, "AiAgent cannot answer %s." % decision.describe())
 	return null
 
@@ -573,6 +575,8 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 		var target: MmGameObject = world.object(candidate.id)
 		if (target.controller_id != me) != harmful:
 			continue
+		if not _can_pay_ward_of(world, me, target, decision.stack_object_id):
+			continue
 		if harmful and damage > 0 and world.characteristics_of(target).toughness - target.damage_marked > damage:
 			continue
 		if taps and target.is_tapped:
@@ -633,6 +637,8 @@ func _cheap_up_to_targets(decision: ChooseTargetsDecision, world: MmGameState) -
 	for index: int in decision.candidates.size():
 		var target: MmGameObject = world.object(decision.candidates[index].id)
 		if (target.controller_id != me) != harmful or (taps and target.is_tapped):
+			continue
+		if not _can_pay_ward_of(world, me, target, decision.stack_object_id):
 			continue
 		values[index] = AiBoardEvaluator.creature_value(world, target)
 		ranked.append(index)
@@ -825,9 +831,12 @@ func _choose_mode(decision: ChooseModeDecision, world: MmGameState, source: MmSi
 ## tap, only when it reaches something of the other player's; any other only when it
 ## reaches something of its own or nothing chosen at all. FULL: simulates both, a tap
 ## through the turn, with the CHEAP answer the default that the other must beat.
+## Whether to pay a cost so as not to be countered, as ward's (ADR 0062): CHEAP pays, since
+## it is asked only when it can and the spell or ability was worth casting; FULL simulates
+## both, with paying the default.
 func _yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	_reason = Reason.BEST_SCORE
-	var cheap: int = _cheap_yes_or_no(decision, world)
+	var cheap: int = ChooseYesOrNoDecision.Choice.YES if decision.cost != null else _cheap_yes_or_no(decision, world)
 	if mode == Mode.CHEAP:
 		return cheap
 	var offered: Array[MmEffect] = [decision.effect]
@@ -837,6 +846,51 @@ func _yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState, source: MmS
 	var scores: Array[int] = _simulate_each(source, rng, options, decision.player_id,
 		AiTiming.taps(offered) and difficulty.judges_tricks_after_the_turn)
 	return _best_option(options, scores, rng, 1)
+
+
+## How much X to pay for a "you may pay {X}" (ADR 0061). Only the Xs worth paying are
+## weighed (_xs_worth_paying()). CHEAP: the largest of them, or declining when there is
+## none. FULL: simulates declining and each of them, with the CHEAP answer the default that
+## another must beat, so mana kept for the rest of the turn is weighed against what X buys.
+func _choose_x_to_pay(decision: ChooseXToPayDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
+	var worth: Array[int] = _xs_worth_paying(decision, world)
+	if worth.is_empty():
+		_reason = Reason.ONLY_CHOICE
+		return ChooseXToPayDecision.DECLINE
+	_reason = Reason.BEST_SCORE
+	var cheap: int = ChooseXToPayDecision.answer_for(worth.back())
+	if mode == Mode.CHEAP:
+		return cheap
+	var options: Array[int] = [cheap, ChooseXToPayDecision.DECLINE]
+	for x: int in worth:
+		if ChooseXToPayDecision.answer_for(x) != cheap:
+			options.append(ChooseXToPayDecision.answer_for(x))
+	var scores: Array[int] = _simulate_each(source, rng, options, decision.player_id)
+	return _best_option(options, scores, rng, 1)
+
+
+## The Xs worth paying, smallest first: each X at which what the "you may pay {X}" wraps,
+## begun with that X paid, offers something no smaller X does, such as a search finding a
+## card of a higher mana value. Every other X pays more for the same. For an effect that
+## asks nothing of its own, only the most, and only if it is more than 0.
+func _xs_worth_paying(decision: ChooseXToPayDecision, world: MmGameState) -> Array[int]:
+	var worth: Array[int] = []
+	var item: MmGameObject = world.object(decision.stack_object_id)
+	var context: MmEffectContext = MmEffectContext.of_stack_object(item, item.targets)
+	var offered: Array[String] = []
+	for x: int in decision.most + 1:
+		var asked: MmPendingDecision = decision.effect.decision_as_it_begins(world, context.with_paid_x(x), decision.stack_object_id)
+		if asked == null or not asked is ChooseCardsInLibraryDecision:
+			return [decision.most] as Array[int] if decision.most > 0 else worth
+		var search: ChooseCardsInLibraryDecision = asked as ChooseCardsInLibraryDecision
+		var found: Array[int] = search.candidate_ids.duplicate()
+		found.sort()
+		var findable: String = "%s up to %d" % [found, mini(search.most, found.size())]
+		if found.is_empty() or search.most <= 0 or offered.has(findable):
+			continue
+		offered.append(findable)
+		worth.append(x)
+	return worth
 
 
 func _cheap_yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState) -> int:
@@ -1156,6 +1210,37 @@ func _effects_of_stack_object(world: MmGameState, object_id: int) -> Array[MmEff
 			# A modal spell does what its chosen mode does (ADR 0046).
 			effects.append_array((ability as SpellAbility).effects_for(item.chosen_mode))
 	return AiTiming.unwrapped(effects)
+
+
+## Whether [param player_id] could pay both what [param stack_object_id] still costs and
+## the ward of [param target], if it has ward and is not theirs (CR 702.21a, ADR 0062): a
+## spell aimed at a warded permanent whose ward cannot also be paid is only countered.
+func _can_pay_ward_of(world: MmGameState, player_id: int, target: MmGameObject, stack_object_id: int) -> bool:
+	if target.controller_id == player_id:
+		return true
+	var total: MmManaCost = MmManaCost.new()
+	for ability: MmAbility in world.characteristics_of(target).abilities:
+		var ward: WardAbility = ability as WardAbility
+		if ward != null and ward.mana_cost != null:
+			total = _with_cost(total, ward.mana_cost)
+	if total.mana_value() == 0:
+		return true
+	var item: MmGameObject = world.object(stack_object_id)
+	if item != null and item.is_card():
+		total = _with_cost(total, world.characteristics_of(item).mana_cost)
+	elif item != null and item.ability is ActivatedAbility:
+		total = _with_cost(total, (item.ability as ActivatedAbility).mana_cost)
+	return ManaPayment.can_afford(world, player_id, total)
+
+
+## [param total] and [param more] together, or [param total] alone for a null [param more].
+static func _with_cost(total: MmManaCost, more: MmManaCost) -> MmManaCost:
+	if more == null:
+		return total
+	var both: MmManaCost = MmManaCost.new()
+	both.generic = total.generic + more.generic
+	both.symbols = total.symbols + more.symbols
+	return both
 
 
 ## The damage a spell's effects deal, when it is a fixed number; 0 otherwise.

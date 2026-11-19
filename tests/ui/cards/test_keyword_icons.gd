@@ -5,7 +5,7 @@ extends GutTest
 const ALPHA: String = "res://content/cards/alpha/%s.tres"
 const KEYWORDS: Array[String] = [
 	"flying", "reach", "vigilance", "haste", "deathtouch", "lifelink", "defender",
-	"first_strike", "double_strike", "trample", "indestructible", "protection", "equip", "flashback",
+	"first_strike", "double_strike", "trample", "indestructible", "protection", "equip", "flashback", "ward",
 ]
 const WHITE: Color = Color(1, 1, 1, 1)
 const GRAY: Color = Color("#9aa3b5")
@@ -16,7 +16,7 @@ func test_every_keyword_has_an_icon() -> void:
 		FlyingAbility.new(), ReachAbility.new(), VigilanceAbility.new(), HasteAbility.new(),
 		DeathtouchAbility.new(), LifelinkAbility.new(), DefenderAbility.new(),
 		FirstStrikeAbility.new(), DoubleStrikeAbility.new(), TrampleAbility.new(), IndestructibleAbility.new(),
-		ProtectionAbility.new(), EquipAbility.new(), FlashbackAbility.new(),
+		ProtectionAbility.new(), EquipAbility.new(), FlashbackAbility.new(), WardAbility.new(),
 	]
 
 	var chips: Array[KeywordChip] = KeywordChips.chips_for(abilities)

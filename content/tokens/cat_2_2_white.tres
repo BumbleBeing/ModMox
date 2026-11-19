@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_40qu5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_a2qri"]
+
+[resource]
+script = ExtResource("2_a2qri")
+name = "Cat Token"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat"])
+color_indicator = Array[int]([0])
+power = 2
+toughness = 2

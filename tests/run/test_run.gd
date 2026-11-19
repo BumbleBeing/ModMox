@@ -14,12 +14,20 @@ func test_a_debug_run_starts_with_three_hearts_and_no_gold() -> void:
 	assert_false(run.is_lost())
 
 
-func test_a_debug_run_owns_four_of_every_nonland_card_in_content() -> void:
+func test_a_debug_run_owns_four_of_every_nonland_card_or_as_many_as_a_villains_deck_has() -> void:
 	var run: Run = Run.debug(7)
 	var expected: Dictionary[MmCardDefinition, int] = {}
 	for definition: MmCardDefinition in ContentCards.all():
 		if not definition.supertypes.has(MmCardTypes.Supertype.BASIC):
 			expected[definition] = Run.DEBUG_COPIES
+	for villain: Villain in ContentStages.all_villains():
+		for setup: MmPlayerSetup in villain.setups:
+			var counted: Dictionary[MmCardDefinition, int] = {}
+			for run_card: MmRunCard in setup.deck:
+				counted[run_card.base] = counted.get(run_card.base, 0) + 1
+			for definition: MmCardDefinition in counted:
+				if expected.has(definition):
+					expected[definition] = maxi(expected[definition], counted[definition])
 	assert_eq(Run.DEBUG_COPIES, 4)
 	var owned: Dictionary[MmCardDefinition, int] = {}
 	for card: DeckbuilderCard in run.collection.cards():
@@ -28,14 +36,36 @@ func test_a_debug_run_owns_four_of_every_nonland_card_in_content() -> void:
 	assert_eq(owned, expected)
 
 
-func test_a_debug_run_has_a_legal_active_deck_built_from_red_green() -> void:
+func test_a_debug_run_has_a_legal_active_deck_built_from_red_green_first() -> void:
 	var run: Run = Run.debug(7)
 	var active: Deck = run.deckbox.active()
 	assert_not_null(active)
-	assert_eq(run.deckbox.decks().size(), 1)
+	assert_eq(run.deckbox.decks()[0], active)
+	assert_eq(active.name, "Red-Green")
 	var red_green: MmPlayerSetup = ContentDecks.load_deck("red_green")
-	assert_eq(active.size(), red_green.deck.size())
+	assert_eq(_list_of(run, active), _list_of_setup(red_green))
 	assert_true(run.deckbox.is_legal(active))
+
+
+func test_a_debug_run_has_a_deck_for_each_villains_deck_named_after_it() -> void:
+	var run: Run = Run.debug(7)
+	var expected: Dictionary[String, Dictionary] = {}
+	for villain: Villain in ContentStages.all_villains():
+		expected[villain.name] = _list_of_setup(villain.setups[0])
+	var built: Dictionary[String, Dictionary] = {}
+	for deck: Deck in run.deckbox.decks():
+		assert_false(built.has(deck.name), deck.name)
+		built[deck.name] = _list_of(run, deck)
+	assert_eq(built, expected)
+
+
+func test_each_card_is_at_most_once_in_a_debug_deck() -> void:
+	var run: Run = Run.debug(7)
+	for deck: Deck in run.deckbox.decks():
+		var seen: Dictionary[int, bool] = {}
+		for id: int in deck.card_ids:
+			assert_false(seen.has(id), deck.name)
+			seen[id] = true
 
 
 ## T1: the same Run Seed gives the same Stage, map, Boss and Villains in order.
@@ -226,6 +256,22 @@ func _walk(run: Run) -> Array[String]:
 func _move_to_an_encounter(run: Run) -> void:
 	while not run.stage_visit.must_play():
 		run.move_to(run.stage_visit.choices()[0])
+
+
+## Card name to how many of it in [param deck], its basic lands counted.
+func _list_of(run: Run, deck: Deck) -> Dictionary:
+	var list: Dictionary = deck.basic_lands.duplicate()
+	for id: int in deck.card_ids:
+		var name: String = run.collection.card(id).run_card.base.name
+		list[name] = list.get(name, 0) + 1
+	return list
+
+
+func _list_of_setup(setup: MmPlayerSetup) -> Dictionary:
+	var list: Dictionary = {}
+	for run_card: MmRunCard in setup.deck:
+		list[run_card.base.name] = list.get(run_card.base.name, 0) + 1
+	return list
 
 
 func _describe(map: StageMap) -> String:

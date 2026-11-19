@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Villain" format=3]
+
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/kemba_kha_enduring_pain.png" id="1_x4h3b"]
+[ext_resource type="Script" path="res://run/villain.gd" id="2_tm7jx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="3_r3ids"]
+[ext_resource type="Resource" path="res://content/decks/kemba_kha_enduring.tres" id="4_8d411"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/kemba_kha_enduring.png" id="5_tgaq8"]
+
+[resource]
+script = ExtResource("2_tm7jx")
+name = "Kemba, Kha Enduring"
+sprite = ExtResource("5_tgaq8")
+pain_sprite = ExtResource("1_x4h3b")
+setups = Array[ExtResource("3_r3ids")]([ExtResource("4_8d411")])

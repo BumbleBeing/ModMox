@@ -1,7 +1,11 @@
 class_name MmEffectContext
 extends RefCounted
 ## Who and what an effect is resolving for: the controller of the spell or ability, its
-## source, its targets, and for a triggered ability what triggered it.
+## source, its targets, for a triggered ability what triggered it, and what was chosen and
+## paid as it resolves.
+
+## [member paid_x] when no X has been paid (ADR 0061).
+const NONE_PAID: int = -1
 
 var controller_id: int
 ## "This": a spell itself, or the permanent, Emblem or Potion an ability came from.
@@ -22,6 +26,9 @@ var triggering_object_id: int = 0
 ## What was chosen as the spell or ability resolved, by choice index (CR 608.2d). A choice
 ## with nothing to choose from is there as null.
 var choices: Dictionary[int, MmReference] = {}
+## The X paid for a "you may pay {X}" as the spell or ability resolved (ADR 0061), or
+## NONE_PAID. Every effect after the payment reads it through PaidXValue.
+var paid_x: int = NONE_PAID
 
 
 func _init(controlling_player_id: int, source_id: int, chosen_targets: Array[MmReference] = [],
@@ -75,4 +82,17 @@ func with_choice(index: int, chosen: MmReference) -> MmEffectContext:
 	copy.target_counts = target_counts.duplicate()
 	copy.choices = choices.duplicate()
 	copy.choices[index] = chosen
+	copy.paid_x = paid_x
+	return copy
+
+
+## This context with [param x] as the X paid (ADR 0061), a new context as with_choice()
+## makes.
+func with_paid_x(x: int) -> MmEffectContext:
+	var copy: MmEffectContext = MmEffectContext.new(controller_id, source_object_id, targets,
+		triggering_player_id, triggering_object_id)
+	copy.own_object_id = own_object_id
+	copy.target_counts = target_counts.duplicate()
+	copy.choices = choices.duplicate()
+	copy.paid_x = x
 	return copy

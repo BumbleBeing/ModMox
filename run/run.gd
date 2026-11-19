@@ -43,30 +43,51 @@ func _init(seed_of_run: int) -> void:
 		basic_lands.append(load(BASIC_LANDS % land) as MmCardDefinition)
 
 
-## The run the main menu's Start Run (debug) begins, for playtesting: [constant DEBUG_COPIES]
-## copies of every nonland card in Content, one Deck built from red_green as the Active
-## Deck, the Playtest Bolt, and a Tier 1 Stage rolled from the Run Seed, entered; or
-## [param stage], when given.
+## The run the main menu's Start Run (debug) begins, for playtesting: at least
+## [constant DEBUG_COPIES] copies of every nonland card in Content, more of a card some
+## Villain's deck has more of; a Deck built from each Villain's deck, named after it, with
+## the one built from red_green first as the Active Deck; the Playtest Bolt, and a Tier 1
+## Stage rolled from the Run Seed, entered; or [param stage], when given.
 static func debug(seed_of_run: int, stage: StageDefinition = null) -> Run:
 	var run: Run = Run.new(seed_of_run)
-	var unused: Dictionary[MmCardDefinition, Array] = {}
+	var red_green: MmPlayerSetup = ContentDecks.load_deck(DEBUG_DECK)
+	var lists: Array[MmPlayerSetup] = [red_green]
+	var names: Array[String] = [DEBUG_DECK_NAME]
+	for villain: Villain in ContentStages.all_villains():
+		for setup: MmPlayerSetup in villain.setups:
+			if not lists.has(setup):
+				lists.append(setup)
+				names.append(villain.name)
+	var copies: Dictionary[MmCardDefinition, int] = {}
 	for definition: MmCardDefinition in ContentCards.all():
-		if definition.supertypes.has(MmCardTypes.Supertype.BASIC):
-			continue
-		unused[definition] = []
-		for copy: int in DEBUG_COPIES:
+		if not definition.supertypes.has(MmCardTypes.Supertype.BASIC):
+			copies[definition] = DEBUG_COPIES
+	for list: MmPlayerSetup in lists:
+		var counted: Dictionary[MmCardDefinition, int] = {}
+		for run_card: MmRunCard in list.deck:
+			counted[run_card.base] = counted.get(run_card.base, 0) + 1
+		for definition: MmCardDefinition in counted:
+			if copies.has(definition):
+				copies[definition] = maxi(copies[definition], counted[definition])
+	var owned: Dictionary[MmCardDefinition, Array] = {}
+	for definition: MmCardDefinition in copies:
+		owned[definition] = []
+		for copy: int in copies[definition]:
 			var run_card: MmRunCard = MmRunCard.new()
 			run_card.base = definition
-			unused[definition].append(run.collection.add(run_card).id)
-	var active: Deck = Deck.new()
-	active.name = DEBUG_DECK_NAME
-	for run_card: MmRunCard in ContentDecks.load_deck(DEBUG_DECK).deck:
-		if run_card.base.supertypes.has(MmCardTypes.Supertype.BASIC):
-			active.basic_lands[run_card.base.name] = active.basic_lands.get(run_card.base.name, 0) + 1
-		else:
-			active.card_ids.append(unused[run_card.base].pop_front())
-	run.deckbox.put(active)
-	run.deckbox.set_active(active)
+			owned[definition].append(run.collection.add(run_card).id)
+	for index: int in lists.size():
+		var deck: Deck = Deck.new()
+		deck.name = run.deckbox.free_name(names[index])
+		var next: Dictionary[MmCardDefinition, int] = {}
+		for run_card: MmRunCard in lists[index].deck:
+			if run_card.base.supertypes.has(MmCardTypes.Supertype.BASIC):
+				deck.basic_lands[run_card.base.name] = deck.basic_lands.get(run_card.base.name, 0) + 1
+			else:
+				deck.card_ids.append(owned[run_card.base][next.get(run_card.base, 0)])
+				next[run_card.base] = next.get(run_card.base, 0) + 1
+		run.deckbox.put(deck)
+	run.deckbox.set_active(run.deckbox.decks()[0])
 	run.hero_emblems.append(load(PLAYTEST_EMBLEM) as MmCardDefinition)
 	run.enter_stage(stage if stage != null else run.roll_stage(FIRST_TIER))
 	return run

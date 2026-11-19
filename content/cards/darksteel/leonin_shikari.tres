@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_73jq7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_mp7v4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/instant_speed_equip_ability.gd" id="2_uwlmy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_uwlmy"]
+
+[sub_resource type="Resource" id="Resource_0deam"]
+script = ExtResource("2_uwlmy")
+
+[sub_resource type="Resource" id="Resource_vcvlg"]
+script = ExtResource("2_mp7v4")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_uwlmy")
+name = "Leonin Shikari"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Soldier"])
+mana_cost = SubResource("Resource_vcvlg")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_73jq7")]([SubResource("Resource_0deam")])
+rarity = 2

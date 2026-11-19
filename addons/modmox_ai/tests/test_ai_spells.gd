@@ -186,6 +186,22 @@ func test_outflank_is_cast_at_an_attacker_once_blockers_are_declared() -> void:
 	assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, agent)).id, bears)
 
 
+func test_slash_of_light_is_cast_at_the_creature_its_sum_kills() -> void:
+	# Two Bears alone would deal 2; the Sword makes it 3, enough for the Giant.
+	var engine: MmEngine = AiScenario.ready_with(
+		[Scenario.creature("Bear", 2, 2), Scenario.creature("Bear", 2, 2), Scenario.sword("Sword")],
+		[Scenario.creature("Giant", 3, 3)], [Scenario.free_slash("Slash")])
+	assert_not_null(engine)
+	var agent: AiAgent = AiAgent.new()
+
+	var play: int = AiScenario.ask(engine, agent)
+	assert_eq(AiScenario.cast_name(engine, play), "Slash")
+	engine.submit(play)
+
+	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+	assert_eq(target.id, Scenario.permanent_named(engine, engine.villain().id, "Giant"))
+
+
 func test_uthden_troll_regenerates_only_when_it_would_die() -> void:
 	for is_blocked: bool in [true, false]:
 		var engine: MmEngine = AiScenario.ready_with([AiScenario.free_alpha("uthden_troll")],

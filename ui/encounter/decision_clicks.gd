@@ -288,10 +288,10 @@ func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView
 		var ability: ActivatedAbility = seen.abilities[action.ability_index]
 		is_mana = ability.is_mana_ability()
 		# A row of the Option Menu reads as the ability is printed on the card.
-		var noun: String = AbilityText.self_noun(seen.card_types, seen.name)
+		var noun: String = AbilityText.self_noun(seen.card_types, seen.name, seen.abilities)
 		if held != null:
 			noun = CardLook.noun_of(CardLook.Kind.EMBLEM if emblem != null else CardLook.Kind.POTION)
-		text = AbilityText.of_ability(ability, noun)
+		text = AbilityText.option_of(ability, noun)
 	# What the Hero holds and can use now is green, as a card to play is (A537).
 	_add_kind(action.object_id, Kind.MANA if is_mana else (Kind.PLAY if held != null else Kind.ABILITY))
 	if permanent != null or held != null:

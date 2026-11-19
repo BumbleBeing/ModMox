@@ -4,7 +4,7 @@ extends Button
 ## Dither Shaded in the Inspector's gray (A489). With priority it passes and names the key that does; while a combat
 ## decision, an order of triggers or a choice of cards is being made it confirms that
 ## instead; at any other time it cannot be pressed. Whatever it reads, it ends with the key
-## that presses it (A495).
+## that presses it (A495), except Pay for a ward cost, which no key presses (ADR 0062).
 
 const PASS_FORMAT: String = "Pass Priority [%s]"
 const CONFIRM_FORMAT: String = "%s [%s]"
@@ -14,6 +14,8 @@ const CONFIRM_FONT: int = 19
 var _key_label: String = "SPACE"
 var _is_confirming: bool = false
 var _confirm_text: String = ""
+## Whether the key presses it while it confirms.
+var _has_key: bool = true
 var _shaded_for: Vector2 = Vector2.ZERO
 
 
@@ -37,7 +39,7 @@ func place(box: Rect2) -> void:
 func show_key(key_label: String) -> void:
 	_key_label = key_label
 	if _is_confirming:
-		_set_text(CONFIRM_FORMAT % [_confirm_text, _key_label])
+		_set_text(_confirming_text())
 	else:
 		_set_text(PASS_FORMAT % _key_label)
 
@@ -51,15 +53,21 @@ func show_pass(can_pass: bool) -> void:
 	disabled = not can_pass
 
 
-## It confirms a choice instead: it reads [param confirm_text] and its key, and can be
-## pressed only when [param is_complete].
-func show_confirm(confirm_text: String, is_complete: bool) -> void:
+## It confirms a choice instead: it reads [param confirm_text] and its key, or the text
+## alone when no key presses it ([param has_key] off), and can be pressed only when
+## [param is_complete].
+func show_confirm(confirm_text: String, is_complete: bool, has_key: bool = true) -> void:
 	if not _is_confirming:
 		_is_confirming = true
 		add_theme_font_size_override("font_size", CONFIRM_FONT)
 	_confirm_text = confirm_text
-	_set_text(CONFIRM_FORMAT % [confirm_text, _key_label])
+	_has_key = has_key
+	_set_text(_confirming_text())
 	disabled = not is_complete
+
+
+func _confirming_text() -> String:
+	return CONFIRM_FORMAT % [_confirm_text, _key_label] if _has_key else _confirm_text
 
 
 ## Setting a button's text lays it out again, so it is set only when it changes.

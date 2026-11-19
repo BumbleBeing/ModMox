@@ -65,6 +65,109 @@ func test_equip_is_offered_only_as_a_sorcery() -> void:
 	assert_ne(Scenario.activate_index(engine.pending_decision() as PriorityDecision, sword), -1, "Its controller's main phase.")
 
 
+func test_with_instant_speed_equip_equip_is_offered_and_resolves_outside_the_main_phase() -> void:
+	# Leonin Shikari: "You may activate equip abilities any time you could cast an instant."
+	var engine: MmEngine = Scenario.combat_ready([_bear(), _shikari(), Scenario.sword("Sword")], [])
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+	var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+	Scenario.declare_attackers(engine, [])
+
+	_pass_to_hero_priority_outside_the_main_phase(engine)
+
+	assert_eq(Scenario.equip_and_resolve(engine, sword, bear), "")
+	assert_eq(Scenario.attached_to(engine, sword), bear)
+
+
+func test_with_instant_speed_equip_equip_is_offered_in_the_other_players_turn() -> void:
+	var engine: MmEngine = Scenario.combat_ready([_bear(), _shikari(), Scenario.sword("Sword")], [])
+	var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+	Scenario.declare_attackers(engine, [])
+
+	Scenario.autoplay(engine, func(running: MmEngine) -> bool:
+		var decision: PriorityDecision = running.pending_decision() as PriorityDecision
+		return decision != null and decision.player_id == running.hero().id \
+			and running.game_state().active_player_id != running.hero().id)
+
+	assert_eq(engine.game_state().step, Step.UPKEEP)
+	assert_ne(Scenario.activate_index(engine.pending_decision() as PriorityDecision, sword), -1)
+
+
+func test_with_instant_speed_equip_equip_is_offered_with_a_spell_on_the_stack() -> void:
+	var gift: MmCardDefinition = Scenario.instant("Gift", Scenario.mana_cost(0), [], [Scenario.gain_life(1, Scenario.you())])
+	var engine: MmEngine = _hero_main([_bear(), _shikari(), Scenario.sword("Sword")], [], [gift])
+	var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Gift")), "")
+
+	assert_eq(Scenario.stack_ids(engine).size(), 1)
+	assert_ne(Scenario.activate_index(engine.pending_decision() as PriorityDecision, sword), -1)
+
+
+func test_the_other_players_instant_speed_equip_does_not_lift_your_equips_restriction() -> void:
+	var engine: MmEngine = Scenario.combat_ready([_bear(), Scenario.sword("Sword")], [_shikari()])
+	var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+	Scenario.declare_attackers(engine, [])
+
+	_pass_to_hero_priority_outside_the_main_phase(engine)
+
+	assert_eq(Scenario.activate_index(engine.pending_decision() as PriorityDecision, sword), -1, "It says \"you\".")
+
+
+func test_instant_speed_equip_lifts_only_an_equip_abilitys_restriction() -> void:
+	var slow: ActivatedAbility = ActivatedAbility.new()
+	slow.effects = [Scenario.gain_life(1, Scenario.you())]
+	slow.is_sorcery_speed = true
+	var engine: MmEngine = Scenario.combat_ready([_bear(), _shikari(), Scenario.artifact("Idol", [slow])], [])
+	var idol: int = Scenario.permanent_named(engine, engine.hero().id, "Idol")
+	Scenario.declare_attackers(engine, [])
+
+	_pass_to_hero_priority_outside_the_main_phase(engine)
+
+	assert_eq(Scenario.activate_index(engine.pending_decision() as PriorityDecision, idol), -1)
+
+
+func test_equip_is_a_sorcery_again_once_the_instant_speed_equip_is_gone() -> void:
+	var engine: MmEngine = Scenario.combat_ready([_bear(), _shikari(), Scenario.sword("Sword")], [], [Scenario.free_destroy("Murder")])
+	var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+	var shikari: int = Scenario.permanent_named(engine, engine.hero().id, "Shikari")
+	Scenario.declare_attackers(engine, [])
+	_pass_to_hero_priority_outside_the_main_phase(engine)
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Murder", [_object(shikari)]), "")
+
+	assert_eq(Scenario.permanents_named(engine, engine.hero().id, "Shikari").size(), 0)
+	assert_ne(engine.game_state().step, Step.PRECOMBAT_MAIN)
+	assert_eq(Scenario.activate_index(engine.pending_decision() as PriorityDecision, sword), -1)
+
+
+func test_instant_speed_equip_works_from_an_emblem() -> void:
+	var hero_permanents: Array[MmCardDefinition] = [_bear(), Scenario.sword("Sword")]
+	var no_cards: Array[MmCardDefinition] = []
+	var setup: MmEncounterSetup = Scenario.combat_setup(hero_permanents, no_cards)
+	setup.hero.emblems = [Scenario.emblem("Armory", [Scenario.instant_speed_equip()])]
+	var engine: MmEngine = Scenario.combat_ready_with(setup, hero_permanents, no_cards)
+	assert_not_null(engine, "No seed gave the needed hands.")
+	var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+	Scenario.declare_attackers(engine, [])
+
+	_pass_to_hero_priority_outside_the_main_phase(engine)
+
+	assert_ne(Scenario.activate_index(engine.pending_decision() as PriorityDecision, sword), -1)
+
+
+func test_a_creature_that_loses_instant_speed_equip_no_longer_lifts_the_restriction() -> void:
+	# CR 613.1f: the permission is read from its characteristics.
+	var hush: MmCardDefinition = Scenario.artifact("Hush", [Scenario.continuous_static(
+		[Scenario.lose_all_abilities(Scenario.each_creature())])])
+	var engine: MmEngine = Scenario.combat_ready([_bear(), _shikari(), Scenario.sword("Sword")], [hush])
+	var sword: int = Scenario.permanent_named(engine, engine.hero().id, "Sword")
+	Scenario.declare_attackers(engine, [])
+
+	_pass_to_hero_priority_outside_the_main_phase(engine)
+
+	assert_eq(Scenario.activate_index(engine.pending_decision() as PriorityDecision, sword), -1)
+
+
 func test_equip_targets_only_a_creature_its_controller_controls() -> void:
 	var engine: MmEngine = _hero_main([_bear(), Scenario.sword("Sword"), Scenario.artifact("Rock", [])], [_ogre()], [])
 	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
@@ -271,6 +374,22 @@ func _wolf() -> MmCardDefinition:
 
 func _ogre() -> MmCardDefinition:
 	return Scenario.creature("Ogre", 4, 4)
+
+
+## Leonin Shikari: a 2/2 with "You may activate equip abilities any time you could cast an
+## instant."
+func _shikari() -> MmCardDefinition:
+	return Scenario.creature("Shikari", 2, 2, [Scenario.instant_speed_equip()])
+
+
+## Passes on from where the Hero has declared no attackers to their next priority that is
+## not in a main phase.
+func _pass_to_hero_priority_outside_the_main_phase(engine: MmEngine) -> void:
+	Scenario.autoplay(engine, func(running: MmEngine) -> bool:
+		var decision: PriorityDecision = running.pending_decision() as PriorityDecision
+		return decision != null and decision.player_id == running.hero().id \
+			and not running.game_state().step in [Step.PRECOMBAT_MAIN, Step.POSTCOMBAT_MAIN])
+	assert_ne(engine.game_state().step, Step.PRECOMBAT_MAIN)
 
 
 func _seen(view: MmPlayerView, object_id: int) -> MmObjectView:

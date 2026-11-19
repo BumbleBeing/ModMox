@@ -78,6 +78,47 @@ func test_a_mana_value_filter_compares_the_total_of_a_cards_mana_cost() -> void:
 	assert_true(Scenario.is_not(four_or_greater).matches(state, by_name["Three"], context))
 
 
+func test_a_mana_value_filter_may_compare_with_a_value_instead() -> void:
+	var engine: MmEngine = _engine_with_mana_values()
+	var state: MmGameState = engine.game_state()
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var by_name: Dictionary[String, MmReference] = _library_by_name(engine)
+	var three_or_less: ManaValueFilter = Scenario.mana_value_from(Scenario.constant(3))
+	var four_or_greater: ManaValueFilter = Scenario.mana_value_from(Scenario.constant(4), ManaValueFilter.Comparison.OR_GREATER)
+
+	assert_true(three_or_less.matches(state, by_name["Three"], context))
+	assert_false(three_or_less.matches(state, by_name["Four"], context))
+	assert_true(three_or_less.matches(state, by_name["Plains"], context), "A land's mana value is 0.")
+	assert_false(three_or_less.matches(state, MmReference.to_player(engine.hero().id), context))
+	assert_false(four_or_greater.matches(state, by_name["Three"], context))
+	assert_true(four_or_greater.matches(state, by_name["Four"], context))
+
+
+func test_a_value_given_to_a_mana_value_filter_is_used_instead_of_its_amount() -> void:
+	var engine: MmEngine = _engine_with_mana_values()
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var filter: ManaValueFilter = Scenario.mana_value_from(Scenario.constant(2))
+	filter.amount = 9
+
+	assert_false(filter.matches(engine.game_state(), _library_by_name(engine)["Three"], context), "2, not 9.")
+
+
+func test_a_mana_value_filter_reads_its_value_each_time_it_is_asked() -> void:
+	# The X paid is the X of the ability resolving (ADR 0061), so the same Filter answers
+	# differently in two contexts, and with none paid X is 0.
+	var engine: MmEngine = _engine_with_mana_values()
+	var state: MmGameState = engine.game_state()
+	var by_name: Dictionary[String, MmReference] = _library_by_name(engine)
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var x_or_less: ManaValueFilter = Scenario.mana_value_from(Scenario.paid_x())
+
+	assert_false(x_or_less.matches(state, by_name["Three"], context.with_paid_x(2)))
+	assert_true(x_or_less.matches(state, by_name["Three"], context.with_paid_x(3)))
+	assert_false(x_or_less.matches(state, by_name["Three"], context), "None paid is 0.")
+	assert_false(x_or_less.matches(state, by_name["Three"], null), "Nor with no context.")
+	assert_true(x_or_less.matches(state, by_name["Plains"], null))
+
+
 func test_a_power_filter_compares_a_creatures_power_in_any_zone() -> void:
 	# CR 208.1: only a creature has power, so nothing else is "with power 2 or less".
 	var cub: MmCardDefinition = Scenario.creature("Cub", 2, 2)
@@ -137,6 +178,21 @@ func test_a_toughness_filter_compares_a_creatures_toughness_in_any_zone() -> voi
 	assert_true(four_or_greater.matches(state, by_name["Shifter"], context), "CR 604.3: its toughness is 5 in every zone.")
 	assert_false(two_or_less.matches(state, MmReference.to_player(engine.hero().id), context), "A player has no toughness.")
 	assert_true(Scenario.is_not(four_or_greater).matches(state, by_name["Cub"], context))
+
+
+## A Hero whose library holds a creature with mana value 3, one with 4, and a Plains.
+func _engine_with_mana_values() -> MmEngine:
+	var three: MmCardDefinition = Scenario.creature("Three", 2, 2, [], Scenario.mana_cost(2, [MmMana.Type.WHITE]))
+	var four: MmCardDefinition = Scenario.creature("Four", 3, 3, [], Scenario.mana_cost(4))
+	return MmEngine.start(Scenario.setup_with(Scenario.cycled([three, four, Scenario.basic_land("Plains")]),
+		Scenario.cycled([])))
+
+
+func _library_by_name(engine: MmEngine) -> Dictionary[String, MmReference]:
+	var by_name: Dictionary[String, MmReference] = {}
+	for card: MmGameObject in engine.hero().library.objects():
+		by_name[engine.game_state().characteristics_of(card).name] = MmReference.to_object(card.id)
+	return by_name
 
 
 func _engine_with_one_forest() -> MmEngine:

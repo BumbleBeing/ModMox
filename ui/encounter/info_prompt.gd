@@ -3,11 +3,16 @@ extends RefCounted
 ## What the Info Panel (game glossary) says for one Pending Decision: one line asking the
 ## Hero for what is wanted, what is still owed while paying, and whether the decision is a
 ## step of a cast that can be canceled. While Auto-tap pays for the Hero it says what is being
-## paid for instead, with what is still owed, and the cast can still be canceled.
+## paid for instead, with what is still owed, and the cast can still be canceled. Paying a
+## ward cost reads "Pay ward for Leonin Lightbringer: {2}" from its yes or no to its last
+## payment, and has no Cancel: nothing is being cast (ADR 0062).
 
 var text: String = ""
 ## While paying: what is still owed. Null otherwise.
 var owed: MmManaCost = null
+## Whether what is owed follows the text on its line, as a ward cost does, rather than
+## under it.
+var is_owed_inline: bool = false
 var can_cancel: bool = false
 ## While declaring attackers: the panel offers "Declare All" (A311).
 var offers_all_attack: bool = false
@@ -29,6 +34,14 @@ static func release_text(option_text: String) -> String:
 static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaDecision = null,
 		names: PlayerNames = null) -> InfoPrompt:
 	var prompt: InfoPrompt = InfoPrompt.new()
+	var ward: MmObjectView = _ward_resolving(view)
+	if ward != null and (decision is PayManaDecision or (decision == null and paying != null)):
+		# ADR 0062: paying a ward cost, by hand or by Auto-tap, says what it is for, and a
+		# payment on resolution cannot be canceled.
+		prompt.text = ward_words(view, ward)
+		prompt.owed = _owed(decision as PayManaDecision if decision != null else paying)
+		prompt.is_owed_inline = true
+		return prompt
 	if decision == null and paying != null:
 		prompt.text = "Paying for %s" % stack_name(view, view.stack.back().id if not view.stack.is_empty() else -1)
 		prompt.owed = _owed(paying)
@@ -76,8 +89,16 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 	elif decision is ChooseYesOrNoDecision:
 		# Game ADR 0060: "Leonin Snarecaster's ability: tap target creature?"
 		var asked: ChooseYesOrNoDecision = decision as ChooseYesOrNoDecision
-		prompt.text = "%s: %s?" % [stack_name(view, asked.stack_object_id), offered_words(view, asked)]
 		prompt.offers_no = true
+		if asked.cost != null:
+			# ADR 0062: "Pay ward for Leonin Lightbringer: {2}", Pay on the Pass Button.
+			var asking: MmObjectView = _stack_item(view, asked.stack_object_id)
+			prompt.text = ward_words(view, asking) if asking != null and asking.ability is WardAbility \
+				else "Pay for %s:" % stack_name(view, asked.stack_object_id)
+			prompt.owed = asked.cost
+			prompt.is_owed_inline = true
+			return prompt
+		prompt.text = "%s: %s?" % [stack_name(view, asked.stack_object_id), offered_words(view, asked)]
 	elif decision is ChooseCreatureTypeDecision:
 		prompt.text = "Choose a creature type for %s" % stack_name(view, (decision as ChooseCreatureTypeDecision).stack_object_id)
 	elif decision is ChooseLegendToKeepDecision:
@@ -114,6 +135,28 @@ static func offered_words(view: MmPlayerView, asked: ChooseYesOrNoDecision) -> S
 		if ability != null:
 			return AbilityText.offered_words(ability, asked.effect, StackItem.noun_of(item, view), item.chosen_mode)
 	return AbilityText.offered_words(SpellAbility.new(), asked.effect, "this")
+
+
+## "Pay ward for Leonin Lightbringer:", after the warded permanent of [param ward], a ward
+## trigger on the stack (ADR 0062). What is owed follows it.
+static func ward_words(view: MmPlayerView, ward: MmObjectView) -> String:
+	var warded: String = EncounterSnapshot.name_in(view, ward.source_object_id)
+	return "Pay ward for %s:" % (ward.name if warded.begins_with("object ") else warded)
+
+
+## The ward trigger resolving on top of the stack, or null: a payment made while it is
+## there is its cost, since a spell being cast is always on top of what it was cast over.
+static func _ward_resolving(view: MmPlayerView) -> MmObjectView:
+	if view.stack.is_empty() or not view.stack.back().ability is WardAbility:
+		return null
+	return view.stack.back()
+
+
+static func _stack_item(view: MmPlayerView, stack_object_id: int) -> MmObjectView:
+	for item: MmObjectView in view.stack:
+		if item.id == stack_object_id:
+			return item
+	return null
 
 
 ## Whether [param stack_object_id] is a triggered ability. Putting one on the stack can't be

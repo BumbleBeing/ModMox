@@ -41,6 +41,20 @@ func test_equip_is_reminded_of_what_it_does_and_named_without_its_cost() -> void
 	assert_eq(reminders[0].text, "Pay its cost to attach it to target creature you control. Equip only as a sorcery.")
 
 
+func test_ward_is_reminded_of_what_it_does_and_named_without_its_cost() -> void:
+	var ward: WardAbility = WardAbility.new()
+	ward.mana_cost = MmManaCost.new()
+	ward.mana_cost.generic = 2
+
+	var reminders: Array[Reminder] = Reminders.of([ward] as Array[MmAbility])
+
+	assert_eq(reminders.size(), 1)
+	assert_eq(reminders[0].icon, "ward")
+	assert_eq(reminders[0].keyword, "Ward", "A plain label draws it, so it has no mana symbol.")
+	assert_eq(reminders[0].text,
+		"Whenever it becomes the target of a spell or ability an opponent controls, counter that unless its controller pays the ward cost.")
+
+
 func test_a_card_with_no_keyword_has_no_reminder() -> void:
 	assert_eq(Reminders.of(_abilities("prodigal_sorcerer")).size(), 0)
 	assert_eq(Reminders.of(_abilities("forest")).size(), 0)

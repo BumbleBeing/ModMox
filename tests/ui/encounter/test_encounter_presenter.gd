@@ -407,6 +407,26 @@ func test_the_heros_own_spell_on_the_stack_is_passed_for_them() -> void:
 	assert_true(snapshot.decision is PriorityDecision)
 
 
+func test_a_you_may_pay_x_the_hero_controls_is_declined_without_asking_them() -> void:
+	# ADR 0061: the screen has no input for choosing X yet.
+	var payer: MmCardDefinition = Scenario.x_payer()
+	var presenter: EncounterPresenter = _started(Scenario.setup_with(Scenario.copies(payer, 40),
+		Scenario.copies(Scenario.vanilla("Card"), 40)))
+	if presenter.snapshot().decision is KeepOrMulliganDecision:
+		presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+		presenter.wait_until_idle()
+
+	assert_eq(presenter.answer(_index_of(presenter.snapshot().decision as PriorityDecision, CastSpellAction)), "")
+	presenter.wait_until_idle()
+
+	var snapshot: EncounterSnapshot = presenter.snapshot()
+	assert_false(snapshot.decision is ChooseXToPayDecision, "The Hero is never asked.")
+	assert_true(snapshot.decision is PriorityDecision)
+	assert_eq(snapshot.view.stack.size(), 0, "The X Payer and its trigger have both resolved.")
+	assert_eq(snapshot.view.life_totals[HERO], 20, "Declined: no X life gained.")
+	presenter.stop()
+
+
 func test_holding_the_key_as_a_spell_goes_on_the_stack_keeps_priority() -> void:
 	var presenter: EncounterPresenter = _started(_shock_setup(), false)
 	presenter.is_hold_key_down = true

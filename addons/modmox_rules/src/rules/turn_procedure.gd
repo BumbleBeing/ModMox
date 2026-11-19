@@ -137,8 +137,10 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	elif decision is ChooseReplacementEffectDecision:
 		_state.choose_replacement_effect(answer as int)  # next_decision() carries on from here.
 	elif decision is ChooseObjectDecision or decision is ChooseCreatureTypeDecision or decision is ChooseCardsInLibraryDecision \
-			or decision is ChooseYesOrNoDecision:
+			or decision is ChooseYesOrNoDecision or decision is ChooseXToPayDecision:
 		_resolution.apply_answer(decision, answer)
+	elif decision is PayManaDecision and _cast == null and _resolution != null:
+		_resolution.apply_answer(decision, answer)  # ADR 0061: paying X as it resolves.
 	elif _cast != null:
 		_cast.apply_answer(decision, answer)
 	elif _stacking != null:
@@ -323,13 +325,31 @@ func _may_play_land(player: MmPlayer) -> bool:
 ## controls, plus any granted this turn by AdditionalLandPlaysEffect.
 func _land_plays_allowed(player: MmPlayer) -> int:
 	var allowed: int = 1 + player.additional_land_plays_this_turn
-	for source: MmGameObject in TriggerDetection.observers(_state):
-		if source.controller_id != player.id:
-			continue
-		for ability: MmAbility in _state.characteristics_of(source).abilities:
-			if ability is AdditionalLandPlaysAbility:
-				allowed += (ability as AdditionalLandPlaysAbility).count
+	for ability: MmAbility in _abilities_controlled_by(player):
+		if ability is AdditionalLandPlaysAbility:
+			allowed += (ability as AdditionalLandPlaysAbility).count
 	return allowed
+
+
+## Every ability of the permanents and Emblems [param player] controls, as they are now.
+func _abilities_controlled_by(player: MmPlayer) -> Array[MmAbility]:
+	var abilities: Array[MmAbility] = []
+	for source: MmGameObject in TriggerDetection.observers(_state):
+		if source.controller_id == player.id:
+			abilities.append_array(_state.characteristics_of(source).abilities)
+	return abilities
+
+
+## Whether [param player] may activate [param ability] without sorcery timing although it
+## says "activate only as a sorcery": an equip ability, while they control an
+## InstantSpeedEquipAbility (ADR 0036).
+func _lifts_sorcery_restriction(player: MmPlayer, ability: ActivatedAbility) -> bool:
+	if not ability is EquipAbility:
+		return false
+	for granted: MmAbility in _abilities_controlled_by(player):
+		if granted is InstantSpeedEquipAbility:
+			return true
+	return false
 
 
 ## CR 307.1: "sorcery speed" means your own main phase with an empty stack.
@@ -388,8 +408,10 @@ func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbi
 		return false  # CR 113.6
 	if ability.is_once_each_game and source.is_ability_spent(ability_index):
 		return false  # CR 602.5b
-	if ability.is_sorcery_speed and not _sorcery_timing(player):
+	if ability.is_sorcery_speed and not _sorcery_timing(player) and not _lifts_sorcery_restriction(player, ability):
 		return false  # CR 602.5d
+	if not ability.is_attachment_allowed(_state, source):
+		return false  # CR 602.5, 702.151a
 	if not ability.can_pay_costs(_state, source):
 		return false
 	if ability.mana_cost != null:

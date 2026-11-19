@@ -432,7 +432,7 @@ func clear_ability_resolutions() -> void:
 	_ability_resolutions.clear()
 
 
-## Event-only: keeps [param leaving], frozen, as it leaves the battlefield.
+## Event-only: keeps [param leaving], frozen, as it leaves the battlefield or a graveyard.
 func record_departure(leaving: MmGameObject) -> void:
 	_departed[leaving.id] = leaving
 

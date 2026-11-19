@@ -33,14 +33,18 @@ const COMBAT_STEPS: Array[MmTurn.Step] = [
 ]
 
 
-## [param effects] with each "you may" (MayEffect) replaced by the effect it offers, so a
-## spell or ability is read as doing what it may do (CR 603.5).
+## [param effects] with each "you may" (MayEffect), "you may pay {X}" (MayPayXEffect,
+## ADR 0061) and "if [condition]" (IfEffect) replaced by the effect it offers, so a spell or
+## ability is read as doing what it may do (CR 603.5).
 static func unwrapped(effects: Array[MmEffect]) -> Array[MmEffect]:
 	var found: Array[MmEffect] = []
 	for effect: MmEffect in effects:
 		var offered: MmEffect = effect
-		while offered is MayEffect:
-			offered = (offered as MayEffect).effect
+		while offered is MayEffect or offered is MayPayXEffect or offered is IfEffect:
+			if offered is IfEffect:
+				offered = (offered as IfEffect).effect
+			else:
+				offered = (offered as MayEffect).effect if offered is MayEffect else (offered as MayPayXEffect).effect
 		found.append(offered)
 	return found
 
@@ -106,7 +110,18 @@ static func tag_of_action(state: MmGameState, action: MmAction) -> Tag:
 	var activated: ActivatedAbility = activated_ability_of(state, action)
 	if activated != null and activated.is_activated_from_hand and _only_draws_or_searches_into_the_hand(effects):
 		return Tag.SPARE_MANA
+	if activated is EquipAbility and not _at_sorcery_timing(state, state.object((action as ActivateAbilityAction).object_id).controller_id):
+		# Equip offered at instant speed (InstantSpeedEquipAbility) is worth it in a fight:
+		# moved after blockers are declared, or onto a creature a spell would kill.
+		return Tag.COMBAT_TRICK
 	return tag_of_effects(effects)
+
+
+## Whether [param player_id] has sorcery timing (CR 307.1): their own main phase, with an
+## empty stack.
+static func _at_sorcery_timing(state: MmGameState, player_id: int) -> bool:
+	var main_phase: bool = state.step == MmTurn.Step.PRECOMBAT_MAIN or state.step == MmTurn.Step.POSTCOMBAT_MAIN
+	return state.active_player_id == player_id and main_phase and state.stack.is_empty()
 
 
 ## Whether [param effects] do nothing but draw cards or search for cards into the hand.

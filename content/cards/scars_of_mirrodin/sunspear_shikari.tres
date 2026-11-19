@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_aw60o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_equipped_filter.gd" id="2_415ny"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_s3iux"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_8n2sx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/selection_matches_condition.gd" id="3_pk5m5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="4_qi3nt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="5_ge08o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/first_strike_ability.gd" id="6_haaln"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/lifelink_ability.gd" id="7_j15kw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="8_e2ea8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="9_s8xue"]
+
+[sub_resource type="Resource" id="Resource_w66rk"]
+script = ExtResource("2_415ny")
+
+[sub_resource type="Resource" id="Resource_7ernn"]
+script = ExtResource("4_qi3nt")
+
+[sub_resource type="Resource" id="Resource_ijb4m"]
+script = ExtResource("3_pk5m5")
+selection = SubResource("Resource_7ernn")
+filter = SubResource("Resource_w66rk")
+
+[sub_resource type="Resource" id="Resource_drhxg"]
+script = ExtResource("6_haaln")
+
+[sub_resource type="Resource" id="Resource_p4xa4"]
+script = ExtResource("7_j15kw")
+
+[sub_resource type="Resource" id="Resource_rvbpj"]
+script = ExtResource("4_qi3nt")
+
+[sub_resource type="Resource" id="Resource_a0fvc"]
+script = ExtResource("8_e2ea8")
+abilities = Array[ExtResource("1_aw60o")]([SubResource("Resource_drhxg"), SubResource("Resource_p4xa4")])
+affected = SubResource("Resource_rvbpj")
+
+[sub_resource type="Resource" id="Resource_nbdc6"]
+script = ExtResource("9_s8xue")
+effects = Array[ExtResource("5_ge08o")]([SubResource("Resource_a0fvc")])
+condition = SubResource("Resource_ijb4m")
+
+[sub_resource type="Resource" id="Resource_a1cm2"]
+script = ExtResource("2_s3iux")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_8n2sx")
+name = "Sunspear Shikari"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Soldier"])
+mana_cost = SubResource("Resource_a1cm2")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_aw60o")]([SubResource("Resource_nbdc6")])

@@ -199,6 +199,23 @@ func test_an_emblem_with_several_usable_abilities_offers_each() -> void:
 	assert_eq(clicks.options_of(30)[1].text, "{0}: Regenerate this emblem.")
 
 
+func test_each_half_of_reconfigure_has_its_own_row_and_the_card_calls_itself_this_permanent() -> void:
+	var view: MmPlayerView = _view()
+	var abilities: Array[MmAbility] = [Scenario.regenerate_ability(Scenario.mana_cost(0))]
+	abilities.append_array(Scenario.reconfigure(Scenario.mana_cost(2)))
+	var sash: MmObjectView = _permanent(40, abilities)
+	sash.card_types = [MmCardTypes.CardType.ARTIFACT]
+	view.battlefield.append(sash)
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [
+		PassAction.new(), ActivateAbilityAction.new(40, 0), ActivateAbilityAction.new(40, 1), ActivateAbilityAction.new(40, 2),
+	] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	var rows: Array = clicks.options_of(40).map(func(option: ClickOption) -> String: return option.text)
+	assert_eq(rows, ["{0}: Regenerate this permanent.", "Reconfigure {2}: attach", "Reconfigure {2}: unattach"])
+
+
 func test_a_potion_is_answered_by_a_click_glows_green_and_reads_without_a_cost() -> void:
 	var view: MmPlayerView = _view()
 	var potion: MmObjectView = _held(31, "Big Gulp", (load("res://content/potions/big_gulp.tres") as MmCardDefinition).abilities)

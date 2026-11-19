@@ -60,6 +60,9 @@ const SEEN_PILE_BOX: Rect2 = Rect2(Vector2(-2, -4), Vector2(7, 4))
 const NO_PREVIEW: int = -1
 ## What the Pass Button reads while a "you may" is asked: it answers yes (game ADR 0060).
 const YES: String = "Yes"
+## What the Pass Button reads while the Hero is asked to pay a cost, as ward's: a click
+## pays, and no key does (ADR 0062).
+const PAY: String = "Pay"
 ## The size of the window that asks which replacement effect applies first.
 const REPLACEMENT_WINDOW_SIZE: Vector2 = Vector2(470, 260)
 ## The mode window's width, the room each mode's entry takes, and the room round them.
@@ -349,7 +352,7 @@ func _ready() -> void:
 			_answer(ChooseYesOrNoDecision.Choice.NO))
 	add_child(_info)
 	_pass_button = PassButton.new()
-	_pass_button.pressed.connect(pass_priority)
+	_pass_button.pressed.connect(_on_pass_button_pressed)
 	add_child(_pass_button)
 	_hold_panel = HoldPanel.new()
 	add_child(_hold_panel)
@@ -778,12 +781,29 @@ func pass_priority() -> void:
 		if not _is_paused:
 			_answer(_trigger_order.answer())
 	elif _snapshot != null and _snapshot.decision is ChooseYesOrNoDecision:
-		if not _is_paused:
+		# ADR 0062: no key pays a cost; only the Pass Button's Pay does.
+		if not _is_paused and not _is_asked_to_pay():
 			_answer(ChooseYesOrNoDecision.Choice.YES)
 	elif not _selection.is_active():
 		_command(_presenter.pass_priority)
 	elif _selection.is_complete() and not _is_paused:
 		_answer(_selection.answer())
+
+
+## The Pass Button was clicked: it pays a cost the Hero is asked to pay, as ward's, and does
+## everything else the pass key does.
+func _on_pass_button_pressed() -> void:
+	if _is_asked_to_pay():
+		if not _is_paused:
+			_answer(ChooseYesOrNoDecision.Choice.YES)
+		return
+	pass_priority()
+
+
+## Whether the Hero is asked whether to pay a cost, as ward's (ADR 0062).
+func _is_asked_to_pay() -> bool:
+	var asked: ChooseYesOrNoDecision = _snapshot.decision as ChooseYesOrNoDecision if _snapshot != null else null
+	return asked != null and asked.cost != null
 
 
 ## Undoes the Hero's last click of a half-made selection or choice of cards, or their last move of a trigger,
@@ -1861,6 +1881,8 @@ func _redraw() -> void:
 		_show_confirm(_selection.confirm_text(), _selection.is_complete(), _selection.can_undo())
 	elif _trigger_order.is_active():
 		_show_confirm("Confirm order", true, _trigger_order.can_undo())
+	elif _is_asked_to_pay():
+		_pass_button.show_confirm(PAY, true, false)
 	elif _snapshot.decision is ChooseYesOrNoDecision:
 		_show_confirm(YES, true, false)
 	_add_player_stepper()
@@ -2961,7 +2983,7 @@ func _add_trigger_entries(view: MmPlayerView) -> void:
 ## Trigger [param number]'s whole ability, in its source's words.
 func _trigger_text(decision: OrderTriggersDecision, number: int) -> String:
 	var source: MmObjectView = _seen(decision.source_object_ids[number])
-	var noun: String = AbilityText.self_noun(source.card_types, source.name) if source != null else "it"
+	var noun: String = AbilityText.self_noun(source.card_types, source.name, source.abilities) if source != null else "it"
 	var look: CardLook = _snapshot.look_of(source.id) if source != null else null
 	if look != null and look.kind != CardLook.Kind.CARD:
 		noun = CardLook.noun_of(look.kind)
@@ -3024,13 +3046,21 @@ func _on_stack_entry_hovered(is_over: bool, object_id: int) -> void:
 
 
 ## While a "you may" is asked, what the asking spell or ability targets carries its
-## dashed Stack Mark, so the Hero sees what "target creature" is (game ADR 0060).
+## dashed Stack Mark, so the Hero sees what "target creature" is (game ADR 0060). While a
+## ward cost is asked, the Stack Window entry of what it would counter carries it
+## (ADR 0062).
 func _mark_asked_targets() -> void:
 	var asked: ChooseYesOrNoDecision = _snapshot.decision as ChooseYesOrNoDecision if _snapshot != null else null
 	if asked == null or not _stack_items.has(asked.stack_object_id):
 		return
 	var item: StackItem = _stack_items[asked.stack_object_id]
 	var color: Color = _stack_colors.color_of(asked.stack_object_id)
+	if asked.cost != null:
+		var countered: StackEntry = stack_entry_of(_triggering_object_of(asked.stack_object_id))
+		if countered != null and is_instance_valid(countered):
+			BorderEffects.add_mark(countered, countered.size, color, true, _ease_seconds)
+			_marked.append(countered)
+		return
 	for target_id: int in item.target_object_ids:
 		_mark_face(target_id, color, true)
 	for player_id: int in item.target_player_ids:
@@ -3047,6 +3077,14 @@ func _on_trigger_hovered(is_over: bool, number: int) -> void:
 		return
 	_info.show_option(_trigger_text(decision, number))
 	_mark_face(decision.source_object_ids[number], Color.WHITE, false)
+
+
+## The object the stack object [param stack_object_id] triggered on, or 0.
+func _triggering_object_of(stack_object_id: int) -> int:
+	for seen: MmObjectView in _snapshot.view.stack:
+		if seen.id == stack_object_id:
+			return seen.triggering_object_id
+	return 0
 
 
 func _mark_face(object_id: int, color: Color, is_dashed: bool) -> void:

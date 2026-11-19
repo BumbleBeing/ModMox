@@ -60,7 +60,8 @@ static func mana_made_by(state: MmGameState, ability: ActivatedAbility, context:
 static func pays_while_paying(state: MmGameState, source: MmGameObject, ability: ActivatedAbility, ability_index: int) -> bool:
 	if not ability.is_mana_ability() or not ability.works_in(state, source) or not ability.can_pay_costs(state, source):
 		return false
-	return not ability.is_sorcery_speed and not (ability.is_once_each_game and source.is_ability_spent(ability_index))
+	return not ability.is_sorcery_speed and not (ability.is_once_each_game and source.is_ability_spent(ability_index)) \
+		and ability.is_attachment_allowed(state, source)
 
 
 ## Everything [param player_id] may activate abilities from (CR 113.6): the permanents they

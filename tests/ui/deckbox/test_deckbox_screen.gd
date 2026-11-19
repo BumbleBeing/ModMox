@@ -12,6 +12,11 @@ func before_each() -> void:
 	_went_to = []
 	RunFlow.clear()
 	_run = Run.debug(11)
+	# The debug run keeps a Deck for every Villain's deck; these tests start from its
+	# Active Deck alone.
+	for deck: Deck in _run.deckbox.decks():
+		if not _run.deckbox.is_active(deck):
+			_run.deckbox.delete(deck)
 
 
 func after_each() -> void:

@@ -25,6 +25,7 @@ const PRINTED: Dictionary[String, String] = {
 		+ "• Destroy target enchantment.",
 	"counterspell": "Counter target spell.",
 	"dark_ritual": "Add {B}{B}{B}.",
+	"darksteel_axe": "Indestructible\nEquipped creature gets +2/+0.\nEquip {2}",
 	"daydream": "Exile target creature you control. Return the exiled card to the battlefield under its owner's control with a +1/+1 counter on it.\nFlashback {2}{W}",
 	"deep_analysis": "Target player draws two cards.\nFlashback—{1}{U}, Pay 3 life",
 	"defiant_strike": "Target creature gets +1/+0 until end of turn. Draw a card.",
@@ -56,9 +57,13 @@ const PRINTED: Dictionary[String, String] = {
 	"island": "({T}: Add {U}.)",
 	"ivory_tower": "At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.",
 	"keldon_warlord": "This creature's power and toughness are each equal to the number of non-Wall creatures you control.",
+	"kemba_kha_enduring": "Whenever a Cat creature you control enters, attach up to one target Equipment you control to that creature.\nEach equipped creature you control gets +1/+1.\n{3}{W}{W}: Create a 2/2 white Cat creature token.",
 	"king_of_the_pride": "Each other Cat creature you control gets +2/+1.",
+	"leonin_lightbringer": "Ward {2}\nAs long as this creature is equipped, it gets +1/+1.",
+	"leonin_shikari": "You may activate equip abilities any time you could cast an instant.",
 	"leonin_snarecaster": "When this creature enters, you may tap target creature.",
 	"lightning_bolt": "Lightning Bolt deals 3 damage to any target.",
+	"lion_sash": "{W}: Exile target card from a graveyard. If it is a permanent card, put a +1/+1 counter on this permanent.\nEquipped creature gets +X/+X, where X is the number of +1/+1 counters on this permanent.\nReconfigure {2}",
 	"lightshield_parry": "Target creature gets +2/+2 until end of turn.\nCycling {2}",
 	"llanowar_elves": "{T}: Add {G}.",
 	"malamet_war_scribe": "When this creature enters, each creature you control gets +2/+1 until end of turn.",
@@ -75,6 +80,8 @@ const PRINTED: Dictionary[String, String] = {
 	"prodigal_sorcerer": "{T}: This creature deals 1 damage to any target.",
 	"prowling_felidar": "Vigilance\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"rally_the_ranks": "As this enchantment enters, choose a creature type.\nEach creature you control of the chosen type gets +1/+1.",
+	"resistance_reunited": "Target creature gets +2/+2 until end of turn. "
+		+ "Each equipped creature you control gains indestructible until end of turn.",
 	"samite_healer": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
 	"scythe_leopard": "Whenever a land you control enters, this creature gets +1/+1 until end of turn.",
 	"scythecat_cub": "Trample\nWhenever a land you control enters, put a +1/+1 counter on target creature you control. "
@@ -85,10 +92,13 @@ const PRINTED: Dictionary[String, String] = {
 	"short_sword": "Equipped creature gets +1/+1.\nEquip {1}",
 	"skyknight_squire": "Whenever another creature you control enters, put a +1/+1 counter on this creature.\n"
 		+ "As long as this creature has three or more +1/+1 counters on it, it has flying and is a Knight in addition to its other types.",
+	"slash_of_light": "Slash of Light deals damage to target creature equal to the number of creatures you control plus the number of Equipment you control.",
 	"steppe_lynx": "Whenever a land you control enters, this creature gets +2/+2 until end of turn.",
 	"stifle": "Counter target activated or triggered ability.",
+	"sunspear_shikari": "As long as this creature is equipped, it has first strike and lifelink.",
 	"swamp": "({T}: Add {B}.)",
-	"territorial_scythecat": "Trample\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
+	"taj_nar_swordsmith": "When this creature enters, you may pay {X}. If you do, search your library for an Equipment card with mana value X or less, put it onto the battlefield, then shuffle.",
+	"territorial_scythecat":"Trample\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"tethmos_high_priest": "Whenever you cast a spell that targets this creature, return target creature card with mana value 2 or less from your graveyard to the battlefield.",
 	"terror": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
 	"topiary_panther": "Trample\nBasic landcycling {1}{G}",
@@ -142,6 +152,65 @@ func test_choosing_a_creature_type_as_it_enters_and_the_chosen_type_are_worded()
 
 	assert_eq(AbilityText.of_card(rally.abilities, rally.card_types, rally.supertypes, rally.name),
 		"As this enchantment enters, choose a creature type.\nEach creature you control of the chosen type gets +1/+1.")
+
+
+func test_instant_speed_equip_is_worded_as_leonin_shikari_words_it() -> void:
+	assert_eq(AbilityText.of_ability(Scenario.instant_speed_equip(), "Leonin Shikari"),
+		"You may activate equip abilities any time you could cast an instant.")
+
+
+func test_reconfigure_prints_its_cost_once_and_its_card_calls_itself_this_permanent() -> void:
+	# CR 702.151a: the keyword stands for two abilities, and prints as one.
+	var sash: MmCardDefinition = Scenario.sash()
+	sash.abilities[1].mana_cost = Scenario.mana_cost(2)
+	sash.abilities[2].mana_cost = Scenario.mana_cost(2)
+
+	assert_eq(AbilityText.of_card(sash.abilities, sash.card_types, sash.supertypes, sash.name),
+		"Equipped creature gets +1/+1.\nReconfigure {2}")
+	assert_eq(AbilityText.self_noun(sash.card_types, sash.name, sash.abilities), "this permanent",
+		"A creature only while unattached, so neither \"this creature\" nor \"this artifact\".")
+	assert_true(AbilityText.is_keyword(sash.abilities[1]))
+
+
+func test_each_half_of_reconfigure_has_its_own_option_row() -> void:
+	var halves: Array[MmAbility] = Scenario.reconfigure(Scenario.mana_cost(2))
+
+	assert_eq(AbilityText.option_of(halves[0], "this permanent"), "Reconfigure {2}: attach")
+	assert_eq(AbilityText.option_of(halves[1], "this permanent"), "Reconfigure {2}: unattach")
+	assert_eq(AbilityText.option_of(Scenario.equip(Scenario.mana_cost(1)), "this artifact"), "Equip {1}",
+		"Anything else reads as it is printed.")
+
+
+func test_what_each_half_of_reconfigure_does() -> void:
+	var halves: Array[MmAbility] = Scenario.reconfigure(Scenario.mana_cost(2))
+
+	assert_eq(AbilityText.effect_of(halves[0], "this permanent"), "Attach this permanent to another target creature you control.")
+	assert_eq(AbilityText.effect_of(halves[1], "this permanent"), "Unattach this permanent.")
+
+
+func test_exiling_a_card_from_a_graveyard_and_an_if_are_worded_as_lion_sash_words_them() -> void:
+	var scavenger: MmCardDefinition = Scenario.scavenger()
+	var ability: ActivatedAbility = scavenger.abilities[0] as ActivatedAbility
+	ability.mana_cost = Scenario.mana_cost(0, [MmMana.Type.WHITE])
+
+	assert_eq(AbilityText.of_ability(ability, "this permanent"),
+		"{W}: Exile target card from a graveyard. If it is a permanent card, put a +1/+1 counter on this permanent.")
+
+
+func test_a_permanent_card_is_a_noun() -> void:
+	var requirement: TargetRequirement = Scenario.target_graveyard_card(Scenario.permanent_card())
+	var spell: SpellAbility = SpellAbility.new()
+	spell.targets = [requirement]
+	spell.effects = [Scenario.exile(Scenario.targeted(0))]
+
+	assert_eq(AbilityText.of_ability(spell, "Spell"), "Exile target permanent card from a graveyard.")
+
+
+func test_counting_counters_is_worded_as_the_number_of_them() -> void:
+	var sash: MmCardDefinition = Scenario.lion_sash()
+
+	assert_eq(AbilityText.of_card(sash.abilities, sash.card_types, sash.supertypes, sash.name),
+		"Equipped creature gets +X/+X, where X is the number of +1/+1 counters on this permanent.\nReconfigure {0}")
 
 
 func test_something_it_has_no_words_for_is_marked_as_a_fallback() -> void:
@@ -284,6 +353,36 @@ func test_a_mode_with_a_counted_amount_says_what_x_is() -> void:
 		"Maneuver deals damage to target creature equal to the number of creatures you control.")
 
 
+func test_a_summed_amount_reads_each_addend_joined_by_plus() -> void:
+	var slash: MmCardDefinition = Scenario.free_slash("Slash")
+
+	assert_eq(AbilityText.of_card(slash.abilities, slash.card_types, slash.supertypes, "Slash"),
+		"Slash deals damage to target creature equal to the number of creatures you control"
+		+ " plus the number of Equipment you control.")
+
+
+func test_a_sum_of_three_reads_plus_between_each() -> void:
+	var damage: DealDamageEffect = Scenario.deal_damage(0, Scenario.targeted(0))
+	damage.amount = Scenario.sum([Scenario.count_yours(Scenario.of_type(CardType.CREATURE)),
+		Scenario.count_yours(Scenario.of_type(CardType.LAND)), Scenario.constant(1)])
+	var spell: MmCardDefinition = Scenario.instant("Sum", Scenario.mana_cost(0), [Scenario.any_target()], [damage])
+
+	assert_eq(AbilityText.of_card(spell.abilities, spell.card_types, spell.supertypes, "Sum"),
+		"Sum deals damage to any target equal to the number of creatures you control"
+		+ " plus the number of lands you control plus 1.")
+
+
+func test_equipment_is_its_own_plural() -> void:
+	var count: CountValue = Scenario.count_yours(Scenario.has_subtype("Equipment"))
+	var damage: DealDamageEffect = Scenario.deal_damage(0, Scenario.targeted(0))
+	damage.amount = count
+	var spell: MmCardDefinition = Scenario.instant("Count", Scenario.mana_cost(0),
+		[Scenario.target(Scenario.of_type(CardType.CREATURE))], [damage])
+
+	assert_eq(AbilityText.of_card(spell.abilities, spell.card_types, spell.supertypes, "Count"),
+		"Count deals damage to target creature equal to the number of Equipment you control.")
+
+
 func test_a_free_ability_costs_zero() -> void:
 	var ability: ActivatedAbility = ActivatedAbility.new()
 	ability.effects = [Scenario.gain_life(1, Scenario.you())]
@@ -417,6 +516,19 @@ func test_what_a_may_effect_offers_is_worded_alone_for_the_question() -> void:
 		[Scenario.target(Scenario.of_type(CardType.CREATURE))])
 
 	assert_eq(AbilityText.offered_words(snare, may.effect, "Leonin Snarecaster"), "tap target creature")
+
+
+func test_a_pay_x_effect_says_you_may_pay_x_then_if_you_do_what_it_does() -> void:
+	# ADR 0061: X is the X paid, so no "where X is" follows.
+	var seeking: SearchLibraryEffect = Scenario.search(Scenario.of_type(CardType.CREATURE))
+	seeking.amount = Scenario.paid_x()
+	var seeker: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.pay_x(seeking)])
+	var gainer: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()),
+		[Scenario.pay_x(Scenario.gain_x_life()), Scenario.gain_x_life()])
+
+	assert_eq(AbilityText.of_ability(seeker, "this creature"), "When this creature enters, you may pay {X}. If you do, "
+		+ "search your library for up to X creature cards, reveal them, put them into your hand, then shuffle.")
+	assert_eq(AbilityText.effect_of(gainer, "Sample"), "You may pay {X}. If you do, you gain X life. You gain X life.")
 
 
 func test_the_times_an_ability_has_resolved_are_worded_as_ordinals() -> void:
@@ -600,6 +712,18 @@ func test_a_conditional_static_ability_is_one_sentence_that_calls_its_source_it_
 		"Outflank deals damage to target attacking or blocking creature equal to the number of creatures you control.")
 
 
+func test_equipped_is_worded_as_an_adjective_and_unequipped_when_negated() -> void:
+	var kemba: MmAbility = Scenario.kemba().abilities[0]
+	var shikari: MmAbility = Scenario.shikari().abilities[0]
+	var reunite: MmAbility = Scenario.free_reunite().abilities[0]
+
+	assert_eq(AbilityText.of_ability(kemba, "Kemba"), "Each equipped creature you control gets +1/+1.")
+	assert_eq(AbilityText.of_ability(shikari, "this creature"), "As long as this creature is equipped, it has first strike and lifelink.")
+	assert_eq(AbilityText.of_ability(reunite, "Reunite"), "Each equipped creature you control gains indestructible until end of turn.")
+	assert_eq(AbilityText.things(Scenario.all_of([Scenario.of_type(CardType.CREATURE), Scenario.is_not(Scenario.equipped())])),
+		"unequipped creatures")
+
+
 func test_a_counter_filter_is_worded_after_its_noun() -> void:
 	var plus: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE
 	var minus: MmCounter.Kind = MmCounter.Kind.MINUS_ONE_MINUS_ONE
@@ -724,6 +848,33 @@ func test_cycling_prints_its_cost_alone() -> void:
 		"Target creature gets +2/+2 until end of turn.\nCycling {2}")
 
 
+func test_ward_prints_its_cost_alone_and_on_the_stack_as_what_it_does() -> void:
+	var ward: WardAbility = Scenario.ward(Scenario.mana_cost(2))
+
+	assert_eq(AbilityText.of_ability(ward, "this creature"), "Ward {2}", "CR 702.21a: what it does is its Reminder.")
+	assert_true(AbilityText.is_keyword(ward))
+	assert_eq(AbilityText.effect_of(ward, "this creature"), "Counter that spell or ability unless its controller pays {2}.")
+	var spelled_out: TriggeredAbility = Scenario.triggered(ward.trigger, ward.effects)
+	assert_eq(AbilityText.of_ability(spelled_out, "this creature"),
+		"Whenever this creature becomes the target of a spell or ability an opponent controls, "
+		+ "counter that spell or ability unless its controller pays {2}.")
+
+
+func test_becoming_a_target_and_counter_unless_paid_are_worded() -> void:
+	var trigger: BecomesTargetTrigger = BecomesTargetTrigger.new()
+	trigger.filter = Scenario.of_type(CardType.CREATURE)
+	trigger.whose = Whose.YOU
+	var leak: SpellAbility = SpellAbility.new()
+	leak.targets = [Scenario.target_spell()]
+	var countering: CounterEffect = Scenario.counter(Scenario.targeted(0))
+	countering.unless_paid = Scenario.mana_cost(3)
+	leak.effects = [countering]
+
+	assert_eq(AbilityText.of_ability(Scenario.triggered(trigger, [Scenario.gain_life(1, Scenario.you())]), "this creature"),
+		"Whenever a creature becomes the target of a spell or ability you control, you gain 1 life.")
+	assert_eq(AbilityText.of_ability(leak, "Sample"), "Counter target spell unless its controller pays {3}.")
+
+
 func test_typecycling_prints_its_type_attached_to_cycling_and_its_cost() -> void:
 	var landcycling: CyclingAbility = Scenario.landcycling(Scenario.mana_cost(1, [MmMana.Type.GREEN]))
 	var plains: HasSubtypeFilter = HasSubtypeFilter.new()
@@ -829,3 +980,21 @@ func test_a_mana_value_filter_is_worded_after_its_noun() -> void:
 		"Not 4 or greater is 3 or less.")
 	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(Scenario.mana_value(2))])),
 		"creatures with mana value 3 or greater")
+
+
+func test_a_mana_value_filter_from_a_value_is_worded_with_its_number_or_x() -> void:
+	var creature: MmFilter = Scenario.of_type(CardType.CREATURE)
+	var x_or_less: ManaValueFilter = Scenario.mana_value_from(Scenario.paid_x())
+
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.mana_value_from(Scenario.constant(3))])),
+		"creatures with mana value 3 or less")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, x_or_less])), "creatures with mana value X or less")
+	assert_eq(AbilityText.things(Scenario.all_of([creature,
+		Scenario.mana_value_from(Scenario.paid_x(), ManaValueFilter.Comparison.OR_GREATER)])), "creatures with mana value X or greater")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(x_or_less)])), "creatures with mana value greater than X",
+		"X can't have 1 taken off in words, so not X or less is greater than X.")
+	var seeking: SearchLibraryEffect = Scenario.search(Scenario.all_of([Scenario.has_subtype("Equipment"), x_or_less]), 1,
+		MmZone.Kind.BATTLEFIELD, false)
+	var seeker: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.pay_x(seeking)])
+	assert_eq(AbilityText.of_ability(seeker, "this creature"), "When this creature enters, you may pay {X}. If you do, "
+		+ "search your library for an Equipment card with mana value X or less, put it onto the battlefield, then shuffle.")

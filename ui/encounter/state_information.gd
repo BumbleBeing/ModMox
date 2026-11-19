@@ -74,7 +74,7 @@ static func _exile_entries(seen: MmObjectView, view: MmPlayerView) -> Array[Stat
 static func _chosen_type_text(seen: MmObjectView) -> String:
 	var lines: PackedStringArray = []
 	for ability: MmAbility in seen.abilities:
-		var worded: String = AbilityText.with_chosen_type(ability, seen.chosen_creature_type, AbilityText.self_noun(seen.card_types, seen.name))
+		var worded: String = AbilityText.with_chosen_type(ability, seen.chosen_creature_type, AbilityText.self_noun(seen.card_types, seen.name, seen.abilities))
 		if worded != "":
 			lines.append(worded)
 	lines.append("Chosen as %s entered." % seen.name)

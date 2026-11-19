@@ -129,6 +129,16 @@
 		"scryfall_id": "ebb6664d-23ca-456e-9916-afcd6f26aa7f",
 		"set": "lea"
 	},
+	"darksteel_axe": {
+		"artist": "Daniel Ljunggren",
+		"collector_number": "149",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "b997c3e6-4b0e-4f4a-9f66-3fc1d8395494",
+		"set": "som"
+	},
 	"daydream": {
 		"artist": "Nia Kovalevski",
 		"collector_number": "9",
@@ -449,6 +459,16 @@
 		"scryfall_id": "8fe3fd83-969c-4add-888f-86f4306b067c",
 		"set": "lea"
 	},
+	"kemba_kha_enduring": {
+		"artist": "Zoltan Boros",
+		"collector_number": "19",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "945d283d-4592-485f-808a-6e5a721f3cf7",
+		"set": "one"
+	},
 	"king_of_the_pride": {
 		"artist": "Jonathan Kuo",
 		"collector_number": "16",
@@ -458,6 +478,26 @@
 		],
 		"scryfall_id": "c4e83abd-6f15-491e-9253-90af9f6f1025",
 		"set": "mh1"
+	},
+	"leonin_lightbringer": {
+		"artist": "Ernanda Souza",
+		"collector_number": "20",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "96ae13df-670e-49a0-99b0-baf908ac9eb4",
+		"set": "one"
+	},
+	"leonin_shikari": {
+		"artist": "Wayne England",
+		"collector_number": "6",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "56b2a0f5-e340-4a85-aa5c-340e7f8231b0",
+		"set": "dst"
 	},
 	"leonin_snarecaster": {
 		"artist": "Kev Walker",
@@ -488,6 +528,16 @@
 		],
 		"scryfall_id": "dcf6a0e7-1fd4-425f-b634-c93236daea35",
 		"set": "dft"
+	},
+	"lion_sash": {
+		"artist": "Yongjae Choi",
+		"collector_number": "26",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "3e1766e9-2fa7-4446-a255-7beea1467ece",
+		"set": "neo"
 	},
 	"llanowar_elves": {
 		"artist": "Anson Maddocks",
@@ -639,6 +689,16 @@
 		"scryfall_id": "03595195-3be2-4d18-b5c0-43b2dcc1c0f5",
 		"set": "khm"
 	},
+	"resistance_reunited": {
+		"artist": "Aurore Folny",
+		"collector_number": "31",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "bbc4b5ca-557e-4465-9725-9e7a15590258",
+		"set": "one"
+	},
 	"samite_healer": {
 		"artist": "Tom Wänerstrand",
 		"collector_number": "37",
@@ -749,6 +809,16 @@
 		"scryfall_id": "fcfe4e62-c153-47b8-8e09-cedaf91f53d8",
 		"set": "fdn"
 	},
+	"slash_of_light": {
+		"artist": "Nathaniel Himawan",
+		"collector_number": "32",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "da6d9529-3cb0-4adc-8209-b9b02db3bf54",
+		"set": "fin"
+	},
 	"steppe_lynx": {
 		"artist": "Nic Klein",
 		"collector_number": "36",
@@ -769,6 +839,16 @@
 		"scryfall_id": "2d7643c0-b2db-478f-944e-b27b77bad3eb",
 		"set": "scg"
 	},
+	"sunspear_shikari": {
+		"artist": "Allen Williams",
+		"collector_number": "23",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "20ac29ef-02e1-4500-bb83-5987beeaa849",
+		"set": "som"
+	},
 	"swamp": {
 		"artist": "Dan Frazier",
 		"collector_number": "290",
@@ -778,6 +858,16 @@
 		],
 		"scryfall_id": "6176936d-72e2-4205-8871-4c5a4f1cb2d8",
 		"set": "lea"
+	},
+	"taj_nar_swordsmith": {
+		"artist": "Todd Lockwood",
+		"collector_number": "27",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "89c24cb4-4d7d-41df-b5c2-bd967a6a5d7e",
+		"set": "mrd"
 	},
 	"territorial_scythecat": {
 		"artist": "Wisnu Tan",
@@ -818,6 +908,16 @@
 		],
 		"scryfall_id": "2885d54c-9fb2-4f01-8937-54f8ac1ce5bc",
 		"set": "tfdn"
+	},
+	"tokens/cat_2_2_white": {
+		"artist": "April Prime",
+		"collector_number": "1",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "11011596-4aa1-48a7-90d8-36cb7b27c711",
+		"set": "tone"
 	},
 	"tokens/cat_beast_2_2_white": {
 		"artist": "Bayard Wu",

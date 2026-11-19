@@ -434,6 +434,12 @@ func _advance(is_passing_now: bool = false) -> void:
 			# A344: their order changes nothing, so the Hero is not asked.
 			_engine.submit(range(order.abilities.size()))
 			continue
+		if decision is ChooseXToPayDecision:
+			# ADR 0061: the screen has no input for choosing X yet, so only the Villain pays
+			# it; a Hero who controls a "you may pay {X}" declines, and it does nothing.
+			push_warning("The Hero cannot choose X yet, so a \"you may pay {X}\" was declined for them.")
+			_engine.submit(ChooseXToPayDecision.DECLINE)
+			continue
 		var payment: PayManaDecision = decision as PayManaDecision
 		if payment != null:
 			if not _pays_for_hero():

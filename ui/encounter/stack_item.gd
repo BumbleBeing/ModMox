@@ -97,7 +97,7 @@ static func noun_of(seen: MmObjectView, view: MmPlayerView) -> String:
 	if source != null:
 		# An Emblem has no card type to name itself by (ADR 0036).
 		return CardLook.noun_of(CardLook.Kind.EMBLEM) if _find(seen.source_object_id, view.command) != null \
-			else AbilityText.self_noun(source.card_types, source.name)
+			else AbilityText.self_noun(source.card_types, source.name, source.abilities)
 	if seen.source_potion_index != MmGameObject.NOT_A_POTION:
 		# Its Potion was used up to pay for it, so nothing is left to find.
 		return CardLook.noun_of(CardLook.Kind.POTION)

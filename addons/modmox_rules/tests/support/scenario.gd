@@ -190,7 +190,11 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 	if decision is ChoosePlayOrDrawDecision:
 		return ChoosePlayOrDrawDecision.Choice.PLAY
 	if decision is ChooseYesOrNoDecision:
-		return ChooseYesOrNoDecision.Choice.YES
+		# A cost asked for, as ward's, is declined, as an X is: autoplay pays nothing.
+		var paying: bool = (decision as ChooseYesOrNoDecision).cost != null
+		return ChooseYesOrNoDecision.Choice.NO if paying else ChooseYesOrNoDecision.Choice.YES
+	if decision is ChooseXToPayDecision:
+		return ChooseXToPayDecision.DECLINE
 	if decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
 		return []
 	if decision is DivideCombatDamageDecision:
@@ -1072,6 +1076,40 @@ static func free_outflank(card_name: String) -> MmCardDefinition:
 	return instant(card_name, mana_cost(0), [target(attacking_or_blocking_creature())], [damage])
 
 
+## "[addends[0]] plus [addends[1]] plus ...".
+static func sum(addends: Array[MmValue]) -> SumValue:
+	var value: SumValue = SumValue.new()
+	value.addends = addends
+	return value
+
+
+## "The number of [filter] you control".
+static func count_yours(filter: MmFilter) -> CountValue:
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var count: CountValue = CountValue.new()
+	count.selection = each(all_of([filter, mine]))
+	return count
+
+
+## Slash of Light as an instant costing {0}: "[param card_name] deals damage to target
+## creature equal to the number of creatures you control plus the number of Equipment you
+## control."
+static func free_slash(card_name: String = "Slash") -> MmCardDefinition:
+	var damage: DealDamageEffect = deal_damage(0, targeted(0))
+	damage.amount = sum([count_yours(of_type(MmCardTypes.CardType.CREATURE)), count_yours(has_subtype("Equipment"))])
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))], [damage])
+
+
+## An artifact creature Equipment costing {0}, such as Lion Sash: counted both as a creature
+## and as an Equipment.
+static func equipment_creature(card_name: String, power: int, toughness: int) -> MmCardDefinition:
+	var definition: MmCardDefinition = creature(card_name, power, toughness, [equip(mana_cost(0))])
+	definition.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	definition.subtypes = ["Equipment"]
+	return definition
+
+
 ## Activates the first ability of [param object_id] offered, choosing [param targets] in
 ## order, and pays automatically.
 static func activate(engine: MmEngine, object_id: int, targets: Array[MmReference] = []) -> String:
@@ -1236,6 +1274,15 @@ static func mana_value(amount: int, comparison: ManaValueFilter.Comparison = Man
 	return filter
 
 
+## "With mana value X or less", or "or greater", X being [param value] as the Filter is
+## asked, such as the X paid (CR 202.3).
+static func mana_value_from(value: MmValue, comparison: ManaValueFilter.Comparison = ManaValueFilter.Comparison.OR_LESS) -> ManaValueFilter:
+	var filter: ManaValueFilter = ManaValueFilter.new()
+	filter.amount_value = value
+	filter.comparison = comparison
+	return filter
+
+
 ## An instant costing {0}: "Return target creature card from your graveyard to the
 ## battlefield", "tapped" with [param tapped]. Helping Hand is this with a mana value filter.
 static func free_reanimate(card_name: String, tapped: bool = false) -> MmCardDefinition:
@@ -1247,6 +1294,35 @@ static func free_reanimate(card_name: String, tapped: bool = false) -> MmCardDef
 ## An instant costing {0}: "Counter target activated or triggered ability."
 static func free_stifle(card_name: String) -> MmCardDefinition:
 	return instant(card_name, mana_cost(0), [target_ability()], [counter(targeted(0))])
+
+
+## "Permanent card" (CR 110.4a).
+static func permanent_card() -> IsPermanentFilter:
+	return IsPermanentFilter.new()
+
+
+## "If [param condition], [param effect]."
+static func if_then(condition: MmCondition, effect: MmEffect) -> IfEffect:
+	var conditional: IfEffect = IfEffect.new()
+	conditional.condition = condition
+	conditional.effect = effect
+	return conditional
+
+
+## A 1/1 creature costing {0}, after Lion Sash's first ability at {0}: "{0}: Exile target
+## card from a graveyard. If it is a permanent card, put a +1/+1 counter on this creature."
+## What it exiles is not linked to it.
+static func scavenger(card_name: String = "Scavenger") -> MmCardDefinition:
+	var exiling: ExileEffect = exile(targeted(0))
+	exiling.links_to_source = false
+	var was_permanent: SelectionMatchesCondition = SelectionMatchesCondition.new()
+	was_permanent.selection = targeted(0)
+	was_permanent.filter = permanent_card()
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.mana_cost = mana_cost(0)
+	ability.targets = [target_graveyard_card()]
+	ability.effects = [exiling, if_then(was_permanent, put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, SourceSelection.new()))]
+	return creature(card_name, 1, 1, [ability])
 
 
 ## The object ID of the first card named [param card_name] in [param player]'s graveyard,
@@ -1274,6 +1350,14 @@ static func put_counters(kind: MmCounter.Kind, amount: int, recipients: MmSelect
 static func free_counters(card_name: String, kind: MmCounter.Kind, amount: int) -> MmCardDefinition:
 	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))],
 		[put_counters(kind, amount, targeted(0))])
+
+
+## "The number of [param kind] counters on [param selection]".
+static func counters_of(kind: MmCounter.Kind, selection: MmSelection) -> CounterCountValue:
+	var value: CounterCountValue = CounterCountValue.new()
+	value.kind = kind
+	value.selection = selection
+	return value
 
 
 ## How many [param kind] counters are on the permanent [param object_id].
@@ -1376,6 +1460,11 @@ static func equip(cost: MmManaCost) -> EquipAbility:
 	return ability
 
 
+## "You may activate equip abilities any time you could cast an instant."
+static func instant_speed_equip() -> InstantSpeedEquipAbility:
+	return InstantSpeedEquipAbility.new()
+
+
 ## An Equipment costing {0}: "Equipped creature gets +[bonus]/+[bonus]. Equip [equip_cost]",
 ## with equip costing {0} unless [param equip_cost] is given.
 static func sword(card_name: String, bonus: int = 1, equip_cost: MmManaCost = null) -> MmCardDefinition:
@@ -1383,6 +1472,41 @@ static func sword(card_name: String, bonus: int = 1, equip_cost: MmManaCost = nu
 		continuous_static([modify_pt(bonus, bonus, attached())]),
 		equip(mana_cost(0) if equip_cost == null else equip_cost)])
 	definition.subtypes = ["Equipment"]
+	return definition
+
+
+## "Reconfigure [cost]": its two abilities, attaching and then unattaching (CR 702.151a).
+static func reconfigure(cost: MmManaCost) -> Array[MmAbility]:
+	var attach: ReconfigureAbility = ReconfigureAbility.new()
+	attach.mana_cost = cost
+	var unattach: ReconfigureAbility = ReconfigureAbility.new()
+	unattach.mana_cost = cost.duplicate()
+	unattach.unattaches = true
+	return [attach, unattach]
+
+
+## A 1/1 artifact creature Equipment Cat costing {0}, after Lion Sash: "Equipped creature
+## gets +[bonus]/+[bonus]. Reconfigure {0}". Its abilities are the bonus, then
+## reconfigure's two.
+static func sash(card_name: String = "Sash", bonus: int = 1) -> MmCardDefinition:
+	var abilities: Array[MmAbility] = [continuous_static([modify_pt(bonus, bonus, attached())])]
+	abilities.append_array(reconfigure(mana_cost(0)))
+	var definition: MmCardDefinition = creature(card_name, 1, 1, abilities)
+	definition.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	definition.subtypes = ["Equipment", "Cat"]
+	return definition
+
+
+## Lion Sash's static ability and reconfigure at {0}, on a 1/1 artifact creature Equipment
+## Cat costing {0}: "Equipped creature gets +X/+X, where X is the number of +1/+1 counters
+## on this permanent. Reconfigure {0}".
+static func lion_sash(card_name: String = "Lion Sash") -> MmCardDefinition:
+	var bonus: ModifyPowerToughnessContinuousEffect = ModifyPowerToughnessContinuousEffect.new()
+	bonus.power = counters_of(MmCounter.Kind.PLUS_ONE_PLUS_ONE, SourceSelection.new())
+	bonus.toughness = counters_of(MmCounter.Kind.PLUS_ONE_PLUS_ONE, SourceSelection.new())
+	bonus.affected = attached()
+	var definition: MmCardDefinition = sash(card_name)
+	definition.abilities[0] = continuous_static([bonus])
 	return definition
 
 
@@ -1395,6 +1519,39 @@ static func attached_to(engine: MmEngine, object_id: int) -> int:
 static func equip_and_resolve(engine: MmEngine, equipment_id: int, creature_id: int) -> String:
 	var error: String = activate(engine, equipment_id, [MmReference.to_object(creature_id)])
 	return error if error != "" else resolve_stack(engine)
+
+
+## "Equipped": a permanent with an Equipment attached to it.
+static func equipped() -> IsEquippedFilter:
+	return IsEquippedFilter.new()
+
+
+## "Equipped creatures you control".
+static func equipped_creature_you_control() -> AllOfFilter:
+	var yours: ControlledByFilter = ControlledByFilter.new()
+	yours.whose = MmTrigger.Whose.YOU
+	return all_of([of_type(MmCardTypes.CardType.CREATURE), equipped(), yours])
+
+
+## A 2/2 creature costing {0}, after Kemba, Kha Enduring's static ability alone: "Equipped
+## creatures you control get +1/+1."
+static func kemba(card_name: String = "Kemba") -> MmCardDefinition:
+	return creature(card_name, 2, 2, [continuous_static([modify_pt(1, 1, each(equipped_creature_you_control()))])])
+
+
+## A 2/2 creature costing {0}, after Sunspear Shikari: "As long as this creature is equipped,
+## it has first strike and lifelink."
+static func shikari(card_name: String = "Shikari") -> MmCardDefinition:
+	return creature(card_name, 2, 2, [continuous_static(
+		[gain_abilities([FirstStrikeAbility.new(), LifelinkAbility.new()], SourceSelection.new())],
+		condition(SourceSelection.new(), equipped()))])
+
+
+## An instant costing {0}, after Resistance Reunited's second sentence: "Equipped creatures
+## you control gain indestructible until end of turn."
+static func free_reunite(card_name: String = "Reunite") -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [],
+		[until_end_of_turn(gain_abilities([IndestructibleAbility.new()], each(equipped_creature_you_control())))])
 
 
 # --- Tokens ---------------------------------------------------------------------------
@@ -1967,3 +2124,73 @@ static func snarer(card_name: String = "Snarer", filter: MmFilter = null) -> MmC
 ## asked.
 static func pass_to_yes_or_no(engine: MmEngine) -> String:
 	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is ChooseYesOrNoDecision)
+
+
+# --- Card track: "you may pay {X}" ----------------------------------------------------
+
+
+## "You may pay {X}. If you do, [param effect]." (ADR 0061): X is chosen and paid as it
+## begins, and [param effect] and every later effect of the ability read it as paid_x().
+static func pay_x(effect: MmEffect) -> MayPayXEffect:
+	var paying: MayPayXEffect = MayPayXEffect.new()
+	paying.effect = effect
+	return paying
+
+
+## "X", the X paid as the spell or ability resolves.
+static func paid_x() -> PaidXValue:
+	return PaidXValue.new()
+
+
+## "You gain X life", X being the X paid.
+static func gain_x_life() -> GainLifeEffect:
+	var effect: GainLifeEffect = gain_life(0, you())
+	effect.amount = paid_x()
+	return effect
+
+
+## A 1/1 creature costing {0}: "When this creature enters, you may pay {X}. If you do,
+## [effects]", by default "you gain X life". Any [param after] follow in the same ability.
+static func x_payer(card_name: String = "X Payer", effect: MmEffect = null, after: Array[MmEffect] = []) -> MmCardDefinition:
+	var effects: Array[MmEffect] = [pay_x(effect if effect != null else gain_x_life())]
+	effects.append_array(after)
+	return creature(card_name, 1, 1, [triggered(enters(IsSourceFilter.new()), effects)])
+
+
+## A 0/1 creature costing {0}: "{T}: Add [param amount] {W}", so one source pays several.
+static func mana_bird(card_name: String = "Mana Bird", amount: int = 3) -> MmCardDefinition:
+	return creature(card_name, 0, 1, [tap_for_mana(MmMana.Type.WHITE, amount)])
+
+
+## Passes priority and answers everything else as autoplay() does, until how much X to pay
+## is asked.
+static func pass_to_x_choice(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is ChooseXToPayDecision)
+
+
+## Answers the pending ChooseXToPayDecision by paying [param x].
+static func choose_x(engine: MmEngine, x: int) -> String:
+	return engine.submit(ChooseXToPayDecision.answer_for(x))
+
+
+# --- Card track: ward ------------------------------------------------------------------
+
+
+## "Ward [param cost]" (CR 702.21a, ADR 0062), {2} unless another cost is given.
+static func ward(cost: MmManaCost = null) -> WardAbility:
+	var ability: WardAbility = WardAbility.new()
+	ability.mana_cost = cost if cost != null else mana_cost(2)
+	return ability
+
+
+## A 2/2 creature costing {0} with ward [param cost], {2} unless another cost is given.
+static func warden(card_name: String = "Warden", cost: MmManaCost = null) -> MmCardDefinition:
+	return creature(card_name, 2, 2, [ward(cost)])
+
+
+## Passes priority and answers everything else as autoplay() does, until a cost is asked to
+## be paid or not, as ward's is.
+static func pass_to_pay_or_not(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool:
+		var asked: ChooseYesOrNoDecision = running.pending_decision() as ChooseYesOrNoDecision
+		return asked != null and asked.cost != null)

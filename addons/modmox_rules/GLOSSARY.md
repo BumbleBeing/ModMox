@@ -67,7 +67,7 @@ A Game Object in the command zone with one activated ability whose cost uses the
 _Avoid_: Consumable, single-use Emblem, item (the game's word)
 
 **Activation Restriction**:
-A rule on an activated ability about when it may be activated, apart from its costs: only once each game, or only as a sorcery (CR 602.5). Checked wherever the engine decides which abilities to offer.
+A rule on an activated ability about when it may be activated, apart from its costs: only once each game, only as a sorcery, or only while its permanent is attached to a creature (CR 602.5). Checked wherever the engine decides which abilities to offer.
 _Avoid_: Limit cost, charge, cooldown
 
 **Spent**:
@@ -165,7 +165,7 @@ A card in a library or a hand that a player knows the identity of, because they 
 _Avoid_: Revealed card, seen card, tracked card
 
 **Last-Known Information**:
-What an object was like the last time it was on the battlefield, kept after it leaves so that "dies" triggers and "its power" still have an answer.
+What an object was like the last time it was on the battlefield or in a graveyard, kept after it leaves so that "dies" triggers, "its power" and "if it was a permanent card" still have an answer.
 _Avoid_: Ghost, snapshot (in rules talk), LKI (in code)
 
 **Flashback**:
@@ -181,7 +181,7 @@ A static ability of a spell that makes it cost less to cast, such as affinity ("
 _Avoid_: Discount, cheaper cost, cost modifier
 
 **Linked Abilities**:
-Two abilities of one object where the second refers to what the first did, as Oblivion Ring's "exile another target nonland permanent" and "return the exiled card" are (CR 607). A card the first exiles remembers the object that exiled it, and the second finds only the cards that object exiled. An object that changes zones is a new object, so the link does not follow it.
+Two abilities of one object where the second refers to what the first did, as Oblivion Ring's "exile another target nonland permanent" and "return the exiled card" are (CR 607). A card the first exiles remembers the object that exiled it, and the second finds only the cards that object exiled. An exile nothing links to, such as Lion Sash's, leaves its cards remembering nothing. An object that changes zones is a new object, so the link does not follow it.
 _Avoid_: Paired abilities, remembered card, hostage
 
 **Condition**:
@@ -191,6 +191,21 @@ _Avoid_: Predicate, check (Filter is the word when a player or object either mat
 **May Effect**:
 An effect its controller may choose not to do, "You may [effect]." (CR 603.5, 608.2d). The spell or ability is put on the stack and its targets chosen whatever its controller means to do (CR 603.3d); as the effect begins they are asked yes or no, and the effect happens only on yes. Saying no is not failing to resolve, so the effects after it still happen.
 _Avoid_: Optional trigger (the ability is not optional, only the effect is), may ability
+
+**Pay X Effect**:
+An effect that offers a cost to pay as it resolves, "You may pay {X}. If you do, [effect]." (CR 107.3, 608.2d, ADR 0061). As it begins its controller chooses an X, up to the most they could pay, or declines; X is then paid one step at a time as a cast's mana is, mana abilities included (CR 605.3a), and only then does the effect it wraps begin. Paying X = 0 is paying. Declining does nothing, and is not failing to resolve. For now only the Villain pays X: the Hero's screen has no input for choosing X yet, so it declines for them. The Hero does pay costs on resolution, as ward's.
+_Avoid_: X cost (an X in a mana cost is chosen as the spell is cast), kicker
+
+**Ward**:
+A keyword, "Ward [cost]": whenever the permanent becomes the target of a spell or ability an opponent controls, counter it unless that player pays [cost] (CR 702.21a, ADR 0062). It triggers as the target is chosen and refers to the spell or ability without targeting it. As it resolves, the controller of that spell or ability is asked whether to pay, but only if they could. A yes is paid as a cast's mana is; a no, or a cost they could not pay, counters it.
+_Avoid_: Protection, hexproof (different keywords)
+
+**Unless Paid**:
+A counter effect's cost that the controller of what it would counter may pay to keep it, "counter [it] unless its controller pays [cost]" (CR 118.12), as ward's is. They are asked yes or no as the effect begins, and only while it is still on the stack and they could pay.
+
+**Paid X**:
+The X paid for a Pay X Effect, kept for the rest of that spell or ability's resolution: the effect it wraps and every effect after it read it, as "X" in "mana value X or less" or "you gain X life". It is 0 when none was paid.
+_Avoid_: Chosen X, X value
 
 ## Continuous effects
 
@@ -255,7 +270,7 @@ A marker on a permanent that stays until the permanent leaves the battlefield or
 _Avoid_: Token (a token is a permanent that is not a card), marker, buff, stack (for a number of counters)
 
 **Attachment**:
-A permanent attached to another, as an Equipment is to the creature it equips. It stays on the battlefield in its own right: when what it is attached to leaves, or may no longer have it, it becomes unattached and stays. "Equipped creature" is what an Equipment is attached to. Equip is the keyword that attaches one, to a creature its controller controls and only as a sorcery.
+A permanent attached to another, as an Equipment is to the creature it equips. It stays on the battlefield in its own right: when what it is attached to leaves, or may no longer have it, it becomes unattached and stays. "Equipped creature" is what an Equipment is attached to, and an equipped permanent is one with at least one Equipment attached to it. Equip is the keyword that attaches one, to a creature its controller controls and only as a sorcery. Reconfigure is the keyword of an Equipment that is also a creature: it attaches the Equipment to another creature its controller controls, or unattaches it, only as a sorcery, and while attached the Equipment is not a creature. Only an Equipment with reconfigure may be attached while it is a creature.
 _Avoid_: Gear, item (an Item is a Potion or a Boon), child, parent, host; "the equipment's owner" for the creature it is on
 
 **Damage Division**:

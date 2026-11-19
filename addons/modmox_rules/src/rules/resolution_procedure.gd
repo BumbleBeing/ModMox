@@ -4,7 +4,8 @@ extends RefCounted
 ## now illegal it does not resolve, and otherwise effects simply skip illegal targets. Each
 ## effect then performs its batches in order. Resolution stops as an effect begins for each
 ## choice it offers (CR 608.2d) and for any decision it asks of its own, such as a search
-## (ADR 0057) or a "you may" (CR 603.5), and whenever a batch is waiting for a replacement choice,
+## (ADR 0057) or a "you may" (CR 603.5), for each step of paying a "you may pay {X}"
+## (ADR 0061) or a cost said yes to, as ward's (ADR 0062), and whenever a batch is waiting for a replacement choice,
 ## carrying on once it is answered (A143). The spell or ability leaves the stack only once
 ## every effect is done.
 
@@ -24,6 +25,16 @@ var _chosen_creature_type: String = ""
 ## search's (ADR 0057) or a "you may"'s, and whether it has one yet.
 var _begin_answer: Variant = null
 var _has_begin_answer: bool = false
+## The X still being paid for a "you may pay {X}" (ADR 0061), or the cost a yes was said
+## to (ADR 0062), or null when nothing is being paid.
+var _payment: ManaPaymentProgress = null
+var _x_being_paid: int = MmEffectContext.NONE_PAID
+## Whether [member _payment] is the cost of a yes (ADR 0062), whose answer the current effect
+## is given once it is paid, rather than an X.
+var _is_paying_for_yes: bool = false
+## The effect begun in place of the current one once its X was paid, the one a
+## MayPayXEffect wraps, or null.
+var _effect_in_place: MmEffect = null
 
 
 ## Begins resolving the top of the stack.
@@ -88,6 +99,10 @@ func copy_for(state: MmGameState) -> ResolutionProcedure:
 	copy._chosen_creature_type = _chosen_creature_type
 	copy._begin_answer = _begin_answer  # Plain data, never changed.
 	copy._has_begin_answer = _has_begin_answer
+	copy._payment = null if _payment == null else _payment.copy()
+	copy._x_being_paid = _x_being_paid
+	copy._is_paying_for_yes = _is_paying_for_yes
+	copy._effect_in_place = _effect_in_place  # Card data, never changed.
 	return copy
 
 
@@ -104,9 +119,15 @@ func next_decision() -> MmPendingDecision:
 			_leave_stack()
 			_is_done = true
 			return null
-		var effect: MmEffect = _effects[_effect_index]
+		var effect: MmEffect = _effects[_effect_index] if _effect_in_place == null else _effect_in_place
 		if _step == 0:
-			var choice: ChooseObjectDecision = _next_choice(effect)
+			if _payment != null:
+				var paying: PayManaDecision = _begin_paid_effect()
+				if paying != null:
+					return paying
+				effect = _effects[_effect_index] if _effect_in_place == null else _effect_in_place
+			# ADR 0061: what "if you do" chooses is chosen only once X is paid.
+			var choice: ChooseObjectDecision = null if effect is MayPayXEffect else _next_choice(effect)
 			if choice != null:
 				return choice
 			if not _has_begin_answer:
@@ -120,6 +141,7 @@ func next_decision() -> MmPendingDecision:
 			_step = 0
 			_begin_answer = null
 			_has_begin_answer = false
+			_effect_in_place = null
 			continue
 		_step += 1
 		_state.perform_resumably(batch)
@@ -137,12 +159,51 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_has_begin_answer = true
 		return
 	if decision is ChooseYesOrNoDecision:
+		var asked: ChooseYesOrNoDecision = decision as ChooseYesOrNoDecision
+		if asked.cost != null and (answer as int) == ChooseYesOrNoDecision.Choice.YES:
+			# ADR 0062: yes is paid first, as a cast's mana is; the effect hears it once paid.
+			_payment = ManaPaymentProgress.of_cost(asked.player_id, asked.cost)
+			_is_paying_for_yes = true
+			return
 		_begin_answer = answer as int
 		_has_begin_answer = true
+		return
+	if decision is ChooseXToPayDecision:
+		var x: int = ChooseXToPayDecision.x_of(answer as int)
+		if x == MmEffectContext.NONE_PAID:
+			_begin_answer = answer as int  # Declined: the effect does nothing.
+			_has_begin_answer = true
+		else:
+			_x_being_paid = x
+			_payment = ManaPaymentProgress.new(decision.player_id, x)
+		return
+	if decision is PayManaDecision:
+		_payment.apply_answer(_state, decision as PayManaDecision, answer as int)
 		return
 	var choice: ChooseObjectDecision = decision as ChooseObjectDecision
 	assert(choice != null, "A resolution cannot answer %s." % decision.describe())
 	_context = _context.with_choice(choice.choice_index, choice.candidates[answer as int])
+
+
+## The next step of paying the X chosen for the current MayPayXEffect (CR 605.3a), or, once
+## it is paid, null with the effect it wraps begun in its place, its context holding the X
+## paid (ADR 0061). For a cost said yes to, once it is paid the current effect is given its
+## yes (ADR 0062).
+func _begin_paid_effect() -> PayManaDecision:
+	if not _payment.is_paid():
+		var paying: PayManaDecision = _payment.decision(_state)
+		assert(paying != null, "What was offered could be paid (ManaPayment.can_afford() is exact).")
+		return paying
+	_payment = null
+	if _is_paying_for_yes:
+		_is_paying_for_yes = false
+		_begin_answer = ChooseYesOrNoDecision.Choice.YES
+		_has_begin_answer = true
+		return null
+	_context = _context.with_paid_x(_x_being_paid)
+	_x_being_paid = MmEffectContext.NONE_PAID
+	_effect_in_place = (_effects[_effect_index] as MayPayXEffect).effect
+	return null
 
 
 ## The choice [param effect] still needs before it begins, or null. One with nothing to

@@ -35,6 +35,8 @@ const YOU_OWN: String = "you own"
 const OPPONENT_OWNS: String = "an opponent owns"
 ## What a Filter leaving out the source says before its noun: "each other creature".
 const OTHER: String = "other"
+## Nouns whose plural is the noun itself: "the number of Equipment you control".
+const PLURAL_AS_SINGULAR: Array[String] = ["Equipment"]
 
 ## What the ability's source calls itself.
 var _noun: String
@@ -60,8 +62,13 @@ class FilterWords:
 
 
 ## What a card with [param card_types] named [param card_name] calls itself in its own
-## text.
-static func self_noun(card_types: Array[MmCardTypes.CardType], card_name: String) -> String:
+## text. A card with reconfigure is "this permanent", as Oracle words it: it is a creature
+## only while it is not attached (CR 702.151b).
+static func self_noun(card_types: Array[MmCardTypes.CardType], card_name: String,
+		abilities: Array[MmAbility] = []) -> String:
+	for ability: MmAbility in abilities:
+		if ability is ReconfigureAbility:
+			return "this permanent"
 	for kind: MmCardTypes.CardType in [MmCardTypes.CardType.CREATURE, MmCardTypes.CardType.ARTIFACT,
 			MmCardTypes.CardType.ENCHANTMENT, MmCardTypes.CardType.LAND]:
 		if card_types.has(kind):
@@ -73,10 +80,12 @@ static func self_noun(card_types: Array[MmCardTypes.CardType], card_name: String
 ## share a line, and a basic land's text is all reminder text, so it is in parentheses.
 static func of_card(abilities: Array[MmAbility], card_types: Array[MmCardTypes.CardType],
 		supertypes: Array[MmCardTypes.Supertype], card_name: String) -> String:
-	var noun: String = self_noun(card_types, card_name)
+	var noun: String = self_noun(card_types, card_name, abilities)
 	var lines: PackedStringArray = []
 	var was_keyword: bool = false
 	for ability: MmAbility in abilities:
+		if ability is ReconfigureAbility and (ability as ReconfigureAbility).unattaches:
+			continue  # CR 702.151a: the keyword's second ability, printed with its first.
 		var keyword: String = _keyword(ability)
 		if keyword != "" and was_keyword:
 			lines[lines.size() - 1] += ", " + keyword.to_lower()
@@ -103,6 +112,16 @@ static func lines_of(abilities: Array[MmAbility], noun: String) -> Array[String]
 static func of_ability(ability: MmAbility, noun: String) -> String:
 	var writer: AbilityText = AbilityText.new(noun)
 	return writer._ability(ability)
+
+
+## [param ability] as a row of the Option Menu reads it: as the card prints it, except that
+## each of reconfigure's two abilities says which it is, "Reconfigure {2}: attach" and
+## "Reconfigure {2}: unattach".
+static func option_of(ability: MmAbility, noun: String) -> String:
+	var text: String = of_ability(ability, noun)
+	if ability is ReconfigureAbility:
+		return text + (": unattach" if (ability as ReconfigureAbility).unattaches else ": attach")
+	return text
 
 
 ## Only what [param ability] does, for a spell or ability on the stack: without the cost
@@ -272,6 +291,9 @@ func _ability(ability: MmAbility) -> String:
 	if ability is EquipAbility:
 		# A keyword prints its cost and nothing else (CR 702.6); what it does is its Reminder.
 		return "Equip " + _costs(ability as EquipAbility)
+	if ability is ReconfigureAbility:
+		# CR 702.151a: as equip does, it prints its cost alone.
+		return "Reconfigure " + _costs(ability as ReconfigureAbility)
 	if ability is CyclingAbility:
 		# CR 702.29a: as equip does, it prints its cost alone.
 		var cycling: PackedStringArray = _cost_parts((ability as CyclingAbility).mana_cost, [])
@@ -279,6 +301,10 @@ func _ability(ability: MmAbility) -> String:
 			+ (", ".join(cycling) if not cycling.is_empty() else "{0}")
 	if ability is FlashbackAbility:
 		return _flashback(ability as FlashbackAbility)
+	if ability is WardAbility:
+		# CR 702.21a: as equip does, it prints its cost alone.
+		var ward: MmManaCost = (ability as WardAbility).mana_cost
+		return "Ward " + (ward.describe() if ward != null else "{0}")
 	if ability is AffinityAbility:
 		# CR 702.41a: what it counts, in the plural, with "you control" left to the keyword.
 		return "Affinity for " + _noun_phrase((ability as AffinityAbility).filter, true)
@@ -304,6 +330,8 @@ func _ability(ability: MmAbility) -> String:
 		return "As %s enters, choose a creature type." % _noun
 	if ability is LookAtTopOfLibraryAbility:
 		return "You may look at the top card of your library any time."
+	if ability is InstantSpeedEquipAbility:
+		return "You may activate equip abilities any time you could cast an instant."
 	if ability is CastFromTopOfLibraryAbility:
 		return "Once each turn, you may cast %s from the top of your library." \
 			% _with_article(_spell_phrase((ability as CastFromTopOfLibraryAbility).filter))
@@ -330,7 +358,7 @@ func _cycling_word(search: MmFilter) -> String:
 ## in lower case and without quotation marks.
 static func is_keyword(ability: MmAbility) -> bool:
 	return _keyword(ability) != "" or ability is ProtectionAbility or ability is EquipAbility or ability is FlashbackAbility \
-		or ability is AffinityAbility or ability is CyclingAbility
+		or ability is AffinityAbility or ability is CyclingAbility or ability is ReconfigureAbility or ability is WardAbility
 
 
 ## The name of a keyword ability that needs no other words, or "".
@@ -480,6 +508,16 @@ func _trigger_text(trigger: MmTrigger) -> String:
 		elif attack.whose == MmTrigger.Whose.OPPONENT:
 			whose = "an opponent controls"
 		return "whenever one or more creatures %s attack" % whose
+	var aimed_at: BecomesTargetTrigger = trigger as BecomesTargetTrigger
+	if aimed_at != null:
+		var whose: String = ""
+		if aimed_at.whose == MmTrigger.Whose.YOU:
+			whose = " you control"
+		elif aimed_at.whose == MmTrigger.Whose.OPPONENT:
+			whose = " an opponent controls"
+		var is_this: bool = aimed_at.filter is IsSourceFilter
+		var subject: String = _noun if is_this else _with_article(_noun_phrase(aimed_at.filter, false))
+		return "whenever %s becomes the target of a spell or ability%s" % [subject, whose]
 	var moved: ZoneChangeTrigger = trigger as ZoneChangeTrigger
 	if moved != null:
 		var is_self: bool = moved.filter is IsSourceFilter
@@ -510,6 +548,8 @@ func _condition(condition: MmCondition) -> String:
 	var subject: String = _selection(matches.selection)
 	if matches.filter is HasCountersFilter:
 		return "%s has %s" % [subject, _counters_on(matches.filter as HasCountersFilter)]
+	if matches.filter is IsPermanentFilter:
+		return "%s is a permanent card" % subject
 	var words: FilterWords = _filter_words(matches.filter)
 	var is_what: String = ", ".join(PackedStringArray(words.adjectives))
 	if words.noun != "" or is_what == "":
@@ -525,7 +565,11 @@ func _static(ability: ContinuousStaticAbility) -> String:
 	var clauses: PackedStringArray = []
 	if ability.condition == null:
 		for continuous: MmContinuousEffect in ability.effects:
-			clauses.append(_capitalized(_continuous(continuous, true)) + ".")
+			_where = ""
+			var clause: String = _continuous(continuous, true)
+			if _where != "":
+				clause += ", where X is " + _where
+			clauses.append(_capitalized(clause) + ".")
 		return " ".join(clauses)
 	var condition: String = _condition(ability.condition)
 	var noun: String = _noun
@@ -613,7 +657,10 @@ func _effect(effect: MmEffect) -> String:
 	if effect is DestroyEffect:
 		return "destroy " + _selection((effect as DestroyEffect).selection)
 	if effect is CounterEffect:
-		return "counter " + _selection((effect as CounterEffect).selection)
+		var countering: CounterEffect = effect as CounterEffect
+		var unless: String = "" if countering.unless_paid == null \
+			else " unless its controller pays " + countering.unless_paid.describe()  # CR 118.12
+		return "counter " + _selection(countering.selection) + unless
 	if effect is ExileEffect:
 		return "exile " + _selection((effect as ExileEffect).selection)
 	if effect is ReturnToBattlefieldEffect:
@@ -628,6 +675,12 @@ func _effect(effect: MmEffect) -> String:
 		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]
 	if effect is TapEffect:
 		return "tap " + _selection((effect as TapEffect).selection)
+	if effect is IfEffect:
+		var conditional: IfEffect = effect as IfEffect
+		# CR 608.2c, a sentence of its own: "If it is a permanent card, put ...".
+		return "if %s, %s" % [_condition(conditional.condition), _effect(conditional.effect)]
+	if effect is UnattachEffect:
+		return "unattach " + _selection((effect as UnattachEffect).selection)
 	if effect is AttachEffect:
 		return "attach %s to %s" % [_selection((effect as AttachEffect).attachment), _selection((effect as AttachEffect).to)]
 	if effect is RegenerateEffect:
@@ -647,6 +700,9 @@ func _effect(effect: MmEffect) -> String:
 	if effect is MayEffect:
 		# CR 603.5: "you may tap target creature".
 		return "you may " + _effect((effect as MayEffect).effect)
+	if effect is MayPayXEffect:
+		# ADR 0061: "you may pay {X}. If you do, search your library for ...".
+		return "you may pay {X}. If you do, " + _effect((effect as MayPayXEffect).effect)
 	if effect is CreateContinuousEffect:
 		return _continuous((effect as CreateContinuousEffect).continuous, false) + " until end of turn"
 	if effect is CreateTokenEffect:
@@ -897,6 +953,8 @@ func _is_any_target(filter: MmFilter) -> bool:
 func _triggering_noun() -> String:
 	if _trigger is SpellCastTrigger:
 		return "spell"
+	if _trigger is BecomesTargetTrigger:
+		return "spell or ability"
 	var moved: ZoneChangeTrigger = _trigger as ZoneChangeTrigger
 	if moved != null:
 		var noun: String = _filter_words(moved.filter).noun
@@ -951,7 +1009,7 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 		subtypes.remove_at(subtypes.size() - 1)
 	if noun == "":
 		noun = "permanent"
-	if is_plural:
+	if is_plural and not PLURAL_AS_SINGULAR.has(noun):
 		noun += "s"
 	if not subtypes.is_empty():
 		noun = " ".join(subtypes) + " " + noun
@@ -1037,6 +1095,12 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 			adjectives.append("non" + type_word)
 		else:
 			nouns.append(type_word)
+	elif filter is IsPermanentFilter:
+		# CR 110.4a: "permanent card", where a graveyard phrase adds "card".
+		if is_negated:
+			adjectives.append("nonpermanent")
+		else:
+			nouns.append("permanent")
 	elif filter is HasColorFilter:
 		var color_word: String = _color_word((filter as HasColorFilter).color)
 		adjectives.append("non" + color_word if is_negated else color_word)
@@ -1054,6 +1118,8 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		adjectives.append("nonattacking" if is_negated else "attacking")
 	elif filter is IsBlockingFilter:
 		adjectives.append("nonblocking" if is_negated else "blocking")
+	elif filter is IsEquippedFilter:
+		adjectives.append("unequipped" if is_negated else "equipped")
 	elif filter is AnyOfFilter and not is_negated and _either_adjective(filter as AnyOfFilter) != "":
 		adjectives.append(_either_adjective(filter as AnyOfFilter))
 	elif filter is IsSourceFilter:
@@ -1128,7 +1194,8 @@ func _amount(value: MmValue) -> String:
 	var constant: ConstantValue = value as ConstantValue
 	if constant != null:
 		return str(constant.value)
-	_where = _value_phrase(value)
+	if not value is PaidXValue:  # ADR 0061: "pay {X}" says what X is already.
+		_where = _value_phrase(value)
 	return "X"
 
 
@@ -1158,11 +1225,19 @@ func _counters(value: MmValue, kind: MmCounter.Kind) -> String:
 
 
 ## "3 or less" or "4 or greater"; negated, the other side: not 4 or greater is 3 or less.
-static func _mana_value_bound(filter: ManaValueFilter, is_negated: bool) -> String:
+## From a Value, "X or less", or negated "greater than X", as X less 1 has no words.
+func _mana_value_bound(filter: ManaValueFilter, is_negated: bool) -> String:
 	var or_less: bool = (filter.comparison == ManaValueFilter.Comparison.OR_LESS) != is_negated
+	var constant: ConstantValue = filter.amount_value as ConstantValue
+	if filter.amount_value != null and constant == null:
+		var number: String = _amount(filter.amount_value)
+		if not is_negated:
+			return "%s %s" % [number, "or less" if or_less else "or greater"]
+		return "less than " + number if or_less else "greater than " + number
+	var bound: int = constant.value if constant != null else filter.amount
 	if not is_negated:
-		return "%d %s" % [filter.amount, "or less" if or_less else "or greater"]
-	return "%d or less" % (filter.amount - 1) if or_less else "%d or greater" % (filter.amount + 1)
+		return "%d %s" % [bound, "or less" if or_less else "or greater"]
+	return "%d or less" % (bound - 1) if or_less else "%d or greater" % (bound + 1)
 
 
 ## "2 or less" or "3 or greater"; negated, the other side, as _mana_value_bound() does.
@@ -1200,8 +1275,16 @@ func _value_phrase(value: MmValue) -> String:
 	if value is DifferenceValue:
 		var difference: DifferenceValue = value as DifferenceValue
 		return "%s minus %s" % [_value_phrase(difference.minuend), _value_phrase(difference.subtrahend)]
+	if value is SumValue:
+		var addends: PackedStringArray = []
+		for addend: MmValue in (value as SumValue).addends:
+			addends.append(_value_phrase(addend))
+		return " plus ".join(addends)
 	if value is PowerValue:
 		return _possessive(_selection((value as PowerValue).selection)) + " power"
+	if value is CounterCountValue:
+		var counted: CounterCountValue = value as CounterCountValue
+		return "the number of %s counters on %s" % [MmCounter.label(counted.kind), _selection(counted.selection)]
 	return _fallback(value, "_value")
 
 

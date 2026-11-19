@@ -17,6 +17,9 @@ extends MmAbility
 ## "Activate only as a sorcery" (CR 602.5d): only in its controller's main phase with an
 ## empty stack.
 @export var is_sorcery_speed: bool = false
+## "Activate only if this permanent is attached to a creature" (CR 602.5, 702.151a), as
+## reconfigure's unattaching half is: only while its source is attached to a creature.
+@export var is_only_while_attached: bool = false
 ## Works only while its card is in its owner's hand, as cycling does (CR 113.6b, 702.29b,
 ## ADR 0059), and never on the battlefield or in the command zone. Every other activated
 ## ability works only there, never from the hand.
@@ -41,6 +44,16 @@ func is_mana_ability() -> bool:
 ## says so, and otherwise anywhere but the hand.
 func works_in(state: MmGameState, source: MmGameObject) -> bool:
 	return is_activated_from_hand == (source.zone() == state.player(source.owner_id).hand)
+
+
+## Whether [member is_only_while_attached] allows activating it from [param source] now:
+## always without it, and otherwise only while [param source] is attached to a creature.
+func is_attachment_allowed(state: MmGameState, source: MmGameObject) -> bool:
+	if not is_only_while_attached:
+		return true
+	var attached_to: MmGameObject = state.object(source.attached_to_object_id) if source.attached_to_object_id != 0 else null
+	return attached_to != null and attached_to.zone() == state.battlefield \
+		and state.characteristics_of(attached_to).has_card_type(MmCardTypes.CardType.CREATURE)
 
 
 ## Whether every cost can be paid right now with [param source] as the ability's source,

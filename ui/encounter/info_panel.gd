@@ -69,8 +69,10 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 	_prompt = _label(prompt.text, Rect2(12, 8, inside, 52), 18, Color.WHITE)
 	add_child(_prompt)
 	_pip_names = ManaSymbols.pip_names(prompt.owed)
+	var first_pip: Vector2 = _first_pip_place(prompt, inside)
 	for index: int in _pip_names.size():
-		var pip: TextureRect = CardShapes.image(ManaSymbols.texture(_pip_names[index]), Rect2(12 + index * 30, 62, 26, 26))
+		var pip: TextureRect = CardShapes.image(ManaSymbols.texture(_pip_names[index]),
+			Rect2(first_pip + Vector2(index * 30, 0), Vector2(26, 26)))
 		add_child(pip)
 		_pips.append(pip)
 	_hint = _label(hint if is_asked else "", Rect2(12, 38, inside, 44), 13, Color(1, 1, 1, 0.65))
@@ -219,6 +221,25 @@ func _arrange() -> void:
 		_all_attack.visible = not is_option
 	if _no != null:
 		_no.visible = not is_option
+
+
+## Where the first pip of what is owed goes: under the prompt, or after its text on its
+## line when [param prompt] says so and they fit, as a ward cost's do (ADR 0062).
+func _first_pip_place(prompt: InfoPrompt, inside: float) -> Vector2:
+	var under: Vector2 = Vector2(12, 62)
+	if not prompt.is_owed_inline:
+		return under
+	var font: Font = _prompt.get_theme_font("font")
+	var font_size: int = _prompt.get_theme_font_size("font_size")
+	var after: float = font.get_string_size(prompt.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 8.0
+	if after + _pip_names.size() * 30 > inside:
+		return under
+	return Vector2(12 + after, 8 + (font.get_height(font_size) - 26.0) / 2.0)
+
+
+## Where the first pip of what is owed is drawn, for tests.
+func first_pip_position() -> Vector2:
+	return _pips[0].position if not _pips.is_empty() else Vector2(-1, -1)
 
 
 func _label(text: String, box: Rect2, font_size: int, color: Color) -> Label:

@@ -282,3 +282,43 @@ func test_a_you_may_asks_with_its_words_and_offers_no() -> void:
 	assert_false(prompt.can_cancel, "The ability is resolving: nothing is being cast.")
 	assert_false(InfoPrompt.of(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int]), view).offers_no)
 
+
+
+func test_a_ward_cost_asks_to_pay_ward_for_the_warded_permanent_with_its_cost_after() -> void:
+	# ADR 0062: "Pay ward for Wand: {2}", No in the panel and Pay on the Pass Button.
+	var view: MmPlayerView = _ward_on_top()
+	var countering: CounterEffect = (view.stack.back().ability as WardAbility).effects[0] as CounterEffect
+
+	var prompt: InfoPrompt = InfoPrompt.of(ChooseYesOrNoDecision.new(HERO, 21, countering, Scenario.mana_cost(2)), view)
+
+	assert_eq(prompt.text, "Pay ward for Wand:")
+	assert_eq(prompt.owed.generic, 2)
+	assert_true(prompt.is_owed_inline, "The cost follows the words on their line.")
+	assert_true(prompt.offers_no)
+	assert_false(prompt.can_cancel)
+
+
+func test_paying_a_ward_cost_reads_the_same_line_with_what_is_left_and_cannot_be_canceled() -> void:
+	var view: MmPlayerView = _ward_on_top()
+	var paying: PayManaDecision = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 1,
+		[] as Array[MmMana.Type])
+
+	var by_hand: InfoPrompt = InfoPrompt.of(paying, view)
+	var by_auto_tap: InfoPrompt = InfoPrompt.of(null, view, paying)
+
+	for prompt: InfoPrompt in [by_hand, by_auto_tap]:
+		assert_eq(prompt.text, "Pay ward for Wand:")
+		assert_eq(prompt.owed.generic, 1, "What is left to pay.")
+		assert_true(prompt.is_owed_inline)
+		assert_false(prompt.can_cancel, "Nothing is being cast: the ward trigger is resolving.")
+
+
+## The Villain's ward trigger from the Wand on top of the stack, above the Hero's Zap.
+func _ward_on_top() -> MmPlayerView:
+	var view: MmPlayerView = _view()
+	var ward: MmObjectView = _object(21, "Wand ability", MmGameObject.NO_CARD)
+	ward.source_object_id = 1
+	ward.ability = Scenario.ward()
+	ward.triggering_object_id = 20
+	view.stack = [_object(20, "Zap", 5), ward]
+	return view
