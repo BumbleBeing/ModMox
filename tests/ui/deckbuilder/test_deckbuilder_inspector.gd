@@ -34,28 +34,24 @@ func test_a_card_with_no_text_says_none() -> void:
 	assert_eq(_inspector.card_text_label().symbols(), [] as Array[String])
 
 
-func test_what_a_mod_says_it_does_draws_a_cost_as_symbols() -> void:
-	var ember: Mod = Fixture.add_symbol_mod(MmMana.Type.RED)
-	ember.name = "Ember"
-	ember.description = "This card costs {R} more to cast."
-	var springs: Mod = Fixture.word_mod("Springs", true)
-	springs.description = "This card has \"{2}{U}, {T}: Draw a card.\""
-	var plain: Mod = Fixture.word_mod("Plain")
-	_inspector.show_card(_fixture.own("grizzly_bears", [ember, springs, plain]), 400.0)
+func test_what_a_mod_does_is_written_from_it_with_its_costs_as_symbols() -> void:
+	var ember: Mod = DeckbuilderSample.cycling_mod("Ember", MmMana.Type.RED)
+	var violent: Mod = Fixture.violent()
+	var burden: Mod = DeckbuilderSample.burden()
+	_inspector.show_card(_fixture.own("grizzly_bears", [ember, violent, burden]), 400.0)
 
 	var labels: Array[SymbolLabel] = _inspector.mod_labels()
-	assert_eq(_inspector.mod_names(), ["Ember", "Springs", "Plain"] as Array[String])
-	assert_eq(labels.size(), 2, "A Mod that says nothing has only its name.")
-	assert_eq(labels[0].symbols(), ["r"] as Array[String])
-	assert_eq(labels[0].get_parsed_text(), "This card costs   more to cast.")
-	assert_eq(labels[1].symbols(), ["2", "u", "t"] as Array[String])
-	assert_false(labels[1].get_parsed_text().contains("{"), "No braces are shown as text.")
+	assert_eq(_inspector.mod_names(), ["Ember", "Violent", "Burden"] as Array[String])
+	assert_eq(labels.size(), 3)
+	assert_eq(labels[0].symbols(), ["r", "r"] as Array[String])
+	assert_eq(labels[1].written(), ModText.of(violent), "ADR 0029: written from the Mod, never by hand.")
+	assert_eq(labels[2].symbols(), ["1"] as Array[String])
+	for label: SymbolLabel in labels:
+		assert_false(label.get_parsed_text().contains("{"), "No braces are shown as text.")
 
 
 func test_no_card_shows_a_brace_as_text_anywhere_in_the_inspector() -> void:
-	var ember: Mod = Fixture.add_symbol_mod(MmMana.Type.RED)
-	ember.name = "Ember"
-	ember.description = "This card costs {R} more to cast."
+	var ember: Mod = DeckbuilderSample.cycling_mod("Ember", MmMana.Type.RED)
 	for file: String in DirAccess.get_files_at("res://content/cards/alpha/"):
 		if not file.ends_with(".tres"):
 			continue

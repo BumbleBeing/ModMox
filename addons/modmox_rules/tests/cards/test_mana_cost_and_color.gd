@@ -36,8 +36,9 @@ func test_a_card_with_no_mana_cost_has_mana_value_zero_and_no_color() -> void:
 func test_adding_a_green_symbol_makes_a_white_red_card_three_colors() -> void:
 	var run_card: MmRunCard = MmRunCard.new()
 	run_card.base = Scenario.sorcery("Boros Thing", Scenario.mana_cost(1, [Type.WHITE, Type.RED]), [], [])
-	var add_green: AddManaSymbolModification = AddManaSymbolModification.new()
-	add_green.symbol = Type.GREEN
+	var add_green: AddManaCostModification = AddManaCostModification.new()
+	add_green.cost = MmManaCost.new()
+	add_green.cost.symbols = [Type.GREEN] as Array[MmMana.Type]
 	run_card.modifications.append(add_green)
 
 	var printed: MmCharacteristics = MmCharacteristics.printed(run_card.flatten())

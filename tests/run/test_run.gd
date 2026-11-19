@@ -201,9 +201,10 @@ func test_a_modded_card_keeps_its_mods_in_the_setup() -> void:
 	var card: DeckbuilderCard = run.collection.card(run.deckbox.active().card_ids[0])
 	var mod: Mod = Mod.new()
 	mod.name = "Ember"
-	var symbol: AddManaSymbolModification = AddManaSymbolModification.new()
-	symbol.symbol = MmMana.Type.RED
-	mod.modification = symbol
+	var symbol: AddManaCostModification = AddManaCostModification.new()
+	symbol.cost = MmManaCost.new()
+	symbol.cost.symbols = [MmMana.Type.RED] as Array[MmMana.Type]
+	mod.mod_cost = symbol
 	card.attach(mod)
 	assert_true(run.hero_setup().deck.has(card.run_card))
 	assert_true(card.run_card.modifications.has(symbol))

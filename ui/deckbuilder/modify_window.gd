@@ -265,7 +265,7 @@ func _tile_list(column: VBoxContainer) -> void:
 		words.offset_top = TILE_PAD
 		words.offset_right = -TILE_PAD
 		words.offset_bottom = -TILE_PAD
-		words.write("%s   ×%d\n%s" % [mod.name, _held_mods.count_of(mod), mod.description])
+		words.write("%s   ×%d\n%s" % [mod.name, _held_mods.count_of(mod), ModText.of(mod)])
 		words.minimum_size_changed.connect(_fit_tile.bind(button, words))
 		# The tile's shading is drawn pixel for pixel; its words as they would be anywhere else.
 		words.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR

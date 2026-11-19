@@ -2,8 +2,9 @@ class_name DeckbuilderSample
 extends RefCounted
 ## A made-up run for looking at the deckbuilder on its own (--deckbuilder) and for its
 ## tests: three copies of every Content card in every set's folder, a few made-up Mods
-## that each add a mana symbol, cards that arrive Hexed or full, and one saved Deck, the
-## Active one. A Mod's name is the word it puts in front of the card's (A559). None of
+## that each give a nonland card cycling for one mana symbol and cost that symbol more, a
+## Hex that takes -1/-1 from a creature, cards that arrive Hexed or full, and one saved Deck,
+## the Active one. A Mod's name is the word it puts in front of the card's (A559). None of
 ## these Mods fits a land, so no basic land can be modified here (A560). Nothing is saved
 ## to disk.
 
@@ -17,6 +18,11 @@ const DECK_CARDS: Dictionary[String, int] = {
 	"Craw Wurm": 1,
 }
 const DECK_LANDS: Dictionary[String, int] = {"Forest": 9, "Mountain": 8}
+## The card types the sample's Mods accept: every one but Land.
+const NONLAND_TYPES: Array[MmCardTypes.CardType] = [
+	MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE, MmCardTypes.CardType.ENCHANTMENT,
+	MmCardTypes.CardType.INSTANT, MmCardTypes.CardType.SORCERY,
+]
 
 var _run: Run = Run.new(1)
 
@@ -48,20 +54,20 @@ func _arrives_with(card_name: String, copy: int) -> Array[Mod]:
 		return mods
 	match card_name:
 		"Craw Wurm":
-			mods.append(_add_symbol("Burden", MmMana.Type.COLORLESS, true))
+			mods.append(burden())
 		"Lightning Bolt":
-			mods.append(_add_symbol("Ember", MmMana.Type.RED))
-			mods.append(_add_symbol("Moss", MmMana.Type.GREEN))
-			mods.append(_add_symbol("Burden", MmMana.Type.COLORLESS, true))
+			mods.append(cycling_mod("Ember", MmMana.Type.RED))
+			mods.append(cycling_mod("Moss", MmMana.Type.GREEN))
+			mods.append(cycling_mod("Tide", MmMana.Type.BLUE))
 		"Grizzly Bears":
-			mods.append(_add_symbol("Ember", MmMana.Type.RED))
+			mods.append(cycling_mod("Ember", MmMana.Type.RED))
 	return mods
 
 
 func _hold_mods() -> void:
-	var ember: Mod = _add_symbol("Ember", MmMana.Type.RED)
-	var moss: Mod = _add_symbol("Moss", MmMana.Type.GREEN)
-	var tide: Mod = _add_symbol("Tide", MmMana.Type.BLUE)
+	var ember: Mod = cycling_mod("Ember", MmMana.Type.RED)
+	var moss: Mod = cycling_mod("Moss", MmMana.Type.GREEN)
+	var tide: Mod = cycling_mod("Tide", MmMana.Type.BLUE)
 	for mod: Mod in [ember, ember, moss, tide]:
 		_run.held_mods.add(mod)
 
@@ -82,16 +88,42 @@ func _save_deck() -> void:
 	_run.deckbox.set_active(_run.deckbox.decks()[0])
 
 
-static func _add_symbol(mod_name: String, symbol: MmMana.Type, is_hex: bool = false) -> Mod:
-	var modification: AddManaSymbolModification = AddManaSymbolModification.new()
-	modification.symbol = symbol
+## A Mod named [param mod_name] for any nonland card: "Modified card gains cycling
+## {[param symbol]}. It costs {[param symbol]} more to cast."
+static func cycling_mod(mod_name: String, symbol: MmMana.Type) -> Mod:
+	var cycling: CyclingAbility = CyclingAbility.new()
+	cycling.mana_cost = _cost(0, [symbol])
+	var gains: AddAbilityModification = AddAbilityModification.new()
+	gains.ability = cycling
 	var mod: Mod = Mod.new()
 	mod.name = mod_name
-	mod.description = "This card costs {%s} more to cast." % MmMana.SYMBOLS[symbol]
-	mod.is_hex = is_hex
-	mod.modification = modification
-	mod.needs_mana_cost = true
+	mod.augmentation = [gains] as Array[MmModification]
+	mod.mod_cost = AddManaCostModification.new()
+	mod.mod_cost.cost = _cost(0, [symbol])
+	mod.card_types = NONLAND_TYPES.duplicate()
 	return mod
+
+
+## The sample's Hex: "Modified card gets -1/-1. It costs {1} more to cast."
+static func burden() -> Mod:
+	var weaker: AddPowerToughnessModification = AddPowerToughnessModification.new()
+	weaker.power = -1
+	weaker.toughness = -1
+	var mod: Mod = Mod.new()
+	mod.name = "Burden"
+	mod.is_hex = true
+	mod.augmentation = [weaker] as Array[MmModification]
+	mod.mod_cost = AddManaCostModification.new()
+	mod.mod_cost.cost = _cost(1, [])
+	mod.card_types = [MmCardTypes.CardType.CREATURE] as Array[MmCardTypes.CardType]
+	return mod
+
+
+static func _cost(generic: int, symbols: Array[MmMana.Type]) -> MmManaCost:
+	var cost: MmManaCost = MmManaCost.new()
+	cost.generic = generic
+	cost.symbols = symbols
+	return cost
 
 
 ## Every Card Definition under [param folder], a set's folder at a time, each in name order.

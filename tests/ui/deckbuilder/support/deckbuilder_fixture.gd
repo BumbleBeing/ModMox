@@ -36,11 +36,9 @@ func working_deck(deck: Deck = null) -> WorkingDeck:
 ## A Mod that adds one mana symbol, which only a card with a mana cost accepts. It has no
 ## name, so it puts no word in front of the card's.
 static func add_symbol_mod(symbol: MmMana.Type, is_hex: bool = false) -> Mod:
-	var modification: AddManaSymbolModification = AddManaSymbolModification.new()
-	modification.symbol = symbol
-	var mod: Mod = Mod.new()
+	var mod: Mod = any_card_mod()
 	mod.is_hex = is_hex
-	mod.modification = modification
+	mod.mod_cost = mana_cost(0, [symbol])
 	mod.needs_mana_cost = true
 	return mod
 
@@ -49,17 +47,49 @@ static func add_symbol_mod(symbol: MmMana.Type, is_hex: bool = false) -> Mod:
 static func rename_mod(new_name: String) -> Mod:
 	var modification: ChangeNameModification = ChangeNameModification.new()
 	modification.new_name = new_name
-	var mod: Mod = Mod.new()
-	mod.modification = modification
+	var mod: Mod = any_card_mod()
+	mod.augmentation = [modification] as Array[MmModification]
 	return mod
 
 
 ## A Mod named [param word] that changes nothing but the card's name, which any card accepts.
 static func word_mod(word: String, is_hex: bool = false) -> Mod:
-	var mod: Mod = Mod.new()
+	var mod: Mod = any_card_mod()
 	mod.name = word
 	mod.is_hex = is_hex
-	mod.modification = NoChange.new() as MmModification
+	mod.augmentation = [NoChange.new() as MmModification] as Array[MmModification]
+	return mod
+
+
+## A Mod with nothing in it that accepts a card of any card type.
+static func any_card_mod() -> Mod:
+	var mod: Mod = Mod.new()
+	for card_type: MmCardTypes.CardType in MmCardTypes.CardType.values():
+		mod.card_types.append(card_type)
+	return mod
+
+
+## A Mod Cost of [param generic] generic mana and [param symbols].
+static func mana_cost(generic: int, symbols: Array[MmMana.Type] = []) -> AddManaCostModification:
+	var modification: AddManaCostModification = AddManaCostModification.new()
+	modification.cost = MmManaCost.new()
+	modification.cost.generic = generic
+	modification.cost.symbols = symbols
+	return modification
+
+
+## Violent, the example Mod: a creature gets +1/+1 and gains trample, and costs {1} more.
+static func violent() -> Mod:
+	var plus_one: AddPowerToughnessModification = AddPowerToughnessModification.new()
+	plus_one.power = 1
+	plus_one.toughness = 1
+	var trample: AddAbilityModification = AddAbilityModification.new()
+	trample.ability = TrampleAbility.new()
+	var mod: Mod = Mod.new()
+	mod.name = "Violent"
+	mod.augmentation = [plus_one, trample] as Array[MmModification]
+	mod.mod_cost = mana_cost(1)
+	mod.card_types = [MmCardTypes.CardType.CREATURE] as Array[MmCardTypes.CardType]
 	return mod
 
 

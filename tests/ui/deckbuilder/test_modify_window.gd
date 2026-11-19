@@ -12,8 +12,7 @@ var _modify_window: ModifyWindow
 
 func before_each() -> void:
 	_fixture = Fixture.new()
-	_ember = Fixture.add_symbol_mod(MmMana.Type.RED)
-	_ember.name = "Ember"
+	_ember = DeckbuilderSample.cycling_mod("Ember", MmMana.Type.RED)
 	_rename = Fixture.rename_mod("Mox-Touched")
 	_fixture.held_mods.add(_ember)
 	_fixture.held_mods.add(_ember)
@@ -46,24 +45,25 @@ func test_there_is_a_tile_for_each_kind_of_held_mod_with_its_count() -> void:
 	assert_null(_modify_window.tile(Fixture.rename_mod("Not held")))
 
 
-func test_a_mana_cost_in_a_mods_description_is_drawn_as_symbols() -> void:
-	_ember.description = "This card costs {R} more to cast."
-	var tap: Mod = Fixture.word_mod("Springs")
-	tap.description = "This card has \"{2}{U}, {T}: Draw a card.\""
-	_fixture.held_mods.add(tap)
+func test_what_a_held_mod_does_is_written_from_it_with_its_costs_as_symbols() -> void:
+	var violent: Mod = Fixture.violent()
+	_fixture.held_mods.add(violent)
 	_open(_fixture.own("grizzly_bears"))
 
-	assert_eq(_modify_window.tile_words(_ember).symbols(), ["r"] as Array[String])
-	assert_eq(_modify_window.tile_words(tap).symbols(), ["2", "u", "t"] as Array[String])
-	for mod: Mod in [_ember, tap, _rename]:
+	assert_eq(_modify_window.tile_words(_ember).symbols(), ["r", "r"] as Array[String])
+	assert_eq(_modify_window.tile_words(violent).symbols(), ["1"] as Array[String])
+	assert_string_contains(_modify_window.tile_words(violent).written(), ModText.of(violent))
+	for mod: Mod in [_ember, violent, _rename]:
 		assert_false(_modify_window.tile_words(mod).get_parsed_text().contains("{"), "No braces are shown as text.")
 		assert_eq(_modify_window.tile(mod).text, "", "The tile's words are drawn by its Symbol Label alone.")
-	assert_string_contains(_modify_window.tile_words(_ember).get_parsed_text(), "This card costs   more to cast.")
 
 
 func test_a_tile_is_as_tall_as_its_words() -> void:
-	_ember.description = "This card costs {R} more to cast, and this sentence runs on for long enough to take " \
-			+ "several lines of the tile, so that the tile has to grow to hold all of them."
+	for keyword: MmAbility in [FlyingAbility.new(), FirstStrikeAbility.new(), VigilanceAbility.new(),
+			TrampleAbility.new(), HasteAbility.new(), LifelinkAbility.new(), DeathtouchAbility.new(), ReachAbility.new()]:
+		var gains: AddAbilityModification = AddAbilityModification.new()
+		gains.ability = keyword
+		_ember.augmentation.append(gains)
 	_open(_fixture.own("grizzly_bears"))
 	await wait_process_frames(3)
 

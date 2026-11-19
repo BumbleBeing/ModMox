@@ -252,7 +252,7 @@ func test_a_selected_collection_card_stays_selected_when_it_leaves_the_deck() ->
 
 func test_mod_slots_are_filled_in_the_order_earned_green_for_a_mod_and_red_for_a_hex() -> void:
 	assert_eq(ModSlotRow.slots_of(_modded("Lightning Bolt", 3)), [
-		ModSlotRow.Slot.MOD, ModSlotRow.Slot.MOD, ModSlotRow.Slot.HEX,
+		ModSlotRow.Slot.MOD, ModSlotRow.Slot.MOD, ModSlotRow.Slot.MOD,
 	] as Array[ModSlotRow.Slot])
 	assert_eq(ModSlotRow.slots_of(_modded("Craw Wurm", 1)), [
 		ModSlotRow.Slot.HEX, ModSlotRow.Slot.EMPTY, ModSlotRow.Slot.EMPTY,
@@ -526,13 +526,13 @@ func test_the_mod_pop_up_fades_in_and_is_gone_at_once_to_anyone_who_asks_when_cl
 	_screen.ease_seconds = 0.0
 
 
-func test_the_mods_panel_lists_each_mod_and_hex_by_name_in_slot_order() -> void:
+func test_the_mods_panel_lists_each_mod_by_name_in_slot_order() -> void:
 	var bolt: DeckbuilderCard = _modded("Lightning Bolt", 3)
 	_screen.right_click_at(_strip_of(bolt))
 	_screen.drag_to(OUTSIDE)
 
-	assert_eq(_screen.inspector().mod_names(), ["Ember", "Moss", "Burden"] as Array[String])
-	assert_eq(_screen.inspector_face().title_text().shown_text(), "Ember Moss Burden Lightning Bolt")
+	assert_eq(_screen.inspector().mod_names(), ["Ember", "Moss", "Tide"] as Array[String])
+	assert_eq(_screen.inspector_face().title_text().shown_text(), "Ember Moss Tide Lightning Bolt")
 
 
 func test_view_original_shows_the_card_without_its_mods_and_is_gray_for_an_unmodified_card() -> void:
@@ -553,7 +553,7 @@ func test_view_original_shows_the_card_without_its_mods_and_is_gray_for_an_unmod
 	assert_eq(_screen.inspector().shown_look().mana_cost.describe(), "{R}")
 	assert_eq(_screen.inspector().mod_names().size(), 3, "The Mods panel still lists what is on the card.")
 	button.button_pressed = false
-	assert_eq(_screen.inspector_face().title_text().shown_text(), "Ember Moss Burden Lightning Bolt")
+	assert_eq(_screen.inspector_face().title_text().shown_text(), "Ember Moss Tide Lightning Bolt")
 
 	button.button_pressed = true
 	_screen.right_click_at(_in_collection(lions))

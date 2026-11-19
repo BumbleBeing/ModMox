@@ -1,8 +1,8 @@
 extends GutTest
 ## A Mod is a game-side item that leaves an engine Modification on a Run Card (ADR 0029).
 ## Every card has three Mod Slots, Hexes included. A basic land is free until its first Mod,
-## which makes it a Run Card of the Collection's (A558). A Mod's name goes in front of the
-## card's (A559).
+## which makes it a Run Card of the Collection's (A558). The Mods' names go in front of the
+## card's, as ModdedName puts them (A559).
 
 const Fixture: GDScript = preload("res://tests/ui/deckbuilder/support/deckbuilder_fixture.gd")
 
@@ -98,19 +98,19 @@ func test_a_modified_basic_land_is_saved_as_a_card_and_stays_owned_when_taken_ou
 	assert_true(_fixture.working_deck(saved).contains(plains), "And the saved Deck reopens with it.")
 
 
-func test_each_mods_name_goes_in_front_of_the_cards_in_slot_order() -> void:
+func test_the_mods_names_go_in_front_of_the_cards_in_alphabetical_order() -> void:
 	var bears: DeckbuilderCard = _fixture.own("grizzly_bears")
 
 	assert_false(bears.is_modified())
 	bears.attach(Fixture.word_mod("Violent"))
 	assert_eq(DeckbuilderLooks.look_of(bears).name, "Violent Grizzly Bears")
 	bears.attach(Fixture.word_mod("Burdened", true))
-	assert_eq(DeckbuilderLooks.look_of(bears).name, "Violent Burdened Grizzly Bears", "A Hex's name too.")
+	assert_eq(DeckbuilderLooks.look_of(bears).name, "Burdened Violent Grizzly Bears", "A Hex's name too.")
 
 	assert_true(bears.is_modified())
 	assert_eq(DeckbuilderLooks.original_of(bears).name, "Grizzly Bears")
-	assert_eq(DeckbuilderLooks.look_of(bears.with_mod(Fixture.word_mod("Mossy"))).name, "Violent Burdened Mossy Grizzly Bears")
-	assert_eq(DeckbuilderLooks.look_of(bears).name, "Violent Burdened Grizzly Bears", "Looking ahead changes nothing.")
+	assert_eq(DeckbuilderLooks.look_of(bears.with_mod(Fixture.word_mod("Mossy"))).name, "Burdened Mossy Violent Grizzly Bears")
+	assert_eq(DeckbuilderLooks.look_of(bears).name, "Burdened Violent Grizzly Bears", "Looking ahead changes nothing.")
 
 
 func test_the_original_is_the_card_with_no_mods_or_hexes() -> void:
@@ -191,3 +191,14 @@ func test_a_mod_survives_leaving_without_saving_and_shows_in_every_deck_with_the
 	var reopened: WorkingDeck = _fixture.working_deck(_fixture.deckbox.decks()[0])
 	assert_eq(Fixture.names(reopened.cards_in(1)), ["Zap"] as Array[String])
 	assert_false(reopened.has_unsaved_changes(), "A Mod is not part of the Working Deck.")
+
+
+func test_the_samples_mods_are_well_shaped() -> void:
+	var run: Run = DeckbuilderSample.make()
+	var mods: Array[Mod] = run.held_mods.kinds()
+	for card: DeckbuilderCard in run.collection.cards():
+		mods.append_array(card.mods)
+
+	assert_gt(mods.size(), 0)
+	for mod: Mod in mods:
+		assert_eq(mod.problems(), [] as Array[String], mod.name)

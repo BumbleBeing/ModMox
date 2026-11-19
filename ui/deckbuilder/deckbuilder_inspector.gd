@@ -382,11 +382,10 @@ func _fill_mods() -> void:
 		plate.add_theme_stylebox_override("panel", style)
 		plate.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var title: String = mod.name if mod.name != "" else "Unnamed"
-		var words: VBoxContainer = InspectorParts.words("%s (Hex)" % title if mod.is_hex else title, mod.description,
+		var words: VBoxContainer = InspectorParts.words("%s (Hex)" % title if mod.is_hex else title, ModText.of(mod),
 			DeckbuilderLook.inspector_palette(), BODY_SIZE)
 		plate.add_child(words)
-		if mod.description != "":
-			_mod_labels.append(words.get_child(1) as SymbolLabel)
+		_mod_labels.append(words.get_child(1) as SymbolLabel)
 		_mod_list.add_child(plate)
 		_mod_names.append(mod.name)
 	_mod_scroll.visible = not _card.mods.is_empty()

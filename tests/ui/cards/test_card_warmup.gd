@@ -23,8 +23,9 @@ func test_each_card_of_both_decks_is_listed_once() -> void:
 
 func test_a_card_with_a_modification_is_listed_as_it_is_with_it() -> void:
 	var setup: MmEncounterSetup = _setup(["grizzly_bears"], ["grizzly_bears"])
-	var red: AddManaSymbolModification = AddManaSymbolModification.new()
-	red.symbol = MmMana.Type.RED
+	var red: AddManaCostModification = AddManaCostModification.new()
+	red.cost = MmManaCost.new()
+	red.cost.symbols = [MmMana.Type.RED] as Array[MmMana.Type]
 	setup.hero.deck[0].modifications = [red] as Array[MmModification]
 
 	var keys: Array[String] = []

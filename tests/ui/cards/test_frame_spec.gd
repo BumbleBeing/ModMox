@@ -170,8 +170,9 @@ func test_a_colored_artifact_and_a_spell_of_its_color_are_baked_apart() -> void:
 func test_a_modification_adding_a_color_to_an_artifact_keeps_the_artifact_border() -> void:
 	var run_card: MmRunCard = MmRunCard.new()
 	run_card.base = _alpha("ankh_of_mishra")
-	var add_blue: AddManaSymbolModification = AddManaSymbolModification.new()
-	add_blue.symbol = MmMana.Type.BLUE
+	var add_blue: AddManaCostModification = AddManaCostModification.new()
+	add_blue.cost = MmManaCost.new()
+	add_blue.cost.symbols = [MmMana.Type.BLUE] as Array[MmMana.Type]
 	run_card.modifications = [add_blue]
 
 	var modified: FrameSpec = FrameSpec.of(CardLook.of_characteristics(MmCharacteristics.printed(run_card.flatten())))
@@ -193,8 +194,9 @@ func test_an_artifact_land_keeps_the_land_frame() -> void:
 func test_a_modification_adding_a_second_color_turns_a_mono_frame_gold() -> void:
 	var run_card: MmRunCard = MmRunCard.new()
 	run_card.base = _alpha("savannah_lions")
-	var add_blue: AddManaSymbolModification = AddManaSymbolModification.new()
-	add_blue.symbol = MmMana.Type.BLUE
+	var add_blue: AddManaCostModification = AddManaCostModification.new()
+	add_blue.cost = MmManaCost.new()
+	add_blue.cost.symbols = [MmMana.Type.BLUE] as Array[MmMana.Type]
 	run_card.modifications = [add_blue]
 
 	var modified: FrameSpec = FrameSpec.of(CardLook.of_characteristics(MmCharacteristics.printed(run_card.flatten())))

@@ -1,8 +1,8 @@
 class_name DeckbuilderCard
 extends RefCounted
 ## One card as the deckbuilder handles it: a Run Card, the identity that lasts the run, and
-## the Mods in its Mod Slots (ADR 0028). Every card is its own; nothing is stacked. Each
-## Mod's name goes in front of the card's own, in slot order (A559).
+## the Mods in its Mod Slots (ADR 0028). Every card is its own; nothing is stacked. The Mods'
+## names go in front of the card's own, as ModdedName puts them (A559, ADR 0029).
 
 ## How many Mod Slots a card has, Hexes included. A basic land has them too (A558).
 const MOD_SLOTS: int = 3
@@ -12,7 +12,7 @@ const COLORLESS_RANK: int = 6
 
 var id: int = 0
 var run_card: MmRunCard = null
-## The Mods on the card, in the order earned. Each one's Modification is on the Run Card.
+## The Mods on the card, in the order earned. Each one's Modifications are on the Run Card.
 var mods: Array[Mod] = []
 
 ## How many times the card has changed: one more for each Mod attached, so that whatever is
@@ -33,7 +33,7 @@ func _init(card_id: int, card: MmRunCard) -> void:
 func characteristics() -> MmCharacteristics:
 	if _characteristics == null:
 		_characteristics = MmCharacteristics.printed(run_card.flatten())
-		_characteristics.name = _modded_name(_characteristics.name)
+		_characteristics.name = ModdedName.of(_characteristics.name, mods)
 	return _characteristics
 
 
@@ -45,7 +45,7 @@ func original_characteristics() -> MmCharacteristics:
 	return _original_characteristics
 
 
-## The card's name as it reads now, each Mod's name in front of its own.
+## The card's name as it reads now, its Modded Name.
 func card_name() -> String:
 	return characteristics().name
 
@@ -92,7 +92,7 @@ func has_empty_mod_slot() -> bool:
 ## (Mod.is_applicable_to): a Hex arrives without being asked.
 func attach(mod: Mod) -> void:
 	mods.append(mod)
-	run_card.modifications.append(mod.modification)
+	run_card.modifications.append_array(mod.modifications())
 	revision += 1
 	_characteristics = null
 
@@ -107,17 +107,6 @@ func with_mod(mod: Mod) -> DeckbuilderCard:
 	copy.mods = mods.duplicate()
 	copy.attach(mod)
 	return copy
-
-
-## [param own_name] with the name of each Mod and Hex in front of it, in slot order. A Mod
-## with no name adds no word.
-func _modded_name(own_name: String) -> String:
-	var words: PackedStringArray = []
-	for mod: Mod in mods:
-		if mod.name != "":
-			words.append(mod.name)
-	words.append(own_name)
-	return " ".join(words)
 
 
 ## Whether this card comes before [param other] in a column: color, then name.

@@ -177,7 +177,7 @@ func test_the_panels_and_buttons_are_dither_shaded() -> void:
 func _winged() -> Mod:
 	var mod: Mod = Mod.new()
 	mod.name = "Winged"
-	mod.modification = GrantFlying.new() as MmModification
+	mod.augmentation = [GrantFlying.new() as MmModification] as Array[MmModification]
 	return mod
 
 
