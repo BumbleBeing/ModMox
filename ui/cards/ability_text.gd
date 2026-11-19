@@ -223,6 +223,12 @@ static func searched_words(most: int, is_up_to: bool, filter: MmFilter) -> Strin
 	return "up to %s %s" % [_number_word(most), words._card_phrase(filter, most != 1)]
 
 
+## How many targets an "up to" choice asks for, as its prompt says it: "up to two targets",
+## "up to one target".
+static func up_to_targets_words(most: int) -> String:
+	return "up to %s target%s" % [_number_word(most), "" if most == 1 else "s"]
+
+
 ## Whether [param text] has something in it there were no words for.
 static func has_fallback(text: String) -> bool:
 	return text.contains("[")
@@ -248,6 +254,11 @@ func _ability(ability: MmAbility) -> String:
 	if ability is EquipAbility:
 		# A keyword prints its cost and nothing else (CR 702.6); what it does is its Reminder.
 		return "Equip " + _costs(ability as EquipAbility)
+	if ability is CyclingAbility:
+		# CR 702.29a: as equip does, it prints its cost alone.
+		var cycling: PackedStringArray = _cost_parts((ability as CyclingAbility).mana_cost, [])
+		return _capitalized(_cycling_word((ability as CyclingAbility).search)) + " " \
+			+ (", ".join(cycling) if not cycling.is_empty() else "{0}")
 	if ability is FlashbackAbility:
 		return _flashback(ability as FlashbackAbility)
 	if ability is AffinityAbility:
@@ -281,11 +292,27 @@ func _ability(ability: MmAbility) -> String:
 	return _fallback(ability, "_ability")
 
 
+## "cycling", or for typecycling the card it searches for with "card" left out and
+## "cycling" attached (CR 702.29e): "basic landcycling", "Plainscycling".
+func _cycling_word(search: MmFilter) -> String:
+	if search == null:
+		return "cycling"
+	var words: FilterWords = _filter_words(search)
+	var parts: PackedStringArray = PackedStringArray(words.adjectives)
+	if words.noun != "":
+		parts.append(words.noun)
+	if parts.is_empty():
+		parts.append("card")
+	parts[parts.size() - 1] += "cycling"
+	parts.append_array(PackedStringArray(words.after))
+	return " ".join(parts)
+
+
 ## Whether [param ability] is a keyword, protection included: an ability a sentence names
 ## in lower case and without quotation marks.
 static func is_keyword(ability: MmAbility) -> bool:
 	return _keyword(ability) != "" or ability is ProtectionAbility or ability is EquipAbility or ability is FlashbackAbility \
-		or ability is AffinityAbility
+		or ability is AffinityAbility or ability is CyclingAbility
 
 
 ## The name of a keyword ability that needs no other words, or "".
@@ -364,6 +391,9 @@ func _cost_parts(mana: MmManaCost, costs: Array[MmCost]) -> PackedStringArray:
 		parts.append(mana.describe())
 	for cost: MmCost in costs:
 		if cost is UseUpCost:
+			continue
+		if cost is DiscardThisCardCost:
+			parts.append("Discard this card")  # CR 702.29a: in any zone's words, a card.
 			continue
 		if cost is TapCost:
 			parts.append("{T}")
@@ -586,7 +616,9 @@ func _effect(effect: MmEffect) -> String:
 		return _prevention(effect as PreventDamageEffect)
 	if effect is PutCountersEffect:
 		var put: PutCountersEffect = effect as PutCountersEffect
-		return "put %s on %s" % [_counters(put.amount, put.kind), _selection(put.recipients)]
+		# "On each of up to two target creatures": the counters go on every one chosen.
+		var each_of: String = "each of " if _is_several_targets(put.recipients) else ""
+		return "put %s on %s%s" % [_counters(put.amount, put.kind), each_of, _selection(put.recipients)]
 	if effect is DoubleCountersEffect:
 		var doubled: DoubleCountersEffect = effect as DoubleCountersEffect
 		return "double the number of %s counters on %s" % [MmCounter.label(doubled.kind), _selection(doubled.recipients)]
@@ -650,11 +682,19 @@ func _instead(effect: InsteadEffect) -> String:
 	return "%s. If %s, %s instead" % [usual, condition, other]
 
 
-## Oracle's token wording (CR 111.4): "a 1/1 white Cat creature token", "two ... tokens".
+## Oracle's token wording (CR 111.4): "a 1/1 white Cat creature token", "two ... tokens",
+## and a token's keywords after "with": "a 1/1 white Cat Soldier creature token with vigilance".
 func _tokens(effect: CreateTokenEffect) -> String:
-	if effect.token == null or not effect.token.abilities.is_empty():
-		# Later: "with flying" and the like, once a Token Definition has abilities.
+	if effect.token == null:
 		return _fallback(effect, "_tokens")
+	var keywords: PackedStringArray = PackedStringArray()
+	for ability: MmAbility in effect.token.abilities:
+		var keyword: String = _keyword(ability)
+		if keyword == "":
+			# Later: a token's other abilities, in quotation marks (CR 111.4).
+			return _fallback(effect, "_tokens")
+		keywords.append(keyword.to_lower())
+	var with: String = "" if keywords.is_empty() else " with " + _listed(keywords)
 	var printed: MmCharacteristics = MmCharacteristics.printed(effect.token)
 	var words: PackedStringArray = PackedStringArray()
 	if printed.has_card_type(MmCardTypes.CardType.CREATURE):
@@ -669,8 +709,8 @@ func _tokens(effect: CreateTokenEffect) -> String:
 		words.append(_type_word(card_type))
 	var phrase: String = " ".join(words)
 	if effect.amount == 1:
-		return _with_article(phrase + " token")
-	return "%s %s tokens" % [_number_word(effect.amount), phrase]
+		return _with_article(phrase + " token") + with
+	return "%s %s tokens%s" % [_number_word(effect.amount), phrase, with]
 
 
 func _mana(effect: AddManaEffect) -> String:
@@ -772,6 +812,8 @@ func _target(index: int) -> String:
 		var noun: String = _filter_words(spec.filter).noun if _names_again_with_that else ""
 		return "that " + noun if noun != "" else "it"
 	_named[index] = true
+	if spec.is_up_to:
+		return _up_to_targets(spec)
 	if spec.among == TargetRequirement.Among.SPELLS:
 		return "target " + _spell_phrase(spec.filter)
 	if spec.among == TargetRequirement.Among.ABILITIES:
@@ -785,6 +827,25 @@ func _target(index: int) -> String:
 	if phrase.begins_with(OTHER + " "):
 		return "another target " + phrase.trim_prefix(OTHER + " ")
 	return "target " + phrase
+
+
+## "Up to two target creatures", "up to two other target creatures you control": "other"
+## comes before "target", as "another" does.
+func _up_to_targets(spec: TargetRequirement) -> String:
+	var phrase: String = _noun_phrase(spec.filter, spec.most != 1)
+	var target: String = "target " + phrase
+	if phrase.begins_with(OTHER + " "):
+		target = "other target " + phrase.trim_prefix(OTHER + " ")
+	return "up to %s %s" % [_number_word(spec.most), target]
+
+
+## Whether [param selection] is the targets of an "up to" requirement that may choose more
+## than one.
+func _is_several_targets(selection: MmSelection) -> bool:
+	var targeted: TargetSelection = selection as TargetSelection
+	if targeted == null or targeted.target_index >= _targets.size():
+		return false
+	return _targets[targeted.target_index].is_up_to and _targets[targeted.target_index].most > 1
 
 
 ## Whether [param selection] is a targeted card that can only be one its controller owns,
@@ -976,6 +1037,11 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		# "Each other creature": anything but the source.
 		if is_negated:
 			adjectives.append(OTHER)
+	elif filter is TargetsFilter:
+		# Heroic: "a spell that targets this creature".
+		var targeted: MmFilter = (filter as TargetsFilter).filter
+		var words: String = _noun if targeted is IsSourceFilter else _with_article(_noun_phrase(targeted, false))
+		after.append(("that doesn't target " if is_negated else "that targets ") + words)
 	elif filter is IsOfChosenTypeFilter:
 		after.append("not of the chosen type" if is_negated else "of the chosen type")
 	elif filter is HasOriginalNameFilter:
@@ -1010,6 +1076,8 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		after.append("with mana value " + _mana_value_bound(filter as ManaValueFilter, is_negated))
 	elif filter is PowerFilter:
 		after.append("with power " + _power_bound(filter as PowerFilter, is_negated))
+	elif filter is ToughnessFilter:
+		after.append("with toughness " + _toughness_bound(filter as ToughnessFilter, is_negated))
 	elif filter is IsPlayerFilter:
 		# Anything that is not a player is a permanent, the noun when none is named.
 		if not is_negated:
@@ -1077,6 +1145,14 @@ static func _mana_value_bound(filter: ManaValueFilter, is_negated: bool) -> Stri
 ## "2 or less" or "3 or greater"; negated, the other side, as _mana_value_bound() does.
 static func _power_bound(filter: PowerFilter, is_negated: bool) -> String:
 	var or_less: bool = (filter.comparison == PowerFilter.Comparison.OR_LESS) != is_negated
+	if not is_negated:
+		return "%d %s" % [filter.amount, "or less" if or_less else "or greater"]
+	return "%d or less" % (filter.amount - 1) if or_less else "%d or greater" % (filter.amount + 1)
+
+
+## "2 or less" or "4 or greater"; negated, the other side, as _mana_value_bound() does.
+static func _toughness_bound(filter: ToughnessFilter, is_negated: bool) -> String:
+	var or_less: bool = (filter.comparison == ToughnessFilter.Comparison.OR_LESS) != is_negated
 	if not is_negated:
 		return "%d %s" % [filter.amount, "or less" if or_less else "or greater"]
 	return "%d or less" % (filter.amount - 1) if or_less else "%d or greater" % (filter.amount + 1)

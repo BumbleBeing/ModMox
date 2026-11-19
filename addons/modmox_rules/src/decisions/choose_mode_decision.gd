@@ -33,7 +33,7 @@ static func of(state: MmGameState, player_id: int, object_id: int, modes: Array[
 		var is_choosable: bool = true
 		for requirement: TargetRequirement in modes[mode_index].targets:
 			var legal: Array[MmReference] = requirement.legal_targets(state, context)
-			if legal.is_empty():
+			if not requirement.can_be_chosen(state, context):
 				is_choosable = false
 			reachable.append_array(legal)
 		if is_choosable:

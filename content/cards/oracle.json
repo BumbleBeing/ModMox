@@ -142,6 +142,24 @@
 		"set_name": "Torment",
 		"type_line": "Sorcery"
 	},
+	"defiant_strike": {
+		"mana_cost": "{W}",
+		"name": "Defiant Strike",
+		"oracle_id": "f8c2d9c5-6fe6-4698-9972-83cdd625d94b",
+		"oracle_text": "Target creature gets +1/+0 until end of turn.\nDraw a card.",
+		"rarity": "common",
+		"set_name": "Khans of Tarkir",
+		"type_line": "Instant"
+	},
+	"destroy_evil": {
+		"mana_cost": "{1}{W}",
+		"name": "Destroy Evil",
+		"oracle_id": "b75e667a-1ceb-445a-acf4-ae1fd2dae9e7",
+		"oracle_text": "Choose one —\n• Destroy target creature with toughness 4 or greater.\n• Destroy target enchantment.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Instant"
+	},
 	"drudge_skeletons": {
 		"mana_cost": "{1}{B}",
 		"name": "Drudge Skeletons",
@@ -181,6 +199,17 @@
 		"rarity": "rare",
 		"set_name": "Zendikar Rising",
 		"type_line": "Enchantment"
+	},
+	"felidar_savior": {
+		"mana_cost": "{3}{W}",
+		"name": "Felidar Savior",
+		"oracle_id": "2bee2508-cd5d-4c62-a205-12d8bbb3143d",
+		"oracle_text": "Lifelink (Damage dealt by this creature also causes you to gain that much life.)\nWhen this creature enters, put a +1/+1 counter on each of up to two other target creatures you control.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Foundations",
+		"toughness": "3",
+		"type_line": "Creature — Cat Beast"
 	},
 	"fog": {
 		"mana_cost": "{G}",
@@ -230,6 +259,24 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "4",
 		"type_line": "Creature — Spider"
+	},
+	"gideons_reproach": {
+		"mana_cost": "{1}{W}",
+		"name": "Gideon's Reproach",
+		"oracle_id": "ec43d67c-2254-4782-8bd4-3318b25907e6",
+		"oracle_text": "Gideon's Reproach deals 4 damage to target attacking or blocking creature.",
+		"rarity": "common",
+		"set_name": "Battle for Zendikar",
+		"type_line": "Instant"
+	},
+	"gird_for_battle": {
+		"mana_cost": "{W}",
+		"name": "Gird for Battle",
+		"oracle_id": "bc72d463-8818-4c19-bd5a-f47841d1adb0",
+		"oracle_text": "Put a +1/+1 counter on each of up to two target creatures.",
+		"rarity": "uncommon",
+		"set_name": "Guilds of Ravnica",
+		"type_line": "Sorcery"
 	},
 	"goblin_balloon_brigade": {
 		"mana_cost": "{R}",
@@ -292,6 +339,17 @@
 		"rarity": "uncommon",
 		"set_name": "The Lost Caverns of Ixalan",
 		"type_line": "Sorcery"
+	},
+	"hero_of_the_pride": {
+		"mana_cost": "{1}{W}",
+		"name": "Hero of the Pride",
+		"oracle_id": "f3a2d80c-de6f-4b0e-aeb1-78639d55a6e6",
+		"oracle_text": "Whenever you cast a spell that targets this creature, creatures you control get +1/+0 until end of turn.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Theros Beyond Death",
+		"toughness": "2",
+		"type_line": "Creature — Cat Soldier"
 	},
 	"hill_giant": {
 		"mana_cost": "{3}{R}",
@@ -380,6 +438,15 @@
 		"oracle_text": "Lightning Bolt deals 3 damage to any target.",
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
+		"type_line": "Instant"
+	},
+	"lightshield_parry": {
+		"mana_cost": "{W}",
+		"name": "Lightshield Parry",
+		"oracle_id": "ecef9e3d-dce8-405f-bba3-14732444258f",
+		"oracle_text": "Target creature gets +2/+2 until end of turn.\nCycling {2} ({2}, Discard this card: Draw a card.)",
+		"rarity": "common",
+		"set_name": "Aetherdrift",
 		"type_line": "Instant"
 	},
 	"llanowar_elves": {
@@ -544,6 +611,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Human Cleric"
 	},
+	"sanctuary_cat": {
+		"mana_cost": "{W}",
+		"name": "Sanctuary Cat",
+		"oracle_id": "c623bc4b-7fc1-4bc1-84e9-71c301dd402f",
+		"oracle_text": "",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Dark Ascension",
+		"toughness": "2",
+		"type_line": "Creature — Cat"
+	},
 	"savannah_lions": {
 		"mana_cost": "{W}",
 		"name": "Savannah Lions",
@@ -688,6 +766,28 @@
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Instant"
 	},
+	"tethmos_high_priest": {
+		"mana_cost": "{2}{W}",
+		"name": "Tethmos High Priest",
+		"oracle_id": "f922150c-8f79-412b-a611-59064e3e3cea",
+		"oracle_text": "Heroic — Whenever you cast a spell that targets this creature, return target creature card with mana value 2 or less from your graveyard to the battlefield.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Journey into Nyx",
+		"toughness": "3",
+		"type_line": "Creature — Cat Cleric"
+	},
+	"topiary_panther": {
+		"mana_cost": "{4}{G}{G}",
+		"name": "Topiary Panther",
+		"oracle_id": "efddf972-94c4-49d1-a844-b4aba70c93aa",
+		"oracle_text": "Trample\nBasic landcycling {1}{G} ({1}{G}, Discard this card: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.)",
+		"power": "6",
+		"rarity": "common",
+		"set_name": "Murders at Karlov Manor",
+		"toughness": "5",
+		"type_line": "Creature — Plant Cat"
+	},
 	"uthden_troll": {
 		"mana_cost": "{2}{R}",
 		"name": "Uthden Troll",
@@ -698,6 +798,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "2",
 		"type_line": "Creature — Troll"
+	},
+	"vanguard_of_brimaz": {
+		"mana_cost": "{W}{W}",
+		"name": "Vanguard of Brimaz",
+		"oracle_id": "4a4f6e85-df16-49a4-8fc6-149a28c2cb42",
+		"oracle_text": "Vigilance\nHeroic — Whenever you cast a spell that targets this creature, create a 1/1 white Cat Soldier creature token with vigilance.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Born of the Gods",
+		"toughness": "2",
+		"type_line": "Creature — Cat Soldier"
 	},
 	"wall_of_stone": {
 		"mana_cost": "{1}{R}{R}",

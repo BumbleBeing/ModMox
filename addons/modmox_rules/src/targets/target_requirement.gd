@@ -2,7 +2,9 @@ class_name TargetRequirement
 extends Resource
 ## One target requirement of a spell or ability: one instance of the word "target"
 ## (CR 115.1), with a Filter saying what may be chosen. Effects refer to the chosen target
-## through a TargetSelection with this requirement's index (ADR 0014).
+## through a TargetSelection with this requirement's index (ADR 0014). "Up to two target
+## creatures" is one requirement too, choosing from none to two different objects
+## (CR 115.1d, 115.3, 601.2c), and its TargetSelection selects each one chosen.
 
 ## Where the targets are. Saved in Content, so values are explicit and only ever added.
 ## SPELLS is "target spell": a spell on the stack, never an ability (CR 115.1, 112.1).
@@ -15,6 +17,44 @@ enum Among { PLAYERS_AND_PERMANENTS = 0, SPELLS = 1, GRAVEYARD_CARDS = 2, ABILIT
 ## What may be chosen. Null for anything, as in "target spell".
 @export var filter: MmFilter
 @export var among: Among = Among.PLAYERS_AND_PERMANENTS
+## How many different objects this one word "target" may choose (CR 115.3). More than one
+## only with [member is_up_to]: "two target creatures", exactly, waits for a card (ADR 0001).
+@export var most: int = 1
+## "Up to [member most] target ...": any number from none to [member most] may be chosen
+## (CR 601.2c), so it can always be chosen, even with nothing to target.
+@export var is_up_to: bool = false
+
+
+## How many places this requirement takes in a stack object's targets: one for each object
+## it may choose (ADR 0014).
+func place_count() -> int:
+	assert(most >= 1 and (most == 1 or is_up_to), "Only \"up to\" may choose more than one target (ADR 0001).")
+	assert(not is_up_to or among == Among.PLAYERS_AND_PERMANENTS,
+		"Later: \"up to\" spells, abilities or cards in graveyards, when a card needs them.")
+	return most
+
+
+## Whether its targets can be chosen right now: there is a legal target, or it is "up to"
+## and may choose none (CR 601.2c, 603.3d, 700.2a).
+func can_be_chosen(state: MmGameState, context: MmEffectContext) -> bool:
+	return is_up_to or not legal_targets(state, context).is_empty()
+
+
+## The place of requirement [param index]'s first target in a stack object's targets: after
+## every place of the requirements before it.
+static func first_place(requirements: Array[TargetRequirement], index: int) -> int:
+	var place: int = 0
+	for earlier: int in index:
+		place += requirements[earlier].place_count()
+	return place
+
+
+## How many places each of [param requirements] takes, in order.
+static func place_counts(requirements: Array[TargetRequirement]) -> Array[int]:
+	var counts: Array[int] = []
+	for requirement: TargetRequirement in requirements:
+		counts.append(requirement.place_count())
+	return counts
 
 
 ## Every legal choice right now. Players and permanents: players first, each in ID order;

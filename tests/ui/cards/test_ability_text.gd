@@ -27,27 +27,36 @@ const PRINTED: Dictionary[String, String] = {
 	"dark_ritual": "Add {B}{B}{B}.",
 	"daydream": "Exile target creature you control. Return the exiled card to the battlefield under its owner's control with a +1/+1 counter on it.\nFlashback {2}{W}",
 	"deep_analysis": "Target player draws two cards.\nFlashback—{1}{U}, Pay 3 life",
+	"defiant_strike": "Target creature gets +1/+0 until end of turn. Draw a card.",
+	"destroy_evil": "Choose one —\n"
+		+ "• Destroy target creature with toughness 4 or greater.\n"
+		+ "• Destroy target enchantment.",
 	"drudge_skeletons": "{B}: Regenerate this creature.",
 	"elvish_archers": "First strike",
 	"explore": "You may play an additional land this turn. Draw a card.",
 	"felidar_retreat": "Whenever a land you control enters, choose one —\n"
 		+ "• Create a 2/2 white Cat Beast creature token.\n"
 		+ "• Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.",
+	"felidar_savior": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each of up to two other target creatures you control.",
 	"fog": "Prevent all combat damage that would be dealt this turn.",
 	"forest": "({T}: Add {G}.)",
 	"frozen_shade": "{B}: This creature gets +1/+1 until end of turn.",
 	"giant_growth": "Target creature gets +3/+3 until end of turn.",
 	"giant_spider": "Reach",
+	"gideons_reproach": "Gideon's Reproach deals 4 damage to target attacking or blocking creature.",
+	"gird_for_battle": "Put a +1/+1 counter on each of up to two target creatures.",
 	"goblin_balloon_brigade": "{R}: This creature gains flying until end of turn.",
 	"group_project": "Create a 2/2 white and red Spirit creature token.\nFlashback—Tap three untapped creatures you control",
 	"helpful_hunter": "When this creature enters, draw a card.",
 	"helping_hand": "Return target creature card with mana value 3 or less from your graveyard to the battlefield tapped.",
+	"hero_of_the_pride": "Whenever you cast a spell that targets this creature, each creature you control gets +1/+0 until end of turn.",
 	"howling_mine": "At the beginning of each player's draw step, if this artifact is untapped, that player draws a card.",
 	"instill_infection": "Put a -1/-1 counter on target creature. Draw a card.",
 	"island": "({T}: Add {U}.)",
 	"ivory_tower": "At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.",
 	"keldon_warlord": "This creature's power and toughness are each equal to the number of non-Wall creatures you control.",
 	"lightning_bolt": "Lightning Bolt deals 3 damage to any target.",
+	"lightshield_parry": "Target creature gets +2/+2 until end of turn.\nCycling {2}",
 	"llanowar_elves": "{T}: Add {G}.",
 	"malamet_war_scribe": "When this creature enters, each creature you control gets +2/+1 until end of turn.",
 	"mountain": "({T}: Add {R}.)",
@@ -77,8 +86,11 @@ const PRINTED: Dictionary[String, String] = {
 	"stifle": "Counter target activated or triggered ability.",
 	"swamp": "({T}: Add {B}.)",
 	"territorial_scythecat": "Trample\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
+	"tethmos_high_priest": "Whenever you cast a spell that targets this creature, return target creature card with mana value 2 or less from your graveyard to the battlefield.",
 	"terror": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
+	"topiary_panther": "Trample\nBasic landcycling {1}{G}",
 	"uthden_troll": "{R}: Regenerate this creature.",
+	"vanguard_of_brimaz": "Vigilance\nWhenever you cast a spell that targets this creature, create a 1/1 white Cat Soldier creature token with vigilance.",
 	"wall_of_stone": "Defender",
 	"white_knight": "First strike\nProtection from black",
 	"whitemane_lion": "Flash\nWhen this creature enters, return a creature you control to its owner's hand.",
@@ -225,6 +237,35 @@ func test_the_cat_beast_token_is_worded_as_oracle_words_it() -> void:
 	assert_eq(text, "Create a 2/2 white Cat Beast creature token.")
 
 
+func test_a_tokens_keyword_is_worded_after_with() -> void:
+	var cat_soldier: MmCardDefinition = load("res://content/tokens/cat_soldier_1_1_white_vigilance.tres") as MmCardDefinition
+	var maker: MmCardDefinition = Scenario.free_tokens("Maker", cat_soldier, 2)
+
+	var text: String = AbilityText.of_card(maker.abilities, maker.card_types, maker.supertypes, "Maker")
+
+	assert_eq(text, "Create two 1/1 white Cat Soldier creature tokens with vigilance.")
+
+
+func test_a_tokens_keywords_are_listed_as_oracle_lists_them() -> void:
+	var angel: MmCardDefinition = MmCardDefinition.new()
+	angel.name = "Angel Token"
+	angel.card_types = [MmCardTypes.CardType.CREATURE]
+	angel.subtypes = ["Angel"]
+	angel.color_indicator = [MmCardTypes.CardColor.WHITE]
+	angel.power = 4
+	angel.toughness = 4
+	angel.abilities = [FlyingAbility.new(), VigilanceAbility.new()]
+	var two: MmCardDefinition = Scenario.free_tokens("Two", angel)
+	var three_angel: MmCardDefinition = angel.duplicate()
+	three_angel.abilities = [FlyingAbility.new(), FirstStrikeAbility.new(), LifelinkAbility.new()]
+	var three: MmCardDefinition = Scenario.free_tokens("Three", three_angel)
+
+	assert_eq(AbilityText.of_card(two.abilities, two.card_types, two.supertypes, "Two"),
+		"Create a 4/4 white Angel creature token with flying and vigilance.")
+	assert_eq(AbilityText.of_card(three.abilities, three.card_types, three.supertypes, "Three"),
+		"Create a 4/4 white Angel creature token with flying, first strike, and lifelink.")
+
+
 func test_a_mode_with_a_counted_amount_says_what_x_is() -> void:
 	var count: CountValue = CountValue.new()
 	count.selection = Scenario.each(Scenario.all_of([Scenario.of_type(MmCardTypes.CardType.CREATURE), _yours()]))
@@ -274,6 +315,9 @@ func test_the_trigger_kinds_are_worded() -> void:
 		"Whenever you cast a creature spell, you gain 1 life.": Scenario.casts(creature, Whose.YOU),
 		"Whenever an opponent casts a spell, you gain 1 life.": Scenario.casts(null, Whose.OPPONENT),
 		"Whenever a player casts an artifact spell, you gain 1 life.": Scenario.casts(Scenario.of_type(CardType.ARTIFACT), Whose.ANY),
+		"Whenever you cast a spell that targets this creature, you gain 1 life.": Scenario.casts(Scenario.targets_source(), Whose.YOU),
+		"Whenever you cast a creature spell that targets a creature you control, you gain 1 life.":
+			Scenario.casts(Scenario.all_of([creature, Scenario.targets(Scenario.all_of([creature, ControlledByFilter.new()]))]), Whose.YOU),
 		"Whenever one or more creatures you control attack, you gain 1 life.": _attack(Whose.YOU),
 		"Whenever one or more creatures an opponent controls attack, you gain 1 life.": _attack(Whose.OPPONENT),
 		"Whenever one or more creatures a player controls attack, you gain 1 life.": _attack(Whose.ANY),
@@ -453,6 +497,19 @@ func test_exiling_another_target_and_returning_the_exiled_card_are_worded() -> v
 	assert_eq(AbilityText.things(Scenario.is_not(IsPlayerFilter.new())), "permanents", "Anything but a player is a permanent.")
 
 
+func test_up_to_targets_are_worded_with_each_of_for_counters() -> void:
+	var gird: MmAbility = Scenario.free_gird("Gird").abilities[0]
+	var savior: MmAbility = Scenario.savior().abilities[0]
+	var one: SpellAbility = SpellAbility.new()
+	one.targets = [Scenario.up_to_targets(Scenario.of_type(CardType.CREATURE), 1)]
+	one.effects = [Scenario.destroy(Scenario.targeted(0))]
+
+	assert_eq(AbilityText.of_ability(gird, "Gird"), "Put a +1/+1 counter on each of up to two target creatures.")
+	assert_eq(AbilityText.of_ability(savior, "this creature"),
+		"When this creature enters, put a +1/+1 counter on each of up to two other target creatures you control.")
+	assert_eq(AbilityText.of_ability(one, "Sample"), "Destroy up to one target creature.")
+
+
 func test_target_ability_is_worded_as_activated_or_triggered() -> void:
 	var stifle: SpellAbility = SpellAbility.new()
 	stifle.targets = [Scenario.target_ability()]
@@ -624,6 +681,43 @@ func test_flashback_prints_its_cost_with_a_dash_when_it_is_more_than_mana() -> v
 	assert_true(AbilityText.is_keyword(Scenario.flashback(white)))
 
 
+func test_cycling_prints_its_cost_alone() -> void:
+	var cycling: CyclingAbility = Scenario.cycling(Scenario.mana_cost(2))
+
+	var text: String = AbilityText.of_ability(cycling, "Lightshield Parry")
+
+	assert_eq(text, "Cycling {2}", "CR 702.29a: what it does is its Reminder.")
+	assert_true(AbilityText.is_keyword(cycling))
+	var spelled_out: ActivatedAbility = ActivatedAbility.new()
+	spelled_out.mana_cost = Scenario.mana_cost(2)
+	spelled_out.costs = cycling.costs
+	spelled_out.effects = cycling.effects
+	assert_eq(AbilityText.of_ability(spelled_out, "Lightshield Parry"), "{2}, Discard this card: Draw a card.")
+	assert_eq(AbilityText.of_card([Scenario.pump_spell("Parry", 2, 2).abilities[0], cycling] as Array[MmAbility],
+		[MmCardTypes.CardType.INSTANT] as Array[MmCardTypes.CardType], [] as Array[MmCardTypes.Supertype], "Parry"),
+		"Target creature gets +2/+2 until end of turn.\nCycling {2}")
+
+
+func test_typecycling_prints_its_type_attached_to_cycling_and_its_cost() -> void:
+	var landcycling: CyclingAbility = Scenario.landcycling(Scenario.mana_cost(1, [MmMana.Type.GREEN]))
+	var plains: HasSubtypeFilter = HasSubtypeFilter.new()
+	plains.subtype = "Plains"
+	var plainscycling: CyclingAbility = Scenario.cycling(Scenario.mana_cost(2))
+	plainscycling.search = plains
+
+	var text: String = AbilityText.of_ability(landcycling, "Topiary Panther")
+
+	assert_eq(text, "Basic landcycling {1}{G}", "CR 702.29e: what it does is its Reminder.")
+	assert_true(AbilityText.is_keyword(landcycling))
+	assert_eq(AbilityText.of_ability(plainscycling, "Sample"), "Plainscycling {2}")
+	var spelled_out: ActivatedAbility = ActivatedAbility.new()
+	spelled_out.mana_cost = Scenario.mana_cost(1, [MmMana.Type.GREEN])
+	spelled_out.costs = landcycling.costs
+	spelled_out.effects = landcycling.effects
+	assert_eq(AbilityText.of_ability(spelled_out, "Topiary Panther"),
+		"{1}{G}, Discard this card: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.")
+
+
 func test_an_activated_ability_can_cost_life() -> void:
 	var ability: ActivatedAbility = ActivatedAbility.new()
 	ability.mana_cost = Scenario.mana_cost(1)
@@ -676,6 +770,18 @@ func test_a_power_filter_is_worded_after_its_noun() -> void:
 	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(greater)])), "creatures with power 2 or less",
 		"Not 3 or greater is 2 or less.")
 
+
+
+func test_a_toughness_filter_is_worded_after_its_noun() -> void:
+	var creature: MmFilter = Scenario.of_type(CardType.CREATURE)
+	var greater: ToughnessFilter = Scenario.toughness(4, ToughnessFilter.Comparison.OR_GREATER)
+
+	assert_eq(AbilityText.things(Scenario.all_of([creature, greater])), "creatures with toughness 4 or greater")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.toughness(2)])), "creatures with toughness 2 or less")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(greater)])), "creatures with toughness 3 or less",
+		"Not 4 or greater is 3 or less.")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(Scenario.toughness(2))])),
+		"creatures with toughness 3 or greater")
 
 func test_looking_at_and_casting_from_the_top_of_the_library_are_worded_as_printed() -> void:
 	var look: LookAtTopOfLibraryAbility = LookAtTopOfLibraryAbility.new()

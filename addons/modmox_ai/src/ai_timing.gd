@@ -20,6 +20,11 @@ enum Tag {
 	## Counters a spell or an ability: considered only with the other player's spell or ability on top
 	## of the stack, never to counter its own.
 	COUNTER,
+	## Only draws cards or searches for them into its owner's hand, from an ability used from
+	## the hand, such as cycling or basic landcycling (ADR 0059): worth the mana left over,
+	## so considered only in the other player's end step, when that mana would go unused,
+	## and in response to the other player's spell or ability.
+	SPARE_MANA,
 }
 
 const COMBAT_STEPS: Array[MmTurn.Step] = [
@@ -68,7 +73,20 @@ static func tag_of_action(state: MmGameState, action: MmAction) -> Tag:
 	if spell != null:
 		return tag_of_spell(spell)
 	var effects: Array[MmEffect] = effects_of_action(state, action)
+	var activated: ActivatedAbility = activated_ability_of(state, action)
+	if activated != null and activated.is_activated_from_hand and _only_draws_or_searches_into_the_hand(effects):
+		return Tag.SPARE_MANA
 	return tag_of_effects(effects)
+
+
+## Whether [param effects] do nothing but draw cards or search for cards into the hand.
+static func _only_draws_or_searches_into_the_hand(effects: Array[MmEffect]) -> bool:
+	for effect: MmEffect in effects:
+		var search: SearchLibraryEffect = effect as SearchLibraryEffect
+		var searches_into_the_hand: bool = search != null and search.destination == MmZone.Kind.HAND
+		if not (effect is DrawCardsEffect or searches_into_the_hand):
+			return false
+	return not effects.is_empty()
 
 
 ## The tag of [param spell]. A modal spell's modes share their tag when they agree;
@@ -137,6 +155,8 @@ static func is_in_window(state: MmGameState, player_id: int, tag: Tag) -> bool:
 		return true
 	if tag == Tag.COUNTER:
 		return false
+	if tag == Tag.SPARE_MANA:
+		return state.active_player_id != player_id and state.step == MmTurn.Step.END
 	if state.step == MmTurn.Step.DECLARE_BLOCKERS:
 		return true
 	if tag == Tag.EVASION:

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Villain" format=3]
+
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/vanguard_of_brimaz_pain.png" id="1_hrury"]
+[ext_resource type="Script" path="res://run/villain.gd" id="2_x2dhu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="3_448db"]
+[ext_resource type="Resource" path="res://content/decks/vanguard_of_brimaz.tres" id="4_g35s2"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/vanguard_of_brimaz.png" id="5_j32xd"]
+
+[resource]
+script = ExtResource("2_x2dhu")
+name = "Vanguard of Brimaz"
+sprite = ExtResource("5_j32xd")
+pain_sprite = ExtResource("1_hrury")
+setups = Array[ExtResource("3_448db")]([ExtResource("4_g35s2")])

@@ -246,6 +246,8 @@ func _answer(engine: MmEngine, decision: MmPendingDecision, attempted_casts: Dic
 		return _payment_answer(engine, decision as PayManaDecision)
 	if decision is ChooseTargetDecision:
 		return _target_answer(engine, decision as ChooseTargetDecision)
+	if decision is ChooseTargetsDecision:
+		return []
 	if decision is DeclareAttackersDecision:
 		return (decision as DeclareAttackersDecision).candidate_ids.duplicate()
 	if decision is DeclareBlockersDecision:

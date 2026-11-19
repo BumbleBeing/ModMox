@@ -503,6 +503,9 @@ func _plan_on(copy: MmEngine) -> PaymentPlan:
 		if decision is ChooseTargetDecision:
 			copy.submit(0)
 			continue
+		if decision is ChooseTargetsDecision:
+			copy.submit([])
+			continue
 		var payment: PayManaDecision = decision as PayManaDecision
 		if payment == null:
 			break

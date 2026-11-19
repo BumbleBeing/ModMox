@@ -6,6 +6,7 @@ Some decisions choose a subset or divide an amount, so their answers cannot be l
 - Declaring attackers: a list of distinct object IDs from the candidates, of any length. An empty list declares no attackers.
 - Declaring blockers: a list of [blocker ID, attacker ID] pairs. Several blockers may block one attacker.
 - Dividing combat damage: one amount per recipient, in the decision's order (blockers by ID, then the player being attacked if the attacker has trample), adding up to the attacker's power.
+- Choosing "up to N" targets for one Target Requirement: a list of distinct indexes into the decision's candidates, from none to N long (CR 115.3, 601.2c). Indexes, as a single target's answer is (ADR 0012), because a candidate may be a player as well as an object. With nothing to choose it is never asked.
 
 Each decision lists its candidates, and validation checks every entry against them, so an answer still cannot describe something illegal. This costs a second set of checks for each decision kind, which is the price ADR 0012 avoided for Actions. A decision with only one possible answer is never asked, so a creature blocked by one creature assigns its damage without asking.
 

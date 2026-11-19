@@ -82,6 +82,25 @@ func test_targeting_names_the_spell_or_the_abilitys_source() -> void:
 	assert_eq(activated.text, "Choose a target for Wand's ability")
 
 
+func test_up_to_targets_say_how_many_and_for_what() -> void:
+	var view: MmPlayerView = _view()
+	var ability: MmObjectView = _object(21, "ability", MmGameObject.NO_CARD)
+	ability.source_object_id = 1
+	ability.ability = TriggeredAbility.new()
+	view.stack = [_object(20, "Gird for Battle", 5), ability]
+	var candidates: Array[MmReference] = [MmReference.to_object(3)]
+
+	var spell: InfoPrompt = InfoPrompt.of(ChooseTargetsDecision.new(HERO, 20, 0, candidates, 2), view)
+	var triggered: InfoPrompt = InfoPrompt.of(ChooseTargetsDecision.new(HERO, 21, 0, candidates, 2), view)
+	var one: InfoPrompt = InfoPrompt.of(ChooseTargetsDecision.new(HERO, 20, 0, candidates, 1), view)
+
+	assert_eq(spell.text, "Choose up to two targets for Gird for Battle")
+	assert_true(spell.can_cancel, "A step of the cast.")
+	assert_eq(triggered.text, "Choose up to two targets for Wand's ability")
+	assert_false(triggered.can_cancel, "CR 603.3: a trigger on the stack can't be taken back.")
+	assert_eq(one.text, "Choose up to one target for Gird for Battle")
+
+
 func test_a_choice_made_on_resolution_says_what_to_choose_and_for_what_and_cannot_be_canceled() -> void:
 	var view: MmPlayerView = _view()
 	var ability: MmObjectView = _object(21, "ability", MmGameObject.NO_CARD)

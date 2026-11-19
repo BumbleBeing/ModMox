@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_dus1m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_4j72v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="2_avv7y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_i3yde"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_yxft2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="4_x4uef"]
+[ext_resource type="Resource" path="res://content/tokens/cat_soldier_1_1_white_vigilance.tres" id="5_ti7ic"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_62r0p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_l023t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_fqea2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_ebojw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/targets_filter.gd" id="10_l880w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="11_ej4w4"]
+
+[sub_resource type="Resource" id="Resource_cy2is"]
+script = ExtResource("2_avv7y")
+
+[sub_resource type="Resource" id="Resource_h42t8"]
+script = ExtResource("4_x4uef")
+token = ExtResource("5_ti7ic")
+
+[sub_resource type="Resource" id="Resource_go02f"]
+script = ExtResource("9_ebojw")
+
+[sub_resource type="Resource" id="Resource_su8qp"]
+script = ExtResource("10_l880w")
+filter = SubResource("Resource_go02f")
+
+[sub_resource type="Resource" id="Resource_om4gj"]
+script = ExtResource("11_ej4w4")
+filter = SubResource("Resource_su8qp")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_npoqs"]
+script = ExtResource("7_l023t")
+trigger = SubResource("Resource_om4gj")
+effects = Array[ExtResource("3_yxft2")]([SubResource("Resource_h42t8")])
+
+[sub_resource type="Resource" id="Resource_cq8ra"]
+script = ExtResource("2_4j72v")
+symbols = Array[int]([0, 0])
+
+[resource]
+script = ExtResource("3_i3yde")
+name = "Vanguard of Brimaz"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Soldier"])
+mana_cost = SubResource("Resource_cq8ra")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_dus1m")]([SubResource("Resource_cy2is"), SubResource("Resource_npoqs")])
+rarity = 1

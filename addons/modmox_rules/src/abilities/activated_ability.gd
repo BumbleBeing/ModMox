@@ -17,6 +17,10 @@ extends MmAbility
 ## "Activate only as a sorcery" (CR 602.5d): only in its controller's main phase with an
 ## empty stack.
 @export var is_sorcery_speed: bool = false
+## Works only while its card is in its owner's hand, as cycling does (CR 113.6b, 702.29b,
+## ADR 0059), and never on the battlefield or in the command zone. Every other activated
+## ability works only there, never from the hand.
+@export var is_activated_from_hand: bool = false
 
 
 ## CR 605.1a: it could add mana and it has no target. There are no loyalty abilities in
@@ -31,6 +35,12 @@ func is_mana_ability() -> bool:
 		if effect.adds_mana():
 			adds_mana = true
 	return adds_mana
+
+
+## Whether this ability works where [param source] is now (CR 113.6): from the hand if it
+## says so, and otherwise anywhere but the hand.
+func works_in(state: MmGameState, source: MmGameObject) -> bool:
+	return is_activated_from_hand == (source.zone() == state.player(source.owner_id).hand)
 
 
 ## Whether every cost can be paid right now with [param source] as the ability's source,

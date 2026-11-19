@@ -41,7 +41,7 @@ First message:
 ```
 You are building one missing primitive, "<name>" (<what it expresses>), for /add-enemy-deck in the ModMox repo (/home/jackson/Projects/ModMox). It blocks these cards: <card names, each with its Oracle text>. Read CLAUDE.md, .claude/skills/add-card/SKILL.md (step 4), addons/modmox_rules/docs/conventions.md, the ADRs that bear on it, and the ledger at <ledger.json path>.
 
-Don't write any code yet. Draft add-card's step 4 proposal for this one primitive (class, folder and fields; the Oracle sentence; engine test scenarios; any ADR it touches; its AbilityText words; Reminders and a Keyword Icon if it is a keyword; the AI; any change to the card tool) and reply with it. The user will read it before anything is built. If the cards need it to be general in some way, say which card needs what. If it can't be built without another primitive that is missing too, say so and name that one.
+Don't write any code yet. Draft add-card's step 4 proposal for this one primitive (class, folder and fields; the Oracle sentence; engine test scenarios; any ADR it touches; its AbilityText words; if it is a keyword, whether it needs a Keyword Chip at all (a question for the user), and if so its Reminder and Keyword Icon; the AI; any change to the card tool) and reply with it. The user will read it before anything is built. If the cards need it to be general in some way, say which card needs what. If it can't be built without another primitive that is missing too, say so and name that one.
 ```
 
 After a yes, with `SendMessage` to the same subagent:

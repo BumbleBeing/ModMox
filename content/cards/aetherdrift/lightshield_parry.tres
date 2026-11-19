@@ -1,0 +1,89 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_pyqt5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_3divj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_x2adf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_8adia"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="3_al00j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_i0icn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_sukg0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_q7l51"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_5q5ol"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="8_cpjhx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_w40bc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="10_n6emb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="11_uvtss"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/discard_this_card_cost.gd" id="12_vgv27"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="13_xdaxx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="14_uig35"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/cycling_ability.gd" id="16_akkff"]
+
+[sub_resource type="Resource" id="Resource_3qfj3"]
+script = ExtResource("3_al00j")
+
+[sub_resource type="Resource" id="Resource_4dpmn"]
+script = ExtResource("4_i0icn")
+value = 2
+
+[sub_resource type="Resource" id="Resource_v8cbg"]
+script = ExtResource("4_i0icn")
+value = 2
+
+[sub_resource type="Resource" id="Resource_0ejpi"]
+script = ExtResource("5_sukg0")
+power = SubResource("Resource_4dpmn")
+toughness = SubResource("Resource_v8cbg")
+affected = SubResource("Resource_3qfj3")
+
+[sub_resource type="Resource" id="Resource_yfca8"]
+script = ExtResource("6_q7l51")
+continuous = SubResource("Resource_0ejpi")
+
+[sub_resource type="Resource" id="Resource_8jlqu"]
+script = ExtResource("10_n6emb")
+
+[sub_resource type="Resource" id="Resource_vgjhb"]
+script = ExtResource("9_w40bc")
+filter = SubResource("Resource_8jlqu")
+
+[sub_resource type="Resource" id="Resource_gf07n"]
+script = ExtResource("8_cpjhx")
+targets = Array[ExtResource("9_w40bc")]([SubResource("Resource_vgjhb")])
+effects = Array[ExtResource("2_x2adf")]([SubResource("Resource_yfca8")])
+
+[sub_resource type="Resource" id="Resource_ukadd"]
+script = ExtResource("12_vgv27")
+
+[sub_resource type="Resource" id="Resource_wlt0p"]
+script = ExtResource("4_i0icn")
+value = 1
+
+[sub_resource type="Resource" id="Resource_yo7x5"]
+script = ExtResource("13_xdaxx")
+
+[sub_resource type="Resource" id="Resource_0q3hh"]
+script = ExtResource("14_uig35")
+amount = SubResource("Resource_wlt0p")
+players = SubResource("Resource_yo7x5")
+
+[sub_resource type="Resource" id="Resource_qy68k"]
+script = ExtResource("2_3divj")
+generic = 2
+
+[sub_resource type="Resource" id="Resource_bxd7y"]
+script = ExtResource("16_akkff")
+mana_cost = SubResource("Resource_qy68k")
+costs = Array[ExtResource("11_uvtss")]([SubResource("Resource_ukadd")])
+effects = Array[ExtResource("2_x2adf")]([SubResource("Resource_0q3hh")])
+is_activated_from_hand = true
+
+[sub_resource type="Resource" id="Resource_jr132"]
+script = ExtResource("2_3divj")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_8adia")
+name = "Lightshield Parry"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_jr132")
+abilities = Array[ExtResource("1_pyqt5")]([SubResource("Resource_gf07n"), SubResource("Resource_bxd7y")])

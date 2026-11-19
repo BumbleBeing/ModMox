@@ -142,7 +142,8 @@ static func keep_all(engine: MmEngine) -> String:
 ## Answers decisions with simple defaults until [param stop] returns true for the engine:
 ## play first, keep, pass priority, bottom or discard the first candidates offered, attack
 ## and block with nothing, put all combat damage on the first recipient, stack triggers in
-## the order offered, and choose the first target and replacement effect offered.
+## the order offered, choose the first target and replacement effect offered, and as many
+## of the first targets offered as an "up to" requirement allows.
 ## With [param play_lands], plays the first land offered instead of passing.
 ## Returns the first rejection reason, or "" once stopped. Gives up after [param limit].
 static func autoplay(engine: MmEngine, stop: Callable, play_lands: bool = false, limit: int = 2000) -> String:
@@ -183,6 +184,9 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 	if decision is ChoosePermanentsDecision:
 		var pick: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
 		return pick.candidate_ids.slice(0, pick.count)
+	if decision is ChooseTargetsDecision:
+		var targeting: ChooseTargetsDecision = decision as ChooseTargetsDecision
+		return range(mini(targeting.most, targeting.candidates.size()))
 	if decision is ChoosePlayOrDrawDecision:
 		return ChoosePlayOrDrawDecision.Choice.PLAY
 	if decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
@@ -1641,6 +1645,14 @@ static func power(amount: int, comparison: PowerFilter.Comparison = PowerFilter.
 	return filter
 
 
+## "With toughness [param amount] or less" (or greater).
+static func toughness(amount: int, comparison: ToughnessFilter.Comparison = ToughnessFilter.Comparison.OR_LESS) -> ToughnessFilter:
+	var filter: ToughnessFilter = ToughnessFilter.new()
+	filter.amount = amount
+	filter.comparison = comparison
+	return filter
+
+
 ## "Once each turn, you may cast a creature spell with power 2 or less from the top of your
 ## library."
 static func cast_from_top() -> CastFromTopOfLibraryAbility:
@@ -1794,3 +1806,126 @@ static func pass_to_search(engine: MmEngine) -> String:
 static func cast_to_search(engine: MmEngine, card_name: String = "Seek") -> String:
 	var error: String = cast(engine, card_in_hand(engine, engine.hero(), card_name))
 	return error if error != "" else pass_to_search(engine)
+
+
+# --- Card track: Heroic ----------------------------------------------------------------
+
+
+## "A spell that targets [param filter]", for a SpellCastTrigger's filter.
+static func targets(filter: MmFilter) -> TargetsFilter:
+	var targeting: TargetsFilter = TargetsFilter.new()
+	targeting.filter = filter
+	return targeting
+
+
+## "A spell that targets this creature": Heroic's filter.
+static func targets_source() -> TargetsFilter:
+	return targets(IsSourceFilter.new())
+
+
+## A 2/2 creature costing {0} with Heroic: "Whenever you cast a spell that targets this
+## creature, [param effects]", by default "you gain 5 life".
+static func heroic(card_name: String = "Hero", effects: Array[MmEffect] = []) -> MmCardDefinition:
+	var gained: Array[MmEffect] = effects.duplicate()
+	if gained.is_empty():
+		gained.append(gain_life(5, you()))
+	return creature(card_name, 2, 2, [triggered(casts(targets_source(), MmTrigger.Whose.YOU), gained)])
+
+
+# --- Card track: up to N targets ------------------------------------------------------
+
+
+## "Up to [param most] target [filter]": one word "target" that chooses any number of
+## different objects from none to [param most] (CR 115.1d, 115.3, 601.2c).
+static func up_to_targets(filter: MmFilter, most: int) -> TargetRequirement:
+	var requirement: TargetRequirement = target(filter)
+	requirement.most = most
+	requirement.is_up_to = true
+	return requirement
+
+
+## A sorcery costing {0}, after Gird for Battle: "Put a +1/+1 counter on each of up to two
+## target creatures."
+static func free_gird(card_name: String = "Gird") -> MmCardDefinition:
+	return sorcery(card_name, mana_cost(0), [up_to_targets(of_type(MmCardTypes.CardType.CREATURE), 2)],
+		[put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, targeted(0))])
+
+
+## "Other creature you control", Felidar Savior's targets.
+static func other_creature_you_control() -> AllOfFilter:
+	var yours: ControlledByFilter = ControlledByFilter.new()
+	yours.whose = MmTrigger.Whose.YOU
+	return all_of([of_type(MmCardTypes.CardType.CREATURE), is_not(IsSourceFilter.new()), yours])
+
+
+## A 2/3 creature costing {0}, after Felidar Savior: "When this creature enters, put a
+## +1/+1 counter on each of up to two other target creatures you control."
+static func savior(card_name: String = "Savior") -> MmCardDefinition:
+	return creature(card_name, 2, 3, [triggered(enters(IsSourceFilter.new()),
+		[put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, targeted(0))],
+		[up_to_targets(other_creature_you_control(), 2)])])
+
+
+## Answers the pending choice of up to some number of targets with [param chosen], in order.
+static func choose_targets(engine: MmEngine, chosen: Array[MmReference]) -> String:
+	var decision: ChooseTargetsDecision = engine.pending_decision() as ChooseTargetsDecision
+	if decision == null:
+		return "Not a choice of targets."
+	var answer: Array = []
+	for wanted: MmReference in chosen:
+		var found: int = -1
+		for index: int in decision.candidates.size():
+			if decision.candidates[index].equals(wanted):
+				found = index
+		if found == -1:
+			return "%s is not a candidate." % wanted.describe()
+		answer.append(found)
+	return engine.submit(answer)
+
+
+## Casts [param object_id], choosing [param chosen] for its one "up to" requirement when it
+## is asked (it is not when nothing could be chosen), and pays automatically.
+static func cast_up_to(engine: MmEngine, object_id: int, chosen: Array[MmReference]) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var index: int = cast_index(decision, object_id)
+	if index == -1:
+		return "Object %d cannot be cast." % object_id
+	var error: String = engine.submit(index)
+	if error == "" and engine.pending_decision() is ChooseTargetsDecision:
+		error = choose_targets(engine, chosen)
+	return error if error != "" else auto_pay(engine)
+
+
+# --- Cycling --------------------------------------------------------------------------
+
+## "Cycling [param mana]" (CR 702.29a): "[mana], Discard this card: Draw a card."
+static func cycling(mana: MmManaCost) -> CyclingAbility:
+	var ability: CyclingAbility = CyclingAbility.new()
+	ability.mana_cost = mana
+	return ability
+
+
+## An instant costing {0}, "You gain 1 life", with cycling for [param mana], {2} unless
+## another cost is given.
+static func cycler(card_name: String = "Cycler", mana: MmManaCost = null) -> MmCardDefinition:
+	var definition: MmCardDefinition = instant(card_name, mana_cost(0), [], [gain_life(1, you())])
+	definition.abilities.append(cycling(mana if mana != null else mana_cost(2)))
+	return definition
+
+
+## "Basic landcycling [param mana]" (CR 702.29e): "[mana], Discard this card: Search your
+## library for a basic land card, reveal it, put it into your hand, then shuffle."
+static func landcycling(mana: MmManaCost) -> CyclingAbility:
+	var ability: CyclingAbility = cycling(mana)
+	ability.search = basic_land_card()
+	return ability
+
+
+## An instant costing {0}, "You gain 1 life", with basic landcycling for [param mana], {2}
+## unless another cost is given.
+static func landcycler(card_name: String = "Landcycler", mana: MmManaCost = null) -> MmCardDefinition:
+	var definition: MmCardDefinition = instant(card_name, mana_cost(0), [], [gain_life(1, you())])
+	definition.abilities.append(landcycling(mana if mana != null else mana_cost(2)))
+	return definition

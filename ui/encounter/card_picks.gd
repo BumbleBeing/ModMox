@@ -4,7 +4,9 @@ extends RefCounted
 ## which to put on the bottom after keeping, or which to discard; or permanents on the
 ## battlefield, such as creatures to tap for a cost (ChoosePermanentsDecision); or up to
 ## some number of cards in the Hero's library, found by a search (ChooseCardsInLibraryDecision,
-## game ADR 0058), any number of which up to that answers. Cards are picked one
+## game ADR 0058), any number of which up to that answers; or up to some number of target
+## permanents (ChooseTargetsDecision, game ADR 0022), any number of which up to that
+## answers too. Cards are picked one
 ## click at a time, and the answer lists them in the order picked, so the last card put on
 ## the bottom ends up lowest. Kept by the Encounter Screen outside the nodes it redraws, as
 ## a CombatSelection is, and confirmed with a button.
@@ -23,7 +25,8 @@ var _history: Array = []
 ## Whether [param decision] is answered by picking cards.
 static func covers(decision: MmPendingDecision) -> bool:
 	return decision is ChooseCardsToBottomDecision or decision is ChooseCardsToDiscardDecision \
-		or decision is ChoosePermanentsDecision or decision is ChooseCardsInLibraryDecision
+		or decision is ChoosePermanentsDecision or decision is ChooseCardsInLibraryDecision \
+		or decision is ChooseTargetsDecision
 
 
 func _init(decision: MmPendingDecision = null) -> void:
@@ -43,6 +46,11 @@ func _init(decision: MmPendingDecision = null) -> void:
 		_decision = decision
 		_candidates = (decision as ChooseCardsInLibraryDecision).candidate_ids.duplicate()
 		_count = (decision as ChooseCardsInLibraryDecision).most
+	elif decision is ChooseTargetsDecision:
+		_decision = decision
+		for candidate: MmReference in (decision as ChooseTargetsDecision).candidates:
+			_candidates.append(candidate.id)
+		_count = (decision as ChooseTargetsDecision).most
 
 
 ## Whether these are the picks being made for [param decision]: a new decision needs new ones.
@@ -70,6 +78,16 @@ func is_searching() -> bool:
 ## Whether the picks are permanents on the battlefield, clicked there.
 func is_picking_permanents() -> bool:
 	return _decision is ChoosePermanentsDecision
+
+
+## Whether the picks are "up to" some number of target permanents, clicked on the battlefield.
+func is_targeting() -> bool:
+	return _decision is ChooseTargetsDecision
+
+
+## Whether the picks are permanents clicked on the battlefield: to pay a cost, or targets.
+func is_picking_on_battlefield() -> bool:
+	return is_picking_permanents() or is_targeting()
 
 
 ## Whether the order picked changes anything: only for several cards put on the bottom.
@@ -132,9 +150,10 @@ func undo() -> bool:
 	return true
 
 
-## Whether the picks answer: as many as asked for, or for a search any number up to that.
+## Whether the picks answer: as many as asked for, or for a search or targets any number up
+## to that.
 func is_complete() -> bool:
-	if is_searching():
+	if is_searching() or is_targeting():
 		return _picked.size() <= _count
 	return is_active() and _picked.size() == _count
 
@@ -149,9 +168,20 @@ func search_confirm_text(view: MmPlayerView) -> String:
 	return "Find %d cards" % _picked.size()
 
 
-## The decision's answer: the picked cards' IDs, in the order picked.
+## What confirming targets does, on the pass button: "No targets" with none picked, and
+## otherwise "Confirm targets".
+func targets_confirm_text() -> String:
+	return "No targets" if _picked.is_empty() else "Confirm targets"
+
+
+## The decision's answer: the picked cards' IDs, in the order picked; for targets, their
+## places among the decision's candidates.
 func answer() -> Array:
 	var ids: Array = []
+	if is_targeting():
+		for id: int in _picked:
+			ids.append(_candidates.find(id))
+		return ids
 	ids.assign(_picked)
 	return ids
 

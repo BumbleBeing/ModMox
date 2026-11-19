@@ -37,8 +37,10 @@ var controlled_since_game_turn: int = 0
 ## The flattened definition, or null for an ability on the stack. Rules code reads
 ## characteristics through MmGameState.characteristics_of(), never from here (ADR 0009).
 var definition: MmCardDefinition
-## For a spell or ability on the stack: the chosen target of each target requirement, in
-## order. An entry is null until that target is chosen.
+## For a spell or ability on the stack: the chosen targets of its target requirements, in
+## order, a place for each target a requirement may choose, so "up to two target creatures"
+## takes two (ADR 0014). An entry is null until that target is chosen, and stays null for
+## one an "up to" requirement left unchosen.
 var targets: Array[MmReference] = []
 ## For a modal spell or modal triggered ability on the stack: the chosen mode (CR 700.2),
 ## an index into its spell ability's or triggered ability's modes. SpellAbility.NO_MODE for
@@ -290,7 +292,7 @@ func set_chosen_mode(mode_index: int) -> void:
 	chosen_mode = mode_index
 
 
-## Event-only: records the target chosen for requirement [param index].
+## Event-only: records the target chosen for place [param index] of the targets.
 func set_target(index: int, target: MmReference) -> void:
 	while targets.size() <= index:
 		targets.append(null)

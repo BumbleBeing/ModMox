@@ -139,6 +139,28 @@ func test_permanents_for_a_cost_are_picked_and_unpicked_to_the_count() -> void:
 	assert_eq(picks.picked(), [6, 3] as Array[int])
 
 
+func test_up_to_targets_are_picked_on_the_board_and_answer_with_any_number_up_to_most() -> void:
+	var candidates: Array[MmReference] = [MmReference.to_object(3), MmReference.to_object(4), MmReference.to_object(6)]
+	var decision: ChooseTargetsDecision = ChooseTargetsDecision.new(HERO, 20, 0, candidates, 2)
+	var picks: CardPicks = CardPicks.new(decision)
+	assert_true(CardPicks.covers(decision))
+	assert_true(picks.is_targeting())
+	assert_true(picks.is_picking_on_battlefield())
+	assert_false(picks.is_picking_permanents(), "Not a cost: nothing is drawn tapped.")
+	assert_true(picks.is_complete(), "None is an answer.")
+	assert_eq(picks.targets_confirm_text(), "No targets")
+	assert_eq(picks.answer(), [])
+
+	assert_true(picks.toggle(6))
+	assert_true(picks.toggle(3))
+
+	assert_false(picks.can_pick(4), "Up to two.")
+	assert_true(picks.is_complete())
+	assert_eq(picks.targets_confirm_text(), "Confirm targets")
+	assert_eq(picks.answer(), [2, 0], "Places among the candidates, in the order picked.")
+	assert_eq(decision.validate(picks.answer()), "")
+
+
 func _bottom(count: int) -> ChooseCardsToBottomDecision:
 	return ChooseCardsToBottomDecision.new(HERO, count, HAND)
 

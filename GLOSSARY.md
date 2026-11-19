@@ -139,15 +139,23 @@ A Potion's picture: a 16 × 16 pixel icon on a beige square with a darker circle
 _Avoid_: Potion art, potion sprite, potion card
 
 **Mod**:
-An Item the Hero holds (a Hex aside) and can apply, in the deckbuilder only, to a card to change it for the rest of the run. Applied, it becomes one of that Run Card's Modifications, the rules engine's word for the change itself. Applying one is final the moment it is confirmed, and it fills one of the card's Mod Slots. A Mod is applicable to a card that has an empty Mod Slot and that the Mod's own rule accepts, a basic land included. Its name becomes part of the card's Modded Name.
+An Item the Hero holds (a Hex aside) and can apply, in the deckbuilder only, to a card to change it for the rest of the run. It has a name, an Augmentation, a Mod Cost, a Rarity and the card types it accepts. Applied, its Augmentation and Mod Cost become that Run Card's Modifications, the rules engine's word for the changes themselves. Applying one is final the moment it is confirmed, and it fills one of the card's Mod Slots. A Mod is applicable to a card that has an empty Mod Slot and has any of the Mod's card types as it reads now, after the Mods already on it, a basic land included; a Mod may add a rule of its own, such as needing a mana cost. A Mod that accepts lands accepts only lands. The same Mod may go on one card more than once, each copy adding its whole Augmentation and Mod Cost, unless the Mod is once per card, as every Unique one is. What a Mod does is written out from its Augmentation and Mod Cost, never by hand, wherever it is shown off a card. Its name becomes part of the card's Modded Name.
 _Avoid_: Modification (the engine's term), upgrade, enchantment
 
 **Hex**:
-A Mod that harms the card it is on. The Hero never holds or applies one: it arrives already on a card, and takes one of that card's three Mod Slots.
+A Mod that harms the card it is on. It has everything a Mod has, and its Augmentation may be a downside, such as "this enters tapped". The Hero never holds or applies one: it arrives already on a card, and takes one of that card's three Mod Slots.
 _Avoid_: Curse, bad mod, downgrade
 
+**Augmentation**:
+What a Mod does to the card it is on, such as "+1/+1 and trample": one or more changes to its characteristics or abilities. A Hex's may be a downside.
+_Avoid_: Effect (a rules term), bonus, stats
+
+**Mod Cost**:
+What a Mod adds to the cost of casting the card it is on: mana symbols, each a fixed color or generic, or an additional cost such as sacrificing a creature, discarding a card or paying life. A Mod that accepts lands has none, and every other Mod has one. A downside that is not paid as the card is cast belongs in the Augmentation.
+_Avoid_: Price (what the Workshop charges), tax, upkeep
+
 **Modded Name**:
-What a card with Mods or Hexes is called: the name of each one on it, in slot order, in front of the card's own. A Grizzly Bears with the Mod Violent is Violent Grizzly Bears. An effect that asks for cards "originally named" something goes by the Original's name, so a Violent Charmed Stray is still originally named Charmed Stray. A fuller set of naming rules is still to be agreed.
+What a card with Mods or Hexes is called: the name of each one on it, in alphabetical order of the Mods' and Hexes' names together, in front of the card's own, whose capitalization never changes. A Grizzly Bears with the Mod Violent is Violent Grizzly Bears. A Mod on the card twice is named once with Very in front, and three times with Extremely: Very Violent Grizzly Bears, Extremely Violent Grizzly Bears. Very and Extremely stand right in front of their Mod's name and play no part in the order: a Plains with Ancient once and Violent twice is Ancient Very Violent Plains. An effect that asks for cards "originally named" something goes by the Original's name, so a Violent Charmed Stray is still originally named Charmed Stray.
 _Avoid_: Prefix, title, nickname
 
 **Mod Slot**:
@@ -540,7 +548,7 @@ What one keyword means, in a sentence, shown in the Inspector beside its Keyword
 _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 
 **Rarity**:
-How scarce a card or a Potion is: Common, Uncommon, Rare, Mythic or Power-9. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. An Emblem has none.
+How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a Unique Villain or a rare Chaos Node event, never in other Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique, and Unique here is not the Villain Rank. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. An Emblem has none.
 _Avoid_: Tier (a part of a run), quality, grade
 
 **Divider**:

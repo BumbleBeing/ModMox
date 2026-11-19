@@ -58,20 +58,25 @@ static func mana_made_by(state: MmGameState, ability: ActivatedAbility, context:
 ## can be paid, and no Activation Restriction forbids it. "Only as a sorcery" always does
 ## there, since something is on the stack (CR 602.5d).
 static func pays_while_paying(state: MmGameState, source: MmGameObject, ability: ActivatedAbility, ability_index: int) -> bool:
-	if not ability.is_mana_ability() or not ability.can_pay_costs(state, source):
+	if not ability.is_mana_ability() or not ability.works_in(state, source) or not ability.can_pay_costs(state, source):
 		return false
 	return not ability.is_sorcery_speed and not (ability.is_once_each_game and source.is_ability_spent(ability_index))
 
 
-## Everything [param player_id] controls whose abilities work where it is (CR 113.6): their
-## permanents in ID order, then their Emblems and Potions in ID order (ADR 0036).
+## Everything [param player_id] may activate abilities from (CR 113.6): the permanents they
+## control in ID order, then their Emblems and Potions in ID order (ADR 0036), then the
+## cards in their hand in ID order, whose abilities work there only when they say so
+## (ActivatedAbility.works_in(), ADR 0059).
 static func sorted_sources_of(state: MmGameState, player_id: int) -> Array[MmGameObject]:
 	var held: Array[MmGameObject] = []
 	for command_object: MmGameObject in state.command.objects():
 		if command_object.controller_id == player_id:
 			held.append(command_object)
 	held.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
-	return sorted_permanents_of(state, player_id) + held
+	var hand: Array[MmGameObject] = []
+	hand.assign(state.player(player_id).hand.objects())
+	hand.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return sorted_permanents_of(state, player_id) + held + hand
 
 
 ## The permanents [param player_id] controls, in ID order.

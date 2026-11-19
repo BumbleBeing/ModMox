@@ -186,10 +186,14 @@ func next_decision() -> MmPendingDecision:
 					return decision
 				_choose_mode(decision.modes[0])  # The only mode that can be chosen needs no asking.
 			Stage.CHOOSE_TARGETS:
-				if _next_target < _target_requirements.size():
-					var legal: Array[MmReference] = _target_requirements[_next_target].legal_targets(_state, _context())
-					return ChooseTargetDecision.new(_player_id, _stack_object_id, _next_target, legal)
-				_stage = Stage.PAY_COSTS
+				if _next_target >= _target_requirements.size():
+					_stage = Stage.PAY_COSTS
+				else:
+					var choice: MmPendingDecision = TargetChoice.decision_for(_state, _player_id, _stack_object_id,
+						_target_requirements, _next_target, _context())
+					if choice != null:
+						return choice
+					_next_target += 1  # An "up to" with nothing to choose chooses none, unasked.
 			Stage.PAY_COSTS:
 				while _next_cost < _costs.size():
 					var cost: MmCost = _costs[_next_cost]
@@ -228,12 +232,15 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_paid_cost_indexes.append(_next_cost)
 		_next_cost += 1
 		return
+	if decision is ChooseTargetsDecision:
+		TargetChoice.perform_answer(_state, decision, answer, _target_requirements)
+		_next_target += 1
+		return
 	var index: int = answer
 	if decision is ChooseModeDecision:
 		_choose_mode((decision as ChooseModeDecision).modes[index])
 	elif decision is ChooseTargetDecision:
-		var chosen: MmReference = (decision as ChooseTargetDecision).candidates[index]
-		_state.perform(TargetChosenEvent.new(_stack_object_id, _next_target, chosen))
+		TargetChoice.perform_answer(_state, decision, answer, _target_requirements)
 		_next_target += 1
 	elif decision is PayManaDecision:
 		var action: MmAction = (decision as PayManaDecision).actions[index]

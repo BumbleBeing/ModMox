@@ -50,16 +50,23 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 	var checking: MmEffectContext = MmEffectContext.of_stack_object(resolving)
 	var targets: Array[MmReference] = []
 	var any_legal: bool = specs.is_empty()
+	var any_chosen: bool = false
 	for index: int in specs.size():
-		var chosen: MmReference = resolving.targets[index] if index < resolving.targets.size() else null
-		var still_legal: bool = specs[index].is_still_legal(state, chosen, checking)
-		targets.append(chosen if still_legal else null)
-		any_legal = any_legal or still_legal
+		var first: int = TargetRequirement.first_place(specs, index)
+		for place: int in range(first, first + specs[index].place_count()):
+			var chosen: MmReference = resolving.targets[place] if place < resolving.targets.size() else null
+			var still_legal: bool = specs[index].is_still_legal(state, chosen, checking)
+			targets.append(chosen if still_legal else null)
+			any_chosen = any_chosen or chosen != null
+			any_legal = any_legal or still_legal
+	# CR 608.2b: only a spell or ability whose every chosen target is illegal is kept from
+	# resolving. One whose "up to" requirements chose none is targeting nothing.
+	any_legal = any_legal or not any_chosen
 	var triggered_ability: TriggeredAbility = resolving.ability as TriggeredAbility
 	if triggered_ability != null and not triggered_ability.condition_holds(state, checking):
 		any_legal = false  # CR 603.4: the intervening "if" no longer holds, so it does nothing.
 	procedure._resolves = any_legal
-	procedure._context = MmEffectContext.of_stack_object(resolving, targets)
+	procedure._context = MmEffectContext.of_stack_object(resolving, targets, TargetRequirement.place_counts(specs))
 	return procedure
 
 

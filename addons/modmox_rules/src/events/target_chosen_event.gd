@@ -1,8 +1,10 @@
 class_name TargetChosenEvent
 extends MmEvent
-## The target for one requirement of a spell or ability on the stack is chosen (CR 601.2c).
+## One target of a spell or ability on the stack is chosen (CR 601.2c), for one place of its
+## targets: a requirement takes a place for each target it may choose (ADR 0014).
 
 var object_id: int
+## The place in the stack object's targets, not the requirement's index.
 var target_index: int
 var target: MmReference
 

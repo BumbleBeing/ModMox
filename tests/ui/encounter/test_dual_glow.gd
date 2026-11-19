@@ -130,9 +130,8 @@ func test_a_redraw_leaves_a_glow_of_two_colors_as_it_was_and_a_new_one_eases_in(
 
 
 func test_a_held_card_with_two_kinds_glows_in_both_made_lighter_and_plainly_again_put_down() -> void:
-	_open([_staff()])
-	var card: MmObjectView = _seen(_in_hand("Staff"))
-	_give_an_ability(card.id)
+	_open([_trinket()])
+	var card: MmObjectView = _seen(_in_hand("Trinket"))
 	var face: Control = _screen.face_of(card.id)
 	var at: Vector2 = face.position + Vector2(30, 60)
 
@@ -152,9 +151,8 @@ func test_a_held_card_with_two_kinds_glows_in_both_made_lighter_and_plainly_agai
 
 
 func test_letting_go_of_a_card_with_two_kinds_opens_the_option_menu_with_both() -> void:
-	_open([_staff()])
-	var card: MmObjectView = _seen(_in_hand("Staff"))
-	_give_an_ability(card.id)
+	_open([_trinket()])
+	var card: MmObjectView = _seen(_in_hand("Trinket"))
 	var at: Vector2 = _screen.face_of(card.id).position + Vector2(30, 60)
 
 	_screen.press_hand(at, false)
@@ -164,19 +162,13 @@ func test_letting_go_of_a_card_with_two_kinds_opens_the_option_menu_with_both() 
 	assert_true(_screen.option_menu().is_open())
 	var rows: Array[Button] = _screen.option_menu().rows()
 	assert_eq(rows.size(), 2)
-	assert_eq([rows[0].text, rows[1].text], ["Cast Staff", "Its ability"])
+	assert_eq([rows[0].text, rows[1].text], ["Cast Trinket", "Cycling {0}"], "The row reads as the ability is printed.")
 	_screen.cancel_drag()
 
 
 func test_letting_go_of_a_card_with_only_an_ability_uses_it() -> void:
-	_open([_staff()])
-	var card: MmObjectView = _seen(_in_hand("Staff"))
-	var clicks: DecisionClicks = _screen._clicks
-	# The answer that casts it stands in for the ability's: no card has one used from the hand yet.
-	clicks._hand_abilities[card.id] = clicks._hand_options[card.id]
-	clicks._hand_options.erase(card.id)
-	clicks.glow_as(card.id, DecisionClicks.Kind.ABILITY)
-	_screen._show_hand()
+	_open([_boulder()])
+	var card: MmObjectView = _seen(_in_hand("Boulder"))
 	var at: Vector2 = _screen.face_of(card.id).position + Vector2(30, 60)
 
 	_screen.press_hand(at, false)
@@ -186,7 +178,8 @@ func test_letting_go_of_a_card_with_only_an_ability_uses_it() -> void:
 	_presenter.wait_until_idle()
 
 	assert_false(_screen.option_menu().is_open(), "One thing to do: no menu.")
-	assert_ne(_permanent("Staff"), -1, "The answer was given.")
+	assert_eq(_seen(card.id), null)
+	assert_true(_in_graveyard("Boulder"), "It was cycled: discarding it paid for the ability.")
 
 
 func test_a_permanent_glowing_in_two_colors_scrolled_out_of_sight_colors_the_arrow_with_the_first() -> void:
@@ -200,14 +193,16 @@ func test_a_permanent_glowing_in_two_colors_scrolled_out_of_sight_colors_the_arr
 	assert_eq(line.arrow_tint(line.right_arrow()), DecisionClicks.color_of(DecisionClicks.Kind.ABILITY))
 
 
-## Gives the card in hand that is [param object_id] an ability used from the hand, as the
-## first card with one will have: here the answer that casts it, under another name.
-func _give_an_ability(object_id: int) -> void:
-	var clicks: DecisionClicks = _screen._clicks
-	clicks._hand_abilities[object_id] = [ClickOption.new(clicks.hand_options_of(object_id)[0].answer, "Its ability")]
-	clicks._add_kind(object_id, DecisionClicks.Kind.ABILITY)
-	# The Hand Strip is shown what each card offers, so it is shown the hand again.
-	_screen._show_hand()
+## An artifact costing {0} with cycling {0}: it can be cast and cycled.
+func _trinket() -> MmCardDefinition:
+	return Scenario.artifact("Trinket", [Scenario.cycling(Scenario.mana_cost(0))])
+
+
+## A creature costing {9} with cycling {0}: in the first turns it can only be cycled.
+func _boulder() -> MmCardDefinition:
+	var boulder: MmCardDefinition = Scenario.creature("Boulder", 9, 9, [Scenario.cycling(Scenario.mana_cost(0))])
+	boulder.mana_cost = Scenario.mana_cost(9)
+	return boulder
 
 
 ## An artifact costing {0} with a mana ability and one that deals damage.
@@ -271,6 +266,13 @@ func _in_hand(card_name: String) -> int:
 		if card.name == card_name:
 			return card.id
 	return -1
+
+
+func _in_graveyard(card_name: String) -> bool:
+	for card: MmObjectView in _presenter.snapshot().view.graveyards.get(HERO, []):
+		if card.name == card_name:
+			return true
+	return false
 
 
 func _seen(object_id: int) -> MmObjectView:

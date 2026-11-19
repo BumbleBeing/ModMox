@@ -1,0 +1,68 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_l7dp6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_4dlrd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_egirg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_u8o80"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_x7jf7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_87mfk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="5_gwa1p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_ewjae"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="7_sfrwv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_jm23t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="9_4m3xa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="10_k3wi6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_attacking_filter.gd" id="11_kebjd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_blocking_filter.gd" id="12_1wm8c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="13_cwblg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="14_ymqyv"]
+
+[sub_resource type="Resource" id="Resource_66psf"]
+script = ExtResource("3_u8o80")
+value = 4
+
+[sub_resource type="Resource" id="Resource_1mjbb"]
+script = ExtResource("4_87mfk")
+
+[sub_resource type="Resource" id="Resource_l7mx7"]
+script = ExtResource("5_gwa1p")
+amount = SubResource("Resource_66psf")
+recipients = SubResource("Resource_1mjbb")
+
+[sub_resource type="Resource" id="Resource_j1aub"]
+script = ExtResource("10_k3wi6")
+
+[sub_resource type="Resource" id="Resource_4jexs"]
+script = ExtResource("11_kebjd")
+
+[sub_resource type="Resource" id="Resource_546cb"]
+script = ExtResource("12_1wm8c")
+
+[sub_resource type="Resource" id="Resource_ui4ea"]
+script = ExtResource("13_cwblg")
+filters = Array[ExtResource("9_4m3xa")]([SubResource("Resource_4jexs"), SubResource("Resource_546cb")])
+
+[sub_resource type="Resource" id="Resource_y735d"]
+script = ExtResource("14_ymqyv")
+filters = Array[ExtResource("9_4m3xa")]([SubResource("Resource_j1aub"), SubResource("Resource_ui4ea")])
+
+[sub_resource type="Resource" id="Resource_6j156"]
+script = ExtResource("8_jm23t")
+filter = SubResource("Resource_y735d")
+
+[sub_resource type="Resource" id="Resource_3j4e8"]
+script = ExtResource("7_sfrwv")
+targets = Array[ExtResource("8_jm23t")]([SubResource("Resource_6j156")])
+effects = Array[ExtResource("2_egirg")]([SubResource("Resource_l7mx7")])
+
+[sub_resource type="Resource" id="Resource_lukpi"]
+script = ExtResource("2_4dlrd")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_x7jf7")
+name = "Gideon's Reproach"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_lukpi")
+abilities = Array[ExtResource("1_l7dp6")]([SubResource("Resource_3j4e8")])

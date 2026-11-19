@@ -1727,6 +1727,12 @@ func _on_object_clicked(object_id: int) -> void:
 		if _picks.toggle(object_id):
 			_redraw()
 		return
+	if _picks.is_targeting():
+		# "Up to" targets: a click picks a target or lets it go; only the pass button
+		# answers, since fewer may be wanted (game ADR 0022).
+		if _picks.toggle(object_id):
+			_redraw()
+		return
 	if _picks.is_picking_permanents():
 		# The click that makes the last pick answers at once: nothing is left to decide
 		# (game ADR 0049).
@@ -2143,15 +2149,16 @@ func _remember_face(object_id: int, face: Control, face_size: Vector2, glow: Dec
 	_face_sizes[object_id] = face_size
 	_face_shown[object_id] = shown if shown.has_area() else Rect2(Vector2.ZERO, face_size)
 	var colors: Array[Color] = _glow_colors(object_id, glow)
-	var is_pickable: bool = _picks.is_picking_permanents() and _picks.is_candidate(object_id)
+	var is_pickable: bool = _picks.is_picking_on_battlefield() and _picks.is_candidate(object_id)
 	if is_pickable:
-		# Picked glows white; the rest green while more can be picked, and not at all once
-		# every pick is made (game ADR 0049).
+		# Picked glows white; the rest green, or as targets for targets, while more can be
+		# picked, and not at all once every pick is made (game ADR 0049, 0022).
 		colors = []
 		if _picks.is_picked(object_id):
 			colors.append(PICKED_GLOW)
 		elif _picks.can_pick(object_id):
-			colors.append(DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
+			var kind: DecisionClicks.Kind = DecisionClicks.Kind.TARGET if _picks.is_targeting() else DecisionClicks.Kind.OTHER
+			colors.append(DecisionClicks.color_of(kind))
 	if not colors.is_empty():
 		BorderEffects.add_glow_of(face, face_size, colors, _glow_seconds_for(object_id, colors))
 	if not glow.options_of(object_id).is_empty() or _selection.is_clickable(object_id) or is_pickable:
@@ -2716,6 +2723,12 @@ func _show_picks() -> void:
 		_show_confirm(_picks.search_confirm_text(_snapshot.view), true, _picks.can_undo())
 		_info.show_prompt(InfoPrompt.of(_snapshot.decision, _snapshot.view).text)
 		return
+	if _picks.is_targeting():
+		_panels[HERO].show_undo(_picks.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
+		_show_confirm(_picks.targets_confirm_text(), true, _picks.can_undo())
+		_info.show_prompt("%s (%d of %d)" % [InfoPrompt.of(_snapshot.decision, _snapshot.view).text, _picks.picked().size(),
+			_picks.count()])
+		return
 	if _picks.is_picking_permanents():
 		_panels[HERO].show_undo(_picks.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
 		_show_confirm("Tap %d" % _picks.count(), _picks.is_complete(), _picks.can_undo())
@@ -2736,7 +2749,7 @@ func _show_picks() -> void:
 ## The choice of cards changed by a click or an undo. Cards put on the bottom leave the
 ## overlay's row, which is drawn again; in the hand's strip nothing is rebuilt.
 func _show_picks_changed() -> void:
-	if _picks.is_bottoming() or _picks.is_picking_permanents() or _picks.is_searching():
+	if _picks.is_bottoming() or _picks.is_picking_on_battlefield() or _picks.is_searching():
 		_redraw()
 	else:
 		_show_picks()

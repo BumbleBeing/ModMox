@@ -4,7 +4,8 @@ extends RefCounted
 ## the active player's first, then the other player's, each player choosing the order of
 ## their own. A modal one's mode is chosen as it is put on the stack, and one with no mode
 ## that can be chosen is removed instead (CR 603.3c). Targets are chosen next, and one with
-## no legal target for a requirement is removed instead (CR 603.3d).
+## no legal target for a requirement is removed instead (CR 603.3d); an "up to" requirement
+## may always choose none, so it never removes one.
 ##
 ## Later: no order decision for triggers whose order cannot matter, such as two copies of
 ## the same ability from the same source triggered by the same event.
@@ -60,8 +61,12 @@ func next_decision() -> MmPendingDecision:
 			continue
 		if _stack_object_id != 0 and _next_target < _target_requirements.size():
 			var context: MmEffectContext = MmEffectContext.of_stack_object(_state.object(_stack_object_id))
-			var legal: Array[MmReference] = _target_requirements[_next_target].legal_targets(_state, context)
-			return ChooseTargetDecision.new(_controller_id, _stack_object_id, _next_target, legal)
+			var choice: MmPendingDecision = TargetChoice.decision_for(_state, _controller_id, _stack_object_id,
+				_target_requirements, _next_target, context)
+			if choice != null:
+				return choice
+			_next_target += 1  # An "up to" with nothing to choose chooses none, unasked.
+			continue
 		_stack_object_id = 0
 		if _ordering_player_id != MmGameState.NO_PLAYER:
 			return OrderTriggersDecision.new(_ordering_player_id, _ordering)
@@ -93,9 +98,8 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_ordering = []
 	elif decision is ChooseModeDecision:
 		_choose_mode((decision as ChooseModeDecision).modes[answer as int])
-	elif decision is ChooseTargetDecision:
-		var chosen: MmReference = (decision as ChooseTargetDecision).candidates[answer as int]
-		_state.perform(TargetChosenEvent.new(_stack_object_id, _next_target, chosen))
+	elif decision is ChooseTargetDecision or decision is ChooseTargetsDecision:
+		TargetChoice.perform_answer(_state, decision, answer, _target_requirements)
 		_next_target += 1
 	else:
 		assert(false, "Stacking triggers cannot answer %s." % decision.describe())
@@ -109,7 +113,7 @@ func _put_on_stack(pending: PendingTrigger) -> void:
 			return
 	else:
 		for requirement: TargetRequirement in ability.targets:
-			if requirement.legal_targets(_state, pending.context()).is_empty():
+			if not requirement.can_be_chosen(_state, pending.context()):
 				_state.perform(TriggerRemovedEvent.new(pending))  # CR 603.3d
 				return
 	var put: TriggeredAbilityPutOnStackEvent = TriggeredAbilityPutOnStackEvent.new(pending)

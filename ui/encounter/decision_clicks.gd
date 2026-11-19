@@ -118,6 +118,13 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 		clicks._add_ids((decision as DeclareAttackersDecision).candidate_ids, Kind.COMBAT)
 	elif decision is ChooseCardsToDiscardDecision:
 		clicks._add_ids((decision as ChooseCardsToDiscardDecision).candidate_ids, Kind.OTHER)
+	elif decision is ChooseTargetsDecision:
+		# "Up to two targets": picked one click at a time with a CardPicks, and confirmed
+		# with the pass button. Only permanents, so far.
+		var targetable: Array[int] = []
+		for candidate: MmReference in (decision as ChooseTargetsDecision).candidates:
+			targetable.append(candidate.id)
+		clicks._add_ids(targetable, Kind.TARGET)
 	elif decision is ChoosePermanentsDecision:
 		# Picked one click at a time with a CardPicks, and confirmed with the pass button.
 		clicks._add_ids((decision as ChoosePermanentsDecision).candidate_ids, Kind.OTHER)

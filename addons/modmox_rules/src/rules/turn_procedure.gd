@@ -282,8 +282,8 @@ func _current_step() -> MmTurn.Step:
 ## (ADR 0012): Pass, then land plays, then spells from the hand, then spells from the
 ## graveyard with flashback (CR 702.34a), then the top card of the library with a
 ## permission (ADR 0054), then abilities of permanents, then
-## abilities of Emblems and Potions (ADR 0036), each by object ID and abilities by their
-## order on the object.
+## abilities of Emblems and Potions (ADR 0036), then abilities of cards in the hand, such
+## as cycling (ADR 0059), each by object ID and abilities by their order on the object.
 func _legal_actions(player_id: int) -> Array[MmAction]:
 	var actions: Array[MmAction] = [PassAction.new()]
 	var player: MmPlayer = _state.player(player_id)
@@ -301,7 +301,8 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 	var top: MmGameObject = player.library.top()
 	if top != null and _may_cast(player, top):
 		actions.append(CastSpellAction.new(top.id))
-	# CR 113.6: an Emblem's abilities work from the command zone, and so does a Potion's.
+	# CR 113.6: an Emblem's abilities work from the command zone, and so does a Potion's;
+	# a card's in hand only when it says so (CR 113.6b).
 	for source: MmGameObject in ManaPayment.sorted_sources_of(_state, player_id):
 		var abilities: Array[MmAbility] = _state.characteristics_of(source).abilities
 		for index: int in abilities.size():
@@ -378,10 +379,12 @@ func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 	return to_pay == null or ManaPayment.can_afford(_state, player.id, to_pay)
 
 
-## Mana abilities whenever their cost can be paid; other abilities also need a legal
-## target for every requirement, and enough mana for any mana in their cost. An Activation
-## Restriction can forbid either kind (CR 602.5).
+## Only where it works (CR 113.6). Mana abilities whenever their cost can be paid; other
+## abilities also need a legal target for every requirement, and enough mana for any mana
+## in their cost. An Activation Restriction can forbid either kind (CR 602.5).
 func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbility, ability_index: int) -> bool:
+	if not ability.works_in(_state, source):
+		return false  # CR 113.6
 	if ability.is_once_each_game and source.is_ability_spent(ability_index):
 		return false  # CR 602.5b
 	if ability.is_sorcery_speed and not _sorcery_timing(player):
@@ -406,7 +409,7 @@ func _has_a_choosable_mode(spell: SpellAbility, player_id: int, source_id: int) 
 func _every_requirement_has_a_target(requirements: Array[TargetRequirement], player_id: int, source_id: int) -> bool:
 	var context: MmEffectContext = MmEffectContext.new(player_id, source_id)
 	for requirement: TargetRequirement in requirements:
-		if requirement.legal_targets(_state, context).is_empty():
+		if not requirement.can_be_chosen(_state, context):
 			return false
 	return true
 

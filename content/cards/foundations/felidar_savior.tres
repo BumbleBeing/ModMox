@@ -1,0 +1,86 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_71w32"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_7svbr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/lifelink_ability.gd" id="2_emuh1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_bwcwn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_xuyjo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_e3qd0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="5_eeb55"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="6_6exu0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_vu40d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_pcnf5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_sjp3l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_r2n0c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_w4m5l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_gxj34"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="13_3udjv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="14_fitpa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="15_i3jmb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="16_kl5xj"]
+
+[sub_resource type="Resource" id="Resource_tkw04"]
+script = ExtResource("2_emuh1")
+
+[sub_resource type="Resource" id="Resource_ufa07"]
+script = ExtResource("4_e3qd0")
+value = 1
+
+[sub_resource type="Resource" id="Resource_wjyrf"]
+script = ExtResource("5_eeb55")
+
+[sub_resource type="Resource" id="Resource_0ijs8"]
+script = ExtResource("6_6exu0")
+amount = SubResource("Resource_ufa07")
+recipients = SubResource("Resource_wjyrf")
+
+[sub_resource type="Resource" id="Resource_e4ued"]
+script = ExtResource("11_w4m5l")
+
+[sub_resource type="Resource" id="Resource_kl3bt"]
+script = ExtResource("12_gxj34")
+
+[sub_resource type="Resource" id="Resource_6bqa6"]
+script = ExtResource("13_3udjv")
+filter = SubResource("Resource_kl3bt")
+
+[sub_resource type="Resource" id="Resource_k4w6x"]
+script = ExtResource("14_fitpa")
+
+[sub_resource type="Resource" id="Resource_e2gwt"]
+script = ExtResource("15_i3jmb")
+filters = Array[ExtResource("10_r2n0c")]([SubResource("Resource_e4ued"), SubResource("Resource_6bqa6"), SubResource("Resource_k4w6x")])
+
+[sub_resource type="Resource" id="Resource_jewy3"]
+script = ExtResource("9_sjp3l")
+filter = SubResource("Resource_e2gwt")
+most = 2
+is_up_to = true
+
+[sub_resource type="Resource" id="Resource_r0je0"]
+script = ExtResource("12_gxj34")
+
+[sub_resource type="Resource" id="Resource_e25bs"]
+script = ExtResource("16_kl5xj")
+filter = SubResource("Resource_r0je0")
+
+[sub_resource type="Resource" id="Resource_skck8"]
+script = ExtResource("8_pcnf5")
+trigger = SubResource("Resource_e25bs")
+targets = Array[ExtResource("9_sjp3l")]([SubResource("Resource_jewy3")])
+effects = Array[ExtResource("3_bwcwn")]([SubResource("Resource_0ijs8")])
+
+[sub_resource type="Resource" id="Resource_e68fu"]
+script = ExtResource("2_7svbr")
+generic = 3
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_xuyjo")
+name = "Felidar Savior"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Beast"])
+mana_cost = SubResource("Resource_e68fu")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_71w32")]([SubResource("Resource_tkw04"), SubResource("Resource_skck8")])

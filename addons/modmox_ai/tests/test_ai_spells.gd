@@ -539,3 +539,150 @@ func test_of_two_free_two_twos_the_one_that_also_makes_a_token_is_cast_first() -
 	assert_not_null(engine)
 
 	assert_eq(AiScenario.cast_name(engine, AiScenario.ask(engine, AiAgent.new())), "Prideful Parent")
+
+
+func test_a_helpful_spell_goes_at_the_creature_whose_heroic_trigger_it_sets_off() -> void:
+	# Heroic: the simulation of each target plays the trigger too, so the +1/+1 counter goes
+	# on the 2/2 that makes a Cat as well, not on the bigger creature the counter alone favors.
+	var vanguard: MmCardDefinition = Scenario.heroic("Vanguard", [Scenario.create_tokens(Scenario.cat())])
+	var blessing: MmCardDefinition = Scenario.sorcery("Blessing", Scenario.mana_cost(0),
+		[Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))],
+		[Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, Scenario.targeted(0))])
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Giant", 3, 3), vanguard], [], [blessing])
+	assert_not_null(engine)
+	var card: int = Scenario.card_in_hand(engine, engine.hero(), "Blessing")
+	assert_eq(engine.submit(Scenario.cast_index(engine.pending_decision() as PriorityDecision, card)), "")
+	var agent: AiAgent = AiAgent.new()
+
+	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+
+	assert_eq(target.id, Scenario.permanent_named(engine, engine.hero().id, "Vanguard"))
+	assert_eq(agent.explain(), AiAgent.Reason.BEST_SCORE)
+
+
+func test_up_to_two_counters_go_on_its_own_two_creatures() -> void:
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), Scenario.creature("Lion", 2, 1)],
+		[Scenario.creature("Ogre", 3, 3)], [Scenario.free_gird()])
+	assert_not_null(engine)
+	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
+	var gird: int = Scenario.card_in_hand(engine, engine.hero(), "Gird")
+	assert_eq(engine.submit(Scenario.cast_index(engine.pending_decision() as PriorityDecision, gird)), "")
+
+	var full: Array = _chosen_ids(engine, AiScenario.ask(engine, agent))
+	var cheap: Array = _chosen_ids(engine, AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP)))
+
+	var expected: Array = [Scenario.permanent_named(engine, engine.hero().id, "Bear"),
+		Scenario.permanent_named(engine, engine.hero().id, "Lion")]
+	expected.sort()
+	assert_eq(full, expected, "Both of its own, never the Ogre.")
+	assert_eq(cheap, expected)
+
+
+func test_the_saviors_trigger_puts_its_counter_on_the_one_other_creature() -> void:
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2)], [Scenario.creature("Ogre", 3, 3)],
+		[Scenario.savior()])
+	assert_not_null(engine)
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Savior")), "")
+	assert_eq(AiScenario.pass_to(engine, engine.hero().id, ChooseTargetsDecision), "")
+	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
+
+	var chosen: Array = _chosen_ids(engine, AiScenario.ask(engine, agent))
+
+	assert_eq(chosen, [Scenario.permanent_named(engine, engine.hero().id, "Bear")], "Its only other creature.")
+
+
+## The object IDs an answer to the pending ChooseTargetsDecision chose, in ID order.
+func _chosen_ids(engine: MmEngine, answer: Variant) -> Array:
+	var decision: ChooseTargetsDecision = engine.pending_decision() as ChooseTargetsDecision
+	var ids: Array = []
+	for index: Variant in answer as Array:
+		ids.append(decision.candidates[index as int].id)
+	ids.sort()
+	return ids
+
+
+# --- Cycling ------------------------------------------------------------------------
+
+func test_a_cycling_card_is_cycled_in_the_other_players_end_step_with_mana_to_spare() -> void:
+	var engine: MmEngine = _engine_holding_a_cycler(4, Step.END)
+	assert_not_null(engine, "No seed gave the Elves and hand.")
+	if engine == null:
+		return
+	Scenario.pass_priority(engine)
+	assert_eq(engine.pending_decision().player_id, engine.hero().id, "The Hero's pass ends the Villain's turn.")
+
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+
+	var activate: ActivateAbilityAction = AiScenario.action_at(engine, answer) as ActivateAbilityAction
+	assert_not_null(activate, "ADR 0059: the Elves' mana would go unused, and a card from the library is worth more.")
+	if activate != null:
+		assert_eq(engine.game_state().characteristics_of(engine.game_state().object(activate.object_id)).name, "Cycler")
+
+
+func test_a_cycling_card_is_not_cycled_in_its_own_main_phase() -> void:
+	var engine: MmEngine = _engine_holding_a_cycler(3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the Elves and hand.")
+	if engine == null:
+		return
+	_cast_every(engine, "Elf")
+	var cycler: int = Scenario.card_in_hand(engine, engine.hero(), "Cycler")
+	assert_ne(Scenario.activate_index(engine.pending_decision() as PriorityDecision, cycler), -1, "It could be cycled.")
+
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+
+	assert_false(AiScenario.action_at(engine, answer) is ActivateAbilityAction,
+		"Its mana may yet cast something: cycling waits for the other player's end step.")
+
+
+func test_a_landcycling_card_is_landcycled_in_the_other_players_end_step_with_mana_to_spare() -> void:
+	var engine: MmEngine = _engine_holding_a_cycler(4, Step.END, Scenario.landcycler())
+	assert_not_null(engine, "No seed gave the Elves and hand.")
+	if engine == null:
+		return
+	Scenario.pass_priority(engine)
+	assert_eq(engine.pending_decision().player_id, engine.hero().id, "The Hero's pass ends the Villain's turn.")
+
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+
+	var activate: ActivateAbilityAction = AiScenario.action_at(engine, answer) as ActivateAbilityAction
+	assert_not_null(activate, "ADR 0059: a search into the hand is worth the mana that would go unused.")
+	if activate != null:
+		assert_eq(engine.game_state().characteristics_of(engine.game_state().object(activate.object_id)).name, "Landcycler")
+
+
+func test_a_landcycling_card_is_not_landcycled_in_its_own_main_phase() -> void:
+	var engine: MmEngine = _engine_holding_a_cycler(3, Step.PRECOMBAT_MAIN, Scenario.landcycler())
+	assert_not_null(engine, "No seed gave the Elves and hand.")
+	if engine == null:
+		return
+	_cast_every(engine, "Elf")
+	var landcycler: int = Scenario.card_in_hand(engine, engine.hero(), "Landcycler")
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	var index: int = Scenario.activate_index(decision, landcycler)
+	assert_ne(index, -1, "It could be landcycled.")
+	if index == -1:
+		return
+	assert_eq(AiTiming.tag_of_action(engine.game_state(), decision.actions[index]), AiTiming.Tag.SPARE_MANA,
+		"ADR 0059: it only searches into its owner's hand.")
+
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+
+	assert_false(AiScenario.action_at(engine, answer) is ActivateAbilityAction,
+		"Its mana may yet cast something: landcycling waits for the other player's end step.")
+
+
+## The Hero with two Elves, "{T}: Add {W}", on the battlefield, holding [param cycler]
+## (by default Cycler, an instant costing {0}, "You gain 1 life", cycling {2}) and Ogre (a
+## 5/5 costing {5}), with Forests in their library too when [param cycler] is given, at the
+## first decision of [param step] in [param game_turn].
+func _engine_holding_a_cycler(game_turn: int, step: Step, cycler: MmCardDefinition = null) -> MmEngine:
+	var elves: Array[MmCardDefinition] = [Scenario.elf(), Scenario.elf()]
+	var ogre: MmCardDefinition = Scenario.creature("Ogre", 5, 5)
+	ogre.mana_cost = Scenario.mana_cost(5)
+	var held: Array[MmCardDefinition] = [cycler if cycler != null else Scenario.cycler(), ogre]
+	var no_cards: Array[MmCardDefinition] = []
+	var in_library: Array[MmCardDefinition] = held.duplicate()
+	if cycler != null:
+		in_library.append(Scenario.basic_land("Forest"))
+	var setup: MmEncounterSetup = Scenario.combat_setup(elves, no_cards, in_library)
+	return Scenario.permanents_ready_with(setup, elves, no_cards, held, no_cards, game_turn, step)

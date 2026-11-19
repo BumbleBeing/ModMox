@@ -132,6 +132,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return AiPaymentPlanner.choose(world, decision as PayManaDecision)
 	if decision is ChooseTargetDecision:
 		return _target(decision as ChooseTargetDecision, world, source, rng)
+	if decision is ChooseTargetsDecision:
+		return _up_to_targets(decision as ChooseTargetsDecision, world, source, rng)
 	if decision is DeclareAttackersDecision:
 		return _attackers(decision as DeclareAttackersDecision, world, source, rng)
 	if decision is DeclareBlockersDecision:
@@ -572,6 +574,57 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 	if best != -1:
 		return best
 	return player_index if player_index != -1 else 0
+
+
+## "Up to N" targets (CR 601.2c). FULL: one target at a time, simulating each candidate
+## added to those already chosen beside stopping there, and stopping when no addition scores
+## better than stopping. CHEAP: the candidates _cheap_target() would aim at, most valuable
+## first, as many as may be chosen.
+func _up_to_targets(decision: ChooseTargetsDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> Array:
+	_reason = Reason.BEST_SCORE
+	var most: int = mini(decision.most, decision.candidates.size())
+	if mode == Mode.CHEAP:
+		return _cheap_up_to_targets(decision, world).slice(0, most)
+	var is_trick: bool = AiTiming.is_trick(AiTiming.tag_of_effects(_effects_of_stack_object(world, decision.stack_object_id)))
+	var chosen: Array = []
+	while chosen.size() < most:
+		var answers: Array = [chosen.duplicate()]
+		for index: int in decision.candidates.size():
+			if not chosen.has(index):
+				var added: Array = chosen.duplicate()
+				added.append(index)
+				answers.append(added)
+		var options: Array[int] = []
+		for index: int in answers.size():
+			options.append(index)
+		var scores: Array[int] = _simulate_each(source, rng, answers, decision.player_id,
+			is_trick and difficulty.judges_tricks_after_the_turn)
+		# Stopping is the default: another target must score better to be added.
+		var best: int = _best_option(options, scores, rng, 1)
+		if best == 0:
+			break
+		chosen = answers[best]
+	return chosen
+
+
+## The candidates of [param decision] _cheap_target() would aim at, most valuable first:
+## harmful effects at the other player's creatures, helpful ones at its own.
+func _cheap_up_to_targets(decision: ChooseTargetsDecision, world: MmGameState) -> Array:
+	var me: int = decision.player_id
+	var tag: AiTiming.Tag = AiTiming.tag_of_effects(_effects_of_stack_object(world, decision.stack_object_id))
+	var harmful: bool = tag == AiTiming.Tag.REMOVAL or tag == AiTiming.Tag.COUNTER
+	var ranked: Array[int] = []
+	var values: Dictionary[int, int] = {}
+	for index: int in decision.candidates.size():
+		var target: MmGameObject = world.object(decision.candidates[index].id)
+		if (target.controller_id != me) != harmful:
+			continue
+		values[index] = AiBoardEvaluator.creature_value(world, target)
+		ranked.append(index)
+	ranked.sort_custom(func(a: int, b: int) -> bool: return values[a] > values[b] or (values[a] == values[b] and a < b))
+	var answer: Array = []
+	answer.assign(ranked)
+	return answer
 
 
 func _order_triggers(decision: OrderTriggersDecision, source: MmSimulationSource, rng: MmRng) -> Array:

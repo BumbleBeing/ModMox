@@ -270,9 +270,9 @@ func test_a_permanent_with_two_abilities_has_two_answers_in_order_and_glows_for_
 
 
 func test_a_card_in_hand_that_can_be_cast_and_has_an_ability_glows_for_both() -> void:
-	# No card has an ability used from the hand yet, so these are built by hand.
+	# Cycling is the one ability used from the hand; a mana ability there is built by hand.
 	var view: MmPlayerView = _view()
-	view.hand = [_in_hand(7, "Cycler", [_ping()]), _in_hand(8, "Spirit Guide", [Scenario.tap_for_mana(MmMana.Type.RED, 1)]),
+	view.hand = [_in_hand(7, "Cycler", [Scenario.cycling(Scenario.mana_cost(2))]), _in_hand(8, "Spirit Guide", [Scenario.tap_for_mana(MmMana.Type.RED, 1)]),
 		_in_hand(9, "Only Ability", [_ping()])]
 	var decision: PriorityDecision = PriorityDecision.new(HERO, [
 		ActivateAbilityAction.new(7, 0), PassAction.new(), CastSpellAction.new(7),
@@ -291,7 +291,7 @@ func test_a_card_in_hand_that_can_be_cast_and_has_an_ability_glows_for_both() ->
 
 func test_a_card_in_hand_offers_its_abilities_after_the_ways_to_play_it() -> void:
 	var view: MmPlayerView = _view()
-	view.hand = [_in_hand(7, "Cycler", [_ping()]), _in_hand(9, "Only Ability", [Scenario.tap_for_mana(MmMana.Type.RED, 1)])]
+	view.hand = [_in_hand(7, "Cycler", [Scenario.cycling(Scenario.mana_cost(2))]), _in_hand(9, "Only Ability", [Scenario.tap_for_mana(MmMana.Type.RED, 1)])]
 	var decision: PriorityDecision = PriorityDecision.new(HERO, [
 		ActivateAbilityAction.new(7, 0), PassAction.new(), CastSpellAction.new(7), ActivateAbilityAction.new(9, 0),
 	] as Array[MmAction])
@@ -300,7 +300,7 @@ func test_a_card_in_hand_offers_its_abilities_after_the_ways_to_play_it() -> voi
 	var options: Array[ClickOption] = clicks.hand_options_of(7)
 
 	assert_eq(options.size(), 2)
-	assert_eq([options[0].text, options[1].text], ["Cast Cycler", "{T}: This creature deals 1 damage to any target."])
+	assert_eq([options[0].text, options[1].text], ["Cast Cycler", "Cycling {2}"])
 	assert_eq([options[0].answer, options[1].answer], [2, 0])
 	assert_eq(clicks.hand_options_of(9).size(), 1, "A card with only an ability is let go to use it.")
 	assert_eq(clicks.hand_options_of(9)[0].answer, 3)
@@ -550,6 +550,16 @@ func test_permanents_to_pick_for_a_cost_glow_green_and_are_picked_on_the_board()
 
 	assert_eq(_kinds(clicks), {3: [DecisionClicks.Kind.OTHER], 4: [DecisionClicks.Kind.OTHER],
 		6: [DecisionClicks.Kind.OTHER], 7: [DecisionClicks.Kind.OTHER]})
+	assert_eq(clicks.clickable_ids().size(), 0, "A click picks it (CardPicks), and answers nothing alone.")
+
+
+func test_up_to_targets_glow_as_targets_and_are_picked_on_the_board() -> void:
+	var candidates: Array[MmReference] = [MmReference.to_object(3), MmReference.to_object(4)]
+	var decision: ChooseTargetsDecision = ChooseTargetsDecision.new(HERO, 20, 0, candidates, 2)
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, _view())
+
+	assert_eq(_kinds(clicks), {3: [DecisionClicks.Kind.TARGET], 4: [DecisionClicks.Kind.TARGET]})
 	assert_eq(clicks.clickable_ids().size(), 0, "A click picks it (CardPicks), and answers nothing alone.")
 
 

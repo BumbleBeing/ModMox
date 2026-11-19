@@ -1,0 +1,83 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_oko8o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_a0t13"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_jqgxb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="3_utkmg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_yvlpd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_t4fgj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="5_u2hx3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="6_v7nvf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="7_7rl4o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="8_oj3lf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="9_r7x5k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="10_orrpw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="11_cbs34"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="12_u3hmk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="13_e3bv1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="14_onkoe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/targets_filter.gd" id="15_uh487"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="16_a3ahf"]
+
+[sub_resource type="Resource" id="Resource_okj36"]
+script = ExtResource("4_t4fgj")
+
+[sub_resource type="Resource" id="Resource_p8s4d"]
+script = ExtResource("5_u2hx3")
+
+[sub_resource type="Resource" id="Resource_8cxit"]
+script = ExtResource("6_v7nvf")
+filters = Array[ExtResource("3_utkmg")]([SubResource("Resource_okj36"), SubResource("Resource_p8s4d")])
+
+[sub_resource type="Resource" id="Resource_oanpm"]
+script = ExtResource("7_7rl4o")
+filter = SubResource("Resource_8cxit")
+
+[sub_resource type="Resource" id="Resource_hgo07"]
+script = ExtResource("8_oj3lf")
+value = 1
+
+[sub_resource type="Resource" id="Resource_vk72a"]
+script = ExtResource("8_oj3lf")
+
+[sub_resource type="Resource" id="Resource_e4qj4"]
+script = ExtResource("9_r7x5k")
+power = SubResource("Resource_hgo07")
+toughness = SubResource("Resource_vk72a")
+affected = SubResource("Resource_oanpm")
+
+[sub_resource type="Resource" id="Resource_bvtmc"]
+script = ExtResource("10_orrpw")
+continuous = SubResource("Resource_e4qj4")
+
+[sub_resource type="Resource" id="Resource_l0mc2"]
+script = ExtResource("14_onkoe")
+
+[sub_resource type="Resource" id="Resource_3vkja"]
+script = ExtResource("15_uh487")
+filter = SubResource("Resource_l0mc2")
+
+[sub_resource type="Resource" id="Resource_goq4j"]
+script = ExtResource("16_a3ahf")
+filter = SubResource("Resource_3vkja")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_upsh1"]
+script = ExtResource("12_u3hmk")
+trigger = SubResource("Resource_goq4j")
+effects = Array[ExtResource("2_a0t13")]([SubResource("Resource_bvtmc")])
+
+[sub_resource type="Resource" id="Resource_54n5b"]
+script = ExtResource("2_jqgxb")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_yvlpd")
+name = "Hero of the Pride"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Soldier"])
+mana_cost = SubResource("Resource_54n5b")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_oko8o")]([SubResource("Resource_upsh1")])

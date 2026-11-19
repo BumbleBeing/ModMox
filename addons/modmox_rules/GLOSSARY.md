@@ -87,7 +87,7 @@ Whatever answers Pending Decisions on behalf of a player: the human through the 
 _Avoid_: Controller, input, brain
 
 **Target Requirement**:
-One instance of the word "target" on a spell or ability, with a Filter saying what may be chosen for it.
+One instance of the word "target" on a spell or ability, with a Filter saying what may be chosen for it. An "up to" one, as in "up to two target creatures", chooses any number of different objects from none to its most, and can always be chosen, since none is a legal choice.
 _Avoid_: Target slot, targeting rule
 
 **Modal Spell**:
@@ -171,6 +171,10 @@ _Avoid_: Ghost, snapshot (in rules talk), LKI (in code)
 **Flashback**:
 A keyword that lets its card be cast from its owner's graveyard by paying its flashback cost instead of its mana cost, with its card type's usual timing; cast that way, it is exiled instead of going anywhere else as it leaves the stack (CR 702.34a). Its cost may have no mana in it, or parts that are not mana, such as "Pay 3 life" or "Tap three untapped creatures you control" (ADR 0048).
 _Avoid_: Recast, graveyard cast, rebuy
+
+**Cycling**:
+A keyword, "Cycling [cost]": "[Cost], Discard this card: Draw a card", an activated ability that works only while its card is in its owner's hand, whenever they have priority (CR 702.29). Discarding the card is part of the cost, paid once the mana is, so the card is gone even if the ability is countered (ADR 0059). Every other activated ability works anywhere but the hand. Typecycling, such as "Basic landcycling [cost]", is cycling that searches your library for a card of that quality, reveals it and puts it into your hand instead of drawing (CR 702.29e).
+_Avoid_: Cycle away, recycle, loot (a different action: draw, then discard)
 
 **Cost Reduction**:
 A static ability of a spell that makes it cost less to cast, such as affinity ("This spell costs {1} less to cast for each Cat you control", CR 702.41a). What it takes off may be generic or colored mana, and comes off the mana cost or an alternative cost such as a flashback cost, by CR 118.7, as the cast begins (CR 601.2f). The spell's mana value never changes (ADR 0050).

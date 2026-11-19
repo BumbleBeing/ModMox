@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_s027t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_gk3nj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ypvki"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="3_ftfep"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_qow03"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_5sbb3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_d4pbe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_ey1cv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="7_vnqdp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="8_inumf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="9_hi7m7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="10_oiu73"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_ylo3r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_dygg5"]
+
+[sub_resource type="Resource" id="Resource_qo14a"]
+script = ExtResource("3_ftfep")
+
+[sub_resource type="Resource" id="Resource_mbmlh"]
+script = ExtResource("4_5sbb3")
+value = 1
+
+[sub_resource type="Resource" id="Resource_8djaf"]
+script = ExtResource("4_5sbb3")
+
+[sub_resource type="Resource" id="Resource_cenw2"]
+script = ExtResource("5_d4pbe")
+power = SubResource("Resource_mbmlh")
+toughness = SubResource("Resource_8djaf")
+affected = SubResource("Resource_qo14a")
+
+[sub_resource type="Resource" id="Resource_pf1t1"]
+script = ExtResource("6_ey1cv")
+continuous = SubResource("Resource_cenw2")
+
+[sub_resource type="Resource" id="Resource_1tnkd"]
+script = ExtResource("4_5sbb3")
+value = 1
+
+[sub_resource type="Resource" id="Resource_ax5s7"]
+script = ExtResource("7_vnqdp")
+
+[sub_resource type="Resource" id="Resource_5w63v"]
+script = ExtResource("8_inumf")
+amount = SubResource("Resource_1tnkd")
+players = SubResource("Resource_ax5s7")
+
+[sub_resource type="Resource" id="Resource_jllkg"]
+script = ExtResource("12_dygg5")
+
+[sub_resource type="Resource" id="Resource_7p8vr"]
+script = ExtResource("11_ylo3r")
+filter = SubResource("Resource_jllkg")
+
+[sub_resource type="Resource" id="Resource_6lqif"]
+script = ExtResource("10_oiu73")
+targets = Array[ExtResource("11_ylo3r")]([SubResource("Resource_7p8vr")])
+effects = Array[ExtResource("2_gk3nj")]([SubResource("Resource_pf1t1"), SubResource("Resource_5w63v")])
+
+[sub_resource type="Resource" id="Resource_75a3o"]
+script = ExtResource("2_ypvki")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_qow03")
+name = "Defiant Strike"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_75a3o")
+abilities = Array[ExtResource("1_s027t")]([SubResource("Resource_6lqif")])

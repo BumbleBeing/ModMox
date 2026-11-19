@@ -149,6 +149,26 @@
 		"scryfall_id": "01e3c2e9-d8df-4a7a-be86-7be8c6254fa2",
 		"set": "tor"
 	},
+	"defiant_strike": {
+		"artist": "Anastasia Ovchinnikova",
+		"collector_number": "7",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "39ec83fa-5cb4-4633-8827-36d874a2d2e7",
+		"set": "ktk"
+	},
+	"destroy_evil": {
+		"artist": "Anna Christenson",
+		"collector_number": "17",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "4f7862ef-2c8d-4d28-9e50-7cc41861f245",
+		"set": "dmu"
+	},
 	"drudge_skeletons": {
 		"artist": "Sandra Everingham",
 		"collector_number": "106",
@@ -188,6 +208,16 @@
 		],
 		"scryfall_id": "45340647-4d3e-4be1-b0e6-e40cc56a438b",
 		"set": "znr"
+	},
+	"felidar_savior": {
+		"artist": "Ilse Gort",
+		"collector_number": "12",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "cd092b14-d72f-4de0-8f19-1338661b9e3b",
+		"set": "fdn"
 	},
 	"fog": {
 		"artist": "Jesper Myrfors",
@@ -238,6 +268,26 @@
 		],
 		"scryfall_id": "77636b4c-faea-4bf5-b88c-dd5bb88dc930",
 		"set": "lea"
+	},
+	"gideons_reproach": {
+		"artist": "Dan Murayama Scott",
+		"collector_number": "30",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "453d8ec3-15ae-4851-9efb-161ca2ee6019",
+		"set": "bfz"
+	},
+	"gird_for_battle": {
+		"artist": "Jakub Kasper",
+		"collector_number": "12",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "f9f731df-eb40-44c8-a72d-f377c824584d",
+		"set": "grn"
 	},
 	"goblin_balloon_brigade": {
 		"artist": "Andi Rusu",
@@ -298,6 +348,16 @@
 		],
 		"scryfall_id": "b8aa7126-5df3-42dd-b4a3-0d0ea59eeebd",
 		"set": "lci"
+	},
+	"hero_of_the_pride": {
+		"artist": "Wisnu Tan",
+		"collector_number": "22",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "81b56863-a52a-4559-a662-f6d9145d5804",
+		"set": "thb"
 	},
 	"hill_giant": {
 		"artist": "Dan Frazier",
@@ -388,6 +448,16 @@
 		],
 		"scryfall_id": "d573ef03-4730-45aa-93dd-e45ac1dbaf4a",
 		"set": "lea"
+	},
+	"lightshield_parry": {
+		"artist": "Leanna Crossan",
+		"collector_number": "19",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "dcf6a0e7-1fd4-425f-b634-c93236daea35",
+		"set": "dft"
 	},
 	"llanowar_elves": {
 		"artist": "Anson Maddocks",
@@ -549,6 +619,16 @@
 		"scryfall_id": "efba235e-04e5-449c-906c-0ac33f6d7929",
 		"set": "lea"
 	},
+	"sanctuary_cat": {
+		"artist": "David Palumbo",
+		"collector_number": "19",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "96865440-01ad-40f2-90d7-9ecd0b4efecc",
+		"set": "dka"
+	},
 	"savannah_lions": {
 		"artist": "Daniel Gelon",
 		"collector_number": "38",
@@ -689,6 +769,16 @@
 		"scryfall_id": "21004958-2c7e-4a55-bc80-411c4d780106",
 		"set": "lea"
 	},
+	"tethmos_high_priest": {
+		"artist": "Mark Zug",
+		"collector_number": "29",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "d901b9d7-6af9-40ce-afb7-d3c9f9143c18",
+		"set": "jou"
+	},
 	"tokens/cat_1_1_white": {
 		"artist": "Leonardo Santanna",
 		"collector_number": "1",
@@ -709,6 +799,16 @@
 		"scryfall_id": "e2c91781-acf9-4cff-be1a-85148ad2a683",
 		"set": "tznr"
 	},
+	"tokens/cat_soldier_1_1_white_vigilance": {
+		"artist": "Scott Chou",
+		"collector_number": "2",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "921d6192-6b6d-4aa1-be80-bc0b9f503e33",
+		"set": "tbng"
+	},
 	"tokens/spirit_2_2_red_white": {
 		"artist": "Filipe Pagliuso",
 		"collector_number": "11",
@@ -719,6 +819,16 @@
 		"scryfall_id": "d0f3bd3d-08cf-4783-ae31-03770c8be69c",
 		"set": "tsos"
 	},
+	"topiary_panther": {
+		"artist": "Xabi Gaztelua",
+		"collector_number": "179",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "03d0365e-6dee-4236-a997-6761e3cde90d",
+		"set": "mkm"
+	},
 	"uthden_troll": {
 		"artist": "Douglas Shuler",
 		"collector_number": "180",
@@ -728,6 +838,16 @@
 		],
 		"scryfall_id": "2ff21a6f-83a7-4bf3-a078-294e303232cc",
 		"set": "lea"
+	},
+	"vanguard_of_brimaz": {
+		"artist": "Mark Zug",
+		"collector_number": "29",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "adb38717-97d5-4763-9e6c-46251df704ed",
+		"set": "bng"
 	},
 	"wall_of_stone": {
 		"artist": "Dan Frazier",

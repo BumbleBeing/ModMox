@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_q7ytr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_iaoa3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/trample_ability.gd" id="2_x4xey"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_63fqn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_a7v28"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/discard_this_card_cost.gd" id="4_7vs0i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_iosvb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_n8e8o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="7_rwe6n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_supertype_filter.gd" id="8_f0vie"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_ho7o6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="10_i25ep"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/search_library_effect.gd" id="11_t8rb5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/cycling_ability.gd" id="13_5j6ct"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="14_x8o1l"]
+
+[sub_resource type="Resource" id="Resource_aexp4"]
+script = ExtResource("2_x4xey")
+
+[sub_resource type="Resource" id="Resource_5v15j"]
+script = ExtResource("4_7vs0i")
+
+[sub_resource type="Resource" id="Resource_jmdpx"]
+script = ExtResource("6_n8e8o")
+value = 1
+
+[sub_resource type="Resource" id="Resource_1j5wd"]
+script = ExtResource("8_f0vie")
+
+[sub_resource type="Resource" id="Resource_808ll"]
+script = ExtResource("9_ho7o6")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_1oxo4"]
+script = ExtResource("10_i25ep")
+filters = Array[ExtResource("7_rwe6n")]([SubResource("Resource_1j5wd"), SubResource("Resource_808ll")])
+
+[sub_resource type="Resource" id="Resource_aujpl"]
+script = ExtResource("11_t8rb5")
+filter = SubResource("Resource_1oxo4")
+amount = SubResource("Resource_jmdpx")
+
+[sub_resource type="Resource" id="Resource_nfmmh"]
+script = ExtResource("2_iaoa3")
+generic = 1
+symbols = Array[int]([4])
+
+[sub_resource type="Resource" id="Resource_usjrc"]
+script = ExtResource("13_5j6ct")
+search = SubResource("Resource_1oxo4")
+mana_cost = SubResource("Resource_nfmmh")
+costs = Array[ExtResource("3_a7v28")]([SubResource("Resource_5v15j")])
+effects = Array[ExtResource("5_iosvb")]([SubResource("Resource_aujpl")])
+is_activated_from_hand = true
+
+[sub_resource type="Resource" id="Resource_x3pql"]
+script = ExtResource("2_iaoa3")
+generic = 4
+symbols = Array[int]([4, 4])
+
+[resource]
+script = ExtResource("3_63fqn")
+name = "Topiary Panther"
+card_types = Array[int]([1])
+subtypes = Array[String](["Plant", "Cat"])
+mana_cost = SubResource("Resource_x3pql")
+power = 6
+toughness = 5
+abilities = Array[ExtResource("1_q7ytr")]([SubResource("Resource_aexp4"), SubResource("Resource_usjrc")])

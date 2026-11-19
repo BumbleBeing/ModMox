@@ -107,6 +107,38 @@ func test_a_power_filter_compares_a_creatures_power_in_any_zone() -> void:
 	assert_false(two_or_less.matches(state, MmReference.to_player(engine.hero().id), context), "A player has no power.")
 
 
+func test_a_toughness_filter_compares_a_creatures_toughness_in_any_zone() -> void:
+	# CR 208.1: only a creature has toughness, so nothing else is "with toughness 4 or greater".
+	var wall: MmCardDefinition = Scenario.creature("Wall", 2, 4)
+	var cub: MmCardDefinition = Scenario.creature("Cub", 1, 2)
+	var glass: MmCardDefinition = Scenario.creature("Glass", 5, 1)
+	var shifter: MmCardDefinition = Scenario.creature("Shifter", 0, 0)
+	var defining: CharacteristicDefiningAbility = CharacteristicDefiningAbility.new()
+	defining.power = Scenario.constant(5)
+	defining.toughness = Scenario.constant(5)
+	shifter.abilities = [defining]
+	var engine: MmEngine = MmEngine.start(Scenario.setup_with(
+		Scenario.cycled([wall, cub, glass, shifter, Scenario.basic_land("Plains")]), Scenario.cycled([])))
+	var state: MmGameState = engine.game_state()
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var by_name: Dictionary[String, MmReference] = {}
+	for card: MmGameObject in engine.hero().library.objects():
+		by_name[state.characteristics_of(card).name] = MmReference.to_object(card.id)
+	var two_or_less: ToughnessFilter = Scenario.toughness(2)
+	var four_or_greater: ToughnessFilter = Scenario.toughness(4, ToughnessFilter.Comparison.OR_GREATER)
+
+	assert_true(two_or_less.matches(state, by_name["Cub"], context), "In any zone, here a library.")
+	assert_false(two_or_less.matches(state, by_name["Wall"], context))
+	assert_true(four_or_greater.matches(state, by_name["Wall"], context))
+	assert_false(four_or_greater.matches(state, by_name["Cub"], context))
+	assert_false(four_or_greater.matches(state, by_name["Glass"], context), "Its power is 5, but its toughness 1.")
+	assert_true(two_or_less.matches(state, by_name["Glass"], context))
+	assert_false(two_or_less.matches(state, by_name["Plains"], context), "A land has no toughness.")
+	assert_true(four_or_greater.matches(state, by_name["Shifter"], context), "CR 604.3: its toughness is 5 in every zone.")
+	assert_false(two_or_less.matches(state, MmReference.to_player(engine.hero().id), context), "A player has no toughness.")
+	assert_true(Scenario.is_not(four_or_greater).matches(state, by_name["Cub"], context))
+
+
 func _engine_with_one_forest() -> MmEngine:
 	var forests: Array[MmCardDefinition] = Scenario.copies(Scenario.basic_land("Forest"), 40)
 	var engine: MmEngine = MmEngine.start(Scenario.setup_with(forests, forests.duplicate()))

@@ -25,10 +25,6 @@ The real cards `/add-card` triaged and has not added yet (ADR 0040), grouped by 
 
 - **Oreskos Explorer** ({1}{W}, Creature — Cat Scout, 2/2): "When this creature enters, search your library for up to X Plains cards, where X is the number of players who control more lands than you. Reveal those cards, put them into your hand, then shuffle." Its search is built; it needs X as a Value (0 or 1 one-on-one).
 
-### Landcycling
-
-- **Topiary Panther** ({4}{G}{G}, Creature — Plant Cat, 6/5): "Trample. Basic landcycling {1}{G}." Its search is built; it needs basic landcycling (CR 702.29): an ability activated from the hand, with discarding this card as part of its cost.
-
 ## Set Aside
 
 ### Paying life as a land enters

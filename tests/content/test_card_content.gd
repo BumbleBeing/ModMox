@@ -452,6 +452,36 @@ func test_coordinated_maneuver_deals_damage_equal_to_its_casters_creatures_or_de
 		+ Scenario.permanents_named(engine, engine.hero().id, "Savannah Lions").size(), 2, "And the exiled creature came back.")
 
 
+func test_destroy_evil_cannot_target_a_three_three_but_destroys_a_two_four_or_an_enchantment() -> void:
+	var destroy_evil: MmCardDefinition = Scenario.free_copy(_card("dominaria_united", "destroy_evil"))
+	var engine: MmEngine = Scenario.combat_ready(
+		[Scenario.free_copy(_alpha("grizzly_bears"))],
+		[Scenario.free_copy(_alpha("hill_giant")), Scenario.creature("Wall of Wood", 2, 4), Scenario.enchantment("Warding Sign", [])],
+		[destroy_evil, destroy_evil])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	Scenario.declare_attackers(engine, [])
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	var wall: int = Scenario.permanent_named(engine, engine.villain().id, "Wall of Wood")
+	engine.submit(Scenario.cast_index(engine.pending_decision() as PriorityDecision,
+		Scenario.card_in_hand(engine, engine.hero(), "Destroy Evil")))
+	assert_eq(Scenario.choose_mode(engine, 0), "")
+
+	var candidates: Array[MmReference] = (engine.pending_decision() as ChooseTargetDecision).candidates
+
+	assert_eq(candidates.size(), 1, "Neither the 3/3 Hill Giant nor the 2/2 Bears has toughness 4 or greater.")
+	assert_true(candidates[0].equals(MmReference.to_object(wall)))
+	Scenario.choose_target(engine, candidates[0])
+	Scenario.auto_pay(engine)
+	Scenario.resolve_stack(engine)
+	assert_eq(Scenario.permanent_named(engine, engine.villain().id, "Wall of Wood"), -1, "The 2/4 is destroyed.")
+	assert_ne(Scenario.permanent_named(engine, engine.villain().id, "Hill Giant"), -1)
+	var sign: int = Scenario.permanent_named(engine, engine.villain().id, "Warding Sign")
+	assert_eq(Scenario.cast_mode(engine, Scenario.card_in_hand(engine, engine.hero(), "Destroy Evil"), 1,
+		[MmReference.to_object(sign)]), "")
+	Scenario.resolve_stack(engine)
+	assert_eq(Scenario.permanent_named(engine, engine.villain().id, "Warding Sign"), -1, "The enchantment is destroyed.")
+
+
 func test_skyknight_squire_becomes_a_flying_knight_once_three_other_creatures_enter() -> void:
 	var others: Array[MmCardDefinition] = [Scenario.free_copy(_alpha("grizzly_bears")),
 		Scenario.free_copy(_alpha("savannah_lions")), Scenario.free_copy(_alpha("hill_giant"))]
@@ -984,6 +1014,174 @@ func test_adventuring_gear_pumps_the_creature_equipped_as_its_landfall_resolves_
 	assert_eq(Scenario.pt(engine, bear), [2, 2], "Until end of turn.")
 
 
+func test_hero_of_the_pride_pumps_its_controllers_creatures_when_their_spell_targets_it() -> void:
+	var hero: MmCardDefinition = Scenario.free_copy(_card("theros_beyond_death", "hero_of_the_pride"))
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var lions: MmCardDefinition = Scenario.free_copy(_alpha("savannah_lions"))
+	var strike: MmCardDefinition = Scenario.free_copy(_card("khans_of_tarkir", "defiant_strike"))
+	var pump: MmCardDefinition = Scenario.pump_spell("Pump", 1, 1)
+	var hand: Array[MmCardDefinition] = [strike, pump]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup([hero, bears], [lions], hand),
+		[hero, bears], [lions], hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hands.")
+	var pride: int = Scenario.permanent_named(engine, engine.hero().id, "Hero of the Pride")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	var lion: int = Scenario.permanent_named(engine, engine.villain().id, "Savannah Lions")
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Pump"), [MmReference.to_object(bear)]), "")
+	assert_eq(Scenario.stack_ids(engine).size(), 1, "A spell targeting another creature does not trigger it.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Defiant Strike"),
+		[MmReference.to_object(pride)]), "")
+	assert_eq(Scenario.stack_ids(engine).size(), 2, "The spell and its Heroic trigger.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.pt(engine, pride), [4, 2], "+1/+0 from Heroic and +1/+0 from Defiant Strike.")
+	assert_eq(Scenario.pt(engine, bear), [4, 3], "+1/+1 from Pump and +1/+0 from Heroic.")
+	assert_eq(Scenario.pt(engine, lion), [2, 1], "Only creatures its controller controls.")
+
+	assert_eq(Scenario.play_until_game_turn(engine, 4), "")
+	assert_eq(Scenario.pt(engine, pride), [2, 2], "Until end of turn.")
+
+
+func test_tethmos_high_priest_returns_a_cheap_creature_card_from_your_graveyard_when_your_spell_targets_it() -> void:
+	var priest: MmCardDefinition = Scenario.free_copy(_card("journey_into_nyx", "tethmos_high_priest"))
+	var lions: MmCardDefinition = Scenario.free_copy(_alpha("savannah_lions"))
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var strike: MmCardDefinition = Scenario.free_copy(_card("khans_of_tarkir", "defiant_strike"))
+	var hand: Array[MmCardDefinition] = [strike, Scenario.free_destroy("Doom"), Scenario.free_destroy("Wreck")]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup([priest, lions], [bears], hand),
+		[priest, lions], [bears], hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hands.")
+	var hero: MmPlayer = engine.hero()
+	assert_eq(Scenario.cast_and_resolve(engine, "Doom",
+		[MmReference.to_object(Scenario.permanent_named(engine, hero.id, "Savannah Lions"))]), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Wreck",
+		[MmReference.to_object(Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears"))]), "")
+	var dead: int = Scenario.card_in_graveyard(engine, hero, "Savannah Lions")
+	var tethmos: int = Scenario.permanent_named(engine, hero.id, "Tethmos High Priest")
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Defiant Strike"),
+		[MmReference.to_object(tethmos)]), "")
+	var decision: ChooseTargetDecision = engine.pending_decision() as ChooseTargetDecision
+	assert_not_null(decision, "The Heroic trigger chooses its target.")
+	assert_eq(decision.candidates.size(), 1, "Only the Lions: the Bears are in another player's graveyard.")
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(dead)), "")
+	assert_eq(Scenario.stack_ids(engine).size(), 2, "The spell and its Heroic trigger.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_ne(Scenario.permanent_named(engine, hero.id, "Savannah Lions"), -1, "Back on the battlefield.")
+	assert_eq(Scenario.card_in_graveyard(engine, hero, "Savannah Lions"), -1)
+	assert_ne(Scenario.card_in_graveyard(engine, engine.villain(), "Grizzly Bears"), -1, "Not the opponent's card.")
+
+
+func test_vanguard_of_brimaz_makes_a_vigilant_cat_soldier_when_your_spell_targets_it() -> void:
+	var vanguard: MmCardDefinition = Scenario.free_copy(_card("born_of_the_gods", "vanguard_of_brimaz"))
+	var strike: MmCardDefinition = Scenario.free_copy(_card("khans_of_tarkir", "defiant_strike"))
+	var hand: Array[MmCardDefinition] = [strike]
+	var yours: Array[MmCardDefinition] = [vanguard]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(yours, no_cards, hand),
+		yours, no_cards, hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var brimaz: int = Scenario.permanent_named(engine, engine.hero().id, "Vanguard of Brimaz")
+	assert_true(Scenario.now(engine, brimaz).has_ability(VigilanceAbility))
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Defiant Strike"),
+		[MmReference.to_object(brimaz)]), "")
+	assert_eq(Scenario.stack_ids(engine).size(), 2, "The spell and its Heroic trigger.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var tokens: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(tokens.size(), 1)
+	assert_eq(Scenario.pt(engine, tokens[0]), [1, 1])
+	assert_true(Scenario.now(engine, tokens[0]).has_ability(VigilanceAbility), "The token has its definition's vigilance.")
+	assert_eq(Scenario.now(engine, tokens[0]).subtypes, ["Cat", "Soldier"] as Array[String])
+
+
+func test_felidar_savior_puts_a_counter_on_each_of_up_to_two_other_creatures_its_controller_chooses() -> void:
+	var savior: MmCardDefinition = Scenario.free_copy(_card("foundations", "felidar_savior"))
+	var hand: Array[MmCardDefinition] = [savior]
+	var yours: Array[MmCardDefinition] = [Scenario.free_copy(_alpha("savannah_lions")), Scenario.free_copy(_alpha("grizzly_bears"))]
+	var theirs: Array[MmCardDefinition] = [Scenario.free_copy(_alpha("grizzly_bears"))]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(yours, theirs, hand),
+		yours, theirs, hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var lions: int = Scenario.permanent_named(engine, engine.hero().id, "Savannah Lions")
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Felidar Savior")), "")
+	Scenario.pass_priority(engine)
+	Scenario.pass_priority(engine)
+	var choice: ChooseTargetsDecision = engine.pending_decision() as ChooseTargetsDecision
+	assert_not_null(choice, "The enters trigger asks for up to two targets.")
+	assert_eq(choice.candidates.size(), 2, "The Lions and the Bears: not the Savior, nor the Villain's Bears.")
+	assert_eq(Scenario.choose_targets(engine, [MmReference.to_object(lions)]), "", "One of two is enough.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var plus: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE
+	var felidar: int = Scenario.permanent_named(engine, engine.hero().id, "Felidar Savior")
+	assert_eq(Scenario.counters_on(engine, lions, plus), 1)
+	assert_eq(Scenario.counters_on(engine, bears, plus), 0, "Not chosen.")
+	assert_eq(Scenario.counters_on(engine, felidar, plus), 0)
+	assert_true(Scenario.now(engine, felidar).has_ability(LifelinkAbility))
+
+
+func test_lightshield_parry_pumps_a_creature_when_cast_and_draws_a_card_when_cycled() -> void:
+	var parry: MmCardDefinition = _card("aetherdrift", "lightshield_parry")
+	var cast: MmEngine = _lightshield_parry_engine(Scenario.free_copy(parry))
+	var bear: int = Scenario.permanent_named(cast, cast.hero().id, "Grizzly Bears")
+
+	assert_eq(Scenario.cast_and_resolve(cast, "Lightshield Parry", [MmReference.to_object(bear)]), "")
+	assert_eq(Scenario.pt(cast, bear), [4, 4])
+	assert_eq(Scenario.play_until_game_turn(cast, 4), "")
+	assert_eq(Scenario.pt(cast, bear), [2, 2], "Until end of turn.")
+
+	var cycle: MmEngine = _lightshield_parry_engine(parry.duplicate(true) as MmCardDefinition)
+	var hero: MmPlayer = cycle.hero()
+	var hand_size: int = hero.hand.size()
+	var library: int = hero.library.size()
+	assert_eq(Scenario.activate(cycle, Scenario.card_in_hand(cycle, hero, "Lightshield Parry")), "",
+		"Cycling {2}, paid by the two Elves.")
+	assert_eq(Scenario.resolve_stack(cycle), "")
+	assert_ne(Scenario.card_in_graveyard(cycle, hero, "Lightshield Parry"), -1, "Discarded to cycle it.")
+	assert_eq(hero.hand.size(), hand_size, "One card out, one drawn.")
+	assert_eq(hero.library.size(), library - 1)
+	assert_eq(Scenario.pt(cycle, Scenario.permanent_named(cycle, hero.id, "Grizzly Bears")), [2, 2],
+		"Cycled, its spell does not happen.")
+
+
+func test_topiary_panther_landcycles_for_a_forest_paid_by_two_forests() -> void:
+	var panther: MmCardDefinition = _card("murders_at_karlov_manor", "topiary_panther")
+	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha("forest"), 20, panther, 20)
+	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		func(running: MmEngine) -> bool: return Scenario.ready_in_main(running, 3, 2, "Topiary Panther"))
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero: MmPlayer = engine.hero()
+	var hand_size: int = hero.hand.size()
+	var library: int = hero.library.size()
+
+	assert_eq(Scenario.activate(engine, Scenario.card_in_hand(engine, hero, "Topiary Panther")), "",
+		"Basic landcycling {1}{G}, paid by the two Forests.")
+	assert_eq(Scenario.pass_to_search(engine), "")
+	var search: ChooseCardsInLibraryDecision = engine.pending_decision() as ChooseCardsInLibraryDecision
+	assert_gt(search.candidate_ids.size(), 0)
+	for id: int in search.candidate_ids:
+		assert_eq(engine.game_state().characteristics_of(engine.game_state().object(id)).name, "Forest")
+	assert_eq(engine.submit([search.candidate_ids[0]]), "")
+
+	assert_ne(Scenario.card_in_graveyard(engine, hero, "Topiary Panther"), -1, "Discarded to landcycle it.")
+	for forest: int in Scenario.permanents_named(engine, hero.id, "Forest"):
+		assert_true(engine.game_state().object(forest).is_tapped)
+	assert_eq(hero.hand.size(), hand_size, "One card out, one Forest found.")
+	assert_eq(hero.library.size(), library - 1)
+	assert_ne(Scenario.card_in_hand(engine, hero, "Forest"), -1)
+
+
 func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:
 	for deck_name: String in ["red_green", "white_black", "blue_red"]:
 		var setup: MmPlayerSetup = load("res://content/decks/%s.tres" % deck_name) as MmPlayerSetup
@@ -1031,6 +1229,17 @@ func _ready_with_lands(creature: MmCardDefinition, land_file: String, land_count
 			if Scenario.card_in_hand(running, running.hero(), extra.name) == -1:
 				return false
 		return Scenario.permanents_named(running, running.hero().id, land.name).size() == land_count)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	return engine
+
+
+## The Hero's turn-3 main phase with Grizzly Bears and two Elves out and [param parry] in hand.
+func _lightshield_parry_engine(parry: MmCardDefinition) -> MmEngine:
+	var yours: Array[MmCardDefinition] = [Scenario.free_copy(_alpha("grizzly_bears")), Scenario.elf(), Scenario.elf()]
+	var hand: Array[MmCardDefinition] = [parry]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(yours, no_cards, hand),
+		yours, no_cards, hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
 	assert_not_null(engine, "No seed gave the needed hand.")
 	return engine
 
