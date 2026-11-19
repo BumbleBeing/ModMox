@@ -9,3 +9,15 @@
 
 # Agent worktrees (each is its own checkout)
 .claude/worktrees/
+
+# Copyrighted art assets
+/content/art/*.jpg
+/content/art/*.jpg.import
+/content/art/tokens/*.jpg
+/content/art/tokens/*.jpg.import
+# Card and token art is fetched from Scryfall by tools/art/fetch_art.gd, never committed.
+# The manifests (art.json) stay tracked.
+/content/art/*.jpg
+/content/art/*.jpg.import
+/content/art/tokens/*.jpg
+/content/art/tokens/*.jpg.import
