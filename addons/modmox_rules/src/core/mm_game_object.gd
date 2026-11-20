@@ -92,6 +92,10 @@ var spent_ability_indexes: Array[int] = []
 ## current one, so nothing has to clear it as a turn begins.
 var permission_used_game_turn: Dictionary[int, int] = {}
 var permission_used_spell_name: Dictionary[int, String] = {}
+## The once-each-turn triggered abilities of this object that have triggered, by their
+## place among its abilities: the Game Turn each last triggered in (ADR 0054's addendum).
+## One is Spent while its Game Turn is the current one, as a permission is.
+var triggered_game_turn: Dictionary[int, int] = {}
 ## For a card in exile: the object whose ability exiled it, so that object's linked ability
 ## can find "the exiled card" (CR 607.2a); 0 for anything else. The object that exiled it
 ## may have left the battlefield since, and is then known only by this ID.
@@ -155,6 +159,7 @@ func duplicate_object() -> MmGameObject:
 	copy.spent_ability_indexes = spent_ability_indexes.duplicate()
 	copy.permission_used_game_turn = permission_used_game_turn.duplicate()
 	copy.permission_used_spell_name = permission_used_spell_name.duplicate()
+	copy.triggered_game_turn = triggered_game_turn.duplicate()
 	copy.exiled_with_object_id = exiled_with_object_id
 	copy.returns_when_exiler_leaves = returns_when_exiler_leaves
 	copy.attached_to_object_id = attached_to_object_id
@@ -183,6 +188,12 @@ func is_ability_spent(ability_index: int) -> bool:
 ## Whether the cast permission at [param ability_index] was used in [param game_turn].
 func is_permission_used_in(ability_index: int, game_turn: int) -> bool:
 	return permission_used_game_turn.get(ability_index, -1) == game_turn
+
+
+## Whether the once-each-turn triggered ability at [param ability_index] triggered in
+## [param game_turn].
+func has_triggered_in(ability_index: int, game_turn: int) -> bool:
+	return triggered_game_turn.get(ability_index, -1) == game_turn
 
 
 ## The zone holding this object, or null while it is between zones.
@@ -298,6 +309,12 @@ func finish_cast_from_library() -> void:
 func record_permission_used(ability_index: int, game_turn: int, spell_name: String) -> void:
 	permission_used_game_turn[ability_index] = game_turn
 	permission_used_spell_name[ability_index] = spell_name
+
+
+## Event-only: the once-each-turn triggered ability at [param ability_index] triggered in
+## [param game_turn].
+func record_triggered(ability_index: int, game_turn: int) -> void:
+	triggered_game_turn[ability_index] = game_turn
 
 
 ## Event-only: records the creature type chosen as this permanent entered (CR 614.12).

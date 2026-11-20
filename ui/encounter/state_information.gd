@@ -1,7 +1,7 @@
 class_name StateInformation
 extends RefCounted
 ## The State Information of a permanent (13h and milestone 16, ADR 0033): summoning sickness, exertion, counters, damage marked, and
-## what it is attached to and what is attached to it, what exiled it or what it exiled, a cast from the top of a library it allowed this turn, and each effect on it with the card it came from. The Encounter Presenter makes one for each
+## what it is attached to and what is attached to it, what exiled it or what it exiled, a cast from the top of a library it allowed this turn, an ability of it that triggers only once each turn and has this turn, and each effect on it with the card it came from. The Encounter Presenter makes one for each
 ## permanent and puts it on the snapshot. A new kind of state adds its entries here and changes nothing in the Inspector.
 
 
@@ -23,6 +23,9 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 	for index: int in seen.permissions_used_this_turn:
 		entries.append(StateEntry.new("Cast from the top this turn",
 			_cast_from_top_text(seen, view, seen.permissions_used_this_turn[index], names)))
+	for _index: int in seen.triggered_this_turn:
+		# Engine ADR 0054's addendum: "This ability triggers only once each turn."
+		entries.append(StateEntry.new("Triggered this turn", "Won't trigger again this turn."))
 	entries.append_array(_attachment_entries(seen, view))
 	entries.append_array(_exile_entries(seen, view))
 	if seen.damage_marked > 0:

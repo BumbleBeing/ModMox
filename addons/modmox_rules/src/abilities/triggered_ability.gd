@@ -19,6 +19,11 @@ extends MmAbility
 ## "Choose one —": one entry for each "•" line. Empty for a triggered ability that is not
 ## modal.
 @export var modes: Array[AbilityMode] = []
+## "This ability triggers only once each turn" (ADR 0054's addendum): once it has triggered
+## in a turn, its source marks it Spent, and its trigger event does nothing more that turn,
+## even several events at once. Counted on its source object, so one that leaves and
+## returns is a new object that may trigger again (ADR 0008).
+@export var is_once_each_turn: bool = false
 
 
 ## Whether the intervening "if" clause, if any, holds right now.

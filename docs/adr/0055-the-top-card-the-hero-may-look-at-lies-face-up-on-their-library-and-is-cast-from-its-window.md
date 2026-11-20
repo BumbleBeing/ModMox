@@ -15,3 +15,7 @@ Assemble the Players lets its controller look at the top card of their library a
 The window first held only the top card, captioned "Top card · only you see it"; the user asked for the usual window with every card instead, so the library reads as itself and the top card stands out by its face and its Glow.
 
 Left out until a card needs them: a library played with its top card revealed to both players, and playing a land from the top.
+
+## Addendum: a permanent whose trigger is Spent this turn is dimmed too (engine ADR 0054's addendum)
+
+A permanent with an ability that triggers only once each turn and has triggered this turn, such as Tocasia's Welcome, is drawn dimmed as one whose cast from the top is Spent: `CardLook.is_dimmed` reads the Object View's `triggered_this_turn` as well. State Information has an entry "Triggered this turn": "Won't trigger again this turn.", the words the user chose.

@@ -44,6 +44,15 @@ func test_a_permanent_is_dimmed_while_a_permission_of_it_is_spent_this_turn() ->
 	assert_true(CardLook.of_view(seen).is_dimmed)
 
 
+func test_a_permanent_is_dimmed_while_a_trigger_of_it_is_spent_this_turn() -> void:
+	var seen: MmObjectView = MmObjectView.new()
+	seen.name = "Tocasia's Welcome"
+
+	assert_false(CardLook.of_view(seen).is_dimmed)
+	seen.triggered_this_turn = [0]
+	assert_true(CardLook.of_view(seen).is_dimmed)
+
+
 func test_a_tapped_battlefield_face_turns_sideways_darkens_and_keeps_its_tap_symbol_upright() -> void:
 	var look: CardLook = _look("grizzly_bears")
 	look.is_tapped = true

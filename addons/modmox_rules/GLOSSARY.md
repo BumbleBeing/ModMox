@@ -71,7 +71,7 @@ A rule on an activated ability about when it may be activated, apart from its co
 _Avoid_: Limit cost, charge, cooldown
 
 **Spent**:
-Said of a once-each-game ability that has been activated this game, whether or not it resolved, and of a once-each-turn permission to cast from the top of a library that has been used this turn, from the moment the cast began. The source's Game Object keeps the mark, and its Object View shows it. A Spent permission is ready again the next turn, whoever's it is.
+Said of a once-each-game ability that has been activated this game, whether or not it resolved, of a once-each-turn permission to cast from the top of a library that has been used this turn, from the moment the cast began, and of an ability that triggers only once each turn and has triggered this turn, whether or not it resolved. The source's Game Object keeps the mark, and its Object View shows it. A Spent permission or trigger is ready again the next turn, whoever's it is.
 _Avoid_: Used up (a Potion is used up; an Emblem never is), exhausted, tapped
 
 **Hero**:
@@ -149,7 +149,7 @@ _Avoid_: Snapshot, visible state
 ## Triggered abilities
 
 **Pending Trigger**:
-A triggered ability that has triggered but has not been put on the stack yet, together with what triggered it ("that player", "that creature") and the card it came from.
+A triggered ability that has triggered but has not been put on the stack yet, together with what triggered it ("that player", "that creature") and the card it came from. One event may make several for one ability, one for each object it is about, as "blocks a creature" does for each attacker blocked.
 _Avoid_: Queued trigger, trigger instance
 
 **Batch**:
@@ -267,7 +267,18 @@ _Avoid_: Paused event, pending event, interrupted batch
 
 **Combat**:
 Which creatures are attacking and blocking, which player is defending, and which creatures have already struck first. It is part of the game state, and empty outside the combat phase.
-_Avoid_: Battle (a card type in Magic), fight
+_Avoid_: Battle (a card type in Magic), fight (a keyword action: see Fight)
+
+**Attacks**:
+A creature being declared as an attacker (CR 508.1), as in "Whenever this creature attacks" (CR 508.3a). A creature put onto the battlefield attacking is attacking but never attacked (CR 508.4).
+_Avoid_: Is attacking (that is a state)
+
+**Blocks**:
+A creature blocks as it is declared as a blocker (CR 509.1); it blocks a creature once for each attacker it is declared blocking (CR 509.3b). A creature put onto the battlefield blocking is blocking but never blocked (CR 509.7).
+
+**Fight**:
+A keyword action: two creatures each deal damage equal to their power to the other, at once (CR 701.14a), as Bushwhack's "Target creature you control fights target creature you don't control". The creatures are the sources, so deathtouch and lifelink apply, and it is not combat damage. If either has left the battlefield, is no longer a creature or has become an illegal target, neither deals any (CR 701.14b).
+_Avoid_: Duel, brawl, combat (fighting is not combat)
 
 **Summoning Sickness**:
 A creature cannot attack or pay {T} until its controller has controlled it continuously since the start of their most recent turn. The engine works this out from when control began; nothing has to clear it.
@@ -276,6 +287,10 @@ _Avoid_: Sick (on its own), fresh, exhausted
 **Exert**:
 To exert a permanent, as part of a cost such as Pride Sovereign's "{W}, {T}, Exert this creature", is to have it not untap during the next untap step of the player who exerted it (CR 701.43). The permanent remembers that player, and that untap step ends its exertion whether it was tapped then or not. Exerting it again before then still skips only that one untap step, and a permanent that changes zones is a new object, not exerted.
 _Avoid_: Tired, "doesn't untap" (that is the effect, not the action)
+
+**Sacrifice**:
+To sacrifice a permanent is for its controller to move it from the battlefield to its owner's graveyard (CR 701.21a), as Ominous Parcel's cost "Sacrifice this artifact" does. Only its controller can, and it is not destruction, so indestructible and regeneration never stop it. A sacrificed creature dies, and an ability whose cost sacrificed its source resolves from the source's last-known information.
+_Avoid_: Destroy (which indestructible stops), discard (which is from a hand)
 
 **Marked Damage**:
 Damage dealt to a creature, which stays on it until the cleanup step removes it.
@@ -338,7 +353,7 @@ What answers "if these attack and these block, what happens?" by running the eng
 _Avoid_: Combat math, damage predictor
 
 **Timing Tag**:
-When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, evasion (a trick that only grants abilities) from the declare attackers step so it can change who blocks whom, removal (damage, destruction and -1/-1 counters) also in its controller's main phases and the other player's end step, a counter only with the other player's spell or ability on top of the stack. A permanent spell has none, unless it has flash and its own "enters" trigger is removal or a trick: then it has that trigger's. It never decides whether a play is good.
+When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, evasion (a trick that only grants abilities) from the declare attackers step so it can change who blocks whom, removal (damage, fights, destruction and -1/-1 counters) also in its controller's main phases and the other player's end step, a counter only with the other player's spell or ability on top of the stack. A permanent spell has none, unless it has flash and its own "enters" trigger is removal or a trick: then it has that trigger's. It never decides whether a play is good.
 _Avoid_: AI hint, card flag, AILogic
 
 **AI Profile**:

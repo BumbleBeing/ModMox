@@ -70,6 +70,22 @@ func test_chump_blocks_when_the_attack_would_be_lethal() -> void:
 	assert_eq(agent.explain(), AiAgent.Reason.LIFE_IN_DANGER)
 
 
+func test_chump_blocks_a_token_put_onto_the_battlefield_attacking_when_its_damage_would_be_lethal() -> void:
+	# CR 508.4: Brimaz's Cat was never declared, but it is attacking, so the blockers
+	# decision lists it with Brimaz.
+	var cub: MmCardDefinition = Scenario.creature("Cub", 1, 1)
+	var engine: MmEngine = _villain_to_block([Scenario.brimaz()], [cub, cub], 1)
+	var cat: int = Scenario.tokens_on_battlefield(engine)[0]
+
+	var blocks: Array = AiScenario.ask(engine, AiAgent.new())
+
+	var blocked: Array[int] = []
+	for pair: Variant in blocks:
+		blocked.append((pair as Array)[1] as int)
+	assert_eq(blocks.size(), 2)
+	assert_true(blocked.has(cat), "Brimaz's 3 or the Cat's 1 would each take the Villain's last life.")
+
+
 func test_gang_blocks_an_attacker_neither_blocker_could_kill_alone() -> void:
 	var bears: MmCardDefinition = AiScenario.free_alpha("grizzly_bears")
 	var engine: MmEngine = _villain_to_block([AiScenario.free_alpha("hill_giant")], [bears, bears])
@@ -106,6 +122,46 @@ func test_attacks_into_an_even_trade_that_path_of_bravery_turns_into_a_win() -> 
 	var attackers: Array = AiScenario.ask(engine, AiAgent.new())
 
 	assert_eq(attackers.size(), 1, "A 3/3 Bears kills a 2/2 blocker and survives.")
+
+
+func test_attacks_into_an_even_trade_that_its_own_attack_trigger_turns_into_a_win() -> void:
+	# The Combat Oracle resolves "whenever this creature attacks" before blockers, as the
+	# engine does.
+	var counter: PutCountersEffect = Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, SourceSelection.new())
+	var charger: MmCardDefinition = Scenario.creature("Charger", 2, 2, [Scenario.triggered(Scenario.attacks(), [counter])])
+	var engine: MmEngine = Scenario.combat_ready([charger], [AiScenario.free_alpha("grizzly_bears")])
+	assert_not_null(engine)
+
+	var attackers: Array = AiScenario.ask(engine, AiAgent.new())
+
+	assert_eq(attackers.size(), 1, "With its +1/+1 counter, a 3/3 kills a 2/2 blocker and survives.")
+
+
+func test_blocks_with_a_creature_its_own_block_trigger_lets_survive_and_kill() -> void:
+	# The Combat Oracle resolves "whenever this creature blocks a creature" before combat
+	# damage, as the engine does. Without it, the 2/2 would be a chump block at safe life.
+	var grow: CreateContinuousEffect = Scenario.until_end_of_turn(Scenario.modify_pt(3, 3, SourceSelection.new()))
+	var bulwark: MmCardDefinition = Scenario.creature("Bulwark", 2, 2, [Scenario.triggered(Scenario.blocks_a_creature(), [grow])])
+	var engine: MmEngine = _villain_to_block([AiScenario.free_alpha("hill_giant")], [bulwark])
+	var agent: AiAgent = AiAgent.new()
+
+	var blocks: Array = AiScenario.ask(engine, agent)
+
+	assert_eq(blocks.size(), 1, "As a 5/5 it kills the 3/3 Giant and survives.")
+	assert_eq(agent.explain(), AiAgent.Reason.SAFE_BLOCKS)
+
+
+func test_blocks_with_brimaz_whose_token_blocking_too_makes_the_block_kill() -> void:
+	# The Combat Oracle resolves Brimaz's trigger, so the Cat that enters blocking the Ox adds
+	# its 1 to Brimaz's 3. Without it both blockers would only survive, and the cheaper Wall
+	# would block.
+	var engine: MmEngine = _villain_to_block([Scenario.creature("Ox", 2, 4)], [Scenario.blocking_brimaz(), Scenario.creature("Wall", 0, 5)])
+	var ox: int = Scenario.permanent_named(engine, engine.hero().id, "Ox")
+	var brimaz: int = Scenario.permanent_named(engine, engine.villain().id, "Brimaz")
+
+	var blocks: Array = AiScenario.ask(engine, AiAgent.new())
+
+	assert_eq(blocks, [[brimaz, ox]], "Brimaz and its Cat deal 4 to the 2/4 Ox, which can't kill Brimaz.")
 
 
 func test_trampling_damage_kills_the_blockers_and_the_rest_goes_to_the_player() -> void:

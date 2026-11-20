@@ -12,15 +12,3 @@ The real cards `/add-card` triaged and has not added yet (ADR 0040), grouped by 
 ### Hybrid mana ({B/R})
 
 - **Cultbrand Cinder** ({4}{B/R}, Creature — Elemental Shaman, 3/3): "When this creature enters, put a -1/-1 counter on target creature." Its ability is Ready since counters; it waits on a mana symbol payable with either of two colors, which the engine's mana costs and the card tool's reading both lack.
-
-### Fight
-
-- **Bushwhack** ({G}, Sorcery): "Choose one — • Search your library for a basic land card, reveal it, put it into your hand, then shuffle. • Target creature you control fights target creature you don't control." Its search is built (ADR 0057); its second mode needs a fight effect (CR 701.14).
-
-### A "sacrifice this permanent" cost
-
-- **Ominous Parcel** ({1}, Artifact): "{2}, {T}, Sacrifice this artifact: Search your library for a basic land card, reveal it, put it into your hand, then shuffle. {5}, {T}, Sacrifice this artifact: It deals 4 damage to target creature." Its search is built; both abilities need a cost that sacrifices the artifact itself.
-
-### A count of the players who control more lands than you
-
-- **Oreskos Explorer** ({1}{W}, Creature — Cat Scout, 2/2): "When this creature enters, search your library for up to X Plains cards, where X is the number of players who control more lands than you. Reveal those cards, put them into your hand, then shuffle." Its search is built; it needs X as a Value (0 or 1 one-on-one).

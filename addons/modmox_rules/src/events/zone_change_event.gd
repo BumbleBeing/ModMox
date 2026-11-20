@@ -11,9 +11,11 @@ extends MmEvent
 ## RETURN_TO_HAND is an effect putting a card into its owner's hand. EXILE is CR 701.13a,
 ## and RETURN_TO_BATTLEFIELD an effect putting a card in exile or a graveyard onto the
 ## battlefield. SEARCH is a card found by a search (CR 701.23). UNATTACHED_AURA is CR 704.5m:
-## an Aura attached illegally, or to nothing, put into its owner's graveyard.
+## an Aura attached illegally, or to nothing, put into its owner's graveyard. SACRIFICE is
+## CR 701.21a: its controller moving a permanent to its owner's graveyard, which is not
+## destruction.
 enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND,
-	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA, SURVEIL }
+	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA, SURVEIL, SACRIFICE }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int

@@ -544,6 +544,8 @@ func fingerprint() -> String:
 			for index: int in game_object.permission_used_game_turn:
 				entries.append("%d permission %d used turn %d for %s" % [game_object.id, index,
 					game_object.permission_used_game_turn[index], game_object.permission_used_spell_name[index]])
+			for index: int in game_object.triggered_game_turn:
+				entries.append("%d ability %d triggered turn %d" % [game_object.id, index, game_object.triggered_game_turn[index]])
 			if game_object.chosen_creature_type != "":
 				entries.append("%d chose %s" % [game_object.id, game_object.chosen_creature_type])
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])

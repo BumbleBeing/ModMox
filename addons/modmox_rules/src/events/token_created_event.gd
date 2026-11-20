@@ -5,6 +5,14 @@ extends MmEvent
 
 var token: MmCardDefinition
 var player_id: int
+## True when the token is put onto the battlefield attacking (CR 508.4), the player the
+## combat's attackers attack: attacking as it arrives, so it is never on the battlefield
+## and not attacking. It was never declared as an attacker (ADR 0044).
+var attacking_on_arrival: bool = false
+## The attacker the token is put onto the battlefield blocking (CR 509.7), or 0: blocking as
+## it arrives, so it is never on the battlefield and not blocking. It was never declared as
+## a blocker (ADR 0044).
+var blocking_on_arrival: int = 0
 ## The new object's ID, set when the event is applied.
 var new_object_id: int = 0
 
@@ -23,7 +31,13 @@ func apply(state: MmGameState) -> void:
 	new_object_id = created.id
 	# CR 302.6: summoning sickness counts from when its controller began controlling it.
 	created.record_control_since(state.game_turn)
+	if attacking_on_arrival:
+		state.combat.enter_attacking(created.id)
+	if blocking_on_arrival != 0:
+		state.combat.enter_blocking(created.id, blocking_on_arrival)
 
 
 func describe() -> String:
-	return "TOKEN CREATED: %s for player %d as object %d" % [token.name, player_id, new_object_id]
+	var attacking: String = " attacking" if attacking_on_arrival else ""
+	var blocking: String = "" if blocking_on_arrival == 0 else " blocking object %d" % blocking_on_arrival
+	return "TOKEN CREATED: %s for player %d as object %d%s%s" % [token.name, player_id, new_object_id, attacking, blocking]

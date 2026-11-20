@@ -19,6 +19,12 @@ const PRINTED: Dictionary[String, String] = {
 	"assemble_the_players": "You may look at the top card of your library any time.\nOnce each turn, you may cast a creature spell with power 2 or less from the top of your library.",
 	"battlegrowth": "Put a +1/+1 counter on target creature.",
 	"black_knight": "First strike\nProtection from white",
+	"brimaz_king_of_oreskos": "Vigilance\n"
+		+ "Whenever this creature attacks, create a 1/1 white Cat Soldier creature token with vigilance that's attacking.\n"
+		+ "Whenever this creature blocks a creature, create a 1/1 white Cat Soldier creature token with vigilance that's blocking that creature.",
+	"bushwhack":"Choose one —\n"
+		+ "• Search your library for a basic land card, reveal it, put it into your hand, then shuffle.\n"
+		+ "• Target creature you control fights target creature you don't control.",
 	"charmed_stray": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each other creature you control originally named Charmed Stray.",
 	"claws_out": "Affinity for Cats\nEach creature you control gets +2/+2 until end of turn.",
 	"coordinated_maneuver": "Choose one —\n"
@@ -64,8 +70,10 @@ const PRINTED: Dictionary[String, String] = {
 	"keldon_warlord": "This creature's power and toughness are each equal to the number of non-Wall creatures you control.",
 	"kemba_kha_enduring": "Whenever a Cat creature you control enters, attach up to one target Equipment you control to that creature.\nEach equipped creature you control gets +1/+1.\n{3}{W}{W}: Create a 2/2 white Cat creature token.",
 	"king_of_the_pride": "Each other Cat creature you control gets +2/+1.",
+	"lay_down_arms": "Exile target creature with mana value less than or equal to the number of Plains you control. Its controller gains 3 life.",
 	"leonin_lightbringer": "Ward {2}\nAs long as this creature is equipped, it gets +1/+1.",
 	"leonin_shikari": "You may activate equip abilities any time you could cast an instant.",
+	"leonin_skyhunter": "Flying",
 	"leonin_snarecaster": "When this creature enters, you may tap target creature.",
 	"leyline_binding": "Flash\nThis spell costs {1} less to cast for each basic land type among lands you control.\nWhen this enchantment enters, exile target nonland permanent an opponent controls until this enchantment leaves the battlefield.",
 	"lightning_bolt": "Lightning Bolt deals 3 damage to any target.",
@@ -78,6 +86,10 @@ const PRINTED: Dictionary[String, String] = {
 	"nyleas_presence": "Enchant land\nWhen this Aura enters, draw a card.\nEnchanted land is every basic land type in addition to its other types.",
 	"oblivion_ring": "When this enchantment enters, exile another target nonland permanent.\n"
 		+ "When this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.",
+	"ominous_parcel": "{2}, {T}, Sacrifice this artifact: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.\n"
+		+ "{5}, {T}, Sacrifice this artifact: This artifact deals 4 damage to target creature.",
+	"oreskos_explorer": "When this creature enters, search your library for up to X Plains cards, reveal them, put them into your hand, "
+		+ "then shuffle, where X is the number of players who control more lands than you.",
 	"ornery_kudu": "When this creature enters, put a -1/-1 counter on target creature you control.",
 	"outflank": "Outflank deals damage to target attacking or blocking creature equal to the number of creatures you control.",
 	"path_of_bravery": "As long as your life total is greater than or equal to your starting life total, each creature you control gets +1/+1.\n"
@@ -114,6 +126,8 @@ const PRINTED: Dictionary[String, String] = {
 	"territorial_scythecat":"Trample\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"tethmos_high_priest": "Whenever you cast a spell that targets this creature, return target creature card with mana value 2 or less from your graveyard to the battlefield.",
 	"terror": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
+	"tocasias_welcome": "Whenever one or more creatures you control with mana value 3 or less enter, draw a card. "
+		+ "This ability triggers only once each turn.",
 	"topiary_panther": "Trample\nBasic landcycling {1}{G}",
 	"tromp_the_domains": "Each creature you control gains trample until end of turn. Each creature you control gets +X/+X until end of turn, where X is the number of basic land types among lands you control.",
 	"uthden_troll": "{R}: Regenerate this creature.",
@@ -353,6 +367,35 @@ func test_a_tokens_keyword_is_worded_after_with() -> void:
 	assert_eq(text, "Create two 1/1 white Cat Soldier creature tokens with vigilance.")
 
 
+func test_a_token_put_onto_the_battlefield_attacking_is_worded_after_its_keywords() -> void:
+	# Brimaz, King of Oreskos's first ability, with "this creature" for its name (ADR 0023).
+	var cat_soldier: MmCardDefinition = load("res://content/tokens/cat_soldier_1_1_white_vigilance.tres") as MmCardDefinition
+	var king: MmCardDefinition = Scenario.brimaz(cat_soldier)
+	var litter: MmCardDefinition = Scenario.instant("Litter", Scenario.mana_cost(0), [], [Scenario.attacking_tokens(Scenario.cat(), 2)])
+
+	var one: String = AbilityText.of_card(king.abilities, king.card_types, king.supertypes, "Brimaz")
+	var two: String = AbilityText.of_card(litter.abilities, litter.card_types, litter.supertypes, "Litter")
+
+	assert_eq(one, "Whenever this creature attacks, create a 1/1 white Cat Soldier creature token with vigilance that's attacking.")
+	assert_eq(two, "Create two 1/1 white Cat creature tokens that are attacking.")
+
+
+func test_a_token_put_onto_the_battlefield_blocking_is_worded_after_its_keywords() -> void:
+	# Brimaz, King of Oreskos's second ability, with "this creature" for its name (ADR 0023).
+	var cat_soldier: MmCardDefinition = load("res://content/tokens/cat_soldier_1_1_white_vigilance.tres") as MmCardDefinition
+	var king: MmCardDefinition = Scenario.blocking_brimaz(cat_soldier)
+	var litter: Array[MmEffect] = [Scenario.blocking_tokens(Scenario.cat(), 2)]
+	var foliage: MmCardDefinition = Scenario.free_foliage()
+
+	var one: String = AbilityText.of_card(king.abilities, king.card_types, king.supertypes, "Brimaz")
+	var two: String = AbilityText.of_ability(Scenario.triggered(Scenario.blocks_a_creature(), litter), "this creature")
+	var targeted: String = AbilityText.of_card(foliage.abilities, foliage.card_types, foliage.supertypes, "Foliage")
+
+	assert_eq(one, "Whenever this creature blocks a creature, create a 1/1 white Cat Soldier creature token with vigilance that's blocking that creature.")
+	assert_eq(two, "Whenever this creature blocks a creature, create two 1/1 white Cat creature tokens that are blocking that creature.")
+	assert_eq(targeted, "Create a 1/1 white Cat creature token that's blocking target attacking creature.")
+
+
 func test_a_tokens_keywords_are_listed_as_oracle_lists_them() -> void:
 	var angel: MmCardDefinition = MmCardDefinition.new()
 	angel.name = "Angel Token"
@@ -509,9 +552,58 @@ func test_the_trigger_kinds_are_worded() -> void:
 		"Whenever one or more creatures you control attack, you gain 1 life.": _attack(Whose.YOU),
 		"Whenever one or more creatures an opponent controls attack, you gain 1 life.": _attack(Whose.OPPONENT),
 		"Whenever one or more creatures a player controls attack, you gain 1 life.": _attack(Whose.ANY),
+		"Whenever this creature attacks, you gain 1 life.": Scenario.attacks(),
+		"Whenever one or more Cats you control attack, you gain 1 life.": Scenario.attacks(Scenario.has_subtype("Cat")),
+		"Whenever one or more Cats an opponent controls attack, you gain 1 life.":
+			Scenario.attacks(Scenario.has_subtype("Cat"), Whose.OPPONENT),
+		"Whenever this creature blocks a creature, you gain 1 life.": Scenario.blocks_a_creature(),
+		"Whenever a creature you control blocks a creature, you gain 1 life.":
+			Scenario.blocks_a_creature(Scenario.creature_you_control()),
 	}
 	for text: String in expected:
 		assert_eq(AbilityText.of_ability(Scenario.triggered(expected[text], gain), "this creature"), text)
+
+
+func test_a_trigger_limited_to_once_each_turn_says_so_and_its_zone_changes_read_one_or_more() -> void:
+	# With the limit, triggering for each object plays as "one or more" does, so it is
+	# worded as Oracle words Tocasia's Welcome, Welcoming Vampire and Morbid Opportunist.
+	var gain: Array[MmEffect] = [Scenario.gain_life(1, Scenario.you())]
+	var creature: MmFilter = Scenario.of_type(CardType.CREATURE)
+	var graveyard: ZoneChangeTrigger = ZoneChangeTrigger.new()
+	graveyard.to_zone = MmZone.Kind.GRAVEYARD
+	graveyard.filter = creature
+	var once: String = " This ability triggers only once each turn."
+	var expected: Dictionary[String, MmTrigger] = {
+		"Whenever one or more creatures you control with mana value 3 or less enter, you gain 1 life.":
+			Scenario.enters(Scenario.all_of([creature, _yours(), Scenario.mana_value(3)])),
+		"Whenever one or more lands you control enter, you gain 1 life.": Scenario.enters(Scenario.of_type(CardType.LAND), Whose.YOU),
+		"Whenever one or more other creatures die, you gain 1 life.":
+			Scenario.dies(Scenario.all_of([creature, Scenario.is_not(IsSourceFilter.new())])),
+		"Whenever one or more creatures leave the battlefield, you gain 1 life.": Scenario.leaves(creature),
+		"Whenever one or more creatures are put into a graveyard from anywhere, you gain 1 life.": graveyard,
+		"When this creature enters, you gain 1 life.": Scenario.enters(IsSourceFilter.new()),
+		"Whenever you cast a creature spell, you gain 1 life.": Scenario.casts(creature, Whose.YOU),
+	}
+	for text: String in expected:
+		var limited: TriggeredAbility = Scenario.once_each_turn(Scenario.triggered(expected[text], gain))
+		assert_eq(AbilityText.of_ability(limited, "this creature"), text + once)
+	var unlimited: TriggeredAbility = Scenario.triggered(Scenario.dies(creature), gain)
+	assert_eq(AbilityText.of_ability(unlimited, "this creature"), "Whenever a creature dies, you gain 1 life.")
+
+
+func test_a_limited_trigger_that_names_that_creature_stays_singular() -> void:
+	var counter: PutCountersEffect = Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, TriggeringObjectSelection.new())
+	var enters: ZoneChangeTrigger = Scenario.enters(Scenario.of_type(CardType.CREATURE), Whose.YOU)
+	var limited: TriggeredAbility = Scenario.once_each_turn(Scenario.triggered(enters, [counter]))
+
+	assert_eq(AbilityText.of_ability(limited, "this creature"),
+		"Whenever a creature you control enters, put a +1/+1 counter on that creature. This ability triggers only once each turn.")
+
+
+func test_what_a_limited_trigger_does_leaves_out_its_limit() -> void:
+	var welcome: TriggeredAbility = Scenario.welcome().abilities[0] as TriggeredAbility
+
+	assert_eq(AbilityText.effect_of(welcome, "this enchantment"), "Draw a card.")
 
 
 func test_the_effects_no_authored_card_uses_yet_are_worded() -> void:
@@ -1038,6 +1130,13 @@ func test_becoming_tapped_is_worded() -> void:
 		"Whenever a creature an opponent controls becomes tapped, you gain 1 life.")
 
 
+func test_blocking_a_creature_calls_the_attacker_that_creature() -> void:
+	var destroy: Array[MmEffect] = [Scenario.destroy(TriggeringObjectSelection.new())]
+
+	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.blocks_a_creature(), destroy), "this creature"),
+		"Whenever this creature blocks a creature, destroy that creature.", "CR 509.3b")
+
+
 func test_typecycling_prints_its_type_attached_to_cycling_and_its_cost() -> void:
 	var landcycling: CyclingAbility = Scenario.landcycling(Scenario.mana_cost(1, [MmMana.Type.GREEN]))
 	var plains: HasSubtypeFilter = HasSubtypeFilter.new()
@@ -1203,3 +1302,33 @@ func _spell_doing(effect: MmEffect) -> SpellAbility:
 	var spell: SpellAbility = SpellAbility.new()
 	spell.effects = [effect]
 	return spell
+
+
+func test_fight_is_worded_without_its_reminder() -> void:
+	var spell: MmAbility = Scenario.free_fight().abilities[0]
+
+	assert_eq(AbilityText.of_ability(spell, "this spell"), "Target creature you control fights target creature you don't control.",
+		"CR 701.14a, without its reminder text.")
+
+
+func test_sacrificing_its_source_is_a_cost_named_as_the_source_calls_itself() -> void:
+	var ability: MmAbility = Scenario.parcel().abilities[0]
+
+	assert_eq(AbilityText.of_ability(ability, "this artifact"),
+		"{0}, {T}, Sacrifice this artifact: This artifact deals 4 damage to target creature.", "CR 701.21a")
+
+
+func test_players_who_control_more_are_worded_with_the_verb_agreeing() -> void:
+	var lands: MmFilter = Scenario.of_type(MmCardTypes.CardType.LAND)
+	var plains: SearchLibraryEffect = Scenario.search(Scenario.has_subtype("Plains"))
+	plains.amount = Scenario.players_who_control_more(lands)
+	var explorer: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [plains])
+	var drained: LoseLifeEffect = LoseLifeEffect.new()
+	drained.amount = Scenario.constant(1)
+	drained.players = Scenario.each(Scenario.controls_more(lands))
+
+	assert_eq(AbilityText.of_ability(explorer, "this creature"), "When this creature enters, search your library for up to X "
+		+ "Plains cards, reveal them, put them into your hand, then shuffle, where X is the number of players who control "
+		+ "more lands than you.")
+	assert_eq(AbilityText.of_ability(_spell_doing(drained), "this spell"),
+		"Each player who controls more lands than you loses 1 life.")

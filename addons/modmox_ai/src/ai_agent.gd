@@ -601,7 +601,8 @@ static func _less_one(cost: MmManaCost, type: MmMana.Type) -> MmManaCost:
 ## FULL: simulates each target; a tap, through the turn, with the CHEAP pick the default.
 ## CHEAP: harmful effects at the most valuable opposing creature they would kill, else the
 ## opponent; a tap at the most valuable untapped one; helpful ones at its own best
-## creature; a counter at the other player's most expensive spell. An Aura spell is aimed
+## creature; a counter at the other player's most expensive spell. A fight (CR 701.14) sends
+## in its own most powerful creature, then aims at what that creature's power would kill. An Aura spell is aimed
 ## only at its own permanents (_is_helpful_aura()), an untapped one first in CHEAP.
 func _target(decision: ChooseTargetDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	if decision.candidates.size() == 1:
@@ -639,6 +640,11 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 	var harmful: bool = AiTiming.is_harmful(effects)
 	var taps: bool = AiTiming.taps(effects)
 	var damage: int = _damage_of(effects, world, decision.stack_object_id)
+	var fight: FightEffect = _fight_of(effects)
+	if fight != null:
+		if _is_target(fight.creature, decision.target_index):
+			return _strongest_own_fighter(decision, world)
+		damage = _fighter_power(fight, world, decision.stack_object_id)
 	var is_aura: bool = _is_helpful_aura(world, decision.stack_object_id)
 	var best: int = -1
 	var best_value: int = -1
@@ -670,6 +676,50 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 	if best != -1:
 		return best
 	return player_index if player_index != -1 else 0
+
+
+## The fight among [param effects] (CR 701.14), or null.
+static func _fight_of(effects: Array[MmEffect]) -> FightEffect:
+	for effect: MmEffect in AiTiming.unwrapped(effects):
+		if effect is FightEffect:
+			return effect as FightEffect
+	return null
+
+
+## Whether [param selection] is the target chosen for requirement [param target_index].
+static func _is_target(selection: MmSelection, target_index: int) -> bool:
+	var targeted: TargetSelection = selection as TargetSelection
+	return targeted != null and targeted.target_index == target_index
+
+
+## The candidate of [param decision] that is its chooser's own creature with the most
+## power, the most toughness breaking a tie: it deals the most and is likeliest to live.
+func _strongest_own_fighter(decision: ChooseTargetDecision, world: MmGameState) -> int:
+	_reason = Reason.BEST_SCORE
+	var best: int = 0
+	var best_power: int = -1
+	var best_toughness: int = -1
+	for index: int in decision.candidates.size():
+		if not _is_own_object(decision.candidates[index], world, decision.player_id):
+			continue
+		var characteristics: MmCharacteristics = world.characteristics_of(world.object(decision.candidates[index].id))
+		if characteristics.power > best_power or (characteristics.power == best_power and characteristics.toughness > best_toughness):
+			best = index
+			best_power = characteristics.power
+			best_toughness = characteristics.toughness
+	return best
+
+
+## The power of the creature [param fight] sends in, once its target is chosen, else 0.
+func _fighter_power(fight: FightEffect, world: MmGameState, stack_object_id: int) -> int:
+	var item: MmGameObject = world.object(stack_object_id)
+	if item == null:
+		return 0
+	for found: MmReference in fight.creature.select(world, MmEffectContext.of_stack_object(item, item.targets)):
+		var fighter: MmGameObject = world.object(found.id) if found.is_object() else null
+		if fighter != null:
+			return maxi(0, world.characteristics_of(fighter).power)
+	return 0
 
 
 ## Whether [param stack_object_id] is an Aura spell (CR 303.4a) whose enchanting helps what

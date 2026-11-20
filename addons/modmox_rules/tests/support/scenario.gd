@@ -2417,3 +2417,181 @@ static func thespian(card_name: String = "Thespian", amount: int = 1) -> MmCardD
 ## asked.
 static func pass_to_surveil(engine: MmEngine) -> String:
 	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is SurveilDecision)
+
+
+# --- Card track: fight, sacrifice, players who control more ---------------------------
+
+
+## "[param creature] fights [param other]" (CR 701.14).
+static func fight(creature: MmSelection, other: MmSelection) -> FightEffect:
+	var effect: FightEffect = FightEffect.new()
+	effect.creature = creature
+	effect.other = other
+	return effect
+
+
+## "Creature you don't control": AllOf(creature, Not(you control)).
+static func creature_you_dont_control() -> AllOfFilter:
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	return all_of([of_type(MmCardTypes.CardType.CREATURE), is_not(mine)])
+
+
+## "Creature you control".
+static func creature_you_control() -> AllOfFilter:
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	return all_of([of_type(MmCardTypes.CardType.CREATURE), mine])
+
+
+## Bushwhack's second mode as an instant costing {0}: "Target creature you control fights
+## target creature you don't control."
+static func free_fight(card_name: String = "Fight") -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(creature_you_control()), target(creature_you_dont_control())],
+		[fight(targeted(0), targeted(1))])
+
+
+## An activated ability: "[param mana], [costs]: [effects]", with [param targets].
+static func activated(mana: MmManaCost, costs: Array[MmCost], effects: Array[MmEffect],
+		targets: Array[TargetRequirement] = []) -> ActivatedAbility:
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.mana_cost = mana
+	ability.costs = costs
+	ability.effects = effects
+	ability.targets = targets
+	return ability
+
+
+## Ominous Parcel's second ability on an artifact costing {0}, at {0}: "{0}, {T}, Sacrifice
+## this artifact: It deals 4 damage to target creature", then [param abilities].
+static func parcel(card_name: String = "Parcel", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [activated(mana_cost(0), [TapCost.new(), SacrificeThisCost.new()],
+		[deal_damage(4, targeted(0))], [target(of_type(MmCardTypes.CardType.CREATURE))])]
+	all.append_array(abilities)
+	return artifact(card_name, all)
+
+
+## "Players who control more [param filter] than you" (as Oreskos Explorer's X counts them).
+static func controls_more(filter: MmFilter) -> ControlsMoreFilter:
+	var players: ControlsMoreFilter = ControlsMoreFilter.new()
+	players.filter = filter
+	return players
+
+
+## "The number of players who control more [param filter] than you".
+static func players_who_control_more(filter: MmFilter) -> CountValue:
+	var count: CountValue = CountValue.new()
+	count.selection = each(controls_more(filter))
+	return count
+
+
+## An instant costing {0}: "You gain X life, where X is the number of players who control
+## more creatures than you."
+static func free_envy(card_name: String = "Envy") -> MmCardDefinition:
+	var gain: GainLifeEffect = gain_life(0, you())
+	gain.amount = players_who_control_more(of_type(MmCardTypes.CardType.CREATURE))
+	return instant(card_name, mana_cost(0), [], [gain])
+
+
+# --- Card track: triggering only once each turn ------------------------------------------
+
+
+## [param ability] with "This ability triggers only once each turn."
+static func once_each_turn(ability: TriggeredAbility) -> TriggeredAbility:
+	ability.is_once_each_turn = true
+	return ability
+
+
+## Tocasia's Welcome as an enchantment costing {0}: "Whenever one or more creatures you
+## control with mana value 3 or less enter, draw a card. This ability triggers only once
+## each turn."
+static func welcome(card_name: String = "Welcome") -> MmCardDefinition:
+	var yours: ControlledByFilter = ControlledByFilter.new()
+	yours.whose = MmTrigger.Whose.YOU
+	var small: AllOfFilter = all_of([of_type(MmCardTypes.CardType.CREATURE), yours, mana_value(3)])
+	return enchantment(card_name, [once_each_turn(triggered(enters(small), [draw_cards(1, you())]))])
+
+
+# --- Card track: attacking --------------------------------------------------------------
+
+
+## "Whenever [filter] attacks" (CR 508.3a): "this creature" unless another Filter is given,
+## then "whenever one or more [filter] [whose] control attack".
+static func attacks(filter: MmFilter = null, whose: MmTrigger.Whose = MmTrigger.Whose.YOU) -> AttackersDeclaredTrigger:
+	var trigger: AttackersDeclaredTrigger = AttackersDeclaredTrigger.new()
+	trigger.filter = filter if filter != null else IsSourceFilter.new()
+	trigger.whose = whose
+	return trigger
+
+
+## A 2/2 costing {0}: "Whenever this creature attacks, you gain 1 life", then
+## [param abilities].
+static func raider(card_name: String = "Raider", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [triggered(attacks(), [gain_life(1, you())])]
+	all.append_array(abilities)
+	return creature(card_name, 2, 2, all)
+
+
+## "Create [param amount] [param made] that's attacking" (CR 508.4).
+static func attacking_tokens(made: MmCardDefinition, amount: int = 1) -> CreateTokenEffect:
+	var effect: CreateTokenEffect = create_tokens(made, amount)
+	effect.attacking = true
+	return effect
+
+
+## An instant costing {0}: "Create a 1/1 white Cat creature token that's attacking", or
+## [param made] instead of the Cat.
+static func free_ambush(card_name: String = "Ambush", made: MmCardDefinition = null) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [], [attacking_tokens(cat() if made == null else made)])
+
+
+## A 3/4 costing {0} with Brimaz, King of Oreskos's attack trigger: "Whenever this creature
+## attacks, create a 1/1 white Cat creature token that's attacking", or [param made] instead
+## of the Cat. The Cat has no vigilance, unlike Brimaz's Cat Soldier, so tapping shows.
+static func brimaz(made: MmCardDefinition = null) -> MmCardDefinition:
+	var effects: Array[MmEffect] = [attacking_tokens(cat() if made == null else made)]
+	return creature("Brimaz", 3, 4, [triggered(attacks(), effects)])
+
+
+# --- Card track: blocking ---------------------------------------------------------------
+
+
+## "Whenever [filter] blocks a creature" (CR 509.3b): "this creature" unless another Filter
+## is given, such as creature_you_control() for "a creature you control".
+static func blocks_a_creature(filter: MmFilter = null) -> BlockersDeclaredTrigger:
+	var trigger: BlockersDeclaredTrigger = BlockersDeclaredTrigger.new()
+	trigger.filter = filter if filter != null else IsSourceFilter.new()
+	return trigger
+
+
+## A 2/2 costing {0}: "Whenever this creature blocks a creature, you gain 1 life", then
+## [param abilities].
+static func sentry(card_name: String = "Sentry", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [triggered(blocks_a_creature(), [gain_life(1, you())])]
+	all.append_array(abilities)
+	return creature(card_name, 2, 2, all)
+
+
+## "Create [param amount] [param made] that's blocking [param blocked]" (CR 509.7): "that
+## creature" unless another Selection is given.
+static func blocking_tokens(made: MmCardDefinition, amount: int = 1, blocked: MmSelection = null) -> CreateTokenEffect:
+	var effect: CreateTokenEffect = create_tokens(made, amount)
+	effect.blocking = blocked if blocked != null else TriggeringObjectSelection.new()
+	return effect
+
+
+## A 3/4 costing {0} with Brimaz, King of Oreskos's block trigger: "Whenever this creature
+## blocks a creature, create a 1/1 white Cat creature token that's blocking that creature",
+## or [param made] instead of the Cat, then [param abilities].
+static func blocking_brimaz(made: MmCardDefinition = null, abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var effects: Array[MmEffect] = [blocking_tokens(cat() if made == null else made)]
+	var all: Array[MmAbility] = [triggered(blocks_a_creature(), effects)]
+	all.append_array(abilities)
+	return creature("Brimaz", 3, 4, all)
+
+
+## An instant costing {0}, after Flash Foliage: "Create a 1/1 white Cat creature token that's
+## blocking target attacking creature."
+static func free_foliage(card_name: String = "Foliage") -> MmCardDefinition:
+	var attacking: AllOfFilter = all_of([of_type(MmCardTypes.CardType.CREATURE), IsAttackingFilter.new()])
+	return instant(card_name, mana_cost(0), [target(attacking)], [blocking_tokens(cat(), 1, targeted(0))])

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Villain" format=3]
+
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/brimaz_king_of_oreskos_pain.png" id="1_3kgf1"]
+[ext_resource type="Script" path="res://run/villain.gd" id="2_nqjnd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="3_kt17f"]
+[ext_resource type="Resource" path="res://content/decks/brimaz_king_of_oreskos.tres" id="4_3l7yn"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/brimaz_king_of_oreskos.png" id="5_i5hxs"]
+
+[resource]
+script = ExtResource("2_nqjnd")
+name = "Brimaz, King of Oreskos"
+sprite = ExtResource("5_i5hxs")
+pain_sprite = ExtResource("1_3kgf1")
+setups = Array[ExtResource("3_kt17f")]([ExtResource("4_3l7yn")])

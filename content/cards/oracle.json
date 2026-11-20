@@ -75,6 +75,26 @@
 		"toughness": "2",
 		"type_line": "Creature — Human Knight"
 	},
+	"brimaz_king_of_oreskos": {
+		"mana_cost": "{1}{W}{W}",
+		"name": "Brimaz, King of Oreskos",
+		"oracle_id": "49471b65-be9d-4ded-b2e5-dfc81b306b54",
+		"oracle_text": "Vigilance\nWhenever Brimaz attacks, create a 1/1 white Cat Soldier creature token with vigilance that's attacking.\nWhenever Brimaz blocks a creature, create a 1/1 white Cat Soldier creature token with vigilance that's blocking that creature.",
+		"power": "3",
+		"rarity": "mythic",
+		"set_name": "Born of the Gods",
+		"toughness": "4",
+		"type_line": "Legendary Creature — Cat Soldier"
+	},
+	"bushwhack": {
+		"mana_cost": "{G}",
+		"name": "Bushwhack",
+		"oracle_id": "c61374e5-a7f6-455e-a40b-a481751b536b",
+		"oracle_text": "Choose one —\n• Search your library for a basic land card, reveal it, put it into your hand, then shuffle.\n• Target creature you control fights target creature you don't control. (Each deals damage equal to its power to the other.)",
+		"rarity": "uncommon",
+		"set_name": "The Brothers' War",
+		"type_line": "Sorcery"
+	},
 	"charmed_stray": {
 		"mana_cost": "{W}",
 		"name": "Charmed Stray",
@@ -518,6 +538,15 @@
 		"toughness": "1",
 		"type_line": "Creature — Cat"
 	},
+	"lay_down_arms": {
+		"mana_cost": "{W}",
+		"name": "Lay Down Arms",
+		"oracle_id": "aa91d092-7f4a-4e4d-85db-e200692f3d9d",
+		"oracle_text": "Exile target creature with mana value less than or equal to the number of Plains you control. Its controller gains 3 life.",
+		"rarity": "uncommon",
+		"set_name": "The Brothers' War",
+		"type_line": "Sorcery"
+	},
 	"leonin_lightbringer": {
 		"mana_cost": "{2}{W}",
 		"name": "Leonin Lightbringer",
@@ -539,6 +568,17 @@
 		"set_name": "Darksteel",
 		"toughness": "2",
 		"type_line": "Creature — Cat Soldier"
+	},
+	"leonin_skyhunter": {
+		"mana_cost": "{W}{W}",
+		"name": "Leonin Skyhunter",
+		"oracle_id": "517c7295-8ba2-47a6-a1c6-aee722f8ca88",
+		"oracle_text": "Flying",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Mirrodin",
+		"toughness": "2",
+		"type_line": "Creature — Cat Knight"
 	},
 	"leonin_snarecaster": {
 		"mana_cost": "{1}{W}",
@@ -659,6 +699,26 @@
 		"rarity": "common",
 		"set_name": "Lorwyn",
 		"type_line": "Enchantment"
+	},
+	"ominous_parcel": {
+		"mana_cost": "{1}",
+		"name": "Ominous Parcel",
+		"oracle_id": "be3c138b-045b-4b08-a12f-a5679d972051",
+		"oracle_text": "{2}, {T}, Sacrifice this artifact: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.\n{5}, {T}, Sacrifice this artifact: It deals 4 damage to target creature.",
+		"rarity": "common",
+		"set_name": "Streets of New Capenna",
+		"type_line": "Artifact"
+	},
+	"oreskos_explorer": {
+		"mana_cost": "{1}{W}",
+		"name": "Oreskos Explorer",
+		"oracle_id": "a3055ae8-990d-495a-9cb5-971407990cfa",
+		"oracle_text": "When this creature enters, search your library for up to X Plains cards, where X is the number of players who control more lands than you. Reveal those cards, put them into your hand, then shuffle.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Commander 2015",
+		"toughness": "2",
+		"type_line": "Creature — Cat Scout"
 	},
 	"ornery_kudu": {
 		"mana_cost": "{2}{G}",
@@ -1023,6 +1083,15 @@
 		"set_name": "Journey into Nyx",
 		"toughness": "3",
 		"type_line": "Creature — Cat Cleric"
+	},
+	"tocasias_welcome": {
+		"mana_cost": "{2}{W}",
+		"name": "Tocasia's Welcome",
+		"oracle_id": "25c983e0-a8c9-4784-91a4-8fe04c6df882",
+		"oracle_text": "Whenever one or more creatures you control with mana value 3 or less enter, draw a card. This ability triggers only once each turn.",
+		"rarity": "rare",
+		"set_name": "The Brothers' War",
+		"type_line": "Enchantment"
 	},
 	"topiary_panther": {
 		"mana_cost": "{4}{G}{G}",

@@ -1,0 +1,5 @@
+# Its liked result is a worked example in references/examples.md, so a run can copy it: test new Potions instead.
+schema_version: "1.1"
+name: dragons-breath-gourd
+expected_outcome: |
+  A 32 × 32 Potion Icon named dragons_breath.png on the gourd template, in the palette, its glass outline intact, whose liquid and motif evoke a dragon's fire.

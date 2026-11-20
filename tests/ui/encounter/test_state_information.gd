@@ -105,6 +105,19 @@ func test_a_permission_not_spent_this_turn_says_nothing() -> void:
 	assert_eq(StateInformation.of(ready, view).size(), 0)
 
 
+func test_a_trigger_spent_this_turn_says_it_wont_trigger_again() -> void:
+	# Engine ADR 0054's addendum: "This ability triggers only once each turn."
+	var welcome: MmObjectView = MmObjectView.new()
+	welcome.id = 42
+	welcome.name = "Tocasia's Welcome"
+	welcome.card_types = [MmCardTypes.CardType.ENCHANTMENT]
+	welcome.triggered_this_turn = [0]
+
+	assert_eq(_texts(StateInformation.of(welcome, _view())), [["Triggered this turn", "Won't trigger again this turn."]])
+	welcome.triggered_this_turn.clear()
+	assert_eq(StateInformation.of(welcome, _view()).size(), 0)
+
+
 func test_a_summoning_sick_creature_says_so_and_a_land_never_does() -> void:
 	var bears: MmObjectView = _bears()
 	bears.is_summoning_sick = true

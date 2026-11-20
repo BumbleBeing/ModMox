@@ -76,6 +76,20 @@ func test_with_nothing_to_find_it_is_still_asked_and_the_library_shuffled() -> v
 	assert_eq(_shuffles_of(engine, engine.hero().id), shuffles_before + 1)
 
 
+func test_a_search_for_up_to_none_asks_nothing_and_still_shuffles() -> void:
+	var engine: MmEngine = _hero_main(Scenario.free_seek("Seek", Scenario.search(Scenario.basic_land_card(), 0)))
+	var hand_before: int = engine.hero().hand.size()
+	var shuffles_before: int = _shuffles_of(engine, engine.hero().id)
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Seek")), "")
+	assert_eq(Scenario.pass_priority(engine), "")
+	assert_eq(Scenario.pass_priority(engine), "")
+
+	assert_false(engine.pending_decision() is ChooseCardsInLibraryDecision, "Up to X with X 0 can find nothing: it is not asked.")
+	assert_eq(engine.hero().hand.size(), hand_before - 1, "Only the Seek has left the hand.")
+	assert_eq(_shuffles_of(engine, engine.hero().id), shuffles_before + 1, "CR 701.23: then shuffle.")
+
+
 func test_up_to_two_finds_two_but_never_three() -> void:
 	var engine: MmEngine = _hero_main(Scenario.free_seek("Seek", Scenario.search(Scenario.basic_land_card(), 2)))
 	assert_eq(Scenario.cast_to_search(engine), "")

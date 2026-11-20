@@ -79,6 +79,26 @@
 		"scryfall_id": "c1662949-0d69-49a3-8c69-daf10717ed4e",
 		"set": "lea"
 	},
+	"brimaz_king_of_oreskos": {
+		"artist": "Peter Mohrbacher",
+		"collector_number": "5",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "f54eb705-6326-4bac-bf0e-68d42db7a270",
+		"set": "bng"
+	},
+	"bushwhack": {
+		"artist": "Artur Nakhodkin",
+		"collector_number": "174",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "712a0640-d9c8-46fc-b38b-bf20a40fa902",
+		"set": "bro"
+	},
 	"charmed_stray": {
 		"artist": "Chris Rahn",
 		"collector_number": "8",
@@ -529,6 +549,16 @@
 		"scryfall_id": "c4e83abd-6f15-491e-9253-90af9f6f1025",
 		"set": "mh1"
 	},
+	"lay_down_arms": {
+		"artist": "Liiga Smilshkalne",
+		"collector_number": "11",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "5649ee5a-4485-40a2-96d1-2e061905a71e",
+		"set": "bro"
+	},
 	"leonin_lightbringer": {
 		"artist": "Ernanda Souza",
 		"collector_number": "20",
@@ -548,6 +578,16 @@
 		],
 		"scryfall_id": "56b2a0f5-e340-4a85-aa5c-340e7f8231b0",
 		"set": "dst"
+	},
+	"leonin_skyhunter": {
+		"artist": "Kev Walker",
+		"collector_number": "11",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "275a47e1-816c-44f9-bd05-b8b56410436f",
+		"set": "mrd"
 	},
 	"leonin_snarecaster": {
 		"artist": "Kev Walker",
@@ -668,6 +708,26 @@
 		],
 		"scryfall_id": "1c7fffe8-709c-4cb4-bbad-e4a0c35b616a",
 		"set": "lrw"
+	},
+	"ominous_parcel": {
+		"artist": "Joe Slucher",
+		"collector_number": "241",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "e1691374-e9f2-4a8b-abdb-0bb1dbc96715",
+		"set": "snc"
+	},
+	"oreskos_explorer": {
+		"artist": "Winona Nelson",
+		"collector_number": "6",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "f287995c-504d-4c95-883d-fe55013caf2e",
+		"set": "c15"
 	},
 	"ornery_kudu": {
 		"artist": "Deruchenko Alexander",
@@ -1028,6 +1088,16 @@
 		],
 		"scryfall_id": "d901b9d7-6af9-40ce-afb7-d3c9f9143c18",
 		"set": "jou"
+	},
+	"tocasias_welcome": {
+		"artist": "Johan Grenier",
+		"collector_number": "30",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "56cd89f1-f9f4-4cb5-a573-79809d0b6dfd",
+		"set": "bro"
 	},
 	"tokens/cat_1_1_white": {
 		"artist": "Leonardo Santanna",

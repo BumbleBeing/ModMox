@@ -35,8 +35,15 @@ const YOU_OWN: String = "you own"
 const OPPONENT_OWNS: String = "an opponent owns"
 ## What a Filter leaving out the source says before its noun: "each other creature".
 const OTHER: String = "other"
-## Nouns whose plural is the noun itself: "the number of Equipment you control".
-const PLURAL_AS_SINGULAR: Array[String] = ["Equipment"]
+## What a ControlsMoreFilter says after "players", made singular for "a player".
+const WHO_CONTROL: String = "who control"
+const WHO_DONT_CONTROL: String = "who don't control"
+## Nouns whose plural is the noun itself: "the number of Equipment you control", "the
+## number of Plains you control".
+const PLURAL_AS_SINGULAR: Array[String] = ["Equipment", "Plains"]
+## What a triggered ability limited to once each turn says after what it does (engine ADR
+## 0054's addendum).
+const ONCE_EACH_TURN: String = "This ability triggers only once each turn."
 
 ## What the ability's source calls itself.
 var _noun: String
@@ -52,6 +59,9 @@ var _named: Dictionary[int, bool] = {}
 var _names_again_with_that: bool = false
 ## What "X" stands for in the sentence being written, or "".
 var _where: String = ""
+## Whether the words written so far say "that creature", the object a trigger's event was
+## about.
+var _says_triggering_object: bool = false
 
 
 ## The words of a Filter: what goes before its noun, the noun, and what follows it.
@@ -501,6 +511,8 @@ func _cost_parts(mana: MmManaCost, costs: Array[MmCost]) -> PackedStringArray:
 			parts.append("Exert " + _noun)  # CR 701.43, without its reminder text.
 		elif cost is PayLifeCost:
 			parts.append("Pay %d life" % (cost as PayLifeCost).amount)
+		elif cost is SacrificeThisCost:
+			parts.append("Sacrifice " + _noun)  # CR 701.21a: "Sacrifice this artifact".
 		elif cost is TapCreaturesCost:
 			parts.append("Tap " + _how_many((cost as TapCreaturesCost).count, (cost as TapCreaturesCost).filter))
 		else:
@@ -518,12 +530,18 @@ func _how_many(count: int, filter: MmFilter) -> String:
 func _triggered(ability: TriggeredAbility) -> String:
 	_targets = ability.targets
 	_trigger = ability.trigger
-	var text: String = _trigger_text(ability.trigger) + ", "
-	if ability.condition != null:
-		text += "if %s, " % _condition(ability.condition)
+	_says_triggering_object = false
+	var condition: String = "" if ability.condition == null else "if %s, " % _condition(ability.condition)
 	if ability.is_modal():
-		return _capitalized(text + "choose one —") + _bullets(ability)
-	return _capitalized(text + _sentences(ability.effects, false))
+		# Later: "one or more" for a modal one, whose modes are worded apart.
+		var modal: String = _capitalized(_trigger_text(ability.trigger) + ", " + condition + "choose one —") + _bullets(ability)
+		return modal + ("\n" + ONCE_EACH_TURN if ability.is_once_each_turn else "")
+	# Worded before the trigger, which says "one or more" only when they never say "that
+	# creature".
+	var does: String = _sentences(ability.effects, false)
+	var is_one_or_more: bool = ability.is_once_each_turn and not _says_triggering_object
+	var text: String = _capitalized(_trigger_text(ability.trigger, is_one_or_more) + ", " + condition + does)
+	return text + (" " + ONCE_EACH_TURN if ability.is_once_each_turn else "")
 
 
 ## CR 700.2: "Choose one —", then a bullet for each mode of [param ability].
@@ -539,7 +557,10 @@ func _bullets(ability: MmAbility) -> String:
 	return text
 
 
-func _trigger_text(trigger: MmTrigger) -> String:
+## [param trigger] in words. With [param is_one_or_more], a zone change of anything but the
+## source reads "whenever one or more creatures enter": once each turn, triggering for each
+## object plays as triggering once for all of them does (engine ADR 0054's addendum).
+func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 	var step: StepBeganTrigger = trigger as StepBeganTrigger
 	if step != null:
 		var whose: String = "your"
@@ -558,12 +579,24 @@ func _trigger_text(trigger: MmTrigger) -> String:
 		return "whenever %s %s" % [caster, _with_article(_spell_phrase(cast.filter))]
 	var attack: AttackersDeclaredTrigger = trigger as AttackersDeclaredTrigger
 	if attack != null:
+		if attack.filter is IsSourceFilter:
+			return "whenever %s attacks" % _noun
+		if attack.filter != null:
+			return "whenever one or more %s attack" % _noun_phrase(attack.filter, true, attack.whose)
 		var whose: String = "a player controls"
 		if attack.whose == MmTrigger.Whose.YOU:
 			whose = "you control"
 		elif attack.whose == MmTrigger.Whose.OPPONENT:
 			whose = "an opponent controls"
 		return "whenever one or more creatures %s attack" % whose
+	var block: BlockersDeclaredTrigger = trigger as BlockersDeclaredTrigger
+	if block != null:
+		var blocker: String = "a creature"
+		if block.filter is IsSourceFilter:
+			blocker = _noun
+		elif block.filter != null:
+			blocker = _with_article(_noun_phrase(block.filter, false))
+		return "whenever %s blocks a creature" % blocker  # CR 509.3b
 	var aimed_at: BecomesTargetTrigger = trigger as BecomesTargetTrigger
 	if aimed_at != null:
 		var whose: String = ""
@@ -582,20 +615,25 @@ func _trigger_text(trigger: MmTrigger) -> String:
 	var moved: ZoneChangeTrigger = trigger as ZoneChangeTrigger
 	if moved != null:
 		var is_self: bool = moved.filter is IsSourceFilter
+		if is_one_or_more and not is_self:
+			return "whenever one or more %s %s" % [_noun_phrase(moved.filter, true, moved.whose), _move_verb(moved, true)]
 		var subject: String = _noun if is_self else _with_article(_noun_phrase(moved.filter, false, moved.whose))
 		return "%s %s %s" % ["when" if is_self else "whenever", subject, _move_verb(moved)]
 	return _fallback(trigger, "_trigger")
 
 
-func _move_verb(moved: ZoneChangeTrigger) -> String:
+## The verb of [param moved]: "enters", or with [param is_plural] "enter".
+func _move_verb(moved: ZoneChangeTrigger, is_plural: bool = false) -> String:
 	if moved.any_to_zone:
-		return "changes zones" if moved.any_from_zone else "leaves " + (ZONE_NAMES[moved.from_zone] as String)
+		if moved.any_from_zone:
+			return "change zones" if is_plural else "changes zones"
+		return ("leave " if is_plural else "leaves ") + (ZONE_NAMES[moved.from_zone] as String)
 	if moved.to_zone == MmZone.Kind.BATTLEFIELD and moved.any_from_zone:
-		return "enters"
+		return "enter" if is_plural else "enters"
 	if not moved.any_from_zone and moved.from_zone == MmZone.Kind.BATTLEFIELD and moved.to_zone == MmZone.Kind.GRAVEYARD:
-		return "dies"
+		return "die" if is_plural else "dies"
 	var from: String = "anywhere" if moved.any_from_zone else (ZONE_NAMES[moved.from_zone] as String)
-	return "is put into %s from %s" % [ZONE_NAMES[moved.to_zone], from]
+	return "%s put into %s from %s" % ["are" if is_plural else "is", ZONE_NAMES[moved.to_zone], from]
 
 
 func _condition(condition: MmCondition) -> String:
@@ -760,6 +798,10 @@ func _effect(effect: MmEffect) -> String:
 		# "On each of up to two target creatures": the counters go on every one chosen.
 		var each_of: String = "each of " if _is_several_targets(put.recipients) else ""
 		return "put %s on %s%s" % [_counters(put.amount, put.kind), each_of, _selection(put.recipients)]
+	if effect is FightEffect:
+		# CR 701.14a, without its reminder text.
+		var fight: FightEffect = effect as FightEffect
+		return "%s fights %s" % [_selection(fight.creature), _selection(fight.other)]
 	if effect is DoubleCountersEffect:
 		var doubled: DoubleCountersEffect = effect as DoubleCountersEffect
 		return "double the number of %s counters on %s" % [MmCounter.label(doubled.kind), _selection(doubled.recipients)]
@@ -833,7 +875,9 @@ func _instead(effect: InsteadEffect) -> String:
 
 
 ## Oracle's token wording (CR 111.4): "a 1/1 white Cat creature token", "two ... tokens",
-## and a token's keywords after "with": "a 1/1 white Cat Soldier creature token with vigilance".
+## and a token's keywords after "with": "a 1/1 white Cat Soldier creature token with vigilance",
+## then "that's attacking" (or "that are attacking") last, as Brimaz, King of Oreskos says,
+## or "that's blocking that creature" (or "that are blocking").
 func _tokens(effect: CreateTokenEffect) -> String:
 	if effect.token == null:
 		return _fallback(effect, "_tokens")
@@ -858,9 +902,14 @@ func _tokens(effect: CreateTokenEffect) -> String:
 	for card_type: MmCardTypes.CardType in printed.card_types:
 		words.append(_type_word(card_type))
 	var phrase: String = " ".join(words)
+	var combat: String = ""
+	if effect.attacking:
+		combat = " that's attacking" if effect.amount == 1 else " that are attacking"
+	elif effect.blocking != null:
+		combat = (" that's blocking " if effect.amount == 1 else " that are blocking ") + _selection(effect.blocking)
 	if effect.amount == 1:
-		return _with_article(phrase + " token") + with
-	return "%s %s tokens%s" % [_number_word(effect.amount), phrase, with]
+		return _with_article(phrase + " token") + with + combat
+	return "%s %s tokens%s%s" % [_number_word(effect.amount), phrase, with, combat]
 
 
 func _mana(effect: AddManaEffect) -> String:
@@ -949,6 +998,7 @@ func _selection(selection: MmSelection) -> String:
 	if selection is TriggeringPlayerSelection:
 		return "that player"
 	if selection is TriggeringObjectSelection:
+		_says_triggering_object = true
 		return "that " + _triggering_noun()
 	if selection is ControllerOfSelection:
 		return _possessive(_selection((selection as ControllerOfSelection).selection)) + " controller"
@@ -1042,6 +1092,8 @@ func _triggering_noun() -> String:
 		return "spell"
 	if _trigger is BecomesTargetTrigger:
 		return "spell or ability"
+	if _trigger is BlockersDeclaredTrigger:
+		return "creature"  # The attacker it blocks.
 	var moved: ZoneChangeTrigger = _trigger as ZoneChangeTrigger
 	if moved != null:
 		var noun: String = _filter_words(moved.filter).noun
@@ -1102,6 +1154,10 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 		noun = "permanent"
 	if is_plural and not PLURAL_AS_SINGULAR.has(noun):
 		noun += "s"
+	elif not is_plural:
+		# "A player who controls", against "players who control".
+		for index: int in after.size():
+			after[index] = after[index].replace(WHO_CONTROL, "who controls").replace(WHO_DONT_CONTROL, "who doesn't control")
 	if not subtypes.is_empty():
 		noun = " ".join(subtypes) + " " + noun
 	if whose == MmTrigger.Whose.YOU:
@@ -1258,6 +1314,11 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		after.append("with power " + _power_bound(filter as PowerFilter, is_negated))
 	elif filter is ToughnessFilter:
 		after.append("with toughness " + _toughness_bound(filter as ToughnessFilter, is_negated))
+	elif filter is ControlsMoreFilter:
+		# "Players who control more lands than you"; _noun_phrase() makes the verb agree.
+		nouns.append("player")
+		var counted: String = _noun_phrase((filter as ControlsMoreFilter).filter, true)
+		after.append(("%s more %s than you" % [WHO_DONT_CONTROL if is_negated else WHO_CONTROL, counted]))
 	elif filter is IsPlayerFilter:
 		# Anything that is not a player is a permanent, the noun when none is named.
 		if not is_negated:

@@ -1,0 +1,70 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_mh0ap"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_jeco0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_vsdal"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/count_value.gd" id="3_0oje3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_as7ne"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_4xvdf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controls_more_filter.gd" id="5_7aicq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="6_0v5ko"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_subtype_filter.gd" id="7_prua5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/search_library_effect.gd" id="8_ivij6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="9_5lmyg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="10_t06k2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_i3snr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_t6c0b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="13_y078d"]
+
+[sub_resource type="Resource" id="Resource_q0yum"]
+script = ExtResource("4_4xvdf")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_vu7hm"]
+script = ExtResource("5_7aicq")
+filter = SubResource("Resource_q0yum")
+
+[sub_resource type="Resource" id="Resource_vpju6"]
+script = ExtResource("6_0v5ko")
+filter = SubResource("Resource_vu7hm")
+
+[sub_resource type="Resource" id="Resource_ragks"]
+script = ExtResource("3_0oje3")
+selection = SubResource("Resource_vpju6")
+
+[sub_resource type="Resource" id="Resource_yy8eo"]
+script = ExtResource("7_prua5")
+subtype = "Plains"
+
+[sub_resource type="Resource" id="Resource_nbjlv"]
+script = ExtResource("8_ivij6")
+filter = SubResource("Resource_yy8eo")
+amount = SubResource("Resource_ragks")
+
+[sub_resource type="Resource" id="Resource_sx6hr"]
+script = ExtResource("12_t6c0b")
+
+[sub_resource type="Resource" id="Resource_0rfis"]
+script = ExtResource("13_y078d")
+filter = SubResource("Resource_sx6hr")
+
+[sub_resource type="Resource" id="Resource_4hm8l"]
+script = ExtResource("10_t06k2")
+trigger = SubResource("Resource_0rfis")
+effects = Array[ExtResource("2_vsdal")]([SubResource("Resource_nbjlv")])
+
+[sub_resource type="Resource" id="Resource_ols4r"]
+script = ExtResource("2_jeco0")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_as7ne")
+name = "Oreskos Explorer"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Scout"])
+mana_cost = SubResource("Resource_ols4r")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_mh0ap")]([SubResource("Resource_4hm8l")])
+rarity = 1

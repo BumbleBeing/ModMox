@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_qeneo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_awqvp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_nwf8q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_1ca5f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_8pcsr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_33teg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_16or5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_33p0h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_r2wab"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_34wgl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="9_8cnpa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="10_h3cm7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="11_6joyk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mana_value_filter.gd" id="12_qwjtd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="13_rvtlh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="14_p1wdd"]
+
+[sub_resource type="Resource" id="Resource_bnx4q"]
+script = ExtResource("3_8pcsr")
+value = 1
+
+[sub_resource type="Resource" id="Resource_fqakh"]
+script = ExtResource("4_33teg")
+
+[sub_resource type="Resource" id="Resource_15ouc"]
+script = ExtResource("5_16or5")
+amount = SubResource("Resource_bnx4q")
+players = SubResource("Resource_fqakh")
+
+[sub_resource type="Resource" id="Resource_m0eoh"]
+script = ExtResource("10_h3cm7")
+
+[sub_resource type="Resource" id="Resource_eofim"]
+script = ExtResource("11_6joyk")
+
+[sub_resource type="Resource" id="Resource_j71y0"]
+script = ExtResource("12_qwjtd")
+amount = 3
+
+[sub_resource type="Resource" id="Resource_55gp5"]
+script = ExtResource("13_rvtlh")
+filters = Array[ExtResource("9_8cnpa")]([SubResource("Resource_m0eoh"), SubResource("Resource_eofim"), SubResource("Resource_j71y0")])
+
+[sub_resource type="Resource" id="Resource_bsy8j"]
+script = ExtResource("14_p1wdd")
+filter = SubResource("Resource_55gp5")
+
+[sub_resource type="Resource" id="Resource_d3vxl"]
+script = ExtResource("7_r2wab")
+trigger = SubResource("Resource_bsy8j")
+effects = Array[ExtResource("2_nwf8q")]([SubResource("Resource_15ouc")])
+is_once_each_turn = true
+
+[sub_resource type="Resource" id="Resource_s0jn2"]
+script = ExtResource("2_awqvp")
+generic = 2
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_1ca5f")
+name = "Tocasia's Welcome"
+card_types = Array[int]([2])
+mana_cost = SubResource("Resource_s0jn2")
+abilities = Array[ExtResource("1_qeneo")]([SubResource("Resource_d3vxl")])
+rarity = 2

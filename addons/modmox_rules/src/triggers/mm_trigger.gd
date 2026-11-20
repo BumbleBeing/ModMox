@@ -30,6 +30,18 @@ func triggering_object_id(_event: MmEvent) -> int:
 	return 0
 
 
+## One entry for each time [param event] triggers the ability, each the object that time is
+## about ("that creature"), or 0 for none; empty when it does not trigger it. One event
+## triggers most abilities once at most, so this is matches() with triggering_object_id(),
+## but "blocks a creature" triggers once for each attacker blocked (CR 509.3b, ADR 0017's
+## addendum).
+func triggering_object_ids(state: MmGameState, event: MmEvent, context: MmEffectContext) -> Array[int]:
+	var found: Array[int] = []
+	if matches(state, event, context):
+		found.append(triggering_object_id(event))
+	return found
+
+
 ## Whether [param player_id] is [param whose] relative to the controller in [param context].
 static func is_whose(whose: Whose, player_id: int, context: MmEffectContext) -> bool:
 	match whose:

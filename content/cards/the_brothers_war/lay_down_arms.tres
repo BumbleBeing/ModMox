@@ -1,0 +1,97 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_32pc2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_3vv80"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_o1igj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/exile_effect.gd" id="3_bctmo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_tcdwv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_e53ro"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_hmsht"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/controller_of_selection.gd" id="6_66o0c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/gain_life_effect.gd" id="7_xpxsj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_val7n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="9_sa0ur"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_o1tm3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_jv31q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_w0uho"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/count_value.gd" id="13_q58ju"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_subtype_filter.gd" id="14_a7vrp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="15_a8p2q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="16_2ayg5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="17_wqvrg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mana_value_filter.gd" id="18_0qy12"]
+
+[sub_resource type="Resource" id="Resource_bip0n"]
+script = ExtResource("4_e53ro")
+
+[sub_resource type="Resource" id="Resource_xkgdn"]
+script = ExtResource("3_bctmo")
+selection = SubResource("Resource_bip0n")
+links_to_source = false
+
+[sub_resource type="Resource" id="Resource_bsuud"]
+script = ExtResource("5_hmsht")
+value = 3
+
+[sub_resource type="Resource" id="Resource_q514e"]
+script = ExtResource("4_e53ro")
+
+[sub_resource type="Resource" id="Resource_mo74i"]
+script = ExtResource("6_66o0c")
+selection = SubResource("Resource_q514e")
+
+[sub_resource type="Resource" id="Resource_i0aik"]
+script = ExtResource("7_xpxsj")
+amount = SubResource("Resource_bsuud")
+players = SubResource("Resource_mo74i")
+
+[sub_resource type="Resource" id="Resource_2potx"]
+script = ExtResource("12_w0uho")
+
+[sub_resource type="Resource" id="Resource_0cm6q"]
+script = ExtResource("14_a7vrp")
+subtype = "Plains"
+
+[sub_resource type="Resource" id="Resource_iqiol"]
+script = ExtResource("15_a8p2q")
+
+[sub_resource type="Resource" id="Resource_24w66"]
+script = ExtResource("16_2ayg5")
+filters = Array[ExtResource("11_jv31q")]([SubResource("Resource_0cm6q"), SubResource("Resource_iqiol")])
+
+[sub_resource type="Resource" id="Resource_brv0g"]
+script = ExtResource("17_wqvrg")
+filter = SubResource("Resource_24w66")
+
+[sub_resource type="Resource" id="Resource_rsmsv"]
+script = ExtResource("13_q58ju")
+selection = SubResource("Resource_brv0g")
+
+[sub_resource type="Resource" id="Resource_1efxw"]
+script = ExtResource("18_0qy12")
+amount_value = SubResource("Resource_rsmsv")
+
+[sub_resource type="Resource" id="Resource_xgl0k"]
+script = ExtResource("16_2ayg5")
+filters = Array[ExtResource("11_jv31q")]([SubResource("Resource_2potx"), SubResource("Resource_1efxw")])
+
+[sub_resource type="Resource" id="Resource_2n2sf"]
+script = ExtResource("10_o1tm3")
+filter = SubResource("Resource_xgl0k")
+
+[sub_resource type="Resource" id="Resource_jrpvw"]
+script = ExtResource("9_sa0ur")
+targets = Array[ExtResource("10_o1tm3")]([SubResource("Resource_2n2sf")])
+effects = Array[ExtResource("2_3vv80")]([SubResource("Resource_xkgdn"), SubResource("Resource_i0aik")])
+
+[sub_resource type="Resource" id="Resource_xd0yh"]
+script = ExtResource("2_o1igj")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_tcdwv")
+name = "Lay Down Arms"
+card_types = Array[int]([5])
+mana_cost = SubResource("Resource_xd0yh")
+abilities = Array[ExtResource("1_32pc2")]([SubResource("Resource_jrpvw")])
+rarity = 1

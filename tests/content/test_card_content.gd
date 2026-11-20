@@ -1031,6 +1031,33 @@ func test_leyline_binding_costs_w_with_five_land_types_and_exiles_a_creature_unt
 	assert_eq(Scenario.exiled_by_owner(engine, engine.villain()).size(), 0)
 
 
+func test_lay_down_arms_exiles_a_creature_up_to_your_plains_count_and_its_controller_gains_3_life() -> void:
+	var arms: MmCardDefinition = _card("the_brothers_war", "lay_down_arms")
+	var setup: MmEncounterSetup = Scenario.setup_with(Scenario.cycled([_alpha("plains"), arms]),
+		Scenario.cycled([_alpha("forest"), _alpha("grizzly_bears")]), MmEncounterSetup.StartingPlayerRule.VILLAIN_STARTS)
+	var engine: MmEngine = Scenario.find_engine(setup, func(running: MmEngine) -> bool:
+		if not Scenario.ready_in_main(running, 3, 2, "Grizzly Bears") or Scenario.cast_and_resolve(running, "Grizzly Bears") != "":
+			return false
+		if Scenario.play_until_step(running, 4, MmTurn.Step.PRECOMBAT_MAIN, true) != "":
+			return false
+		return Scenario.permanents_named(running, running.hero().id, "Plains").size() == 1 \
+			and Scenario.card_in_hand(running, running.hero(), "Plains") != -1 \
+			and Scenario.card_in_hand(running, running.hero(), "Lay Down Arms") != -1)
+	assert_not_null(engine, "No seed gave the needed hands.")
+	var bears: int = Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears")
+	var card: int = Scenario.card_in_hand(engine, engine.hero(), "Lay Down Arms")
+	assert_false(Scenario.offers_cast(engine, card), "One Plains: the Bears' mana value 2 is too high, so nothing to target.")
+
+	Scenario.play_first_land(engine)
+	assert_true(Scenario.offers_cast(engine, card), "Two Plains now.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Lay Down Arms", [MmReference.to_object(bears)]), "")
+
+	assert_eq(Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears"), -1)
+	assert_eq(Scenario.exiled_by_owner(engine, engine.villain()).size(), 1)
+	assert_eq(engine.villain().life, 23, "The exiled creature's controller gains the life.")
+	assert_eq(engine.hero().life, 20)
+
+
 func test_short_sword_is_equipped_for_one_mana_and_gives_its_creature_plus_one_plus_one() -> void:
 	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
 	var sword: MmCardDefinition = Scenario.free_copy(_card("dominaria", "short_sword"))
@@ -1228,6 +1255,62 @@ func test_vanguard_of_brimaz_makes_a_vigilant_cat_soldier_when_your_spell_target
 	assert_eq(Scenario.now(engine, tokens[0]).subtypes, ["Cat", "Soldier"] as Array[String])
 
 
+func test_brimaz_attacking_makes_a_vigilant_cat_soldier_that_is_attacking_too() -> void:
+	var brimaz_card: MmCardDefinition = Scenario.free_copy(_card("born_of_the_gods", "brimaz_king_of_oreskos"))
+	var engine: MmEngine = Scenario.combat_ready([brimaz_card], [])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var brimaz: int = Scenario.permanent_named(engine, engine.hero().id, brimaz_card.name)
+	assert_eq(Scenario.declare_attackers(engine, [brimaz]), "")
+
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var state: MmGameState = engine.game_state()
+	assert_false(state.object(brimaz).is_tapped, "Vigilance.")
+	var tokens: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(tokens.size(), 1)
+	var cat: int = tokens[0]
+	_assert_is_a_white_vigilant_cat_soldier(engine, cat)
+	assert_eq(state.object(cat).controller_id, engine.hero().id)
+	assert_true(state.combat.is_attacking(cat), "CR 508.4")
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	assert_eq(engine.villain().life, 16, "Brimaz's 3 and the Cat's 1.")
+
+
+func test_brimaz_blocking_makes_a_vigilant_cat_soldier_blocking_the_creature_it_blocks() -> void:
+	var brimaz_card: MmCardDefinition = Scenario.free_copy(_card("born_of_the_gods", "brimaz_king_of_oreskos"))
+	var engine: MmEngine = Scenario.combat_ready([Scenario.creature("Ox", 2, 4)], [brimaz_card])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var ox: int = Scenario.permanent_named(engine, engine.hero().id, "Ox")
+	var brimaz: int = Scenario.permanent_named(engine, engine.villain().id, brimaz_card.name)
+	assert_eq(Scenario.declare_attackers(engine, [ox]), "")
+	assert_eq(Scenario.pass_to_blockers(engine), "")
+	assert_eq(Scenario.declare_blockers(engine, [[brimaz, ox]]), "")
+
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var state: MmGameState = engine.game_state()
+	var tokens: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(tokens.size(), 1)
+	var cat: int = tokens[0]
+	_assert_is_a_white_vigilant_cat_soldier(engine, cat)
+	assert_eq(state.object(cat).controller_id, engine.villain().id)
+	assert_eq(state.combat.attackers_blocked_by(state, cat), [ox], "CR 509.7")
+	assert_eq(state.combat.blockers_of(state, ox), [brimaz, cat])
+	assert_eq(Scenario.pass_until_step(engine, MmTurn.Step.COMBAT_DAMAGE), "")
+	assert_true(engine.pending_decision() is DivideCombatDamageDecision, "CR 510.1c: two creatures block the Ox.")
+	assert_eq(engine.submit([1, 1]), "")
+	Scenario.pass_until_step(engine, MmTurn.Step.POSTCOMBAT_MAIN)
+	assert_eq(Scenario.permanent_named(engine, engine.hero().id, "Ox"), -1, "Brimaz's 3 and the Cat's 1 killed the 2/4 Ox.")
+
+
+func _assert_is_a_white_vigilant_cat_soldier(engine: MmEngine, token_id: int) -> void:
+	var characteristics: MmCharacteristics = Scenario.now(engine, token_id)
+	assert_eq([characteristics.power, characteristics.toughness], [1, 1])
+	assert_eq(characteristics.colors, [MmCardTypes.CardColor.WHITE] as Array[MmCardTypes.CardColor])
+	assert_eq(characteristics.subtypes, ["Cat", "Soldier"] as Array[String])
+	assert_true(characteristics.has_ability(VigilanceAbility), "The content token's vigilance.")
+
+
 func test_felidar_savior_puts_a_counter_on_each_of_up_to_two_other_creatures_its_controller_chooses() -> void:
 	var savior: MmCardDefinition = Scenario.free_copy(_card("foundations", "felidar_savior"))
 	var hand: Array[MmCardDefinition] = [savior]
@@ -1402,6 +1485,60 @@ func _alpha(file_name: String) -> MmCardDefinition:
 
 
 ## The authored card [param file_name] of the set in folder [param set_name].
+func test_oreskos_explorer_finds_a_plains_while_an_opponent_controls_more_lands() -> void:
+	var engine: MmEngine = _explorer_ready(MmEncounterSetup.StartingPlayerRule.VILLAIN_STARTS)
+	assert_eq(_lands_of(engine, engine.villain().id), 1)
+	assert_eq(_lands_of(engine, engine.hero().id), 0)
+
+	Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Oreskos Explorer"))
+	assert_eq(Scenario.pass_to_search(engine), "")
+
+	var search: ChooseCardsInLibraryDecision = engine.pending_decision() as ChooseCardsInLibraryDecision
+	assert_eq(search.most, 1, "One player controls more lands.")
+	for id: int in search.candidate_ids:
+		assert_eq(engine.game_state().characteristics_of(engine.game_state().object(id)).name, "Plains")
+	assert_eq(engine.submit([search.candidate_ids[0]]), "")
+	assert_ne(Scenario.card_in_hand(engine, engine.hero(), "Plains"), -1)
+
+
+func test_oreskos_explorer_asks_nothing_when_no_one_controls_more_lands() -> void:
+	var engine: MmEngine = _explorer_ready(MmEncounterSetup.StartingPlayerRule.HERO_STARTS)
+	var hand_before: int = engine.hero().hand.size()
+
+	Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Oreskos Explorer"))
+	_resolve(engine)
+
+	assert_eq(engine.hero().hand.size(), hand_before - 1, "X is 0: no Plains found, and none asked for.")
+	assert_ne(Scenario.permanent_named(engine, engine.hero().id, "Oreskos Explorer"), -1)
+
+
+## The Hero, holding a free Oreskos Explorer with Plains in their library, in their first
+## main phase before playing a land: behind on lands when the Villain started and played
+## one, level when the Hero starts.
+func _explorer_ready(rule: MmEncounterSetup.StartingPlayerRule) -> MmEngine:
+	var explorer: MmCardDefinition = Scenario.free_copy(_card("commander_2015", "oreskos_explorer"))
+	var plains: MmCardDefinition = _alpha("plains")
+	var forest: MmCardDefinition = _alpha("forest")
+	var setup: MmEncounterSetup = Scenario.setup_with(Scenario.cycled([explorer, plains]), Scenario.cycled([forest]), rule)
+	var first_hero_turn: int = 2 if rule == MmEncounterSetup.StartingPlayerRule.VILLAIN_STARTS else 1
+	var engine: MmEngine = Scenario.find_engine(setup, func(running: MmEngine) -> bool:
+		if Scenario.play_until_step(running, first_hero_turn, MmTurn.Step.PRECOMBAT_MAIN, true) != "":
+			return false
+		return running.pending_decision() is PriorityDecision and running.pending_decision().player_id == running.hero().id \
+			and Scenario.card_in_hand(running, running.hero(), "Oreskos Explorer") != -1)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	return engine
+
+
+func _lands_of(engine: MmEngine, player_id: int) -> int:
+	var count: int = 0
+	for permanent: MmGameObject in engine.game_state().battlefield.objects():
+		if permanent.controller_id == player_id \
+				and engine.game_state().characteristics_of(permanent).has_card_type(MmCardTypes.CardType.LAND):
+			count += 1
+	return count
+
+
 func _card(set_name: String, file_name: String) -> MmCardDefinition:
 	return load("%s/%s/%s.tres" % [CONTENT_ROOT, set_name, file_name]) as MmCardDefinition
 

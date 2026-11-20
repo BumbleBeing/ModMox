@@ -5,7 +5,10 @@ extends RefCounted
 ## battlefield triggers look back in time: they check what was on the battlefield just
 ## before the batch, using last-known information for what left (CR 603.10a). Every other
 ## trigger looks at the game after the batch, so things entering together see each other
-## (CR 603.6a). Abilities work from the battlefield and, for Emblems, the command zone.
+## (CR 603.6a). Abilities work from the battlefield and, for Emblems, the command zone. One
+## event may trigger an ability several times, once for each object it is about (ADR 0017's
+## addendum). One that triggers only once each turn triggers for the first match of a
+## batch, and for none once its source has marked it Spent this turn (ADR 0054's addendum).
 ##
 ## Later: abilities that trigger from other zones, such as a graveyard.
 
@@ -45,12 +48,29 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 				if not watching:
 					continue
 				var context: MmEffectContext = MmEffectContext.new(observer.controller_id, observer.id)
-				if not triggered.trigger.matches(state, event, context):
-					continue
-				var pending: PendingTrigger = PendingTrigger.new(triggered, ability_index, observer, characteristics,
-					triggered.trigger.triggering_player_id(state, event), triggered.trigger.triggering_object_id(event))
-				# CR 603.4: an intervening "if" must hold for the ability to trigger at all.
-				if triggered.condition_holds(state, pending.context()):
+				# ADR 0017's addendum: one event may trigger it several times, once for each
+				# object it is about, as "blocks a creature" does (CR 509.3b).
+				for object_id: int in triggered.trigger.triggering_object_ids(state, event, context):
+					var pending: PendingTrigger = PendingTrigger.new(triggered, ability_index, observer, characteristics,
+						triggered.trigger.triggering_player_id(state, event), object_id)
+					# CR 603.4: an intervening "if" must hold for the ability to trigger at all.
+					if not triggered.condition_holds(state, pending.context()):
+						continue
+					# ADR 0054's addendum: once each turn, so of several events in one batch, or
+					# of the several times one event triggers it, only the first that matches
+					# triggers it, and its "that creature" is that one's.
+					if triggered.is_once_each_turn and (observer.has_triggered_in(ability_index, state.game_turn)
+							or _has_triggered_among(found, observer.id, ability_index)):
+						continue
 					found.append(pending)
 	for pending: PendingTrigger in found:
 		state.perform(AbilityTriggeredEvent.new(pending))
+
+
+## Whether ability [param ability_index] of the object [param source_id] is among
+## [param found].
+static func _has_triggered_among(found: Array[PendingTrigger], source_id: int, ability_index: int) -> bool:
+	for pending: PendingTrigger in found:
+		if pending.source_object_id == source_id and pending.ability_index == ability_index:
+			return true
+	return false

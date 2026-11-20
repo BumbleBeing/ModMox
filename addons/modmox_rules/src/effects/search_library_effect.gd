@@ -5,6 +5,8 @@ extends MmEffect
 ## library: as it begins they are asked a ChooseCardsInLibraryDecision of the cards that
 ## match, and may find from none up to [member amount] of them (CR 701.23b). The cards
 ## found move together, then the library is shuffled, whether or not anything was found.
+## With up to none, as Oreskos Explorer's X may be, nothing is asked and only the shuffle
+## happens.
 # Later: ask an AsEntersPayOrEntersTappedAbility's cost before a found land moves onto the
 # battlefield (ADR 0052), once a card can find one there; unasked, it enters tapped.
 
@@ -29,6 +31,8 @@ func decision_as_it_begins(state: MmGameState, context: MmEffectContext, stack_o
 		if filter == null or filter.matches(state, MmReference.to_object(card.id), context):
 			matching.append(card.id)
 	var most: int = maxi(0, amount.evaluate(state, context)) if amount != null else 1
+	if most == 0:
+		return null  # Up to none can find nothing, and everyone knows it: only the shuffle is left.
 	var constant: ConstantValue = amount as ConstantValue
 	var is_up_to: bool = constant == null or constant.value != 1
 	return ChooseCardsInLibraryDecision.new(context.controller_id, stack_object_id, matching, most, filter, is_up_to)

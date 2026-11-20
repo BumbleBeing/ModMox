@@ -1,0 +1,5 @@
+# Its liked result is a worked example in references/examples.md, so a run can copy it: test new Potions instead.
+schema_version: "1.1"
+name: twin-fizz-red-blue-jar
+expected_outcome: |
+  A 32 × 32 Potion Icon named twin_fizz.png on the jar template, in the palette, its glass outline intact, whose red and blue brews divide like a cell or coil like yin and yang, and which looks magical.

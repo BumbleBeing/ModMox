@@ -23,3 +23,19 @@ Left out until a card needs them (ADR 0001): casting from the top without "once 
 ## Addendum: a surveil's cards are shown and kept the same way (ADR 0068)
 
 While a surveil is pending its player's view shows the cards it looks at, worked out from the pending decision as a search's library is, and a Simulation Copy made by that player keeps them in place. The cards it keeps on top become Known Cards to their owner, so "re-deal exactly what the view hides" keeps them after it, too.
+
+## Addendum: an ability that triggers only once each turn is Spent the same way
+
+Tocasia's Welcome, in the Villain deck `brimaz_king_of_oreskos`, says "Whenever one or more creatures you control with mana value 3 or less enter, draw a card. This ability triggers only once each turn."
+
+**"This ability triggers only once each turn" is `TriggeredAbility.is_once_each_turn`**, a restriction on the ability as `is_once_each_game` is on an activated one (ADR 0036). A Condition was rejected: an intervening "if" is checked again as the ability resolves (CR 603.4), when it has already triggered, and it cannot see the other triggers of its own batch. So was a wrapper around the Trigger, since the limit spans events, not one.
+
+**Its source marks it Spent as it triggers, by Game Turn, as a permission is.** `AbilityTriggeredEvent` records on the source the Game Turn it triggered in (`MmGameObject.triggered_game_turn`, by ability index), so nothing clears it as a turn begins, "each turn" includes the other player's, two permanents with it each trigger once, and one that leaves and returns is a new object that may trigger again (ADR 0008). It has triggered, so a trigger that is countered still Spends it. The mark is copied, in the fingerprint, and in the Object View for both players (`triggered_this_turn`). ADR 0056 keeps its count on the game state because a resolving ability's source may have left; a triggering ability's source has not, unless it is a leaves-the-battlefield trigger whose source left in the same batch (CR 603.10a). That object never triggers again, so it is not marked, which a frozen departed object could not be anyway.
+
+**`TriggerDetection` applies the limit as it looks for triggers (ADR 0017).** A limited ability whose source is marked this Game Turn does not trigger, nor does one already found in the batch, so of several events at once only the first that matches, in batch order, triggers it, and that event's object is "that creature". The same goes for the several times one event triggers it, as a creature blocking two attackers does (ADR 0017's addendum): only the first, by blocker and then attacker ID, triggers it. A match whose intervening "if" is false never triggered and does not Spend it. Triggering for each creature with the limit therefore plays exactly as "one or more creatures enter" does, and no batched "one or more" zone-change trigger was built (ADR 0001).
+
+**`AbilityText` words it as Oracle does.** It adds "This ability triggers only once each turn." after what the ability does, though not on the stack, where only what it does is shown. A limited zone-change trigger of anything but its source reads "Whenever one or more creatures you control with mana value 3 or less enter", unless its words say "that creature", when it stays singular.
+
+**The AI needs nothing.** The mark is on the Game Object, so every Simulation Copy carries it, and a FULL Agent's lookahead sees one draw a turn, never two. The GUI dims a permanent whose trigger is Spent (game ADR 0055's addendum).
+
+Left out until a card needs them (ADR 0001): "one or more" in the words of a modal limited trigger, a "one or more" zone-change trigger without the limit, and abilities that trigger a set number of times other than once.

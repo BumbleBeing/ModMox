@@ -101,11 +101,9 @@ func test_paying_x_of_zero_is_paying() -> void:
 
 	assert_eq(Scenario.choose_x(engine, 0), "")
 
-	var search: ChooseCardsInLibraryDecision = engine.pending_decision() as ChooseCardsInLibraryDecision
-	assert_not_null(search, "No mana is asked, and the search still happens.")
-	assert_eq(search.most, 0)
-	assert_eq(engine.submit([]), "")
-	assert_eq(_shuffles_of(engine, engine.hero().id), shuffles_before + 1, "So the library is shuffled.")
+	assert_false(engine.pending_decision() is ChooseCardsInLibraryDecision,
+		"No mana is asked, and a search for up to none asks nothing (ADR 0057).")
+	assert_eq(_shuffles_of(engine, engine.hero().id), shuffles_before + 1, "But the search happens: the library is shuffled.")
 
 
 func test_declining_a_search_it_wraps_neither_searches_nor_shuffles() -> void:

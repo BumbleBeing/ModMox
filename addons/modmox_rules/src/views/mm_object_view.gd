@@ -48,6 +48,10 @@ var cast_from_library: bool = false
 ## The cast permissions of this permanent Spent this turn (ADR 0054), by their place among
 ## its abilities, each with the name of the spell it cast. Public, like the permanent.
 var permissions_used_this_turn: Dictionary[int, String] = {}
+## Its once-each-turn triggered abilities that have triggered this turn, Spent until the
+## next turn (ADR 0054's addendum), by their place among its abilities, lowest first.
+## Public, like the permanent.
+var triggered_this_turn: Array[int] = []
 var is_creature: bool = false
 ## Current power and toughness; meaningful only for a creature (CR 208.3).
 var power: int = 0
@@ -124,6 +128,10 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	for index: int in game_object.permission_used_game_turn:
 		if game_object.is_permission_used_in(index, state.game_turn):
 			view.permissions_used_this_turn[index] = game_object.permission_used_spell_name[index]
+	for index: int in game_object.triggered_game_turn:
+		if game_object.has_triggered_in(index, state.game_turn):
+			view.triggered_this_turn.append(index)
+	view.triggered_this_turn.sort()
 	var characteristics: MmCharacteristics = state.characteristics_of(game_object)
 	view.colors = characteristics.colors.duplicate()
 	view.card_types = characteristics.card_types.duplicate()

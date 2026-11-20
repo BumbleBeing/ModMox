@@ -42,7 +42,8 @@ var is_tapped: bool = false
 ## (game ADR 0053), or "".
 var chosen_creature_type: String = ""
 ## For a permanent: drawn grayed and darkened, because a cast from the top of the library
-## it allows is Spent this turn (game ADR 0055).
+## it allows, or an ability of it that triggers only once each turn, is Spent this turn
+## (game ADR 0055).
 var is_dimmed: bool = false
 ## Which art to draw: the file name of the card's Card Definition, without its extension.
 ## Art belongs to the Card Definition, so a renamed Run Card keeps its art (A229).
@@ -100,7 +101,7 @@ static func of_view(view: MmObjectView, card_art_key: String = "") -> CardLook:
 	look.counters = view.counters.duplicate()
 	look.is_token = view.is_token
 	look.chosen_creature_type = view.chosen_creature_type
-	look.is_dimmed = not view.permissions_used_this_turn.is_empty()
+	look.is_dimmed = not view.permissions_used_this_turn.is_empty() or not view.triggered_this_turn.is_empty()
 	look.art_key = card_art_key
 	look.rules_text = AbilityText.of_card(look.abilities, look.card_types, look.supertypes, look.name)
 	return look

@@ -14,6 +14,9 @@ var defending_player_id: int = MmGameState.NO_PLAYER
 ## strikers (CR 510.4).
 var is_first_strike_damage_step: bool = false
 
+## The declared attackers, then any put onto the battlefield attacking (CR 508.4).
+## Later (raid, "attacked this turn"): tell the two apart, since those put onto the
+## battlefield attacking never attacked.
 var _attacker_ids: Array[int] = []
 ## CR 509.1h: an attacker stays blocked even once its blockers are gone.
 var _blocked_attacker_ids: Array[int] = []
@@ -109,10 +112,23 @@ func declare_attackers(attacker_ids: Array[int], defending_id: int) -> void:
 ## Event-only: records blocks, as parallel lists of blockers and the attackers they block.
 func declare_blocks(blocker_ids: Array[int], attacker_ids: Array[int]) -> void:
 	for index: int in blocker_ids.size():
-		_block_blocker_ids.append(blocker_ids[index])
-		_block_attacker_ids.append(attacker_ids[index])
-		if not _blocked_attacker_ids.has(attacker_ids[index]):
-			_blocked_attacker_ids.append(attacker_ids[index])
+		_record_block(blocker_ids[index], attacker_ids[index])
+
+
+## Event-only: CR 508.4: [param object_id] is put onto the battlefield attacking the
+## defending player, without being declared as an attacker. Unless it is blocked later,
+## it is unblocked.
+func enter_attacking(object_id: int) -> void:
+	assert(defending_player_id != MmGameState.NO_PLAYER, "Only once attackers are declared (ADR 0044).")
+	_attacker_ids.append(object_id)
+
+
+## Event-only: CR 509.7: [param blocker_id] is put onto the battlefield blocking
+## [param attacker_id], without being declared as a blocker, and recorded as a declared
+## block is. An attacker it blocks is blocked from then on, if it wasn't already (CR 509.1h).
+func enter_blocking(blocker_id: int, attacker_id: int) -> void:
+	assert(_attacker_ids.has(attacker_id), "Only an attacker can be blocked (ADR 0044).")
+	_record_block(blocker_id, attacker_id)
 
 
 ## Event-only: a combat damage step begins. [param first_strike_ids] are the creatures that
@@ -149,6 +165,15 @@ func describe() -> String:
 	return "combat defending %d attackers %s blocked %s blocks %s->%s damage steps %d first strike %s %s removed %s" % [
 		defending_player_id, _attacker_ids, _blocked_attacker_ids, _block_blocker_ids, _block_attacker_ids,
 		_damage_steps_begun, is_first_strike_damage_step, _first_strike_ids, _removed_ids]
+
+
+## One block, declared or not: [param blocker_id] blocks [param attacker_id], which is
+## blocked from then on (CR 509.1h).
+func _record_block(blocker_id: int, attacker_id: int) -> void:
+	_block_blocker_ids.append(blocker_id)
+	_block_attacker_ids.append(attacker_id)
+	if not _blocked_attacker_ids.has(attacker_id):
+		_blocked_attacker_ids.append(attacker_id)
 
 
 ## The IDs in [param ids] of objects still on the battlefield, in ID order.

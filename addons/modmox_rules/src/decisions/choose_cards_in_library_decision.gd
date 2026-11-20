@@ -2,7 +2,7 @@ class_name ChooseCardsInLibraryDecision
 extends MmPendingDecision
 ## The controller of a resolving search looks through their library and finds up to
 ## [member most] of the cards that match its Filter (CR 701.23, ADR 0057). Asked even when
-## nothing matches. While it is pending, that player's Player View shows their whole
+## nothing matches, though never when [member most] would be 0. While it is pending, that player's Player View shows their whole
 ## library. Answer: an Array of distinct object IDs from [member candidate_ids], from none
 ## up to [member most] of them (CR 701.23b: a search for a stated quality may find nothing).
 
