@@ -9,6 +9,8 @@ extends MmEffect
 ## (CR 122.6). Either way its "enters" abilities see it as it arrived. A token that left the
 ## battlefield never comes back (CR 111.8).
 # Later: "under your control", for a card returned from another player's graveyard.
+# Later: ask an AsEntersPayOrEntersTappedAbility's cost before the move (ADR 0052), once a
+# card can return a land; unasked, it enters tapped.
 
 @export var selection: MmSelection
 ## How many counters it enters with. Null for none.

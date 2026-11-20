@@ -6,8 +6,9 @@
 -- draws every icon onto one contact sheet.
 --
 -- A grid file holds "= name" lines, each followed by the icon's rows, one character for
--- each pixel: . is transparent and any other is the palette color at that character's
--- place in KEY. Lines starting with ; are comments. Two settings may come first:
+-- each pixel: . is transparent, ~ is see-through glass (the palette's silvery gray, GLASS,
+-- at GLASS_ALPHA), and any other is the palette color at that character's place in KEY.
+-- Lines starting with ; are comments. Two settings may come first:
 --   @ size 32         the icons' width and height (16 if left out)
 --   @ backdrop chip   draw the contact sheet's icons on a Keyword Chip
 --
@@ -21,6 +22,10 @@ local BACKDROP = "plain"
 -- teal, blue, violet and rose, then the five brights.
 local KEY = "0123+56#" .. "abcde" .. "fghij" .. "klmno" .. "pqrst" .. "uvwxy" .. "ABCDE"
 	.. "FGHIJ" .. "KLMNO" .. "PQRST" .. "UVWXY" .. "zZ489" .. "!$%&*"
+-- The one see-through color: a pixel of glass, which lets what is behind the icon show.
+local GLASS = "~"
+local GLASS_TONE = "5"
+local GLASS_ALPHA = 153
 local SCALES = { 1, 2, 4 }
 local PAD = 8
 local TONES = {}
@@ -68,7 +73,7 @@ local function read_icons(path)
 			end
 			for x = 1, SIZE do
 				local character = row:sub(x, x)
-				if character ~= "." and TONES[character] == nil then
+				if character ~= "." and character ~= GLASS and TONES[character] == nil then
 					fail(icon.name .. " row " .. y .. " has '" .. character .. "', which is no palette color")
 				end
 			end
@@ -103,8 +108,12 @@ local function draw_grid(icon, path)
 	local image = Image(SIZE, SIZE, ColorMode.RGB)
 	for y, row in ipairs(icon.rows) do
 		for x = 1, SIZE do
-			local tone = TONES[row:sub(x, x)]
-			if tone ~= nil then
+			local character = row:sub(x, x)
+			local tone = TONES[character]
+			if character == GLASS then
+				local glass = TONES[GLASS_TONE]
+				image:drawPixel(x - 1, y - 1, app.pixelColor.rgba(glass[1], glass[2], glass[3], GLASS_ALPHA))
+			elseif tone ~= nil then
 				image:drawPixel(x - 1, y - 1, app.pixelColor.rgba(tone[1], tone[2], tone[3], 255))
 			end
 		end

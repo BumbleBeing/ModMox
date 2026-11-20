@@ -65,7 +65,12 @@ func place(box: Rect2) -> void:
 		if _flash != null:
 			remove_child(_flash)
 			_flash.queue_free()
-		_flash = CardShapes.outline(Vector2(box.size.x, SteelFrame.face_height(box.size.y)), 4, SteelFrame.RING, Color.WHITE)
+		# The flash is the frame's own ring, stepped corners and all.
+		_flash = Panel.new()
+		_flash.size = box.size
+		_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_flash.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_flash.add_theme_stylebox_override("panel", SteelFrame.ring_plate(maxi(1, int(box.size.y))))
 		_flash.modulate.a = 0.0
 		add_child(_flash)
 	_place_lines()

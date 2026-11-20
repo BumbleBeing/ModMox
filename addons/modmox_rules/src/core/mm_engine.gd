@@ -216,13 +216,23 @@ func villain() -> MmPlayer:
 ## What [param player] may legally see.
 func view_for(player: MmPlayer) -> MmPlayerView:
 	var priority_player_id: int = _pending.player_id if _pending is PriorityDecision else MmGameState.NO_PLAYER
-	return MmPlayerView.build(_state, player.id, priority_player_id, _is_searching(player.id))
+	return MmPlayerView.build(_state, player.id, priority_player_id, _is_searching(player.id), _looked_at_by(player.id))
 
 
 ## Whether [param player_id] is searching their library now: a search is pending for them
 ## (ADR 0057). Nothing on the game state says so; the decision does.
 func _is_searching(player_id: int) -> bool:
 	return _pending is ChooseCardsInLibraryDecision and _pending.player_id == player_id
+
+
+## The cards of [param player_id]'s own library they are looking at now: those a pending
+## surveil of theirs names (ADR 0068). Nothing on the game state says so; the decision does.
+func _looked_at_by(player_id: int) -> Array[int]:
+	var surveil: SurveilDecision = _pending as SurveilDecision
+	if surveil != null and surveil.player_id == player_id:
+		return surveil.card_ids
+	var none: Array[int] = []
+	return none
 
 
 ## The Run Card with Card Identity [param card_id], as an MmObjectView's card_id or
@@ -277,8 +287,8 @@ func simulation_copy(viewer_id: int, rng: MmRng, keeps_hidden_cards: bool = fals
 	copy._state = _state.duplicate_state()
 	copy._state.event_log = []
 	if not keeps_hidden_cards:
-		# ADR 0057: a pending search names the searcher's cards, so their library stays.
-		copy._state.randomize_hidden_cards(viewer_id, rng, _is_searching(viewer_id))
+		# ADR 0057 and 0068: a pending search or surveil names the cards looked at, so they stay.
+		copy._state.randomize_hidden_cards(viewer_id, rng, _is_searching(viewer_id), _looked_at_by(viewer_id))
 	copy._state.game_rng = MmRng.new(rng.next_seed())
 	copy._pregame = _pregame.copy_for(copy._state)
 	copy._turns = _turns.copy_for(copy._state)
@@ -327,7 +337,7 @@ func _advance() -> void:
 
 
 ## ADR 0015: a point that cannot fairly be undone past. Hidden information was revealed (a
-## search shows the searcher their library) or
+## search shows the searcher their library, a surveil the cards surveilled) or
 ## randomness used (a draw, a shuffle), something left the stack, or the other player now
 ## has a decision. A card cast from the top of a library is the exception: its owner sees
 ## no new top card until it becomes cast (ADR 0054), so the barrier comes then, and the
@@ -337,6 +347,8 @@ func _is_undo_barrier(answered: MmPendingDecision, events_before: int) -> bool:
 		return true
 	if _pending is ChooseCardsInLibraryDecision:
 		return true  # ADR 0057: the searcher now sees their whole library.
+	if _pending is SurveilDecision:
+		return true  # ADR 0068: the player now sees the cards surveilled.
 	for index: int in range(events_before, _state.event_log.size()):
 		var event: MmEvent = _state.event_log[index]
 		if event is ShuffleEvent or event is AbilityLeftStackEvent:

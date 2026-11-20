@@ -63,7 +63,7 @@ func test_apply_frames_every_state_once_with_white_text() -> void:
 	SteelFrame.apply(other, GRAY)
 
 	assert_eq(one.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
-	for state: String in ButtonShading.STATES:
+	for state: String in ["normal", "pressed", "hover_pressed", "disabled"]:
 		assert_eq(one.get_theme_stylebox(state), SteelFrame.plate(GRAY, state, HEIGHT), state)
 	assert_eq(one.get_theme_stylebox("normal"), other.get_theme_stylebox("normal"), "Painted once and shared.")
 	assert_eq(one.get_theme_color("font_color"), Color.WHITE)
@@ -74,6 +74,62 @@ func test_apply_frames_every_state_once_with_white_text() -> void:
 ## Whether a painted pixel is [param color], within a step of its 256.
 func _is(pixel: Color, color: Color) -> bool:
 	return absf(pixel.r - color.r) < 0.01 and absf(pixel.g - color.g) < 0.01 and absf(pixel.b - color.b) < 0.01
+
+
+func test_the_cursor_lightens_its_face_with_an_ease_and_never_a_switch() -> void:
+	var button: Button = _button()
+	SteelFrame.apply(button, GRAY)
+	var layer: Control = HoverEase.layer_of(button)
+
+	assert_eq(HoverEase.TIME, 0.1)
+	assert_eq(button.get_theme_stylebox("hover"), SteelFrame.plate(GRAY, "normal", HEIGHT), "No plate switches under the cursor.")
+	assert_eq(layer.modulate.a, 0.0, "Unlit until the cursor comes.")
+	assert_eq(layer.get_index(), 0, "Under anything drawn on the button later.")
+	var lit: Image = SteelFrame.hover_plate(HEIGHT).texture.get_image()
+	var middle: int = lit.get_width() / 2
+	assert_almost_eq(lit.get_pixel(middle, HEIGHT / 2).a, InspectorParts.HOVER_LIGHTEN, 0.01, "White over the face, as far as a hover lightens,")
+	assert_eq(lit.get_pixel(middle, 0).a, 0.0, "nothing over the ring")
+	assert_eq(lit.get_pixel(middle, HEIGHT - 1).a, 0.0, "or the lip.")
+
+	button.mouse_entered.emit()
+
+	assert_eq(layer.modulate.a, 0.0, "Not lit at once: it is eased in.")
+	await wait_seconds(0.15)
+	assert_almost_eq(layer.modulate.a, 1.0, 0.01, "Lit within a tenth of a second.")
+	button.mouse_exited.emit()
+	await wait_seconds(0.16)
+	assert_almost_eq(layer.modulate.a, 0.0, 0.01, "And settled as fast.")
+
+
+func test_a_button_that_cannot_be_pressed_does_not_light_and_one_held_down_goes_dark() -> void:
+	var button: Button = _button()
+	SteelFrame.apply(button, GRAY)
+	var layer: Control = HoverEase.layer_of(button)
+	button.disabled = true
+
+	button.mouse_entered.emit()
+	await wait_seconds(0.15)
+
+	assert_eq(layer.modulate.a, 0.0)
+	button.disabled = false
+	button.mouse_entered.emit()
+	await wait_seconds(0.15)
+	button.button_down.emit()
+	assert_eq(layer.modulate.a, 0.0, "Held down, it sits on its lip unlit.")
+
+
+func test_framing_a_button_again_leaves_it_one_hover_layer() -> void:
+	var button: Button = _button()
+
+	SteelFrame.apply(button, GRAY)
+	SteelFrame.apply(button, GRAY, true)
+	await wait_process_frames(2)
+
+	var layers: int = 0
+	for child: Node in button.get_children():
+		if child.name.begins_with(HoverEase.LAYER):
+			layers += 1
+	assert_eq(layers, 1)
 
 
 func _image(state: String, is_selected: bool) -> Image:

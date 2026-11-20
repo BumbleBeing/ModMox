@@ -158,6 +158,10 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_begin_answer = (answer as Array).duplicate()
 		_has_begin_answer = true
 		return
+	if decision is SurveilDecision:
+		_begin_answer = (answer as Array).duplicate(true)  # Two lists, kept whole (ADR 0068).
+		_has_begin_answer = true
+		return
 	if decision is ChooseYesOrNoDecision:
 		var asked: ChooseYesOrNoDecision = decision as ChooseYesOrNoDecision
 		if asked.cost != null and (answer as int) == ChooseYesOrNoDecision.Choice.YES:

@@ -130,8 +130,9 @@ func duplicate_state() -> MmGameState:
 ## Only what the viewer's Player View hides is re-dealt: a Known Card, in a library or the
 ## other player's hand (ADR 0057), or a top card the viewer may look at (ADR 0054), stays
 ## where it is, and the pool is the rest. With [param is_searching], the viewer is looking
-## through their own library (ADR 0057), so it is not re-dealt at all.
-func randomize_hidden_cards(viewer_id: int, rng: MmRng, is_searching: bool = false) -> void:
+## through their own library (ADR 0057), so it is not re-dealt at all; the cards of
+## [param looked_at_ids], which a pending surveil shows them (ADR 0068), stay too.
+func randomize_hidden_cards(viewer_id: int, rng: MmRng, is_searching: bool = false, looked_at_ids: Array[int] = []) -> void:
 	var other: MmPlayer = opponent_of(viewer_id)
 	var unseen: Array[MmGameObject] = []
 	for card: MmGameObject in other.hand.objects():
@@ -140,7 +141,11 @@ func randomize_hidden_cards(viewer_id: int, rng: MmRng, is_searching: bool = fal
 	unseen.append_array(_unseen_in_library(other.id, viewer_id))
 	_redeal(unseen, rng)
 	if not is_searching:
-		_redeal(_unseen_in_library(viewer_id, viewer_id), rng)
+		var unseen_own: Array[MmGameObject] = []
+		for card: MmGameObject in _unseen_in_library(viewer_id, viewer_id):
+			if not looked_at_ids.has(card.id):
+				unseen_own.append(card)
+		_redeal(unseen_own, rng)
 
 
 ## The IDs of the cards in [param owner_id]'s library that [param viewer_id] sees: their

@@ -362,3 +362,13 @@ func _ward_on_top() -> MmPlayerView:
 	ward.triggering_object_id = 20
 	view.stack = [_object(20, "Zap", 5), ward]
 	return view
+
+
+func test_a_surveil_asks_in_the_words_the_user_approved() -> void:
+	var view: MmPlayerView = _view()
+	var one: SurveilDecision = SurveilDecision.new(HERO, 21, [31] as Array[int])
+	var two: SurveilDecision = SurveilDecision.new(HERO, 21, [31, 32] as Array[int])
+
+	assert_eq(InfoPrompt.of(one, view).text, "Surveil: graveyard any of these.", "Game ADR 0069.")
+	assert_eq(InfoPrompt.of(two, view).text, "Surveil: graveyard any of these, and order the rest. The leftmost will be on top.")
+	assert_false(InfoPrompt.of(two, view).can_cancel, "A resolving trigger cannot be canceled.")

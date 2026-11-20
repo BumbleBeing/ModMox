@@ -51,6 +51,9 @@ const SPEED_GAP: float = 6.0
 const RADIUS: int = WindowLook.RADIUS
 ## What rings the Game Speed in use.
 const RING: String = "Chosen"
+const RING_WIDTH: int = 2
+
+static var _rings: Dictionary[int, StyleBoxTexture] = {}
 
 ## How long it takes to ease in or out; the Encounter Screen sets it.
 var ease_seconds: float = 0.0
@@ -60,6 +63,7 @@ var _page: Page = Page.MENU
 var _window: Panel = null
 var _heading: Label = null
 var _buttons: Dictionary[String, Button] = {}
+var _speed_heading: Label = null
 var _speed: GameSpeed.Speed = GameSpeed.Speed.NORMAL
 var _speed_buttons: Dictionary[GameSpeed.Speed, Button] = {}
 var _is_auto_passing: bool = true
@@ -187,6 +191,11 @@ func window() -> Panel:
 	return _window
 
 
+## The "Game speed" heading of the settings page, or null on any other page.
+func speed_heading() -> Label:
+	return _speed_heading if is_instance_valid(_speed_heading) else null
+
+
 ## The gold ring on the button for [param speed], shown while it is the Game Speed in use;
 ## null on any other page.
 func chosen_ring(speed: GameSpeed.Speed) -> Panel:
@@ -307,10 +316,12 @@ func _add_speeds(window_width: float) -> void:
 	heading.text = SPEED_HEADING
 	heading.position = Vector2(60, EncounterLayout.PAUSE_HEADING)
 	heading.size = Vector2(window_width - 120, EncounterLayout.PAUSE_ROW - 12)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	heading.add_theme_font_size_override("font_size", 19)
 	heading.modulate = Color(1, 1, 1, 0.8)
 	_window.add_child(heading)
+	_speed_heading = heading
 	var count: int = GameSpeed.ALL.size()
 	var width: float = (window_width - 120 - SPEED_GAP * (count - 1)) / count
 	for index: int in count:
@@ -319,9 +330,13 @@ func _add_speeds(window_width: float) -> void:
 		made.position = Vector2(60 + index * (width + SPEED_GAP), EncounterLayout.PAUSE_HEADING + EncounterLayout.PAUSE_ROW)
 		made.size = Vector2(width, EncounterLayout.PAUSE_ROW - 12)
 		_shade(made)
-		var ring: Panel = CardShapes.outline(made.size, WindowLook.BUTTON_RADIUS, 2, CHOSEN)
+		# The ring is painted round the button's own plate, so its corners are the button's.
+		var ring: Panel = Panel.new()
 		ring.name = RING
+		ring.size = made.size
 		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ring.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		ring.add_theme_stylebox_override("panel", _chosen_ring_of(made))
 		made.add_child(ring)
 		made.pressed.connect(_on_speed_pressed.bind(speed))
 		_window.add_child(made)
@@ -386,11 +401,20 @@ func _button(text: String, font_size: int = 21) -> Button:
 	return made
 
 
+## The gold ring round [param made], shaped as the plate it is drawn with. Painted once for
+## each plate.
+static func _chosen_ring_of(made: Button) -> StyleBoxTexture:
+	var plate: StyleBoxTexture = made.get_theme_stylebox("normal") as StyleBoxTexture
+	var key: int = plate.get_instance_id()
+	if not _rings.has(key):
+		_rings[key] = DitherShading.ring_round(plate, RING_WIDTH, CHOSEN)
+	return _rings[key]
+
+
 ## Dither Shades [param made], its size already set, as the Spoils screen's buttons are,
 ## and in the Inspector's gray while it cannot be pressed.
 static func _shade(made: Button) -> void:
-	ButtonShading.shade(made, WindowLook.BUTTON, Inspector.palette().button_disabled, ButtonShading.SIDE, true,
-		WindowLook.BUTTON_RADIUS)
+	ButtonShading.shade(made, WindowLook.BUTTON, Inspector.palette().button_disabled)
 
 
 func _on_pressed(text: String) -> void:

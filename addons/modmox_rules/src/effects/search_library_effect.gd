@@ -5,6 +5,8 @@ extends MmEffect
 ## library: as it begins they are asked a ChooseCardsInLibraryDecision of the cards that
 ## match, and may find from none up to [member amount] of them (CR 701.23b). The cards
 ## found move together, then the library is shuffled, whether or not anything was found.
+# Later: ask an AsEntersPayOrEntersTappedAbility's cost before a found land moves onto the
+# battlefield (ADR 0052), once a card can find one there; unasked, it enters tapped.
 
 ## What may be found, such as a basic land card.
 @export var filter: MmFilter

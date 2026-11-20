@@ -1,22 +1,38 @@
 class_name PotionArt
 extends Control
-## A Potion Icon as it is always drawn (ADR 0033, A538): on a beige square with a darker
-## circle behind it, the circle in the icon's own pixels so that its edge steps as the
-## icon's does. The circle always fills the icon's grid. Large, in the Inspector, the icon
-## has a margin of one art pixel; small, on an entry of the Potions window or the Stack
-## Window, the icon fills the square, and so does the circle, which never reaches past it.
+## A Potion Icon as it is always drawn (ADR 0033, as amended): on a raised plate in Dither
+## Shading in its Rarity's color, the icon in whole art pixels over it. Large, in the
+## Inspector, the icon has a margin of one art pixel of plate; small, on an entry of the
+## Potions window or the Stack Window, the icon fills the plate. An icon's glass is left
+## clear but for a see-through lining, so the plate shows through it.
 
 const FOLDER: String = "res://ui/sprites/potions/"
 ## The icon of a Potion that has none of its own.
 const BOTTLE: String = "bottle"
-## The icon's grid: 16 art pixels each way.
-const CELLS: int = 16
-const BEIGE: Color = Color("#e6dcbd")
-const CIRCLE: Color = Color("#a8926f")
+## The icon's grid: 32 art pixels each way.
+const CELLS: int = 32
+## The plate's color for each Rarity: the color the Inspector glows in (Inspector.GLOWS),
+## but for Mythic, whose plate is sienna, since a plate in the glow's honey would pass for
+## Rare's gold beside it.
+const PLATES: Dictionary[MmCardDefinition.Rarity, Color] = {
+	MmCardDefinition.Rarity.COMMON: Color("#8a8f98"),
+	MmCardDefinition.Rarity.UNCOMMON: Color("#d5dbe3"),
+	MmCardDefinition.Rarity.RARE: Color("#f2c744"),
+	MmCardDefinition.Rarity.MYTHIC: Color("#a0522d"),
+	MmCardDefinition.Rarity.POWER_NINE: Color("#9be88a"),
+}
+const EDGE: Color = Color("#14171c")
+const EDGE_WIDTH: int = 2
+## How far the plate is lightened at its top and darkened at its foot.
+const LIGHTEN: float = 0.18
+const DARKEN: float = 0.2
+## The plate's corners are rounded by this share of its side.
+const ROUNDING: float = 0.08
 
 var _key: String
 var _is_small: bool
-var _circle: TextureRect
+var _plate_color: Color
+var _plate: Panel
 var _icon: TextureRect
 
 
@@ -30,37 +46,33 @@ static func has_icon(key: String) -> bool:
 	return key != "" and ResourceLoader.exists(FOLDER + key + ".png")
 
 
-## The circle as an image, as wide as the icon's grid.
-static func circle_image() -> Image:
-	var middle: float = (CELLS - 1) / 2.0
-	var image: Image = Image.create(CELLS, CELLS, false, Image.FORMAT_RGBA8)
-	for y: int in CELLS:
-		for x: int in CELLS:
-			if Vector2(x - middle, y - middle).length() <= CELLS / 2.0:
-				image.set_pixel(x, y, CIRCLE)
-	return image
+## The plate a Potion Icon stands on: [param color] in Dither Shading, edged in near-black,
+## painted for a square [param side] pixels wide.
+static func plate_style(color: Color, side: int) -> StyleBoxTexture:
+	return DitherShading.plate(color.lightened(LIGHTEN), color.darkened(DARKEN), EDGE,
+			maxi(EDGE_WIDTH, roundi(side * ROUNDING)), EDGE_WIDTH, 0, side)
 
 
 ## The art of the Potion authored in the file named [param key], in a square [param side]
-## pixels wide.
-func _init(key: String, side: float, is_small: bool) -> void:
+## pixels wide, on the plate of its [param rarity] (a Rarity, or null for a Potion given
+## none, which stands on the Common plate).
+func _init(key: String, side: float, is_small: bool, rarity: Variant) -> void:
 	_key = key
 	_is_small = is_small
+	_plate_color = PLATES[rarity as MmCardDefinition.Rarity] if rarity != null else PLATES[MmCardDefinition.Rarity.COMMON]
 	custom_minimum_size = Vector2(side, side)
 	size = Vector2(side, side)
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var square: ColorRect = ColorRect.new()
-	square.color = BEIGE
-	square.size = size
-	square.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(square)
+	_plate = Panel.new()
+	_plate.size = size
+	_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Hard edges: the plate's blocks are pixel art too.
+	_plate.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_plate.add_theme_stylebox_override("panel", plate_style(_plate_color, int(side)))
+	add_child(_plate)
 	var art_pixel: float = side / CELLS if is_small else side / (CELLS + 2)
 	var icon_rect: Rect2 = Rect2(Vector2.ZERO, size) if is_small else Rect2(Vector2(art_pixel, art_pixel), Vector2(CELLS, CELLS) * art_pixel)
-	_circle = _picture(ImageTexture.create_from_image(circle_image()))
-	_circle.position = icon_rect.position
-	_circle.size = icon_rect.size
-	add_child(_circle)
 	_icon = _picture(icon_of(key))
 	_icon.position = icon_rect.position
 	_icon.size = icon_rect.size
@@ -82,9 +94,14 @@ func icon_rect() -> Rect2:
 	return Rect2(_icon.position, _icon.size)
 
 
-## Where the darker circle is drawn in the square: where the icon is.
-func circle_rect() -> Rect2:
-	return Rect2(_circle.position, _circle.size)
+## Where the plate is drawn: the whole square.
+func plate_rect() -> Rect2:
+	return Rect2(_plate.position, _plate.size)
+
+
+## The color the plate is shaded from: its Potion's Rarity's.
+func plate_color() -> Color:
+	return _plate_color
 
 
 ## The icon drawn: the Potion's own, or the plain bottle.

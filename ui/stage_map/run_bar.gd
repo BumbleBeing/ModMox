@@ -20,10 +20,8 @@ const ICON_SCALE: int = 2
 ## The Spoils screen's Continue: its title bar gray (#656a75) darkened a fifth.
 const BUTTON_FILL: Color = Color("#51555e")
 const BUTTON_HEIGHT: int = 48
-const BUTTON_RADIUS: int = 12
 ## A button is as wide as its name and icon, with this much room at each side.
 const BUTTON_SIDE: int = 18
-const HOVER_LIGHTEN: float = 0.10
 const SATCHEL: String = "Satchel"
 const DECKBOX: String = "Deckbox"
 
@@ -153,17 +151,16 @@ func _add_button(parent: Control, text: String, icon_name: String, on_press: Cal
 	made.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	made.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	made.add_theme_font_size_override("font_size", 22)
-	made.add_theme_stylebox_override("normal", _plate(BUTTON_FILL, false))
-	made.add_theme_stylebox_override("hover", _plate(BUTTON_FILL.lightened(HOVER_LIGHTEN), false))
-	made.add_theme_stylebox_override("pressed", _plate(BUTTON_FILL, true))
-	made.add_theme_stylebox_override("hover_pressed", _plate(BUTTON_FILL, true))
+	for state: String in ButtonShading.STATES:
+		made.add_theme_stylebox_override(state, _plate(state))
 	made.pressed.connect(on_press)
 	parent.add_child(made)
 	_buttons[text] = made
 
 
-func _plate(fill: Color, is_pressed: bool) -> StyleBoxTexture:
-	var made: StyleBoxTexture = DitherShading.button_plate(fill, is_pressed, BUTTON_HEIGHT, BUTTON_RADIUS)
+## A button's plate in the Steel Frame (game ADR 0066), with this bar's room at its sides.
+func _plate(state: String) -> StyleBoxTexture:
+	var made: StyleBoxTexture = SteelFrame.roomy_plate(BUTTON_FILL, state, BUTTON_HEIGHT).duplicate() as StyleBoxTexture
 	made.content_margin_left = BUTTON_SIDE
 	made.content_margin_right = BUTTON_SIDE
 	return made

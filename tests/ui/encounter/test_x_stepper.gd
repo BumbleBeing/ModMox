@@ -34,6 +34,18 @@ func test_its_signs_have_no_shape_of_their_own() -> void:
 	assert_eq(plain.border_width_top, 0)
 
 
+func test_an_end_lightens_under_the_cursor_with_the_same_ease() -> void:
+	var stepper: XStepper = _stepper(2, true, true, false)
+	var layer: Control = HoverEase.layer_of(stepper.plus_button())
+
+	assert_not_null(layer)
+	assert_eq(layer.modulate.a, 0.0)
+	stepper.plus_button().mouse_entered.emit()
+	await wait_seconds(0.15)
+	assert_almost_eq(layer.modulate.a, 1.0, 0.01)
+	assert_not_null(HoverEase.layer_of(stepper), "The plate itself too.")
+
+
 func test_an_end_steps_and_the_plate_selects() -> void:
 	var stepper: XStepper = _stepper(2, true, true, false)
 	var said: Array[String] = []

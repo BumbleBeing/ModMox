@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_po26p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_kwsd7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/pay_life_cost.gd" id="2_pxt7a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/as_enters_pay_or_enters_tapped_ability.gd" id="3_dcbb2"]
+
+[sub_resource type="Resource" id="Resource_h20e8"]
+script = ExtResource("2_pxt7a")
+amount = 2
+
+[sub_resource type="Resource" id="Resource_j85qj"]
+script = ExtResource("3_dcbb2")
+cost = SubResource("Resource_h20e8")
+
+[resource]
+script = ExtResource("2_kwsd7")
+name = "Temple Garden"
+card_types = Array[int]([4])
+subtypes = Array[String](["Forest", "Plains"])
+abilities = Array[ExtResource("1_po26p")]([SubResource("Resource_j85qj")])
+rarity = 2

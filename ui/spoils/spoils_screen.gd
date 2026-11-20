@@ -402,12 +402,7 @@ func _continue_button() -> Button:
 	_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_button.add_theme_font_override("font", UiText.bold())
 	_button.add_theme_font_size_override("font_size", 26)
-	_button.add_theme_stylebox_override("normal", DitherShading.button_plate(BUTTON_FILL, false, BUTTON_HEIGHT, BUTTON_RADIUS))
-	_button.add_theme_stylebox_override("hover",
-			DitherShading.button_plate(BUTTON_FILL.lightened(0.1), false, BUTTON_HEIGHT, BUTTON_RADIUS))
-	_button.add_theme_stylebox_override("pressed", DitherShading.button_plate(BUTTON_FILL, true, BUTTON_HEIGHT, BUTTON_RADIUS))
-	_button.add_theme_stylebox_override("hover_pressed",
-			DitherShading.button_plate(BUTTON_FILL, true, BUTTON_HEIGHT, BUTTON_RADIUS))
+	SteelFrame.frame_roomy(_button, BUTTON_FILL, BUTTON_HEIGHT)
 	_button.pressed.connect(func() -> void:
 		has_left = true
 		navigate.call(Screens.scene(RunFlow.finish_spoils())))

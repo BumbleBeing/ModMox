@@ -262,10 +262,11 @@ func test_a_buttons_hover_face_is_lightened_by_ten_percent() -> void:
 	await _open()
 	var made: Button = _screen.button("Start")
 	assert_gt(_top_light(made.get_theme_stylebox("hover")), _top_light(made.get_theme_stylebox("normal")))
-	var normal: StyleBoxTexture = DitherShading.button_plate(DeckbuilderLook.BUTTON, false, DeckboxScreen.BUTTON_HEIGHT)
-	var hover: StyleBoxTexture = DitherShading.button_plate(DeckbuilderLook.BUTTON.lightened(0.10), false, DeckboxScreen.BUTTON_HEIGHT)
-	assert_almost_eq(_top_light(made.get_theme_stylebox("normal")), _top_light(normal), 0.001)
-	assert_almost_eq(_top_light(made.get_theme_stylebox("hover")), _top_light(hover), 0.001)
+	# In the Steel Frame every button has (game ADR 0066), the hover's fill a tenth lighter.
+	var height: int = DeckboxScreen.BUTTON_HEIGHT
+	assert_eq(made.get_theme_stylebox("normal"), SteelFrame.roomy_plate(DeckbuilderLook.BUTTON, "normal", height, DeckbuilderLook.BUTTON_DISABLED))
+	assert_eq(made.get_theme_stylebox("hover"), SteelFrame.roomy_plate(DeckbuilderLook.BUTTON, "hover", height, DeckbuilderLook.BUTTON_DISABLED))
+	assert_eq(InspectorParts.HOVER_LIGHTEN, 0.10)
 
 
 func test_a_disabled_button_has_no_lip_and_a_clickable_one_does() -> void:

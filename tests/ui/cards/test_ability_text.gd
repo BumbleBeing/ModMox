@@ -110,6 +110,7 @@ const PRINTED: Dictionary[String, String] = {
 	"swamp": "({T}: Add {B}.)",
 	"taj_nar_swordsmith": "When this creature enters, you may pay {X}. If you do, search your library for an Equipment card with mana value X or less, put it onto the battlefield, then shuffle.",
 	"tangled_islet": "This land enters tapped.\n{T}: Add {G}.\n{T}: Add {U}.",
+	"temple_garden": "As this land enters, you may pay 2 life. If you don't, it enters tapped.\n{T}: Add {G}.\n{T}: Add {W}.",
 	"territorial_scythecat":"Trample\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"tethmos_high_priest": "Whenever you cast a spell that targets this creature, return target creature card with mana value 2 or less from your graveyard to the battlefield.",
 	"terror": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
@@ -118,6 +119,7 @@ const PRINTED: Dictionary[String, String] = {
 	"uthden_troll": "{R}: Regenerate this creature.",
 	"vanguard_of_brimaz": "Vigilance\nWhenever you cast a spell that targets this creature, create a 1/1 white Cat Soldier creature token with vigilance.",
 	"wall_of_stone": "Defender",
+	"wary_thespian": "When this creature enters, surveil 1.\nWhen this creature dies, surveil 1.",
 	"white_knight": "First strike\nProtection from black",
 	"whitemane_lion": "Flash\nWhen this creature enters, return a creature you control to its owner's hand.",
 	"wooded_ridgeline": "This land enters tapped.\n{T}: Add {R}.\n{T}: Add {G}.",
@@ -760,6 +762,10 @@ func test_the_static_abilities_no_authored_card_uses_yet_are_worded() -> void:
 	assert_eq(AbilityText.of_ability(DamageStaysAbility.new(), "this creature"), "Damage isn't removed from this creature during cleanup steps.")
 	assert_eq(AbilityText.of_ability(EntersTappedAbility.new(), "this land"), "This land enters tapped.")
 	assert_eq(AbilityText.of_ability(EntersTappedAbility.new(), "this creature"), "This creature enters tapped.")
+	var shock: AsEntersPayOrEntersTappedAbility = AsEntersPayOrEntersTappedAbility.new()
+	shock.cost = Scenario.pay_life(2)
+	assert_eq(AbilityText.of_ability(shock, "this land"), "As this land enters, you may pay 2 life. If you don't, it enters tapped.")
+	assert_eq(AbilityText.cost_words(Scenario.pay_life(2), "this land"), "Pay 2 life", "The Info Panel's Pay answer (game ADR 0067).")
 	assert_eq(AbilityText.of_ability(anthem, "this enchantment"), "Each white creature gets +1/+1.")
 	assert_eq(AbilityText.of_ability(Scenario.protection_from(Scenario.of_type(CardType.ARTIFACT)), "this creature"), "Protection from artifacts")
 	assert_eq(AbilityText.of_ability(HasteAbility.new(), "this creature"), "Haste")
@@ -1181,3 +1187,19 @@ func test_a_mana_value_filter_from_a_value_is_worded_with_its_number_or_x() -> v
 	var seeker: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.pay_x(seeking)])
 	assert_eq(AbilityText.of_ability(seeker, "this creature"), "When this creature enters, you may pay {X}. If you do, "
 		+ "search your library for an Equipment card with mana value X or less, put it onto the battlefield, then shuffle.")
+
+
+func test_surveil_is_worded_with_its_number_and_no_reminder() -> void:
+	var expected: Dictionary[String, MmAbility] = {
+		"When this creature enters, surveil 1.": Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.surveil(1)]),
+		"When this creature dies, surveil 1.": Scenario.triggered(Scenario.dies(IsSourceFilter.new()), [Scenario.surveil(1)]),
+		"Surveil 2.": _spell_doing(Scenario.surveil(2)),
+	}
+	for text: String in expected:
+		assert_eq(AbilityText.of_ability(expected[text], "this creature"), text, "CR 701.25a, without its reminder text.")
+
+
+func _spell_doing(effect: MmEffect) -> SpellAbility:
+	var spell: SpellAbility = SpellAbility.new()
+	spell.effects = [effect]
+	return spell

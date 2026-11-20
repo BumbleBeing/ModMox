@@ -19,6 +19,8 @@ const EDGE: float = 4.0
 const INSET: float = 12.0
 ## How tall an Inspector's buttons are, so their Dither Shading is painted for it: ten units.
 const BUTTON_HEIGHT: int = 40
+## The room a button keeps at each side of its text.
+const BUTTON_SIDE: int = 10
 ## The meta a titled panel keeps the room over its title in, for when it is shaded again.
 const TITLE_ROOM: StringName = &"title_room"
 ## Set on a shaded background whose painting is held off, and the painting itself.
@@ -102,20 +104,15 @@ static func toggle(text: String, font_size: int, palette: Palette) -> Button:
 	return button
 
 
-## Gives [param button] Dither Shading in every state, as the Deckbox's buttons have
-## (A596), and makes it BUTTON_HEIGHT tall so the shading is painted for it.
+## Gives [param button] the steel frame and Dither Shading in every state (A596, game ADR
+## 0066), and makes it BUTTON_HEIGHT tall so the shading is painted for it.
 static func shade_button(button: Button, palette: Palette) -> void:
 	button.custom_minimum_size.y = BUTTON_HEIGHT
 	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var fill: Color = palette.button
-	var radius: int = palette.button_radius
-	button.add_theme_stylebox_override("normal", DitherShading.button_plate(fill, false, BUTTON_HEIGHT, radius))
-	button.add_theme_stylebox_override("hover",
-			DitherShading.button_plate(fill.lightened(HOVER_LIGHTEN), false, BUTTON_HEIGHT, radius))
-	button.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT, radius))
-	button.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT, radius))
-	button.add_theme_stylebox_override("disabled",
-			DitherShading.disabled_plate(palette.button_disabled, BUTTON_HEIGHT, radius))
+	# In the steel frame every button has (game ADR 0066), with room at its sides as before.
+	for state: String in ButtonShading.STATES:
+		button.add_theme_stylebox_override(state,
+			SteelFrame.plate(palette.button, state, BUTTON_HEIGHT, false, palette.button_disabled, BUTTON_SIDE))
 
 
 ## A bordered panel with [param title] centered at its top in bold and a body under it, filled

@@ -23,6 +23,9 @@ var _needs_rewind: bool = false
 ## The legends kept so far in the legend rule's choices, until the state-based actions that
 ## wait for them are performed (CR 704.5j, ADR 0051).
 var _legends_kept: Array[int] = []
+## The land being played while its controller is asked whether to pay for it to enter
+## untapped (ADR 0052), or 0.
+var _land_entering_id: int = 0
 
 
 func _init(state: MmGameState) -> void:
@@ -43,6 +46,7 @@ func copy_for(state: MmGameState) -> TurnProcedure:
 	copy._resolution = null if _resolution == null else _resolution.copy_for(state)
 	copy._needs_rewind = _needs_rewind
 	copy._legends_kept = _legends_kept.duplicate()
+	copy._land_entering_id = _land_entering_id
 	return copy
 
 
@@ -63,6 +67,8 @@ func next_decision() -> MmPendingDecision:
 	while true:
 		if _state.is_batch_suspended():
 			return _state.replacement_decision()  # A143: whatever proposed it carries on after.
+		if _land_entering_id != 0:
+			return _entry_choice()
 		if _cast != null:
 			var casting: MmPendingDecision = _cast.next_decision()
 			if casting != null:
@@ -136,8 +142,10 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_legends_kept.append((decision as ChooseLegendToKeepDecision).candidate_ids[answer as int])  # next_decision() carries on.
 	elif decision is ChooseReplacementEffectDecision:
 		_state.choose_replacement_effect(answer as int)  # next_decision() carries on from here.
+	elif decision is ChooseYesOrNoDecision and (decision as ChooseYesOrNoDecision).entering_object_id != 0:
+		_finish_playing_land(answer as int == ChooseYesOrNoDecision.Choice.YES)
 	elif decision is ChooseObjectDecision or decision is ChooseCreatureTypeDecision or decision is ChooseCardsInLibraryDecision \
-			or decision is ChooseYesOrNoDecision or decision is ChooseXToPayDecision:
+			or decision is ChooseYesOrNoDecision or decision is ChooseXToPayDecision or decision is SurveilDecision:
 		_resolution.apply_answer(decision, answer)
 	elif decision is PayManaDecision and _cast == null and _resolution != null:
 		_resolution.apply_answer(decision, answer)  # ADR 0061: paying X as it resolves.
@@ -442,11 +450,46 @@ func _every_requirement_has_a_target(requirements: Array[TargetRequirement], pla
 
 
 ## CR 305.1: the land moves straight to the battlefield. The player keeps priority, and
-## taking an action means everyone must pass again before the step ends (CR 117.4).
+## taking an action means everyone must pass again before the step ends (CR 117.4). A land
+## that may be paid for to enter untapped asks first, while still in the hand, if its
+## controller can pay (CR 614.12, 119.4, ADR 0052); one who can't isn't asked, and it enters
+## tapped.
 func _play_land(action: PlayLandAction) -> void:
 	var land: MmGameObject = _state.object(action.object_id)
-	_state.perform(ZoneChangeEvent.new(land, _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.PLAY_LAND))
+	var asking: AsEntersPayOrEntersTappedAbility = _entry_cost_ability(land)
+	_land_entering_id = land.id
+	if asking == null or not asking.cost.can_pay(_state, land, land.controller_id):
+		_finish_playing_land(false)  # Otherwise next_decision() asks, and the answer finishes it.
+
+
+## Moves the land being played onto the battlefield, first paying what it
+## asks to enter untapped when [param pays]. The move itself never needs a replacement
+## choice, so it is performed at once.
+func _finish_playing_land(pays: bool) -> void:
+	var land: MmGameObject = _state.object(_land_entering_id) if _land_entering_id != 0 else null
+	_land_entering_id = 0
+	assert(land != null, "No land is being played.")
+	var move: ZoneChangeEvent = ZoneChangeEvent.new(land, _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.PLAY_LAND)
+	if pays:
+		_entry_cost_ability(land).cost.pay(_state, land, land.controller_id, [])
+		move.entry_cost_paid = true
+	_state.perform(move)
 	_passes_in_succession = 0
+
+
+## Whether to pay for the land being played to enter untapped.
+func _entry_choice() -> ChooseYesOrNoDecision:
+	var land: MmGameObject = _state.object(_land_entering_id)
+	return ChooseYesOrNoDecision.as_entering(land.controller_id, land.id, _entry_cost_ability(land).cost)
+
+
+## [param land]'s AsEntersPayOrEntersTappedAbility, read where it is now, standing for what
+## it would have on the battlefield (CR 614.12), or null.
+func _entry_cost_ability(land: MmGameObject) -> AsEntersPayOrEntersTappedAbility:
+	for ability: MmAbility in _state.characteristics_of(land).abilities:
+		if ability is AsEntersPayOrEntersTappedAbility:
+			return ability as AsEntersPayOrEntersTappedAbility
+	return null
 
 
 ## CR 605.3: a mana ability resolves immediately without using the stack, and the player

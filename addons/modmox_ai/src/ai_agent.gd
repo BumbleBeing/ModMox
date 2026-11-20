@@ -18,6 +18,12 @@ const MOST_PICKS_SIMULATED: int = 10
 const MOST_TYPES_SIMULATED: int = 3
 ## What a CHEAP Agent adds to an untapped permanent's worth as the target of its own Aura.
 const UNTAPPED_AURA_TARGET_BONUS: int = 1000
+## The least life the AI keeps when it pays life for a land to enter untapped, as Temple
+## Garden's "you may pay 2 life" (engine ADR 0052).
+const MIN_LIFE_AFTER_PAYING: int = 6
+## How many lands, controlled and in hand, the AI wants before it graveyards a land it
+## surveils: as many as it keeps when it discards (engine ADR 0068).
+const SURVEIL_LANDS: int = 6
 ## The color of mana each basic land type makes (CR 305.6), for ranking what a search finds.
 const BASIC_LAND_COLORS: Dictionary[String, MmMana.Type] = {
 	"Plains": MmMana.Type.WHITE, "Island": MmMana.Type.BLUE, "Swamp": MmMana.Type.BLACK,
@@ -175,6 +181,8 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _yes_or_no(decision as ChooseYesOrNoDecision, world, source, rng)
 	if decision is ChooseXToPayDecision:
 		return _choose_x_to_pay(decision as ChooseXToPayDecision, world, source, rng)
+	if decision is SurveilDecision:
+		return _surveil(decision as SurveilDecision, world)
 	assert(false, "AiAgent cannot answer %s." % decision.describe())
 	return null
 
@@ -507,9 +515,10 @@ func _targets_spells(world: MmGameState, cast: CastSpellAction) -> bool:
 
 
 ## The land to play: the one making the color the hand needs most. When one of them enters
-## tapped (EntersTappedAbility), an untapped land that lets a spell in hand be cast this
-## turn comes first, then a land that enters tapped, since its mana is not missed this
-## turn, then the other untapped lands.
+## tapped (EntersTappedAbility, or an entry cost it would not pay), an untapped land that
+## lets a spell in hand be cast this turn comes first, one that costs no life before one
+## that does, then a land that enters tapped, since its mana is not missed this turn, then
+## the other untapped lands.
 func _best_land(decision: PriorityDecision, world: MmGameState) -> int:
 	var needed: Dictionary[int, int] = AiPaymentPlanner.colors_needed_by_hand(world, decision.player_id)
 	var plays: Array[int] = []
@@ -518,8 +527,9 @@ func _best_land(decision: PriorityDecision, world: MmGameState) -> int:
 		var play: PlayLandAction = decision.actions[index] as PlayLandAction
 		if play != null:
 			plays.append(index)
-			any_enters_tapped = any_enters_tapped \
-				or world.characteristics_of(world.object(play.object_id)).has_ability(EntersTappedAbility)
+			var characteristics: MmCharacteristics = world.characteristics_of(world.object(play.object_id))
+			any_enters_tapped = any_enters_tapped or characteristics.has_ability(EntersTappedAbility) \
+				or characteristics.has_ability(AsEntersPayOrEntersTappedAbility)
 	var best: int = -1
 	var best_rank: int = -1
 	var best_need: int = -1
@@ -532,10 +542,11 @@ func _best_land(decision: PriorityDecision, world: MmGameState) -> int:
 			need = maxi(need, needed.get(type, 0))
 		var rank: int = 0
 		if any_enters_tapped:
-			if characteristics.has_ability(EntersTappedAbility):
+			var paid_for: bool = characteristics.has_ability(AsEntersPayOrEntersTappedAbility)
+			if characteristics.has_ability(EntersTappedAbility) or (paid_for and not _pays_to_enter(world, land)):
 				rank = 1
 			elif _unlocks_a_spell(world, decision.player_id, made):
-				rank = 2
+				rank = 2 if paid_for else 3
 		if rank > best_rank or (rank == best_rank and need > best_need):
 			best = index
 			best_rank = rank
@@ -923,12 +934,21 @@ func _choose_mode(decision: ChooseModeDecision, world: MmGameState, source: MmSi
 ## Whether to pay a cost so as not to be countered, as ward's (ADR 0062): CHEAP pays, since
 ## it is asked only when it can and the spell or ability was worth casting; FULL simulates
 ## both, with paying the default.
+## Whether to pay for a land to enter untapped (engine ADR 0052): CHEAP as _pays_to_enter()
+## says; FULL simulates both, with that answer the default.
 func _yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	_reason = Reason.BEST_SCORE
-	var cheap: int = ChooseYesOrNoDecision.Choice.YES if decision.cost != null else _cheap_yes_or_no(decision, world)
+	var cheap: int = ChooseYesOrNoDecision.Choice.YES
+	if decision.entry_cost != null:
+		var pays: bool = _pays_to_enter(world, world.object(decision.entering_object_id))
+		cheap = ChooseYesOrNoDecision.Choice.YES if pays else ChooseYesOrNoDecision.Choice.NO
+	elif decision.cost == null:
+		cheap = _cheap_yes_or_no(decision, world)
 	if mode == Mode.CHEAP:
 		return cheap
-	var offered: Array[MmEffect] = [decision.effect]
+	var offered: Array[MmEffect] = []
+	if decision.effect != null:
+		offered.append(decision.effect)
 	var other: int = ChooseYesOrNoDecision.Choice.NO if cheap == ChooseYesOrNoDecision.Choice.YES \
 		else ChooseYesOrNoDecision.Choice.YES
 	var options: Array[int] = [cheap, other]
@@ -983,6 +1003,21 @@ static func xs_worth_paying(decision: ChooseXToPayDecision, world: MmGameState) 
 	return worth
 
 
+## Whether to pay for [param land] to enter untapped, as Temple Garden's 2 life (engine
+## ADR 0052): only when its mana lets a spell in hand be cast this turn and its controller
+## keeps at least MIN_LIFE_AFTER_PAYING life.
+func _pays_to_enter(world: MmGameState, land: MmGameObject) -> bool:
+	var characteristics: MmCharacteristics = world.characteristics_of(land)
+	var cost: PayLifeCost = null
+	for ability: MmAbility in characteristics.abilities:
+		if ability is AsEntersPayOrEntersTappedAbility:
+			cost = (ability as AsEntersPayOrEntersTappedAbility).cost as PayLifeCost
+	if cost == null or not cost.can_pay(world, land, land.controller_id):
+		return false  # Later: an entry cost other than life, once a card has one.
+	return world.player(land.controller_id).life - cost.amount >= MIN_LIFE_AFTER_PAYING \
+		and _unlocks_a_spell(world, land.controller_id, _mana_made_by_land(characteristics))
+
+
 func _cheap_yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState) -> int:
 	var me: int = decision.player_id
 	var harmful: bool = AiTiming.is_harmful([decision.effect])
@@ -1033,6 +1068,47 @@ func _search(decision: ChooseCardsInLibraryDecision, world: MmGameState, source:
 			ranked.erase(best)
 			ranked.push_front(best)
 	return ranked.slice(0, decision.most)
+
+
+## What to graveyard and what to keep with a surveil (engine ADR 0068), FULL and CHEAP alike:
+## one-step simulation sees neither the library's top nor the graveyard, so it would score
+## every answer the same. From the top down, a land is kept while the lands its player
+## controls and holds, and those kept above it, number fewer than SURVEIL_LANDS, and a spell
+## is kept when that many lands and one more would cast it. Kept lands go on top while the
+## player is short of lands, then the kept spells, cheapest first.
+func _surveil(decision: SurveilDecision, world: MmGameState) -> Array:
+	var me: int = decision.player_id
+	var lands: int = _lands_controlled(world, me)
+	for card: MmGameObject in world.player(me).hand.objects():
+		if world.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND):
+			lands += 1
+	var is_short: bool = lands < SURVEIL_LANDS
+	var graveyarded: Array[int] = []
+	var kept_lands: Array[int] = []
+	var kept_spells: Array[int] = []
+	for id: int in decision.card_ids:
+		var characteristics: MmCharacteristics = world.characteristics_of(world.object(id))
+		if characteristics.has_card_type(MmCardTypes.CardType.LAND):
+			if lands < SURVEIL_LANDS:
+				kept_lands.append(id)
+				lands += 1
+			else:
+				graveyarded.append(id)
+		elif characteristics.mana_value() <= lands + 1:
+			kept_spells.append(id)
+		else:
+			graveyarded.append(id)
+	kept_spells.sort_custom(func(first: int, second: int) -> bool:
+		return world.characteristics_of(world.object(first)).mana_value() < world.characteristics_of(world.object(second)).mana_value())
+	var kept: Array[int] = []
+	if is_short:
+		kept.append_array(kept_lands)
+		kept.append_array(kept_spells)
+	else:
+		kept.append_array(kept_spells)
+		kept.append_array(kept_lands)
+	_reason = Reason.LAND_COUNT
+	return [graveyarded, kept]
 
 
 ## [param candidate_ids] best first for [param me] to find: a basic land of the color their

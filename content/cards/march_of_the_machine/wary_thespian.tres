@@ -1,0 +1,70 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_wwda7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_1uavi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_uahdl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_c3lpq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_tn7vi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/surveil_effect.gd" id="4_o132k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_ec8ke"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_dccp2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_037q2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_xroh0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_ibt2f"]
+
+[sub_resource type="Resource" id="Resource_khtav"]
+script = ExtResource("3_tn7vi")
+value = 1
+
+[sub_resource type="Resource" id="Resource_b7a33"]
+script = ExtResource("4_o132k")
+amount = SubResource("Resource_khtav")
+
+[sub_resource type="Resource" id="Resource_t8w24"]
+script = ExtResource("8_xroh0")
+
+[sub_resource type="Resource" id="Resource_hp6bn"]
+script = ExtResource("9_ibt2f")
+filter = SubResource("Resource_t8w24")
+
+[sub_resource type="Resource" id="Resource_nqq5p"]
+script = ExtResource("6_dccp2")
+trigger = SubResource("Resource_hp6bn")
+effects = Array[ExtResource("2_1uavi")]([SubResource("Resource_b7a33")])
+
+[sub_resource type="Resource" id="Resource_54bl7"]
+script = ExtResource("3_tn7vi")
+value = 1
+
+[sub_resource type="Resource" id="Resource_15p6e"]
+script = ExtResource("4_o132k")
+amount = SubResource("Resource_54bl7")
+
+[sub_resource type="Resource" id="Resource_b7h72"]
+script = ExtResource("8_xroh0")
+
+[sub_resource type="Resource" id="Resource_0syt6"]
+script = ExtResource("9_ibt2f")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_b7h72")
+
+[sub_resource type="Resource" id="Resource_4oi34"]
+script = ExtResource("6_dccp2")
+trigger = SubResource("Resource_0syt6")
+effects = Array[ExtResource("2_1uavi")]([SubResource("Resource_15p6e")])
+
+[sub_resource type="Resource" id="Resource_0yn4k"]
+script = ExtResource("2_uahdl")
+generic = 1
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_c3lpq")
+name = "Wary Thespian"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Druid"])
+mana_cost = SubResource("Resource_0yn4k")
+power = 3
+toughness = 1
+abilities = Array[ExtResource("1_wwda7")]([SubResource("Resource_nqq5p"), SubResource("Resource_4oi34")])

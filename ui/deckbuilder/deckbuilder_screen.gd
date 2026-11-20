@@ -1573,17 +1573,11 @@ func _shade(button: Button, fill: Color, margin_right: int = 10) -> void:
 
 func _paint_shade(button: Button, fill: Color, margin_right: int) -> void:
 	var height: int = maxi(1, int(button.size.y))
-	var radius: int = DeckbuilderLook.BUTTON_RADIUS
-	var faces: Dictionary[String, StyleBoxTexture] = {
-		"normal": DitherShading.button_plate(fill, false, height, radius),
-		"hover": DitherShading.button_plate(fill.lightened(InspectorParts.HOVER_LIGHTEN), false, height, radius),
-		"pressed": DitherShading.button_plate(fill, true, height, radius),
-		"hover_pressed": DitherShading.button_plate(fill, true, height, radius),
-		"disabled": DitherShading.disabled_plate(DeckbuilderLook.BUTTON_DISABLED, height, radius),
-	}
-	for state: String in faces:
-		faces[state].content_margin_right = margin_right
-		button.add_theme_stylebox_override(state, faces[state])
+	# In the Steel Frame every button has (game ADR 0066); a copy, as its margin is its own.
+	for state: String in ButtonShading.STATES:
+		var face: StyleBoxTexture = SteelFrame.roomy_plate(fill, state, height, DeckbuilderLook.BUTTON_DISABLED).duplicate() as StyleBoxTexture
+		face.content_margin_right = margin_right
+		button.add_theme_stylebox_override(state, face)
 
 
 ## A small dark pill at the right of [param button] for a number.

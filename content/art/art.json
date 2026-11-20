@@ -989,6 +989,16 @@
 		"scryfall_id": "4a325fb4-fe71-47f1-9a2f-05b8cfe88fe6",
 		"set": "dmu"
 	},
+	"temple_garden": {
+		"artist": "Rob Alexander",
+		"collector_number": "284",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "794a2b79-8c55-4423-8843-7e6e96f84071",
+		"set": "rav"
+	},
 	"territorial_scythecat": {
 		"artist": "Wisnu Tan",
 		"collector_number": "213",
@@ -1128,6 +1138,16 @@
 		],
 		"scryfall_id": "140e567c-6e4a-42b0-8084-d6c9695ae802",
 		"set": "lea"
+	},
+	"wary_thespian": {
+		"artist": "Billy Christian",
+		"collector_number": "215",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "675b29bf-0b64-410f-9a92-c88e5615c27f",
+		"set": "mom"
 	},
 	"water_elemental": {
 		"artist": "Jeff A. Menges",

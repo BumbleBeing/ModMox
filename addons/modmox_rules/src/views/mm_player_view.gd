@@ -69,8 +69,11 @@ var loss_reasons: Dictionary[int, MmPlayer.LossReason] = {}
 
 ## Builds [param viewing_player_id]'s view of [param state]. [param priority_holder_id]
 ## is the player currently holding priority, or MmGameState.NO_PLAYER. With
-## [param is_searching], the viewer is searching their own library (ADR 0057).
-static func build(state: MmGameState, viewing_player_id: int, priority_holder_id: int, is_searching: bool = false) -> MmPlayerView:
+## [param is_searching], the viewer is searching their own library (ADR 0057); the cards of
+## their own library in [param looked_at_ids] are shown too, as a pending surveil shows
+## them (ADR 0068).
+static func build(state: MmGameState, viewing_player_id: int, priority_holder_id: int, is_searching: bool = false,
+		looked_at_ids: Array[int] = []) -> MmPlayerView:
 	var view: MmPlayerView = MmPlayerView.new()
 	view.viewer_id = viewing_player_id
 	view.is_searching_library = is_searching
@@ -101,7 +104,8 @@ static func build(state: MmGameState, viewing_player_id: int, priority_holder_id
 		var seen: Dictionary[int, bool] = state.seen_library_ids(player.id, viewing_player_id)
 		var sees_all: bool = is_searching and player.id == viewing_player_id
 		for card: MmGameObject in player.library.objects():
-			library.append(MmObjectView.of(state, card) if sees_all or seen.has(card.id) else null)
+			var is_looked_at: bool = player.id == viewing_player_id and looked_at_ids.has(card.id)
+			library.append(MmObjectView.of(state, card) if sees_all or seen.has(card.id) or is_looked_at else null)
 		view.libraries[player.id] = library
 		var known: Array[MmObjectView] = []
 		if player.id != viewing_player_id:

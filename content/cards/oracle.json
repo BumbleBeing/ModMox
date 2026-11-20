@@ -984,6 +984,15 @@
 		"set_name": "Dominaria United",
 		"type_line": "Land — Forest Island"
 	},
+	"temple_garden": {
+		"mana_cost": "",
+		"name": "Temple Garden",
+		"oracle_id": "f413a83d-a40d-434c-b20a-4c707c0527fa",
+		"oracle_text": "({T}: Add {G} or {W}.)\nAs this land enters, you may pay 2 life. If you don't, it enters tapped.",
+		"rarity": "rare",
+		"set_name": "Ravnica: City of Guilds",
+		"type_line": "Land — Forest Plains"
+	},
 	"territorial_scythecat": {
 		"mana_cost": "{2}{G}",
 		"name": "Territorial Scythecat",
@@ -1067,6 +1076,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "8",
 		"type_line": "Creature — Wall"
+	},
+	"wary_thespian": {
+		"mana_cost": "{1}{G}",
+		"name": "Wary Thespian",
+		"oracle_id": "448cc829-1596-4aec-b180-c0c1e0566f6b",
+		"oracle_text": "When this creature enters or dies, surveil 1. (Look at the top card of your library. You may put it into your graveyard.)",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "March of the Machine",
+		"toughness": "1",
+		"type_line": "Creature — Cat Druid"
 	},
 	"water_elemental": {
 		"mana_cost": "{3}{U}{U}",

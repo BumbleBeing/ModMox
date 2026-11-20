@@ -66,6 +66,8 @@ const PAY_X_FORMAT: String = "Pay {%d}"
 ## What it reads, and cannot be pressed, while a question that spends mana has no Selected
 ## Answer yet (game ADR 0066).
 const CHOOSE_AN_ANSWER: String = "Choose an answer"
+## What the Pass Button reads while the Hero surveils (game ADR 0069).
+const DONE: String = "Done"
 ## The size of the window that asks which replacement effect applies first.
 const REPLACEMENT_WINDOW_SIZE: Vector2 = Vector2(470, 260)
 ## The mode window's width, the room each mode's entry takes, and the room round them.
@@ -170,6 +172,15 @@ var _choice_window: ZoneWindow
 var _choice_entries: Array[ZoneEntry] = []
 ## Where the Hero chooses a creature type (game ADR 0053), kept through redraws.
 var _creature_type_window: CreatureTypeWindow
+## The Hero's half-made answer to a surveil, and the window it is made in (game ADR 0069),
+## kept through redraws; the decision the window was placed for; the cards sent that have
+## landed on the Graveyard pile, which counts them; and the cards sent when Done answered,
+## which never fly a second time.
+var _surveil: SurveilChoice = SurveilChoice.new()
+var _surveil_window: SurveilWindow
+var _surveil_placed_for: MmPendingDecision = null
+var _surveil_landed: Array[int] = []
+var _sent_at_done: Array[int] = []
 ## What the entry under the cursor has marked on the board.
 var _marked: Array[Control] = []
 ## How long a Glow or mark takes to ease in or out: none until the game's pace is set.
@@ -328,6 +339,12 @@ func _ready() -> void:
 	_creature_type_window.pointed.connect(_on_creature_type_pointed)
 	_creature_type_window.escaped.connect(press_key.bind(KEY_ESCAPE))
 	add_child(_creature_type_window)
+	_surveil_window = SurveilWindow.new()
+	_surveil_window.hide()
+	_surveil_window.card_clicked.connect(_pick_surveilled)
+	_surveil_window.moved.connect(_move_surveilled)
+	_surveil_window.graveyard_pressed.connect(_send_surveilled)
+	add_child(_surveil_window)
 	for player_id: int in [HERO, VILLAIN]:
 		var emblems: ZoneWindow = ZoneWindow.new("Emblems", true, PlayerPanel.GOLD)
 		emblems.size = Vector2(300, 220)
@@ -580,7 +597,7 @@ func _apply_speed() -> void:
 ## in a real encounter). Tests and screenshots leave it at none.
 func set_ease_seconds(seconds: float) -> void:
 	_ease_seconds = seconds
-	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
+	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _surveil_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
 		window.ease_seconds = seconds
 	for key: String in _pile_windows:
 		_pile_windows[key].ease_seconds = seconds
@@ -799,6 +816,11 @@ func pass_priority() -> void:
 	elif _trigger_order.is_active():
 		if not _is_paused:
 			_answer(_trigger_order.answer())
+	elif _surveil.is_active():
+		# Game ADR 0069: Done gives the cards sent and the row's order, and can always be.
+		if not _is_paused:
+			_sent_at_done = _surveil.sent()
+			_answer(_surveil.answer())
 	elif _answer_asked != null:
 		# Game ADR 0066: it gives the Selected Answer, and nothing while there is none.
 		if not _is_paused and _selected_answer != InfoPanel.NOTHING:
@@ -852,10 +874,11 @@ func _step_x(by: int) -> void:
 		_redraw()
 
 
-## Whether the Hero is asked whether to pay a cost, as ward's (ADR 0062).
+## Whether the Hero is asked whether to pay a cost, as ward's (ADR 0062) or a land's to
+## enter untapped (game ADR 0067).
 func _is_asked_to_pay() -> bool:
 	var asked: ChooseYesOrNoDecision = _snapshot.decision as ChooseYesOrNoDecision if _snapshot != null else null
-	return asked != null and asked.cost != null
+	return asked != null and (asked.cost != null or asked.entry_cost != null)
 
 
 ## Undoes the Hero's last click of a half-made selection or choice of cards, or their last move of a trigger,
@@ -868,6 +891,8 @@ func undo() -> void:
 		return
 	elif not _is_paused and _trigger_order.undo():
 		_show_trigger_order()
+	elif not _is_paused and _surveil.is_active() and _surveil.can_undo():
+		_undo_surveilled()
 	elif not _is_paused and _selection.undo():
 		_error = ""
 		_redraw()
@@ -887,7 +912,7 @@ func leave(scene: String) -> void:
 func _is_covered(cursor: Vector2) -> bool:
 	if _option_menu.is_open():
 		return true
-	var windows: Array[Control] = [_stack_window, _choice_window, _creature_type_window]
+	var windows: Array[Control] = [_stack_window, _choice_window, _creature_type_window, _surveil_window]
 	if _overlay.is_open():
 		windows.append(_overlay)
 	windows.append_array(_emblem_windows.values())
@@ -1021,6 +1046,10 @@ func _inspectable_entries() -> Dictionary[int, Control]:
 		for object_id: int in pile.entries():
 			if object_id != PileWindow.UNKNOWN and pile.face_of(object_id) != null:
 				entries[object_id] = pile.face_of(object_id)
+	if Easing.is_shown(_surveil_window):
+		for object_id: int in _surveil_window.entries():
+			if _surveil_window.face_of(object_id) != null:
+				entries[object_id] = _surveil_window.face_of(object_id)
 	var top: MmObjectView = _seen_library_top(HERO) if _snapshot != null else null
 	if top != null and is_instance_valid(_library_top_face) and not entries.has(top.id):
 		entries[top.id] = _library_top_face
@@ -1236,6 +1265,11 @@ func creature_type_window() -> CreatureTypeWindow:
 	return _creature_type_window
 
 
+## Where the Hero surveils (game ADR 0069), kept through redraws.
+func surveil_window() -> SurveilWindow:
+	return _surveil_window
+
+
 ## What takes a click on the choice window's entry number [param index].
 func choice_catcher(index: int) -> ClickCatcher:
 	return ClickCatcher.of(_choice_entries[index])
@@ -1416,6 +1450,9 @@ func _show(snapshot: EncounterSnapshot) -> void:
 		_trigger_order = TriggerOrder.new(order)
 	if not _picks.is_for(snapshot.decision if CardPicks.covers(snapshot.decision) else null):
 		_picks = CardPicks.new(snapshot.decision)
+	if not _surveil.is_for(snapshot.decision if SurveilChoice.covers(snapshot.decision) else null):
+		_surveil = SurveilChoice.new(snapshot.decision if SurveilChoice.covers(snapshot.decision) else null)
+		_surveil_landed.clear()
 	var asked_x: ChooseXToPayDecision = snapshot.decision as ChooseXToPayDecision
 	if asked_x != _x_asked:
 		_x_asked = asked_x
@@ -1425,7 +1462,8 @@ func _show(snapshot: EncounterSnapshot) -> void:
 		if snapshot.decision is ChooseYesOrNoDecision or snapshot.decision is ChooseXToPayDecision else null
 	if asked_answer != _answer_asked:
 		_answer_asked = asked_answer
-		var is_free: bool = asked_answer is ChooseYesOrNoDecision and (asked_answer as ChooseYesOrNoDecision).cost == null
+		var is_free: bool = asked_answer is ChooseYesOrNoDecision and (asked_answer as ChooseYesOrNoDecision).cost == null \
+			and (asked_answer as ChooseYesOrNoDecision).entry_cost == null
 		_selected_answer = InfoPanel.AFFIRMATIVE if is_free else InfoPanel.NOTHING
 	var previous: EncounterSnapshot = _snapshot
 	# Nothing flies through the pregame, whose cards the overlay holds.
@@ -1448,6 +1486,7 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	# redraw, and where it lands from what the redraw draws.
 	_has_taken_off = false
 	_flight_layer.show_snapshot(previous, snapshot, redraw)
+	_sent_at_done.clear()
 	if _has_taken_off:
 		_pose_faces()
 		_hide_landing_places()
@@ -1672,7 +1711,7 @@ func _open_pile(key: String) -> void:
 func _fill_pile_window(key: String) -> void:
 	var view: MmPlayerView = _snapshot.view
 	var player_id: int = HERO if key.begins_with("hero") else VILLAIN
-	var cards: Array = view.graveyards.get(player_id, [])
+	var cards: Array = _graveyard_shown(player_id)
 	var zone_name: String = "Graveyard"
 	if key.ends_with("exile"):
 		cards = view.exiles.get(player_id, [])
@@ -1949,6 +1988,9 @@ func _redraw() -> void:
 		_show_confirm(_selection.confirm_text(), _selection.is_complete(), _selection.can_undo())
 	elif _trigger_order.is_active():
 		_show_confirm("Confirm order", true, _trigger_order.can_undo())
+	elif _surveil.is_active():
+		_panels[HERO].show_undo(_surveil.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
+		_show_confirm(DONE, true, _surveil.can_undo())
 	_add_player_stepper()
 	# Like the Hero's, the Villain's hand eases aside for a drawn card that has landed.
 	_villain_hand.show_hand(view.hand_sizes.get(VILLAIN, 0) - _flight_layer.drawn_in_air(VILLAIN).size(),
@@ -1962,8 +2004,9 @@ func _redraw() -> void:
 	_draw_row(_permanents(view, HERO, true), regions["hero_lands"], glow, on_lands)
 	for player_id: int in [VILLAIN, HERO]:
 		var who: String = "hero" if player_id == HERO else "villain"
-		_draw_library(view.library_sizes.get(player_id, 0), who + "_library", regions[who + "_library"])
-		var graveyard: Array = view.graveyards.get(player_id, [])
+		var landed: int = _surveil_landed.size() if player_id == HERO else 0
+		_draw_library(view.library_sizes.get(player_id, 0) - landed, who + "_library", regions[who + "_library"])
+		var graveyard: Array = _graveyard_shown(player_id)
 		var exile: Array = view.exiles.get(player_id, [])
 		_draw_pile("Graveyard", graveyard, graveyard, who + "_graveyard", regions[who + "_graveyard"])
 		# The pile counts its Tucked Cards and does not show them (ADR 0043).
@@ -1979,6 +2022,7 @@ func _redraw() -> void:
 	_mark_asked_targets()
 	_fill_choice_window(view)
 	_fill_creature_type_window(view, regions)
+	_fill_surveil_window(regions)
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
 	_info.show_x(_x_to_pay)
 	_info.show_selected(_selected_answer)
@@ -2035,7 +2079,7 @@ func _place_windows(battlefield: Rect2) -> void:
 		_emblem_windows[HERO].position = Vector2(battlefield.position.x + 400, battlefield.end.y - 240)
 		_emblem_windows[VILLAIN].position = Vector2(battlefield.position.x + 400, battlefield.position.y + 10)
 		_potions_window.position = Vector2(battlefield.position.x + 720, battlefield.end.y - 180)
-	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
+	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _surveil_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
 		window.bounds = battlefield
 		window.fit()
 	for key: String in _pile_windows:
@@ -2624,6 +2668,13 @@ func _on_took_off(route: CardFlights.Route) -> void:
 ## hand with a redraw, made from the next frame so that an open Option Menu can wait for
 ## it; a card that lands in the Hero's hand some other way shows there at once.
 func _on_landed(route: CardFlights.Route) -> void:
+	if route.first_object_id == route.object_id and _surveil.sent().has(route.object_id) \
+			and not _surveil_landed.has(route.object_id):
+		# Game ADR 0069: a card sent from the Surveil window counts on the pile once it lands.
+		_surveil_landed.append(route.object_id)
+		if not _is_redrawing:
+			_redraw()
+		return
 	var is_drawn: bool = route.from_zone_kind == MmZone.Kind.LIBRARY and route.to_zone_kind == MmZone.Kind.HAND
 	if is_drawn:
 		_has_draw_landed = not _is_redrawing
@@ -2657,6 +2708,8 @@ func _flight_place(route: CardFlights.Route, is_landing: bool) -> FacePose:
 	var owner_id: int = route.to_owner_id if is_landing else route.from_owner_id
 	var object_id: int = route.object_id if is_landing else route.first_object_id
 	var is_drawn: bool = is_landing and route.from_zone_kind == MmZone.Kind.LIBRARY and route.to_zone_kind == MmZone.Kind.HAND
+	if not is_landing and _sent_at_done.has(object_id):
+		return null  # Game ADR 0069: it flew from the Surveil window already.
 	if zone_kind == MmZone.Kind.EXILE:
 		# The one exile is drawn as a pile for each player, the card's owner's.
 		owner_id = _exile_owners.get(object_id, owner_id)
@@ -2836,8 +2889,13 @@ func _show_hand() -> void:
 	var flying_in: Array[int] = _flight_layer.flying_into_hand(HERO)
 	hand.arriving = _flight_layer.drawn_in_air(HERO)
 	var is_discarding: bool = _picks.is_active() and _picks.is_discarding() and not _snapshot.is_over()
+	# Game ADR 0067: a land asked whether to pay to enter untapped waits here, glowing white.
+	var entering: ChooseYesOrNoDecision = _snapshot.decision as ChooseYesOrNoDecision
+	var entering_id: int = entering.entering_object_id if entering != null and entering.player_id == HERO else 0
 	for in_hand: MmObjectView in _snapshot.view.hand:
 		var glow: Array[Color] = _glow_colors(in_hand.id, _clicks)
+		if entering_id != 0 and in_hand.id == entering_id:
+			glow = [PICKED_GLOW]
 		if is_discarding:
 			glow = []
 			if _picks.is_picked(in_hand.id):
@@ -3045,7 +3103,7 @@ func _fill_stack_window(view: MmPlayerView) -> void:
 			_stack_colors.color_of(seen.id))
 		if is_from_potion:
 			# Its Potion is gone, but its ability still shows which it was (A531).
-			entry.show_potion(stack_look.art_key)
+			entry.show_potion(stack_look.art_key, _snapshot.rarity_of(seen.id) if _snapshot.has_rarity(seen.id) else null)
 		if not _clicks.options_of(seen.id).is_empty():
 			# A spell that can be chosen as a target is clicked here (A354).
 			entry.make_targetable().clicked.connect(_on_object_clicked.bind(seen.id))
@@ -3267,6 +3325,101 @@ func _fill_creature_type_window(view: MmPlayerView, regions: Dictionary) -> void
 	_creature_type_window.open_for_typing()
 
 
+## The Surveil window is open exactly while the Hero surveils (game ADR 0069). It opens
+## left of the piles over the Hero's side, as the Library window does, for each new surveil,
+## and keeps its place and size while that is asked.
+func _fill_surveil_window(regions: Dictionary) -> void:
+	if not _surveil.is_active() or _snapshot.is_over():
+		_surveil_window.forget()
+		_surveil_window.set_open(false)
+		_surveil_placed_for = null
+		return
+	var battlefield: Rect2 = regions["battlefield"]
+	_surveil_window.bounds = battlefield
+	if _surveil_placed_for != _snapshot.decision:
+		_surveil_placed_for = _snapshot.decision
+		_surveil_window.forget()
+		_surveil_window.size = SurveilWindow.opening_size()
+		_surveil_window.position = Vector2((regions["piles"] as Rect2).position.x - _surveil_window.size.x - 5.0 * SurveilWindow.UNIT,
+			battlefield.end.y - _surveil_window.size.y - 2.0 * SurveilWindow.UNIT)
+		_surveil_window.fit()
+		_surveil_window.open()
+	var looks: Dictionary[int, CardLook] = {}
+	for object_id: int in _surveil.row():
+		looks[object_id] = _snapshot.look_of(object_id)
+	_surveil_window.show_choice(_surveil, looks)
+	_surveil_window.move_to_front()
+
+
+## A card of the Surveil window was clicked: it is selected, or let go.
+func _pick_surveilled(object_id: int) -> void:
+	if _is_paused or not _surveil.is_active():
+		return
+	_surveil.pick(object_id)
+	_redraw()
+
+
+## A card of the Surveil window was dragged to another place in its row. A drag that moves
+## nothing, or one while paused, is drawn back where the choice has it.
+func _move_surveilled(from: int, to: int) -> void:
+	if not _is_paused and _surveil.is_active():
+		_surveil.move_to(from, to)
+	_redraw()
+
+
+## "Graveyard" was pressed: the selected card flies out of the Surveil window straight onto
+## the Hero's Graveyard pile, which counts it once it lands. Nothing is answered (game ADR
+## 0069).
+func _send_surveilled() -> void:
+	if _is_paused or not _surveil.is_active():
+		return
+	var face: CardFace = _surveil_window.face_of(_surveil.picked())
+	var start: FacePose = null
+	if face != null:
+		var rect: Rect2 = face.get_global_rect()
+		start = FacePose.of(rect.get_center() - global_position, rect.size.y, 0.0)
+	var sent: int = _surveil.send_picked()
+	if sent == SurveilChoice.NONE:
+		return
+	if _flight_layer.seconds > 0.0 and start != null:
+		var route: CardFlights.Route = CardFlights.Route.new()
+		route.first_object_id = sent
+		route.object_id = sent
+		route.card_id = _seen(sent).card_id if _seen(sent) != null else 0
+		route.from_zone_kind = MmZone.Kind.LIBRARY
+		route.from_owner_id = HERO
+		route.to_zone_kind = MmZone.Kind.GRAVEYARD
+		route.to_owner_id = HERO
+		_flight_layer.put_in_air(route, start, FlightCard.Kind.CARD, _snapshot.look_of(sent))
+	else:
+		_surveil_landed.append(sent)
+	_redraw()
+
+
+## Takes back the last card sent or move made in the Surveil window; a card taken back while
+## it flies comes down at once, and leaves the Graveyard pile.
+func _undo_surveilled() -> void:
+	var sent_before: Array[int] = _surveil.sent()
+	_surveil.undo()
+	for object_id: int in sent_before:
+		if not _surveil.sent().has(object_id):
+			_flight_layer.cancel(object_id)
+			_surveil_landed.erase(object_id)
+	_redraw()
+
+
+## What [param player_id]'s Graveyard pile shows: their graveyard, and while the Hero
+## surveils, the cards they sent there that have landed, the last on top (game ADR 0069).
+func _graveyard_shown(player_id: int) -> Array:
+	var cards: Array = _snapshot.view.graveyards.get(player_id, []).duplicate()
+	if player_id == HERO:
+		for object_id: int in _surveil_landed:
+			var seen: MmObjectView = _seen(object_id)
+			if seen != null:
+				cards.append(seen)
+	return cards
+
+
 func _choose_creature_type(answer: int) -> void:
 	if not _is_paused and _snapshot.decision is ChooseCreatureTypeDecision:
 		_answer(answer)
@@ -3395,7 +3548,7 @@ func _fill_potions_window() -> void:
 	for potion: MmObjectView in potions:
 		var look: CardLook = _snapshot.look_of(potion.id)
 		var entry: ZoneEntry = ZoneEntry.new("", potion.name, "", PlayerPanel.POTION_COLOR)
-		entry.show_picture(PotionArt.new(look.art_key, ZoneEntry.ART_SIZE, true))
+		entry.show_picture(PotionArt.new(look.art_key, ZoneEntry.ART_SIZE, true, _snapshot.rarity_of(potion.id)))
 		var lines: Array[String] = ["%s · %s" % [look.held_type_line(), Inspector.RARITY_NAMES[_snapshot.rarity_of(potion.id)]]]
 		lines.append_array(look.rules_lines)
 		entry.show_lines(lines)
@@ -3461,5 +3614,4 @@ func _draw_banner(view: MmPlayerView) -> void:
 
 ## Dither Shades [param button], its size already set, as a WindowLook button.
 static func _shade_as_window(button: Button) -> void:
-	ButtonShading.shade(button, WindowLook.BUTTON, ButtonShading.DISABLED, ButtonShading.SIDE, true,
-		WindowLook.BUTTON_RADIUS)
+	ButtonShading.shade(button, WindowLook.BUTTON, ButtonShading.DISABLED)

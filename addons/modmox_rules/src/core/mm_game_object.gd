@@ -319,7 +319,8 @@ func set_target(index: int, target: MmReference) -> void:
 
 
 ## Event-only: [param player_id] saw this card go into a library, or saw it revealed
-## as it went into a hand (ADR 0057).
+## as it went into a hand (ADR 0057), or kept it on top of their library with a surveil
+## (ADR 0068).
 func make_known_to(player_id: int) -> void:
 	if not known_to_player_ids.has(player_id):
 		known_to_player_ids.append(player_id)

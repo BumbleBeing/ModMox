@@ -331,7 +331,8 @@ func _build_row() -> void:
 		_x_stepper.raised.connect(func() -> void: x_raised.emit())
 		add_child(_x_stepper)
 	else:
-		_affirmative = _button(YES if _owed_text == "" else PAY_FORMAT % _owed_text.strip_edges(), left, is_yes)
+		var words: String = YES if _owed_text == "" else PAY_FORMAT % _owed_text.strip_edges()
+		_affirmative = _button(_asked.affirmative if _asked.affirmative != "" else words, left, is_yes)
 		_affirmative.pressed.connect(func() -> void: answer_selected.emit(AFFIRMATIVE))
 	_no = _button(NO, right, _selected == NO_ANSWER)
 	_no.pressed.connect(func() -> void: answer_selected.emit(NO_ANSWER))

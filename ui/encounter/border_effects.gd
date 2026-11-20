@@ -8,6 +8,9 @@ extends RefCounted
 ## A Glow and a mark ease in and out over the seconds they are given, and a Glow changing
 ## color crossfades. Given none, as in tests and screenshots, they come and go at once. One
 ## taken away is gone at once to anyone who asks; it is only drawn while it fades.
+##
+## Round a button drawn with a painted plate, a Glow of one color hugs the plate's own
+## shape, corners, lip and all (game ADR 0066); round anything else it is rounded.
 
 const GLOW: String = "Glow"
 const POINTER: String = "Pointer"
@@ -17,6 +20,12 @@ const PIN: String = "Pin"
 const PIN_COLOR: Color = Color("#e6e9ef")
 ## What an effect fading out is renamed to, so a new one can take its name meanwhile.
 const LEAVING: String = "Leaving"
+## How far out a Glow's solid ring reaches, how far its soft one, and how strong that is.
+const GLOW_NEAR: int = 3
+const GLOW_FAR: int = 7
+const GLOW_SOFT: float = 0.35
+
+static var _halos: Dictionary[int, StyleBoxTexture] = {}
 
 
 ## Gives [param host], [param host_size] pixels in size, a Glow of [param color], easing in
@@ -38,8 +47,10 @@ static func add_glow_of(host: Control, host_size: Vector2, colors: Array[Color],
 		soft_split.modulate.a = 0.35
 		glow.add_child(soft_split)
 		glow.add_child(SplitOutline.new(host_size, colors[0], colors[1], 3, 9, 3))
+	elif plate_of(host) != null:
+		glow.add_child(_hugging(plate_of(host), host_size, colors[0]))
 	else:
-		var soft: Panel = CardShapes.outline(host_size + Vector2(14, 14), 12, 4, Color(colors[0], 0.35))
+		var soft: Panel = CardShapes.outline(host_size + Vector2(14, 14), 12, 4, Color(colors[0], GLOW_SOFT))
 		soft.position = Vector2(-7, -7)
 		glow.add_child(soft)
 		var hard: Panel = CardShapes.outline(host_size + Vector2(6, 6), 9, 3, colors[0])
@@ -47,6 +58,39 @@ static func add_glow_of(host: Control, host_size: Vector2, colors: Array[Color],
 		glow.add_child(hard)
 	host.add_child(glow)
 	Easing.fade_in(glow, seconds)
+
+
+## The painted plate [param host] is drawn with, if it is a button and has one: what its
+## Glow hugs. Null for anything else.
+static func plate_of(host: Control) -> StyleBoxTexture:
+	var button: Button = host as Button
+	if button == null:
+		return null
+	var plate: StyleBoxTexture = button.get_theme_stylebox("normal") as StyleBoxTexture
+	return plate if plate != null and plate.texture != null else null
+
+
+## Whether [param host]'s Glow hugs the shape of its plate.
+static func is_glow_hugging(host: Control) -> bool:
+	var glow: Node = host.get_node_or_null(GLOW)
+	return glow != null and glow.get_child_count() == 1 and glow.get_child(0).has_meta("plate")
+
+
+## A Glow of [param color] round the shape of [param plate], on a host [param host_size]
+## pixels in size. The halo is painted once for each plate.
+static func _hugging(plate: StyleBoxTexture, host_size: Vector2, color: Color) -> Panel:
+	var key: int = plate.get_instance_id()
+	if not _halos.has(key):
+		_halos[key] = DitherShading.halo_round(plate, GLOW_NEAR, GLOW_FAR, GLOW_SOFT)
+	var halo: Panel = Panel.new()
+	halo.set_meta("plate", key)
+	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	halo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	halo.add_theme_stylebox_override("panel", _halos[key])
+	halo.self_modulate = color
+	halo.position = -Vector2(GLOW_FAR, GLOW_FAR)
+	halo.size = host_size + Vector2(GLOW_FAR, GLOW_FAR) * 2.0
+	return halo
 
 
 ## Gives [param host] a Glow of [param color] in place of any it has, crossfading over
@@ -60,11 +104,21 @@ static func set_glow(host: Control, host_size: Vector2, color: Color, seconds: f
 ## colors and size, is left as it is.
 static func set_glow_of(host: Control, host_size: Vector2, colors: Array[Color], seconds: float = 0.0) -> void:
 	var old: Node = host.get_node_or_null(GLOW)
-	if old != null and glow_colors(host) == colors and old.get_meta("size") == host_size:
+	if old != null and glow_colors(host) == colors and old.get_meta("size") == host_size and _hugs_its_plate(host):
 		return
 	remove_glow(host, seconds)
 	if not colors.is_empty():
 		add_glow_of(host, host_size, colors, seconds)
+
+
+## Whether [param host]'s Glow is still the right shape: a button given another plate since
+## its Glow was made needs a new one.
+static func _hugs_its_plate(host: Control) -> bool:
+	var plate: StyleBoxTexture = plate_of(host)
+	var glow: Node = host.get_node_or_null(GLOW)
+	if plate == null or glow == null or glow_colors(host).size() != 1:
+		return true
+	return is_glow_hugging(host) and glow.get_child(0).get_meta("plate") == plate.get_instance_id()
 
 
 ## Takes away [param host]'s Glow, if it has one, easing out over [param seconds].

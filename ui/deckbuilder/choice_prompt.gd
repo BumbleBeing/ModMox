@@ -68,6 +68,7 @@ func setup(title: String, message: String, choices: Array[String]) -> void:
 		button.custom_minimum_size = Vector2(120, 40)
 		button.add_theme_font_size_override("font_size", 20)
 		button.focus_mode = Control.FOCUS_NONE
+		SteelFrame.frame_as_sized(button, DeckbuilderLook.BUTTON, DeckbuilderLook.BUTTON_DISABLED)
 		button.pressed.connect(func() -> void: chosen.emit(index))
 		row.add_child(button)
 		_buttons.append(button)

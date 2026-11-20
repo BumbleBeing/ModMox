@@ -15,3 +15,17 @@
 **The AI Agent chooses among the types of its own creatures.** Only those are worth anything to it: the types of creatures it controls, then of creature cards it owns in its hand, graveyard and library, ranked by how many it controls, then how many it owns elsewhere, then the list's order. A FULL Agent simulates the best `MOST_TYPES_SIMULATED` (3), a CHEAP one takes the best, and with no creature anywhere it answers the first type with nothing simulated.
 
 Left out until a card needs it (ADR 0001): other ways onto the battlefield asking the choice (`ReturnToBattlefieldEffect`, flicker), choosing a color or a card name, "choose a creature type other than Wall", and changelings.
+
+## Addendum: "As this land enters, you may pay 2 life. If you don't, it enters tapped."
+
+Temple Garden, a land of the Villain deck `zar_ojanen_scion_of_efrava` that the Hero can own through Spoils, is the second "as this enters" choice, and it is asked the same way: before the move, by whatever puts the permanent onto the battlefield, with the answer carried on its zone change.
+
+**`AsEntersPayOrEntersTappedAbility` holds the cost**, an `MmCost`: a `PayLifeCost` of 2 for Temple Garden. It does nothing on the battlefield. Read from the land's characteristics in the hand (CR 614.12), it makes `TurnProcedure` ask the player playing it a `ChooseYesOrNoDecision` before the land moves, while it is still in the hand. The decision is the one a "you may" and ward ask (ADR 0062), with `entering_object_id` (the land) and `entry_cost` (the cost) set, and no stack object, effect or mana cost. A new decision class was turned down: this one already has the answers, the AI's simulation of both and the Info Panel's Answer Row. The turn procedure keeps the land's ID while it waits (copied in `copy_for()`), so playing a land now stops for a decision; its move is still performed with `perform()`, since nothing in it needs a replacement choice (ADR 0019).
+
+**Yes pays the cost, then moves the land with `entry_cost_paid` on its `ZoneChangeEvent`.** The life is lost in a batch of its own just before the move. The ability generates an ordinary `EntersTappedReplacementEffect` for its own entering unless the move says the cost was paid, so No, or any move that never asked, enters tapped. Entering tapped by another effect and paying never conflict, so there is still nothing to order and the choice stays out of the pipeline.
+
+**A player who cannot pay is not asked** (CR 119.4: more than 0 life can be paid only from a life total at least that large; 0 always can). The land enters tapped. A player at exactly 2 life is asked, and paying loses the encounter as state-based actions are checked (CR 704.5a). Undo takes back the land play while the question waits, since nothing hidden was shown (ADR 0015).
+
+**The AI pays only when it is worth it.** CHEAP pays when the untapped mana lets a spell in its hand be cast this turn and it keeps at least `AiAgent.MIN_LIFE_AFTER_PAYING` (6) life; FULL simulates both, with that answer the default. Choosing which land to play, a land it would not pay for counts as entering tapped, and among lands that let a spell be cast, one that costs no life comes first.
+
+Left out until a card needs it (ADR 0001): asking it when such a land enters some other way (`SearchLibraryEffect`, `ReturnToBattlefieldEffect`); unasked, it enters tapped. An entry cost other than life.

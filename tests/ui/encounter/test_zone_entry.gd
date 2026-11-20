@@ -66,7 +66,7 @@ func test_a_potions_art_or_a_gray_square_takes_the_arts_place() -> void:
 	var potion: ZoneEntry = _entry()
 	var emblem: ZoneEntry = _entry()
 
-	potion.show_picture(PotionArt.new("big_gulp", ZoneEntry.ART_SIZE, true))
+	potion.show_picture(PotionArt.new("big_gulp", ZoneEntry.ART_SIZE, true, MmCardDefinition.Rarity.COMMON))
 	emblem.show_no_art()
 
 	assert_true(potion.picture() is PotionArt)

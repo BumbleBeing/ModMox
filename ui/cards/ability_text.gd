@@ -282,6 +282,13 @@ static func up_to_targets_words(most: int) -> String:
 	return "up to %s target%s" % [_number_word(most), "" if most == 1 else "s"]
 
 
+## The words of [param cost], as a cost of an ability of [param noun] reads them: "Pay 2
+## life". The Info Panel's Pay answer for a land that may pay to enter untapped (game
+## ADR 0067).
+static func cost_words(cost: MmCost, noun: String) -> String:
+	return ", ".join(AbilityText.new(noun)._cost_parts(null, [cost] as Array[MmCost]))
+
+
 ## Whether [param text] has something in it there were no words for.
 static func has_fallback(text: String) -> bool:
 	return text.contains("[")
@@ -350,6 +357,10 @@ func _ability(ability: MmAbility) -> String:
 		return "As %s enters, choose a creature type." % _noun
 	if ability is EntersTappedAbility:
 		return "%s enters tapped." % _capitalized(_noun)
+	if ability is AsEntersPayOrEntersTappedAbility:
+		var unless_paid: AsEntersPayOrEntersTappedAbility = ability as AsEntersPayOrEntersTappedAbility
+		return "As %s enters, you may %s. If you don't, it enters tapped." % [_noun,
+			", ".join(_cost_parts(null, [unless_paid.cost] as Array[MmCost])).to_lower()]
 	if ability is LookAtTopOfLibraryAbility:
 		return "You may look at the top card of your library any time."
 	if ability is InstantSpeedEquipAbility:
@@ -766,6 +777,9 @@ func _effect(effect: MmEffect) -> String:
 		return "create " + _tokens(effect as CreateTokenEffect)
 	if effect is SearchLibraryEffect:
 		return _search(effect as SearchLibraryEffect)
+	if effect is SurveilEffect:
+		# CR 701.25a, with its number as digits, as Oracle words it ("surveil 1").
+		return "surveil " + _amount((effect as SurveilEffect).amount)
 	return _fallback(effect, "_effect")
 
 

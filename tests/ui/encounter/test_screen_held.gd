@@ -194,6 +194,7 @@ func test_the_potions_button_opens_a_window_that_shows_each_potion() -> void:
 	assert_true(entry.picture() is PotionArt)
 	assert_eq((entry.picture() as PotionArt).key(), "big_gulp")
 	assert_true((entry.picture() as PotionArt).is_small())
+	assert_eq((entry.picture() as PotionArt).plate_color(), PotionArt.PLATES[MmCardDefinition.Rarity.COMMON], "Big Gulp is Common.")
 	panel.potions_button().pressed.emit()
 	assert_false(_screen.potions_window().is_open())
 
@@ -261,6 +262,7 @@ func test_a_potions_ability_on_the_stack_shows_the_potions_art() -> void:
 	assert_not_null(entry.potion_art())
 	assert_eq(entry.potion_art().key(), "big_gulp")
 	assert_true(entry.potion_art().is_small())
+	assert_eq(entry.potion_art().plate_color(), PotionArt.PLATES[MmCardDefinition.Rarity.COMMON], "The Potion's Rarity outlasts it.")
 	assert_eq(entry.name_text(), "Target creature gets +2/+2 until end of turn.")
 
 

@@ -69,6 +69,89 @@ static func disabled_plate(fill: Color, height: int, radius: int = 6) -> StyleBo
 	return made
 
 
+## A ring [param width] pixels thick in [param color] round the very shape [param plate] is
+## painted in, lip and all, with nothing inside it: every pixel of the plate within
+## [param width] of its outside. It is stretched as the plate is, so laid over a button
+## drawn with that plate it follows its corners exactly.
+static func ring_round(plate: StyleBoxTexture, width: int, color: Color) -> StyleBoxTexture:
+	var shape: Image = plate.texture.get_image()
+	var size: Vector2i = shape.get_size()
+	var image: Image = Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
+	for y: int in size.y:
+		for x: int in size.x:
+			if shape.get_pixel(x, y).a > 0.0 and _is_near_outside(shape, x, y, width):
+				image.set_pixel(x, y, color)
+	var made: StyleBoxTexture = plate.duplicate() as StyleBoxTexture
+	made.texture = ImageTexture.create_from_image(image)
+	return made
+
+
+## A white halo outside the very shape [param plate] is painted in, lip and all, and nothing
+## over the plate itself: solid out to [param near] pixels from it, and [param soft] as
+## strong from there out to [param far]. It is [param far] pixels bigger than the plate on
+## every side and stretched as the plate is, so a panel that much bigger than a button drawn
+## with that plate hugs its corners. Whatever draws it colors it.
+static func halo_round(plate: StyleBoxTexture, near: int, far: int, soft: float) -> StyleBoxTexture:
+	var shape: Image = plate.texture.get_image()
+	var size: Vector2i = shape.get_size()
+	# The shape has no hollows, so each column of it is one run of pixels.
+	var tops: PackedInt32Array = PackedInt32Array()
+	var bottoms: PackedInt32Array = PackedInt32Array()
+	for x: int in size.x:
+		var top: int = -1
+		var bottom: int = -1
+		for y: int in size.y:
+			if shape.get_pixel(x, y).a > 0.0:
+				if top < 0:
+					top = y
+				bottom = y
+		tops.append(top)
+		bottoms.append(bottom)
+	var image: Image = Image.create_empty(size.x + far * 2, size.y + far * 2, false, Image.FORMAT_RGBA8)
+	for y: int in image.get_height():
+		for x: int in image.get_width():
+			var away: float = _distance_outside(tops, bottoms, x - far, y - far, far)
+			if away > 0.0 and away <= far:
+				image.set_pixel(x, y, Color(1, 1, 1, 1.0 if away <= near else soft))
+	var made: StyleBoxTexture = plate.duplicate() as StyleBoxTexture
+	made.texture = ImageTexture.create_from_image(image)
+	made.texture_margin_left = plate.texture_margin_left + far
+	made.texture_margin_right = plate.texture_margin_right + far
+	made.texture_margin_top = plate.texture_margin_top + far
+	made.texture_margin_bottom = plate.texture_margin_bottom + far
+	return made
+
+
+## How far the pixel at [param x], [param y] is from a shape whose columns run from
+## [param tops] to [param bottoms]: 0 inside it, and more than [param reach] when it is
+## further than that.
+static func _distance_outside(tops: PackedInt32Array, bottoms: PackedInt32Array, x: int, y: int, reach: int) -> float:
+	var nearest: float = reach + 1.0
+	for column: int in range(maxi(0, x - reach), mini(tops.size(), x + reach + 1)):
+		if tops[column] < 0:
+			continue
+		var down: int = 0
+		if y < tops[column]:
+			down = tops[column] - y
+		elif y > bottoms[column]:
+			down = y - bottoms[column]
+		nearest = minf(nearest, Vector2(column - x, down).length())
+	return nearest
+
+
+## Whether a pixel outside [param shape], or past its edge, is within [param reach] of
+## [param x], [param y].
+static func _is_near_outside(shape: Image, x: int, y: int, reach: int) -> bool:
+	for dy: int in range(-reach, reach + 1):
+		for dx: int in range(-reach, reach + 1):
+			if dx * dx + dy * dy > reach * reach:
+				continue
+			var at: Vector2i = Vector2i(x + dx, y + dy)
+			if at.x < 0 or at.y < 0 or at.x >= shape.get_width() or at.y >= shape.get_height() or shape.get_pixelv(at).a == 0.0:
+				return true
+	return false
+
+
 ## The tone a pixel of the shaded face takes: one of the bands from [param top] to
 ## [param bottom], chosen block by block.
 static func band_color(x: int, y: int, height: int, top: Color, bottom: Color) -> Color:

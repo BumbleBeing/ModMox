@@ -88,14 +88,14 @@ func test_steps_are_dithered_gray_and_stops_green() -> void:
 	var upkeep: Button = panel.step_button(UPKEEP)
 	var height: int = int(upkeep.size.y)
 	assert_eq(upkeep.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
-	assert_true(_same(upkeep.get_theme_stylebox("normal"), DitherShading.button_plate(Inspector.palette().button, false, height)))
-	assert_true(_same(upkeep.get_theme_stylebox("hover"),
-		DitherShading.button_plate(Inspector.palette().button.lightened(InspectorParts.HOVER_LIGHTEN), false, height)))
-	assert_true(_same(upkeep.get_theme_stylebox("pressed"), DitherShading.button_plate(Inspector.palette().button, true, height)))
+	var gray: Color = Inspector.palette().button
+	var off: Color = Inspector.palette().button_disabled
+	for state: String in ["normal", "hover", "pressed"]:
+		assert_eq(upkeep.get_theme_stylebox(state), SteelFrame.plate(gray, state, height, false, off, PlayerPanel.BUTTON_SIDE), state)
 
 	_stops.toggle(HERO, UPKEEP)
 	_show(panel, HERO)
-	assert_true(_same(upkeep.get_theme_stylebox("normal"), DitherShading.button_plate(PlayerPanel.STOP_COLOR, false, height)),
+	assert_eq(upkeep.get_theme_stylebox("normal"), SteelFrame.plate(PlayerPanel.STOP_COLOR, "normal", height, false, off, PlayerPanel.BUTTON_SIDE),
 		"A stop is dithered green.")
 
 
@@ -103,8 +103,12 @@ func test_untap_and_cleanup_lie_flat() -> void:
 	var panel: PlayerPanel = _panel(HERO)
 	var untap: Button = panel.step_button(MmTurn.Step.UNTAP)
 	assert_true(untap.disabled)
-	assert_true(_same(untap.get_theme_stylebox("disabled"),
-		DitherShading.disabled_plate(Inspector.palette().button_disabled, int(untap.size.y))))
+	var flat: Image = (untap.get_theme_stylebox("disabled") as StyleBoxTexture).texture.get_image()
+	var raised: Image = (untap.get_theme_stylebox("normal") as StyleBoxTexture).texture.get_image()
+	var middle: int = flat.get_width() / 2
+	var bottom: int = flat.get_height() - 1
+	assert_ne(flat.get_pixel(middle, bottom), raised.get_pixel(middle, bottom), "No lip under it.")
+	assert_eq(flat.get_pixel(middle, bottom).a, 1.0, "Its ring reaches the bottom.")
 
 
 func test_the_now_glow_and_the_priority_glow_still_show() -> void:
@@ -119,10 +123,8 @@ func test_emblems_are_dithered_gold_and_potions_purple_with_their_lettering_kept
 	var panel: PlayerPanel = _panel(HERO)
 	var emblems: Button = panel.emblems_button()
 	var potions: Button = panel.potions_button()
-	assert_true(_same(emblems.get_theme_stylebox("normal"),
-		DitherShading.button_plate(PlayerPanel.held_fill(PlayerPanel.GOLD), false, int(emblems.size.y))))
-	assert_true(_same(potions.get_theme_stylebox("normal"),
-		DitherShading.button_plate(PlayerPanel.held_fill(PlayerPanel.POTION_COLOR), false, int(potions.size.y))))
+	assert_true(_is_framed_in(emblems, "normal", PlayerPanel.held_fill(PlayerPanel.GOLD)))
+	assert_true(_is_framed_in(potions, "normal", PlayerPanel.held_fill(PlayerPanel.POTION_COLOR)))
 	assert_eq(emblems.get_theme_color("font_color"), Color("#f1dc9a"))
 	assert_eq(potions.get_theme_color("font_color"), Color("#dcc6f7"))
 
@@ -131,8 +133,7 @@ func test_with_none_held_they_are_gray_and_lie_flat() -> void:
 	var panel: PlayerPanel = _panel(HERO)
 	var potions: Button = panel.potions_button()
 	assert_true(potions.disabled)
-	assert_true(_same(potions.get_theme_stylebox("disabled"),
-		DitherShading.disabled_plate(PlayerPanel.held_fill(PlayerPanel.NO_ITEMS_COLOR), int(potions.size.y))))
+	assert_true(_is_framed_in(potions, "disabled", PlayerPanel.held_fill(PlayerPanel.NO_ITEMS_COLOR)))
 
 
 func test_the_heros_controls_sit_on_an_entry_plate_and_undo_is_dithered() -> void:
@@ -143,8 +144,9 @@ func test_the_heros_controls_sit_on_an_entry_plate_and_undo_is_dithered() -> voi
 	assert_eq(plate.border_color, palette.edge)
 	var undo: Button = panel.undo_button()
 	var height: int = int(undo.size.y)
-	assert_true(_same(undo.get_theme_stylebox("normal"), DitherShading.button_plate(palette.button, false, height)))
-	assert_true(_same(undo.get_theme_stylebox("disabled"), DitherShading.disabled_plate(palette.button_disabled, height)))
+	assert_eq(undo.get_theme_stylebox("normal"),
+		SteelFrame.plate(palette.button, "normal", height, false, palette.button_disabled, PlayerPanel.BUTTON_SIDE))
+	assert_true(_is_framed_in(undo, "disabled", palette.button_disabled))
 	_snapshot.can_undo = false
 	_show(panel, HERO)
 	assert_true(undo.disabled, "It still grays out when nothing can be undone.")
@@ -235,3 +237,24 @@ func _same(a: StyleBox, b: StyleBox) -> bool:
 	if left == null or right == null:
 		return false
 	return left.texture.get_image().get_data() == right.texture.get_image().get_data()
+
+
+## Whether [param button]'s plate for [param state] has the steel ring round a face of
+## [param fill]: the ring along its top, and the fill's own shading in its middle.
+func _is_framed_in(button: Button, state: String, fill: Color) -> bool:
+	var plate: StyleBoxTexture = button.get_theme_stylebox(state) as StyleBoxTexture
+	if plate == null:
+		return false
+	var image: Image = plate.texture.get_image()
+	var middle: int = image.get_width() / 2
+	var is_off: bool = state == "disabled"
+	var ring: Color = image.get_pixel(middle, 0)
+	var wanted_ring: Color = SteelFrame.ring_color(false, is_off)
+	var face: Color = image.get_pixel(middle, image.get_height() / 2)
+	var face_height: int = image.get_height() - (0 if is_off else DitherShading.LIP)
+	var wanted: Color = DitherShading.band_color(middle, image.get_height() / 2, face_height, fill.lightened(0.12), fill.darkened(0.25))
+	return _near(ring, wanted_ring) and _near(face, wanted)
+
+
+func _near(a: Color, b: Color) -> bool:
+	return absf(a.r - b.r) < 0.01 and absf(a.g - b.g) < 0.01 and absf(a.b - b.b) < 0.01

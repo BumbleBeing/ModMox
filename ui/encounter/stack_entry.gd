@@ -72,9 +72,10 @@ func _init(art_key: String, first_line: String, second_line: String, color: Colo
 
 
 ## Shows the art of the Potion authored in the file named [param key] where the art is: its
-## ability is on the stack, and the Potion itself is gone (ADR 0032, A531).
-func show_potion(key: String) -> void:
-	_potion_art = PotionArt.new(key, ART_SIZE, true)
+## ability is on the stack, and the Potion itself is gone (ADR 0032, A531). It stands on the
+## plate of the Potion's [param rarity] (a Rarity, or null for none).
+func show_potion(key: String, rarity: Variant) -> void:
+	_potion_art = PotionArt.new(key, ART_SIZE, true, rarity)
 	_art.add_child(_potion_art)
 
 

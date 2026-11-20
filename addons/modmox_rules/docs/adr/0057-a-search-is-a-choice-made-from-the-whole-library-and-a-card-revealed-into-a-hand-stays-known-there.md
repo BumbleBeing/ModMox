@@ -19,3 +19,7 @@ Searching a library arrived on the card track with four cards from the Villain d
 **The Agent answers the search itself.** A CHEAP Agent finds the cards that best pay for what is in its hand: for lands, the basic land of the color its hand most lacks, counted over the mana costs of its nonland cards against the colors its lands make. A FULL Agent simulates finding each distinct card it could find (one simulation per name, not per copy) and keeps the best, as it does for modes.
 
 Left out until a card needs them (ADR 0001): searching another player's library, a destination in the library itself, revealing a card that is not found (a "reveal the top card"), and cards known in a hand for any reason but a search's reveal.
+
+## Addendum: a card kept on top by a surveil is a Known Card to its owner (ADR 0068)
+
+A Known Card in a library was until now one its owner saw go there from their hand. A surveil makes Known Cards without moving them: the cards its player keeps on top are put in order by a `LibraryTopOrderedEvent`, which keeps their objects and marks each known to its owner until the library is shuffled. And what a pending decision shows its player is no longer the search's alone: `MmEngine` reads a pending surveil's cards the same way, for the Player View and for a Simulation Copy.

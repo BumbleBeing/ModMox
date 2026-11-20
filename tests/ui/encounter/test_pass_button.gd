@@ -66,6 +66,24 @@ func test_its_border_flashes_once_whenever_it_becomes_one_that_can_be_pressed() 
 	assert_almost_eq(button._flash.modulate.a, 0.0, 0.01, "It settles.")
 
 
+func test_the_flash_is_the_frames_own_ring_and_lights_no_corner_the_button_does_not_have() -> void:
+	var button: PassButton = _button()
+
+	assert_eq(button._flash.get_theme_stylebox("panel"), SteelFrame.ring_plate(96))
+	assert_eq(button._flash.size, BOX.size)
+	var ring: Image = SteelFrame.ring_plate(96).texture.get_image()
+	var frame: Image = SteelFrame.plate(Inspector.palette().button, "normal", 96).texture.get_image()
+	for y: int in ring.get_height():
+		for x: int in ring.get_width():
+			var is_lit: bool = ring.get_pixel(x, y).a > 0.0
+			var is_steel: bool = frame.get_pixel(x, y).is_equal_approx(SteelFrame.STEEL)
+			if is_lit != is_steel:
+				fail_test("The flash and the steel ring differ at %d, %d." % [x, y])
+				return
+	assert_eq(ring.get_pixel(0, 0).a, 0.0, "The cut corner stays dark.")
+	pass_test("The flash covers the steel ring exactly.")
+
+
 func test_it_names_the_key_it_is_told() -> void:
 	var button: PassButton = _button()
 	button.show_pass(true)

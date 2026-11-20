@@ -36,7 +36,6 @@ const TILE: Color = Color("#33363c")
 const TILE_PAD: float = 8.0
 const TILE_HEIGHT: float = 68.0
 const TILE_FONT_SIZE: int = 18
-const TILE_RADIUS: int = 5
 ## Set on a button with the Callable that paints its Dither Shading, so that painting it in
 ## other colors replaces it.
 const PAINT: StringName = &"paint"
@@ -360,9 +359,9 @@ func _show_state() -> void:
 ## and lighter and ringed while it [param is_chosen].
 func _style_tile(button: Button, is_chosen: bool) -> void:
 	if is_chosen:
-		_shade_button(button, DeckbuilderLook.BUTTON_HOVER, DeckbuilderLook.BUTTON_HOVER, TILE_RADIUS, CHOSEN_RING)
+		_shade_button(button, DeckbuilderLook.BUTTON_HOVER, DeckbuilderLook.BUTTON_HOVER, CHOSEN_RING)
 	else:
-		_shade_button(button, TILE, TILE.darkened(0.3), TILE_RADIUS)
+		_shade_button(button, TILE, TILE.darkened(0.3))
 
 
 ## Gives [param panel] Dither Shading in [param fill] for its own height, painted again
@@ -397,45 +396,19 @@ static func _shade(panel: PanelContainer, fill: Color, radius: int, margins: Vec
 			(child as CanvasItem).texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR)
 
 
-## Gives [param button] Dither Shading in every state, as the deckbuilder's buttons have,
-## painted again whenever its height changes: [param fill] lit from above with a darker lip,
-## lighter under the mouse, sitting down on its lip when pressed, and
-## [param disabled_fill] lying flat when it takes no clicks. Its corners are rounded by
-## [param radius]; a [param ring] color, when given, edges it two pixels wide.
-static func _shade_button(button: Button, fill: Color, disabled_fill: Color, radius: int, ring: Variant = null) -> void:
-	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+## Gives [param button] the Steel Frame in every state, as the deckbuilder's buttons have
+## (game ADR 0066), painted again whenever its height changes: [param fill] lit from above
+## over a lip, lighter under the mouse, sitting down on its lip when pressed, and
+## [param disabled_fill] lying flat when it takes no clicks. A [param ring] color, when
+## given, is its ring's in place of steel.
+static func _shade_button(button: Button, fill: Color, disabled_fill: Color, ring: Variant = null) -> void:
 	if button.has_meta(PAINT):
 		button.resized.disconnect(button.get_meta(PAINT) as Callable)
 	var paint: Callable = func() -> void:
-		var height: int = maxi(1, int(button.size.y))
-		var faces: Dictionary[String, StyleBoxTexture] = {
-			"normal": _button_face(fill, false, height, radius, ring),
-			"hover": _button_face(fill.lightened(InspectorParts.HOVER_LIGHTEN), false, height, radius, ring),
-			"pressed": _button_face(fill, true, height, radius, ring),
-			"hover_pressed": _button_face(fill, true, height, radius, ring),
-			"disabled": DitherShading.disabled_plate(disabled_fill, height, radius),
-		}
-		for state: String in faces:
-			button.add_theme_stylebox_override(state, faces[state])
+		SteelFrame.frame_roomy(button, fill, maxi(1, int(button.size.y)), disabled_fill, ring)
 	button.set_meta(PAINT, paint)
 	button.resized.connect(paint)
 	paint.call()
-
-
-## A button's face [param height] tall: DitherShading.button_plate, edged in [param ring]
-## two pixels wide in place of its own dark edge when a ring is given.
-static func _button_face(fill: Color, is_pressed: bool, height: int, radius: int, ring: Variant) -> StyleBoxTexture:
-	var face: StyleBoxTexture = DitherShading.button_plate(fill, is_pressed, height, radius)
-	if ring == null:
-		return face
-	var lip: int = DitherShading.PRESSED_LIP if is_pressed else DitherShading.LIP
-	var top: Color = fill.darkened(0.2) if is_pressed else fill.lightened(0.12)
-	var bottom: Color = fill.lightened(0.02) if is_pressed else fill.darkened(0.25)
-	var ringed: StyleBoxTexture = DitherShading.plate(top, bottom, ring as Color, radius, 2, lip, height,
-			fill.darkened(DitherShading.LIP_DARKEN))
-	for side: Side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
-		ringed.set_content_margin(side, face.get_content_margin(side))
-	return ringed
 
 
 ## [param label] made to take the footer's spare width and wrap in it, so that a long line
@@ -452,7 +425,7 @@ func _add_button(key: String, text: String, action: Callable) -> void:
 	button.custom_minimum_size = Vector2(110, 0)
 	button.add_theme_font_size_override("font_size", 20)
 	button.focus_mode = Control.FOCUS_NONE
-	_shade_button(button, DeckbuilderLook.BUTTON, DeckbuilderLook.BUTTON_DISABLED, DeckbuilderLook.BUTTON_RADIUS)
+	_shade_button(button, DeckbuilderLook.BUTTON, DeckbuilderLook.BUTTON_DISABLED)
 	button.pressed.connect(action)
 	_footer.add_child(button)
 	_buttons[key] = button

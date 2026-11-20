@@ -190,11 +190,14 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 	if decision is ChoosePlayOrDrawDecision:
 		return ChoosePlayOrDrawDecision.Choice.PLAY
 	if decision is ChooseYesOrNoDecision:
-		# A cost asked for, as ward's, is declined, as an X is: autoplay pays nothing.
-		var paying: bool = (decision as ChooseYesOrNoDecision).cost != null
+		# A cost asked for, as ward's or as a land enters, is declined, as an X is: autoplay
+		# pays nothing.
+		var paying: bool = (decision as ChooseYesOrNoDecision).cost != null or (decision as ChooseYesOrNoDecision).entry_cost != null
 		return ChooseYesOrNoDecision.Choice.NO if paying else ChooseYesOrNoDecision.Choice.YES
 	if decision is ChooseXToPayDecision:
 		return ChooseXToPayDecision.DECLINE
+	if decision is SurveilDecision:
+		return [[], (decision as SurveilDecision).card_ids.duplicate()]  # Every card kept, in order.
 	if decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
 		return []
 	if decision is DivideCombatDamageDecision:
@@ -2297,6 +2300,21 @@ static func tapped_dual_land(first_type: String, second_type: String) -> MmCardD
 	return definition
 
 
+# --- Card track: paying as a land enters ----------------------------------------------
+
+
+## A nonbasic land with two basic land types and "As this land enters, you may pay 2 life.
+## If you don't, it enters tapped." (CR 614.1c, 119.4), as on Temple Garden, named
+## "Shock [first] [second]".
+static func shock_land(first_type: String, second_type: String) -> MmCardDefinition:
+	var definition: MmCardDefinition = dual_land(first_type, second_type)
+	definition.name = "Shock %s %s" % [first_type, second_type]
+	var ability: AsEntersPayOrEntersTappedAbility = AsEntersPayOrEntersTappedAbility.new()
+	ability.cost = pay_life(2)
+	definition.abilities = [ability]
+	return definition
+
+
 # --- Card track: activated ability cost reduction ---------------------------------------
 
 
@@ -2376,3 +2394,26 @@ static func scion(card_name: String = "Scion") -> MmCardDefinition:
 	var less_than_domain: NotFilter = is_not(toughness_from(domain(), ToughnessFilter.Comparison.OR_GREATER))
 	var recipients: EachSelection = each(all_of([of_type(MmCardTypes.CardType.CREATURE), mine, less_than_domain]))
 	return creature(card_name, 4, 4, [triggered(becomes_tapped(), [put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, recipients)])])
+
+
+# --- Card track: surveil ---------------------------------------------------------------
+
+
+## "Surveil [param amount]" (CR 701.25, ADR 0068).
+static func surveil(amount: int = 1) -> SurveilEffect:
+	var effect: SurveilEffect = SurveilEffect.new()
+	effect.amount = constant(amount)
+	return effect
+
+
+## A 3/1 creature costing {0} with Wary Thespian's abilities: "When this creature enters,
+## surveil [param amount]." and "When this creature dies, surveil [param amount]."
+static func thespian(card_name: String = "Thespian", amount: int = 1) -> MmCardDefinition:
+	return creature(card_name, 3, 1, [triggered(enters(IsSourceFilter.new()), [surveil(amount)]),
+		triggered(dies(IsSourceFilter.new()), [surveil(amount)])])
+
+
+## Passes priority and answers everything else as autoplay() does, until a surveil is
+## asked.
+static func pass_to_surveil(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is SurveilDecision)

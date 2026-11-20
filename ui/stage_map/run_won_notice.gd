@@ -71,10 +71,7 @@ func _ready() -> void:
 	_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_button.add_theme_font_override("font", UiText.bold())
 	_button.add_theme_font_size_override("font_size", 26)
-	_button.add_theme_stylebox_override("normal", _plate(BUTTON_FILL, false))
-	_button.add_theme_stylebox_override("hover", _plate(BUTTON_FILL.lightened(0.1), false))
-	_button.add_theme_stylebox_override("pressed", _plate(BUTTON_FILL, true))
-	_button.add_theme_stylebox_override("hover_pressed", _plate(BUTTON_FILL, true))
+	SteelFrame.frame_roomy(_button, BUTTON_FILL, BUTTON_HEIGHT)
 	_button.pressed.connect(func() -> void: main_menu.call())
 	column.add_child(_shadowed(_button))
 	Easing.fade_in(self, fade_seconds)
@@ -82,10 +79,6 @@ func _ready() -> void:
 
 func button() -> Button:
 	return _button
-
-
-func _plate(fill: Color, is_pressed: bool) -> StyleBoxTexture:
-	return DitherShading.button_plate(fill, is_pressed, BUTTON_HEIGHT, BUTTON_RADIUS)
 
 
 ## [param item] in a frame that draws only its drop shadow, rounded as the button is.

@@ -10,4 +10,6 @@ Amended: there is one exception, the run's first Deck. Straight after Choose you
 
 Mods are applied only in the deckbuilder (ADR 0029), so the Deckbox is also the only way to a Mod's use. The deckbuilder's inspector shows cards and Mods only; Potions and other Items belong to whichever screen shows what the Hero holds (A546).
 
+Amended: the Deckbox no longer opens by itself at an encounter. Arriving at one opens the Encounter Reveal first (GLOSSARY.md): a short animation reveals the Villain and rests on a still of the Hero against the Villain, from which the Hero opens the Satchel or starts the encounter. Starting it opens the Deckbox with its Start button, as described above, so the Deck is still chosen knowing who is faced, and Start is still the one place legality is checked. The Encounter Reveal was put in front so that the Hero can change what Armor is Worn against a known Villain as they can change the Deck: Armor is put on and taken off only in the Satchel, which the Deckbox does not open. The Encounter Reveal is not built yet; until its milestone the Deckbox opens by itself as before.
+
 The Deckbox screen does not exist yet. It is built with the deckbuilder's port into production code, in the first run milestone (A539, A551).

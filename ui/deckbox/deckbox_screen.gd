@@ -336,11 +336,7 @@ func _add_button(parent: Control, text: String, on_press: Callable) -> Button:
 	made.text = text
 	made.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var fill: Color = DeckbuilderLook.BUTTON
-	made.add_theme_stylebox_override("normal", DitherShading.button_plate(fill, false, BUTTON_HEIGHT))
-	made.add_theme_stylebox_override("hover", DitherShading.button_plate(fill.lightened(HOVER_LIGHTEN), false, BUTTON_HEIGHT))
-	made.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
-	made.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, BUTTON_HEIGHT))
-	made.add_theme_stylebox_override("disabled", DitherShading.disabled_plate(DeckbuilderLook.BUTTON_DISABLED, BUTTON_HEIGHT))
+	SteelFrame.frame_roomy(made, fill, BUTTON_HEIGHT, DeckbuilderLook.BUTTON_DISABLED)
 	made.pressed.connect(on_press)
 	parent.add_child(made)
 	_buttons[text] = made

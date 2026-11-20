@@ -124,6 +124,14 @@ func land_all() -> void:
 		_take_down(object_id, true)
 
 
+## Takes the card that would land as Game Object [param object_id] out of the air where it
+## is, never landing: what sent it was taken back, as a surveilled card sent to the
+## graveyard is by undo (game ADR 0069).
+func cancel(object_id: int) -> void:
+	if _timing.is_flying(object_id):
+		_take_down(object_id, false)
+
+
 ## Whether the card that lands as Game Object [param object_id] is in the air.
 func is_flying(object_id: int) -> bool:
 	return _timing.is_flying(object_id)

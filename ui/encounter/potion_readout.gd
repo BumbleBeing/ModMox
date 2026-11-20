@@ -1,7 +1,7 @@
 class_name PotionReadout
 extends Control
 ## A Potion as the Inspector shows it (ADR 0033, A532, A581, A588): its Potion Icon enlarged
-## where a Card Face would be, glowing in its Rarity's color, with its name and a type line
+## where a Card Face would be, on its Rarity's plate and glowing in its Rarity's color, with its name and a type line
 ## of its Rarity and "Potion", such as "Rare Potion", under it. Its rules text is the
 ## Inspector's Card Text, not the readout's.
 
@@ -22,7 +22,7 @@ func setup(look: CardLook, width: float, rarity: Variant) -> void:
 	# A whole number of screen pixels to each art pixel, so the icon's edges stay hard.
 	var art_pixel: float = floorf(width * ART_SHARE / (PotionArt.CELLS + 2))
 	var side: float = art_pixel * (PotionArt.CELLS + 2)
-	_art = PotionArt.new(look.art_key, side, false)
+	_art = PotionArt.new(look.art_key, side, false, rarity)
 	_art.position = Vector2(roundf((width - side) / 2.0), 24)
 	add_child(_art)
 	if rarity != null:

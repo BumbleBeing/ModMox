@@ -9,6 +9,10 @@ extends RefCounted
 ## pay {X}" reads "Pay {X} for Taj-Nar Swordsmith?", with a stepper and No in the panel, and
 ## paying it reads "Pay for Taj-Nar Swordsmith:" with what is owed after it (game ADR 0063).
 
+## What a surveil asks (game ADR 0069), of one card and of more.
+const SURVEIL_ONE: String = "Surveil: graveyard any of these."
+const SURVEIL_SEVERAL: String = "Surveil: graveyard any of these, and order the rest. The leftmost will be on top."
+
 var text: String = ""
 ## While paying: what is still owed. Null otherwise.
 var owed: MmManaCost = null
@@ -26,6 +30,9 @@ var offers_no: bool = false
 ## and the Pass Button pays the X it shows (game ADR 0063).
 var chooses_x: bool = false
 var most_x: int = 0
+## The affirmative answer's words when they are neither "Yes" nor paying what is owed:
+## "Pay 2 life", for a land that may be paid for to enter untapped (game ADR 0067).
+var affirmative: String = ""
 
 
 ## What the panel says while a card is held where letting go would play it, from the
@@ -94,10 +101,18 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		var search: ChooseCardsInLibraryDecision = decision as ChooseCardsInLibraryDecision
 		prompt.text = "%s: search your library for %s" % [stack_name(view, search.stack_object_id),
 			AbilityText.searched_words(search.most, search.is_up_to, search.filter)]
+	elif decision is SurveilDecision:
+		# Game ADR 0069: the user's words, the Surveil window holding the cards.
+		prompt.text = SURVEIL_ONE if (decision as SurveilDecision).card_ids.size() == 1 else SURVEIL_SEVERAL
 	elif decision is ChooseYesOrNoDecision:
 		# Game ADR 0060: "Leonin Snarecaster's ability: tap target creature?"
 		var asked: ChooseYesOrNoDecision = decision as ChooseYesOrNoDecision
 		prompt.offers_no = true
+		if asked.entry_cost != null:
+			# Game ADR 0067: "Have Temple Garden enter untapped?", "Pay 2 life" on the left.
+			prompt.text = "Have %s enter untapped?" % EncounterSnapshot.name_in(view, asked.entering_object_id)
+			prompt.affirmative = AbilityText.cost_words(asked.entry_cost, "this land")
+			return prompt
 		if asked.cost != null:
 			# ADR 0062: "Pay ward for Leonin Lightbringer: {2}", Pay on the Pass Button.
 			var asking: MmObjectView = _stack_item(view, asked.stack_object_id)

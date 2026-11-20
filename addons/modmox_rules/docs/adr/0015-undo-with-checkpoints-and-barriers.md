@@ -9,3 +9,7 @@ Two alternatives were rejected. Replaying the whole encounter from its setup was
 Once the encounter is over, whether by a state-based action or a concession, nothing can be undone.
 
 The checkpoint copy is the same state copying the AI will use to look ahead.
+
+## Addendum: a surveil is a barrier as it is asked (ADR 0068)
+
+Asking a surveil shows its player the top cards of their library, as asking a search shows the whole library (ADR 0057), so the decision becomes a barrier as it is asked. The Hero's Graveyard presses and drags in the Surveil window are not engine answers: the screen takes them back one at a time before the surveil is answered (game ADR 0069), and once it is, its cards have left the library or been seen.

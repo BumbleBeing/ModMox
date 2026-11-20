@@ -165,7 +165,7 @@ A state-based action: a player who controls two or more legendary permanents wit
 _Avoid_: Legendary uniqueness, legend check
 
 **Known Card**:
-A card in a library or a hand that a player knows the identity of, because they saw it put there: one they put on the bottom from their hand, for instance, or one the other player found with a search and revealed (ADR 0057). A shuffle of that library makes every card in it unknown again. A Known Card in a hand stops being known when it leaves the hand, or when any card leaves a hand of two or more cards for the library without being revealed. A Player View shows Known Cards to the players who know them and nothing of the rest.
+A card in a library or a hand that a player knows the identity of, because they saw it put there: one they put on the bottom from their hand, for instance, one they kept on top of their library with a surveil (ADR 0068), or one the other player found with a search and revealed (ADR 0057). A shuffle of that library makes every card in it unknown again. A Known Card in a hand stops being known when it leaves the hand, or when any card leaves a hand of two or more cards for the library without being revealed. A Player View shows Known Cards to the players who know them and nothing of the rest.
 _Avoid_: Revealed card, seen card, tracked card
 
 **Last-Known Information**:
@@ -242,6 +242,10 @@ _Avoid_: Override, interceptor, hook
 **Prevention Effect**:
 A replacement effect that stops damage from being dealt: all of it, or up to an amount. Prevented damage is never dealt, so nothing that reacts to damage sees it.
 _Avoid_: Damage reduction, absorb, block (blocking is combat)
+
+**Surveil**:
+A keyword action: its player looks at the top N cards of their library, puts any number of them into their graveyard and the rest back on top in any order (CR 701.25a). One decision, asked as the effect begins and answered once with the cards graveyarded and the order of the rest; the cards kept become Known Cards to their owner (ADR 0068).
+_Avoid_: Scry (which puts cards on the bottom), mill (which chooses nothing)
 
 **Shield**:
 A replacement or prevention effect that is used up as it applies, such as "prevent the next 1 damage" or a regeneration shield. The GUI shows what each one has left and the card it came from.

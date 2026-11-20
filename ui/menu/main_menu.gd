@@ -58,6 +58,8 @@ var _is_skipping: bool = false
 func _ready() -> void:
 	# Here because the game always opens on this scene, whatever it goes on to.
 	get_window().min_size = MIN_WINDOW
+	# Every button of every screen lightens under the cursor with an ease (game ADR 0066).
+	HoverEase.watch(get_tree())
 	# Only until the deckbuilder is left, so that its Exit lands here and not back in it.
 	if arguments.has(DECKBUILDER_FLAG) and not DeckbuilderScreen.has_left:
 		_is_skipping = true
@@ -208,11 +210,7 @@ func _add(column: VBoxContainer, text: String, on_press: Callable) -> void:
 	made.add_theme_color_override("font_color", SpoilsScreen.TEXT)
 	var fill: Color = SpoilsScreen.BUTTON_FILL
 	var height: int = SpoilsScreen.BUTTON_HEIGHT
-	var radius: int = SpoilsScreen.BUTTON_RADIUS
-	made.add_theme_stylebox_override("normal", DitherShading.button_plate(fill, false, height, radius))
-	made.add_theme_stylebox_override("hover", DitherShading.button_plate(fill.lightened(0.1), false, height, radius))
-	made.add_theme_stylebox_override("pressed", DitherShading.button_plate(fill, true, height, radius))
-	made.add_theme_stylebox_override("hover_pressed", DitherShading.button_plate(fill, true, height, radius))
+	SteelFrame.frame_roomy(made, fill, height)
 	made.pressed.connect(on_press)
 	column.add_child(_shadowed(made))
 	_buttons[text] = made

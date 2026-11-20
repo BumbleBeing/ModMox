@@ -13,7 +13,7 @@ extends MmEvent
 ## battlefield. SEARCH is a card found by a search (CR 701.23). UNATTACHED_AURA is CR 704.5m:
 ## an Aura attached illegally, or to nothing, put into its owner's graveyard.
 enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND,
-	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA }
+	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA, SURVEIL }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -44,6 +44,9 @@ var tapped_on_arrival: bool = false
 ## For a card entering the battlefield: the creature type chosen as it enters (CR 614.12,
 ## ADR 0052), or "". Recorded as it arrives, so its static abilities apply at once.
 var chosen_creature_type_on_arrival: String = ""
+## For a card entering the battlefield: true when its controller paid what its
+## AsEntersPayOrEntersTappedAbility asks as it enters, so it enters untapped (ADR 0052).
+var entry_cost_paid: bool = false
 ## For an Aura spell entering the battlefield: the ID of the object it enters attached to
 ## (CR 303.4a, ADR 0064), or 0. Attached as it arrives, so its static abilities apply at
 ## once and its "enters" abilities see what it enchants.
@@ -82,6 +85,7 @@ func copy(state: MmGameState) -> ZoneChangeEvent:
 	same.tapped_on_arrival = tapped_on_arrival
 	same.chosen_creature_type_on_arrival = chosen_creature_type_on_arrival
 	same.attached_to_on_arrival = attached_to_on_arrival
+	same.entry_cost_paid = entry_cost_paid
 	same.revealed = revealed
 	return same
 

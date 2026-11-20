@@ -19,3 +19,7 @@ Casting from the library arrived on the card track with Assemble the Players: "Y
 **The AI needed one rule.** The Agent reads its top card from its view and its World, so a FULL Agent casts from the top by simulation, and casting from there keeps a card in hand, which the Board Evaluator values. A CHEAP Agent picks the most expensive spell; of two that cost the same it now takes the one on top of its library, for the same reason.
 
 Left out until a card needs them (ADR 0001): casting from the top without "once each turn", playing lands from the top (Future Sight), a library played with its top card revealed to everyone, choosing which of two different permissions is used, and casting from other zones (madness, escape).
+
+## Addendum: a surveil's cards are shown and kept the same way (ADR 0068)
+
+While a surveil is pending its player's view shows the cards it looks at, worked out from the pending decision as a search's library is, and a Simulation Copy made by that player keeps them in place. The cards it keeps on top become Known Cards to their owner, so "re-deal exactly what the view hides" keeps them after it, too.

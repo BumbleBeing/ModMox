@@ -21,8 +21,12 @@ The layered image a card is drawn on, worked out from its characteristics: a fra
 _Avoid_: Card background, border, template
 
 **Status**:
-A lasting condition on the Hero's character that changes the starting conditions of encounters or adds an Emblem to them. The player picks any number on Choose your Hero, a Boon only once an Achievement has unlocked it, and each one may also raise or lower, by a percentage, the gold a won run puts in the Vault: as a rule an Affliction raises it and a Boon lowers it. A Status is never used up; what is used up is a Potion. What does the same to an encounter but is bought, sold, put on and taken off is an Armor.
+A lasting condition on the Hero's character that holds one or more Starting Conditions. A Named Hero comes with its own, which the player cannot change; for the Custom Hero the player picks any number on Choose your Hero, a Boon only once an Achievement has unlocked it. A Status may also bar Armor Slots, and each one may also raise or lower, by a percentage, the gold a won run puts in the Vault: as a rule an Affliction raises it and a Boon lowers it. A Status is never used up; what is used up is a Potion. What does the same to an encounter but is bought, sold, put on and taken off is an Armor.
 _Avoid_: Trait, perk, buff, condition
+
+**Starting Condition**:
+One change to how the Hero starts an encounter: more or less starting life, a smaller opening hand, an extra free mulligan, or an Emblem that is theirs for that encounter. A Status holds one or more, and so does an Armor, whose Starting Conditions count only while it is Worn.
+_Avoid_: Condition (alone), effect (a rules term), bonus, modifier
 
 **Boon**:
 A Status that helps the Hero, such as an extra free mulligan.
@@ -139,7 +143,7 @@ Said of what a player has in an encounter that is not a card: their Emblems and 
 _Avoid_: Command object, non-card, Item (only a Potion is one); and "held card", which is a Drag Card
 
 **Potion Icon**:
-A Potion's picture: a 16 × 16 pixel icon on a beige square with a darker circle behind it, shown on its entry in the Potions window, on its ability's entry in the Stack Window, and enlarged in the Inspector. A Potion without one shows a plain bottle.
+A Potion's picture: a 32 × 32 pixel icon on a raised plate in its Rarity's color, shown on its entry in the Satchel and in the Potions window, on its ability's entry in the Stack Window, and enlarged in the Inspector. A Potion without one shows a plain bottle.
 _Avoid_: Potion art, potion sprite, potion card
 
 **Mod**:
@@ -167,16 +171,20 @@ One of the three places a card has for Mods, Hexes included. A basic land has th
 _Avoid_: Mod pip, socket, upgrade slot
 
 **Armor**:
-An Item the Hero wears. Each Armor is a Helm, Greaves or Boots, and fills the Armor Slot of that name. While Worn it does to every encounter what a Status does, changing the Hero's starting conditions or adding an Emblem: the two share one system and differ only in how they are come by. A Status is picked on Choose your Hero and lasts the run; an Armor is won, bought and sold, and put on or taken off between encounters, in the Satchel, as often as the Hero likes. Held but not Worn, it does nothing. It has a picture of its own, 32 × 32 pixels, and no Rarity, though Armor is the scarcest and most valuable kind of Item.
+An Item the Hero wears. Each Armor is a Helm, Greaves or Boots, and fills the Armor Slot of that name. It holds one or more Starting Conditions, as a Status does, and they count only while it is Worn: the two share one system and differ only in how they are come by. A Status is picked on Choose your Hero and lasts the run; an Armor is won, bought and sold, and put on or taken off between encounters, in the Satchel, as often as the Hero likes. Held but not Worn, it does nothing. It has an Armor Icon and no Rarity, though Armor is the scarcest and most valuable kind of Item.
 _Avoid_: Gear, equipment (an Equipment is a card), armor type (a Helm, Greaves or Boots is told by its Armor Slot)
 
 **Armor Slot**:
-One of the Hero's three places for Armor: Helm, Greaves and Boots. Each holds one Armor of its own kind at a time. A Status can leave the Hero without the use of one or more of them, and such a slot is drawn under a red X.
-_Avoid_: Armor type, equipment slot, Mod Slot (a card's place for a Mod)
+One of the Hero's three places for Armor: Helm, Greaves and Boots. Each holds one Armor of its own kind at a time. A Status can bar one or more of them, a Named Hero's own Status included. A **Barred** Armor Slot holds nothing and is drawn under a red X; an Armor for it can still be held and sold, but not put on.
+_Avoid_: Armor type, equipment slot, Mod Slot (a card's place for a Mod); for Barred: blocked (a rules term), locked, disabled
 
 **Worn**:
 Said of an Armor that is in its Armor Slot. An Armor is put on and taken off, and only a Worn one does anything.
 _Avoid_: Attached (a rules term, for an Aura or an Equipment), equipped (equip is a rules keyword), active
+
+**Armor Icon**:
+An Armor's picture: a 32 × 32 pixel icon, shown on its entry in the Satchel and in its Armor Slot while it is Worn. It has no ground of its own: on its entry it is drawn straight on the parchment, and in its Armor Slot on the slot's dark square. A Potion Icon, unlike it, stands on its Rarity's plate. An empty Armor Slot shows a faint outline of a helm, greaves or boots in its place.
+_Avoid_: Armor art, armor sprite, Armor Slot (the place, not the picture)
 
 **Heart**:
 One of the losses a run can survive. Losing an encounter costs one, and the run is lost when none are left.
@@ -190,13 +198,21 @@ _Avoid_: Starter deck, card pool, starting collection
 A goal met across runs, kept in the Profile, shown in the Gallery. Some add cards to the Starting Pool or unlock a Boon; nothing an Achievement unlocks is sold in the Bazaar.
 _Avoid_: Trophy, unlock, milestone (a roadmap term)
 
-**Hero Color**:
-The one color of mage the Hero plays as, chosen on Choose your Hero. It weights the deal from the Starting Pool and picks the Hero's Portrait; the Hero can still play cards of any color.
-_Avoid_: Class, mage type, deck color
+**Choose your Hero**:
+The screen a new run starts on, where the player chooses the Hero to play as: a Named Hero or the Custom Hero.
+_Avoid_: Hero Selection, character select, Hero screen
 
-**Presentation**:
-Whether the Hero's Portrait is drawn Masc or Femme, chosen on Choose your Hero. With the Hero Color it picks one of ten Portraits.
-_Avoid_: Gender, sex, body type
+**Named Hero**:
+A Hero that is a Magic planeswalker, offered on Choose your Hero. Its name, its Hero Color, its Portrait and its Statuses are its own, and the player changes none of them. Some of its Statuses are no one else's, and one may bar Armor Slots.
+_Avoid_: Character, class, preset
+
+**Custom Hero**:
+The Hero the player makes on Choose your Hero. The player gives its name and, alone among Heroes, chooses its Hero Color, or none, and the Statuses it takes. Its Portrait is one of a set kept for Custom Heroes.
+_Avoid_: Custom character, blank Hero, player-made Hero
+
+**Hero Color**:
+The one color of mage the Hero plays as. A Named Hero's is its own; the Custom Hero's is chosen on Choose your Hero, and may be none. It weights the deal from the Starting Pool toward that color, and with none the deal favors no color; the Hero can still play cards of any color.
+_Avoid_: Class, mage type, deck color
 
 **Vault**:
 The gold kept between runs: whatever gold the Hero still holds when a run is won goes into it, raised or lowered by the run's Statuses. A lost run puts nothing in it. It is kept in the Profile and spent only in the Bazaar.
@@ -227,7 +243,7 @@ The strip along the Stage Map that shows the Stage, its Tier, the Hearts left an
 _Avoid_: HUD, status bar, top bar
 
 **Satchel**:
-Where the Hero keeps the Items they hold between encounters, and the window that shows them. The window stands over whatever opened it, which it dims, and cannot be resized. It has three pages, Armor, Mods and Potions, and always opens on Armor. Each page is a scrolling list with one entry for each kind of Item held, saying how many: its picture (a Mod has none), its name, what it does and its Rarity (an Armor has none). Beside the pages, whichever is open, stand the Hero's Portrait and their three Armor Slots. A click on an Armor's entry puts it on, in place of any Worn in that Armor Slot, and a click on a filled Armor Slot takes that Armor off; Mods and Potions are only read there. It has no limit on what it holds. It is opened from a button on the Run Bar, beside the Hearts, the gold and the Deckbox button, from the Encounter Reveal, and from a button at a Store or a Workshop, where Items are sold from it.
+Where the Hero keeps the Items they hold between encounters, and the window that shows them. The window stands over whatever opened it, which it dims, and cannot be resized. It has three pages, Armor, Mods and Potions, and always opens on Armor. Each page is a scrolling list with one entry for each kind of Item held, saying how many: its picture (a Mod has none), its name, what it does and its Rarity (an Armor has none). Beside the pages, whichever is open, stand the Hero's Portrait and their three Armor Slots. A click on an Armor's entry puts it on, in place of any Worn in that Armor Slot, and a click on a filled Armor Slot takes that Armor off; Mods and Potions are only read there. A Worn Armor keeps its entry in the list, marked with a star, and a right-click on it in its Armor Slot opens the Armor page scrolled to that entry, where what it does is read. It has no limit on what it holds. It is opened from a button on the Run Bar, beside the Hearts, the gold and the Deckbox button, from the Encounter Reveal, and from a button at a Store or a Workshop, where Items are sold from it.
 _Avoid_: Inventory, bag, Satchel screen (it is a window), Potions window (the encounter's list of Potions)
 
 **Run Seed**:
@@ -325,6 +341,10 @@ _Avoid_: Stack region, stack panel
 **Mode Window**:
 The window over the battlefield that asks which Mode of a Modal Spell is cast, or of a modal triggered ability the Hero is putting on the stack (game ADR 0047), titled "[spell or source]: choose one". It has an entry for every Mode, each only the card's art and the Mode's words; one that cannot be chosen is dimmed. Pointing at a Mode shows it in full in the Info Panel and marks what it could target. It opens only when two or more Modes can be chosen, and a trigger's offers no Cancel. It is the same window that asks which replacement effect applies first.
 _Avoid_: Mode menu, charm picker, choose-one dialog
+
+**Surveil Window**:
+The window where the Hero surveils (game ADR 0069), titled "Surveil N" for the number of cards surveilled. It opens by itself left of the piles, three cards wide, with the cards face up in one row, leftmost on top of the library, and "Graveyard" under them; it has no close button. A drag orders the row, a click selects a card (white, the others green), and Graveyard flies the selected card to the Hero's Graveyard pile. Only Done on the Pass Button answers.
+_Avoid_: Surveil dialog, scry window, Library window (that shows the whole library)
 
 **Creature Type Window**:
 The window over the battlefield where the Hero chooses a Chosen Creature Type (game ADR 0053), titled "[card]: choose a creature type". A search box at its top has the keyboard as it opens; under it the Hero's own creatures' types are pinned, each just its name, then every other creature type as a compact row. Typing narrows both, names starting with what is typed first, and lights the top match, which Enter chooses; Up and Down move the light. Pointing at a type marks the Hero's creatures of it; the Info Panel only asks "Choose a creature type for [card]". Nothing in it glows, since every type can be chosen.
@@ -440,12 +460,16 @@ The colored outline on everything a Pending Decision can choose: orange-red for 
 _Avoid_: Highlight, selection, halo
 
 **Info Panel**:
-The bordered, Dither Shaded box at the left end of the hand's strip, between the Hero's panel and the Hand Strip, 360 wide and as tall as the strip (ADR 0066). Centered in it, it says what the Hero is being asked and what is still owed while paying, and, in red above its Answer Row, why their last answer was refused. Its Answer Row holds the answers of a question or one action. While a "you may" is asked it reads "[ability]: [what yes does]?" (ADR 0060); while a ward cost is asked, and while it is paid, "Pay ward for [the warded permanent]:" with the cost still to pay after it on the same line (ADR 0062); while an X is asked, "Pay {X} for [the source]?" (ADR 0063). It is dim while nothing is asked, and its border flashes white once when a question other than priority arrives. While the cursor is on an Option Menu row it shows that row in full in place of everything else.
+The bordered, Dither Shaded box at the left end of the hand's strip, between the Hero's panel and the Hand Strip, 360 wide and as tall as the strip (ADR 0066). Centered in it, it says what the Hero is being asked and what is still owed while paying, and, in red above its Answer Row, why their last answer was refused. Its Answer Row holds the answers of a question or one action. While a "you may" is asked it reads "[ability]: [what yes does]?" (ADR 0060); while a ward cost is asked, and while it is paid, "Pay ward for [the warded permanent]:" with the cost still to pay after it on the same line (ADR 0062); while an X is asked, "Pay {X} for [the source]?" (ADR 0063); while a land being played may be paid for to enter untapped, "Have [the land] enter untapped?", with the cost, "Pay 2 life", as the left answer of its Answer Row (ADR 0067). It is dim while nothing is asked, and its border flashes white once when a question other than priority arrives. While the cursor is on an Option Menu row it shows that row in full in place of everything else.
 _Avoid_: Prompt bar, status line, message box
 
 **Pass Button**:
 The gray, shaded button at the right end of the hand's strip, opposite the Info Panel and as wide, which is always there (ADR 0066). It reads what it does in large type with the key that presses it under it, smaller: "Pass Priority" over "SPACE". With priority it passes; while attackers, blockers, a division of damage, an order of triggers or cards to discard are being chosen it confirms that choice instead ("Attack with 2"); while a question with a Selected Answer is asked it reads that answer ("Yes", "No", "Pay {2}") and gives it; while such a question has no Selected Answer it reads "Choose an answer", with no key, and cannot be pressed; at any other time it cannot be pressed, and is gray and blank. Its border flashes white once whenever it becomes one that can be pressed. It was over the Info Panel until 13l, and on the Hero's panel until 13g.
 _Avoid_: Confirm button, OK button, next button
+
+**Steel Frame**:
+How a button is drawn: a ring of light steel three pixels thick with a dark line inside it, its corners stepped and never rounded, over a lip the button sits down on while held, round a face Dither Shaded in the button's own color (game ADR 0066). The ring of a Selected Answer is white. A button that cannot be pressed lies flat, with no lip, its ring faded. Whatever is drawn round a button, a Glow or a ring, follows the frame's shape.
+_Avoid_: Border, outline, bevel, button skin
 
 **Answer Row**:
 The bottom row of the Info Panel (ADR 0066). It holds the answers of a question as two halves, the affirmative on the left and "No" on the right, or one action across its whole width: Cancel for a cast in progress, which names the key that cancels, or "Declare All", which reads "Undeclare All" and puts every attacker back for as long as any is declared (A496). An answer is only selected there; an action acts at once. While an X is asked its left half is the stepper: a plate whose ends are − and + and whose number sits in a dark well between them.
@@ -456,7 +480,7 @@ The answer of a "you may", a ward cost or an X that is lit in the Answer Row, wi
 _Avoid_: Default answer, highlighted answer, focus
 
 **Portrait**:
-The 32 × 32 pixel picture of a player on their panel, drawn six screen pixels to each of its own with hard edges, with the life total in its corner. It is what glows and is clicked when its player can be chosen. Every Portrait but a placeholder has a Pain Portrait, and one drawn after a Magic character a Blink Portrait too. A Villain's is drawn after a character in a Magic card's art, turned to face the front; the Hero's ten are a set of their own. Until Heroes have their own, the Hero's is Urza, Academy Headmaster's; for testing, every Villain without a Portrait of its own, and one met outside a run, has Charmed Stray's.
+The 32 × 32 pixel picture of a player on their panel, drawn six screen pixels to each of its own with hard edges, with the life total in its corner. It is what glows and is clicked when its player can be chosen. Every Portrait but a placeholder has a Pain Portrait, and one drawn after a Magic character a Blink Portrait too. A Villain's is drawn after a character in a Magic card's art, turned to face the front, and a Named Hero's after its planeswalker in the same way; the Custom Hero's are a set of their own. Until Heroes have their own, the Hero's is Urza, Academy Headmaster's; for testing, every Villain without a Portrait of its own, and one met outside a run, has Charmed Stray's.
 _Avoid_: Avatar, icon, face (a Card Face or Battlefield Face is a card's)
 
 **Pain Portrait**:
@@ -576,7 +600,7 @@ What one keyword means, in a sentence, shown in the Inspector beside its Keyword
 _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 
 **Rarity**:
-How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a Unique Villain or a rare Chaos Node event, never in other Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique, and Unique here is not the Villain Rank. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. An Emblem has none, and neither has an Armor.
+How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a Unique Villain or a rare Chaos Node event, never in other Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique, and Unique here is not the Villain Rank. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. A Potion Icon's plate is the same color, but for a Mythic's, which is sienna so that it is not taken for Rare's gold; a Unique Item's plate is light purple. An Emblem has none, and neither has an Armor.
 _Avoid_: Tier (a part of a run), quality, grade
 
 **Divider**:

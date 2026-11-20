@@ -147,6 +147,22 @@ func test_settings_opens_a_page_with_the_game_speeds_and_the_one_in_use_marked()
 	assert_lt(menu.speed_button(GameSpeed.Speed.SLOW).position.y, menu.button(PauseMenu.BACK).position.y)
 
 
+func test_the_game_speed_heading_is_centered_over_the_speeds() -> void:
+	var menu: PauseMenu = _menu()
+	menu.open(FIELD, true)
+	assert_null(menu.speed_heading(), "On the settings page only.")
+
+	menu.button(PauseMenu.SETTINGS).pressed.emit()
+
+	var heading: Label = menu.speed_heading()
+	assert_eq(heading.text, "Game speed")
+	assert_eq(heading.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER)
+	var first: Button = menu.speed_button(GameSpeed.ALL[0])
+	var last: Button = menu.speed_button(GameSpeed.ALL[-1])
+	assert_almost_eq(heading.position.x + heading.size.x / 2.0, (first.position.x + last.position.x + last.size.x) / 2.0, 0.01,
+		"Over the middle of the row of speeds.")
+
+
 func test_pressing_a_speed_says_so_and_marks_it() -> void:
 	var menu: PauseMenu = _menu()
 	var chosen: Array[GameSpeed.Speed] = []
@@ -266,8 +282,24 @@ func test_the_speed_in_use_has_a_gold_ring_and_pressing_another_moves_it() -> vo
 	menu.button(PauseMenu.SETTINGS).pressed.emit()
 	for speed: GameSpeed.Speed in GameSpeed.ALL:
 		assert_eq(menu.chosen_ring(speed).visible, speed == GameSpeed.Speed.NORMAL, GameSpeed.name_of(speed))
-	var ring: StyleBoxFlat = menu.chosen_ring(GameSpeed.Speed.NORMAL).get_theme_stylebox("panel") as StyleBoxFlat
-	assert_eq(ring.border_color, PauseMenu.CHOSEN)
+	var button: Button = menu.speed_button(GameSpeed.Speed.NORMAL)
+	var ring: Panel = menu.chosen_ring(GameSpeed.Speed.NORMAL)
+	assert_eq(ring.size, button.size)
+	var plate: Image = (button.get_theme_stylebox("normal") as StyleBoxTexture).texture.get_image()
+	var gold: Image = (ring.get_theme_stylebox("panel") as StyleBoxTexture).texture.get_image()
+	assert_eq(gold.get_size(), plate.get_size(), "Painted round the button's own plate,")
+	var middle: int = gold.get_width() / 2
+	assert_true(gold.get_pixel(middle, 0).is_equal_approx(PauseMenu.CHOSEN), "gold along its top,")
+	assert_true(gold.get_pixel(middle, 1).is_equal_approx(PauseMenu.CHOSEN), "two pixels thick,")
+	assert_eq(gold.get_pixel(middle, 2).a, 0.0, "with nothing inside it,")
+	assert_true(gold.get_pixel(middle, gold.get_height() - 1).is_equal_approx(PauseMenu.CHOSEN), "round the lip too,")
+	for y: int in gold.get_height():
+		for x: int in gold.get_width():
+			if gold.get_pixel(x, y).a > 0.0 and plate.get_pixel(x, y).a == 0.0:
+				fail_test("The ring lights %d, %d, which is outside the button's corner." % [x, y])
+				return
+	assert_eq(plate.get_pixel(0, 0).a, 0.0, "The button's corner is rounded away")
+	assert_eq(gold.get_pixel(0, 0).a, 0.0, "and so is the ring's.")
 	var other: GameSpeed.Speed = GameSpeed.ALL[0]
 	menu.speed_button(other).pressed.emit()
 	assert_true(menu.chosen_ring(other).visible)
@@ -287,10 +319,9 @@ func _is_dithered(button: Button, palette: InspectorParts.Palette) -> void:
 	var height: int = int(button.size.y)
 	assert_eq(button.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, button.text)
 	assert_eq(button.get_theme_stylebox("normal"),
-		ButtonShading.plate(WindowLook.BUTTON, "normal", height, ButtonShading.SIDE, true, WindowLook.BUTTON_RADIUS),
+		ButtonShading.plate(WindowLook.BUTTON, "normal", height),
 		button.text)
-	assert_eq(button.get_theme_stylebox("disabled"), ButtonShading.plate(palette.button_disabled, "disabled", height,
-		ButtonShading.SIDE, true, WindowLook.BUTTON_RADIUS), button.text)
+	assert_eq(button.get_theme_stylebox("disabled"), ButtonShading.plate(WindowLook.BUTTON, "disabled", height, ButtonShading.SIDE, true, palette.button_disabled), button.text)
 
 
 ## Whether two Dither Shaded plates are painted alike, pixel for pixel.

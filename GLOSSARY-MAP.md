@@ -7,10 +7,11 @@
 
 ## Relationships
 
-- **Game → Rules Engine**: The game hands the engine an Encounter Setup (decks of Run Cards, final starting numbers, Emblems derived from Statuses, the Potions the Hero holds) and receives the event log, the Outcome and which Potions were used. The engine never refers to the game.
+- **Game → Rules Engine**: The game hands the engine an Encounter Setup (decks of Run Cards, final starting numbers, Emblems derived from the Starting Conditions of Statuses and Worn Armor, the Potions the Hero holds) and receives the event log, the Outcome and which Potions were used. The engine never refers to the game.
 - **Game → Rules Engine, in the GUI**: Only the Encounter Presenter holds the engine and the Encounter Driver. The Encounter Screen is handed snapshots built from the Hero's Player View, never the engine or the game state (ADR 0021, in the root `docs/adr/`, which shares the engine ADRs' numbering).
 - **Game → AI Agent**: The game gives each Villain an AI Profile, sets one global AI Difficulty, and runs the encounter with an Encounter Driver, holding no Agent for the Hero so it stops for the GUI. The AI depends on the engine; the engine never refers to the AI.
 - **Game → Rules Engine, in Potions**: The game's Potion is an Item the Hero holds between encounters. The engine's Potion is the Game Object that Item becomes for one encounter (ADR 0036). The engine never says Item.
 - **Game → Rules Engine, in Originals**: Both say Original for a card as its Card Definition has it. The game shows it in the Inspector; the engine keeps a reference to it on each card in an encounter, for effects that ask what a card was originally named (ADR 0004).
 - **Game → Rules Engine, in names**: The game's Mod is the Item the Hero buys, holds and applies. The engine's Modification is the change it leaves on a Run Card (ADR 0004). The engine never says Mod, and the game says Modification only when it means the engine's record.
 - **Game → Rules Engine, in "you may"**: The engine's May Effect asks its controller a yes-or-no Pending Decision as it resolves. The game answers it for the Hero with the Info Panel's "No" button and the Pass Button, which reads "Yes" (ADR 0060, in the root `docs/adr/`).
+- **Game → Rules Engine, in surveil**: The engine's Surveil asks one Pending Decision, answered with the cards graveyarded and the order of the rest (ADR 0068). The game makes that answer for the Hero in the Surveil Window, card by card, and gives it all at once with Done (ADR 0069, in the root `docs/adr/`).

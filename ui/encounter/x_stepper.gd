@@ -15,6 +15,8 @@ const END: float = 46.0
 const WELL: Color = Color("#1e2228")
 const AMOUNT_FONT: int = 24
 const SIGN_FONT: int = 24
+## How far an end lightens under the cursor.
+const END_HOVER: float = 0.12
 
 var _amount: Label
 var _minus: Button
@@ -77,7 +79,7 @@ func is_selected() -> bool:
 
 
 ## One end: its sign on the plate's own face, and the press that steps. It has no plate of
-## its own, only a lighter face under the cursor.
+## its own, only a lighter face under the cursor, eased as the plate's is.
 func _end(sign_text: String, box: Rect2, is_enabled: bool, on_press: Callable) -> Button:
 	var button: Button = Button.new()
 	button.text = sign_text
@@ -93,11 +95,13 @@ func _end(sign_text: String, box: Rect2, is_enabled: bool, on_press: Callable) -
 	for state: String in ButtonShading.STATES:
 		var flat: StyleBoxFlat = StyleBoxFlat.new()
 		flat.bg_color = Color(1, 1, 1, 0.0)
-		if state == "hover":
-			flat.bg_color = Color(1, 1, 1, 0.12)
-		elif state in ["pressed", "hover_pressed"]:
+		if state in ["pressed", "hover_pressed"]:
 			flat.bg_color = Color(0, 0, 0, 0.25)
 		button.add_theme_stylebox_override(state, flat)
 	button.pressed.connect(on_press)
+	var lit: ColorRect = ColorRect.new()
+	lit.color = Color(1, 1, 1, END_HOVER)
+	lit.size = box.size
+	HoverEase.ease(button, lit)
 	add_child(button)
 	return button

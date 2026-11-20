@@ -742,7 +742,7 @@ func test_every_button_is_shaded_in_its_own_color_and_confirm_is_gray_until_enou
 	assert_gt(OpeningHandOverlay.CONFIRM_COLOR.g, OpeningHandOverlay.CONFIRM_COLOR.b, "Green.")
 	var confirm: Button = _overlay.button("Confirm")
 	assert_true(confirm.disabled, "A card is still owed,")
-	assert_eq(confirm.get_theme_stylebox("disabled"), ButtonShading.plate(ButtonShading.DISABLED, "disabled", int(confirm.size.y)), "so it is gray.")
+	assert_eq(confirm.get_theme_stylebox("disabled"), ButtonShading.plate(OpeningHandOverlay.CONFIRM_COLOR, "disabled", int(confirm.size.y)), "so it is gray.")
 
 	_open(Scenario.setup(Rule.HERO_CHOOSES))
 	_is_shaded("Play first", OpeningHandOverlay.CHOICE_COLOR)
