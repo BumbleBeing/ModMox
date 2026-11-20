@@ -1,9 +1,10 @@
 extends GutTest
 ## Ward on the Encounter Screen (ADR 0062). The Hero's Zap (an instant costing {0}, 2 damage
 ## to any target) is aimed at the Villain's Warden (a 2/2 with ward {2}); as the ward
-## trigger resolves, the Info Panel reads "Pay ward for Warden:" with the cost after it and a
-## "No" button, the Pass Button reads "Pay" and no key presses it, and the Zap's Stack Window
-## entry carries the ward's dashed Stack Mark. Paying reads the same line, with what is left,
+## trigger resolves, the Info Panel reads "Pay ward for Warden:" with the cost after it, and
+## "Pay {2}" and "No" in its Answer Row with neither selected, so the Pass Button reads
+## "Choose an answer" and cannot be pressed (game ADR 0066). The Zap's Stack Window entry
+## carries the ward's dashed Stack Mark. Paying reads the same line, with what is left,
 ## and has no Cancel. The Hero's Mana Bird taps for {W}{W}{W}.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
@@ -21,27 +22,50 @@ func after_each() -> void:
 	await wait_process_frames(2)
 
 
-func test_the_info_panel_asks_to_pay_ward_with_the_cost_after_it_and_offers_no() -> void:
+func test_the_info_panel_asks_to_pay_ward_with_the_cost_after_it_and_neither_answer_selected() -> void:
 	_open_asked()
+	var panel: InfoPanel = _screen.info_panel()
 
-	assert_eq(_screen.info_panel().prompt_text(), "Pay ward for Warden:")
-	assert_eq(_screen.info_panel().owed_pip_names(), ["2"] as Array[String])
-	assert_lt(_screen.info_panel().first_pip_position().y, 40.0, "On the prompt's line, not under it.")
-	assert_gt(_screen.info_panel().first_pip_position().x, 100.0, "After the words.")
-	assert_eq(_screen.info_panel().no_button().text, "No")
-	assert_null(_screen.info_panel().cancel_button())
-	assert_eq(_screen.pass_button().text, "Pay", "No key pays.")
-	assert_false(_screen.pass_button().disabled)
+	assert_eq(panel.prompt_text(), "Pay ward for Warden:")
+	assert_eq(panel.owed_pip_names(), ["2"] as Array[String])
+	assert_eq(panel.prompt_written(), "Pay ward for Warden: {2}", "On the prompt's line, after the words.")
+	assert_eq(panel.affirmative_text(), "Pay {2}")
+	assert_eq(panel.no_button().text, "No")
+	assert_null(panel.cancel_button())
+	assert_eq(panel.selected(), InfoPanel.NOTHING, "A question that spends mana starts on nothing.")
+	assert_false(InfoPanel.is_lit(panel.affirmative_button()))
+	assert_false(InfoPanel.is_lit(panel.no_button()))
+	assert_eq(_screen.pass_button().shown_text(), "Choose an answer")
+	assert_eq(_screen.pass_button().key_text(), "", "No key presses it yet.")
+	assert_true(_screen.pass_button().disabled)
 
 
-func test_the_pass_key_does_not_pay() -> void:
+func test_the_pass_key_does_nothing_until_an_answer_is_selected() -> void:
 	_open_asked()
 	var asked: MmPendingDecision = _presenter.snapshot().decision
 
 	_screen.press_key(KEY_SPACE)
+	_screen.pass_button().pressed.emit()
 	_presenter.wait_until_idle()
 
-	assert_eq(_presenter.snapshot().decision, asked, "Still asked: only a click pays.")
+	assert_eq(_presenter.snapshot().decision, asked, "Still asked: nothing is selected.")
+
+
+func test_selecting_pay_makes_the_pass_button_read_it_and_the_pass_key_pays() -> void:
+	_open_asked()
+
+	_screen.info_panel().affirmative_button().pressed.emit()
+
+	assert_eq(_screen.info_panel().selected(), InfoPanel.AFFIRMATIVE)
+	assert_eq(_screen.pass_button().shown_text(), "Pay {2}")
+	assert_eq(_screen.pass_button().key_text(), "SPACE")
+	assert_false(_screen.pass_button().disabled)
+	assert_true(_presenter.snapshot().decision is ChooseYesOrNoDecision, "Selecting pays nothing.")
+
+	_screen.press_key(KEY_SPACE)
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is PayManaDecision, "Paid by hand: Auto-tap is off in a test.")
 
 
 func test_the_spell_it_would_counter_carries_its_dashed_stack_mark() -> void:
@@ -57,11 +81,11 @@ func test_pay_asks_for_the_cost_on_the_same_line_with_no_cancel_and_the_spell_re
 	_open_asked()
 	var zap: int = _zap_id()
 
-	_screen.pass_button().pressed.emit()
-	_presenter.wait_until_idle()
+	_pay()
 
 	assert_true(_presenter.snapshot().decision is PayManaDecision, "Paid by hand: Auto-tap is off in a test.")
 	assert_eq(_screen.info_panel().prompt_text(), "Pay ward for Warden:")
+	assert_eq(_screen.info_panel().prompt_written(), "Pay ward for Warden: {2}")
 	assert_eq(_screen.info_panel().owed_pip_names(), ["2"] as Array[String])
 	assert_null(_screen.info_panel().cancel_button(), "Nothing is being cast.")
 	assert_eq(_presenter.answer(_bird_answer()), "")
@@ -75,8 +99,7 @@ func test_auto_tap_pays_the_ward_cost() -> void:
 	var zap: int = _zap_id()
 	_presenter.set_auto_tapping(true)
 
-	_screen.pass_button().pressed.emit()
-	_presenter.wait_until_idle()
+	_pay()
 
 	assert_false(_presenter.snapshot().decision is PayManaDecision)
 	assert_false(_stack_ids().has(zap))
@@ -85,8 +108,7 @@ func test_auto_tap_pays_the_ward_cost() -> void:
 
 func test_undo_after_pay_asks_again() -> void:
 	_open_asked()
-	_screen.pass_button().pressed.emit()
-	_presenter.wait_until_idle()
+	_pay()
 	assert_true(_presenter.snapshot().decision is PayManaDecision)
 
 	assert_eq(_presenter.undo(), "")
@@ -102,10 +124,19 @@ func test_no_counters_the_spell() -> void:
 	var zap: int = _zap_id()
 
 	_screen.info_panel().no_button().pressed.emit()
+	assert_eq(_screen.pass_button().shown_text(), "No")
+	_screen.pass_button().pressed.emit()
 	_presenter.wait_until_idle()
 
 	assert_false(_stack_ids().has(zap))
 	assert_not_null(_warden(), "The Zap was countered.")
+
+
+## Selects Pay and presses the Pass Button.
+func _pay() -> void:
+	_screen.info_panel().affirmative_button().pressed.emit()
+	_screen.pass_button().pressed.emit()
+	_presenter.wait_until_idle()
 
 
 func _zap_id() -> int:

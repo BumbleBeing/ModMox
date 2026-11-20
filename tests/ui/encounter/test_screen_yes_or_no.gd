@@ -1,7 +1,8 @@
 extends GutTest
-## A "you may" on the Encounter Screen (game ADR 0060). As the Hero's "you may" ability
-## resolves, the Info Panel asks "[ability]: [what yes does]?" with a "No" button, the Pass
-## Button reads "Yes [SPACE]", and what the ability targets carries its dashed Stack Mark.
+## A "you may" on the Encounter Screen (game ADRs 0060 and 0066). As the Hero's "you may"
+## ability resolves, the Info Panel asks "[ability]: [what yes does]?" with Yes and No in its
+## Answer Row, Yes selected; a press or Left and Right only selects, and the Pass Button reads
+## the Selected Answer and gives it. What the ability targets carries its dashed Stack Mark.
 ## Snarer is a 2/1 costing {0}: "When this creature enters, you may tap target creature.";
 ## it is the only creature, so it targets itself.
 
@@ -19,13 +20,18 @@ func after_each() -> void:
 	await wait_process_frames(2)
 
 
-func test_the_info_panel_asks_and_offers_no_and_the_pass_button_says_yes() -> void:
+func test_the_info_panel_asks_with_yes_selected_and_the_pass_button_reads_it() -> void:
 	_open_asked()
+	var panel: InfoPanel = _screen.info_panel()
 
-	assert_eq(_screen.info_panel().prompt_text(), "Snarer's ability: tap target creature?")
-	assert_not_null(_screen.info_panel().no_button())
-	assert_eq(_screen.info_panel().no_button().text, "No")
-	assert_eq(_screen.pass_button().text, "Yes [SPACE]")
+	assert_eq(panel.prompt_text(), "Snarer's ability: tap target creature?")
+	assert_eq(panel.affirmative_button().text, "Yes")
+	assert_eq(panel.no_button().text, "No")
+	assert_eq(panel.selected(), InfoPanel.AFFIRMATIVE, "A \"you may\" starts on Yes.")
+	assert_true(InfoPanel.is_lit(panel.affirmative_button()))
+	assert_false(InfoPanel.is_lit(panel.no_button()))
+	assert_eq(_screen.pass_button().shown_text(), "Yes")
+	assert_eq(_screen.pass_button().key_text(), "SPACE")
 	assert_false(_screen.pass_button().disabled)
 
 
@@ -50,15 +56,54 @@ func test_the_pass_button_answers_yes() -> void:
 	assert_false(BorderEffects.mark_color(_screen.face_of(target)) != null, "Nor marked.")
 
 
-func test_the_no_button_answers_no() -> void:
+func test_pressing_no_selects_it_and_answers_nothing_until_the_pass_key() -> void:
 	_open_asked()
 	var target: int = _target_id()
+	var asked: MmPendingDecision = _presenter.snapshot().decision
 
 	_screen.info_panel().no_button().pressed.emit()
 	_presenter.wait_until_idle()
 
+	assert_eq(_presenter.snapshot().decision, asked, "Still asked: a press only selects.")
+	assert_eq(_screen.info_panel().selected(), InfoPanel.NO_ANSWER)
+	assert_true(InfoPanel.is_lit(_screen.info_panel().no_button()))
+	assert_false(InfoPanel.is_lit(_screen.info_panel().affirmative_button()))
+	assert_eq(_screen.pass_button().shown_text(), "No")
+
+	_screen.press_key(KEY_SPACE)
+	_presenter.wait_until_idle()
+
 	assert_false(_permanent(target).is_tapped)
 	assert_true(_presenter.snapshot().view.stack.is_empty(), "The ability resolved all the same.")
+
+
+func test_left_and_right_move_the_selected_answer_and_answer_nothing() -> void:
+	_open_asked()
+	var asked: MmPendingDecision = _presenter.snapshot().decision
+
+	_screen.press_key(KEY_RIGHT)
+
+	assert_eq(_screen.info_panel().selected(), InfoPanel.NO_ANSWER)
+	assert_eq(_screen.pass_button().shown_text(), "No")
+
+	_screen.press_key(KEY_LEFT)
+	_presenter.wait_until_idle()
+
+	assert_eq(_screen.info_panel().selected(), InfoPanel.AFFIRMATIVE)
+	assert_eq(_screen.pass_button().shown_text(), "Yes")
+	assert_eq(_presenter.snapshot().decision, asked, "Neither key answers.")
+
+
+func test_the_border_flashes_for_the_question_and_not_for_priority() -> void:
+	_open_asked()
+
+	assert_gt(_screen.info_panel().flash_count(), 0, "The question flashed it.")
+	var flashes: int = _screen.info_panel().flash_count()
+	_screen.pass_priority()
+	_presenter.wait_until_idle()
+	assert_true(_presenter.snapshot().decision is PriorityDecision)
+
+	assert_eq(_screen.info_panel().flash_count(), flashes, "Priority comes too often to flash.")
 
 
 func _target_id() -> int:

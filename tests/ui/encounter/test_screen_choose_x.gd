@@ -2,8 +2,9 @@ extends GutTest
 ## Choosing X on the Encounter Screen (game ADR 0063). The Hero's X Payer ("When this creature
 ## enters, you may pay {X}. If you do, you gain X life.") enters while their Mana Bird, which
 ## taps for {W}{W}{W}, is untapped, so X runs 0 to 3. The Info Panel reads "Pay {X} for X
-## Payer?" with a − X + stepper starting at the largest X worth paying and a "No" button; the
-## Pass Button reads "Pay {3}" and no key presses it. Paying by hand reads "Pay for X Payer:"
+## Payer?" with the X stepper, starting at the largest X worth paying, and "No" as the halves
+## of its Answer Row, neither selected, so the Pass Button reads "Choose an answer" (game ADR
+## 0066). Stepping selects the stepper, and the Pass Button then reads "Pay {3}". Paying by hand reads "Pay for X Payer:"
 ## with what is left after it, and has no Cancel.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
@@ -20,29 +21,34 @@ func after_each() -> void:
 	await wait_process_frames(2)
 
 
-func test_the_info_panel_asks_to_pay_x_with_a_stepper_at_the_most_worth_paying_and_offers_no() -> void:
+func test_the_info_panel_asks_to_pay_x_with_the_stepper_and_no_and_neither_selected() -> void:
 	_open_asked()
+	var panel: InfoPanel = _screen.info_panel()
 
-	assert_eq(_screen.info_panel().prompt_text(), "Pay {X} for X Payer?")
-	var stepper: DamageStepper = _screen.info_panel().x_stepper()
+	assert_eq(panel.prompt_text(), "Pay {X} for X Payer?")
+	var stepper: XStepper = panel.x_stepper()
 	assert_not_null(stepper)
 	assert_eq(stepper.amount_text(), "3", "Gaining life is worth every X, so the most.")
 	assert_true(stepper.plus_button().disabled, "3 is all the Hero can pay.")
 	assert_false(stepper.minus_button().disabled)
-	assert_eq(_screen.info_panel().no_button().text, "No")
-	assert_lt(_screen.info_panel().no_button().size.x, InfoPanel.BUTTON_ROOM - 12.0, "Narrower, to make room.")
-	assert_null(_screen.info_panel().cancel_button())
-	assert_eq(_screen.pass_button().shown_text(), "Pay {3}", "No key pays.")
-	assert_false(_screen.pass_button().disabled)
+	assert_eq(panel.no_button().text, "No")
+	assert_almost_eq(stepper.size.x, panel.no_button().size.x, 0.01, "The two halves of the Answer Row.")
+	assert_null(panel.cancel_button())
+	assert_eq(panel.selected(), InfoPanel.NOTHING)
+	assert_false(stepper.is_selected())
+	assert_eq(_screen.pass_button().shown_text(), "Choose an answer")
+	assert_true(_screen.pass_button().disabled)
 
 
-func test_the_stepper_lowers_and_raises_x_from_0_to_the_most() -> void:
+func test_stepping_selects_the_stepper_and_x_runs_from_0_to_the_most() -> void:
 	_open_asked()
 
 	_screen.info_panel().x_stepper().minus_button().pressed.emit()
 
+	assert_true(_screen.info_panel().x_stepper().is_selected(), "A step selects paying.")
 	assert_eq(_screen.info_panel().x_stepper().amount_text(), "2")
 	assert_eq(_screen.pass_button().shown_text(), "Pay {2}")
+	assert_eq(_screen.pass_button().key_text(), "SPACE")
 	assert_false(_screen.info_panel().x_stepper().plus_button().disabled)
 	for step: int in 3:
 		_screen.info_panel().x_stepper().minus_button().pressed.emit()
@@ -53,14 +59,52 @@ func test_the_stepper_lowers_and_raises_x_from_0_to_the_most() -> void:
 	assert_eq(_screen.info_panel().x_stepper().amount_text(), "1")
 
 
-func test_the_pass_key_does_not_pay() -> void:
+func test_a_press_on_the_stepper_selects_it_without_stepping() -> void:
+	_open_asked()
+
+	_screen.info_panel().x_stepper().pressed.emit()
+
+	assert_true(_screen.info_panel().x_stepper().is_selected())
+	assert_eq(_screen.info_panel().x_stepper().amount_text(), "3")
+	assert_eq(_screen.pass_button().shown_text(), "Pay {3}")
+
+
+func test_up_and_down_step_x_and_left_and_right_still_move_between_the_stepper_and_no() -> void:
+	_open_asked()
+
+	_screen.press_key(KEY_DOWN)
+
+	assert_eq(_screen.info_panel().x_stepper().amount_text(), "2")
+	assert_true(_screen.info_panel().x_stepper().is_selected())
+	_screen.press_key(KEY_UP)
+	_screen.press_key(KEY_UP)
+	assert_eq(_screen.info_panel().x_stepper().amount_text(), "3", "Never above the most.")
+
+	_screen.press_key(KEY_RIGHT)
+
+	assert_eq(_screen.info_panel().selected(), InfoPanel.NO_ANSWER)
+	assert_false(_screen.info_panel().x_stepper().is_selected())
+	assert_eq(_screen.info_panel().x_stepper().amount_text(), "3", "Right does not step X.")
+	assert_eq(_screen.pass_button().shown_text(), "No")
+	_screen.press_key(KEY_LEFT)
+	assert_true(_screen.info_panel().x_stepper().is_selected())
+	assert_eq(_screen.pass_button().shown_text(), "Pay {3}")
+
+
+func test_the_pass_key_does_nothing_until_an_answer_is_selected_and_then_pays() -> void:
 	_open_asked()
 	var asked: MmPendingDecision = _presenter.snapshot().decision
 
 	_screen.press_key(KEY_SPACE)
 	_presenter.wait_until_idle()
 
-	assert_eq(_presenter.snapshot().decision, asked, "Still asked: only a click pays.")
+	assert_eq(_presenter.snapshot().decision, asked, "Still asked: nothing is selected.")
+
+	_screen.press_key(KEY_DOWN)
+	_screen.press_key(KEY_SPACE)
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is PayManaDecision, "Paid by hand: Auto-tap is off in a test.")
 
 
 func test_pay_pays_the_x_shown_by_hand_on_one_line_with_no_cancel() -> void:
@@ -73,17 +117,19 @@ func test_pay_pays_the_x_shown_by_hand_on_one_line_with_no_cancel() -> void:
 	assert_true(_presenter.snapshot().decision is PayManaDecision, "Paid by hand: Auto-tap is off in a test.")
 	assert_eq(_screen.info_panel().prompt_text(), "Pay for X Payer:")
 	assert_eq(_screen.info_panel().owed_pip_names(), ["2"] as Array[String])
-	assert_lt(_screen.info_panel().first_pip_position().y, 40.0, "On the prompt's line, not under it.")
+	assert_eq(_screen.info_panel().prompt_written(), "Pay for X Payer: {2}", "On the prompt's line, not under it.")
 	assert_null(_screen.info_panel().cancel_button(), "Nothing is being cast.")
 	assert_eq(_presenter.answer(_bird_answer()), "")
 	_presenter.wait_until_idle()
 	assert_eq(_presenter.snapshot().view.life_totals[HERO], 22, "X = 2 life gained.")
 
 
-func test_no_declines_and_nothing_happens() -> void:
+func test_no_then_the_pass_key_declines_and_nothing_happens() -> void:
 	_open_asked()
 
 	_screen.info_panel().no_button().pressed.emit()
+	assert_true(_presenter.snapshot().decision is ChooseXToPayDecision, "A press only selects.")
+	_screen.press_key(KEY_SPACE)
 	_presenter.wait_until_idle()
 
 	assert_true(_presenter.snapshot().decision is PriorityDecision)

@@ -1,7 +1,7 @@
 class_name ButtonShading
 extends RefCounted
-## How the encounter's made buttons are drawn (the pregame's, the Pass Button and the
-## sidebar's): Dither Shading in the button's own color, as the Inspector's buttons are,
+## How the encounter's made buttons are drawn (the pregame's and the sidebar's; the Info
+## Panel's and the Pass Button are framed by SteelFrame instead, game ADR 0066): Dither Shading in the button's own color, as the Inspector's buttons are,
 ## lighter under the cursor, sat down on its lip while held, and flat and gray while it
 ## cannot be pressed. A button never changes size for it: its plate keeps only SIDE pixels
 ## at its sides and lifts its text above the lip, or, where even that would make it grow,

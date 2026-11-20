@@ -319,7 +319,12 @@ func test_the_settings_page_has_a_keys_button_that_opens_the_controls_page() -> 
 	assert_eq(menu.key_button(KeyBindings.Action.UNDO).text, "Z")
 	assert_eq(menu.key_button(KeyBindings.Action.CANCEL).text, "X")
 	assert_eq(menu.key_button(KeyBindings.Action.HOLD).text, "CTRL")
-	assert_eq(menu.window_rect(), EncounterLayout.pause_rect(6, FIELD), "Four rows, Reset controls and Back.")
+	assert_eq(menu.key_button(KeyBindings.Action.PREVIOUS_ANSWER).text, "LEFT", "Game ADR 0066: the answer and X keys.")
+	assert_eq(menu.key_button(KeyBindings.Action.NEXT_ANSWER).text, "RIGHT")
+	assert_eq(menu.key_button(KeyBindings.Action.RAISE_X).text, "UP")
+	assert_eq(menu.key_button(KeyBindings.Action.LOWER_X).text, "DOWN")
+	assert_eq(menu.window_rect(), EncounterLayout.pause_rect(10, FIELD), "Eight rows, Reset controls and Back.")
+	assert_true(FIELD.encloses(menu.window_rect()), "Still inside the battlefield.")
 
 	menu.button(PauseMenu.BACK).pressed.emit()
 

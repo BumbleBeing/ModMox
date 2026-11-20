@@ -1,10 +1,12 @@
 extends GutTest
-## The Info Panel shows the prompt, what is owed, a refused answer's reason, whether priority
-## is held and the Cancel button, and gives way to an Option Menu row while one is pointed at.
+## The Info Panel shows the prompt, what is owed and a refused answer's reason, all centered,
+## over its Answer Row: a question's two answers, which a press only selects, or one action
+## across its width. It gives way to an Option Menu row while one is pointed at (game ADR
+## 0066).
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
-const BOX: Rect2 = Rect2(352, 904, 300, 170)
+const BOX: Rect2 = Rect2(352, 904.5, 360, 169.5)
 
 var _cancels: int = 0
 
@@ -49,6 +51,7 @@ func test_while_paying_it_shows_what_is_owed_as_pips_and_a_cancel_button() -> vo
 	var panel: InfoPanel = _panel(_snapshot(decision), "")
 
 	assert_eq(panel.owed_pip_names(), ["1", "r", "r"] as Array[String])
+	assert_true(panel.prompt_written().ends_with("\n{1}{R}{R}"), "What is owed is under the prompt, drawn as its symbols.")
 	assert_not_null(panel.cancel_button())
 	assert_true(BOX.encloses(panel.cancel_button().get_global_rect()), "Cancel is inside the panel.")
 
@@ -81,7 +84,6 @@ func test_an_option_replaces_everything_and_clearing_it_puts_everything_back() -
 	assert_false(panel.shows_prompt())
 	assert_false(panel._error.visible)
 	assert_false(panel.cancel_button().visible)
-	assert_false(panel._pips[0].visible)
 	assert_true(panel.has_border(), "The box itself stays.")
 
 	panel.show_option("")
@@ -90,7 +92,6 @@ func test_an_option_replaces_everything_and_clearing_it_puts_everything_back() -
 	assert_true(panel.shows_prompt())
 	assert_true(panel._error.visible)
 	assert_true(panel.cancel_button().visible)
-	assert_true(panel._pips[0].visible)
 
 
 func test_while_auto_tap_pays_it_is_lit_and_shows_what_is_owed_and_a_cancel_button() -> void:
@@ -159,7 +160,8 @@ func test_a_long_prompt_wraps_inside_the_panel() -> void:
 
 	assert_lt(panel._prompt.size.x, BOX.size.x)
 	assert_lt(panel._error.size.x, BOX.size.x)
-	assert_gt(panel._prompt.get_line_count(), 1, "It goes on to a second line; none of it is cut off.")
+	assert_gt(panel.prompt_rect().size.y, panel._line_height(panel.prompt_font_size()) * 1.5,
+		"It goes on to a second line; none of it is cut off.")
 	assert_gt(panel._error.get_line_count(), 1)
 
 
@@ -192,20 +194,102 @@ func test_the_cancel_button_names_the_key_it_is_told() -> void:
 	assert_eq(panel.cancel_button().text, "Cancel [BACKSPACE]", "A panel filled again still names it.")
 
 
-func test_everything_stays_inside_the_shorter_panel_under_the_pass_button() -> void:
+func test_a_refusal_has_its_own_centered_line_above_the_answer_row_and_under_the_prompt() -> void:
+	# Game ADR 0066: one line, or two when it must, growing upward from the row.
 	var box: Rect2 = EncounterLayout.regions(Vector2(1920, 1080))["info"]
 	var decision: PayManaDecision = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 1,
 		[MmMana.Type.RED] as Array[MmMana.Type])
 	var panel: InfoPanel = InfoPanel.new()
 	add_child_autofree(panel)
 
-	panel.show_snapshot(_snapshot(decision), "You cannot pay with that.", box)
+	panel.show_snapshot(_snapshot(decision), "Leonin Lightbringer has ward, and you can't pay for it.", box)
 
 	var inside: Rect2 = Rect2(Vector2.ZERO, box.size)
-	assert_true(box.encloses(panel.cancel_button().get_global_rect()), "Cancel is inside the panel.")
-	assert_true(inside.encloses(panel.error_rect()), "The reason is inside it too")
-	assert_false(panel.error_rect().intersects(Rect2(panel.cancel_button().position, panel.cancel_button().size)),
-		"and beside the Cancel button, not under it.")
+	var cancel: Rect2 = Rect2(panel.cancel_button().position, panel.cancel_button().size)
+	assert_true(inside.encloses(cancel), "Cancel is inside the panel.")
+	assert_true(inside.encloses(panel.error_rect()), "The reason is inside it too,")
+	assert_lt(panel.error_rect().end.y, cancel.position.y, "above the Answer Row and never over it,")
+	assert_eq(panel._error.get_line_count(), 2, "on two lines when it must be,")
+	assert_eq(panel._error.vertical_alignment, VERTICAL_ALIGNMENT_BOTTOM, "growing upward from the row,")
+	assert_eq(panel._error.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER, "and centered.")
+	var refusal_top: float = panel.error_rect().end.y - 2.0 * panel._error.get_line_height()
+	assert_gt(refusal_top, panel.prompt_rect().end.y - 4.0, "Its two lines clear the prompt's.")
+
+
+func test_an_action_fills_the_answer_row_from_side_to_side() -> void:
+	var paying: InfoPanel = _panel(_snapshot(PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 1,
+		[] as Array[MmMana.Type])), "")
+	var attacking: InfoPanel = _panel(_snapshot(DeclareAttackersDecision.new(HERO, [1, 2] as Array[int])), "")
+
+	for button: Button in [paying.cancel_button(), attacking.all_attack_button()]:
+		assert_eq(Rect2(button.position, button.size), paying.row_rect(), button.text)
+		assert_eq(button.get_theme_stylebox("normal"), SteelFrame.plate(InfoPanel.BUTTON, "normal", 44), "Framed in steel.")
+	assert_eq(paying.row_rect(), Rect2(12, 113.5, 336, 44), "The bottom row, inset from the panel's sides.")
+
+
+func test_the_text_above_the_row_is_centered() -> void:
+	var blocks: DeclareBlockersDecision = DeclareBlockersDecision.new(HERO, [1] as Array[int], [7] as Array[int],
+		{1: [7]} as Dictionary[int, Array], {1: 1} as Dictionary[int, int])
+	var panel: InfoPanel = InfoPanel.new()
+	add_child_autofree(panel)
+
+	panel.show_snapshot(_snapshot(blocks), "No.", BOX, "Click a creature, then the attacker it blocks.")
+	panel.show_option("{T}: Something")
+
+	assert_eq(panel._prompt.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER)
+	assert_eq(panel._hint.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER)
+	assert_eq(panel._error.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER)
+	assert_eq(panel._option.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER, "An Option Menu row in full too.")
+
+
+func test_a_prompt_that_would_need_a_third_line_is_drawn_smaller() -> void:
+	var view: MmPlayerView = MmPlayerView.new()
+	view.viewer_id = HERO
+	var spell: MmObjectView = MmObjectView.new()
+	spell.id = 20
+	spell.card_id = 4
+	spell.name = "Bushwhack"
+	view.stack = [spell]
+	var short: EncounterSnapshot = EncounterSnapshot.new()
+	short.view = view
+	short.decision = ChooseTargetDecision.new(HERO, 20, 0, [MmReference.to_player(HERO)] as Array[MmReference])
+	var panel: InfoPanel = _panel(short, "")
+
+	assert_eq(panel.prompt_font_size(), 22)
+
+	panel.show_prompt("Taj-Nar Swordsmith's ability: search your library for an Equipment card with mana value 2 or less")
+
+	assert_eq(panel.prompt_font_size(), 18, "Three lines at 22, so 18.")
+	panel.show_prompt("Choose a target for Bushwhack (0 of 2)")
+	assert_eq(panel.prompt_font_size(), 22, "And back.")
+
+
+func test_it_is_dither_shaded_and_dim_only_while_nothing_is_asked() -> void:
+	var asked: InfoPanel = _panel(_snapshot(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int])), "")
+
+	assert_true(asked._back.get_theme_stylebox("panel") is StyleBoxTexture, "A painted plate, not a flat fill.")
+	assert_eq(asked._back.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_false(asked.is_dim())
+	assert_true(_panel(_snapshot(null), "").is_dim())
+
+
+func test_the_border_flashes_once_for_a_new_question_and_never_for_priority() -> void:
+	var discard: EncounterSnapshot = _snapshot(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int]))
+	var panel: InfoPanel = InfoPanel.new()
+	add_child_autofree(panel)
+
+	panel.show_snapshot(_snapshot(PriorityDecision.new(HERO, [] as Array[MmAction])), "", BOX)
+	assert_eq(panel.flash_count(), 0, "Priority comes too often to flash.")
+	panel.show_snapshot(discard, "", BOX)
+	assert_eq(panel.flash_count(), 1)
+	assert_eq(panel._flash.modulate.a, 1.0, "White at once, then it fades.")
+	panel.show_snapshot(discard, "", BOX)
+	assert_eq(panel.flash_count(), 1, "The same question redrawn does not flash again.")
+	panel.show_snapshot(_snapshot(null), "", BOX)
+	panel.show_snapshot(_snapshot(DeclareAttackersDecision.new(HERO, [1, 2] as Array[int])), "", BOX)
+	assert_eq(panel.flash_count(), 2)
+	await wait_seconds(InfoPanel.FLASH_TIME + 0.15)
+	assert_almost_eq(panel._flash.modulate.a, 0.0, 0.01, "It settles.")
 
 
 func test_all_attack_reads_undeclare_all_once_told_an_attacker_is_declared_and_turns_back() -> void:
@@ -230,21 +314,59 @@ func test_all_attack_reads_undeclare_all_once_told_an_attacker_is_declared_and_t
 	_panel(_snapshot(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int])), "").show_undeclare(true)
 
 
-func test_a_you_may_offers_no_where_the_cancel_button_goes() -> void:
-	# Game ADR 0060: "No" by the mouse alone; the Pass Button says yes.
-	var said: Array[String] = []
+func test_a_you_may_has_yes_and_no_as_the_halves_of_the_answer_row_and_a_press_only_selects() -> void:
+	# Game ADR 0066: the Pass Button gives the Selected Answer.
+	var said: Array[int] = []
 	var panel: InfoPanel = _panel(_snapshot(ChooseYesOrNoDecision.new(HERO, 21, Scenario.draw_cards(1, Scenario.you()))), "")
-	panel.no_pressed.connect(func() -> void: said.append("no"))
+	panel.answer_selected.connect(func(index: int) -> void: said.append(index))
 
-	assert_not_null(panel.no_button())
+	assert_eq(panel.affirmative_button().text, "Yes")
+	assert_eq(panel.affirmative_text(), "Yes")
 	assert_eq(panel.no_button().text, "No")
-	assert_true(BOX.encloses(panel.no_button().get_global_rect()))
-	assert_eq(panel.no_button().focus_mode, Control.FOCUS_NONE, "No key presses it.")
+	var row: Rect2 = panel.row_rect()
+	assert_eq(panel.affirmative_button().position, row.position, "The affirmative on the left,")
+	assert_almost_eq(panel.no_button().position.x + panel.no_button().size.x, row.end.x, 0.01, "No on the right,")
+	assert_almost_eq(panel.affirmative_button().size.x, panel.no_button().size.x, 0.01, "in equal halves")
+	assert_almost_eq(panel.no_button().position.x - (row.position.x + panel.affirmative_button().size.x), InfoPanel.ROW_GAP, 0.01)
+	assert_eq(panel.no_button().focus_mode, Control.FOCUS_NONE)
 	assert_null(panel.cancel_button())
+	panel.affirmative_button().pressed.emit()
 	panel.no_button().pressed.emit()
 
-	assert_eq(said, ["no"] as Array[String])
+	assert_eq(said, [InfoPanel.AFFIRMATIVE, InfoPanel.NO_ANSWER] as Array[int])
 	assert_null(_panel(_snapshot(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int])), "").no_button())
 	panel.show_option("{T}: Something")
 	assert_false(panel.no_button().visible, "An option replaces it like everything else.")
+	assert_false(panel.affirmative_button().visible)
 
+
+func test_the_selected_answer_is_lit_with_a_white_ring_and_a_brighter_face() -> void:
+	var panel: InfoPanel = _panel(_snapshot(ChooseYesOrNoDecision.new(HERO, 21, Scenario.draw_cards(1, Scenario.you()))), "")
+	assert_false(InfoPanel.is_lit(panel.affirmative_button()), "Nothing is lit until told.")
+	assert_false(InfoPanel.is_lit(panel.no_button()))
+
+	panel.show_selected(InfoPanel.AFFIRMATIVE)
+
+	assert_eq(panel.selected(), InfoPanel.AFFIRMATIVE)
+	assert_true(InfoPanel.is_lit(panel.affirmative_button()))
+	assert_eq(panel.affirmative_button().get_theme_stylebox("normal"), SteelFrame.plate(InfoPanel.SELECTED, "normal", 44, true))
+	assert_eq(panel.no_button().get_theme_stylebox("normal"), SteelFrame.plate(InfoPanel.BUTTON, "normal", 44, false))
+
+	panel.show_selected(InfoPanel.NO_ANSWER)
+
+	assert_true(InfoPanel.is_lit(panel.no_button()))
+	assert_false(InfoPanel.is_lit(panel.affirmative_button()))
+	panel.show_selected(InfoPanel.NOTHING)
+	assert_false(InfoPanel.is_lit(panel.no_button()))
+
+
+func test_a_cost_asked_reads_pay_and_its_cost_as_the_affirmative() -> void:
+	var cost: MmManaCost = MmManaCost.new()
+	cost.generic = 2
+	var asked: ChooseYesOrNoDecision = ChooseYesOrNoDecision.new(HERO, 21, Scenario.draw_cards(1, Scenario.you()))
+	asked.cost = cost
+	var panel: InfoPanel = _panel(_snapshot(asked), "")
+
+	assert_eq(panel.affirmative_text(), "Pay {2}")
+	assert_eq(panel.affirmative_button().text, "", "Drawn with its symbol.")
+	assert_true(panel.prompt_written().ends_with(": {2}"), "The cost follows the prompt on its line.")

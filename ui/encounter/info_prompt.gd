@@ -18,8 +18,9 @@ var is_owed_inline: bool = false
 var can_cancel: bool = false
 ## While declaring attackers: the panel offers "Declare All" (A311).
 var offers_all_attack: bool = false
-## While a "you may" is asked: the panel offers "No", and the Pass Button says yes
-## (game ADR 0060).
+## While a question with two answers is asked, a "you may", a ward cost or an X: the
+## panel's Answer Row holds them, the affirmative and "No", and the Pass Button gives the
+## one selected (game ADRs 0060 and 0066).
 var offers_no: bool = false
 ## While how much X to pay is asked: the panel shows a stepper from 0 to [member most_x],
 ## and the Pass Button pays the X it shows (game ADR 0063).

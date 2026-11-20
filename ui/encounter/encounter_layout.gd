@@ -50,9 +50,8 @@ const CONTROLS_PAD: float = 6.0
 const CONTROLS_GAP: float = 6.0
 ## A panel's life total, in the corner of the portrait.
 const LIFE_SIZE: Vector2 = Vector2(69.0, 50.0)
-## The Pass Button, over the Info Panel, and the space between them (A489).
-const PASS_HEIGHT: float = 46.0
-const PASS_GAP: float = 8.0
+## The Pass Button, at the right end of the hand's strip (game ADR 0066).
+const PASS_HEIGHT: float = 96.0
 
 ## The Info Panel, at the left end of the hand's strip (A293).
 ## The opening-hand overlay (13e-2), on a screen DESIGN_HEIGHT tall: the widest a card is
@@ -78,7 +77,7 @@ const OPENING_TWO_ROWS_FROM: int = 9
 const TRIGGER_GAP: float = 6.0
 ## How far a card of the hand chosen to be discarded stands above the rest, of its height.
 const PICKED_RISE: float = 0.25
-const INFO_WIDTH: float = 300.0
+const INFO_WIDTH: float = 360.0
 const INFO_PAD: float = 6.0
 ## The Option Menu: how wide it is, how tall a row is, the gap between rows, the room around
 ## them, and how many rows show before it scrolls (A286).
@@ -130,7 +129,7 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	found["hero_panel"] = Rect2(PANEL_PAD, panel_height + PANEL_PAD * 2.0, SIDEBAR_WIDTH - PANEL_PAD * 2.0, panel_height)
 
 	# The Villain's hand keeps to the middle as the Hero's does, clear of the Hold Panel,
-	# which is opposite the Info Panel.
+	# which is above the Info Panel and as wide.
 	var hand_inset: float = INFO_WIDTH + GUTTER
 	found["villain_hand"] = Rect2(left + hand_inset, 0, width - hand_inset * 2.0, 80.0 * scale)
 	found["hold"] = Rect2(left, INFO_PAD, INFO_WIDTH, 80.0 * scale - INFO_PAD * 2.0)
@@ -142,11 +141,11 @@ static func regions(screen: Vector2) -> Dictionary[String, Rect2]:
 	found["hero_nonlands"] = Rect2(left, (472.0 + drop) * scale, width, 200.0 * scale)
 	found["hero_lands"] = Rect2(left, (684.0 + drop) * scale, width, 140.0 * scale)
 	var strip: Rect2 = Rect2(left, (836.0 + drop) * scale, width, screen.y - (836.0 + drop) * scale)
-	# The Pass Button takes the top of the Info Panel's place in the strip, and the Info
-	# Panel what is left under it, so nothing on the battlefield moves for it (A489).
-	found["pass"] = Rect2(strip.position.x, strip.position.y + INFO_PAD, INFO_WIDTH, PASS_HEIGHT)
-	var info_top: float = found["pass"].end.y + PASS_GAP
-	found["info"] = Rect2(strip.position.x, info_top, INFO_WIDTH, strip.end.y - INFO_PAD - info_top)
+	# The Info Panel takes the left end of the strip and the Pass Button the bottom of its
+	# right end, as wide, so nothing on the battlefield moves for either (A489, game ADR
+	# 0066).
+	found["info"] = Rect2(strip.position.x, strip.position.y + INFO_PAD, INFO_WIDTH, strip.size.y - INFO_PAD * 2.0)
+	found["pass"] = Rect2(strip.end.x - INFO_WIDTH, strip.end.y - INFO_PAD - PASS_HEIGHT, INFO_WIDTH, PASS_HEIGHT)
 	# The hand keeps to the middle of the battlefield between strict bounds: the Info
 	# Panel's side, and as far in from the other side, so it can never overlap the panel.
 	found["hero_hand"] = Rect2(strip.position.x + hand_inset, strip.position.y, strip.size.x - hand_inset * 2.0, strip.size.y)

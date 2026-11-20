@@ -1,112 +1,154 @@
 class_name PassButton
 extends Button
-## The Pass Button (game glossary): over the Info Panel and as wide, always there, and
-## Dither Shaded in the Inspector's gray (A489). With priority it passes and names the key that does; while a combat
+## The Pass Button (game glossary): at the right end of the hand's strip, opposite the Info
+## Panel and as wide, always there, in the Inspector's gray inside a steel frame (game ADR
+## 0066). It reads what it does in large type with the key that presses it under it,
+## smaller and dimmer: "Pass Priority" over "SPACE". With priority it passes; while a combat
 ## decision, an order of triggers or a choice of cards is being made it confirms that
-## instead; at any other time it cannot be pressed. Whatever it reads, it ends with the key
-## that presses it (A495), except Pay for a ward cost or an X, which no key presses (ADR
-## 0062, game ADR 0063). Words with a mana symbol, as "Pay {2}", are drawn by a SymbolLabel
-## over it, the button's own text left empty.
+## instead; while a question's answer is selected in the Info Panel it reads and gives that
+## answer; at any other time it cannot be pressed, and is gray and blank. A choice still
+## being made keeps its words, dimmed ("Confirm discard"). Whenever it goes from one that
+## cannot be pressed to one that can, its border flashes white once, as the Info Panel's
+## does. Words with a mana symbol, as "Pay {2}", are drawn with it. Its own text is left
+## empty: its two lines are drawn over it.
 
-const PASS_FORMAT: String = "Pass Priority [%s]"
-const CONFIRM_FORMAT: String = "%s [%s]"
-const PASS_FONT: int = 21
-const CONFIRM_FONT: int = 19
+const PASS: String = "Pass Priority"
+const WORDS_FONT: int = 26
+const KEY_FONT: int = 16
+## How far the key's line is dimmed against the words.
+const KEY_DIM: float = 0.6
+const WORDS_HEIGHT: float = 40.0
+const KEY_HEIGHT: float = 24.0
+const FLASH_TIME: float = InfoPanel.FLASH_TIME
 
 var _key_label: String = "SPACE"
 var _is_confirming: bool = false
 var _confirm_text: String = ""
 ## Whether the key presses it while it confirms.
 var _has_key: bool = true
-var _shaded_for: Vector2 = Vector2.ZERO
+var _framed_for: Vector2 = Vector2.ZERO
 ## What it reads, as written, braces and all.
 var _shown: String = ""
-var _symbol_line: SymbolLabel
+var _words: SymbolLabel
+var _key: Label
+var _flash: Panel = null
+var _flash_count: int = 0
+## Whether it could be pressed when last looked at, a frame ago: a redraw may turn it off
+## and on again, and only what it settles on counts.
+var _was_pressable: bool = false
 
 
 func _init() -> void:
 	focus_mode = Control.FOCUS_NONE
-	text = PASS_FORMAT % _key_label
 	disabled = true
-	add_theme_font_size_override("font_size", PASS_FONT)
-	_shown = text
-	_symbol_line = SymbolLabel.new()
-	_symbol_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_symbol_line.set_font_size(CONFIRM_FONT)
-	_symbol_line.hide()
-	add_child(_symbol_line)
+	_words = SymbolLabel.new()
+	_words.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_words.set_font_size(WORDS_FONT + UiText.RAISE)
+	_words.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	add_child(_words)
+	_key = Label.new()
+	_key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_key.add_theme_font_size_override("font_size", KEY_FONT + UiText.RAISE)
+	_key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_key.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	add_child(_key)
+	_show(PASS)
 
 
-## Puts the button in [param box]. It is shaded once, and again only for another size.
+## Puts the button in [param box]. It is framed once, and again only for another size.
 func place(box: Rect2) -> void:
 	position = box.position
 	size = box.size
-	_place_symbol_line()
-	if box.size != _shaded_for:
-		_shaded_for = box.size
-		ButtonShading.apply(self, Inspector.palette().button)
+	if box.size != _framed_for:
+		_framed_for = box.size
+		SteelFrame.apply(self, Inspector.palette().button)
+		if _flash != null:
+			remove_child(_flash)
+			_flash.queue_free()
+		_flash = CardShapes.outline(Vector2(box.size.x, SteelFrame.face_height(box.size.y)), 4, SteelFrame.RING, Color.WHITE)
+		_flash.modulate.a = 0.0
+		add_child(_flash)
+	_place_lines()
 
 
 ## Names [param key_label] as the key that passes.
 func show_key(key_label: String) -> void:
 	_key_label = key_label
-	if _is_confirming:
-		_set_text(_confirming_text())
-	else:
-		_set_text(PASS_FORMAT % _key_label)
+	_show(_shown)
 
 
-## It passes priority, and can be pressed only when [param can_pass].
+## It passes priority, and can be pressed only when [param can_pass]. When it cannot, it is
+## blank.
 func show_pass(can_pass: bool) -> void:
-	if _is_confirming:
-		_is_confirming = false
-		add_theme_font_size_override("font_size", PASS_FONT)
-	_set_text(PASS_FORMAT % _key_label)
+	_is_confirming = false
+	_has_key = can_pass
 	disabled = not can_pass
+	_show(PASS if can_pass else "")
 
 
-## It confirms a choice instead: it reads [param confirm_text] and its key, or the text
-## alone when no key presses it ([param has_key] off), and can be pressed only when
+## Flashes the border once when it has become one that can be pressed.
+func _process(_delta: float) -> void:
+	var is_pressable: bool = not disabled
+	if is_pressable and not _was_pressable and _flash != null:
+		_flash_count += 1
+		_flash.modulate.a = 1.0
+		create_tween().tween_property(_flash, "modulate:a", 0.0, FLASH_TIME)
+	_was_pressable = is_pressable
+
+
+## How many times the border has flashed for becoming one that can be pressed.
+func flash_count() -> int:
+	return _flash_count
+
+
+## It confirms a choice instead: it reads [param confirm_text] with its key under it, or the
+## text alone when no key presses it ([param has_key] off), and can be pressed only when
 ## [param is_complete].
 func show_confirm(confirm_text: String, is_complete: bool, has_key: bool = true) -> void:
-	if not _is_confirming:
-		_is_confirming = true
-		add_theme_font_size_override("font_size", CONFIRM_FONT)
+	_is_confirming = true
 	_confirm_text = confirm_text
 	_has_key = has_key
-	_set_text(_confirming_text())
 	disabled = not is_complete
+	_show(confirm_text)
 
 
-func _confirming_text() -> String:
-	return CONFIRM_FORMAT % [_confirm_text, _key_label] if _has_key else _confirm_text
-
-
-## What it reads, as written: "Pay {2}" while its words are drawn with a symbol.
+## What it reads, as written: "Attack with 2", or "Pay {2}" with its symbol in braces.
 func shown_text() -> String:
 	return _shown
 
 
-## The line that draws words with a mana symbol in them.
+## The key named under its words, or "" when no key presses it.
+func key_text() -> String:
+	return _key.text if _key.visible else ""
+
+
+## The line that draws its words.
 func symbol_line() -> SymbolLabel:
-	return _symbol_line
+	return _words
 
 
-## Setting a button's text lays it out again, so it is set only when it changes.
-func _set_text(shown: String) -> void:
-	if _shown == shown:
-		return
+## The line that names its key.
+func key_line() -> Label:
+	return _key
+
+
+func _show(shown: String) -> void:
+	var color: Color = ButtonShading.DISABLED_TEXT if disabled else Color.WHITE
+	var is_new: bool = shown != _shown or _words.get_meta("color", Color.TRANSPARENT) != color
 	_shown = shown
-	var has_symbol: bool = shown.contains("{")
-	text = "" if has_symbol else shown
-	_symbol_line.visible = has_symbol
-	if has_symbol:
-		_symbol_line.write(shown)
-		_place_symbol_line()
+	if is_new:
+		_words.set_meta("color", color)
+		_words.write_in(shown, color)
+	_key.text = _key_label
+	_key.visible = _has_key
+	_key.add_theme_color_override("font_color", Color(color, color.a * KEY_DIM))
+	_place_lines()
 
 
-## Centers the symbol line on the button.
-func _place_symbol_line() -> void:
-	_symbol_line.size = Vector2(size.x, 0)
-	var line: float = _symbol_line.get_theme_font("normal_font").get_height(CONFIRM_FONT)
-	_symbol_line.position = Vector2(0, (size.y - line) / 2.0)
+## Centers the two lines on the button's face, above its lip, or the words alone.
+func _place_lines() -> void:
+	var middle: float = SteelFrame.face_height(size.y) / 2.0
+	_words.size = Vector2(size.x, WORDS_HEIGHT)
+	_words.position = Vector2(0, middle - (32.0 if _has_key else 20.0))
+	_key.size = Vector2(size.x, KEY_HEIGHT)
+	_key.position = Vector2(0, middle + 10.0)

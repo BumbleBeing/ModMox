@@ -41,7 +41,7 @@ func test_a_search_opens_the_library_window_by_itself_as_a_grid_with_what_it_may
 	assert_eq(BorderEffects.glow_colors(window.face_of(search.candidate_ids[0])), [GREEN] as Array[Color])
 	assert_eq(BorderEffects.glow_colors(window.face_of(entries.back())), [] as Array[Color], "A Grove may not be found.")
 	assert_eq(_screen.info_panel().prompt_text(), "Seek: search your library for a basic land card")
-	assert_eq(_screen.pass_button().text, "Find nothing [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Find nothing")
 
 
 func test_a_click_selects_a_card_and_a_second_click_lets_it_go() -> void:
@@ -56,7 +56,7 @@ func test_a_click_selects_a_card_and_a_second_click_lets_it_go() -> void:
 	assert_eq(BorderEffects.glow_colors(window.face_of(forest)), [Color.WHITE] as Array[Color], "Selected glows white.")
 	assert_eq(BorderEffects.glow_colors(window.face_of(other)), [] as Array[Color], "One may be found, so no more.")
 	assert_null(window.catcher_of(other), "Nor does another take a click.")
-	assert_eq(_screen.pass_button().text, "Find Forest [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Find Forest")
 	assert_true(_presenter.snapshot().decision is ChooseCardsInLibraryDecision, "A click alone finds nothing.")
 
 	window.catcher_of(forest).clicked.emit()
@@ -64,7 +64,7 @@ func test_a_click_selects_a_card_and_a_second_click_lets_it_go() -> void:
 	window = _screen.pile_window(MINE)
 	assert_eq(BorderEffects.glow_colors(window.face_of(forest)), [GREEN] as Array[Color])
 	assert_eq(BorderEffects.glow_colors(window.face_of(other)), [GREEN] as Array[Color])
-	assert_eq(_screen.pass_button().text, "Find nothing [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Find nothing")
 
 
 func test_the_pass_button_finds_the_selected_card_and_the_window_closes() -> void:

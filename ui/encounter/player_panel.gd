@@ -7,7 +7,7 @@ extends Control
 ## one all round it (A477, A478). While the player can be chosen, their portrait alone
 ## glows and takes the click, never the whole panel. The Hero's panel has the Potions
 ## button under the Emblems button, which opens the Potions window, and under that Undo
-## and Yield Turn; the Pass Button is not here but over the Info Panel (A489). The
+## and Yield Turn; the Pass Button is not here but at the right end of the hand's strip (A489, game ADR 0066). The
 ## Villain's panel says when the Villain is thinking, under its Emblems button (A294),
 ## wrapped downward to as many lines as it takes. A name too long for its box glides from
 ## one end to the other and back (NameGlide), clipped to the box.

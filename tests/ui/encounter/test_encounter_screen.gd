@@ -331,9 +331,10 @@ func test_the_pass_button_works_only_with_priority_and_the_undo_button_only_with
 	assert_true(_screen.pass_button().disabled, "Keeping a hand is not priority.")
 	assert_true(_screen.undo_button().disabled)
 	assert_true(_screen.undo_button().visible, "Undo is always there, grayed out (A245).")
-	assert_eq(_screen.pass_button().text, "Pass Priority [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "", "Blank while it cannot be pressed.")
 	assert_eq(_screen.undo_button().text, "Undo [Z]")
 	_keep_and_reach_main()
+	assert_eq(_screen.pass_button().shown_text(), "Pass Priority", "Its words come with priority.")
 	assert_false(_screen.pass_button().disabled)
 
 	_do(PlayLandAction, "Forest")
@@ -1132,7 +1133,7 @@ func test_clicking_a_creature_that_may_attack_steps_it_into_the_lane_and_again_s
 	var rest_x: float = _screen.face_of(bears[1]).get_global_rect().position.x
 	assert_eq(BorderEffects.glow_color(_screen.face_of(bears[1])), DecisionClicks.color_of(DecisionClicks.Kind.COMBAT))
 	assert_eq(_screen.info_panel().prompt_text(), "Declare attackers")
-	assert_eq(_screen.pass_button().text, "No attacks [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "No attacks")
 	assert_false(_screen.pass_button().disabled)
 
 	_click(bears[1])
@@ -1143,12 +1144,12 @@ func test_clicking_a_creature_that_may_attack_steps_it_into_the_lane_and_again_s
 	assert_almost_eq(chosen.get_global_rect().position.x, rest_x, 0.5, "where it stood: nothing changes places while choosing.")
 	assert_false(_view_of(bears[1]).is_tapped, "And upright: only the engine taps it (A312).")
 	assert_eq(chosen.size, _screen.face_of(bears[0]).size, "Nobody shrinks until the attack is declared.")
-	assert_eq(_screen.pass_button().text, "Attack with 1 [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Attack with 1")
 
 	_click(bears[1])
 
 	assert_almost_eq(_screen.face_of(bears[1]).get_global_rect().get_center().y, rest_y, 0.5)
-	assert_eq(_screen.pass_button().text, "No attacks [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "No attacks")
 
 
 func test_confirming_declares_the_attack_and_the_attackers_move_to_the_left_in_id_order() -> void:
@@ -1157,7 +1158,7 @@ func test_confirming_declares_the_attack_and_the_attackers_move_to_the_left_in_i
 	var bears: Array[int] = _permanents("Bear")
 	_click(bears[2])
 	_click(bears[1])
-	assert_eq(_screen.pass_button().text, "Attack with 2 [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Attack with 2")
 
 	_screen.pass_button().pressed.emit()
 	_presenter.wait_until_idle()
@@ -1183,7 +1184,7 @@ func test_all_attack_chooses_every_candidate_without_confirming() -> void:
 
 	assert_true(_presenter.snapshot().decision is DeclareAttackersDecision, "Still to be confirmed (A311).")
 	assert_eq(_screen.selection().attacker_ids().size(), 3)
-	assert_eq(_screen.pass_button().text, "Attack with 3 [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Attack with 3")
 
 	_screen.press_key(KEY_SPACE)
 	_presenter.wait_until_idle()
@@ -1204,7 +1205,7 @@ func test_undo_takes_back_one_click_of_a_selection_before_it_undoes_an_answer() 
 	_screen.press_key(KEY_Z)
 
 	assert_eq(_screen.selection().attacker_ids(), [bears[0]] as Array[int])
-	assert_eq(_screen.pass_button().text, "Attack with 1 [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Attack with 1")
 	assert_true(_presenter.snapshot().decision is DeclareAttackersDecision)
 
 	_screen.undo_button().pressed.emit()
@@ -1226,7 +1227,7 @@ func test_a_half_made_selection_survives_a_resize_and_a_pause() -> void:
 	_screen.size = Vector2(2560, 1080)
 
 	assert_eq(_screen.selection().attacker_ids(), [bears[1]] as Array[int])
-	assert_eq(_screen.pass_button().text, "Attack with 1 [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Attack with 1")
 
 	_screen.press_key(KEY_ESCAPE)
 	_click(bears[0])
@@ -1256,7 +1257,7 @@ func test_a_selection_is_kept_when_the_same_decision_is_handed_out_again() -> vo
 
 	assert_true(_presenter.snapshot().decision is DeclareAttackersDecision)
 	assert_eq(_screen.selection().attacker_ids(), [bears[0]] as Array[int], "Setting a stop made a new snapshot, not a new decision.")
-	assert_eq(_screen.pass_button().text, "Attack with 1 [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Attack with 1")
 
 
 func test_while_paused_a_blocker_in_hand_and_the_damage_steppers_stay_as_they_were() -> void:
@@ -1316,7 +1317,7 @@ func test_a_blocker_is_picked_up_and_paired_with_the_attacker_clicked() -> void:
 	var info: InfoPanel = _screen.info_panel()
 	assert_eq(info.prompt_text(), "Declare blockers")
 	assert_eq(info.hint_text(), "Click one or more creatures, then the attacker they block.")
-	assert_eq(_screen.pass_button().text, "No blocks [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "No blocks")
 	assert_null(_screen.click_catcher(ogres[0]), "An attacker is clicked only for a blocker in hand.")
 	assert_null(BorderEffects.glow_color(_screen.face_of(ogres[0])))
 	var rest_y: float = _screen.face_of(bears[0]).get_global_rect().get_center().y
@@ -1338,7 +1339,7 @@ func test_a_blocker_is_picked_up_and_paired_with_the_attacker_clicked() -> void:
 	assert_eq(_screen.block_lines().line_color(0), BlockLines.CHOSEN)
 	assert_almost_eq(rest_y - _screen.face_of(bears[0]).get_global_rect().get_center().y, EncounterLayout.COMBAT_STEP, 0.5,
 		"The blocker stepped into the lane.")
-	assert_eq(_screen.pass_button().text, "Confirm blocks [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Confirm blocks")
 	assert_eq(info.hint_text(), "", "The hint goes once a block is made (A326).")
 	assert_true(_presenter.snapshot().decision is DeclareBlockersDecision)
 
@@ -1462,7 +1463,7 @@ func test_one_click_on_a_blocking_creature_takes_it_off_its_block() -> void:
 	assert_eq(_screen.selection().pairs().size(), 0)
 	assert_eq(_screen.block_lines().line_count(), 0)
 	assert_false(BorderEffects.has_pointer(_screen.face_of(bear)), "Taken off, not picked up.")
-	assert_eq(_screen.pass_button().text, "No blocks [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "No blocks")
 
 
 func test_a_press_on_the_board_puts_a_picked_up_blocker_down_but_a_press_on_a_card_in_hand_does_not() -> void:
@@ -1499,7 +1500,7 @@ func test_a_click_on_empty_board_puts_a_picked_up_blocker_down_unassigned() -> v
 	assert_false(BorderEffects.has_pointer(_screen.face_of(bear)))
 	assert_eq(_screen.selection().pairs().size(), 0)
 	assert_eq(_screen.block_lines().line_count(), 0)
-	assert_eq(_screen.pass_button().text, "No blocks [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "No blocks")
 
 	_screen.click_empty_board()
 	assert_eq(_screen.selection().can_undo(), true, "The clicks so far can still be taken back,")
@@ -1571,7 +1572,7 @@ func test_damage_is_divided_with_steppers_on_the_blockers() -> void:
 	assert_true(_screen.stepper_of(ogres[1]).plus_button().disabled, "Nothing is left to give.")
 	assert_eq(first.get_parent(), _screen.face_of(ogres[0]), "On the creature itself.")
 	assert_null(_screen.stepper_of(bear))
-	assert_eq(_screen.pass_button().text, "Assign damage [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Assign damage")
 	assert_false(_screen.pass_button().disabled)
 
 	first.minus_button().pressed.emit()
@@ -1954,7 +1955,8 @@ func test_a_rebound_key_passes_and_the_old_one_does_nothing_and_the_buttons_name
 	_screen.key_bindings().bind(KeyBindings.Action.PASS, KEY_ENTER)
 	_screen.key_bindings().bind(KeyBindings.Action.UNDO, KEY_BACKSPACE)
 	_screen._on_keys_changed()
-	assert_eq(_screen.pass_button().text, "Pass Priority [ENTER]")
+	assert_eq(_screen.pass_button().shown_text(), "Pass Priority")
+	assert_eq(_screen.pass_button().key_text(), "ENTER")
 	assert_eq(_screen.undo_button().text, "Undo [BACKSPACE]")
 
 	_screen.press_key(KEY_SPACE)
@@ -1965,7 +1967,7 @@ func test_a_rebound_key_passes_and_the_old_one_does_nothing_and_the_buttons_name
 	_presenter.wait_until_idle()
 
 	assert_ne(_presenter.snapshot().view.step, step, "Enter passed.")
-	assert_eq(_screen.pass_button().text, "Pass Priority [ENTER]", "A redraw still names it.")
+	assert_eq(_screen.pass_button().key_text(), "ENTER", "A redraw still names it.")
 
 
 func test_a_key_shared_by_pass_and_undo_only_passes() -> void:
@@ -2015,7 +2017,7 @@ func test_a_key_pressed_while_a_row_of_the_controls_page_waits_is_bound_and_does
 	assert_true(_screen.pause_menu().shows_shared(KeyBindings.Action.UNDO))
 	_screen.press_key(KEY_Z)
 	assert_eq(_presenter.snapshot(), snapshot, "And no bound key acts while the Pause Menu is open.")
-	assert_eq(_screen.pass_button().text, "Pass Priority [Z]")
+	assert_eq(_screen.pass_button().key_text(), "Z")
 
 	_screen.press_key(KEY_ESCAPE)
 	assert_false(_screen.is_paused(), "Escape closes the menu from the Controls Page.")
@@ -2090,7 +2092,7 @@ func test_all_attack_becomes_undeclare_all_while_any_attacker_is_declared() -> v
 	assert_eq(_screen.selection().attacker_ids().size(), 0)
 	assert_true(_presenter.snapshot().decision is DeclareAttackersDecision, "Nothing is confirmed.")
 	assert_eq(_screen.info_panel().all_attack_button().text, "Declare All", "It turns back with none declared.")
-	assert_eq(_screen.pass_button().text, "No attacks [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "No attacks")
 
 	_screen.info_panel().all_attack_button().pressed.emit()
 	assert_eq(_screen.selection().attacker_ids().size(), 3)

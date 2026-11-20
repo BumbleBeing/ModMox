@@ -24,7 +24,7 @@ func test_targets_glow_as_targets_and_the_prompt_and_button_say_what_is_asked() 
 	assert_eq(BorderEffects.glow_colors(_screen.face_of(bears[0])),
 		[DecisionClicks.color_of(DecisionClicks.Kind.TARGET)] as Array[Color])
 	assert_eq(_screen.info_panel().prompt_text(), "Choose up to two targets for Gird (0 of 2)")
-	assert_eq(_screen.pass_button().text, "No targets [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "No targets")
 	assert_false(_screen.pass_button().disabled, "None is an answer.")
 
 
@@ -37,7 +37,7 @@ func test_a_click_picks_a_target_white_where_it_stands_and_answers_nothing() -> 
 	assert_eq(BorderEffects.glow_colors(_screen.face_of(bears[0])), [Color.WHITE] as Array[Color])
 	assert_false(_screen.is_drawn_tapped(bears[0]), "A target is not tapped.")
 	assert_eq(_screen.info_panel().prompt_text(), "Choose up to two targets for Gird (1 of 2)")
-	assert_eq(_screen.pass_button().text, "Confirm targets [SPACE]")
+	assert_eq(_screen.pass_button().shown_text(), "Confirm targets")
 	_screen.click_catcher(bears[1]).clicked.emit()
 	_presenter.wait_until_idle()
 	assert_true(_presenter.snapshot().decision is ChooseTargetsDecision, "Even the last pick waits for the pass button.")

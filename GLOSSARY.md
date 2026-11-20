@@ -440,12 +440,20 @@ The colored outline on everything a Pending Decision can choose: orange-red for 
 _Avoid_: Highlight, selection, halo
 
 **Info Panel**:
-The bordered box at the bottom left of the battlefield, between the Hero's panel and the Hero's hand. It says what the Hero is being asked, what is still owed while paying and why their last answer was refused, and holds the Cancel button for a cast in progress, which names the key that cancels. While attackers are declared it holds "Declare All", which reads "Undeclare All" and puts every attacker back for as long as any is declared (A496). While a "you may" is asked it reads "[ability]: [what yes does]?" and holds "No", pressed with the mouse alone (ADR 0060). While a ward cost is asked, and while it is paid, it reads "Pay ward for [the warded permanent]:" with the cost still to pay after it on the same line, holds "No" while asked, and has no Cancel, since nothing is being cast (ADR 0062). The Pass Button is directly above it.
+The bordered, Dither Shaded box at the left end of the hand's strip, between the Hero's panel and the Hand Strip, 360 wide and as tall as the strip (ADR 0066). Centered in it, it says what the Hero is being asked and what is still owed while paying, and, in red above its Answer Row, why their last answer was refused. Its Answer Row holds the answers of a question or one action. While a "you may" is asked it reads "[ability]: [what yes does]?" (ADR 0060); while a ward cost is asked, and while it is paid, "Pay ward for [the warded permanent]:" with the cost still to pay after it on the same line (ADR 0062); while an X is asked, "Pay {X} for [the source]?" (ADR 0063). It is dim while nothing is asked, and its border flashes white once when a question other than priority arrives. While the cursor is on an Option Menu row it shows that row in full in place of everything else.
 _Avoid_: Prompt bar, status line, message box
 
 **Pass Button**:
-The gray, shaded button over the Info Panel and as wide, which is always there. With priority it reads "Pass Priority" with the key that passes, and passes; while attackers, blockers, a division of damage, an order of triggers or cards to discard are being chosen it confirms that choice instead ("Attack with 2"); while a "you may" is asked it reads "Yes" and answers yes (ADR 0060); while a ward cost is asked it reads "Pay", with no key, and only a click pays (ADR 0060's addendum); at any other time it cannot be pressed. Whatever it reads but Pay, it ends with the key that presses it: "Attack with 2 [SPACE]" (A495). It was on the Hero's panel until 13g.
+The gray, shaded button at the right end of the hand's strip, opposite the Info Panel and as wide, which is always there (ADR 0066). It reads what it does in large type with the key that presses it under it, smaller: "Pass Priority" over "SPACE". With priority it passes; while attackers, blockers, a division of damage, an order of triggers or cards to discard are being chosen it confirms that choice instead ("Attack with 2"); while a question with a Selected Answer is asked it reads that answer ("Yes", "No", "Pay {2}") and gives it; while such a question has no Selected Answer it reads "Choose an answer", with no key, and cannot be pressed; at any other time it cannot be pressed, and is gray and blank. Its border flashes white once whenever it becomes one that can be pressed. It was over the Info Panel until 13l, and on the Hero's panel until 13g.
 _Avoid_: Confirm button, OK button, next button
+
+**Answer Row**:
+The bottom row of the Info Panel (ADR 0066). It holds the answers of a question as two halves, the affirmative on the left and "No" on the right, or one action across its whole width: Cancel for a cast in progress, which names the key that cancels, or "Declare All", which reads "Undeclare All" and puts every attacker back for as long as any is declared (A496). An answer is only selected there; an action acts at once. While an X is asked its left half is the stepper: a plate whose ends are − and + and whose number sits in a dark well between them.
+_Avoid_: Button row, button bar, footer
+
+**Selected Answer**:
+The answer of a "you may", a ward cost or an X that is lit in the Answer Row, with a white border, and that the Pass Button reads and gives (ADR 0066). A click on an answer or Left and Right selects it; for an X, clicking or stepping the stepper selects paying, and Up and Down step X. A "you may" starts on Yes. A question that spends mana starts with none, and cannot be answered until the Hero selects one.
+_Avoid_: Default answer, highlighted answer, focus
 
 **Portrait**:
 The 32 × 32 pixel picture of a player on their panel, drawn six screen pixels to each of its own with hard edges, with the life total in its corner. It is what glows and is clicked when its player can be chosen. Every Portrait but a placeholder has a Pain Portrait, and one drawn after a Magic character a Blink Portrait too. A Villain's is drawn after a character in a Magic card's art, turned to face the front; the Hero's ten are a set of their own. Until Heroes have their own, the Hero's is Urza, Academy Headmaster's; for testing, every Villain without a Portrait of its own, and one met outside a run, has Charmed Stray's.
@@ -484,7 +492,7 @@ The page of the Pause Menu that the Controls button on its settings page opens: 
 _Avoid_: Keys page, keybind menu, input settings
 
 **Hold Panel**:
-The box at the top left of the battlefield, opposite the Info Panel, that says "Holding Priority" in large type. It shows only while the Hold Key is down.
+The box at the top left of the battlefield, above the Info Panel and as wide, that says "Holding Priority" in large type. It shows only while the Hold Key is down.
 _Avoid_: Hold indicator, priority badge
 
 **Combat Selection**:

@@ -1,55 +1,85 @@
 class_name InfoPanel
 extends Control
-## The Info Panel (game glossary): the bordered box by the Hero's hand that says what the
-## Hero is being asked and why their last answer was refused, with the Cancel button for a
-## cast in progress. While the cursor is over a row of
-## the Option Menu, it shows that option in full in place of everything else. A prompt with
-## a mana symbol in it, as "Pay {X} for Taj-Nar Swordsmith?", is drawn with its symbol. While
-## how much X to pay is asked, a − X + stepper sits at its bottom left, beside a narrower
-## "No" (game ADR 0063).
+## The Info Panel (game glossary, game ADR 0066): the Dither Shaded box at the left end of
+## the hand's strip. Centered in it, it says what the Hero is being asked and what is still
+## owed while paying; in red above its Answer Row, why their last answer was refused. The
+## Answer Row (game glossary) is its bottom row: the two answers of a "you may", a ward cost
+## or an X, which a press only selects, or one action across its whole width, Cancel or
+## "Declare All", which acts at once. While how much X to pay is asked, the affirmative
+## half is the X stepper. Its border flashes white once when a question other than priority
+## arrives. While the cursor is over a row of the Option Menu, it shows that option in full
+## in place of everything else.
 
 signal cancel_pressed
 signal all_attack_pressed
 ## "Undeclare All" was pressed: the same button, while an attacker is declared (A496).
 signal undeclare_all_pressed
-## "No" was pressed: the answer to a "you may" (game ADR 0060).
-signal no_pressed
-## The X stepper's "−" or "+" was pressed (game ADR 0063).
+## An answer was pressed, AFFIRMATIVE or NO_ANSWER: it is selected, and nothing is answered.
+signal answer_selected(index: int)
+## An end of the X stepper was pressed (game ADR 0063).
 signal x_lowered
 signal x_raised
 
+## Which answer is the Selected Answer: neither, the one on the left or "No".
+const NOTHING: int = -1
+const AFFIRMATIVE: int = 0
+const NO_ANSWER: int = 1
+
+const FILL: Color = Color("#2c323c")
 const BORDER: Color = Color("#8a93a6")
 const DIM: float = 0.45
+## An answer or action, and the brighter face of the Selected Answer.
+const BUTTON: Color = Color("#4b4e55")
+const SELECTED: Color = Color("#6f7682")
+const MUTED: Color = Color(1, 1, 1, 0.65)
+const REFUSED: Color = Color(1, 0.45, 0.4)
 
 const CANCEL_FORMAT: String = "Cancel [%s]"
 const ALL_ATTACK: String = "Declare All"
 const UNDECLARE_ALL: String = "Undeclare All"
-## A "you may" is answered no with it, by the mouse alone; the Pass Button says yes.
+const YES: String = "Yes"
 const NO: String = "No"
-## The room the Cancel or "Declare All" button takes at the panel's bottom right.
-const BUTTON_ROOM: float = 142.0
-## The X stepper's size, and the narrower "No" beside it.
-const X_STEPPER_SIZE: Vector2 = Vector2(160, 38)
-const NO_BESIDE_STEPPER: float = 104.0
+const PAY_FORMAT: String = "Pay %s"
+
+## The room kept at the panel's sides and under its Answer Row.
+const INSET: float = 12.0
+const TOP: float = 8.0
+const ROW_HEIGHT: float = 44.0
+const ROW_GAP: float = 8.0
+const PROMPT_FONT: int = 22
+## A prompt that would need a third line is drawn this size instead.
+const SMALL_PROMPT_FONT: int = 18
+const PROMPT_LINES: int = 2
+const SMALL_FONT: int = 16
+const BUTTON_FONT: int = 20
+## A refusal takes one line, or two when it must, growing upward from the Answer Row.
+const REFUSAL_HEIGHT: float = 48.0
+const FLASH_TIME: float = 0.3
 
 var _back: Panel = null
-var _border: Panel = null
-var _prompt: Label = null
-## The prompt, drawn with its symbols, when it has any; null otherwise.
-var _symbol_prompt: SymbolLabel = null
-## The X stepper and the most it goes to, while how much X to pay is asked.
-var _x_stepper: DamageStepper = null
-var _most_x: int = -1
+var _flash: Panel = null
+var _flash_count: int = 0
+## What was asked when the border last flashed, so that the same question redrawn does not.
+var _flashed_for: String = ""
+var _prompt: SymbolLabel = null
+var _prompt_text: String = ""
+## What is still owed, written after the prompt: " {2}" on its line or under it.
+var _owed_text: String = ""
 var _error: Label = null
-var _option: Label = null
+var _option: SymbolLabel = null
+var _hint: Label = null
+var _pip_names: Array[String] = []
+var _asked: InfoPrompt = null
 var _cancel: Button = null
 ## The key that cancels, as the Cancel button names it.
 var _cancel_key: String = "X"
 var _all_attack: Button = null
+var _is_undeclaring: bool = false
+var _affirmative: Button = null
 var _no: Button = null
-var _hint: Label = null
-var _pips: Array[TextureRect] = []
-var _pip_names: Array[String] = []
+var _x_stepper: XStepper = null
+var _x: int = 0
+var _selected: int = NOTHING
 
 
 func _init() -> void:
@@ -61,112 +91,83 @@ func _init() -> void:
 ## The panel is dim and empty while nothing is asked of the Hero.
 func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint: String = "") -> void:
 	for child: Node in get_children():
-		remove_child(child)
-		child.queue_free()
-	_pips.clear()
+		if child != _flash:
+			remove_child(child)
+			child.queue_free()
 	_cancel = null
 	_all_attack = null
+	_affirmative = null
 	_no = null
-	_symbol_prompt = null
 	_x_stepper = null
-	_most_x = -1
+	_option = null
 	position = box.position
 	size = box.size
 	# A payment Auto-tap is making asks nothing, but says what is owed and can be canceled.
 	var is_asked: bool = (snapshot.decision != null or snapshot.paying != null) and not snapshot.is_over()
-	var prompt: InfoPrompt = InfoPrompt.of(snapshot.decision if is_asked else null, snapshot.view,
+	_asked = InfoPrompt.of(snapshot.decision if is_asked else null, snapshot.view,
 			snapshot.paying if is_asked else null, snapshot.names)
-	_back = CardShapes.rounded(box.size, 8, Color("#2c323c"))
+	_back = Panel.new()
+	_back.size = box.size
+	_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_back.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_back.add_theme_stylebox_override("panel",
+		DitherShading.plate(FILL.lightened(0.06), FILL.darkened(0.3), BORDER, 8, 2, 0, maxi(1, int(box.size.y))))
 	_back.modulate.a = 1.0 if is_asked else DIM
 	add_child(_back)
-	_border = CardShapes.outline(box.size, 8, 2, BORDER)
-	_border.modulate.a = _back.modulate.a
-	add_child(_border)
-	var inside: float = box.size.x - 24.0
-	var has_symbol: bool = prompt.text.contains("{")
-	_prompt = _label("" if has_symbol else prompt.text, Rect2(12, 8, inside, 52), 18, Color.WHITE)
+	var inside: float = box.size.x - INSET * 2.0
+	_pip_names = ManaSymbols.pip_names(_asked.owed)
+	_owed_text = ""
+	if not _pip_names.is_empty():
+		var symbols: String = ""
+		for pip: String in _pip_names:
+			symbols += "{%s}" % pip.to_upper()
+		_owed_text = (" " if _asked.is_owed_inline else "\n") + symbols
+	_prompt = _words(Rect2(INSET, TOP, inside, 0))
 	add_child(_prompt)
-	if has_symbol:
-		_symbol_prompt = SymbolLabel.new()
-		_symbol_prompt.set_font_size(18 + UiText.RAISE)
-		_symbol_prompt.position = Vector2(12, 8)
-		_symbol_prompt.size = Vector2(inside, 0)
-		_symbol_prompt.write(prompt.text)
-		add_child(_symbol_prompt)
-	_pip_names = ManaSymbols.pip_names(prompt.owed)
-	var first_pip: Vector2 = _first_pip_place(prompt, inside)
-	for index: int in _pip_names.size():
-		var pip: TextureRect = CardShapes.image(ManaSymbols.texture(_pip_names[index]),
-			Rect2(first_pip + Vector2(index * 30, 0), Vector2(26, 26)))
-		add_child(pip)
-		_pips.append(pip)
-	_hint = _label(hint if is_asked else "", Rect2(12, 38, inside, 44), 13, Color(1, 1, 1, 0.65))
+	_hint = _label(hint if is_asked else "", Rect2(INSET, TOP, inside, 44), SMALL_FONT, MUTED)
 	add_child(_hint)
-	# The reason sits along the bottom, beside the Cancel or "Declare All" button if there
-	# is one: the panel is too short for a row of its own (A489).
-	var beside: float = BUTTON_ROOM if prompt.can_cancel or prompt.offers_all_attack or prompt.offers_no else 0.0
-	_error = _label(error, Rect2(12, box.size.y - 50, inside - beside, 44), 13, Color(1, 0.45, 0.4))
+	_write_prompt(_asked.text)
+	var row_top: float = box.size.y - INSET - ROW_HEIGHT
+	_error = _label(error, Rect2(INSET, row_top - REFUSAL_HEIGHT - 4.0, inside, REFUSAL_HEIGHT), SMALL_FONT, REFUSED)
+	_error.add_theme_constant_override("line_spacing", -2)
 	_error.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	add_child(_error)
-	if prompt.can_cancel:
-		_cancel = Button.new()
-		_cancel.text = CANCEL_FORMAT % _cancel_key
-		_cancel.focus_mode = Control.FOCUS_NONE
-		_cancel.position = Vector2(box.size.x - BUTTON_ROOM, box.size.y - 40)
-		_cancel.size = Vector2(BUTTON_ROOM - 12, 32)
-		_cancel.add_theme_font_size_override("font_size", 18)
-		_cancel.pressed.connect(func() -> void: cancel_pressed.emit())
-		add_child(_cancel)
-	if prompt.offers_all_attack:
-		_all_attack = Button.new()
-		_all_attack.text = ALL_ATTACK
-		_all_attack.focus_mode = Control.FOCUS_NONE
-		_all_attack.position = Vector2(box.size.x - BUTTON_ROOM, box.size.y - 40)
-		_all_attack.size = Vector2(BUTTON_ROOM - 12, 32)
-		_all_attack.add_theme_font_size_override("font_size", 18)
-		_all_attack.pressed.connect(func() -> void:
-			if _all_attack.text == UNDECLARE_ALL:
-				undeclare_all_pressed.emit()
-			else:
-				all_attack_pressed.emit())
-		add_child(_all_attack)
-	if prompt.offers_no:
-		_no = Button.new()
-		_no.text = NO
-		_no.focus_mode = Control.FOCUS_NONE
-		var no_width: float = NO_BESIDE_STEPPER if prompt.chooses_x else BUTTON_ROOM - 12
-		_no.position = Vector2(box.size.x - 12 - no_width, box.size.y - 40)
-		_no.size = Vector2(no_width, 32)
-		_no.add_theme_font_size_override("font_size", 18)
-		_no.pressed.connect(func() -> void: no_pressed.emit())
-		add_child(_no)
-	if prompt.chooses_x:
-		_most_x = prompt.most_x
-	_option = _label("", Rect2(12, 8, inside, box.size.y - 16), 18, Color.WHITE)
+	_build_row()
+	_option = _words(Rect2(INSET, TOP, inside, 0))
 	add_child(_option)
+	_show_flash(box.size, snapshot.decision if is_asked else null)
 	_arrange()
+
+
+## Lights answer [param index] of the Answer Row as the Selected Answer, or none of them
+## for NOTHING. It does nothing to a row with no answers.
+func show_selected(index: int) -> void:
+	if _selected == index:
+		return
+	_selected = index
+	if _asked != null and _asked.offers_no:
+		_build_row()
+		_arrange()
+
+
+## The Selected Answer as the row shows it: NOTHING, AFFIRMATIVE or NO_ANSWER.
+func selected() -> int:
+	return _selected
 
 
 ## Shows [param x] on the X stepper, which can go from 0 to the most the Hero can pay. It
 ## does nothing while how much X to pay is not asked.
 func show_x(x: int) -> void:
-	if _most_x < 0:
+	if _x == x and _x_stepper != null:
 		return
-	if _x_stepper != null:
-		remove_child(_x_stepper)
-		_x_stepper.queue_free()
-	_x_stepper = DamageStepper.new(Rect2(Vector2(12, size.y - X_STEPPER_SIZE.y - 6), X_STEPPER_SIZE), x, false,
-		x > 0, x < _most_x)
-	_x_stepper.lowered.connect(func() -> void: x_lowered.emit())
-	_x_stepper.raised.connect(func() -> void: x_raised.emit())
-	add_child(_x_stepper)
-	if _option != null:
-		move_child(_option, -1)
-	_arrange()
+	_x = x
+	if _asked != null and _asked.chooses_x:
+		_build_row()
+		_arrange()
 
 
 ## The X stepper, or null while how much X to pay is not asked.
-func x_stepper() -> DamageStepper:
+func x_stepper() -> XStepper:
 	return _x_stepper
 
 
@@ -174,19 +175,26 @@ func x_stepper() -> DamageStepper:
 ## the panel back.
 func show_option(text: String) -> void:
 	if _option != null:
-		_option.text = text
+		if _option.written() != text:
+			_option.write(text)
 		_arrange()
 
 
 ## Changes what the prompt says without building the panel again, for a choice that is
 ## counted as it is made ("Discard 2 cards (1 chosen)").
 func show_prompt(text: String) -> void:
-	if _prompt != null and _prompt.text != text:
-		_prompt.text = text
+	if _prompt != null and _prompt_text != text:
+		_write_prompt(text)
 
 
 func prompt_text() -> String:
-	return _symbol_prompt.written() if _symbol_prompt != null else _prompt.text
+	return _prompt_text
+
+
+## The size the prompt is drawn at, before it is raised: PROMPT_FONT, or SMALL_PROMPT_FONT
+## when it would need a third line.
+func prompt_font_size() -> int:
+	return _prompt.get_meta("font", PROMPT_FONT)
 
 
 ## The reason the last answer was refused, as shown, or "".
@@ -196,7 +204,7 @@ func error_text() -> String:
 
 ## The option shown in place of the prompt, or "".
 func option_text() -> String:
-	return _option.text
+	return _option.written()
 
 
 ## Whether the prompt, and not an option, is what shows.
@@ -210,12 +218,17 @@ func is_dim() -> bool:
 
 
 func has_border() -> bool:
-	return _border != null and _border.get_parent() == self
+	return _back != null and _back.get_parent() == self
 
 
 ## The pips of what is still owed while paying, such as ["1", "r"].
 func owed_pip_names() -> Array[String]:
 	return _pip_names
+
+
+## What the prompt's line reads with what is owed written after it: "Pay for Hill Giant\n{3}{R}".
+func prompt_written() -> String:
+	return _prompt.written()
 
 
 ## The line under the prompt saying how the input is used, or "".
@@ -226,6 +239,7 @@ func hint_text() -> String:
 ## While [param is_on], which is while any attacker is declared, the "Declare All" button
 ## reads "Undeclare All" and puts them all back instead (A496).
 func show_undeclare(is_on: bool) -> void:
+	_is_undeclaring = is_on
 	if _all_attack != null:
 		_all_attack.text = UNDECLARE_ALL if is_on else ALL_ATTACK
 
@@ -235,7 +249,18 @@ func all_attack_button() -> Button:
 	return _all_attack
 
 
-## The "No" button, or null while no "you may" is asked.
+## The answer on the left of the Answer Row, "Yes" or "Pay {2}", or null while no question
+## with answers is asked or the X stepper is there instead.
+func affirmative_button() -> Button:
+	return _affirmative
+
+
+## What the answer on the left reads, "Yes" or "Pay {2}", or "" when there is none.
+func affirmative_text() -> String:
+	return _affirmative.get_meta("words", "") if _affirmative != null else ""
+
+
+## The "No" answer, or null while no question with answers is asked.
 func no_button() -> Button:
 	return _no
 
@@ -256,51 +281,177 @@ func error_rect() -> Rect2:
 	return Rect2(_error.position, _error.size)
 
 
+## Where the Answer Row is, in the panel.
+func row_rect() -> Rect2:
+	return Rect2(INSET, size.y - INSET - ROW_HEIGHT, size.x - INSET * 2.0, ROW_HEIGHT)
+
+
+## Where the prompt's lines are, in the panel.
+func prompt_rect() -> Rect2:
+	return Rect2(_prompt.position, Vector2(_prompt.size.x, _line_count(_prompt.written(), prompt_font_size()) * _line_height(prompt_font_size())))
+
+
+## How many times the border has flashed for a new question.
+func flash_count() -> int:
+	return _flash_count
+
+
+## Builds the Answer Row from what is asked: two answers, one action, or nothing.
+func _build_row() -> void:
+	for old: Button in [_cancel, _all_attack, _affirmative, _no, _x_stepper]:
+		if old != null:
+			remove_child(old)
+			old.queue_free()
+	_cancel = null
+	_all_attack = null
+	_affirmative = null
+	_no = null
+	_x_stepper = null
+	var row: Rect2 = row_rect()
+	if _asked.can_cancel:
+		_cancel = _button(CANCEL_FORMAT % _cancel_key, row, false)
+		_cancel.pressed.connect(func() -> void: cancel_pressed.emit())
+	if _asked.offers_all_attack:
+		_all_attack = _button(UNDECLARE_ALL if _is_undeclaring else ALL_ATTACK, row, false)
+		_all_attack.pressed.connect(func() -> void:
+			if _all_attack.text == UNDECLARE_ALL:
+				undeclare_all_pressed.emit()
+			else:
+				all_attack_pressed.emit())
+	if not _asked.offers_no:
+		return
+	var half: float = (row.size.x - ROW_GAP) / 2.0
+	var left: Rect2 = Rect2(row.position, Vector2(half, row.size.y))
+	var right: Rect2 = Rect2(row.position + Vector2(half + ROW_GAP, 0), Vector2(half, row.size.y))
+	var is_yes: bool = _selected == AFFIRMATIVE
+	if _asked.chooses_x:
+		_x_stepper = XStepper.new(left, _x, _x > 0, _x < _asked.most_x, SELECTED if is_yes else BUTTON, is_yes)
+		_x_stepper.pressed.connect(func() -> void: answer_selected.emit(AFFIRMATIVE))
+		_x_stepper.lowered.connect(func() -> void: x_lowered.emit())
+		_x_stepper.raised.connect(func() -> void: x_raised.emit())
+		add_child(_x_stepper)
+	else:
+		_affirmative = _button(YES if _owed_text == "" else PAY_FORMAT % _owed_text.strip_edges(), left, is_yes)
+		_affirmative.pressed.connect(func() -> void: answer_selected.emit(AFFIRMATIVE))
+	_no = _button(NO, right, _selected == NO_ANSWER)
+	_no.pressed.connect(func() -> void: answer_selected.emit(NO_ANSWER))
+	if _option != null:
+		move_child(_option, -1)
+	if _flash != null:
+		move_child(_flash, -1)
+
+
+## A button of the Answer Row in [param box], framed, its ring white when [param is_lit].
+## Words with a mana symbol, as "Pay {2}", are drawn with it.
+func _button(words: String, box: Rect2, is_lit: bool) -> Button:
+	var button: Button = Button.new()
+	button.focus_mode = Control.FOCUS_NONE
+	button.position = box.position
+	button.size = box.size
+	button.add_theme_font_size_override("font_size", BUTTON_FONT + UiText.RAISE)
+	button.set_meta("words", words)
+	button.set_meta("is_lit", is_lit)
+	SteelFrame.apply(button, SELECTED if is_lit else BUTTON, is_lit)
+	if words.contains("{"):
+		var line: SymbolLabel = SymbolLabel.new()
+		line.set_font_size(BUTTON_FONT + UiText.RAISE)
+		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		line.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		line.size = Vector2(box.size.x, 0)
+		line.position = Vector2(0, (SteelFrame.face_height(box.size.y) - _line_height(BUTTON_FONT)) / 2.0)
+		line.write(words)
+		button.add_child(line)
+	else:
+		button.text = words
+	add_child(button)
+	return button
+
+
+## Whether [param button] of the Answer Row is lit as the Selected Answer.
+static func is_lit(button: Button) -> bool:
+	return button != null and button.get_meta("is_lit", false)
+
+
+## Writes [param text] as the prompt, what is owed after it, at the size that keeps it to
+## PROMPT_LINES lines, and puts the hint under it.
+func _write_prompt(text: String) -> void:
+	_prompt_text = text
+	var written: String = text + _owed_text if text != "" else ""
+	var font_size: int = PROMPT_FONT if _line_count(written, PROMPT_FONT) <= PROMPT_LINES else SMALL_PROMPT_FONT
+	_prompt.set_meta("font", font_size)
+	_prompt.set_font_size(font_size + UiText.RAISE)
+	_prompt.write(written)
+	_hint.position.y = TOP + _line_count(written, font_size) * _line_height(font_size) + 2.0
+
+
+## Flashes the border white once when what is asked is new and is not priority.
+func _show_flash(box: Vector2, decision: MmPendingDecision) -> void:
+	if _flash == null or _flash.size != box:
+		if _flash != null:
+			remove_child(_flash)
+			_flash.queue_free()
+		_flash = CardShapes.outline(box, 8, 3, Color.WHITE)
+		_flash.modulate.a = 0.0
+		add_child(_flash)
+	move_child(_flash, -1)
+	var asked: String = _asked.text
+	if asked == _flashed_for:
+		return
+	_flashed_for = asked
+	if asked == "" or decision is PriorityDecision:
+		return
+	_flash_count += 1
+	_flash.modulate.a = 1.0
+	if is_inside_tree():
+		create_tween().tween_property(_flash, "modulate:a", 0.0, FLASH_TIME)
+	else:
+		_flash.modulate.a = 0.0
+
+
 func _arrange() -> void:
 	if _option == null:
 		return
-	var is_option: bool = _option.text != ""
+	var is_option: bool = _option.written() != ""
 	_option.visible = is_option
 	_prompt.visible = not is_option
-	if _symbol_prompt != null:
-		_symbol_prompt.visible = not is_option
-	if _x_stepper != null:
-		_x_stepper.visible = not is_option
 	_error.visible = not is_option and _error.text != ""
-	for pip: TextureRect in _pips:
-		pip.visible = not is_option
 	_hint.visible = not is_option and _hint.text != ""
-	if _cancel != null:
-		_cancel.visible = not is_option
-	if _all_attack != null:
-		_all_attack.visible = not is_option
-	if _no != null:
-		_no.visible = not is_option
+	for button: Button in [_cancel, _all_attack, _affirmative, _no, _x_stepper]:
+		if button != null:
+			button.visible = not is_option
 
 
-## Where the first pip of what is owed goes: under the prompt, or after its text on its
-## line when [param prompt] says so and they fit, as a ward cost's do (ADR 0062).
-func _first_pip_place(prompt: InfoPrompt, inside: float) -> Vector2:
-	var under: Vector2 = Vector2(12, 62)
-	if not prompt.is_owed_inline:
-		return under
-	var font: Font = _prompt.get_theme_font("font")
-	var font_size: int = _prompt.get_theme_font_size("font_size")
-	var after: float = font.get_string_size(prompt.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 8.0
-	if after + _pip_names.size() * 30 > inside:
-		return under
-	return Vector2(12 + after, 8 + (font.get_height(font_size) - 26.0) / 2.0)
+## How many lines [param text] takes in the panel at [param font_size].
+func _line_count(text: String, font_size: int) -> int:
+	if text == "":
+		return 0
+	var font: Font = get_theme_default_font()
+	var raised: int = font_size + UiText.RAISE
+	# A mana symbol is about as wide as two letters of its line.
+	var plain: String = text.replace("{", "").replace("}", "0")
+	return roundi(font.get_multiline_string_size(plain, HORIZONTAL_ALIGNMENT_LEFT, size.x - INSET * 2.0, raised).y
+		/ font.get_height(raised))
 
 
-## Where the first pip of what is owed is drawn, for tests.
-func first_pip_position() -> Vector2:
-	return _pips[0].position if not _pips.is_empty() else Vector2(-1, -1)
+func _line_height(font_size: int) -> float:
+	return get_theme_default_font().get_height(font_size + UiText.RAISE)
+
+
+## A centered line of words that draws its mana symbols.
+func _words(box: Rect2) -> SymbolLabel:
+	var line: SymbolLabel = SymbolLabel.new()
+	line.set_font_size(PROMPT_FONT + UiText.RAISE)
+	line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	line.position = box.position
+	line.size = box.size
+	return line
 
 
 func _label(text: String, box: Rect2, font_size: int, color: Color) -> Label:
 	var label: Label = Label.new()
 	# Wrapping is set before the text, or the label grows as wide as its longest line.
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", font_size + UiText.RAISE)
 	label.add_theme_color_override("font_color", color)
 	label.text = text

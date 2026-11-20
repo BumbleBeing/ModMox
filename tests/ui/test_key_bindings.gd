@@ -23,7 +23,21 @@ func test_the_defaults_are_space_z_x_and_control() -> void:
 	assert_eq(keys.key_of(UNDO), KEY_Z)
 	assert_eq(keys.key_of(CANCEL), KEY_X)
 	assert_eq(keys.key_of(HOLD), KEY_CTRL)
-	assert_eq(KeyBindings.ACTIONS.size(), 4)
+	assert_eq(KeyBindings.ACTIONS.size(), 8)
+
+
+func test_the_arrows_move_the_selected_answer_and_step_x() -> void:
+	# Game ADR 0066.
+	var keys: KeyBindings = KeyBindings.new()
+
+	assert_eq(keys.pressed_action(KEY_LEFT), KeyBindings.Action.PREVIOUS_ANSWER)
+	assert_eq(keys.pressed_action(KEY_RIGHT), KeyBindings.Action.NEXT_ANSWER)
+	assert_eq(keys.pressed_action(KEY_UP), KeyBindings.Action.RAISE_X)
+	assert_eq(keys.pressed_action(KEY_DOWN), KeyBindings.Action.LOWER_X)
+	assert_eq(KeyBindings.name_of(KeyBindings.Action.PREVIOUS_ANSWER), "Previous answer")
+	assert_eq(KeyBindings.name_of(KeyBindings.Action.NEXT_ANSWER), "Next answer")
+	assert_eq(KeyBindings.name_of(KeyBindings.Action.RAISE_X), "Raise X")
+	assert_eq(KeyBindings.name_of(KeyBindings.Action.LOWER_X), "Lower X")
 
 
 func test_a_key_does_the_action_it_is_bound_to() -> void:

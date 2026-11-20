@@ -25,3 +25,7 @@ Ward (engine ADR 0062) asks the Hero a `ChooseYesOrNoDecision` with a `cost` whe
 - **The mark.** While the cost is asked, the Stack Window entry of the spell or ability ward would counter carries the ward trigger's dashed Stack Mark, in the ward trigger's Stack Color. Ward refers to that spell or ability rather than targeting it.
 
 Once the Hero has paid and the ward trigger has resolved, the Hero's own spell is on top of the stack again and is passed for them, as any spell of their own is.
+
+## Addendum: an answer is now selected, then given (ADR 0066)
+
+ADR 0066 changes how these questions are answered, and nothing else here. "No" is no longer pressed to answer: Yes and No are both in the Info Panel, a click or Left and Right selects one, and the Pass Button or Space gives it. A "you may" starts on Yes, so Space still says yes. A ward cost starts with neither selected and Space does nothing until one is; after that Space pays, so "No key pays" above no longer holds. The words, the marks and "nothing glows" stand.

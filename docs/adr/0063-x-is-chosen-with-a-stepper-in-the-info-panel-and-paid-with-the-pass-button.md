@@ -17,3 +17,7 @@ Taj-Nar Swordsmith, a card of the Villain deck `kemba_kha_enduring` that the Her
 **Nothing is marked.** The prototype drew the trigger's source with a dashed Stack Mark; as with a "you may" (ADR 0060), only a target is marked, and "pay {X}" has none.
 
 Left out until a card needs them: an X chosen as a spell is cast (CR 107.3a, 601.2b), an X with a limit or colored mana, and a cost on resolution other than {X}.
+
+## Addendum: the stepper is the Pay answer (ADR 0066)
+
+ADR 0066 changes where the stepper and "No" sit and how X is paid. They are the two halves of the Info Panel's Answer Row; the stepper is a plate of its own and no longer the `DamageStepper`. Neither is selected at first, and the Pass Button reads "Choose an answer"; clicking or stepping the stepper selects it, Up and Down step X, and the Pass Button or Space then pays, so "no key presses it" above no longer holds. The words, where the stepper starts and the glow of what Auto-tap would tap stand.

@@ -1,0 +1,29 @@
+# An answer is selected in the Info Panel and given with the Pass Button
+
+The Info Panel was a box 300 wide and about 115 tall under the Pass Button, with one prompt, one small button and the reason for a refusal squeezed beside it (A489). It is where a "you may" (ADR 0060), a ward cost (ADR 0062) and an X (ADR 0063) are asked, and more questions will be asked there, so the user wanted it easier to see and to answer. The design was agreed question by question, then shown in a throwaway prototype of fourteen states on a mock board (`prototypes/info_panel/`), where the user chose the buttons' border from three, had the stepper made one plate and the text centered, and signed it off: "Build it as shown". It is milestone 13l.
+
+**The Pass Button moves to the right end of the hand's strip, and the Info Panel takes the room.** The Pass Button is 360 × 96 there, bottom-aligned, in the 300 pixels that were empty beside the piles. The Info Panel is 360 wide and as tall as the strip less its pads, and stays inside the strip, so no battlefield row or pile moves (A489's rule). The Hold Panel is 360 wide too, so the three boxes match. The Hand Strip stays centered between them, 372 in from each end of the strip; it lost 120 of about 1,086 pixels. Growing the panel upward over the Hero's lands, and a Pass Button the strip's whole height, were turned down.
+
+**An answer is selected in the Info Panel; only the Pass Button and its key give it.** The answers of a "you may", a ward cost and an X are both in the panel's Answer Row, the affirmative on the left and No on the right. A click on one, or Left and Right, selects it and answers nothing. The Pass Button reads the Selected Answer ("Yes", "No", "Pay {2}") and gives it, by a click or by Space. This is one rule for these questions, the X stepper, attackers and discards alike: what is in the panel or on the board sets an answer up, and the Pass Button gives it. A click that answered at once would have been faster by mouse but a second way to answer, beside buttons that only select.
+
+This changes ADR 0060, where "No" was "pressed with the mouse alone" and answered at once, and the Pass Button could only say yes. The Pass Button being the one place that says "go ahead" is kept, and is why Yes did not move into the panel as a button that answers.
+
+**A "you may" starts on Yes; a question that spends mana starts on nothing.** Space through a "you may" still says yes, as the user chose in ADR 0060. A ward cost and an X start with no Selected Answer: the Pass Button reads "Choose an answer", cannot be pressed, and Space does nothing. Starting on Pay would have a Hero pressing Space through priority spend mana without reading the question, which ADR 0060's addendum and ADR 0063 forbade; starting on No would have the same Hero get their own spell countered by ward, which loses more. Once the Hero has selected an answer, Space gives it as it gives any other, so "no key pays" in those two ADRs no longer holds.
+
+**For X, the stepper is the Pay answer.** It is the left half of the Answer Row and is selected when it is clicked or stepped. Up and Down step X. Left and Right do not, though that was first agreed: they must still move from the stepper to No.
+
+**The Answer Row holds answers or one action.** It is the panel's bottom row, 44 tall: two halves for a question's answers, or one button across its whole width for Cancel or "Declare All", which act at once as before. No decision has both. A refusal has a red line of its own directly above the row, and takes a second line, growing upward, when it must: the prototype showed a real refusal does not fit in one.
+
+**The look.**
+- The panel is Dither Shaded, and dim while nothing is asked.
+- Every button of the panel and the Pass Button has a pixel border with stepped corners, nothing rounded: a 3 pixel ring of light steel with a 1 pixel dark line inside it, over the button's lip. The Selected Answer's ring is white and its face brighter. "Ink and rim" (a near-black ring with a light rim) and "Bevel" were the two turned down.
+- The X stepper is one such plate. Its − and + are its own ends, drawn on its face with no shape of their own, and its number sits in a flat dark gray well between them. It is no longer the `DamageStepper` combat damage is divided with.
+- All the text above the Answer Row is centered, and so is an Option Menu row shown in full. The prompt is 22 pixels, and 18 when it would need a third line; a refusal 16; the buttons 20.
+- The Pass Button has what it does in 26 pixels and its key under it in 16, dimmer and without brackets: "Pass Priority" over "SPACE". "Choose an answer" has no key under it.
+- Without priority, and with nothing to confirm, the Pass Button is gray and blank: no words and no key. The user asked for this after playing the build; before, it read a dimmed "Pass Priority". A choice still being made keeps its dimmed words ("Confirm discard"), and so does "Choose an answer", since each says what is still to do.
+- The Pass Button's border flashes white once, as the panel's does, whenever it goes from one that cannot be pressed to one that can.
+- The panel's border flashes white once, over about 0.3 seconds, when a question other than priority arrives. Priority comes too often to flash.
+
+**Left as they are:** attackers, blockers, a division of damage, an order of triggers and cards to discard, which already start empty or on a default and are confirmed with the Pass Button; a target and the legend to keep, which are one click on the board; the words of every prompt, and every Stack Mark (ADRs 0060, 0062 and 0063).
+
+Left for later: the text of buttons is sometimes distorted and choppy, which the user saw on the prototype and which is not yet looked into.

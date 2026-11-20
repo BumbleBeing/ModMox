@@ -883,18 +883,33 @@ func test_the_portrait_is_six_times_a_portraits_pixels_and_the_step_column_is_na
 		assert_true(panel_rect.encloses(parts["step_%d" % step]))
 
 
-func test_the_pass_button_is_over_the_info_panel_and_as_wide() -> void:
+func test_the_pass_button_is_at_the_right_end_of_the_hands_strip_opposite_the_info_panel() -> void:
+	# Game ADR 0066.
 	for screen: Vector2 in SIZES:
 		var regions: Dictionary[String, Rect2] = EncounterLayout.regions(screen)
 		var button: Rect2 = regions["pass"]
 		var info: Rect2 = regions["info"]
+		var strip_top: float = regions["hero_hand"].position.y
 
-		assert_eq(button.position.x, info.position.x, "The same left edge at %s." % screen)
-		assert_eq(button.size.x, info.size.x)
-		assert_eq(button.size.y, EncounterLayout.PASS_HEIGHT)
-		assert_almost_eq(info.position.y - button.end.y, EncounterLayout.PASS_GAP, 0.01, "Directly above it.")
+		assert_eq(button.size, Vector2(360, 96), "At %s." % screen)
+		assert_almost_eq(button.end.x, regions["hero_lands"].end.x, 0.01, "Flush with the right of the battlefield.")
+		assert_almost_eq(button.end.y, screen.y - EncounterLayout.INFO_PAD, 0.01, "At the bottom of the strip.")
 		assert_gt(button.position.y, regions["hero_lands"].end.y, "Clear of the Hero's lands.")
-		assert_almost_eq(info.end.y, screen.y - EncounterLayout.INFO_PAD, 0.01, "The Info Panel still ends where it did.")
+		assert_almost_eq(button.position.x - regions["hero_hand"].end.x, EncounterLayout.GUTTER, 0.01, "The hand ends to its left.")
+		assert_eq(info.size.x, 360.0)
+		assert_almost_eq(info.position.y, strip_top + EncounterLayout.INFO_PAD, 0.01, "The Info Panel takes the strip's height.")
+		assert_almost_eq(info.end.y, screen.y - EncounterLayout.INFO_PAD, 0.01)
+
+
+func test_the_bigger_info_panel_moves_no_row_and_no_pile() -> void:
+	# Where each was before game ADR 0066, on a 1920 x 1080 screen.
+	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(Vector2(1920, 1080))
+
+	assert_eq(regions["hero_lands"], Rect2(352, 746.5, 1386, 140))
+	assert_eq(regions["hero_nonlands"], Rect2(352, 534.5, 1386, 200))
+	assert_eq(regions["villain_lands"], Rect2(352, 92, 1386, 140))
+	assert_eq(regions["hero_library"].position.x, 1750.0)
+	assert_almost_eq(regions["hero_hand"].position.x - regions["hero_lands"].position.x, 372.0, 0.01)
 
 
 func test_every_row_and_pile_has_a_zone_plate_and_no_hand_has_one() -> void:

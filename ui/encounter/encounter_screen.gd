@@ -58,14 +58,14 @@ const PICKED_GLOW: Color = Color.WHITE
 const SEEN_PILE_BOX: Rect2 = Rect2(Vector2(-2, -4), Vector2(7, 4))
 ## What the Tap Preview shows when the cursor asks for nothing.
 const NO_PREVIEW: int = -1
-## What the Pass Button reads while a "you may" is asked: it answers yes (game ADR 0060).
+## What the Pass Button reads while a question's affirmative is the Selected Answer: "Yes"
+## for a "you may" (game ADR 0060), and for a cost "Pay {2}", as the Info Panel's own
+## answer reads (ADR 0062), or the X the stepper shows (game ADR 0063).
 const YES: String = "Yes"
-## What the Pass Button reads while the Hero is asked to pay a cost, as ward's: a click
-## pays, and no key does (ADR 0062).
-const PAY: String = "Pay"
-## What it reads while how much X to pay is asked: "Pay {2}", the X the stepper shows
-## (game ADR 0063).
 const PAY_X_FORMAT: String = "Pay {%d}"
+## What it reads, and cannot be pressed, while a question that spends mana has no Selected
+## Answer yet (game ADR 0066).
+const CHOOSE_AN_ANSWER: String = "Choose an answer"
 ## The size of the window that asks which replacement effect applies first.
 const REPLACEMENT_WINDOW_SIZE: Vector2 = Vector2(470, 260)
 ## The mode window's width, the room each mode's entry takes, and the room round them.
@@ -101,6 +101,10 @@ var _error: String = ""
 ## Pass Button pays (game ADR 0063).
 var _x_asked: ChooseXToPayDecision = null
 var _x_to_pay: int = 0
+## The Selected Answer (game glossary) of the "you may", ward cost or X being asked, as the
+## Info Panel numbers them, and the question it is of (game ADR 0066).
+var _selected_answer: int = InfoPanel.NOTHING
+var _answer_asked: MmPendingDecision = null
 var _board: Control
 var _panels: Dictionary[int, PlayerPanel] = {}
 var _stack_window: ZoneWindow
@@ -353,11 +357,8 @@ func _ready() -> void:
 	_info.undeclare_all_pressed.connect(func() -> void:
 		if not _is_paused and _selection.clear_attackers():
 			_redraw())
-	# Game ADR 0060: "No" answers a "you may"; the Pass Button says yes. Game ADR 0063: it
-	# declines to pay X too.
-	_info.no_pressed.connect(func() -> void:
-		if not _is_paused:
-			_answer(ChooseXToPayDecision.DECLINE if _x_asked != null else ChooseYesOrNoDecision.Choice.NO))
+	# Game ADR 0066: a press of an answer only selects it; the Pass Button gives it.
+	_info.answer_selected.connect(_select_answer)
 	_info.x_lowered.connect(_step_x.bind(-1))
 	_info.x_raised.connect(_step_x.bind(1))
 	add_child(_info)
@@ -706,6 +707,14 @@ func press_key(keycode: Key) -> void:
 			KeyBindings.Action.CANCEL:
 				if _info.cancel_button() != null:
 					_command(_presenter.cancel_cast)
+			KeyBindings.Action.PREVIOUS_ANSWER:
+				_select_answer(InfoPanel.AFFIRMATIVE)
+			KeyBindings.Action.NEXT_ANSWER:
+				_select_answer(InfoPanel.NO_ANSWER)
+			KeyBindings.Action.RAISE_X:
+				_step_x(1)
+			KeyBindings.Action.LOWER_X:
+				_step_x(-1)
 
 
 ## The Hold Key (game glossary): whichever key holding priority is bound to.
@@ -790,41 +799,56 @@ func pass_priority() -> void:
 	elif _trigger_order.is_active():
 		if not _is_paused:
 			_answer(_trigger_order.answer())
-	elif _snapshot != null and _snapshot.decision is ChooseXToPayDecision:
-		# Game ADR 0063: no key pays X; only the Pass Button's Pay does.
-		return
-	elif _snapshot != null and _snapshot.decision is ChooseYesOrNoDecision:
-		# ADR 0062: no key pays a cost; only the Pass Button's Pay does.
-		if not _is_paused and not _is_asked_to_pay():
-			_answer(ChooseYesOrNoDecision.Choice.YES)
+	elif _answer_asked != null:
+		# Game ADR 0066: it gives the Selected Answer, and nothing while there is none.
+		if not _is_paused and _selected_answer != InfoPanel.NOTHING:
+			_answer(_selected_answer_value())
 	elif not _selection.is_active():
 		_command(_presenter.pass_priority)
 	elif _selection.is_complete() and not _is_paused:
 		_answer(_selection.answer())
 
 
-## The Pass Button was clicked: it pays a cost the Hero is asked to pay, as ward's, and does
-## everything else the pass key does.
+## The Pass Button was clicked: it does what the pass key does (game ADR 0066).
 func _on_pass_button_pressed() -> void:
-	if _snapshot != null and _snapshot.decision is ChooseXToPayDecision:
-		if not _is_paused:
-			_answer(ChooseXToPayDecision.answer_for(_x_to_pay))
-		return
-	if _is_asked_to_pay():
-		if not _is_paused:
-			_answer(ChooseYesOrNoDecision.Choice.YES)
-		return
 	pass_priority()
 
 
+## Selects answer [param index] of the question being asked, InfoPanel.AFFIRMATIVE or
+## NO_ANSWER, and answers nothing: the Pass Button gives it (game ADR 0066).
+func _select_answer(index: int) -> void:
+	if _is_paused or _answer_asked == null or index == _selected_answer:
+		return
+	_selected_answer = index
+	_redraw()
+
+
+## What the engine is answered for the Selected Answer.
+func _selected_answer_value() -> Variant:
+	var is_yes: bool = _selected_answer == InfoPanel.AFFIRMATIVE
+	if _x_asked != null:
+		return ChooseXToPayDecision.answer_for(_x_to_pay) if is_yes else ChooseXToPayDecision.DECLINE
+	return ChooseYesOrNoDecision.Choice.YES if is_yes else ChooseYesOrNoDecision.Choice.NO
+
+
+## What the Pass Button reads for the Selected Answer: "Yes", "No", "Pay {2}".
+func _selected_answer_text() -> String:
+	if _selected_answer == InfoPanel.NO_ANSWER:
+		return InfoPanel.NO
+	if _x_asked != null:
+		return PAY_X_FORMAT % _x_to_pay
+	return _info.affirmative_text() if _is_asked_to_pay() else YES
+
+
 ## Raises or lowers the X the stepper shows by [param by], from 0 to the most the Hero can
-## pay (game ADR 0063).
+## pay (game ADR 0063), and selects paying it (game ADR 0066).
 func _step_x(by: int) -> void:
 	if _is_paused or _x_asked == null:
 		return
 	var x: int = clampi(_x_to_pay + by, 0, _x_asked.most)
-	if x != _x_to_pay:
+	if x != _x_to_pay or _selected_answer != InfoPanel.AFFIRMATIVE:
 		_x_to_pay = x
+		_selected_answer = InfoPanel.AFFIRMATIVE
 		_redraw()
 
 
@@ -1396,6 +1420,13 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	if asked_x != _x_asked:
 		_x_asked = asked_x
 		_x_to_pay = _presenter.starting_x() if asked_x != null else 0
+	# Game ADR 0066: a "you may" starts on Yes; a question that spends mana, on nothing.
+	var asked_answer: MmPendingDecision = snapshot.decision \
+		if snapshot.decision is ChooseYesOrNoDecision or snapshot.decision is ChooseXToPayDecision else null
+	if asked_answer != _answer_asked:
+		_answer_asked = asked_answer
+		var is_free: bool = asked_answer is ChooseYesOrNoDecision and (asked_answer as ChooseYesOrNoDecision).cost == null
+		_selected_answer = InfoPanel.AFFIRMATIVE if is_free else InfoPanel.NOTHING
 	var previous: EncounterSnapshot = _snapshot
 	# Nothing flies through the pregame, whose cards the overlay holds.
 	var may_fly: bool = not _opening.is_open()
@@ -1918,12 +1949,6 @@ func _redraw() -> void:
 		_show_confirm(_selection.confirm_text(), _selection.is_complete(), _selection.can_undo())
 	elif _trigger_order.is_active():
 		_show_confirm("Confirm order", true, _trigger_order.can_undo())
-	elif _x_asked != null:
-		_pass_button.show_confirm(PAY_X_FORMAT % _x_to_pay, true, false)
-	elif _is_asked_to_pay():
-		_pass_button.show_confirm(PAY, true, false)
-	elif _snapshot.decision is ChooseYesOrNoDecision:
-		_show_confirm(YES, true, false)
 	_add_player_stepper()
 	# Like the Hero's, the Villain's hand eases aside for a drawn card that has landed.
 	_villain_hand.show_hand(view.hand_sizes.get(VILLAIN, 0) - _flight_layer.drawn_in_air(VILLAIN).size(),
@@ -1956,6 +1981,11 @@ func _redraw() -> void:
 	_fill_creature_type_window(view, regions)
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
 	_info.show_x(_x_to_pay)
+	_info.show_selected(_selected_answer)
+	if _answer_asked != null:
+		# After the panel: a ward cost's answer reads as the panel's own does.
+		var has_answer: bool = _selected_answer != InfoPanel.NOTHING
+		_pass_button.show_confirm(_selected_answer_text() if has_answer else CHOOSE_AN_ANSWER, has_answer, has_answer)
 	_info.show_undeclare(not _selection.attacker_ids().is_empty())
 	_hold_panel.place(regions["hold"])
 	_show_hand()
