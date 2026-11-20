@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Villain" format=3]
+
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/zar_ojanen_scion_of_efrava_pain.png" id="1_4ck7u"]
+[ext_resource type="Script" path="res://run/villain.gd" id="2_2ekfc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="3_3lxfn"]
+[ext_resource type="Resource" path="res://content/decks/zar_ojanen_scion_of_efrava.tres" id="4_ga8g0"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/zar_ojanen_scion_of_efrava.png" id="5_4ck7u"]
+
+[resource]
+script = ExtResource("2_2ekfc")
+name = "Zar Ojanen, Scion of Efrava"
+sprite = ExtResource("5_4ck7u")
+pain_sprite = ExtResource("1_4ck7u")
+setups = Array[ExtResource("3_3lxfn")]([ExtResource("4_ga8g0")])

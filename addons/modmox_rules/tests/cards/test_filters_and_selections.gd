@@ -180,6 +180,29 @@ func test_a_toughness_filter_compares_a_creatures_toughness_in_any_zone() -> voi
 	assert_true(Scenario.is_not(four_or_greater).matches(state, by_name["Cub"], context))
 
 
+func test_a_toughness_filter_may_compare_with_a_value_instead_of_its_amount() -> void:
+	var wall: MmCardDefinition = Scenario.creature("Wall", 2, 4)
+	var cub: MmCardDefinition = Scenario.creature("Cub", 1, 2)
+	var engine: MmEngine = MmEngine.start(Scenario.setup_with(
+		Scenario.cycled([wall, cub, Scenario.basic_land("Plains")]), Scenario.cycled([])))
+	var state: MmGameState = engine.game_state()
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var by_name: Dictionary[String, MmReference] = {}
+	for card: MmGameObject in engine.hero().library.objects():
+		by_name[state.characteristics_of(card).name] = MmReference.to_object(card.id)
+	var two_or_less: ToughnessFilter = Scenario.toughness_from(Scenario.constant(2))
+	two_or_less.amount = 9
+	var less_than_four: NotFilter = Scenario.is_not(
+		Scenario.toughness_from(Scenario.constant(4), ToughnessFilter.Comparison.OR_GREATER))
+
+	assert_true(two_or_less.matches(state, by_name["Cub"], context))
+	assert_false(two_or_less.matches(state, by_name["Wall"], context), "2, not 9.")
+	assert_false(two_or_less.matches(state, by_name["Plains"], context), "A land has no toughness.")
+	assert_false(two_or_less.matches(state, MmReference.to_player(engine.hero().id), context))
+	assert_true(less_than_four.matches(state, by_name["Cub"], context), "Less than 4 is not 4 or greater.")
+	assert_false(less_than_four.matches(state, by_name["Wall"], context))
+
+
 ## A Hero whose library holds a creature with mana value 3, one with 4, and a Plains.
 func _engine_with_mana_values() -> MmEngine:
 	var three: MmCardDefinition = Scenario.creature("Three", 2, 2, [], Scenario.mana_cost(2, [MmMana.Type.WHITE]))

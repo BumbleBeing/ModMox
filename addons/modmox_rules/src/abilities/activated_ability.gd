@@ -7,6 +7,10 @@ extends MmAbility
 ## The mana part of its cost, such as {B} in "{B}: Regenerate this creature", paid like a
 ## spell's mana cost (CR 602.2b). Null when it costs no mana.
 @export var mana_cost: MmManaCost = null
+## "This ability costs {1} less to activate for each [Value]" (CR 602.2b, 601.2f, ADR
+## 0050), such as Jodah's Codex's Domain: one generic mana off [member mana_cost] for each
+## point of the Value, fixed as the activation begins. Null for none.
+@export var generic_reduction: MmValue = null
 ## Every other part of its cost, such as {T}, paid once the mana is (CR 601.2h).
 @export var costs: Array[MmCost] = []
 @export var targets: Array[TargetRequirement] = []
@@ -63,6 +67,17 @@ func can_pay_costs(state: MmGameState, source: MmGameObject) -> bool:
 		if not cost.can_pay(state, source, source.controller_id):
 			return false
 	return true
+
+
+## The mana [param source]'s controller pays to activate this ability now: its
+## [member mana_cost] less [member generic_reduction], generic mana only (CR 118.7a). Null
+## when it costs no mana.
+func mana_to_pay(state: MmGameState, source: MmGameObject) -> MmManaCost:
+	if mana_cost == null or generic_reduction == null:
+		return mana_cost
+	var reduction: MmManaCost = MmManaCost.new()
+	reduction.generic = generic_reduction.evaluate(state, MmEffectContext.new(source.controller_id, source.id))
+	return mana_cost.reduced_by(reduction)
 
 
 ## Pays every cost, in order (CR 602.2b), for an ability that never stops to ask: a mana

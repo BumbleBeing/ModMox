@@ -141,6 +141,32 @@ func test_once_its_permanent_has_gone_the_card_flies_from_behind_it_to_the_pile_
 	assert_eq(_screen.face_of(bear).modulate.a, 1.0)
 
 
+func test_a_card_exiled_until_its_permanent_leaves_flies_from_behind_it_straight_to_the_battlefield() -> void:
+	# Leyline Binding's exile (engine ADR 0065): the card returns in the same action as its
+	# permanent leaves, so it never lands on the pile.
+	_open(_setup_of([_bear(), Scenario.free_binding("Binding", Scenario.another_nonland_permanent()),
+		Scenario.free_disenchant("Disenchant")]), FLIGHT)
+	_cast("Bear")
+	_cast("Binding", [_permanent("Bear")])
+	_settle()
+	var exiled: int = _exiled("Bear")
+	assert_gt(exiled, 0, "The Binding exiled the Bear.")
+	var tucked: Vector2 = _middle(_screen.face_of(exiled))
+
+	_cast("Disenchant", [_permanent("Binding")])
+
+	assert_eq(_permanent("Binding"), -1)
+	var bear: int = _permanent("Bear")
+	assert_gt(bear, 0, "It is back on the battlefield.")
+	var flying: FlightCard = _screen.flight_card_of(bear)
+	assert_not_null(flying)
+	assert_almost_eq(flying.position, tucked, NEAR)
+	assert_true(flying.leaving_face() is BattlefieldFace, "It leaves as it lay.")
+	_settle()
+	assert_eq(_screen.face_of(bear).modulate.a, 1.0)
+	assert_eq(_screen.pile_text("hero_exile"), "Exile (0)", "It never landed on the pile.")
+
+
 func test_a_card_whose_permanent_left_before_it_was_exiled_is_in_the_pile() -> void:
 	_open(_setup_of([_bear(), Scenario.free_prison("Prison"), Scenario.free_disenchant("Disenchant")]))
 	_cast("Bear")

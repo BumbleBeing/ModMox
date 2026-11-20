@@ -1,0 +1,92 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_cx876"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_cwrk1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_i7j7d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_fswnr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="3_q5ovu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/basic_land_type_count_value.gd" id="4_4l2c0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="5_2rf2h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="6_m6pta"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="7_68xis"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="8_qyirq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="9_fitag"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="10_8ew5c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="11_uwt48"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="12_fxhaw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="13_1m548"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="14_0fvys"]
+
+[sub_resource type="Resource" id="Resource_mq8up"]
+script = ExtResource("3_q5ovu")
+
+[sub_resource type="Resource" id="Resource_ax33j"]
+script = ExtResource("6_m6pta")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_snk4l"]
+script = ExtResource("7_68xis")
+
+[sub_resource type="Resource" id="Resource_cpxf0"]
+script = ExtResource("8_qyirq")
+filters = Array[ExtResource("5_2rf2h")]([SubResource("Resource_ax33j"), SubResource("Resource_snk4l")])
+
+[sub_resource type="Resource" id="Resource_n0jho"]
+script = ExtResource("9_fitag")
+filter = SubResource("Resource_cpxf0")
+
+[sub_resource type="Resource" id="Resource_vophb"]
+script = ExtResource("4_4l2c0")
+selection = SubResource("Resource_n0jho")
+
+[sub_resource type="Resource" id="Resource_ywtsf"]
+script = ExtResource("6_m6pta")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_3bcg2"]
+script = ExtResource("7_68xis")
+
+[sub_resource type="Resource" id="Resource_dvipi"]
+script = ExtResource("8_qyirq")
+filters = Array[ExtResource("5_2rf2h")]([SubResource("Resource_ywtsf"), SubResource("Resource_3bcg2")])
+
+[sub_resource type="Resource" id="Resource_wbdpq"]
+script = ExtResource("9_fitag")
+filter = SubResource("Resource_dvipi")
+
+[sub_resource type="Resource" id="Resource_28nai"]
+script = ExtResource("4_4l2c0")
+selection = SubResource("Resource_wbdpq")
+
+[sub_resource type="Resource" id="Resource_3vjqe"]
+script = ExtResource("10_8ew5c")
+power = SubResource("Resource_vophb")
+toughness = SubResource("Resource_28nai")
+affected = SubResource("Resource_mq8up")
+
+[sub_resource type="Resource" id="Resource_jxqov"]
+script = ExtResource("11_uwt48")
+continuous = SubResource("Resource_3vjqe")
+
+[sub_resource type="Resource" id="Resource_f32b7"]
+script = ExtResource("6_m6pta")
+
+[sub_resource type="Resource" id="Resource_i584b"]
+script = ExtResource("14_0fvys")
+filter = SubResource("Resource_f32b7")
+
+[sub_resource type="Resource" id="Resource_jqe3t"]
+script = ExtResource("13_1m548")
+targets = Array[ExtResource("14_0fvys")]([SubResource("Resource_i584b")])
+effects = Array[ExtResource("2_i7j7d")]([SubResource("Resource_jxqov")])
+
+[sub_resource type="Resource" id="Resource_m7x0u"]
+script = ExtResource("2_cwrk1")
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_fswnr")
+name = "Gaea's Might"
+card_types = Array[int]([3])
+mana_cost = SubResource("Resource_m7x0u")
+abilities = Array[ExtResource("1_cx876")]([SubResource("Resource_jqe3t")])

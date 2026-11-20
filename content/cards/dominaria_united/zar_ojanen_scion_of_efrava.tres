@@ -1,0 +1,101 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_g7gi7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_4axfp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_c6vxe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_3r8tg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_hugpn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="4_aa0nn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="5_xs0no"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="6_ppqsp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/basic_land_type_count_value.gd" id="7_oxfyy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="8_ge86v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="9_6f8mq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/toughness_filter.gd" id="10_vpooc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="11_eto1y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="12_qayln"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="13_5wwmk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="14_410nh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="15_u1bbf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="16_k8v4x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/becomes_tapped_trigger.gd" id="17_k5dfl"]
+
+[sub_resource type="Resource" id="Resource_gki3y"]
+script = ExtResource("3_3r8tg")
+value = 1
+
+[sub_resource type="Resource" id="Resource_cyw2j"]
+script = ExtResource("5_xs0no")
+
+[sub_resource type="Resource" id="Resource_xr4r2"]
+script = ExtResource("6_ppqsp")
+
+[sub_resource type="Resource" id="Resource_w5ajb"]
+script = ExtResource("5_xs0no")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_fhm6s"]
+script = ExtResource("6_ppqsp")
+
+[sub_resource type="Resource" id="Resource_16b7m"]
+script = ExtResource("8_ge86v")
+filters = Array[ExtResource("4_aa0nn")]([SubResource("Resource_w5ajb"), SubResource("Resource_fhm6s")])
+
+[sub_resource type="Resource" id="Resource_wkco0"]
+script = ExtResource("9_6f8mq")
+filter = SubResource("Resource_16b7m")
+
+[sub_resource type="Resource" id="Resource_xwmsr"]
+script = ExtResource("7_oxfyy")
+selection = SubResource("Resource_wkco0")
+
+[sub_resource type="Resource" id="Resource_r1st5"]
+script = ExtResource("10_vpooc")
+comparison = 1
+amount_value = SubResource("Resource_xwmsr")
+
+[sub_resource type="Resource" id="Resource_eaodk"]
+script = ExtResource("11_eto1y")
+filter = SubResource("Resource_r1st5")
+
+[sub_resource type="Resource" id="Resource_rnrx4"]
+script = ExtResource("8_ge86v")
+filters = Array[ExtResource("4_aa0nn")]([SubResource("Resource_cyw2j"), SubResource("Resource_xr4r2"), SubResource("Resource_eaodk")])
+
+[sub_resource type="Resource" id="Resource_rycda"]
+script = ExtResource("9_6f8mq")
+filter = SubResource("Resource_rnrx4")
+
+[sub_resource type="Resource" id="Resource_m1yfk"]
+script = ExtResource("12_qayln")
+amount = SubResource("Resource_gki3y")
+recipients = SubResource("Resource_rycda")
+
+[sub_resource type="Resource" id="Resource_ww5yw"]
+script = ExtResource("16_k8v4x")
+
+[sub_resource type="Resource" id="Resource_y5upm"]
+script = ExtResource("17_k5dfl")
+filter = SubResource("Resource_ww5yw")
+
+[sub_resource type="Resource" id="Resource_mlg2v"]
+script = ExtResource("14_410nh")
+trigger = SubResource("Resource_y5upm")
+effects = Array[ExtResource("2_c6vxe")]([SubResource("Resource_m1yfk")])
+
+[sub_resource type="Resource" id="Resource_mxm1r"]
+script = ExtResource("2_4axfp")
+generic = 3
+symbols = Array[int]([4, 0])
+
+[resource]
+script = ExtResource("3_hugpn")
+name = "Zar Ojanen, Scion of Efrava"
+card_types = Array[int]([1])
+supertypes = Array[int]([1])
+subtypes = Array[String](["Cat", "Warrior"])
+mana_cost = SubResource("Resource_mxm1r")
+power = 4
+toughness = 4
+abilities = Array[ExtResource("1_g7gi7")]([SubResource("Resource_mlg2v")])
+rarity = 1

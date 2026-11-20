@@ -21,7 +21,7 @@ The layered image a card is drawn on, worked out from its characteristics: a fra
 _Avoid_: Card background, border, template
 
 **Status**:
-A lasting condition on the Hero's character that changes the starting conditions of encounters or adds an Emblem to them. The player picks any number on Choose your Hero, a Boon only once an Achievement has unlocked it, and each one may also raise or lower, by a percentage, the gold a won run puts in the Vault: as a rule an Affliction raises it and a Boon lowers it. A Status is never used up; what is used up is a Potion.
+A lasting condition on the Hero's character that changes the starting conditions of encounters or adds an Emblem to them. The player picks any number on Choose your Hero, a Boon only once an Achievement has unlocked it, and each one may also raise or lower, by a percentage, the gold a won run puts in the Vault: as a rule an Affliction raises it and a Boon lowers it. A Status is never used up; what is used up is a Potion. What does the same to an encounter but is bought, sold, put on and taken off is an Armor.
 _Avoid_: Trait, perk, buff, condition
 
 **Boon**:
@@ -118,16 +118,20 @@ _Avoid_: Difficulty (AI Difficulty is the one global setting for how hard every 
 A Villain of Unique Rank, met only through a Chaos Node. It can turn up at any Stage, with a stronger deck at each Tier.
 _Avoid_: Mystery enemy, mini-boss, special
 
+**Encounter Reveal**:
+The screen that opens when the Hero arrives at an encounter, before the Deckbox. A short animation reveals which Villain it is and comes to rest on a still of the Hero against the Villain. From that still the Hero can open the Satchel, or start the encounter, which opens the Deckbox with its Start button.
+_Avoid_: Versus screen, matchup screen, Stage Intro (the screen that opens a Stage)
+
 **Spoils**:
 What the Hero wins for beating a Villain: gold and cards, and now and then an Item. They are paid the moment the win is counted and the Hero takes all of them; the Spoils screen only shows what was won. How many cards follows the Villain's Rank (a Lesser Villain pays 1 to 3, mostly 1, an Elite or a Unique Villain 1 to 3 more evenly, a Boss 2 or 3), and how much gold its Rank and the Tier. The cards are drawn evenly from the copies in the Villain's own deck at that Tier, never its basic lands, so their quality is whatever that deck holds. A loss pays nothing.
 _Avoid_: Loot, rewards, drops
 
 **Item**:
-Anything the Hero holds between encounters and can buy, sell or win other than a card: a Mod or a Potion.
+Anything the Hero holds between encounters and can buy, sell or win other than a card: a Mod, a Potion or an Armor.
 _Avoid_: Gear, equipment (an Equipment is a card), inventory object
 
 **Potion**:
-An Item that is used up when it is used. Some can be used in the middle of an encounter, where they do what a spell would, such as "gain 2 life" or "each opponent discards a card". A Potion has no mana cost, and has a Rarity and a Potion Icon. The Hero's panel counts them on its Potions button, which glows while one could be used, is purple with any and gray with none, and opens the Potions window, where a click on a Potion uses it. Whatever is gone for good once used is a Potion and never an Emblem: an Emblem's ability is static or triggered, or can be activated, sometimes only once each game, and the Emblem itself stays (A491 to A493). The only Potion so far is a mock, Big Gulp: "Target creature gets +2/+2 until end of turn."
+An Item that is used up when it is used. It is used only in the middle of an encounter, never between them, and does there what a spell would, such as "gain 2 life" or "each opponent discards a card". A Potion has no mana cost, and has a Rarity and a Potion Icon. The Hero's panel counts them on its Potions button, which glows while one could be used, is purple with any and gray with none, and opens the Potions window, where a click on a Potion uses it. Whatever is gone for good once used is a Potion and never an Emblem: an Emblem's ability is static or triggered, or can be activated, sometimes only once each game, and the Emblem itself stays (A491 to A493). The only Potion so far is a mock, Big Gulp: "Target creature gets +2/+2 until end of turn."
 _Avoid_: Consumable, single-use Emblem, single-use Boon, charge
 
 **Held**:
@@ -161,6 +165,18 @@ _Avoid_: Prefix, title, nickname
 **Mod Slot**:
 One of the three places a card has for Mods, Hexes included. A basic land has them too.
 _Avoid_: Mod pip, socket, upgrade slot
+
+**Armor**:
+An Item the Hero wears. Each Armor is a Helm, Greaves or Boots, and fills the Armor Slot of that name. While Worn it does to every encounter what a Status does, changing the Hero's starting conditions or adding an Emblem: the two share one system and differ only in how they are come by. A Status is picked on Choose your Hero and lasts the run; an Armor is won, bought and sold, and put on or taken off between encounters, in the Satchel, as often as the Hero likes. Held but not Worn, it does nothing. It has a picture of its own, 32 × 32 pixels, and no Rarity, though Armor is the scarcest and most valuable kind of Item.
+_Avoid_: Gear, equipment (an Equipment is a card), armor type (a Helm, Greaves or Boots is told by its Armor Slot)
+
+**Armor Slot**:
+One of the Hero's three places for Armor: Helm, Greaves and Boots. Each holds one Armor of its own kind at a time. A Status can leave the Hero without the use of one or more of them, and such a slot is drawn under a red X.
+_Avoid_: Armor type, equipment slot, Mod Slot (a card's place for a Mod)
+
+**Worn**:
+Said of an Armor that is in its Armor Slot. An Armor is put on and taken off, and only a Worn one does anything.
+_Avoid_: Attached (a rules term, for an Aura or an Equipment), equipped (equip is a rules keyword), active
 
 **Heart**:
 One of the losses a run can survive. Losing an encounter costs one, and the run is lost when none are left.
@@ -211,8 +227,8 @@ The strip along the Stage Map that shows the Stage, its Tier, the Hearts left an
 _Avoid_: HUD, status bar, top bar
 
 **Satchel**:
-Where the Hero keeps the Items they hold, Mods and Potions alike, between encounters. It is opened from a button on the Run Bar, beside the Hearts, the gold and the Deckbox button, where it only shows each Item and what it does, and from a button at a Store or a Workshop, where Items are sold from it.
-_Avoid_: Inventory, bag, Potions window (the encounter's list of Potions)
+Where the Hero keeps the Items they hold between encounters, and the window that shows them. The window stands over whatever opened it, which it dims, and cannot be resized. It has three pages, Armor, Mods and Potions, and always opens on Armor. Each page is a scrolling list with one entry for each kind of Item held, saying how many: its picture (a Mod has none), its name, what it does and its Rarity (an Armor has none). Beside the pages, whichever is open, stand the Hero's Portrait and their three Armor Slots. A click on an Armor's entry puts it on, in place of any Worn in that Armor Slot, and a click on a filled Armor Slot takes that Armor off; Mods and Potions are only read there. It has no limit on what it holds. It is opened from a button on the Run Bar, beside the Hearts, the gold and the Deckbox button, from the Encounter Reveal, and from a button at a Store or a Workshop, where Items are sold from it.
+_Avoid_: Inventory, bag, Satchel screen (it is a window), Potions window (the encounter's list of Potions)
 
 **Run Seed**:
 The single number from which all randomness in a run is derived: each Stage's map, which Villain a Node gives, the Spoils, and every Encounter Seed. A run is exactly replayable from it and the human's choices.
@@ -241,7 +257,7 @@ A named list of Run Cards from the Collection, each at most once, plus any numbe
 _Avoid_: Decklist, loadout, build
 
 **Deckbox**:
-The Decks the Hero has saved in the run, and the screen that lists them, sets the Active Deck and is the only way into the deckbuilder. It can be opened from the Stage Map, and it opens by itself before an encounter once the Villain is revealed, with a Start button that is disabled while the Active Deck is illegal.
+The Decks the Hero has saved in the run, and the screen that lists them, sets the Active Deck and is the only way into the deckbuilder. It can be opened from the Stage Map, and it opens from the Encounter Reveal before an encounter, with a Start button that is disabled while the Active Deck is illegal.
 _Avoid_: Deck list, deck slots, saved decks
 
 **Active Deck**:
@@ -552,7 +568,7 @@ What one keyword means, in a sentence, shown in the Inspector beside its Keyword
 _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 
 **Rarity**:
-How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a Unique Villain or a rare Chaos Node event, never in other Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique, and Unique here is not the Villain Rank. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. An Emblem has none.
+How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a Unique Villain or a rare Chaos Node event, never in other Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique, and Unique here is not the Villain Rank. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. An Emblem has none, and neither has an Armor.
 _Avoid_: Tier (a part of a run), quality, grade
 
 **Divider**:

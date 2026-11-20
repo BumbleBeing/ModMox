@@ -313,6 +313,46 @@ func test_paying_a_ward_cost_reads_the_same_line_with_what_is_left_and_cannot_be
 		assert_false(prompt.can_cancel, "Nothing is being cast: the ward trigger is resolving.")
 
 
+func test_choosing_x_asks_to_pay_x_for_the_source_and_offers_no() -> void:
+	# Game ADR 0063: "Pay {X} for Wand?", a stepper and No in the panel, Pay on the Pass Button.
+	var view: MmPlayerView = _x_trigger_on_top()
+	var paying_x: MayPayXEffect = (view.stack.back().ability as TriggeredAbility).effects[0] as MayPayXEffect
+
+	var prompt: InfoPrompt = InfoPrompt.of(ChooseXToPayDecision.new(HERO, 21, paying_x.effect, 3), view)
+
+	assert_eq(prompt.text, "Pay {X} for Wand?")
+	assert_true(prompt.chooses_x)
+	assert_eq(prompt.most_x, 3)
+	assert_true(prompt.offers_no)
+	assert_false(prompt.can_cancel, "The ability is resolving: nothing is being cast.")
+	assert_false(InfoPrompt.of(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int]), view).chooses_x)
+
+
+func test_paying_x_on_resolution_says_what_for_with_what_is_left_after_it_and_cannot_be_canceled() -> void:
+	var view: MmPlayerView = _x_trigger_on_top()
+	var paying: PayManaDecision = PayManaDecision.new(HERO, [PayWithManaAction.new(0)] as Array[MmAction], 2,
+		[] as Array[MmMana.Type])
+
+	var by_hand: InfoPrompt = InfoPrompt.of(paying, view)
+	var by_auto_tap: InfoPrompt = InfoPrompt.of(null, view, paying)
+
+	for prompt: InfoPrompt in [by_hand, by_auto_tap]:
+		assert_eq(prompt.text, "Pay for Wand:")
+		assert_eq(prompt.owed.generic, 2, "What is left to pay.")
+		assert_true(prompt.is_owed_inline)
+		assert_false(prompt.can_cancel, "Nothing is being cast: the trigger is resolving.")
+
+
+## The Hero's "you may pay {X}" trigger from the Wand on top of the stack.
+func _x_trigger_on_top() -> MmPlayerView:
+	var view: MmPlayerView = _view()
+	var trigger: MmObjectView = _object(21, "Wand ability", MmGameObject.NO_CARD)
+	trigger.source_object_id = 1
+	trigger.ability = Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.pay_x(Scenario.gain_x_life())])
+	view.stack = [trigger]
+	return view
+
+
 ## The Villain's ward trigger from the Wand on top of the stack, above the Hero's Zap.
 func _ward_on_top() -> MmPlayerView:
 	var view: MmPlayerView = _view()

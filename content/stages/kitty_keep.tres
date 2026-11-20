@@ -4,6 +4,7 @@
 [ext_resource type="Resource" path="res://content/villains/white_black.tres" id="2_rhaj0"]
 [ext_resource type="Resource" path="res://content/villains/arahbo_the_first_fang.tres" id="3_3wb0c"]
 [ext_resource type="Resource" path="res://content/villains/blue_red.tres" id="3_xdi4n"]
+[ext_resource type="Resource" path="res://content/villains/zar_ojanen_scion_of_efrava.tres" id="4_impsd"]
 [ext_resource type="Resource" path="res://content/villains/charmed_stray.tres" id="5_3wb0c"]
 [ext_resource type="Script" path="res://run/stage_definition.gd" id="5_besua"]
 [ext_resource type="Texture2D" path="res://ui/sprites/backgrounds/stage_maps/kitty_keep.png" id="5_gruod"]
@@ -76,7 +77,7 @@ script = ExtResource("5_besua")
 name = "Kitty Keep"
 lesser_villains = Array[ExtResource("1_55mbs")]([ExtResource("5_3wb0c"), ExtResource("7_dy8ix"), ExtResource("8_axcsg")])
 elite_villains = Array[ExtResource("1_55mbs")]([ExtResource("3_xdi4n"), ExtResource("5_xgxq3"), ExtResource("6_ipkip")])
-bosses = Array[ExtResource("1_55mbs")]([ExtResource("2_rhaj0"), ExtResource("3_3wb0c")])
+bosses = Array[ExtResource("1_55mbs")]([ExtResource("2_rhaj0"), ExtResource("3_3wb0c"), ExtResource("4_impsd")])
 map_backdrop = ExtResource("5_gruod")
 intro_color = Color(0.9254902, 0.87058824, 0.7294118, 1)
 scenery = Array[ExtResource("6_gmlbg")]([SubResource("Resource_res7u"), SubResource("Resource_3wb0c"), SubResource("Resource_xgxq3"), SubResource("Resource_impsd"), SubResource("Resource_hu2ih"), SubResource("Resource_o1p7k")])

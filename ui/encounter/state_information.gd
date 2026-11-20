@@ -1,6 +1,6 @@
 class_name StateInformation
 extends RefCounted
-## The State Information of a permanent (13h and milestone 16, ADR 0033): summoning sickness, counters, damage marked, and
+## The State Information of a permanent (13h and milestone 16, ADR 0033): summoning sickness, exertion, counters, damage marked, and
 ## what it is attached to and what is attached to it, what exiled it or what it exiled, a cast from the top of a library it allowed this turn, and each effect on it with the card it came from. The Encounter Presenter makes one for each
 ## permanent and puts it on the snapshot. A new kind of state adds its entries here and changes nothing in the Inspector.
 
@@ -13,6 +13,8 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 	if seen.is_creature and seen.is_summoning_sick:
 		entries.append(StateEntry.new("Summoning Sick",
 			"Can't attack or tap until its controller's next turn."))
+	if seen.is_exerted:
+		entries.append(StateEntry.new("Exerted", "Won't untap during its controller's next untap step."))  # CR 701.43
 	for kind: MmCounter.Kind in MmCounter.KINDS:
 		if seen.counters_of(kind) > 0:
 			entries.append(StateEntry.new("%s Counters" % MmCounter.label(kind), _counters_text(kind, seen.counters_of(kind))))

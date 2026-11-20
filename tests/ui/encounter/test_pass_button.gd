@@ -54,6 +54,22 @@ func test_it_confirms_a_choice_and_is_a_pass_button_again_afterward() -> void:
 	assert_eq(button.get_theme_font_size("font_size"), PassButton.PASS_FONT)
 
 
+func test_a_cost_on_it_is_drawn_with_its_symbols() -> void:
+	# Game ADR 0063: "Pay {2}", the 2 a pip, and no key named.
+	var button: PassButton = _button()
+
+	button.show_confirm("Pay {2}", true, false)
+
+	assert_eq(button.shown_text(), "Pay {2}")
+	assert_eq(button.text, "", "The words are drawn by the symbol line, not the button.")
+	assert_true(button.symbol_line().visible)
+	assert_eq(button.symbol_line().symbols(), ["2"] as Array[String])
+	button.show_confirm("Confirm order", true)
+	assert_false(button.symbol_line().visible, "Words with no symbol are the button's own.")
+	assert_eq(button.text, "Confirm order [SPACE]")
+	assert_eq(button.shown_text(), "Confirm order [SPACE]")
+
+
 func test_it_fills_its_box_and_is_shaded_gray() -> void:
 	var button: PassButton = _button()
 

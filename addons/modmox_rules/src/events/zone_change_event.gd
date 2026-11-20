@@ -10,9 +10,10 @@ extends MmEvent
 ## which is not destruction. COUNTER is CR 701.6: a spell countered on the stack.
 ## RETURN_TO_HAND is an effect putting a card into its owner's hand. EXILE is CR 701.13a,
 ## and RETURN_TO_BATTLEFIELD an effect putting a card in exile or a graveyard onto the
-## battlefield. SEARCH is a card found by a search (CR 701.23).
+## battlefield. SEARCH is a card found by a search (CR 701.23). UNATTACHED_AURA is CR 704.5m:
+## an Aura attached illegally, or to nothing, put into its owner's graveyard.
 enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND,
-	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH }
+	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -29,6 +30,9 @@ var can_be_regenerated: bool = true
 ## For an exile: the object whose ability exiled the card, which its linked ability later
 ## looks for (CR 607.2a), or 0.
 var exiled_with_object_id: int = 0
+## For an exile "until [that object] leaves the battlefield" (CR 610.3, ADR 0065): the card
+## comes back once the object in exiled_with_object_id has left.
+var exiled_until_source_leaves: bool = false
 ## For a card cast from a graveyard for its flashback cost (CR 702.34a): marks the spell.
 var cast_with_flashback: bool = false
 ## For a card entering the battlefield: the counters it enters with (CR 122.6), on it as it
@@ -40,6 +44,10 @@ var tapped_on_arrival: bool = false
 ## For a card entering the battlefield: the creature type chosen as it enters (CR 614.12,
 ## ADR 0052), or "". Recorded as it arrives, so its static abilities apply at once.
 var chosen_creature_type_on_arrival: String = ""
+## For an Aura spell entering the battlefield: the ID of the object it enters attached to
+## (CR 303.4a, ADR 0064), or 0. Attached as it arrives, so its static abilities apply at
+## once and its "enters" abilities see what it enchants.
+var attached_to_on_arrival: int = 0
 ## For a card found by a search and revealed (CR 701.20, ADR 0057): every player sees it,
 ## so one put into a hand is a Known Card there.
 var revealed: bool = false
@@ -60,6 +68,22 @@ func _init(leaving: MmGameObject, destination: MmZone, at_position: int, why: Re
 	position = at_position
 	reason = why
 	can_be_regenerated = regenerable
+
+
+## The same move, not yet performed, for a replacement effect to change (ADR 0019): the
+## original may be shared with a copy of the state, so it is never changed itself.
+func copy(state: MmGameState) -> ZoneChangeEvent:
+	var same: ZoneChangeEvent = ZoneChangeEvent.new(state.object(object_id), state.zone(to_zone_kind, to_owner_id), position,
+		reason, can_be_regenerated)
+	same.exiled_with_object_id = exiled_with_object_id
+	same.exiled_until_source_leaves = exiled_until_source_leaves
+	same.cast_with_flashback = cast_with_flashback
+	same.counters_on_arrival = counters_on_arrival.duplicate()
+	same.tapped_on_arrival = tapped_on_arrival
+	same.chosen_creature_type_on_arrival = chosen_creature_type_on_arrival
+	same.attached_to_on_arrival = attached_to_on_arrival
+	same.revealed = revealed
+	return same
 
 
 func apply(state: MmGameState) -> void:
@@ -89,7 +113,7 @@ func apply(state: MmGameState) -> void:
 		# token where it lands until state-based actions see it there (CR 704.5d).
 		arriving.become_token()
 	if to_zone_kind == MmZone.Kind.EXILE and exiled_with_object_id != 0:
-		arriving.record_exiled_with(exiled_with_object_id)
+		arriving.record_exiled_with(exiled_with_object_id, exiled_until_source_leaves)
 	if to_zone_kind == MmZone.Kind.LIBRARY and from_zone_kind == MmZone.Kind.HAND:
 		# Whoever held the card knows where it went, until the library is shuffled.
 		# Later: a card put there from a zone everyone sees, when a card does that.
@@ -108,6 +132,8 @@ func apply(state: MmGameState) -> void:
 		arriving.set_tapped(true)
 	if chosen_creature_type_on_arrival != "" and to_zone_kind == MmZone.Kind.BATTLEFIELD:
 		arriving.record_chosen_creature_type(chosen_creature_type_on_arrival)
+	if attached_to_on_arrival != 0 and to_zone_kind == MmZone.Kind.BATTLEFIELD:
+		arriving.attach_to(attached_to_on_arrival)
 	if to_zone_kind == MmZone.Kind.BATTLEFIELD:
 		# CR 302.6: summoning sickness counts from when its controller began controlling it.
 		arriving.record_control_since(state.game_turn)
@@ -116,9 +142,11 @@ func apply(state: MmGameState) -> void:
 
 
 func describe() -> String:
-	var exiled_with: String = "" if exiled_with_object_id == 0 else " with object %d" % exiled_with_object_id
+	var exiled_with: String = "" if exiled_with_object_id == 0 else " with object %d%s" % [exiled_with_object_id,
+		" until it leaves" if exiled_until_source_leaves else ""]
 	var chosen: String = "" if chosen_creature_type_on_arrival == "" else " choosing %s" % chosen_creature_type_on_arrival
-	return "%s%s: object %d (card %d) from %s to %s%s%s%s as object %d" % [
+	var attached: String = "" if attached_to_on_arrival == 0 else " attached to object %d" % attached_to_on_arrival
+	return "%s%s: object %d (card %d) from %s to %s%s%s%s%s as object %d" % [
 		Reason.find_key(reason), "" if can_be_regenerated else " (can't be regenerated)", object_id, card_id,
 		MmZone.describe_zone(from_zone_kind, from_owner_id), MmZone.describe_zone(to_zone_kind, to_owner_id),
-		" tapped" if tapped_on_arrival else "", chosen, exiled_with, new_object_id]
+		" tapped" if tapped_on_arrival else "", chosen, attached, exiled_with, new_object_id]

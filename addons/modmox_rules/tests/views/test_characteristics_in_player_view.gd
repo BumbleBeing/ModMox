@@ -82,3 +82,17 @@ func test_a_star_creature_shows_a_star_in_hand_and_its_worked_out_numbers_on_the
 	assert_false(seen.is_toughness_variable)
 	assert_eq([seen.power, seen.toughness], [1, 1])
 	assert_eq(CardLook.of_view(seen).power_toughness_texts(), ["1", "/", "1"] as Array[String])
+
+
+func test_a_creature_defining_its_power_alone_shows_a_star_for_its_power_only() -> void:
+	# A */3 such as Nishoba Brawler: its toughness is printed (CR 604.3).
+	var defining: CharacteristicDefiningAbility = CharacteristicDefiningAbility.new()
+	defining.power = Scenario.constant(2)
+	var brawler: MmCardDefinition = Scenario.creature("Brawler", 0, 3, [defining])
+	var engine: MmEngine = MmEngine.start(Scenario.setup_with(Scenario.copies(brawler, 40), Scenario.copies(brawler, 40)))
+
+	var held: MmObjectView = engine.view_for(engine.hero()).hand[0]
+
+	assert_true(held.is_power_variable)
+	assert_false(held.is_toughness_variable)
+	assert_eq(CardLook.of_view(held).power_toughness_texts(), ["*", "/", "3"] as Array[String])

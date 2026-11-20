@@ -90,6 +90,30 @@ func test_a_cheap_agent_casts_removal_with_an_opposing_creature_to_aim_at() -> v
 	assert_eq(AiScenario.cast_name(engine, play), "Terror")
 
 
+func test_a_cheap_agent_aims_counted_damage_at_the_creature_it_kills() -> void:
+	# Artillery Blast's "1 plus [Domain]" is worked out on the Agent's world: with a Plains
+	# and a Mountain it deals 3, enough for the Ogre but not the more valuable Wurm.
+	var blast: DealDamageEffect = Scenario.deal_damage(0, Scenario.targeted(0))
+	blast.amount = Scenario.sum([Scenario.constant(1), Scenario.domain()])
+	var spell: MmCardDefinition = Scenario.instant("Blast", Scenario.mana_cost(0),
+		[Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))], [blast])
+	var no_creatures: Array[MmCardDefinition] = []
+	var villain_creatures: Array[MmCardDefinition] = [Scenario.creature("Ogre", 3, 3), Scenario.creature("Wurm", 6, 6)]
+	var hero_extras: Array[MmCardDefinition] = [Scenario.free_land_fetch(), spell]
+	var lands: Array[MmCardDefinition] = [Scenario.basic_land("Plains"), Scenario.basic_land("Mountain")]
+	var setup: MmEncounterSetup = Scenario.combat_setup(no_creatures, villain_creatures, hero_extras + lands)
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, no_creatures, villain_creatures, hero_extras, no_creatures,
+		3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine)
+	assert_eq(Scenario.fetch_lands(engine, ["Plains", "Mountain"]), "")
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	engine.submit(Scenario.cast_index(decision, Scenario.card_in_hand(engine, engine.hero(), "Blast")))
+
+	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP)))
+
+	assert_eq(target.id, Scenario.permanent_named(engine, engine.villain().id, "Ogre"))
+
+
 func test_a_creature_is_cast_rather_than_held() -> void:
 	var no_creatures: Array[MmCardDefinition] = []
 	var engine: MmEngine = AiScenario.ready_with(no_creatures, no_creatures, [AiScenario.free_alpha("hill_giant")])

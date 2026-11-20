@@ -2,7 +2,8 @@ class_name Attachments
 extends RefCounted
 ## Which permanents are drawn attached to which (game ADR 0042). An attachment, such as an
 ## Equipment, is drawn behind the permanent it is attached to when that permanent stands in
-## the line being drawn; any other stands on its own like every other permanent.
+## the line being drawn, and an Aura on a land behind that land in its row, whoever controls
+## either; any other stands on its own like every other permanent.
 
 
 ## The attachments among [param permanents] drawn with each of [param host_ids], by the ID

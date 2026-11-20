@@ -215,28 +215,32 @@ static func panel(panel_rect: Rect2) -> Dictionary[String, Rect2]:
 
 ## How tall the Battlefield Faces in a row of [param row_rect] are: as tall as lets a tapped
 ## one, which stands taller sideways, still fit, and shorter when the row would overflow.
-static func row_face_height(is_tapped: Array[bool], row_rect: Rect2) -> float:
+## [param attached_counts] says how many attachments lie behind each, at its height, whose
+## name strips take room after it (game ADR 0042).
+static func row_face_height(is_tapped: Array[bool], row_rect: Rect2, attached_counts: Array[int] = []) -> float:
 	var height: float = floorf(row_rect.size.y / CardGeometry.FIELD_ASPECT)
-	var total: float = _row_width(is_tapped, height)
+	var total: float = _row_width(is_tapped, height, attached_counts)
 	if total > row_rect.size.x:
 		# The gaps do not shrink, so only the faces' share of the width is scaled.
 		var gaps: float = ROW_GAP * (is_tapped.size() - 1)
 		height = floorf(height * (row_rect.size.x - gaps) / (total - gaps))
-		while height > 1.0 and _row_width(is_tapped, height) > row_rect.size.x:
+		while height > 1.0 and _row_width(is_tapped, height, attached_counts) > row_rect.size.x:
 			height -= 1.0
 	return height
 
 
 ## Where each permanent in a row stands: its footprint, sideways if tapped, centered in
-## [param row_rect] on one line.
-static func row(is_tapped: Array[bool], row_rect: Rect2) -> Array[Rect2]:
-	var height: float = row_face_height(is_tapped, row_rect)
-	var x: float = row_rect.position.x + (row_rect.size.x - _row_width(is_tapped, height)) / 2.0
+## [param row_rect] on one line. One with attachments behind it, [param attached_counts] of
+## them, takes the room of their name strips after it, so the next stands the usual gap
+## past the last strip (game ADR 0042).
+static func row(is_tapped: Array[bool], row_rect: Rect2, attached_counts: Array[int] = []) -> Array[Rect2]:
+	var height: float = row_face_height(is_tapped, row_rect, attached_counts)
+	var x: float = row_rect.position.x + (row_rect.size.x - _row_width(is_tapped, height, attached_counts)) / 2.0
 	var footprints: Array[Rect2] = []
-	for tapped: bool in is_tapped:
-		var footprint: Vector2 = _footprint(tapped, height)
+	for index: int in is_tapped.size():
+		var footprint: Vector2 = _footprint(is_tapped[index], height)
 		footprints.append(Rect2(Vector2(x, row_rect.position.y + (row_rect.size.y - footprint.y) / 2.0), footprint))
-		x += footprint.x + ROW_GAP
+		x += footprint.x + attached_room(height, _count(attached_counts, index)) + ROW_GAP
 	return footprints
 
 
@@ -803,10 +807,14 @@ static func _footprint(is_tapped: bool, height: float) -> Vector2:
 	return Vector2(upright.y, upright.x) if is_tapped else upright
 
 
-static func _row_width(is_tapped: Array[bool], height: float) -> float:
+static func _row_width(is_tapped: Array[bool], height: float, attached_counts: Array[int] = []) -> float:
 	if is_tapped.is_empty():
 		return 0.0
 	var total: float = 0.0
-	for tapped: bool in is_tapped:
-		total += _footprint(tapped, height).x + ROW_GAP
+	for index: int in is_tapped.size():
+		total += _footprint(is_tapped[index], height).x + attached_room(height, _count(attached_counts, index)) + ROW_GAP
 	return total - ROW_GAP
+
+
+static func _count(counts: Array[int], index: int) -> int:
+	return counts[index] if index < counts.size() else 0

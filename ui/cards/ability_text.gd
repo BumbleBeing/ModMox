@@ -40,6 +40,8 @@ const PLURAL_AS_SINGULAR: Array[String] = ["Equipment"]
 
 ## What the ability's source calls itself.
 var _noun: String
+## What an Aura's "enchanted" names, from its enchant ability: "enchanted land", or "".
+var _enchanted: String = ""
 var _targets: Array[TargetRequirement] = []
 var _trigger: MmTrigger = null
 ## The target requirements already named, which are "it" from then on.
@@ -69,6 +71,8 @@ static func self_noun(card_types: Array[MmCardTypes.CardType], card_name: String
 	for ability: MmAbility in abilities:
 		if ability is ReconfigureAbility:
 			return "this permanent"
+		if ability is EnchantAbility:
+			return "this Aura"  # CR 303.4: an Aura is the permanent with enchant.
 	for kind: MmCardTypes.CardType in [MmCardTypes.CardType.CREATURE, MmCardTypes.CardType.ARTIFACT,
 			MmCardTypes.CardType.ENCHANTMENT, MmCardTypes.CardType.LAND]:
 		if card_types.has(kind):
@@ -90,7 +94,7 @@ static func of_card(abilities: Array[MmAbility], card_types: Array[MmCardTypes.C
 		if keyword != "" and was_keyword:
 			lines[lines.size() - 1] += ", " + keyword.to_lower()
 		else:
-			lines.append(of_ability(ability, noun))
+			lines.append(of_ability(ability, noun, enchanted_words(abilities)))
 		was_keyword = keyword != ""
 	if supertypes.has(MmCardTypes.Supertype.BASIC):
 		for index: int in lines.size():
@@ -108,10 +112,22 @@ static func lines_of(abilities: Array[MmAbility], noun: String) -> Array[String]
 
 
 ## [param ability] as a card prints it, with its cost or its trigger. [param noun] is what
-## its source calls itself (see self_noun()).
-static func of_ability(ability: MmAbility, noun: String) -> String:
+## its source calls itself (see self_noun()), and [param enchanted] what an Aura's
+## "enchanted" names (see enchanted_words()).
+static func of_ability(ability: MmAbility, noun: String, enchanted: String = "") -> String:
 	var writer: AbilityText = AbilityText.new(noun)
+	writer._enchanted = enchanted
 	return writer._ability(ability)
+
+
+## What "enchanted" names on a card with [param abilities]: "enchanted land" for one with
+## "Enchant land" (CR 303.4), or "" for a card with no enchant ability.
+static func enchanted_words(abilities: Array[MmAbility]) -> String:
+	for ability: MmAbility in abilities:
+		if ability is EnchantAbility:
+			var writer: AbilityText = AbilityText.new("")
+			return "enchanted " + writer._noun_phrase((ability as EnchantAbility).filter, false)
+	return ""
 
 
 ## [param ability] as a row of the Option Menu reads it: as the card prints it, except that
@@ -283,6 +299,8 @@ func _ability(ability: MmAbility) -> String:
 		return keyword
 	if ability is ProtectionAbility:
 		return "Protection from " + _protection((ability as ProtectionAbility).from)
+	if ability is EnchantAbility:
+		return "Enchant " + _noun_phrase((ability as EnchantAbility).filter, false)  # CR 702.5a
 	if ability is SpellAbility and (ability as SpellAbility).is_modal():
 		return _choose_one(ability)
 	if ability is SpellAbility:
@@ -308,10 +326,12 @@ func _ability(ability: MmAbility) -> String:
 	if ability is AffinityAbility:
 		# CR 702.41a: what it counts, in the plural, with "you control" left to the keyword.
 		return "Affinity for " + _noun_phrase((ability as AffinityAbility).filter, true)
+	if ability is CostReductionAbility:
+		return _costs_less("This spell", "cast", (ability as CostReductionAbility).amount)
 	if ability is ActivatedAbility:
 		var activated: ActivatedAbility = ability as ActivatedAbility
 		_targets = activated.targets
-		var does: String = _sentences(activated.effects, true) + _restrictions(activated)
+		var does: String = _sentences(activated.effects, true) + _reduction(activated) + _restrictions(activated)
 		# A Potion prints only what it does: using it up is what a Potion is (ADR 0036).
 		return does if _uses_up_its_source(activated) else "%s: %s" % [_costs(activated), does]
 	if ability is TriggeredAbility:
@@ -328,6 +348,8 @@ func _ability(ability: MmAbility) -> String:
 		return "Damage isn't removed from %s during cleanup steps." % _noun
 	if ability is AsEntersChooseCreatureTypeAbility:
 		return "As %s enters, choose a creature type." % _noun
+	if ability is EntersTappedAbility:
+		return "%s enters tapped." % _capitalized(_noun)
 	if ability is LookAtTopOfLibraryAbility:
 		return "You may look at the top card of your library any time."
 	if ability is InstantSpeedEquipAbility:
@@ -358,7 +380,8 @@ func _cycling_word(search: MmFilter) -> String:
 ## in lower case and without quotation marks.
 static func is_keyword(ability: MmAbility) -> bool:
 	return _keyword(ability) != "" or ability is ProtectionAbility or ability is EquipAbility or ability is FlashbackAbility \
-		or ability is AffinityAbility or ability is CyclingAbility or ability is ReconfigureAbility or ability is WardAbility
+		or ability is AffinityAbility or ability is CyclingAbility or ability is ReconfigureAbility or ability is WardAbility \
+		or ability is EnchantAbility
 
 
 ## The name of a keyword ability that needs no other words, or "".
@@ -405,6 +428,26 @@ static func _uses_up_its_source(ability: ActivatedAbility) -> bool:
 	return false
 
 
+## The sentence after what [param ability] does that says how much less it costs to
+## activate (CR 602.2b, ADR 0050), or "".
+func _reduction(ability: ActivatedAbility) -> String:
+	var value: MmValue = ability.generic_reduction
+	if value == null:
+		return ""
+	return " " + _costs_less("This ability", "activate", value)
+
+
+## "[param subject] costs {1} less to [param verb] for each" a basic land type, as Domain
+## says it, or "... costs {X} less to [param verb], where X is" any other [param value]
+## (CR 601.2f, ADR 0050).
+func _costs_less(subject: String, verb: String, value: MmValue) -> String:
+	var among: EachSelection = (value as BasicLandTypeCountValue).selection as EachSelection \
+		if value is BasicLandTypeCountValue else null
+	if among != null:
+		return "%s costs {1} less to %s for each basic land type among %s." % [subject, verb, _noun_phrase(among.filter, true)]
+	return "%s costs {X} less to %s, where X is %s." % [subject, verb, _value_phrase(value)]
+
+
 ## The sentence after what [param ability] does that says when it may be activated
 ## (CR 602.5), or "".
 static func _restrictions(ability: ActivatedAbility) -> String:
@@ -443,6 +486,8 @@ func _cost_parts(mana: MmManaCost, costs: Array[MmCost]) -> PackedStringArray:
 			continue
 		if cost is TapCost:
 			parts.append("{T}")
+		elif cost is ExertCost:
+			parts.append("Exert " + _noun)  # CR 701.43, without its reminder text.
 		elif cost is PayLifeCost:
 			parts.append("Pay %d life" % (cost as PayLifeCost).amount)
 		elif cost is TapCreaturesCost:
@@ -518,6 +563,11 @@ func _trigger_text(trigger: MmTrigger) -> String:
 		var is_this: bool = aimed_at.filter is IsSourceFilter
 		var subject: String = _noun if is_this else _with_article(_noun_phrase(aimed_at.filter, false))
 		return "whenever %s becomes the target of a spell or ability%s" % [subject, whose]
+	var tapped: BecomesTappedTrigger = trigger as BecomesTappedTrigger
+	if tapped != null:
+		var is_this: bool = tapped.filter is IsSourceFilter
+		var subject: String = _noun if is_this else _with_article(_noun_phrase(tapped.filter, false, tapped.whose))
+		return "whenever %s becomes tapped" % subject
 	var moved: ZoneChangeTrigger = trigger as ZoneChangeTrigger
 	if moved != null:
 		var is_self: bool = moved.filter is IsSourceFilter
@@ -597,9 +647,13 @@ static func _listed(parts: PackedStringArray) -> String:
 
 
 func _characteristic_defining(ability: CharacteristicDefiningAbility) -> String:
+	var owner: String = _capitalized(_possessive(_noun))
+	if ability.toughness == null:
+		return "%s power is equal to %s." % [owner, _value_phrase(ability.power)]
+	if ability.power == null:
+		return "%s toughness is equal to %s." % [owner, _value_phrase(ability.toughness)]
 	var power: String = _value_phrase(ability.power)
 	var toughness: String = _value_phrase(ability.toughness)
-	var owner: String = _capitalized(_possessive(_noun))
 	if power == toughness:
 		return "%s power and toughness are each equal to %s." % [owner, power]
 	return "%s power is equal to %s and its toughness is equal to %s." % [owner, power, toughness]
@@ -662,7 +716,10 @@ func _effect(effect: MmEffect) -> String:
 			else " unless its controller pays " + countering.unless_paid.describe()  # CR 118.12
 		return "counter " + _selection(countering.selection) + unless
 	if effect is ExileEffect:
-		return "exile " + _selection((effect as ExileEffect).selection)
+		var exiling: ExileEffect = effect as ExileEffect
+		# CR 610.3: "until" its source leaves, as Leyline Binding's.
+		var until: String = " until %s leaves the battlefield" % _noun if exiling.until_source_leaves else ""
+		return "exile " + _selection(exiling.selection) + until
 	if effect is ReturnToBattlefieldEffect:
 		var back: ReturnToBattlefieldEffect = effect as ReturnToBattlefieldEffect
 		# A card that can only be your own returns under your control, so Oracle leaves out
@@ -830,11 +887,25 @@ func _continuous(continuous: MmContinuousEffect, is_static: bool) -> String:
 		return "%s %s %s" % [affected, gains, " and ".join(gained)]
 	if continuous is AddSubtypesContinuousEffect:
 		var subtypes: PackedStringArray = PackedStringArray((continuous as AddSubtypesContinuousEffect).subtypes)
+		var added: String = _with_article(" ".join(subtypes))
+		if _is_every_basic_land_type(subtypes):
+			added = "every basic land type"
 		return "%s %s %s in addition to its other types" % [affected,
-			"is" if is_static else _verb(continuous.affected, "become"), _with_article(" ".join(subtypes))]
+			"is" if is_static else _verb(continuous.affected, "become"), added]
 	if continuous is LoseAllAbilitiesContinuousEffect:
 		return "%s %s all abilities" % [affected, _verb(continuous.affected, "lose")]
 	return _fallback(continuous, "_continuous_effect")
+
+
+## Whether [param subtypes] are the five basic land types, each once, in any order: what
+## Nylea's Presence calls "every basic land type".
+static func _is_every_basic_land_type(subtypes: PackedStringArray) -> bool:
+	if subtypes.size() != MmCardTypes.BASIC_LAND_TYPES.size():
+		return false
+	for land_type: String in MmCardTypes.BASIC_LAND_TYPES:
+		if not subtypes.has(land_type):
+			return false
+	return true
 
 
 ## "+3/+3", "-2/-0": a zero takes the other number's sign, as cards print it.
@@ -876,8 +947,10 @@ func _selection(selection: MmSelection) -> String:
 	if selection is ExiledWithSourceSelection:
 		return "the exiled card"
 	if selection is AttachedToSelection:
-		# Later: "enchanted creature", once an Aura is what is attached.
-		return "equipped creature"
+		# An Aura's is what it enchants (CR 303.4), and an Equipment's a creature (CR 301.5).
+		if _enchanted != "":
+			return _enchanted
+		return "enchanted permanent" if _noun == "this Aura" else "equipped creature"
 	return _fallback(selection, "_selection")
 
 
@@ -959,6 +1032,10 @@ func _triggering_noun() -> String:
 	if moved != null:
 		var noun: String = _filter_words(moved.filter).noun
 		return noun if noun != "" else "permanent"
+	var tapped: BecomesTappedTrigger = _trigger as BecomesTappedTrigger
+	if tapped != null:
+		var tapped_noun: String = _filter_words(tapped.filter).noun
+		return tapped_noun if tapped_noun != "" else "permanent"
 	return "permanent"
 
 
@@ -1224,20 +1301,8 @@ func _counters(value: MmValue, kind: MmCounter.Kind) -> String:
 	return "%s %s counters" % [_number_word(constant.value), MmCounter.label(kind)]
 
 
-## "3 or less" or "4 or greater"; negated, the other side: not 4 or greater is 3 or less.
-## From a Value, "X or less", or negated "greater than X", as X less 1 has no words.
 func _mana_value_bound(filter: ManaValueFilter, is_negated: bool) -> String:
-	var or_less: bool = (filter.comparison == ManaValueFilter.Comparison.OR_LESS) != is_negated
-	var constant: ConstantValue = filter.amount_value as ConstantValue
-	if filter.amount_value != null and constant == null:
-		var number: String = _amount(filter.amount_value)
-		if not is_negated:
-			return "%s %s" % [number, "or less" if or_less else "or greater"]
-		return "less than " + number if or_less else "greater than " + number
-	var bound: int = constant.value if constant != null else filter.amount
-	if not is_negated:
-		return "%d %s" % [bound, "or less" if or_less else "or greater"]
-	return "%d or less" % (bound - 1) if or_less else "%d or greater" % (bound + 1)
+	return _bound(filter.amount, filter.amount_value, filter.comparison == ManaValueFilter.Comparison.OR_LESS, is_negated)
 
 
 ## "2 or less" or "3 or greater"; negated, the other side, as _mana_value_bound() does.
@@ -1248,12 +1313,30 @@ static func _power_bound(filter: PowerFilter, is_negated: bool) -> String:
 	return "%d or less" % (filter.amount - 1) if or_less else "%d or greater" % (filter.amount + 1)
 
 
-## "2 or less" or "4 or greater"; negated, the other side, as _mana_value_bound() does.
-static func _toughness_bound(filter: ToughnessFilter, is_negated: bool) -> String:
-	var or_less: bool = (filter.comparison == ToughnessFilter.Comparison.OR_LESS) != is_negated
+func _toughness_bound(filter: ToughnessFilter, is_negated: bool) -> String:
+	return _bound(filter.amount, filter.amount_value, filter.comparison == ToughnessFilter.Comparison.OR_LESS, is_negated)
+
+
+## A Filter's bound: "3 or less" or "4 or greater"; negated, the other side: not 4 or
+## greater is 3 or less. From the X paid, "X or less", or negated "greater than X", as X
+## less 1 has no words. From any other Value, its number in words, inline: "less than the
+## number of basic land types among lands you control", or "less than or equal to" it.
+func _bound(amount: int, value: MmValue, is_or_less: bool, is_negated: bool) -> String:
+	var or_less: bool = is_or_less != is_negated
+	var constant: ConstantValue = value as ConstantValue
+	if value is PaidXValue:
+		if not is_negated:
+			return "X %s" % ("or less" if or_less else "or greater")
+		return "less than X" if or_less else "greater than X"
+	if value != null and constant == null:
+		var number: String = _value_phrase(value)
+		if is_negated:
+			return ("less than " if or_less else "greater than ") + number
+		return ("less than or equal to " if or_less else "greater than or equal to ") + number
+	var bound: int = constant.value if constant != null else amount
 	if not is_negated:
-		return "%d %s" % [filter.amount, "or less" if or_less else "or greater"]
-	return "%d or less" % (filter.amount - 1) if or_less else "%d or greater" % (filter.amount + 1)
+		return "%d %s" % [bound, "or less" if or_less else "or greater"]
+	return "%d or less" % (bound - 1) if or_less else "%d or greater" % (bound + 1)
 
 
 ## "a +1/+1 counter on it" or "three or more -1/-1 counters on it".
@@ -1270,6 +1353,10 @@ func _value_phrase(value: MmValue) -> String:
 		var counted: EachSelection = (value as CountValue).selection as EachSelection
 		if counted != null:
 			return "the number of " + _noun_phrase(counted.filter, true)
+	if value is BasicLandTypeCountValue:
+		var among: EachSelection = (value as BasicLandTypeCountValue).selection as EachSelection
+		if among != null:
+			return "the number of basic land types among " + _noun_phrase(among.filter, true)
 	if value is HandSizeValue:
 		return "the number of cards in %s hand" % _possessive(_selection((value as HandSizeValue).players))
 	if value is DifferenceValue:

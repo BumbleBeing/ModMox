@@ -113,6 +113,8 @@ var _payment_left: PaymentPlan = null
 ## Answer to the latest snapshot's decision → what paying for it would take, or null, for
 ## each one asked about so far.
 var _plans: Dictionary[int, PaymentPlan] = {}
+## The plans x_payment_plan() has worked out for this snapshot, by X.
+var _x_plans: Dictionary[int, PaymentPlan] = {}
 ## The Original of each card seen so far, by Card Identity.
 var _originals: Dictionary[int, CardLook] = {}
 ## The setup the encounter began from, which says what each Emblem and Potion was authored
@@ -209,6 +211,33 @@ func payment_plan(answer: int) -> PaymentPlan:
 	if not _plans.has(answer):
 		_plans[answer] = _plan_for(priority, answer, _snapshot.view)
 	return _plans[answer]
+
+
+## Where the Hero's X stepper starts while they are asked how much X to pay (game ADR
+## 0063): the largest X worth paying, as the Villain's Agent judges it, or 0 when none is.
+## It reads the engine, so it gives 0 while the Villain is thinking.
+func starting_x() -> int:
+	var asked: ChooseXToPayDecision = _snapshot.decision as ChooseXToPayDecision if _snapshot != null else null
+	if asked == null or _task != -1:
+		return 0
+	var worth: Array[int] = AiAgent.xs_worth_paying(asked, _engine.game_state())
+	return worth.back() if not worth.is_empty() else 0
+
+
+## What Auto-tap would tap and spend to pay [param x] while the Hero is asked how much X to
+## pay, or null: Auto-tap is off, nothing is asked, or X costs nothing. Kept until the next
+## snapshot, as payment_plan()'s are.
+func x_payment_plan(x: int) -> PaymentPlan:
+	if not _is_auto_tapping or _task != -1 or _snapshot == null:
+		return null
+	var asked: ChooseXToPayDecision = _snapshot.decision as ChooseXToPayDecision
+	if asked == null or x <= 0 or x > asked.most:
+		return null
+	if not _x_plans.has(x):
+		var copy: MmEngine = _copy()
+		_x_plans[x] = null if copy.submit(ChooseXToPayDecision.answer_for(x)) != "" else _plan_on(copy)
+	var plan: PaymentPlan = _x_plans[x]
+	return null if plan == null or plan.is_empty() else plan
 
 
 ## Call every frame on the main thread: once the Villain has answered and the last snapshot
@@ -433,12 +462,6 @@ func _advance(is_passing_now: bool = false) -> void:
 		if order != null and TriggerOrder.are_alike(order):
 			# A344: their order changes nothing, so the Hero is not asked.
 			_engine.submit(range(order.abilities.size()))
-			continue
-		if decision is ChooseXToPayDecision:
-			# ADR 0061: the screen has no input for choosing X yet, so only the Villain pays
-			# it; a Hero who controls a "you may pay {X}" declines, and it does nothing.
-			push_warning("The Hero cannot choose X yet, so a \"you may pay {X}\" was declined for them.")
-			_engine.submit(ChooseXToPayDecision.DECLINE)
 			continue
 		var payment: PayManaDecision = decision as PayManaDecision
 		if payment != null:
@@ -676,6 +699,7 @@ func _emit() -> void:
 			made.state_information[seen.id] = state
 	_snapshot = made
 	_plans.clear()
+	_x_plans.clear()
 
 
 ## Gives [param made] the look of [param seen]: a card's, an Emblem's, a Potion's, or that

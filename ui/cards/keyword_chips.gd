@@ -1,8 +1,9 @@
 class_name KeywordChips
 extends RefCounted
-## Which keyword chips a Battlefield Face shows, how big they are, and how many fit. Chips
-## run along the bottom of the art from the left toward the P/T box; when they run out of
-## room, the last one that fits becomes "+N" for every keyword not shown.
+## Which keyword chips a Battlefield Face, or a Card Face in a graveyard, shows, how big they
+## are, and how many fit. Chips run along the bottom of the art from the left toward the P/T
+## box; when they run out of room, the last one that fits becomes "+N" for every keyword not
+## shown.
 
 ## Chips are whole multiples of this, so the pixel icons stay crisp.
 const PIXEL_STEP: float = 16.0
@@ -12,11 +13,23 @@ const ICON_FOLDER: String = "res://ui/sprites/keywords/"
 const MOST_OF_HEIGHT: float = 0.2
 const GAP: float = 0.12
 
+## Where a card is drawn, which decides the keywords that get a chip. A keyword gets one only
+## where it matters: flashback is cast from a graveyard, so it is chipped there and nowhere
+## else, and a graveyard card shows no other chip.
+enum Place {
+	## A Battlefield Face: every keyword but flashback.
+	BATTLEFIELD,
+	## A Card Face in a graveyard: flashback alone.
+	GRAVEYARD,
+	## Wherever the card is, as the Inspector lists its Reminders: every keyword.
+	ANYWHERE,
+}
 
-## The chips for [param abilities], in the fixed keyword order (A222), one for each keyword
-## however many times the card has it. Flash is left out: it no longer matters once a card
-## is on the battlefield.
-static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
+
+## The chips for [param abilities] at [param place], in the fixed keyword order (A222), one
+## for each keyword however many times the card has it. Flash is left out: it no longer
+## matters once a card is on the battlefield.
+static func chips_for(abilities: Array[MmAbility], place: Place = Place.BATTLEFIELD) -> Array[KeywordChip]:
 	var order: Array[Script] = [
 		FlyingAbility, ReachAbility, VigilanceAbility, HasteAbility, DeathtouchAbility,
 		LifelinkAbility, DefenderAbility, FirstStrikeAbility, DoubleStrikeAbility, TrampleAbility,
@@ -30,6 +43,8 @@ static func chips_for(abilities: Array[MmAbility]) -> Array[KeywordChip]:
 	var chips: Array[KeywordChip] = []
 	var seen: Dictionary[String, bool] = {}
 	for index: int in order.size():
+		if (order[index] == FlashbackAbility) != (place == Place.GRAVEYARD) and place != Place.ANYWHERE:
+			continue
 		for ability: MmAbility in abilities:
 			if not is_instance_of(ability, order[index]):
 				continue

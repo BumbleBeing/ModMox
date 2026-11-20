@@ -30,6 +30,23 @@ func test_a_graveyard_shows_its_cards_newest_first() -> void:
 	assert_eq(window.face_of(9).title_text().shown_text(), "Card 9")
 
 
+func test_a_graveyards_flashback_card_shows_its_flashback_chip() -> void:
+	var window: PileWindow = _window(PileWindow.Arrangement.GRID, true)
+
+	window.show_cards("Hero's Graveyard", [_card(4), _flashback_card(9)], _snapshot, _none())
+
+	assert_eq(window.face_of(9).chips().size(), 1)
+	assert_eq(window.face_of(4).chips().size(), 0)
+
+
+func test_an_exiled_flashback_card_shows_no_chip() -> void:
+	var window: PileWindow = _window(PileWindow.Arrangement.GRID)
+
+	window.show_cards("Hero's Exile", [_flashback_card(9)], _snapshot, _none())
+
+	assert_eq(window.face_of(9).chips().size(), 0)
+
+
 func test_it_is_titled_with_whose_zone_it_is_and_how_many_cards_it_holds() -> void:
 	var window: PileWindow = _window(PileWindow.Arrangement.GRID)
 
@@ -205,8 +222,8 @@ func test_a_top_card_the_hero_may_look_at_shows_face_up_first_among_the_backs_an
 	assert_eq(hovered, [[5, true], [5, false]])
 
 
-func _window(arrangement: PileWindow.Arrangement) -> PileWindow:
-	var window: PileWindow = PileWindow.new(arrangement, Color.GRAY)
+func _window(arrangement: PileWindow.Arrangement, is_graveyard: bool = false) -> PileWindow:
+	var window: PileWindow = PileWindow.new(arrangement, Color.GRAY, is_graveyard)
 	add_child_autofree(window)
 	window.card_clicked.connect(func(object_id: int) -> void: _clicked.append(object_id))
 	return window
@@ -228,4 +245,10 @@ func _card(id: int) -> MmObjectView:
 	seen.id = id
 	seen.name = "Card %d" % id
 	_snapshot.looks[id] = CardLook.of_view(seen)
+	return seen
+
+
+func _flashback_card(id: int) -> MmObjectView:
+	var seen: MmObjectView = _card(id)
+	_snapshot.looks[id].abilities = [FlashbackAbility.new()] as Array[MmAbility]
 	return seen

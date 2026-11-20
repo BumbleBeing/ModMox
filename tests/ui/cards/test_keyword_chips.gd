@@ -27,6 +27,19 @@ func test_lifelinks_chip_comes_after_deathtouch() -> void:
 	assert_eq(_letters(KeywordChips.chips_for(abilities)), ["DT", "LL", "DF"])
 
 
+func test_flashback_gets_no_chip_on_the_battlefield() -> void:
+	var abilities: Array[MmAbility] = [FlashbackAbility.new(), FlyingAbility.new()]
+
+	assert_eq(_letters(KeywordChips.chips_for(abilities)), ["F"])
+
+
+func test_in_a_graveyard_only_flashback_gets_a_chip() -> void:
+	var abilities: Array[MmAbility] = [FlyingAbility.new(), FlashbackAbility.new()]
+
+	assert_eq(_letters(KeywordChips.chips_for(abilities, KeywordChips.Place.GRAVEYARD)), ["FB"])
+	assert_eq(KeywordChips.chips_for([FlyingAbility.new()] as Array[MmAbility], KeywordChips.Place.GRAVEYARD).size(), 0)
+
+
 func test_abilities_that_are_not_keywords_get_no_chip() -> void:
 	assert_eq(KeywordChips.chips_for(CardLook.of_definition(_alpha("prodigal_sorcerer")).abilities).size(), 0)
 

@@ -247,6 +247,11 @@ func _leave_stack() -> void:
 		var entering: ZoneChangeEvent = ZoneChangeEvent.new(resolving, _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED)
 		# ADR 0052: the type chosen as it enters is on it as it arrives.
 		entering.chosen_creature_type_on_arrival = _chosen_creature_type
+		# CR 303.4a, ADR 0064: an Aura spell enters attached to its target, still legal,
+		# since it resolved.
+		if _state.characteristics_of(resolving).has_ability(EnchantAbility) and not _context.targets.is_empty() \
+				and _context.targets[0] != null and _context.targets[0].is_object():
+			entering.attached_to_on_arrival = _context.targets[0].id
 		_state.perform(entering)
 	elif resolving.is_card():
 		# CR 608.2n: an instant or sorcery goes to its owner's graveyard.

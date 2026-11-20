@@ -71,8 +71,9 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	procedure._costs = ability.costs
 	procedure._source_object_id = source.id
 	procedure._ability_index = ability_index
-	# CR 602.2b: an activation's mana is paid like a spell's (CR 601.2g-h).
-	procedure._payment = ManaPaymentProgress.of_cost(player_id, ability.mana_cost)
+	# CR 602.2b: an activation's mana is paid like a spell's (CR 601.2f-h), less any
+	# reduction, fixed now (ADR 0050).
+	procedure._payment = ManaPaymentProgress.of_cost(player_id, ability.mana_to_pay(state, source))
 	var put: AbilityPutOnStackEvent = AbilityPutOnStackEvent.new(source.id, ability_index, player_id)
 	state.perform(put)
 	procedure._stack_object_id = put.new_object_id
@@ -129,13 +130,16 @@ static func flashback_of(characteristics: MmCharacteristics) -> FlashbackAbility
 	return null
 
 
-## The spell ability of an instant or sorcery, or null, as for a creature with no spell
-## ability.
+## The spell ability of an instant or sorcery, or of an Aura its enchant ability makes
+## (CR 303.4a, ADR 0064), or null, as for a creature with no spell ability.
 static func spell_ability_of(characteristics: MmCharacteristics) -> SpellAbility:
+	var enchant: EnchantAbility = null
 	for ability: MmAbility in characteristics.abilities:
 		if ability is SpellAbility:
 			return ability as SpellAbility
-	return null
+		if enchant == null and ability is EnchantAbility:
+			enchant = ability as EnchantAbility
+	return null if enchant == null else enchant.aura_spell()
 
 
 func _init(state: MmGameState, player_id: int) -> void:

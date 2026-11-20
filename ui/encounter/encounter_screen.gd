@@ -63,6 +63,9 @@ const YES: String = "Yes"
 ## What the Pass Button reads while the Hero is asked to pay a cost, as ward's: a click
 ## pays, and no key does (ADR 0062).
 const PAY: String = "Pay"
+## What it reads while how much X to pay is asked: "Pay {2}", the X the stepper shows
+## (game ADR 0063).
+const PAY_X_FORMAT: String = "Pay {%d}"
 ## The size of the window that asks which replacement effect applies first.
 const REPLACEMENT_WINDOW_SIZE: Vector2 = Vector2(470, 260)
 ## The mode window's width, the room each mode's entry takes, and the room round them.
@@ -94,6 +97,10 @@ var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get
 var _presenter: EncounterPresenter = null
 var _snapshot: EncounterSnapshot = null
 var _error: String = ""
+## While how much X to pay is asked: what is asked, and the X the stepper shows, which the
+## Pass Button pays (game ADR 0063).
+var _x_asked: ChooseXToPayDecision = null
+var _x_to_pay: int = 0
 var _board: Control
 var _panels: Dictionary[int, PlayerPanel] = {}
 var _stack_window: ZoneWindow
@@ -330,7 +337,7 @@ func _ready() -> void:
 	for key: String in EncounterLayout.pile_keys():
 		var is_row: bool = key.ends_with("library")
 		var pile_window: PileWindow = PileWindow.new(PileWindow.Arrangement.ROW if is_row else PileWindow.Arrangement.GRID,
-			Color("#6f7f9a") if key.begins_with("hero") else Color("#9a6f6f"))
+			Color("#6f7f9a") if key.begins_with("hero") else Color("#9a6f6f"), key.ends_with("graveyard"))
 		pile_window.card_clicked.connect(_on_object_clicked)
 		pile_window.card_hovered.connect(_on_pile_card_hovered)
 		# Its Tucked Cards fly back behind their permanents (ADR 0043).
@@ -346,10 +353,13 @@ func _ready() -> void:
 	_info.undeclare_all_pressed.connect(func() -> void:
 		if not _is_paused and _selection.clear_attackers():
 			_redraw())
-	# Game ADR 0060: "No" answers a "you may"; the Pass Button says yes.
+	# Game ADR 0060: "No" answers a "you may"; the Pass Button says yes. Game ADR 0063: it
+	# declines to pay X too.
 	_info.no_pressed.connect(func() -> void:
 		if not _is_paused:
-			_answer(ChooseYesOrNoDecision.Choice.NO))
+			_answer(ChooseXToPayDecision.DECLINE if _x_asked != null else ChooseYesOrNoDecision.Choice.NO))
+	_info.x_lowered.connect(_step_x.bind(-1))
+	_info.x_raised.connect(_step_x.bind(1))
 	add_child(_info)
 	_pass_button = PassButton.new()
 	_pass_button.pressed.connect(_on_pass_button_pressed)
@@ -780,6 +790,9 @@ func pass_priority() -> void:
 	elif _trigger_order.is_active():
 		if not _is_paused:
 			_answer(_trigger_order.answer())
+	elif _snapshot != null and _snapshot.decision is ChooseXToPayDecision:
+		# Game ADR 0063: no key pays X; only the Pass Button's Pay does.
+		return
 	elif _snapshot != null and _snapshot.decision is ChooseYesOrNoDecision:
 		# ADR 0062: no key pays a cost; only the Pass Button's Pay does.
 		if not _is_paused and not _is_asked_to_pay():
@@ -793,11 +806,26 @@ func pass_priority() -> void:
 ## The Pass Button was clicked: it pays a cost the Hero is asked to pay, as ward's, and does
 ## everything else the pass key does.
 func _on_pass_button_pressed() -> void:
+	if _snapshot != null and _snapshot.decision is ChooseXToPayDecision:
+		if not _is_paused:
+			_answer(ChooseXToPayDecision.answer_for(_x_to_pay))
+		return
 	if _is_asked_to_pay():
 		if not _is_paused:
 			_answer(ChooseYesOrNoDecision.Choice.YES)
 		return
 	pass_priority()
+
+
+## Raises or lowers the X the stepper shows by [param by], from 0 to the most the Hero can
+## pay (game ADR 0063).
+func _step_x(by: int) -> void:
+	if _is_paused or _x_asked == null:
+		return
+	var x: int = clampi(_x_to_pay + by, 0, _x_asked.most)
+	if x != _x_to_pay:
+		_x_to_pay = x
+		_redraw()
 
 
 ## Whether the Hero is asked whether to pay a cost, as ward's (ADR 0062).
@@ -1320,7 +1348,7 @@ func pile_text(key: String) -> String:
 
 
 ## The Hero's controls live in their player panel, under the Emblems button.
-func pass_button() -> Button:
+func pass_button() -> PassButton:
 	return _pass_button
 
 
@@ -1364,6 +1392,10 @@ func _show(snapshot: EncounterSnapshot) -> void:
 		_trigger_order = TriggerOrder.new(order)
 	if not _picks.is_for(snapshot.decision if CardPicks.covers(snapshot.decision) else null):
 		_picks = CardPicks.new(snapshot.decision)
+	var asked_x: ChooseXToPayDecision = snapshot.decision as ChooseXToPayDecision
+	if asked_x != _x_asked:
+		_x_asked = asked_x
+		_x_to_pay = _presenter.starting_x() if asked_x != null else 0
 	var previous: EncounterSnapshot = _snapshot
 	# Nothing flies through the pregame, whose cards the overlay holds.
 	var may_fly: bool = not _opening.is_open()
@@ -1441,9 +1473,10 @@ func _exile_key(player_id: int) -> String:
 
 
 ## The permanents a card can be tucked behind: the ones that stand in a line of nonland
-## permanents, which leaves out an attachment lying behind its creature.
+## permanents, which leaves out an attachment lying behind its creature or its land.
 func _standing_ids(view: MmPlayerView) -> Array[int]:
 	var standing: Array[int] = []
+	var land_ids: Array[int] = _land_ids(view)
 	for player_id: int in [VILLAIN, HERO]:
 		var nonlands: Array[MmObjectView] = _permanents(view, player_id, false)
 		var creature_ids: Array[int] = []
@@ -1451,7 +1484,8 @@ func _standing_ids(view: MmPlayerView) -> Array[int]:
 			if permanent.is_creature:
 				creature_ids.append(permanent.id)
 		for permanent: MmObjectView in nonlands:
-			if permanent.is_creature or not Attachments.is_drawn_attached(permanent, creature_ids):
+			if permanent.is_creature or not (Attachments.is_drawn_attached(permanent, creature_ids)
+					or Attachments.is_drawn_attached(permanent, land_ids)):
 				standing.append(permanent.id)
 	return standing
 
@@ -1848,6 +1882,9 @@ func _redraw() -> void:
 	if _snapshot.payment_left != null and not _snapshot.is_over():
 		# Auto-tap is paying: what it has still to tap glows until its turn comes.
 		glow = DecisionClicks.of_payment(_snapshot.payment_left)
+	elif _x_asked != null and _presenter.x_payment_plan(_x_to_pay) != null:
+		# Game ADR 0063: what Auto-tap would tap for the X the stepper shows glows.
+		glow = DecisionClicks.of_payment(_presenter.x_payment_plan(_x_to_pay))
 	# While blockers are picked up, the attackers any of them can block glow as targets (A313, A431).
 	for attacker_id: int in _selection.target_ids():
 		glow.glow_as(attacker_id, DecisionClicks.Kind.TARGET)
@@ -1881,6 +1918,8 @@ func _redraw() -> void:
 		_show_confirm(_selection.confirm_text(), _selection.is_complete(), _selection.can_undo())
 	elif _trigger_order.is_active():
 		_show_confirm("Confirm order", true, _trigger_order.can_undo())
+	elif _x_asked != null:
+		_pass_button.show_confirm(PAY_X_FORMAT % _x_to_pay, true, false)
 	elif _is_asked_to_pay():
 		_pass_button.show_confirm(PAY, true, false)
 	elif _snapshot.decision is ChooseYesOrNoDecision:
@@ -1890,10 +1929,12 @@ func _redraw() -> void:
 	_villain_hand.show_hand(view.hand_sizes.get(VILLAIN, 0) - _flight_layer.drawn_in_air(VILLAIN).size(),
 			regions["villain_hand"], _is_hand_easing)
 	_show_known_villain_cards(view)
-	_draw_row(_permanents(view, VILLAIN, true), regions["villain_lands"], glow)
+	# An Aura on a land lies behind it in that land's row, whoever controls it (ADR 0042).
+	var on_lands: Dictionary[int, Array] = Attachments.by_host(_all_nonlands(view), _land_ids(view))
+	_draw_row(_permanents(view, VILLAIN, true), regions["villain_lands"], glow, on_lands)
 	_draw_nonlands(view, VILLAIN, regions["villain_nonlands"], glow)
 	_draw_nonlands(view, HERO, regions["hero_nonlands"], glow)
-	_draw_row(_permanents(view, HERO, true), regions["hero_lands"], glow)
+	_draw_row(_permanents(view, HERO, true), regions["hero_lands"], glow, on_lands)
 	for player_id: int in [VILLAIN, HERO]:
 		var who: String = "hero" if player_id == HERO else "villain"
 		_draw_library(view.library_sizes.get(player_id, 0), who + "_library", regions[who + "_library"])
@@ -1914,6 +1955,7 @@ func _redraw() -> void:
 	_fill_choice_window(view)
 	_fill_creature_type_window(view, regions)
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
+	_info.show_x(_x_to_pay)
 	_info.show_undeclare(not _selection.attacker_ids().is_empty())
 	_hold_panel.place(regions["hold"])
 	_show_hand()
@@ -1989,18 +2031,51 @@ func _permanents(view: MmPlayerView, player_id: int, are_lands: bool) -> Array[M
 	return grouped
 
 
-func _draw_row(permanents: Array[MmObjectView], row_rect: Rect2, glow: DecisionClicks) -> void:
+## Draws a row of lands. The permanents in [param attached], by the ID of the land each is
+## attached to, lie behind it sideways at its height, and the row gives each land the room
+## of their name strips (ADR 0042).
+func _draw_row(permanents: Array[MmObjectView], row_rect: Rect2, glow: DecisionClicks,
+		attached: Dictionary[int, Array] = {}) -> void:
 	var is_tapped: Array[bool] = _tapped(permanents)
-	var footprints: Array[Rect2] = EncounterLayout.row(is_tapped, row_rect)
-	var height: float = EncounterLayout.row_face_height(is_tapped, row_rect)
+	var counts: Array[int] = []
+	for permanent: MmObjectView in permanents:
+		counts.append((attached.get(permanent.id, []) as Array).size())
+	var footprints: Array[Rect2] = EncounterLayout.row(is_tapped, row_rect, counts)
+	var height: float = EncounterLayout.row_face_height(is_tapped, row_rect, counts)
 	for index: int in permanents.size():
 		var permanent: MmObjectView = permanents[index]
 		var face: BattlefieldFace = BattlefieldFace.new()
 		face.setup(_board_look(permanent), height)
 		face.position = footprints[index].position
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# The outermost attachment is drawn first and the land last, over them all.
+		var behind: Array = attached.get(permanent.id, [])
+		for place: int in range(behind.size() - 1, -1, -1):
+			var attachment: MmObjectView = behind[place]
+			var lying: Rect2 = EncounterLayout.attached_place(footprints[index], height, place)
+			var attached_face: BattlefieldFace = BattlefieldFace.new()
+			attached_face.setup(_board_look(attachment), height, true)
+			attached_face.position = lying.position
+			attached_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_board.add_child(attached_face)
+			_remember_face(attachment.id, attached_face, lying.size, glow,
+					EncounterLayout.attached_shown(lying.size, EncounterLayout.attached_strip(height)))
 		_board.add_child(face)
 		_remember_face(permanent.id, face, footprints[index].size, glow)
+
+
+## Every land on the battlefield, either player's.
+func _land_ids(view: MmPlayerView) -> Array[int]:
+	var ids: Array[int] = []
+	for player_id: int in [VILLAIN, HERO]:
+		for land: MmObjectView in _permanents(view, player_id, true):
+			ids.append(land.id)
+	return ids
+
+
+## Every nonland permanent on the battlefield, either player's.
+func _all_nonlands(view: MmPlayerView) -> Array[MmObjectView]:
+	return _permanents(view, VILLAIN, false) + _permanents(view, HERO, false)
 
 
 ## A player's nonland permanents: creatures toward the left and middle, and the rest to
@@ -2021,10 +2096,13 @@ func _draw_nonlands(view: MmPlayerView, player_id: int, row_rect: Rect2, glow: D
 		if permanent.is_creature:
 			creatures.append(permanent)
 			creature_ids.append(permanent.id)
-	# An attachment lies behind its creature and leaves the other permanents (ADR 0042).
+	# An attachment lies behind its creature, or its land in the lands row, and leaves the
+	# other permanents (ADR 0042).
 	var attached: Dictionary[int, Array] = Attachments.by_host(nonlands, creature_ids)
+	var land_ids: Array[int] = _land_ids(view)
 	for permanent: MmObjectView in nonlands:
-		if not permanent.is_creature and not Attachments.is_drawn_attached(permanent, creature_ids):
+		if not permanent.is_creature and not Attachments.is_drawn_attached(permanent, creature_ids) \
+				and not Attachments.is_drawn_attached(permanent, land_ids):
 			others.append(permanent)
 	# A Tucked Card lies behind the permanent that exiled it, past its attachments (ADR 0043).
 	for host_id: int in _tucks:
@@ -2858,6 +2936,8 @@ func _draw_pile(zone_name: String, cards: Array, loose: Array, key: String, pile
 			continue
 		var face: CardFace = CardFace.new()
 		face.setup(_snapshot.look_of(shown.id), card.y)
+		if key.ends_with("graveyard"):
+			face.show_graveyard_chips()
 		face.position = at
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_board.add_child(face)

@@ -130,6 +130,45 @@ func test_trampling_damage_kills_the_blockers_and_the_rest_goes_to_the_player() 
 
 ## The Hero attacks with all of [param hero_creatures]; stops at the Villain's blockers
 ## decision.
+func test_a_creature_defining_its_power_attacks_for_lethal_by_that_power() -> void:
+	# A */3 such as Nishoba Brawler, printed with power 0: its power is worked out (CR 604.3).
+	var defining: CharacteristicDefiningAbility = CharacteristicDefiningAbility.new()
+	defining.power = Scenario.constant(3)
+	var no_creatures: Array[MmCardDefinition] = []
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Brawler", 0, 3, [defining])], no_creatures, [], [],
+		Step.DECLARE_ATTACKERS, 3)
+	assert_not_null(engine)
+	var agent: AiAgent = AiAgent.new()
+
+	assert_eq((AiScenario.ask(engine, agent) as Array).size(), 1)
+	assert_eq(agent.explain(), AiAgent.Reason.LETHAL_ATTACK, "Its 3 power is the Villain's last 3 life.")
+
+
+func test_attacking_with_a_creature_that_triggers_on_becoming_tapped_sets_off_its_trigger() -> void:
+	# Zar Ojanen's ability: the attack taps it, and the trigger resolves before blockers.
+	var scion: MmCardDefinition = Scenario.scion()
+	var cub: MmCardDefinition = Scenario.creature("Cub", 1, 1)
+	var hero_creatures: Array[MmCardDefinition] = [scion, cub]
+	var no_creatures: Array[MmCardDefinition] = []
+	var fetch: Array[MmCardDefinition] = [Scenario.free_land_fetch()]
+	var lands: Array[MmCardDefinition] = [Scenario.basic_land("Plains"), Scenario.basic_land("Forest")]
+	var setup: MmEncounterSetup = Scenario.combat_setup(hero_creatures, no_creatures, fetch + lands)
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, hero_creatures, no_creatures, fetch, no_creatures, 3,
+		Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hands.")
+	assert_eq(Scenario.fetch_lands(engine, ["Plains", "Forest"]), "")
+	assert_eq(Scenario.play_until_step(engine, 3, Step.DECLARE_ATTACKERS), "")
+	var scion_id: int = Scenario.permanent_named(engine, engine.hero().id, "Scion")
+
+	var attackers: Array = AiScenario.ask(engine, AiAgent.new())
+
+	assert_true(attackers.has(scion_id), "Into an empty board.")
+	assert_eq(engine.submit(attackers), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	var cub_id: int = Scenario.permanent_named(engine, engine.hero().id, "Cub")
+	assert_eq(Scenario.counters_on(engine, cub_id, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 1, "Toughness 1 is less than Domain 2.")
+
+
 func _villain_to_block(hero_creatures: Array[MmCardDefinition], villain_creatures: Array[MmCardDefinition],
 		villain_life: int = 20) -> MmEngine:
 	var engine: MmEngine = AiScenario.ready_with(hero_creatures, villain_creatures, [], [], Step.DECLARE_ATTACKERS, villain_life)

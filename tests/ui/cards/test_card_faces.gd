@@ -417,3 +417,42 @@ func _wheel(button: MouseButton) -> InputEventMouseButton:
 	event.button_index = button
 	event.pressed = true
 	return event
+
+
+func test_a_card_face_shows_no_keyword_chip_until_it_is_shown_in_a_graveyard() -> void:
+	var face: CardFace = _card_face(_daydream(), 250.0)
+
+	assert_eq(face.chips().size(), 0)
+
+
+func test_a_card_face_in_a_graveyard_shows_its_flashback_chip_at_the_bottom_left_of_its_art() -> void:
+	var face: CardFace = _card_face(_daydream(), 250.0)
+
+	face.show_graveyard_chips()
+
+	assert_eq(face.chips().size(), 1)
+	assert_eq(face.chips()[0].icon, "flashback")
+	var art: Rect2 = CardGeometry.on_card(CardGeometry.ART, face.size)
+	var chip: Rect2 = face.chip_rects()[0]
+	assert_true(art.encloses(chip), "The chip sits on the art.")
+	assert_almost_eq(chip.position.x - art.position.x, art.end.y - chip.end.y, 0.01, "As far in from the left as up from the bottom.")
+	assert_eq(fmod(chip.size.x, KeywordChips.PIXEL_STEP), 0.0, "Its icon stays crisp.")
+
+
+func test_a_card_face_in_a_graveyard_with_no_flashback_shows_no_chip() -> void:
+	var face: CardFace = _card_face(_look("serra_angel"), 250.0)
+
+	face.show_graveyard_chips()
+
+	assert_eq(face.chips().size(), 0)
+
+
+func _card_face(look: CardLook, height: float) -> CardFace:
+	var face: CardFace = CardFace.new()
+	face.setup(look, height)
+	add_child_autofree(face)
+	return face
+
+
+func _daydream() -> CardLook:
+	return CardLook.of_definition(load("res://content/cards/secrets_of_strixhaven/daydream.tres") as MmCardDefinition)

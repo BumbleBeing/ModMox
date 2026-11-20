@@ -1,0 +1,168 @@
+[gd_resource type="Resource" script_class="MmPlayerSetup" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_run_card.gd" id="1_ig350"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/artillery_blast.tres" id="2_kabbi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="3_cer7p"]
+[ext_resource type="Resource" path="res://content/cards/alpha/forest.tres" id="4_wbgm1"]
+[ext_resource type="Resource" path="res://content/cards/planeshift/gaeas_might.tres" id="5_62yxa"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/haunted_mire.tres" id="6_r3i70"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/idyllic_beachfront.tres" id="7_4812v"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/jodahs_codex.tres" id="8_yhrx4"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/leyline_binding.tres" id="9_22q1t"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/nishoba_brawler.tres" id="10_6mnfh"]
+[ext_resource type="Resource" path="res://content/cards/theros/nyleas_presence.tres" id="11_hj8r3"]
+[ext_resource type="Resource" path="res://content/cards/alpha/plains.tres" id="12_x5n1e"]
+[ext_resource type="Resource" path="res://content/cards/hour_of_devastation/pride_sovereign.tres" id="13_ho8ah"]
+[ext_resource type="Resource" path="res://content/cards/foundations/prideful_parent.tres" id="14_c6nhr"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/sacred_peaks.tres" id="15_p338d"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/sunlit_marsh.tres" id="16_s2moe"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/tangled_islet.tres" id="17_h3x82"]
+[ext_resource type="Resource" path="res://content/cards/time_spiral/tromp_the_domains.tres" id="18_fgpt8"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/wooded_ridgeline.tres" id="19_df18h"]
+[ext_resource type="Resource" path="res://content/cards/dominaria_united/zar_ojanen_scion_of_efrava.tres" id="20_8larj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="21_dpajx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="22_vfw5q"]
+
+[sub_resource type="Resource" id="Resource_dgs0v"]
+script = ExtResource("1_ig350")
+base = ExtResource("2_kabbi")
+
+[sub_resource type="Resource" id="Resource_b14n1"]
+script = ExtResource("1_ig350")
+base = ExtResource("2_kabbi")
+
+[sub_resource type="Resource" id="Resource_68120"]
+script = ExtResource("1_ig350")
+base = ExtResource("4_wbgm1")
+
+[sub_resource type="Resource" id="Resource_mltou"]
+script = ExtResource("1_ig350")
+base = ExtResource("4_wbgm1")
+
+[sub_resource type="Resource" id="Resource_mvxx6"]
+script = ExtResource("1_ig350")
+base = ExtResource("4_wbgm1")
+
+[sub_resource type="Resource" id="Resource_xo8vw"]
+script = ExtResource("1_ig350")
+base = ExtResource("4_wbgm1")
+
+[sub_resource type="Resource" id="Resource_k7tlw"]
+script = ExtResource("1_ig350")
+base = ExtResource("4_wbgm1")
+
+[sub_resource type="Resource" id="Resource_qvcum"]
+script = ExtResource("1_ig350")
+base = ExtResource("5_62yxa")
+
+[sub_resource type="Resource" id="Resource_aowxu"]
+script = ExtResource("1_ig350")
+base = ExtResource("5_62yxa")
+
+[sub_resource type="Resource" id="Resource_6y1mi"]
+script = ExtResource("1_ig350")
+base = ExtResource("6_r3i70")
+
+[sub_resource type="Resource" id="Resource_8nofl"]
+script = ExtResource("1_ig350")
+base = ExtResource("7_4812v")
+
+[sub_resource type="Resource" id="Resource_0f88g"]
+script = ExtResource("1_ig350")
+base = ExtResource("8_yhrx4")
+
+[sub_resource type="Resource" id="Resource_birri"]
+script = ExtResource("1_ig350")
+base = ExtResource("9_22q1t")
+
+[sub_resource type="Resource" id="Resource_nc741"]
+script = ExtResource("1_ig350")
+base = ExtResource("9_22q1t")
+
+[sub_resource type="Resource" id="Resource_3do11"]
+script = ExtResource("1_ig350")
+base = ExtResource("10_6mnfh")
+
+[sub_resource type="Resource" id="Resource_an3bx"]
+script = ExtResource("1_ig350")
+base = ExtResource("10_6mnfh")
+
+[sub_resource type="Resource" id="Resource_6vgv6"]
+script = ExtResource("1_ig350")
+base = ExtResource("10_6mnfh")
+
+[sub_resource type="Resource" id="Resource_e5jgm"]
+script = ExtResource("1_ig350")
+base = ExtResource("11_hj8r3")
+
+[sub_resource type="Resource" id="Resource_jtmad"]
+script = ExtResource("1_ig350")
+base = ExtResource("11_hj8r3")
+
+[sub_resource type="Resource" id="Resource_g2c67"]
+script = ExtResource("1_ig350")
+base = ExtResource("11_hj8r3")
+
+[sub_resource type="Resource" id="Resource_wlo16"]
+script = ExtResource("1_ig350")
+base = ExtResource("12_x5n1e")
+
+[sub_resource type="Resource" id="Resource_y5rfg"]
+script = ExtResource("1_ig350")
+base = ExtResource("12_x5n1e")
+
+[sub_resource type="Resource" id="Resource_6ndul"]
+script = ExtResource("1_ig350")
+base = ExtResource("12_x5n1e")
+
+[sub_resource type="Resource" id="Resource_a5c54"]
+script = ExtResource("1_ig350")
+base = ExtResource("12_x5n1e")
+
+[sub_resource type="Resource" id="Resource_m2shy"]
+script = ExtResource("1_ig350")
+base = ExtResource("13_ho8ah")
+
+[sub_resource type="Resource" id="Resource_d0tpj"]
+script = ExtResource("1_ig350")
+base = ExtResource("14_c6nhr")
+
+[sub_resource type="Resource" id="Resource_aqjb8"]
+script = ExtResource("1_ig350")
+base = ExtResource("14_c6nhr")
+
+[sub_resource type="Resource" id="Resource_jrb7s"]
+script = ExtResource("1_ig350")
+base = ExtResource("14_c6nhr")
+
+[sub_resource type="Resource" id="Resource_5hkl5"]
+script = ExtResource("1_ig350")
+base = ExtResource("15_p338d")
+
+[sub_resource type="Resource" id="Resource_lox3y"]
+script = ExtResource("1_ig350")
+base = ExtResource("16_s2moe")
+
+[sub_resource type="Resource" id="Resource_mf2h8"]
+script = ExtResource("1_ig350")
+base = ExtResource("17_h3x82")
+
+[sub_resource type="Resource" id="Resource_lfppx"]
+script = ExtResource("1_ig350")
+base = ExtResource("18_fgpt8")
+
+[sub_resource type="Resource" id="Resource_25wst"]
+script = ExtResource("1_ig350")
+base = ExtResource("19_df18h")
+
+[sub_resource type="Resource" id="Resource_u0b7k"]
+script = ExtResource("1_ig350")
+base = ExtResource("20_8larj")
+
+[sub_resource type="Resource" id="Resource_0ccqu"]
+script = ExtResource("1_ig350")
+base = ExtResource("20_8larj")
+
+[resource]
+script = ExtResource("22_vfw5q")
+deck = Array[ExtResource("1_ig350")]([SubResource("Resource_dgs0v"), SubResource("Resource_b14n1"), SubResource("Resource_68120"), SubResource("Resource_mltou"), SubResource("Resource_mvxx6"), SubResource("Resource_xo8vw"), SubResource("Resource_k7tlw"), SubResource("Resource_qvcum"), SubResource("Resource_aowxu"), SubResource("Resource_6y1mi"), SubResource("Resource_8nofl"), SubResource("Resource_0f88g"), SubResource("Resource_birri"), SubResource("Resource_nc741"), SubResource("Resource_3do11"), SubResource("Resource_an3bx"), SubResource("Resource_6vgv6"), SubResource("Resource_e5jgm"), SubResource("Resource_jtmad"), SubResource("Resource_g2c67"), SubResource("Resource_wlo16"), SubResource("Resource_y5rfg"), SubResource("Resource_6ndul"), SubResource("Resource_a5c54"), SubResource("Resource_m2shy"), SubResource("Resource_d0tpj"), SubResource("Resource_aqjb8"), SubResource("Resource_jrb7s"), SubResource("Resource_5hkl5"), SubResource("Resource_lox3y"), SubResource("Resource_mf2h8"), SubResource("Resource_lfppx"), SubResource("Resource_25wst"), SubResource("Resource_u0b7k"), SubResource("Resource_0ccqu")])

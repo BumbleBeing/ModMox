@@ -23,6 +23,8 @@ var name: String
 var owner_id: int
 var controller_id: int
 var is_tapped: bool
+## Exerted (CR 701.43): it won't untap during its controller's next untap step. Public.
+var is_exerted: bool = false
 ## The characteristics a card is drawn from, so the GUI can choose its Frame (ADR 0009).
 ## In WUBRG order; empty means colorless.
 var colors: Array[MmCardTypes.CardColor] = []
@@ -114,6 +116,7 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.owner_id = game_object.owner_id
 	view.controller_id = game_object.controller_id
 	view.is_tapped = game_object.is_tapped
+	view.is_exerted = game_object.exerted_by_player_id != MmGameState.NO_PLAYER
 	view.targets = game_object.targets.duplicate()
 	view.chosen_mode = game_object.chosen_mode
 	view.cast_with_flashback = game_object.cast_with_flashback

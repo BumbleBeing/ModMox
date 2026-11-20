@@ -10,6 +10,8 @@ Flashback arrived on the card track with Daydream, Deep Analysis and Group Proje
 
 **`PayLifeCost` and `TapCreaturesCost`.** Paying life is losing it through a `LifeLostEvent`, payable only while the payer has at least that much life, so paying all of it loses the encounter (CR 119.4). Tapping creatures asks a `ChoosePermanentsDecision`: exactly `count` distinct IDs from the candidates, which match the cost's Filter, answered with a plain list (ADR 0016). It is not any creature's own {T}, so a creature with summoning sickness may be tapped for it (CR 302.6).
 
+`ExertCost`, "Exert this creature", came later, for Pride Sovereign (CR 701.43): paying it performs an `ExertEvent` that marks the source with the payer, and the untap step of that player ends the exertion with an `ExertionEndsEvent` in place of untapping it.
+
 **Returning a card can put counters on it as it enters.** `ReturnToBattlefieldEffect` gained `counters` and `counter_kind`; the `ZoneChangeEvent` carries `counters_on_arrival`, so the card's "enters" abilities see them (CR 122.6). A token that left the battlefield never comes back (CR 111.8).
 
 Casting from the top of the library came with Assemble the Players (ADR 0054), marked `cast_from_library` beside `cast_with_flashback`. Left out until a card needs them (ADR 0001): casting from other zones (madness, escape), other alternative and additional costs, a mana ability whose cost asks a choice, and picks for costs other than tapping. Cost reductions came with affinity (ADR 0050), and reduce a flashback cost as they do a mana cost.

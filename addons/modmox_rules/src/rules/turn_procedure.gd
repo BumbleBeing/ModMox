@@ -189,9 +189,13 @@ func _perform_turn_based_actions() -> MmPendingDecision:
 	var active: MmPlayer = _state.player(_state.active_player_id)
 	match _current_step():
 		MmTurn.Step.UNTAP:
-			# CR 502.3: the active player untaps all their permanents.
+			# CR 502.3: the active player untaps all their permanents, but not one they
+			# exerted (CR 701.43): this untap step ends its exertion instead, whether it is
+			# tapped or not, and whoever controls it now.
 			for permanent: MmGameObject in _state.battlefield.objects():
-				if permanent.controller_id == active.id and permanent.is_tapped:
+				if permanent.exerted_by_player_id == active.id:
+					_state.perform(ExertionEndsEvent.new(permanent.id))
+				elif permanent.controller_id == active.id and permanent.is_tapped:
 					_state.perform(UntapEvent.new(permanent.id))
 		MmTurn.Step.DRAW:
 			# Later: let this stop for a replacement choice once a card replaces draws, such
@@ -402,7 +406,7 @@ func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 
 ## Only where it works (CR 113.6). Mana abilities whenever their cost can be paid; other
 ## abilities also need a legal target for every requirement, and enough mana for any mana
-## in their cost. An Activation Restriction can forbid either kind (CR 602.5).
+## in their cost, less any reduction (CR 602.2b). An Activation Restriction can forbid either kind (CR 602.5).
 func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbility, ability_index: int) -> bool:
 	if not ability.works_in(_state, source):
 		return false  # CR 113.6
@@ -417,7 +421,7 @@ func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbi
 	if ability.mana_cost != null:
 		if ability.is_mana_ability():
 			return false  # Later: mana abilities with mana in their cost, such as "{1}: Add {R}".
-		if not ManaPayment.can_afford(_state, player.id, ability.mana_cost):
+		if not ManaPayment.can_afford(_state, player.id, ability.mana_to_pay(_state, source)):
 			return false
 	return ability.is_mana_ability() or _every_requirement_has_a_target(ability.targets, player.id, source.id)
 

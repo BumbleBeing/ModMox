@@ -22,4 +22,6 @@ Oblivion Ring exiles a permanent and returns it when the Ring leaves (Linked Abi
 
 **Only a linked exile tucks a card.** Lion Sash exiles a card from a graveyard with an activated ability, and nothing brings it back. Had the engine remembered Lion Sash as what exiled it, every card it took would have lain behind it, saying it would return. So an `ExileEffect` remembers its source only with `links_to_source`, as Oblivion Ring's and Daydream's do; Lion Sash's turns it off and its cards go to their owner's exile pile like any other (Linked Abilities in the engine glossary, CR 607.2a). The screen still never works out a link: it tucks exactly what the engine says was exiled with a permanent.
 
+**An exile until its permanent leaves tucks its card too** (engine ADR 0065). Leyline Binding's card remembers the Binding as what exiled it, so it lies behind the Binding as an Oblivion Ring's does, and State Information says "Exiled by Leyline Binding." The return needs no ability, so it happens in the same action as the Binding leaving: the card flies from behind the Binding straight to the battlefield and never lands on the pile.
+
 Left for when a card needs it: a Tucked Card that is face down, and a permanent in the land rows with a card behind it.

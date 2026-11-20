@@ -576,6 +576,114 @@ func test_a_permanent_card_in_the_other_players_graveyard_is_exiled_for_its_coun
 		assert_eq(target.id, Scenario.card_in_graveyard(engine, engine.villain(), "Ogre"))
 
 
+# --- Spare mana -------------------------------------------------------------------------
+
+func test_a_draw_ability_on_a_permanent_is_activated_in_the_other_players_end_step_for_its_reduced_cost() -> void:
+	var engine: MmEngine = _codex_ready(4, Step.END)
+	Scenario.pass_priority(engine)
+	assert_eq(engine.pending_decision().player_id, engine.hero().id, "The Hero's pass ends the Villain's turn.")
+
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+
+	var activate: ActivateAbilityAction = AiScenario.action_at(engine, answer) as ActivateAbilityAction
+	assert_not_null(activate, "Its three lands pay {5} less two basic land types, and would go unused.")
+	if activate != null:
+		assert_eq(engine.game_state().characteristics_of(engine.game_state().object(activate.object_id)).name, "Codex")
+
+
+func test_a_draw_ability_on_a_permanent_waits_in_its_own_main_phase() -> void:
+	var engine: MmEngine = _codex_ready(3, Step.PRECOMBAT_MAIN)
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	var index: int = Scenario.activate_index(decision, Scenario.permanent_named(engine, engine.hero().id, "Codex"))
+	assert_ne(index, -1, "It could be activated for its reduced cost.")
+	if index == -1:
+		return
+	assert_eq(AiTiming.tag_of_action(engine.game_state(), decision.actions[index]), Tag.SPARE_MANA,
+		"It only draws a card.")
+
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+
+	assert_false(AiScenario.action_at(engine, answer) is ActivateAbilityAction,
+		"Its mana may yet cast something: drawing waits for the other player's end step.")
+
+
+func test_a_draw_ability_activated_only_as_a_sorcery_is_considered_in_its_own_main_phase() -> void:
+	# Diviner's Boon's "Draw two cards. Activate only as a sorcery": the other player's end
+	# step is never sorcery timing.
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.mana_cost = Scenario.mana_cost(0)
+	ability.effects = [Scenario.draw_cards(2, Scenario.you())]
+	ability.is_sorcery_speed = true
+	var setup: MmEncounterSetup = Scenario.combat_setup([], [])
+	setup.hero.emblems = [Scenario.emblem("Boon", [ability])]
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, [], [], [], [], 3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine)
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+
+	var index: int = Scenario.activate_index(decision, engine.view_for(engine.hero()).command[0].id)
+
+	assert_ne(index, -1)
+	if index != -1:
+		assert_eq(AiTiming.tag_of_action(engine.game_state(), decision.actions[index]), Tag.NONE)
+
+func test_an_exert_ability_waits_in_its_own_main_phase_and_is_activated_in_the_other_players_end_step() -> void:
+	var engine: MmEngine = _pride_ready()
+	var pride: int = Scenario.permanent_named(engine, engine.hero().id, "Pride")
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	var index: int = Scenario.activate_index(decision, pride)
+	assert_ne(index, -1)
+	if index == -1:
+		return
+	assert_eq(AiTiming.tag_of_action(engine.game_state(), decision.actions[index]), Tag.SPARE_MANA,
+		"CR 701.43: exerted now or in the other player's end step, it skips the same untap step.")
+
+	var waits: int = AiScenario.ask(engine, AiAgent.new())
+
+	assert_false(AiScenario.action_at(engine, waits) is ActivateAbilityAction, "It may block first.")
+	assert_eq(Scenario.play_until_step(engine, 4, Step.END), "")
+	Scenario.pass_priority(engine)
+	assert_eq(engine.pending_decision().player_id, engine.hero().id)
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+	var activate: ActivateAbilityAction = AiScenario.action_at(engine, answer) as ActivateAbilityAction
+	assert_not_null(activate, "Two Cats are worth the untap step it skips.")
+	if activate != null:
+		assert_eq(activate.object_id, pride)
+
+
+## The Hero with Scenario.codex() ("{5}, {T}: Draw a card", {1} less for each basic land
+## type among lands they control) and a Plains and two Forests, so it costs {3}, holding
+## Ogre (a 5/5 costing {5}), at the first decision of [param step] in [param game_turn].
+func _codex_ready(game_turn: int, step: Step) -> MmEngine:
+	var codex: Array[MmCardDefinition] = [Scenario.codex()]
+	var ogre: MmCardDefinition = Scenario.creature("Ogre", 5, 5)
+	ogre.mana_cost = Scenario.mana_cost(5)
+	var held: Array[MmCardDefinition] = [Scenario.free_land_fetch(), ogre]
+	var lands: Array[MmCardDefinition] = [Scenario.basic_land("Plains"), Scenario.basic_land("Forest"),
+		Scenario.basic_land("Forest")]
+	var no_cards: Array[MmCardDefinition] = []
+	var setup: MmEncounterSetup = Scenario.combat_setup(codex, no_cards, held + lands)
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, codex, no_cards, held, no_cards, 3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.fetch_lands(engine, ["Plains", "Forest", "Forest"]), "")
+	if game_turn != 3 or step != Step.PRECOMBAT_MAIN:
+		assert_eq(Scenario.play_until_step(engine, game_turn, step), "")
+	return engine
+
+
+## The Hero's precombat main phase of Game Turn 3 with a Pride, a 2/2 with "{T}, Exert this
+## creature: Create two 1/1 Cat creature tokens", there since Game Turn 1.
+func _pride_ready() -> MmEngine:
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.costs = [TapCost.new(), ExertCost.new()]
+	ability.effects = [Scenario.create_tokens(Scenario.creature("Cat", 1, 1), 2)]
+	var pride: Array[MmCardDefinition] = [Scenario.creature("Pride", 2, 2, [ability])]
+	var no_cards: Array[MmCardDefinition] = []
+	var setup: MmEncounterSetup = Scenario.combat_setup(pride, no_cards)
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, pride, no_cards, no_cards, no_cards, 3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	return engine
+
+
 ## The Hero's main phase with a Scavenger (Lion Sash's first ability at {0}) on the
 ## battlefield, a Doom and a Shock in the Hero's graveyard and an Ogre in the Villain's.
 func _graveyards_filled() -> MmEngine:

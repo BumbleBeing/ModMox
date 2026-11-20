@@ -16,6 +16,8 @@ enum Mode { FULL, CHEAP }
 const MOST_PICKS_SIMULATED: int = 10
 ## How many creature types a FULL Agent simulates choosing, the best ranked first.
 const MOST_TYPES_SIMULATED: int = 3
+## What a CHEAP Agent adds to an untapped permanent's worth as the target of its own Aura.
+const UNTAPPED_AURA_TARGET_BONUS: int = 1000
 ## The color of mana each basic land type makes (CR 305.6), for ranking what a search finds.
 const BASIC_LAND_COLORS: Dictionary[String, MmMana.Type] = {
 	"Plains": MmMana.Type.WHITE, "Island": MmMana.Type.BLUE, "Swamp": MmMana.Type.BLACK,
@@ -504,27 +506,83 @@ func _targets_spells(world: MmGameState, cast: CastSpellAction) -> bool:
 	return false
 
 
-## The land to play: the one making the color the hand needs most.
+## The land to play: the one making the color the hand needs most. When one of them enters
+## tapped (EntersTappedAbility), an untapped land that lets a spell in hand be cast this
+## turn comes first, then a land that enters tapped, since its mana is not missed this
+## turn, then the other untapped lands.
 func _best_land(decision: PriorityDecision, world: MmGameState) -> int:
 	var needed: Dictionary[int, int] = AiPaymentPlanner.colors_needed_by_hand(world, decision.player_id)
-	var best: int = -1
-	var best_need: int = -1
+	var plays: Array[int] = []
+	var any_enters_tapped: bool = false
 	for index: int in decision.actions.size():
 		var play: PlayLandAction = decision.actions[index] as PlayLandAction
-		if play == null:
-			continue
+		if play != null:
+			plays.append(index)
+			any_enters_tapped = any_enters_tapped \
+				or world.characteristics_of(world.object(play.object_id)).has_ability(EntersTappedAbility)
+	var best: int = -1
+	var best_rank: int = -1
+	var best_need: int = -1
+	for index: int in plays:
+		var land: MmGameObject = world.object((decision.actions[index] as PlayLandAction).object_id)
+		var characteristics: MmCharacteristics = world.characteristics_of(land)
+		var made: Array[MmMana.Type] = _mana_made_by_land(characteristics)
 		var need: int = 0
-		for ability: MmAbility in world.characteristics_of(world.object(play.object_id)).abilities:
-			var activated: ActivatedAbility = ability as ActivatedAbility
-			if activated == null:
-				continue
-			for effect: MmEffect in activated.effects:
-				if effect is AddManaEffect:
-					need = maxi(need, needed.get((effect as AddManaEffect).mana_type, 0))
-		if need > best_need:
+		for type: MmMana.Type in made:
+			need = maxi(need, needed.get(type, 0))
+		var rank: int = 0
+		if any_enters_tapped:
+			if characteristics.has_ability(EntersTappedAbility):
+				rank = 1
+			elif _unlocks_a_spell(world, decision.player_id, made):
+				rank = 2
+		if rank > best_rank or (rank == best_rank and need > best_need):
 			best = index
+			best_rank = rank
 			best_need = need
 	return best
+
+
+## The types of mana the mana abilities of a land with [param characteristics] add.
+static func _mana_made_by_land(characteristics: MmCharacteristics) -> Array[MmMana.Type]:
+	var made: Array[MmMana.Type] = []
+	for ability: MmAbility in characteristics.abilities:
+		var activated: ActivatedAbility = ability as ActivatedAbility
+		if activated == null:
+			continue
+		for effect: MmEffect in activated.effects:
+			if effect is AddManaEffect and not made.has((effect as AddManaEffect).mana_type):
+				made.append((effect as AddManaEffect).mana_type)
+	return made
+
+
+## Whether one more mana of a type in [param made] would let [param player_id] pay for a
+## spell in their hand that they cannot pay for now, at the cost a cast would pay, less its
+## cost reductions as they are now (ADR 0050).
+static func _unlocks_a_spell(world: MmGameState, player_id: int, made: Array[MmMana.Type]) -> bool:
+	for card: MmGameObject in world.player(player_id).hand.objects():
+		var cost: MmManaCost = CastProcedure.mana_to_pay(world, player_id, card)
+		if world.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND) or cost == null \
+				or ManaPayment.can_afford(world, player_id, cost):
+			continue
+		for type: MmMana.Type in made:
+			if ManaPayment.can_afford(world, player_id, _less_one(cost, type)):
+				return true
+	return false
+
+
+## [param cost] with one mana of [param type] already paid: a symbol of that type if it has
+## one, else one generic.
+static func _less_one(cost: MmManaCost, type: MmMana.Type) -> MmManaCost:
+	var less: MmManaCost = MmManaCost.new()
+	less.generic = cost.generic
+	less.symbols = cost.symbols.duplicate()
+	var index: int = less.symbols.find(type)
+	if index != -1:
+		less.symbols.remove_at(index)
+	elif less.generic > 0:
+		less.generic -= 1
+	return less
 
 
 # --- Targets, triggers and replacement effects --------------------------------------
@@ -532,7 +590,8 @@ func _best_land(decision: PriorityDecision, world: MmGameState) -> int:
 ## FULL: simulates each target; a tap, through the turn, with the CHEAP pick the default.
 ## CHEAP: harmful effects at the most valuable opposing creature they would kill, else the
 ## opponent; a tap at the most valuable untapped one; helpful ones at its own best
-## creature; a counter at the other player's most expensive spell.
+## creature; a counter at the other player's most expensive spell. An Aura spell is aimed
+## only at its own permanents (_is_helpful_aura()), an untapped one first in CHEAP.
 func _target(decision: ChooseTargetDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	if decision.candidates.size() == 1:
 		_reason = Reason.ONLY_CHOICE
@@ -545,7 +604,13 @@ func _target(decision: ChooseTargetDecision, world: MmGameState, source: MmSimul
 		# is the default and another target must score better.
 		if taps:
 			options.append(_cheap_target(decision, world))
+		# A helpful Aura scores the same on either side, since the Board Evaluator values
+		# what is enchanted and the Aura apart, so only its own permanents are simulated.
+		var own_only: bool = _is_helpful_aura(world, decision.stack_object_id) \
+			and _has_own_candidate(decision, world)
 		for index: int in decision.candidates.size():
+			if own_only and not _is_own_object(decision.candidates[index], world, decision.player_id):
+				continue
 			if not options.has(index):
 				options.append(index)
 		var lasts_the_turn: bool = AiTiming.is_trick(AiTiming.tag_of_effects(effects)) or taps
@@ -562,7 +627,8 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 	var tag: AiTiming.Tag = AiTiming.tag_of_effects(effects)
 	var harmful: bool = AiTiming.is_harmful(effects)
 	var taps: bool = AiTiming.taps(effects)
-	var damage: int = _constant_damage(effects)
+	var damage: int = _damage_of(effects, world, decision.stack_object_id)
+	var is_aura: bool = _is_helpful_aura(world, decision.stack_object_id)
 	var best: int = -1
 	var best_value: int = -1
 	var player_index: int = -1
@@ -584,6 +650,8 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 		var value: int = AiBoardEvaluator.creature_value(world, target)
 		if tag == AiTiming.Tag.COUNTER:
 			value = world.characteristics_of(target).mana_value()
+		if is_aura and not target.is_tapped:
+			value += UNTAPPED_AURA_TARGET_BONUS  # What it gives can be used this turn.
 		if value > best_value:
 			best = index
 			best_value = value
@@ -591,6 +659,27 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 	if best != -1:
 		return best
 	return player_index if player_index != -1 else 0
+
+
+## Whether [param stack_object_id] is an Aura spell (CR 303.4a) whose enchanting helps what
+## it enchants, so it is aimed at its controller's own permanents. Every Aura so far helps.
+# Later: an Aura whose static abilities harm what it enchants, such as "Enchanted creature
+# can't attack", aimed at the other player's permanents, once a card has one.
+static func _is_helpful_aura(world: MmGameState, stack_object_id: int) -> bool:
+	var item: MmGameObject = world.object(stack_object_id)
+	return item != null and item.is_card() and world.characteristics_of(item).has_ability(EnchantAbility)
+
+
+## Whether [param candidate] is a permanent [param player_id] controls.
+static func _is_own_object(candidate: MmReference, world: MmGameState, player_id: int) -> bool:
+	return candidate.is_object() and world.object(candidate.id).controller_id == player_id
+
+
+static func _has_own_candidate(decision: ChooseTargetDecision, world: MmGameState) -> bool:
+	for candidate: MmReference in decision.candidates:
+		if _is_own_object(candidate, world, decision.player_id):
+			return true
+	return false
 
 
 ## "Up to N" targets (CR 601.2c). FULL: one target at a time, simulating each candidate
@@ -849,11 +938,11 @@ func _yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState, source: MmS
 
 
 ## How much X to pay for a "you may pay {X}" (ADR 0061). Only the Xs worth paying are
-## weighed (_xs_worth_paying()). CHEAP: the largest of them, or declining when there is
+## weighed (xs_worth_paying()). CHEAP: the largest of them, or declining when there is
 ## none. FULL: simulates declining and each of them, with the CHEAP answer the default that
 ## another must beat, so mana kept for the rest of the turn is weighed against what X buys.
 func _choose_x_to_pay(decision: ChooseXToPayDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
-	var worth: Array[int] = _xs_worth_paying(decision, world)
+	var worth: Array[int] = xs_worth_paying(decision, world)
 	if worth.is_empty():
 		_reason = Reason.ONLY_CHOICE
 		return ChooseXToPayDecision.DECLINE
@@ -872,8 +961,9 @@ func _choose_x_to_pay(decision: ChooseXToPayDecision, world: MmGameState, source
 ## The Xs worth paying, smallest first: each X at which what the "you may pay {X}" wraps,
 ## begun with that X paid, offers something no smaller X does, such as a search finding a
 ## card of a higher mana value. Every other X pays more for the same. For an effect that
-## asks nothing of its own, only the most, and only if it is more than 0.
-func _xs_worth_paying(decision: ChooseXToPayDecision, world: MmGameState) -> Array[int]:
+## asks nothing of its own, only the most, and only if it is more than 0. The Encounter
+## Presenter starts the Hero's X stepper at the largest of them (game ADR 0063).
+static func xs_worth_paying(decision: ChooseXToPayDecision, world: MmGameState) -> Array[int]:
 	var worth: Array[int] = []
 	var item: MmGameObject = world.object(decision.stack_object_id)
 	var context: MmEffectContext = MmEffectContext.of_stack_object(item, item.targets)
@@ -1243,12 +1333,15 @@ static func _with_cost(total: MmManaCost, more: MmManaCost) -> MmManaCost:
 	return both
 
 
-## The damage a spell's effects deal, when it is a fixed number; 0 otherwise.
-func _constant_damage(effects: Array[MmEffect]) -> int:
+## The damage the first damage effect of [param stack_object_id] would deal, its Value
+## worked out on [param world] as if it resolved now, such as "1 plus [Domain]"; 0 when it
+## deals none.
+func _damage_of(effects: Array[MmEffect], world: MmGameState, stack_object_id: int) -> int:
+	var item: MmGameObject = world.object(stack_object_id)
 	for effect: MmEffect in effects:
 		var damage: DealDamageEffect = effect as DealDamageEffect
-		if damage != null and damage.amount is ConstantValue:
-			return (damage.amount as ConstantValue).value
+		if damage != null and item != null:
+			return damage.amount.evaluate(world, MmEffectContext.of_stack_object(item))
 	return 0
 
 

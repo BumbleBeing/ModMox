@@ -10,6 +10,10 @@ var _art_fallback: AnchoredText = null
 var _title: AnchoredText
 var _artist: AnchoredText = null
 var _rules: RulesText = null
+var _shape: Panel = null
+## The Keyword Chips shown, and where each is, in the face's own coordinates.
+var _chips: Array[KeywordChip] = []
+var _chip_rects: Array[Rect2] = []
 
 
 ## Draws [param look] [param height] pixels tall.
@@ -21,6 +25,7 @@ func setup(look: CardLook, height: float) -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	var shape: Panel = CardShapes.rounded(size_now, size_now.x * CardGeometry.CORNER, Color.BLACK, true)
 	add_child(shape)
+	_shape = shape
 	var spec: FrameSpec = FrameSpec.of(look)
 	_add_art(shape, CardGeometry.on_card(CardGeometry.ART, size_now))
 	shape.add_child(CardShapes.image(FrameBaker.texture(spec), Rect2(Vector2.ZERO, size_now)))
@@ -39,6 +44,33 @@ func setup(look: CardLook, height: float) -> void:
 		# The artist, in the black border under the frame, two points larger than it fits.
 		_artist = _text(shape, CardGeometry.on_card(CardGeometry.ARTIST, size_now), ["Illus. " + artist],
 				[Color(1, 1, 1, 0.9)], CardFonts.body(), 0.9, HORIZONTAL_ALIGNMENT_LEFT, AnchoredText.Fit.ELLIPSIS, 2)
+
+
+## Shows the Keyword Chips of a card in a graveyard, along the bottom of its art from the
+## left as a Battlefield Face's run: flashback's, the one keyword that matters there.
+func show_graveyard_chips() -> void:
+	var chips: Array[KeywordChip] = KeywordChips.chips_for(_look.abilities, KeywordChips.Place.GRAVEYARD)
+	if chips.is_empty() or not _chips.is_empty():
+		return
+	var art: Rect2 = CardGeometry.on_card(CardGeometry.ART, size)
+	var chip: float = KeywordChips.chip_size(size.y, art.size.x)
+	var gap: float = KeywordChips.gap(chip)
+	var at: Vector2 = Vector2(art.position.x + gap, art.end.y - chip - gap)
+	_chips = KeywordChips.shown(chips, KeywordChips.fit_count(chip, art.size.x))
+	for keyword: KeywordChip in _chips:
+		_shape.add_child(CardShapes.chip(keyword, at, chip))
+		_chip_rects.append(Rect2(at, Vector2(chip, chip)))
+		at.x += chip + gap
+
+
+## The Keyword Chips shown, none until show_graveyard_chips().
+func chips() -> Array[KeywordChip]:
+	return _chips
+
+
+## Where each chip in chips() is, in the face's own coordinates.
+func chip_rects() -> Array[Rect2]:
+	return _chip_rects
 
 
 ## The rules text, or null when the card has none.

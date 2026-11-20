@@ -7,7 +7,8 @@ extends RefCounted
 ## layers did, and nothing recurses. Within a layer, effects apply in timestamp order.
 ##
 ## Later: layers 1-3 and 5 (copy, control, text, color), and dependencies (CR 613.8), which
-## override timestamp order.
+## override timestamp order; and setting a land's subtype, which takes away the mana
+## abilities of the basic land types it loses (CR 305.7).
 
 
 ## The characteristics of every object on the battlefield and in the command zone, by ID.
@@ -23,6 +24,10 @@ static func compute(state: MmGameState) -> Dictionary[int, MmCharacteristics]:
 	for game_object: MmGameObject in objects:
 		_apply_reconfigure(game_object, current[game_object.id])
 	_apply_layer(state, objects, current, started, MmContinuousEffect.Layer.TYPE)
+	# CR 305.7: a land that gained a basic land type in layer 4 has its mana ability, which
+	# layer 6 may then take away.
+	for game_object: MmGameObject in objects:
+		current[game_object.id].add_basic_land_abilities()
 	_apply_layer(state, objects, current, started, MmContinuousEffect.Layer.ABILITY)
 	for game_object: MmGameObject in objects:
 		_apply_defining_abilities(state, game_object, current[game_object.id])
@@ -64,8 +69,10 @@ static func _apply_defining_abilities(state: MmGameState, game_object: MmGameObj
 		var defining: CharacteristicDefiningAbility = ability as CharacteristicDefiningAbility
 		if defining != null:
 			var context: MmEffectContext = MmEffectContext.new(game_object.controller_id, game_object.id)
-			characteristics.power = defining.power.evaluate(state, context)
-			characteristics.toughness = defining.toughness.evaluate(state, context)
+			if defining.power != null:
+				characteristics.power = defining.power.evaluate(state, context)
+			if defining.toughness != null:
+				characteristics.toughness = defining.toughness.evaluate(state, context)
 
 
 ## Layer 7c (CR 613.4c): +1/+1 and -1/-1 counters change power and toughness along with

@@ -5,7 +5,9 @@ extends RefCounted
 ## step of a cast that can be canceled. While Auto-tap pays for the Hero it says what is being
 ## paid for instead, with what is still owed, and the cast can still be canceled. Paying a
 ## ward cost reads "Pay ward for Leonin Lightbringer: {2}" from its yes or no to its last
-## payment, and has no Cancel: nothing is being cast (ADR 0062).
+## payment, and has no Cancel: nothing is being cast (ADR 0062). Choosing X for a "you may
+## pay {X}" reads "Pay {X} for Taj-Nar Swordsmith?", with a stepper and No in the panel, and
+## paying it reads "Pay for Taj-Nar Swordsmith:" with what is owed after it (game ADR 0063).
 
 var text: String = ""
 ## While paying: what is still owed. Null otherwise.
@@ -19,6 +21,10 @@ var offers_all_attack: bool = false
 ## While a "you may" is asked: the panel offers "No", and the Pass Button says yes
 ## (game ADR 0060).
 var offers_no: bool = false
+## While how much X to pay is asked: the panel shows a stepper from 0 to [member most_x],
+## and the Pass Button pays the X it shows (game ADR 0063).
+var chooses_x: bool = false
+var most_x: int = 0
 
 
 ## What the panel says while a card is held where letting go would play it, from the
@@ -34,11 +40,12 @@ static func release_text(option_text: String) -> String:
 static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaDecision = null,
 		names: PlayerNames = null) -> InfoPrompt:
 	var prompt: InfoPrompt = InfoPrompt.new()
-	var ward: MmObjectView = _ward_resolving(view)
-	if ward != null and (decision is PayManaDecision or (decision == null and paying != null)):
-		# ADR 0062: paying a ward cost, by hand or by Auto-tap, says what it is for, and a
-		# payment on resolution cannot be canceled.
-		prompt.text = ward_words(view, ward)
+	var resolving: MmObjectView = _trigger_resolving(view)
+	if resolving != null and (decision is PayManaDecision or (decision == null and paying != null)):
+		# ADR 0062, game ADR 0063: paying a ward cost or an X, by hand or by Auto-tap, says
+		# what it is for, and a payment on resolution cannot be canceled.
+		prompt.text = ward_words(view, resolving) if resolving.ability is WardAbility \
+			else "Pay for %s:" % source_name(view, resolving)
 		prompt.owed = _owed(decision as PayManaDecision if decision != null else paying)
 		prompt.is_owed_inline = true
 		return prompt
@@ -99,6 +106,14 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 			prompt.is_owed_inline = true
 			return prompt
 		prompt.text = "%s: %s?" % [stack_name(view, asked.stack_object_id), offered_words(view, asked)]
+	elif decision is ChooseXToPayDecision:
+		# Game ADR 0063: "Pay {X} for Taj-Nar Swordsmith?"
+		var choosing: ChooseXToPayDecision = decision as ChooseXToPayDecision
+		var asking_x: MmObjectView = _stack_item(view, choosing.stack_object_id)
+		prompt.text = "Pay {X} for %s?" % (source_name(view, asking_x) if asking_x != null else "this")
+		prompt.chooses_x = true
+		prompt.most_x = choosing.most
+		prompt.offers_no = true
 	elif decision is ChooseCreatureTypeDecision:
 		prompt.text = "Choose a creature type for %s" % stack_name(view, (decision as ChooseCreatureTypeDecision).stack_object_id)
 	elif decision is ChooseLegendToKeepDecision:
@@ -144,10 +159,20 @@ static func ward_words(view: MmPlayerView, ward: MmObjectView) -> String:
 	return "Pay ward for %s:" % (ward.name if warded.begins_with("object ") else warded)
 
 
-## The ward trigger resolving on top of the stack, or null: a payment made while it is
-## there is its cost, since a spell being cast is always on top of what it was cast over.
-static func _ward_resolving(view: MmPlayerView) -> MmObjectView:
-	if view.stack.is_empty() or not view.stack.back().ability is WardAbility:
+## The name of what [param item] on the stack comes from: an ability's source, or its own
+## name when the source is out of sight, or a spell's name.
+static func source_name(view: MmPlayerView, item: MmObjectView) -> String:
+	if item.card_id != MmGameObject.NO_CARD:
+		return item.name
+	var source: String = EncounterSnapshot.name_in(view, item.source_object_id)
+	return item.name if source.begins_with("object ") else source
+
+
+## The triggered ability resolving on top of the stack, such as ward's, or null: a payment
+## made while it is there is made as it resolves, since putting a trigger on the stack costs
+## nothing and a spell being cast is always on top of what it was cast over.
+static func _trigger_resolving(view: MmPlayerView) -> MmObjectView:
+	if view.stack.is_empty() or not view.stack.back().ability is TriggeredAbility:
 		return null
 	return view.stack.back()
 

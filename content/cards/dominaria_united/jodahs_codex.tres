@@ -1,0 +1,77 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_jefp5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_87i6u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_gedoh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_l3uhy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="3_vct7h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_1bbig"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_djjbk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="6_5u8fe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="7_ykn6t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/basic_land_type_count_value.gd" id="8_lslyl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="9_8p2p8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="10_wjkv3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="11_lby7s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="12_3q2oy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="13_6jnf5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="15_otx8e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="16_onb58"]
+
+[sub_resource type="Resource" id="Resource_sa1bo"]
+script = ExtResource("3_vct7h")
+
+[sub_resource type="Resource" id="Resource_tyjhn"]
+script = ExtResource("5_djjbk")
+value = 1
+
+[sub_resource type="Resource" id="Resource_4ho5l"]
+script = ExtResource("6_5u8fe")
+
+[sub_resource type="Resource" id="Resource_fmbfa"]
+script = ExtResource("7_ykn6t")
+amount = SubResource("Resource_tyjhn")
+players = SubResource("Resource_4ho5l")
+
+[sub_resource type="Resource" id="Resource_4odyg"]
+script = ExtResource("10_wjkv3")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_qrl1t"]
+script = ExtResource("11_lby7s")
+
+[sub_resource type="Resource" id="Resource_8e5d6"]
+script = ExtResource("12_3q2oy")
+filters = Array[ExtResource("9_8p2p8")]([SubResource("Resource_4odyg"), SubResource("Resource_qrl1t")])
+
+[sub_resource type="Resource" id="Resource_pgn1j"]
+script = ExtResource("13_6jnf5")
+filter = SubResource("Resource_8e5d6")
+
+[sub_resource type="Resource" id="Resource_qfsm2"]
+script = ExtResource("8_lslyl")
+selection = SubResource("Resource_pgn1j")
+
+[sub_resource type="Resource" id="Resource_xrs74"]
+script = ExtResource("2_gedoh")
+generic = 5
+
+[sub_resource type="Resource" id="Resource_q6sba"]
+script = ExtResource("15_otx8e")
+mana_cost = SubResource("Resource_xrs74")
+generic_reduction = SubResource("Resource_qfsm2")
+costs = Array[ExtResource("2_87i6u")]([SubResource("Resource_sa1bo")])
+effects = Array[ExtResource("4_1bbig")]([SubResource("Resource_fmbfa")])
+
+[sub_resource type="Resource" id="Resource_kulo2"]
+script = ExtResource("2_gedoh")
+generic = 5
+
+[resource]
+script = ExtResource("3_l3uhy")
+name = "Jodah's Codex"
+card_types = Array[int]([0])
+subtypes = Array[String](["Book"])
+mana_cost = SubResource("Resource_kulo2")
+abilities = Array[ExtResource("1_jefp5")]([SubResource("Resource_q6sba")])
+rarity = 1

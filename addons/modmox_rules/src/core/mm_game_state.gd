@@ -524,10 +524,14 @@ func fingerprint() -> String:
 				entries.append("%d known to %s" % [game_object.id, game_object.known_to_player_ids])
 			if game_object.exiled_with_object_id != 0:
 				entries.append("%d exiled with %d" % [game_object.id, game_object.exiled_with_object_id])
+			if game_object.returns_when_exiler_leaves:
+				entries.append("%d returns when its exiler leaves" % game_object.id)
 			if game_object.attached_to_object_id != 0:
 				entries.append("%d attached to %d" % [game_object.id, game_object.attached_to_object_id])
 			if game_object.is_token:
 				entries.append("%d token" % game_object.id)
+			if game_object.exerted_by_player_id != NO_PLAYER:
+				entries.append("%d exerted by %d" % [game_object.id, game_object.exerted_by_player_id])
 			if game_object.cast_with_flashback:
 				entries.append("%d flashback" % game_object.id)
 			if game_object.cast_from_library:
@@ -589,6 +593,11 @@ func _continue_batch(batch: SuspendedBatch) -> void:
 			return
 		_replace_next(batch, chosen)
 	TriggerDetection.detect(self, batch.performed, batch.before)
+	# CR 610.3: a card exiled until its source leaves comes back immediately after, as a batch
+	# of its own (ADR 0065).
+	var returning: Array[MmEvent] = ExileUntilRules.returns(self)
+	if not returning.is_empty():
+		perform_resumably(returning)
 
 
 func _replace_next(batch: SuspendedBatch, chosen: ActiveReplacementEffect) -> void:

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_wcqey"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_fwvht"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_nkx5l"]
+
+[sub_resource type="Resource" id="Resource_q6i78"]
+script = ExtResource("2_fwvht")
+
+[resource]
+script = ExtResource("2_nkx5l")
+name = "Tangled Islet"
+card_types = Array[int]([4])
+subtypes = Array[String](["Forest", "Island"])
+abilities = Array[ExtResource("1_wcqey")]([SubResource("Resource_q6i78")])

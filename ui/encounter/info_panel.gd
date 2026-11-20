@@ -3,7 +3,10 @@ extends Control
 ## The Info Panel (game glossary): the bordered box by the Hero's hand that says what the
 ## Hero is being asked and why their last answer was refused, with the Cancel button for a
 ## cast in progress. While the cursor is over a row of
-## the Option Menu, it shows that option in full in place of everything else.
+## the Option Menu, it shows that option in full in place of everything else. A prompt with
+## a mana symbol in it, as "Pay {X} for Taj-Nar Swordsmith?", is drawn with its symbol. While
+## how much X to pay is asked, a − X + stepper sits at its bottom left, beside a narrower
+## "No" (game ADR 0063).
 
 signal cancel_pressed
 signal all_attack_pressed
@@ -11,6 +14,9 @@ signal all_attack_pressed
 signal undeclare_all_pressed
 ## "No" was pressed: the answer to a "you may" (game ADR 0060).
 signal no_pressed
+## The X stepper's "−" or "+" was pressed (game ADR 0063).
+signal x_lowered
+signal x_raised
 
 const BORDER: Color = Color("#8a93a6")
 const DIM: float = 0.45
@@ -22,10 +28,18 @@ const UNDECLARE_ALL: String = "Undeclare All"
 const NO: String = "No"
 ## The room the Cancel or "Declare All" button takes at the panel's bottom right.
 const BUTTON_ROOM: float = 142.0
+## The X stepper's size, and the narrower "No" beside it.
+const X_STEPPER_SIZE: Vector2 = Vector2(160, 38)
+const NO_BESIDE_STEPPER: float = 104.0
 
 var _back: Panel = null
 var _border: Panel = null
 var _prompt: Label = null
+## The prompt, drawn with its symbols, when it has any; null otherwise.
+var _symbol_prompt: SymbolLabel = null
+## The X stepper and the most it goes to, while how much X to pay is asked.
+var _x_stepper: DamageStepper = null
+var _most_x: int = -1
 var _error: Label = null
 var _option: Label = null
 var _cancel: Button = null
@@ -53,6 +67,9 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 	_cancel = null
 	_all_attack = null
 	_no = null
+	_symbol_prompt = null
+	_x_stepper = null
+	_most_x = -1
 	position = box.position
 	size = box.size
 	# A payment Auto-tap is making asks nothing, but says what is owed and can be canceled.
@@ -66,8 +83,16 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 	_border.modulate.a = _back.modulate.a
 	add_child(_border)
 	var inside: float = box.size.x - 24.0
-	_prompt = _label(prompt.text, Rect2(12, 8, inside, 52), 18, Color.WHITE)
+	var has_symbol: bool = prompt.text.contains("{")
+	_prompt = _label("" if has_symbol else prompt.text, Rect2(12, 8, inside, 52), 18, Color.WHITE)
 	add_child(_prompt)
+	if has_symbol:
+		_symbol_prompt = SymbolLabel.new()
+		_symbol_prompt.set_font_size(18 + UiText.RAISE)
+		_symbol_prompt.position = Vector2(12, 8)
+		_symbol_prompt.size = Vector2(inside, 0)
+		_symbol_prompt.write(prompt.text)
+		add_child(_symbol_prompt)
 	_pip_names = ManaSymbols.pip_names(prompt.owed)
 	var first_pip: Vector2 = _first_pip_place(prompt, inside)
 	for index: int in _pip_names.size():
@@ -109,14 +134,40 @@ func show_snapshot(snapshot: EncounterSnapshot, error: String, box: Rect2, hint:
 		_no = Button.new()
 		_no.text = NO
 		_no.focus_mode = Control.FOCUS_NONE
-		_no.position = Vector2(box.size.x - BUTTON_ROOM, box.size.y - 40)
-		_no.size = Vector2(BUTTON_ROOM - 12, 32)
+		var no_width: float = NO_BESIDE_STEPPER if prompt.chooses_x else BUTTON_ROOM - 12
+		_no.position = Vector2(box.size.x - 12 - no_width, box.size.y - 40)
+		_no.size = Vector2(no_width, 32)
 		_no.add_theme_font_size_override("font_size", 18)
 		_no.pressed.connect(func() -> void: no_pressed.emit())
 		add_child(_no)
+	if prompt.chooses_x:
+		_most_x = prompt.most_x
 	_option = _label("", Rect2(12, 8, inside, box.size.y - 16), 18, Color.WHITE)
 	add_child(_option)
 	_arrange()
+
+
+## Shows [param x] on the X stepper, which can go from 0 to the most the Hero can pay. It
+## does nothing while how much X to pay is not asked.
+func show_x(x: int) -> void:
+	if _most_x < 0:
+		return
+	if _x_stepper != null:
+		remove_child(_x_stepper)
+		_x_stepper.queue_free()
+	_x_stepper = DamageStepper.new(Rect2(Vector2(12, size.y - X_STEPPER_SIZE.y - 6), X_STEPPER_SIZE), x, false,
+		x > 0, x < _most_x)
+	_x_stepper.lowered.connect(func() -> void: x_lowered.emit())
+	_x_stepper.raised.connect(func() -> void: x_raised.emit())
+	add_child(_x_stepper)
+	if _option != null:
+		move_child(_option, -1)
+	_arrange()
+
+
+## The X stepper, or null while how much X to pay is not asked.
+func x_stepper() -> DamageStepper:
+	return _x_stepper
 
 
 ## Shows [param text], an Option Menu row in full, in place of everything else. "" puts
@@ -135,7 +186,7 @@ func show_prompt(text: String) -> void:
 
 
 func prompt_text() -> String:
-	return _prompt.text
+	return _symbol_prompt.written() if _symbol_prompt != null else _prompt.text
 
 
 ## The reason the last answer was refused, as shown, or "".
@@ -211,6 +262,10 @@ func _arrange() -> void:
 	var is_option: bool = _option.text != ""
 	_option.visible = is_option
 	_prompt.visible = not is_option
+	if _symbol_prompt != null:
+		_symbol_prompt.visible = not is_option
+	if _x_stepper != null:
+		_x_stepper.visible = not is_option
 	_error.visible = not is_option and _error.text != ""
 	for pip: TextureRect in _pips:
 		pip.visible = not is_option

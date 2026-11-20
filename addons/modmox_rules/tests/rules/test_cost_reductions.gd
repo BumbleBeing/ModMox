@@ -166,7 +166,7 @@ func test_a_copy_and_a_replay_pay_the_reduced_cost() -> void:
 ## A cost reduction that always takes [param amount] off.
 func _fixed(amount: MmManaCost) -> CostReductionAbility:
 	var ability: FixedCostReduction = FixedCostReduction.new()
-	ability.amount = amount
+	ability.mana = amount
 	return ability
 
 

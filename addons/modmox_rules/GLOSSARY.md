@@ -103,7 +103,7 @@ Who or what an effect applies to: the target chosen for a Target Requirement, ea
 _Avoid_: Target (unless an actual target is meant), recipient list, scope
 
 **Filter**:
-A condition a player or Game Object either meets or does not, such as "untapped land". Filters combine with all-of, any-of and not.
+A condition a player or Game Object either meets or does not, such as "untapped land". Filters combine with all-of, any-of and not. A number a Filter compares with may be a Value worked out each time it is asked, as in "with toughness less than the number of basic land types among lands you control".
 _Avoid_: Predicate, query, condition
 
 **Pending Decision**:
@@ -156,6 +156,10 @@ _Avoid_: Queued trigger, trigger instance
 Events that happen at the same moment, such as everything state-based actions do at once or all combat damage in a step. Triggers are looked for once, after the whole batch.
 _Avoid_: Transaction, group
 
+**Becomes Tapped**:
+An untapped permanent changing to tapped, for any reason: attacking, paying a {T} cost, or an effect, as in "Whenever this creature becomes tapped" (CR 603.2). A permanent that enters the battlefield tapped never becomes tapped, and one already tapped can't become tapped again.
+_Avoid_: Is tapped (that is a state, not a change), taps (a player taps a permanent; the permanent becomes tapped)
+
 **Legend Rule**:
 A state-based action: a player who controls two or more legendary permanents with the same name chooses one to keep, and the rest are put into their owners' graveyards with the other state-based actions of that moment (CR 704.5j).
 _Avoid_: Legendary uniqueness, legend check
@@ -177,12 +181,16 @@ A keyword, "Cycling [cost]": "[Cost], Discard this card: Draw a card", an activa
 _Avoid_: Cycle away, recycle, loot (a different action: draw, then discard)
 
 **Cost Reduction**:
-A static ability of a spell that makes it cost less to cast, such as affinity ("This spell costs {1} less to cast for each Cat you control", CR 702.41a). What it takes off may be generic or colored mana, and comes off the mana cost or an alternative cost such as a flashback cost, by CR 118.7, as the cast begins (CR 601.2f). The spell's mana value never changes (ADR 0050).
+A static ability of a spell that makes it cost less to cast: "This spell costs {1} less to cast for each basic land type among lands you control" takes off as much generic mana as a Value comes to, and affinity ("This spell costs {1} less to cast for each Cat you control", CR 702.41a) one for each matching permanent. What it takes off may be generic or colored mana, and comes off the mana cost or an alternative cost such as a flashback cost, by CR 118.7, as the cast begins (CR 601.2f). The spell's mana value never changes (ADR 0050). An activated ability may carry its own, as part of its text: "This ability costs {1} less to activate for each basic land type among lands you control" (CR 602.2b) takes generic mana off its mana cost as the activation begins.
 _Avoid_: Discount, cheaper cost, cost modifier
 
 **Linked Abilities**:
 Two abilities of one object where the second refers to what the first did, as Oblivion Ring's "exile another target nonland permanent" and "return the exiled card" are (CR 607). A card the first exiles remembers the object that exiled it, and the second finds only the cards that object exiled. An exile nothing links to, such as Lion Sash's, leaves its cards remembering nothing. An object that changes zones is a new object, so the link does not follow it.
 _Avoid_: Paired abilities, remembered card, hostage
+
+**Exile Until**:
+An exile that lasts until the object that did it leaves the battlefield, as Leyline Binding's "exile target nonland permanent an opponent controls until this enchantment leaves the battlefield" (CR 610.3). It is one effect, not two Linked Abilities: the card comes back to the battlefield under its owner's control by itself, with nothing on the stack, right after that object leaves, before anything else happens. If the object has already left when the exile would happen, nothing is exiled (CR 610.3c). A token exiled this way ceases to exist and never comes back (ADR 0065).
+_Avoid_: Temporary exile, O-Ring effect, banish
 
 **Condition**:
 Something true or false about the game right now, such as "this permanent is untapped", used for an intervening "if" clause, for "as long as", and for an effect that happens instead of another while it holds ("If this is the second time this ability has resolved this turn, ... instead", CR 608.2c).
@@ -222,7 +230,7 @@ When an object entered its zone or a continuous effect was created. Within a lay
 _Avoid_: Creation order, age
 
 **Characteristic-Defining Ability**:
-An ability that works out a characteristic, such as "its power and toughness are each equal to the number of non-Wall creatures you control". It works in every zone, and its card shows "*" for that number.
+An ability that works out a characteristic, such as "its power and toughness are each equal to the number of non-Wall creatures you control". It may work out power alone, as on a */3 creature, or toughness alone, and the other number is the printed one. It works in every zone, and its card shows "*" for each number it works out.
 _Avoid_: Variable stats, star ability
 
 ## Replacement effects
@@ -261,6 +269,10 @@ _Avoid_: Battle (a card type in Magic), fight
 A creature cannot attack or pay {T} until its controller has controlled it continuously since the start of their most recent turn. The engine works this out from when control began; nothing has to clear it.
 _Avoid_: Sick (on its own), fresh, exhausted
 
+**Exert**:
+To exert a permanent, as part of a cost such as Pride Sovereign's "{W}, {T}, Exert this creature", is to have it not untap during the next untap step of the player who exerted it (CR 701.43). The permanent remembers that player, and that untap step ends its exertion whether it was tapped then or not. Exerting it again before then still skips only that one untap step, and a permanent that changes zones is a new object, not exerted.
+_Avoid_: Tired, "doesn't untap" (that is the effect, not the action)
+
 **Marked Damage**:
 Damage dealt to a creature, which stays on it until the cleanup step removes it.
 _Avoid_: Wounds, damage counters (counters are something else)
@@ -270,8 +282,12 @@ A marker on a permanent that stays until the permanent leaves the battlefield or
 _Avoid_: Token (a token is a permanent that is not a card), marker, buff, stack (for a number of counters)
 
 **Attachment**:
-A permanent attached to another, as an Equipment is to the creature it equips. It stays on the battlefield in its own right: when what it is attached to leaves, or may no longer have it, it becomes unattached and stays. "Equipped creature" is what an Equipment is attached to, and an equipped permanent is one with at least one Equipment attached to it. Equip is the keyword that attaches one, to a creature its controller controls and only as a sorcery. Reconfigure is the keyword of an Equipment that is also a creature: it attaches the Equipment to another creature its controller controls, or unattaches it, only as a sorcery, and while attached the Equipment is not a creature. Only an Equipment with reconfigure may be attached while it is a creature.
+A permanent attached to another, as an Equipment is to the creature it equips or an Aura to what it enchants. An Equipment stays on the battlefield in its own right: when what it is attached to leaves, or may no longer have it, it becomes unattached and stays. An Aura does not: it goes to its owner's graveyard (see Aura). "Equipped creature" is what an Equipment is attached to, and an equipped permanent is one with at least one Equipment attached to it. Equip is the keyword that attaches one, to a creature its controller controls and only as a sorcery. Reconfigure is the keyword of an Equipment that is also a creature: it attaches the Equipment to another creature its controller controls, or unattaches it, only as a sorcery, and while attached the Equipment is not a creature. Only an Equipment with reconfigure may be attached while it is a creature.
 _Avoid_: Gear, item (an Item is a Potion or a Boon), child, parent, host; "the equipment's owner" for the creature it is on
+
+**Aura**:
+An enchantment that is an Attachment from the moment it enters, made so by its enchant ability, such as "Enchant land", which says what it may be attached to. An Aura spell targets what it will enchant, and if that target is gone as it resolves it goes to its owner's graveyard instead of entering; otherwise it enters attached to it. An Aura attached to something it may not enchant, or to nothing, is put into its owner's graveyard (CR 704.5m). "Enchanted land" is what an Aura is attached to, and "this Aura" what an Aura calls itself.
+_Avoid_: Enchantment (an Aura is one kind, and most enchantments are not Auras), buff, modifier; "falls off" (an Aura is put into the graveyard, an Equipment becomes unattached)
 
 **Damage Division**:
 An attacker's controller choosing how its combat damage is split among the creatures blocking it, and with trample the player it attacks. There is no damage assignment order. The GUI shows it as a damage-split popup.
@@ -318,7 +334,7 @@ What answers "if these attack and these block, what happens?" by running the eng
 _Avoid_: Combat math, damage predictor
 
 **Timing Tag**:
-When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, evasion (a trick that only grants abilities) from the declare attackers step so it can change who blocks whom, removal (damage, destruction and -1/-1 counters) also in its controller's main phases and the other player's end step, a counter only with the other player's spell or ability on top of the stack. It never decides whether a play is good.
+When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, evasion (a trick that only grants abilities) from the declare attackers step so it can change who blocks whom, removal (damage, destruction and -1/-1 counters) also in its controller's main phases and the other player's end step, a counter only with the other player's spell or ability on top of the stack. A permanent spell has none, unless it has flash and its own "enters" trigger is removal or a trick: then it has that trigger's. It never decides whether a play is good.
 _Avoid_: AI hint, card flag, AILogic
 
 **AI Profile**:

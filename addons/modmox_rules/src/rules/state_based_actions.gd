@@ -57,6 +57,8 @@ static func _actions(state: MmGameState, kept_ids: Array[int]) -> Array[MmEvent]
 		actions.append(CountersRemovedEvent.new(permanent.id, MmCounter.Kind.MINUS_ONE_MINUS_ONE, canceled))
 	for permanent: MmGameObject in _permanents_attached_illegally(state):
 		actions.append(UnattachedEvent.new(permanent.id))
+	for aura: MmGameObject in _auras_attached_illegally(state):
+		actions.append(_to_graveyard(state, aura, ZoneChangeEvent.Reason.UNATTACHED_AURA))
 	for token: MmGameObject in _tokens_off_the_battlefield(state):
 		actions.append(TokenCeasedEvent.new(token))
 	for group: Array[int] in _legend_groups(state):
@@ -175,14 +177,31 @@ static func _permanents_with_both_kinds_of_counter(state: MmGameState) -> Array[
 
 ## CR 704.5n: an Equipment attached to an illegal permanent, or to something that is no
 ## longer on the battlefield, becomes unattached and stays on the battlefield. In ID order.
+## An Aura is never unattached this way: _auras_attached_illegally() finds it instead.
 static func _permanents_attached_illegally(state: MmGameState) -> Array[MmGameObject]:
 	var found: Array[MmGameObject] = []
 	for permanent: MmGameObject in state.battlefield.objects():
-		if permanent.attached_to_object_id != 0 \
+		if permanent.attached_to_object_id != 0 and not _is_aura(state, permanent) \
 				and not AttachmentRules.can_be_attached(state, permanent, state.object(permanent.attached_to_object_id)):
 			found.append(permanent)
 	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
 	return found
+
+
+## CR 704.5m: an Aura attached to an illegal object or player, or not attached to an object
+## or player, is put into its owner's graveyard. In ID order.
+static func _auras_attached_illegally(state: MmGameState) -> Array[MmGameObject]:
+	var found: Array[MmGameObject] = []
+	for permanent: MmGameObject in state.battlefield.objects():
+		if _is_aura(state, permanent) and (permanent.attached_to_object_id == 0
+				or not AttachmentRules.can_be_attached(state, permanent, state.object(permanent.attached_to_object_id))):
+			found.append(permanent)
+	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return found
+
+
+static func _is_aura(state: MmGameState, permanent: MmGameObject) -> bool:
+	return state.characteristics_of(permanent).subtypes.has(AttachmentRules.AURA)
 
 
 ## CR 704.5d: a token in a zone other than the battlefield ceases to exist. In ID order.

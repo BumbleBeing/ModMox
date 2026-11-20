@@ -55,6 +55,17 @@ func test_ward_is_reminded_of_what_it_does_and_named_without_its_cost() -> void:
 		"Whenever it becomes the target of a spell or ability an opponent controls, counter that unless its controller pays the ward cost.")
 
 
+func test_flashback_is_reminded_of_wherever_the_card_is() -> void:
+	# Its chip is drawn only in a graveyard, but the Inspector lists its Reminder anywhere.
+	var daydream: MmCardDefinition = load("res://content/cards/secrets_of_strixhaven/daydream.tres") as MmCardDefinition
+
+	var reminders: Array[Reminder] = Reminders.of(daydream.abilities)
+
+	assert_eq(reminders.size(), 1)
+	assert_eq(reminders[0].icon, "flashback")
+	assert_eq(reminders[0].keyword, "Flashback")
+
+
 func test_a_card_with_no_keyword_has_no_reminder() -> void:
 	assert_eq(Reminders.of(_abilities("prodigal_sorcerer")).size(), 0)
 	assert_eq(Reminders.of(_abilities("forest")).size(), 0)

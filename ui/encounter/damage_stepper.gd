@@ -3,7 +3,7 @@ extends Control
 ## How much combat damage one recipient is given while damage is being divided: the amount
 ## between a "−" and a "+" button, on the creature itself or on the attacked player's
 ## portrait (A318). The amount is red once it is lethal (A319). A button that would do
-## nothing is grayed out.
+## nothing is grayed out. The Info Panel's X stepper is one too, never lethal (game ADR 0063).
 
 signal lowered
 signal raised

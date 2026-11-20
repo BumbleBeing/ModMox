@@ -47,11 +47,25 @@ static func affected_player_id(state: MmGameState, event: MmEvent) -> int:
 	return state.object(moved.object_id).controller_id
 
 
-## The effects static abilities generate right now: protection's prevention (CR 702.16e).
+## The effects static abilities generate right now: protection's prevention (CR 702.16e),
+## and the effects an object entering the battlefield generates for its own entering, read
+## from its characteristics where it is now, standing for those it would have on the
+## battlefield (CR 614.12).
+# Later: an effect that grants an ability only on the battlefield, which CR 614.12 says an
+# entering permanent already has, once a card has one.
 static func _from_static_abilities(state: MmGameState, event: MmEvent) -> Array[ActiveReplacementEffect]:
 	var found: Array[ActiveReplacementEffect] = []
+	var moved: ZoneChangeEvent = event as ZoneChangeEvent
+	if moved != null and moved.to_zone_kind == MmZone.Kind.BATTLEFIELD and state.object(moved.object_id) != null:
+		var entering: MmGameObject = state.object(moved.object_id)
+		var own: Array[MmAbility] = state.characteristics_of(entering).abilities
+		for index: int in own.size():
+			var enters_tapped: EntersTappedAbility = own[index] as EntersTappedAbility
+			if enters_tapped != null:
+				found.append(ActiveReplacementEffect.of_static(enters_tapped.replacement(), entering, index))
+		return found
 	if not event is DamageEvent:
-		return found  # Only protection generates one so far, and it only prevents damage.
+		return found  # Only protection generates one for any other event, and it only prevents damage.
 	var permanents: Array[MmGameObject] = state.battlefield.objects()
 	permanents.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
 	for permanent: MmGameObject in permanents:

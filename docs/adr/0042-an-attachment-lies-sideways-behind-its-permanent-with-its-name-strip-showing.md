@@ -18,4 +18,6 @@ Equipment came on the card track with Short Sword (engine ADR 0041), and an atta
 
 **It turns as it moves.** A Face Pose says how far a face lies over for being attached (`lean`, 0 to 1) beside how far it is turned for being tapped, and Face Motion eases it with the face's place and size. So an Equipment turns onto its side on its way behind its creature, stands up again on its way back to the other permanents, and takes off lying as it lay when it leaves the battlefield. Tapped and lying down are the same quarter turn, so the card is turned by the larger of the two, and only the tapped part darkens it. The Attached Mark fades in as the card lies down.
 
-Left for when it is wanted: an attachment on another player's permanent, which no card can make yet, is drawn among its own controller's other permanents.
+**An Aura on a land lies behind it in that land's row** (engine ADR 0064). It is drawn as an Equipment is behind its creature: sideways, at the land's height, with its name strip and Attached Mark past the land's right edge. The lands row gives that land the room of the strip (`EncounterLayout.row()` and `row_face_height()` take how many attachments each land has) and shrinks its faces sooner, as it does for more lands. This holds whoever controls the land, so an Aura the Hero puts on the Villain's land lies in the Villain's row. No prototype was needed: the user chose to reuse this look.
+
+Left for when it is wanted: an attachment on another player's creature, which no card can make yet, is drawn among its own controller's other permanents.

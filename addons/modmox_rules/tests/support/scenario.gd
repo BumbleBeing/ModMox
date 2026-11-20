@@ -1430,6 +1430,24 @@ static func free_prison(card_name: String) -> MmCardDefinition:
 	])
 
 
+## "Exile [param selection] until this permanent leaves the battlefield" (CR 610.3).
+static func exile_until(selection: MmSelection) -> ExileEffect:
+	var effect: ExileEffect = exile(selection)
+	effect.until_source_leaves = true
+	return effect
+
+
+## An enchantment costing {0} with Leyline Binding's trigger: "When this enchantment enters,
+## exile target nonland permanent an opponent controls until this enchantment leaves the
+## battlefield." With [param aimed] the target is that instead.
+static func free_binding(card_name: String, aimed: TargetRequirement = null) -> MmCardDefinition:
+	var theirs: ControlledByFilter = ControlledByFilter.new()
+	theirs.whose = MmTrigger.Whose.OPPONENT
+	var requirement: TargetRequirement = aimed if aimed != null else \
+		target(all_of([is_not(IsPlayerFilter.new()), is_not(of_type(MmCardTypes.CardType.LAND)), theirs]))
+	return enchantment(card_name, [triggered(enters(IsSourceFilter.new()), [exile_until(targeted(0))], [requirement])])
+
+
 ## An instant costing {0}: "Destroy target enchantment."
 static func free_disenchant(card_name: String) -> MmCardDefinition:
 	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.ENCHANTMENT))],
@@ -1737,6 +1755,21 @@ static func affinity(filter: MmFilter) -> AffinityAbility:
 	return ability
 
 
+## "This spell costs {1} less to cast for each [param amount]" (CR 601.2f).
+static func cost_reduction(amount: MmValue) -> CostReductionAbility:
+	var ability: CostReductionAbility = CostReductionAbility.new()
+	ability.amount = amount
+	return ability
+
+
+## An instant costing [param cost]: "This spell costs {1} less to cast for each basic land
+## type among lands you control. You gain 1 life.", as Leyline Binding's reduction reads.
+static func domain_reduced_instant(card_name: String, cost: MmManaCost) -> MmCardDefinition:
+	var definition: MmCardDefinition = instant(card_name, cost, [], [gain_life(1, you())])
+	definition.abilities.push_front(cost_reduction(domain()))
+	return definition
+
+
 ## A 1/1 Cat creature costing {0}: "{T}: Add {W}", so it can pay for what it makes cheaper.
 static func mouser(card_name: String = "Mouser") -> MmCardDefinition:
 	var definition: MmCardDefinition = creature(card_name, 1, 1, [tap_for_mana(MmMana.Type.WHITE, 1)])
@@ -1820,6 +1853,15 @@ static func power(amount: int, comparison: PowerFilter.Comparison = PowerFilter.
 static func toughness(amount: int, comparison: ToughnessFilter.Comparison = ToughnessFilter.Comparison.OR_LESS) -> ToughnessFilter:
 	var filter: ToughnessFilter = ToughnessFilter.new()
 	filter.amount = amount
+	filter.comparison = comparison
+	return filter
+
+
+## "With toughness X or less", or "or greater", X being [param value] as the Filter is
+## asked, such as Domain. "Less than X" is not "X or greater": is_not() around it.
+static func toughness_from(value: MmValue, comparison: ToughnessFilter.Comparison = ToughnessFilter.Comparison.OR_LESS) -> ToughnessFilter:
+	var filter: ToughnessFilter = ToughnessFilter.new()
+	filter.amount_value = value
 	filter.comparison = comparison
 	return filter
 
@@ -2194,3 +2236,143 @@ static func pass_to_pay_or_not(engine: MmEngine) -> String:
 	return autoplay(engine, func(running: MmEngine) -> bool:
 		var asked: ChooseYesOrNoDecision = running.pending_decision() as ChooseYesOrNoDecision
 		return asked != null and asked.cost != null)
+
+
+# --- Card track: Domain ----------------------------------------------------------------
+
+
+## Domain (CR 207.2c): "the number of basic land types among lands you control".
+static func domain() -> BasicLandTypeCountValue:
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var value: BasicLandTypeCountValue = BasicLandTypeCountValue.new()
+	value.selection = each(all_of([of_type(MmCardTypes.CardType.LAND), mine]))
+	return value
+
+
+## A nonbasic land with two basic land types, such as a Plains Island, named after them.
+## Its mana abilities come from its subtypes (CR 305.6), and it enters untapped.
+static func dual_land(first_type: String, second_type: String) -> MmCardDefinition:
+	var definition: MmCardDefinition = vanilla("%s %s" % [first_type, second_type])
+	definition.card_types = [MmCardTypes.CardType.LAND]
+	definition.subtypes = [first_type, second_type]
+	return definition
+
+
+## A sorcery costing {0}: "Search your library for up to [param amount] land cards and put
+## them onto the battlefield, then shuffle", to put chosen lands under the Hero's control.
+static func free_land_fetch(card_name: String = "Land Fetch", amount: int = 6) -> MmCardDefinition:
+	return free_seek(card_name, search(of_type(MmCardTypes.CardType.LAND), amount, MmZone.Kind.BATTLEFIELD))
+
+
+## Casts [param card_name] (a free_land_fetch()) from the Hero's hand and finds a land card
+## named each of [param land_names], in order, then lets the stack resolve. Returns the
+## first rejection reason, or "".
+static func fetch_lands(engine: MmEngine, land_names: Array[String], card_name: String = "Land Fetch") -> String:
+	var error: String = cast_to_search(engine, card_name)
+	if error != "":
+		return error
+	var search: ChooseCardsInLibraryDecision = engine.pending_decision() as ChooseCardsInLibraryDecision
+	var found: Array[int] = []
+	for land_name: String in land_names:
+		for id: int in search.candidate_ids:
+			if not found.has(id) and engine.game_state().characteristics_of(engine.game_state().object(id)).name == land_name:
+				found.append(id)
+				break
+	if found.size() != land_names.size():
+		return "Not every land is in the library."
+	error = engine.submit(found)
+	return error if error != "" else resolve_stack(engine)
+
+
+# --- Card track: entering tapped --------------------------------------------------------
+
+
+## A nonbasic land with two basic land types and "This land enters tapped." (CR 614.1c),
+## such as Haunted Mire, named "Tapped [first] [second]".
+static func tapped_dual_land(first_type: String, second_type: String) -> MmCardDefinition:
+	var definition: MmCardDefinition = dual_land(first_type, second_type)
+	definition.name = "Tapped %s %s" % [first_type, second_type]
+	definition.abilities = [EntersTappedAbility.new()]
+	return definition
+
+
+# --- Card track: activated ability cost reduction ---------------------------------------
+
+
+## Jodah's Codex as an artifact costing {0}: "[param mana], {T}: Draw a card. This ability
+## costs {1} less to activate for each basic land type among lands you control." ({5}
+## unless another cost is given). With [param is_reduced] false it has no reduction.
+static func codex(mana: MmManaCost = null, is_reduced: bool = true) -> MmCardDefinition:
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.mana_cost = mana if mana != null else mana_cost(5)
+	ability.costs = [TapCost.new()]
+	ability.effects = [draw_cards(1, you())]
+	if is_reduced:
+		ability.generic_reduction = domain()
+	return artifact("Codex", [ability])
+
+
+# --- Card track: Auras ------------------------------------------------------------------
+
+
+## "Enchant [param filter]" (CR 303.4a, 702.5): "Enchant land" unless another Filter is given.
+static func enchant(filter: MmFilter = null) -> EnchantAbility:
+	var ability: EnchantAbility = EnchantAbility.new()
+	ability.filter = filter if filter != null else of_type(MmCardTypes.CardType.LAND)
+	return ability
+
+
+## An Aura costing {0}: "Enchant [param filter]" ("Enchant land" unless another Filter is
+## given), then [param abilities].
+static func aura(card_name: String = "Aura", filter: MmFilter = null, abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [enchant(filter)]
+	all.append_array(abilities)
+	var definition: MmCardDefinition = enchantment(card_name, all)
+	definition.subtypes = ["Aura"]
+	return definition
+
+
+## Layer 4: "[affected] is every basic land type in addition to its other types", as Nylea's
+## Presence says of enchanted land: the five basic land types, in the order of
+## MmCardTypes.BASIC_LAND_TYPES. A land gains each one's mana ability (CR 305.7).
+static func every_basic_land_type(affected: MmSelection) -> AddSubtypesContinuousEffect:
+	var subtypes: Array[String] = []
+	subtypes.assign(MmCardTypes.BASIC_LAND_TYPES.keys())
+	return add_subtypes(subtypes, affected)
+
+
+## An instant costing {0}: "Return target land to its owner's hand."
+static func free_uproot(card_name: String = "Uproot") -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.LAND))], [return_to_hand(targeted(0))])
+
+
+# --- Card track: becoming tapped --------------------------------------------------------
+
+
+## "Whenever [filter] [whose] becomes tapped" (CR 603.2): "this permanent" unless another
+## Filter is given.
+static func becomes_tapped(filter: MmFilter = null, whose: MmTrigger.Whose = MmTrigger.Whose.ANY) -> BecomesTappedTrigger:
+	var trigger: BecomesTappedTrigger = BecomesTappedTrigger.new()
+	trigger.filter = filter if filter != null else IsSourceFilter.new()
+	trigger.whose = whose
+	return trigger
+
+
+## A 2/2 costing {0}: "Whenever this creature becomes tapped, you gain 1 life", then
+## [param abilities].
+static func tap_watcher(card_name: String = "Watcher", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [triggered(becomes_tapped(), [gain_life(1, you())])]
+	all.append_array(abilities)
+	return creature(card_name, 2, 2, all)
+
+
+## Zar Ojanen's ability on a 4/4 costing {0}: "Whenever this creature becomes tapped, put a
+## +1/+1 counter on each creature you control with toughness less than the number of basic
+## land types among lands you control."
+static func scion(card_name: String = "Scion") -> MmCardDefinition:
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var less_than_domain: NotFilter = is_not(toughness_from(domain(), ToughnessFilter.Comparison.OR_GREATER))
+	var recipients: EachSelection = each(all_of([of_type(MmCardTypes.CardType.CREATURE), mine, less_than_domain]))
+	return creature(card_name, 4, 4, [triggered(becomes_tapped(), [put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, recipients)])])

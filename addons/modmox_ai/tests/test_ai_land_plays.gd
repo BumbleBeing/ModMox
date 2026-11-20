@@ -101,6 +101,43 @@ func test_normal_casts_explore_and_plays_the_additional_land() -> void:
 	assert_eq(_lands_of(engine, engine.hero().id), 3, "A land on Game Turns 1 and 3, and the additional one.")
 
 
+func test_an_untapped_land_is_played_over_one_that_enters_tapped_when_its_mana_casts_a_spell() -> void:
+	# The Forest in the tapped land is needed most ({3}{G}{G}), but only the Swamp's mana
+	# casts something this turn.
+	var engine: MmEngine = _with_lands_in_hand(Scenario.tapped_dual_land("Swamp", "Forest"),
+		[Scenario.creature("Rat", 1, 1, [], Scenario.mana_cost(0, [MmMana.Type.BLACK])),
+		Scenario.creature("Wurm", 6, 6, [], Scenario.mana_cost(3, [MmMana.Type.GREEN, MmMana.Type.GREEN]))])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
+
+	assert_eq(_land_name(engine, AiScenario.ask(engine, agent)), "Swamp")
+
+
+func test_a_land_that_enters_tapped_is_played_first_when_no_mana_would_be_spent() -> void:
+	# The Swamp makes the color the hand needs, but nothing could be cast with it this turn.
+	var engine: MmEngine = _with_lands_in_hand(Scenario.tapped_dual_land("Plains", "Island"),
+		[Scenario.creature("Horror", 4, 4, [], Scenario.mana_cost(3, [MmMana.Type.BLACK]))])
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.CHEAP)
+
+	assert_eq(_land_name(engine, AiScenario.ask(engine, agent)), "Tapped Plains Island")
+
+
+## The Hero in their precombat main phase on Game Turn 3 with no lands yet, holding
+## [param tapped_land], a Swamp and [param spells].
+func _with_lands_in_hand(tapped_land: MmCardDefinition, spells: Array[MmCardDefinition]) -> MmEngine:
+	var hand: Array[MmCardDefinition] = [tapped_land, Scenario.basic_land("Swamp")]
+	hand.append_array(spells)
+	var no_creatures: Array[MmCardDefinition] = []
+	return AiScenario.ready_with(no_creatures, no_creatures, hand)
+
+
+## The name of the land a priority answer plays, or "".
+func _land_name(engine: MmEngine, answer: int) -> String:
+	var play: PlayLandAction = AiScenario.action_at(engine, answer) as PlayLandAction
+	return "" if play == null else engine.game_state().characteristics_of(engine.game_state().object(play.object_id)).name
+
+
 ## The Hero in their precombat main phase on Game Turn 3 at [param life], holding a
 ## Mountain and [param extras], with "Sample Hex: Ankh's Curse", the sample Emblem with
 ## Ankh of Mishra's abilities, against a Villain with [param villain_creatures].

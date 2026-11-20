@@ -205,6 +205,75 @@ func test_a_filter_in_layer_six_sees_a_subtype_added_in_layer_four() -> void:
 	assert_eq(Scenario.pt(engine, squire), [2, 2], "The Captain's Knights get +1/+1 in layer 7c.")
 
 
+func test_a_land_that_gains_every_basic_land_type_gains_their_mana_abilities() -> void:
+	# CR 305.7: the mana abilities come with the types, not only with printed ones.
+	var dawn: MmCardDefinition = Scenario.instant("Dawn", Scenario.mana_cost(0, [MmMana.Type.WHITE]), [],
+		[Scenario.gain_life(1, Scenario.you())])
+	var forest_card: MmCardDefinition = Scenario.basic_land("Forest")
+	var engine: MmEngine = _land_main(forest_card, [_presence(), dawn])
+	var forest: int = _fetch(engine, "Forest")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Presence", [_object(forest)]), "")
+
+	assert_eq(Scenario.now(engine, forest).subtypes, ["Forest", "Plains", "Island", "Swamp", "Mountain"] as Array[String],
+		"In addition to its other types.")
+	assert_eq(_mana_made(engine, forest), [MmMana.Type.GREEN, MmMana.Type.WHITE, MmMana.Type.BLUE, MmMana.Type.BLACK,
+		MmMana.Type.RED] as Array[MmMana.Type])
+	var life: int = engine.hero().life
+	assert_eq(Scenario.cast_and_resolve(engine, "Dawn"), "", "The Forest taps for {W}.")
+	assert_eq(engine.hero().life, life + 1)
+	assert_true(engine.game_state().object(forest).is_tapped)
+	assert_eq(MmCharacteristics.printed(forest_card).abilities.size(), 1, "The definition is untouched.")
+
+
+func test_a_land_keeps_its_own_mana_abilities_and_gains_only_the_types_it_lacked() -> void:
+	var ruins: MmCardDefinition = Scenario.mana_land("Ruins", MmMana.Type.COLORLESS, 1)
+	ruins.subtypes = ["Plains", "Island"]
+	var engine: MmEngine = _land_main(ruins, [_presence()])
+	var land: int = _fetch(engine, "Ruins")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Presence", [_object(land)]), "")
+
+	assert_eq(_mana_made(engine, land), [MmMana.Type.COLORLESS, MmMana.Type.WHITE, MmMana.Type.BLUE,
+		MmMana.Type.BLACK, MmMana.Type.RED, MmMana.Type.GREEN] as Array[MmMana.Type],
+		"Its written ability keeps its index, and no type's ability comes twice.")
+
+
+func test_a_land_loses_the_gained_mana_abilities_when_its_types_go() -> void:
+	var engine: MmEngine = _land_main(Scenario.basic_land("Forest"), [_presence(), Scenario.free_disenchant("Disenchant")])
+	var forest: int = _fetch(engine, "Forest")
+	assert_eq(Scenario.cast_and_resolve(engine, "Presence", [_object(forest)]), "")
+	var presence: int = Scenario.permanent_named(engine, engine.hero().id, "Presence")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Disenchant", [_object(presence)]), "")
+
+	assert_eq(Scenario.now(engine, forest).subtypes, ["Forest"] as Array[String])
+	assert_eq(_mana_made(engine, forest), [MmMana.Type.GREEN] as Array[MmMana.Type])
+
+
+func test_losing_all_abilities_in_layer_six_takes_the_gained_mana_abilities_too() -> void:
+	# CR 613.1d before 613.1f: the abilities come in layer 4, so layer 6 removes them.
+	var hush: MmCardDefinition = Scenario.instant("Hush", Scenario.mana_cost(0), [Scenario.target(Scenario.of_type(CardType.LAND))],
+		[Scenario.until_end_of_turn(Scenario.lose_all_abilities(Scenario.targeted(0)))])
+	var engine: MmEngine = _land_main(Scenario.basic_land("Forest"), [_presence(), hush])
+	var forest: int = _fetch(engine, "Forest")
+	assert_eq(Scenario.cast_and_resolve(engine, "Presence", [_object(forest)]), "")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Hush", [_object(forest)]), "")
+
+	assert_eq(_mana_made(engine, forest), [] as Array[MmMana.Type])
+	assert_eq(Scenario.now(engine, forest).subtypes.size(), 5, "It keeps its types.")
+
+
+func test_domain_counts_the_types_a_land_gained() -> void:
+	var engine: MmEngine = _land_main(Scenario.basic_land("Forest"), [_presence()])
+	var forest: int = _fetch(engine, "Forest")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Presence", [_object(forest)]), "")
+
+	assert_eq(Scenario.domain().evaluate(engine.game_state(), MmEffectContext.new(engine.hero().id, forest)), 5)
+
+
 func test_a_characteristic_defining_ability_works_everywhere_and_prints_as_a_star() -> void:
 	var wall: MmCardDefinition = Scenario.creature("Wall", 0, 4)
 	wall.subtypes = ["Wall"]
@@ -219,6 +288,43 @@ func test_a_characteristic_defining_ability_works_everywhere_and_prints_as_a_sta
 	assert_true(printed.is_power_variable)
 	assert_true(printed.is_toughness_variable)
 	assert_false(MmCharacteristics.printed(_bear()).is_power_variable)
+
+
+func test_a_power_defining_ability_keeps_the_printed_toughness() -> void:
+	# CR 604.3: a */3 defines its power alone, in every zone.
+	var engine: MmEngine = _hero_main([_strider(), _bear()], [_bear()], [_strider()])
+	var strider: int = Scenario.permanent_named(engine, engine.hero().id, "Strider")
+	var in_hand: MmGameObject = engine.game_state().object(Scenario.card_in_hand(engine, engine.hero(), "Strider"))
+
+	assert_eq(Scenario.pt(engine, strider), [2, 3], "Itself and the Bear; the toughness is printed.")
+	var from_hand: MmCharacteristics = engine.game_state().characteristics_of(in_hand)
+	assert_eq([from_hand.power, from_hand.toughness], [2, 3])
+	var printed: MmCharacteristics = MmCharacteristics.printed(_strider())
+	assert_true(printed.is_power_variable, "It prints */3.")
+	assert_false(printed.is_toughness_variable)
+
+
+func test_a_toughness_defining_ability_keeps_the_printed_power() -> void:
+	var engine: MmEngine = _hero_main([_sprawler(), _bear()], [], [])
+	var sprawler: int = Scenario.permanent_named(engine, engine.hero().id, "Sprawler")
+
+	assert_eq(Scenario.pt(engine, sprawler), [1, 2])
+	var printed: MmCharacteristics = MmCharacteristics.printed(_sprawler())
+	assert_false(printed.is_power_variable, "It prints 1/*.")
+	assert_true(printed.is_toughness_variable)
+
+
+func test_a_power_defining_ability_is_modified_and_set_by_later_layers() -> void:
+	var engine: MmEngine = _hero_main([_strider()], [], [Scenario.pump_spell("Pump", 2, 2),
+			Scenario.creature_spell_until_end_of_turn("Shrink", Scenario.set_pt(1, 1, Scenario.targeted(0)))])
+	var strider: int = Scenario.permanent_named(engine, engine.hero().id, "Strider")
+	assert_eq(Scenario.pt(engine, strider), [1, 3])
+
+	Scenario.cast_and_resolve(engine, "Pump", [_object(strider)])
+	assert_eq(Scenario.pt(engine, strider), [3, 5], "Layer 7c on top of 7a and the printed toughness.")
+
+	Scenario.cast_and_resolve(engine, "Shrink", [_object(strider)])
+	assert_eq(Scenario.pt(engine, strider), [3, 3], "Layer 7b sets both, then 7c adds +2/+2.")
 
 
 func test_last_known_information_keeps_the_pumped_power() -> void:
@@ -306,6 +412,67 @@ func _warlord() -> MmCardDefinition:
 	defining.power = count
 	defining.toughness = count
 	return Scenario.creature("Warlord", 0, 0, [defining])
+
+
+## */3: "This creature's power is equal to the number of creatures you control."
+func _strider() -> MmCardDefinition:
+	var defining: CharacteristicDefiningAbility = CharacteristicDefiningAbility.new()
+	defining.power = _creatures_you_control()
+	return Scenario.creature("Strider", 0, 3, [defining])
+
+
+## 1/*: "This creature's toughness is equal to the number of creatures you control."
+func _sprawler() -> MmCardDefinition:
+	var defining: CharacteristicDefiningAbility = CharacteristicDefiningAbility.new()
+	defining.toughness = _creatures_you_control()
+	return Scenario.creature("Sprawler", 1, 0, [defining])
+
+
+## Nylea's Presence as an Aura costing {0}, without its draw: "Enchant land. Enchanted land
+## is every basic land type in addition to its other types."
+func _presence() -> MmCardDefinition:
+	return Scenario.aura("Presence", null, [Scenario.continuous_static([Scenario.every_basic_land_type(Scenario.attached())])])
+
+
+## The types of mana the mana abilities of [param object_id] add, in ability order.
+func _mana_made(engine: MmEngine, object_id: int) -> Array[MmMana.Type]:
+	var made: Array[MmMana.Type] = []
+	for ability: MmAbility in Scenario.now(engine, object_id).abilities:
+		var activated: ActivatedAbility = ability as ActivatedAbility
+		if activated == null:
+			continue
+		for effect: MmEffect in activated.effects:
+			if effect is AddManaEffect:
+				made.append((effect as AddManaEffect).mana_type)
+	return made
+
+
+## Puts the land card named [param land_name] from the Hero's library onto the battlefield.
+func _fetch(engine: MmEngine, land_name: String) -> int:
+	assert_eq(Scenario.fetch_lands(engine, [land_name]), "")
+	return Scenario.permanent_named(engine, engine.hero().id, land_name)
+
+
+## Stops in the Hero's precombat main phase of Game Turn 3 with a Land Fetch and
+## [param hero_extras] in hand, and [param land] in the Hero's library for the fetch.
+func _land_main(land: MmCardDefinition, hero_extras: Array[MmCardDefinition]) -> MmEngine:
+	var in_hand: Array[MmCardDefinition] = [Scenario.free_land_fetch()]
+	in_hand.append_array(hero_extras)
+	var no_cards: Array[MmCardDefinition] = []
+	var deck: Array[MmCardDefinition] = in_hand.duplicate()
+	deck.append(land)
+	var setup: MmEncounterSetup = Scenario.combat_setup(no_cards, no_cards, deck)
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, no_cards, no_cards, in_hand, no_cards, 3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hands.")
+	return engine
+
+
+func _creatures_you_control() -> CountValue:
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var count: CountValue = CountValue.new()
+	count.selection = Scenario.each_creature(mine)
+	return count
 
 
 func _hero_main(hero_permanents: Array[MmCardDefinition], villain_permanents: Array[MmCardDefinition],

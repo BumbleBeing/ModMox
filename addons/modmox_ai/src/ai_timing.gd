@@ -20,10 +20,13 @@ enum Tag {
 	## Counters a spell or an ability: considered only with the other player's spell or ability on top
 	## of the stack, never to counter its own.
 	COUNTER,
-	## Only draws cards or searches for them into its owner's hand, from an ability used from
-	## the hand, such as cycling or basic landcycling (ADR 0059): worth the mana left over,
-	## so considered only in the other player's end step, when that mana would go unused,
-	## and in response to the other player's spell or ability.
+	## Only draws cards or searches for them into its owner's hand, from an activated ability
+	## not restricted to sorcery timing, such as cycling, basic landcycling (ADR 0059) or
+	## Jodah's Codex's "{5}, {T}: Draw a card": worth the mana left over, so considered only
+	## in the other player's end step, when that mana would go unused, and in response to the
+	## other player's spell or ability. An ability whose cost exerts its creature (CR 701.43),
+	## such as Pride Sovereign's, and which is otherwise NONE, is considered then too: its
+	## creature was free to block first, and it skips the same untap step either way.
 	SPARE_MANA,
 }
 
@@ -106,15 +109,56 @@ static func tag_of_action(state: MmGameState, action: MmAction) -> Tag:
 	var spell: SpellAbility = modal_spell_of_action(state, action)
 	if spell != null:
 		return tag_of_spell(spell)
+	var flashed: Tag = _tag_of_flash_permanent(state, action)
+	if flashed != Tag.NONE:
+		return flashed
 	var effects: Array[MmEffect] = effects_of_action(state, action)
 	var activated: ActivatedAbility = activated_ability_of(state, action)
-	if activated != null and activated.is_activated_from_hand and _only_draws_or_searches_into_the_hand(effects):
+	if activated != null and not activated.is_sorcery_speed and _only_draws_or_searches_into_the_hand(effects):
 		return Tag.SPARE_MANA
 	if activated is EquipAbility and not _at_sorcery_timing(state, state.object((action as ActivateAbilityAction).object_id).controller_id):
 		# Equip offered at instant speed (InstantSpeedEquipAbility) is worth it in a fight:
 		# moved after blockers are declared, or onto a creature a spell would kill.
 		return Tag.COMBAT_TRICK
-	return tag_of_effects(effects)
+	var tag: Tag = tag_of_effects(effects)
+	if tag == Tag.NONE and activated != null and not activated.is_sorcery_speed and _exerts(activated):
+		return Tag.SPARE_MANA
+	return tag
+
+
+## For casting a permanent spell with flash: the tag of its own "enters" triggered
+## abilities when that is removal or a trick, as Leyline Binding's exile is, so it is held
+## for the moments those are; otherwise NONE, and it is cast as any permanent is (ADR 0065).
+static func _tag_of_flash_permanent(state: MmGameState, action: MmAction) -> Tag:
+	var cast: CastSpellAction = action as CastSpellAction
+	if cast == null:
+		return Tag.NONE
+	var characteristics: MmCharacteristics = state.characteristics_of(state.object(cast.object_id))
+	if not characteristics.is_permanent() or not characteristics.has_ability(FlashAbility):
+		return Tag.NONE
+	var effects: Array[MmEffect] = []
+	for ability: MmAbility in characteristics.abilities:
+		var triggered: TriggeredAbility = ability as TriggeredAbility
+		if triggered != null and _is_own_enters(triggered.trigger):
+			effects.append_array(triggered.effects)
+	var tag: Tag = tag_of_effects(effects)
+	return tag if tag == Tag.REMOVAL or is_trick(tag) else Tag.NONE
+
+
+## Whether [param trigger] is "when this enters": the source itself arriving on the
+## battlefield.
+static func _is_own_enters(trigger: MmTrigger) -> bool:
+	var zone_change: ZoneChangeTrigger = trigger as ZoneChangeTrigger
+	return zone_change != null and not zone_change.any_to_zone and zone_change.to_zone == MmZone.Kind.BATTLEFIELD \
+		and zone_change.filter is IsSourceFilter
+
+
+## Whether paying for [param ability] exerts its source (CR 701.43).
+static func _exerts(ability: ActivatedAbility) -> bool:
+	for cost: MmCost in ability.costs:
+		if cost is ExertCost:
+			return true
+	return false
 
 
 ## Whether [param player_id] has sorcery timing (CR 307.1): their own main phase, with an

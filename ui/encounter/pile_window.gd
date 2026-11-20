@@ -42,10 +42,13 @@ var _shown: String = ""
 var _usual: Arrangement
 ## The cards being selected in a search shown here, or null when it shows no search.
 var _picks: CardPicks = null
+## Whether it is a graveyard's, whose cards show their flashback chips.
+var _is_graveyard: bool
 
 
-func _init(arrangement: Arrangement, tint: Color) -> void:
+func _init(arrangement: Arrangement, tint: Color, is_graveyard: bool = false) -> void:
 	super("", true, tint)
+	_is_graveyard = is_graveyard
 	_arrangement = arrangement
 	_usual = arrangement
 	size = OPENING_SIZE
@@ -187,6 +190,8 @@ func _holder(seen: MmObjectView, snapshot: EncounterSnapshot, clicks: DecisionCl
 		return holder
 	var face: CardFace = CardFace.new()
 	face.setup(snapshot.look_of(seen.id), CARD_HEIGHT)
+	if _is_graveyard:
+		face.show_graveyard_chips()
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holder.add_child(face)
 	_faces[seen.id] = face

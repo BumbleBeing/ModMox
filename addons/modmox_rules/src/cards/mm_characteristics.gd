@@ -55,15 +55,25 @@ static func printed(definition: MmCardDefinition) -> MmCharacteristics:
 	result.toughness = result.base_toughness
 	result.abilities = definition.abilities.duplicate()
 	for ability: MmAbility in result.abilities:
-		if ability is CharacteristicDefiningAbility:
-			result.is_power_variable = true
-			result.is_toughness_variable = true
-	# CR 305.6: each basic land type grants "{T}: Add [its mana]", in subtype order.
-	if result.has_card_type(MmCardTypes.CardType.LAND):
-		for subtype: String in result.subtypes:
-			if MmCardTypes.BASIC_LAND_TYPES.has(subtype):
-				result.abilities.append(_basic_land_ability(subtype))
+		var defining: CharacteristicDefiningAbility = ability as CharacteristicDefiningAbility
+		if defining != null:
+			result.is_power_variable = result.is_power_variable or defining.power != null
+			result.is_toughness_variable = result.is_toughness_variable or defining.toughness != null
+	result.add_basic_land_abilities()
 	return result
+
+
+## CR 305.6, 305.7: a land has "{T}: Add [its mana]" for each basic land type it has, in
+## subtype order, after its other abilities. One it already has is not added again, so the
+## layer engine calls this again after layer 4 for the types an effect added.
+func add_basic_land_abilities() -> void:
+	if not has_card_type(MmCardTypes.CardType.LAND):
+		return
+	for subtype: String in subtypes:
+		if MmCardTypes.BASIC_LAND_TYPES.has(subtype):
+			var ability: ActivatedAbility = _basic_land_ability(subtype)
+			if not abilities.has(ability):
+				abilities.append(ability)
 
 
 func has_card_type(card_type: MmCardTypes.CardType) -> bool:

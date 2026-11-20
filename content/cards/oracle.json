@@ -37,6 +37,15 @@
 		"toughness": "2",
 		"type_line": "Legendary Creature — Cat Avatar"
 	},
+	"artillery_blast": {
+		"mana_cost": "{1}{W}",
+		"name": "Artillery Blast",
+		"oracle_id": "dad0b69f-ef33-475b-aebc-3a3ca880feb1",
+		"oracle_text": "Domain — Artillery Blast deals X damage to target tapped creature, where X is 1 plus the number of basic land types among lands you control.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Instant"
+	},
 	"assemble_the_players": {
 		"mana_cost": "{1}{W}",
 		"name": "Assemble the Players",
@@ -249,6 +258,15 @@
 		"toughness": "1",
 		"type_line": "Creature — Shade"
 	},
+	"gaeas_might": {
+		"mana_cost": "{G}",
+		"name": "Gaea's Might",
+		"oracle_id": "73b26f12-78eb-4d01-9dd6-ee643c7a80a8",
+		"oracle_text": "Domain — Target creature gets +1/+1 until end of turn for each basic land type among lands you control.",
+		"rarity": "common",
+		"set_name": "Planeshift",
+		"type_line": "Instant"
+	},
 	"giant_growth": {
 		"mana_cost": "{G}",
 		"name": "Giant Growth",
@@ -329,6 +347,15 @@
 		"set_name": "Secrets of Strixhaven",
 		"type_line": "Sorcery"
 	},
+	"haunted_mire": {
+		"mana_cost": "",
+		"name": "Haunted Mire",
+		"oracle_id": "b0b58a03-462c-4964-97c7-42bc777ec23e",
+		"oracle_text": "({T}: Add {B} or {G}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Swamp Forest"
+	},
 	"helpful_hunter": {
 		"mana_cost": "{1}{W}",
 		"name": "Helpful Hunter",
@@ -391,6 +418,15 @@
 		"toughness": "3",
 		"type_line": "Creature — Minotaur"
 	},
+	"idyllic_beachfront": {
+		"mana_cost": "",
+		"name": "Idyllic Beachfront",
+		"oracle_id": "0aea7e5d-40d7-46c7-a8a6-479cb8061e49",
+		"oracle_text": "({T}: Add {W} or {U}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Plains Island"
+	},
 	"instill_infection": {
 		"mana_cost": "{3}{B}",
 		"name": "Instill Infection",
@@ -439,6 +475,15 @@
 		"rarity": "uncommon",
 		"set_name": "Antiquities",
 		"type_line": "Artifact"
+	},
+	"jodahs_codex": {
+		"mana_cost": "{5}",
+		"name": "Jodah's Codex",
+		"oracle_id": "1ba5b108-59cb-4af1-88cb-d3ceaaf00784",
+		"oracle_text": "Domain — {5}, {T}: Draw a card. This ability costs {1} less to activate for each basic land type among lands you control.",
+		"rarity": "uncommon",
+		"set_name": "Dominaria United",
+		"type_line": "Artifact — Book"
 	},
 	"keldon_warlord": {
 		"mana_cost": "{2}{R}{R}",
@@ -505,6 +550,15 @@
 		"set_name": "Theros",
 		"toughness": "1",
 		"type_line": "Creature — Cat Soldier"
+	},
+	"leyline_binding": {
+		"mana_cost": "{5}{W}",
+		"name": "Leyline Binding",
+		"oracle_id": "b49642f6-20bd-468d-9dac-e578f9ac3091",
+		"oracle_text": "Flash\nDomain — This spell costs {1} less to cast for each basic land type among lands you control.\nWhen this enchantment enters, exile target nonland permanent an opponent controls until this enchantment leaves the battlefield.",
+		"rarity": "rare",
+		"set_name": "Dominaria United",
+		"type_line": "Enchantment"
 	},
 	"lightning_bolt": {
 		"mana_cost": "{R}",
@@ -577,6 +631,26 @@
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Mountain"
 	},
+	"nishoba_brawler": {
+		"mana_cost": "{1}{G}",
+		"name": "Nishoba Brawler",
+		"oracle_id": "c501e577-5137-4dd6-b923-95408b78258a",
+		"oracle_text": "Trample\nDomain — Nishoba Brawler's power is equal to the number of basic land types among lands you control.",
+		"power": "*",
+		"rarity": "uncommon",
+		"set_name": "Dominaria United",
+		"toughness": "3",
+		"type_line": "Creature — Cat Warrior"
+	},
+	"nyleas_presence": {
+		"mana_cost": "{1}{G}",
+		"name": "Nylea's Presence",
+		"oracle_id": "93fe5eed-520f-467a-8e27-6f40eaa727e8",
+		"oracle_text": "Enchant land\nWhen this Aura enters, draw a card.\nEnchanted land is every basic land type in addition to its other types.",
+		"rarity": "common",
+		"set_name": "Theros",
+		"type_line": "Enchantment — Aura"
+	},
 	"oblivion_ring": {
 		"mana_cost": "{2}{W}",
 		"name": "Oblivion Ring",
@@ -634,6 +708,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Plains"
+	},
+	"pride_sovereign": {
+		"mana_cost": "{2}{G}",
+		"name": "Pride Sovereign",
+		"oracle_id": "a131c32d-2b4f-4ee4-aab2-ab05ab010978",
+		"oracle_text": "This creature gets +1/+1 for each other Cat you control.\n{W}, {T}, Exert this creature: Create two 1/1 white Cat creature tokens with lifelink. (An exerted creature won't untap during your next untap step.)",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Hour of Devastation",
+		"toughness": "2",
+		"type_line": "Creature — Cat"
 	},
 	"prideful_parent": {
 		"mana_cost": "{2}{W}",
@@ -694,6 +779,15 @@
 		"rarity": "uncommon",
 		"set_name": "Phyrexia: All Will Be One",
 		"type_line": "Instant"
+	},
+	"sacred_peaks": {
+		"mana_cost": "",
+		"name": "Sacred Peaks",
+		"oracle_id": "fb69bc57-f05a-41c2-9b7b-9a9761ef0cd3",
+		"oracle_text": "({T}: Add {R} or {W}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Mountain Plains"
 	},
 	"samite_healer": {
 		"mana_cost": "{1}{W}",
@@ -841,6 +935,15 @@
 		"set_name": "Scourge",
 		"type_line": "Instant"
 	},
+	"sunlit_marsh": {
+		"mana_cost": "",
+		"name": "Sunlit Marsh",
+		"oracle_id": "a5e5a259-5fa7-4b01-93cb-a2b4aaf80927",
+		"oracle_text": "({T}: Add {W} or {B}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Plains Swamp"
+	},
 	"sunspear_shikari": {
 		"mana_cost": "{1}{W}",
 		"name": "Sunspear Shikari",
@@ -871,6 +974,15 @@
 		"set_name": "Mirrodin",
 		"toughness": "3",
 		"type_line": "Creature — Cat Soldier"
+	},
+	"tangled_islet": {
+		"mana_cost": "",
+		"name": "Tangled Islet",
+		"oracle_id": "4b1f68a2-b606-4c64-bd44-a9714808316d",
+		"oracle_text": "({T}: Add {G} or {U}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Forest Island"
 	},
 	"territorial_scythecat": {
 		"mana_cost": "{2}{G}",
@@ -913,6 +1025,15 @@
 		"set_name": "Murders at Karlov Manor",
 		"toughness": "5",
 		"type_line": "Creature — Plant Cat"
+	},
+	"tromp_the_domains": {
+		"mana_cost": "{5}{G}",
+		"name": "Tromp the Domains",
+		"oracle_id": "5b5dece6-b1e0-4844-bbf9-3b44008ffa70",
+		"oracle_text": "Domain — Until end of turn, creatures you control gain trample and get +1/+1 for each basic land type among lands you control.",
+		"rarity": "uncommon",
+		"set_name": "Time Spiral",
+		"type_line": "Sorcery"
 	},
 	"uthden_troll": {
 		"mana_cost": "{2}{R}",
@@ -979,5 +1100,25 @@
 		"set_name": "Salvat 2005",
 		"toughness": "2",
 		"type_line": "Creature — Cat"
+	},
+	"wooded_ridgeline": {
+		"mana_cost": "",
+		"name": "Wooded Ridgeline",
+		"oracle_id": "c2ca3e20-23ca-4d2a-88a1-5e98ff884abb",
+		"oracle_text": "({T}: Add {R} or {G}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Mountain Forest"
+	},
+	"zar_ojanen_scion_of_efrava": {
+		"mana_cost": "{3}{G}{W}",
+		"name": "Zar Ojanen, Scion of Efrava",
+		"oracle_id": "1402c792-6e2f-4a85-8a0c-8db3c8ce5f1f",
+		"oracle_text": "Domain — Whenever Zar Ojanen becomes tapped, put a +1/+1 counter on each creature you control with toughness less than the number of basic land types among lands you control.",
+		"power": "4",
+		"rarity": "uncommon",
+		"set_name": "Dominaria United",
+		"toughness": "4",
+		"type_line": "Legendary Creature — Cat Warrior"
 	}
 }

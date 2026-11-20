@@ -29,7 +29,7 @@ const TEXTS: Dictionary[String, String] = {
 ## Chips (A222), a keyword it has twice once.
 static func of(abilities: Array[MmAbility]) -> Array[Reminder]:
 	var reminders: Array[Reminder] = []
-	for chip: KeywordChip in KeywordChips.chips_for(abilities):
+	for chip: KeywordChip in KeywordChips.chips_for(abilities, KeywordChips.Place.ANYWHERE):
 		if not TEXTS.has(chip.icon):
 			continue
 		var reminder: Reminder = Reminder.new()
@@ -43,7 +43,7 @@ static func of(abilities: Array[MmAbility]) -> Array[Reminder]:
 ## The keyword [param chip] stands for, in the card's own words.
 static func _keyword(chip: KeywordChip, abilities: Array[MmAbility]) -> String:
 	for ability: MmAbility in abilities:
-		var chips: Array[KeywordChip] = KeywordChips.chips_for([ability] as Array[MmAbility])
+		var chips: Array[KeywordChip] = KeywordChips.chips_for([ability] as Array[MmAbility], KeywordChips.Place.ANYWHERE)
 		if chips.size() == 1 and chips[0].icon == chip.icon and chips[0].has_protection_color == chip.has_protection_color \
 				and chips[0].protection_color == chip.protection_color:
 			# Its cost may hold a mana symbol, which a plain label cannot draw.

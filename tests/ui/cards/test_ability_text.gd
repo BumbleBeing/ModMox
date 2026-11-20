@@ -15,6 +15,7 @@ const PRINTED: Dictionary[String, String] = {
 	"ancestral_recall": "Target player draws three cards.",
 	"ankh_of_mishra": "Whenever a land enters, this artifact deals 2 damage to that land's controller.",
 	"arahbo_the_first_fang": "Each other Cat creature you control gets +1/+1.\nWhenever a nontoken Cat creature you control enters, create a 1/1 white Cat creature token.",
+	"artillery_blast": "Artillery Blast deals damage to target tapped creature equal to 1 plus the number of basic land types among lands you control.",
 	"assemble_the_players": "You may look at the top card of your library any time.\nOnce each turn, you may cast a creature spell with power 2 or less from the top of your library.",
 	"battlegrowth": "Put a +1/+1 counter on target creature.",
 	"black_knight": "First strike\nProtection from white",
@@ -42,32 +43,39 @@ const PRINTED: Dictionary[String, String] = {
 	"fog": "Prevent all combat damage that would be dealt this turn.",
 	"forest": "({T}: Add {G}.)",
 	"frozen_shade": "{B}: This creature gets +1/+1 until end of turn.",
+	"gaeas_might": "Target creature gets +X/+X until end of turn, where X is the number of basic land types among lands you control.",
 	"giant_growth": "Target creature gets +3/+3 until end of turn.",
 	"giant_spider": "Reach",
 	"gideons_reproach": "Gideon's Reproach deals 4 damage to target attacking or blocking creature.",
 	"gird_for_battle": "Put a +1/+1 counter on each of up to two target creatures.",
 	"goblin_balloon_brigade": "{R}: This creature gains flying until end of turn.",
 	"group_project": "Create a 2/2 white and red Spirit creature token.\nFlashback—Tap three untapped creatures you control",
+	"haunted_mire": "This land enters tapped.\n{T}: Add {B}.\n{T}: Add {G}.",
 	"helpful_hunter": "When this creature enters, draw a card.",
 	"helping_hand": "Return target creature card with mana value 3 or less from your graveyard to the battlefield tapped.",
 	"hero_of_the_pride": "Whenever you cast a spell that targets this creature, each creature you control gets +1/+0 until end of turn.",
 	"howling_mine": "At the beginning of each player's draw step, if this artifact is untapped, that player draws a card.",
+	"idyllic_beachfront": "This land enters tapped.\n{T}: Add {W}.\n{T}: Add {U}.",
 	"instill_infection": "Put a -1/-1 counter on target creature. Draw a card.",
 	"ironpaw_aspirant": "When this creature enters, put a +1/+1 counter on target creature.",
 	"island": "({T}: Add {U}.)",
 	"ivory_tower": "At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.",
+	"jodahs_codex": "{5}, {T}: Draw a card. This ability costs {1} less to activate for each basic land type among lands you control.",
 	"keldon_warlord": "This creature's power and toughness are each equal to the number of non-Wall creatures you control.",
 	"kemba_kha_enduring": "Whenever a Cat creature you control enters, attach up to one target Equipment you control to that creature.\nEach equipped creature you control gets +1/+1.\n{3}{W}{W}: Create a 2/2 white Cat creature token.",
 	"king_of_the_pride": "Each other Cat creature you control gets +2/+1.",
 	"leonin_lightbringer": "Ward {2}\nAs long as this creature is equipped, it gets +1/+1.",
 	"leonin_shikari": "You may activate equip abilities any time you could cast an instant.",
 	"leonin_snarecaster": "When this creature enters, you may tap target creature.",
+	"leyline_binding": "Flash\nThis spell costs {1} less to cast for each basic land type among lands you control.\nWhen this enchantment enters, exile target nonland permanent an opponent controls until this enchantment leaves the battlefield.",
 	"lightning_bolt": "Lightning Bolt deals 3 damage to any target.",
 	"lion_sash": "{W}: Exile target card from a graveyard. If it is a permanent card, put a +1/+1 counter on this permanent.\nEquipped creature gets +X/+X, where X is the number of +1/+1 counters on this permanent.\nReconfigure {2}",
 	"lightshield_parry": "Target creature gets +2/+2 until end of turn.\nCycling {2}",
 	"llanowar_elves": "{T}: Add {G}.",
 	"malamet_war_scribe": "When this creature enters, each creature you control gets +2/+1 until end of turn.",
 	"mountain": "({T}: Add {R}.)",
+	"nishoba_brawler": "Trample\nThis creature's power is equal to the number of basic land types among lands you control.",
+	"nyleas_presence": "Enchant land\nWhen this Aura enters, draw a card.\nEnchanted land is every basic land type in addition to its other types.",
 	"oblivion_ring": "When this enchantment enters, exile another target nonland permanent.\n"
 		+ "When this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.",
 	"ornery_kudu": "When this creature enters, put a -1/-1 counter on target creature you control.",
@@ -76,12 +84,14 @@ const PRINTED: Dictionary[String, String] = {
 		+ "Whenever one or more creatures you control attack, you gain X life, where X is the number of attacking creatures.",
 	"plains": "({T}: Add {W}.)",
 	"raise_dead": "Return target creature card from your graveyard to your hand.",
+	"pride_sovereign": "This creature gets +X/+X, where X is the number of other Cats you control.\n{W}, {T}, Exert this creature: Create two 1/1 white Cat creature tokens with lifelink.",
 	"prideful_parent": "Vigilance\nWhen this creature enters, create a 1/1 white Cat creature token.",
 	"prodigal_sorcerer": "{T}: This creature deals 1 damage to any target.",
 	"prowling_felidar": "Vigilance\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"rally_the_ranks": "As this enchantment enters, choose a creature type.\nEach creature you control of the chosen type gets +1/+1.",
 	"resistance_reunited": "Target creature gets +2/+2 until end of turn. "
 		+ "Each equipped creature you control gains indestructible until end of turn.",
+	"sacred_peaks": "This land enters tapped.\n{T}: Add {R}.\n{T}: Add {W}.",
 	"samite_healer": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
 	"scythe_leopard": "Whenever a land you control enters, this creature gets +1/+1 until end of turn.",
 	"scythecat_cub": "Trample\nWhenever a land you control enters, put a +1/+1 counter on target creature you control. "
@@ -95,18 +105,23 @@ const PRINTED: Dictionary[String, String] = {
 	"slash_of_light": "Slash of Light deals damage to target creature equal to the number of creatures you control plus the number of Equipment you control.",
 	"steppe_lynx": "Whenever a land you control enters, this creature gets +2/+2 until end of turn.",
 	"stifle": "Counter target activated or triggered ability.",
+	"sunlit_marsh": "This land enters tapped.\n{T}: Add {W}.\n{T}: Add {B}.",
 	"sunspear_shikari": "As long as this creature is equipped, it has first strike and lifelink.",
 	"swamp": "({T}: Add {B}.)",
 	"taj_nar_swordsmith": "When this creature enters, you may pay {X}. If you do, search your library for an Equipment card with mana value X or less, put it onto the battlefield, then shuffle.",
+	"tangled_islet": "This land enters tapped.\n{T}: Add {G}.\n{T}: Add {U}.",
 	"territorial_scythecat":"Trample\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"tethmos_high_priest": "Whenever you cast a spell that targets this creature, return target creature card with mana value 2 or less from your graveyard to the battlefield.",
 	"terror": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
 	"topiary_panther": "Trample\nBasic landcycling {1}{G}",
+	"tromp_the_domains": "Each creature you control gains trample until end of turn. Each creature you control gets +X/+X until end of turn, where X is the number of basic land types among lands you control.",
 	"uthden_troll": "{R}: Regenerate this creature.",
 	"vanguard_of_brimaz": "Vigilance\nWhenever you cast a spell that targets this creature, create a 1/1 white Cat Soldier creature token with vigilance.",
 	"wall_of_stone": "Defender",
 	"white_knight": "First strike\nProtection from black",
 	"whitemane_lion": "Flash\nWhen this creature enters, return a creature you control to its owner's hand.",
+	"wooded_ridgeline": "This land enters tapped.\n{T}: Add {R}.\n{T}: Add {G}.",
+	"zar_ojanen_scion_of_efrava": "Whenever this creature becomes tapped, put a +1/+1 counter on each creature you control with toughness less than the number of basic land types among lands you control.",
 }
 
 
@@ -179,6 +194,24 @@ func test_each_half_of_reconfigure_has_its_own_option_row() -> void:
 	assert_eq(AbilityText.option_of(halves[1], "this permanent"), "Reconfigure {2}: unattach")
 	assert_eq(AbilityText.option_of(Scenario.equip(Scenario.mana_cost(1)), "this artifact"), "Equip {1}",
 		"Anything else reads as it is printed.")
+
+
+func test_an_aura_prints_enchant_calls_itself_this_aura_and_names_what_it_enchants() -> void:
+	# Nylea's Presence's first two lines, and "enchanted land" (CR 303.4, 702.5).
+	var drawing: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.draw_cards(1, Scenario.you())])
+	var swamp: ContinuousStaticAbility = Scenario.continuous_static([Scenario.add_subtypes(["Swamp"], Scenario.attached())])
+	var aura: MmCardDefinition = Scenario.aura("Presence", null, [drawing, swamp])
+
+	assert_eq(AbilityText.of_card(aura.abilities, aura.card_types, aura.supertypes, aura.name),
+		"Enchant land\nWhen this Aura enters, draw a card.\nEnchanted land is a Swamp in addition to its other types.")
+	assert_eq(AbilityText.self_noun(aura.card_types, aura.name, aura.abilities), "this Aura")
+	assert_true(AbilityText.is_keyword(aura.abilities[0]))
+	var on_creature: MmCardDefinition = Scenario.aura("Might", Scenario.of_type(CardType.CREATURE),
+		[Scenario.continuous_static([Scenario.modify_pt(2, 2, Scenario.attached())])])
+	assert_eq(AbilityText.of_card(on_creature.abilities, on_creature.card_types, on_creature.supertypes, on_creature.name),
+		"Enchant creature\nEnchanted creature gets +2/+2.")
+	assert_eq(AbilityText.of_ability(Scenario.sword("Sword").abilities[0], "this artifact"), "Equipped creature gets +1/+1.",
+		"An Equipment's is still \"equipped creature\".")
 
 
 func test_what_each_half_of_reconfigure_does() -> void:
@@ -372,6 +405,47 @@ func test_a_sum_of_three_reads_plus_between_each() -> void:
 		+ " plus the number of lands you control plus 1.")
 
 
+func test_domain_reads_as_the_number_of_basic_land_types_among_lands_you_control() -> void:
+	var damage: DealDamageEffect = Scenario.deal_damage(0, Scenario.targeted(0))
+	damage.amount = Scenario.sum([Scenario.constant(1), Scenario.domain()])
+	var spell: MmCardDefinition = Scenario.instant("Artillery Blast", Scenario.mana_cost(0),
+		[Scenario.target(Scenario.all_of([Scenario.of_type(CardType.CREATURE), IsTappedFilter.new()]))], [damage])
+
+	assert_eq(AbilityText.of_card(spell.abilities, spell.card_types, spell.supertypes, "Artillery Blast"),
+		"Artillery Blast deals damage to target tapped creature equal to 1 plus the number of basic land types"
+		+ " among lands you control.")
+
+
+func test_a_pump_by_domain_says_what_x_is() -> void:
+	# Gaea's Might; its "Domain —" ability word is not printed, as Landfall's is not.
+	var pump: ModifyPowerToughnessContinuousEffect = Scenario.modify_pt(0, 0, Scenario.targeted(0))
+	pump.power = Scenario.domain()
+	pump.toughness = Scenario.domain()
+	var spell: MmCardDefinition = Scenario.creature_spell_until_end_of_turn("Gaea's Might", pump)
+
+	assert_eq(AbilityText.of_card(spell.abilities, spell.card_types, spell.supertypes, "Gaea's Might"),
+		"Target creature gets +X/+X until end of turn, where X is the number of basic land types among lands you control.")
+
+
+func test_a_power_defined_alone_leaves_the_toughness_unsaid() -> void:
+	# Nishoba Brawler, a */3; its "Domain —" ability word is not printed.
+	var defining: CharacteristicDefiningAbility = CharacteristicDefiningAbility.new()
+	defining.power = Scenario.domain()
+	var brawler: MmCardDefinition = Scenario.creature("Nishoba Brawler", 0, 3, [defining])
+
+	assert_eq(AbilityText.of_card(brawler.abilities, brawler.card_types, brawler.supertypes, "Nishoba Brawler"),
+		"This creature's power is equal to the number of basic land types among lands you control.")
+
+
+func test_a_toughness_defined_alone_leaves_the_power_unsaid() -> void:
+	var defining: CharacteristicDefiningAbility = CharacteristicDefiningAbility.new()
+	defining.toughness = Scenario.domain()
+	var sprawler: MmCardDefinition = Scenario.creature("Sprawler", 1, 0, [defining])
+
+	assert_eq(AbilityText.of_card(sprawler.abilities, sprawler.card_types, sprawler.supertypes, "Sprawler"),
+		"This creature's toughness is equal to the number of basic land types among lands you control.")
+
+
 func test_equipment_is_its_own_plural() -> void:
 	var count: CountValue = Scenario.count_yours(Scenario.has_subtype("Equipment"))
 	var damage: DealDamageEffect = Scenario.deal_damage(0, Scenario.targeted(0))
@@ -398,6 +472,16 @@ func test_mana_and_tapping_are_both_listed_as_costs() -> void:
 	ability.effects = [Scenario.lose_life(2, Scenario.targeted(0))]
 
 	assert_eq(AbilityText.of_ability(ability, "this creature"), "{1}{R}, {T}: Target player loses 2 life.")
+
+
+func test_exerting_is_a_cost_worded_as_pride_sovereign_words_it() -> void:
+	var ability: ActivatedAbility = ActivatedAbility.new()
+	ability.mana_cost = Scenario.mana_cost(0, [MmMana.Type.WHITE])
+	ability.costs = [TapCost.new(), ExertCost.new()]
+	ability.effects = [Scenario.gain_life(1, Scenario.you())]
+
+	assert_eq(AbilityText.of_ability(ability, "this creature"), "{W}, {T}, Exert this creature: You gain 1 life.",
+		"CR 701.43, without its reminder text.")
 
 
 func test_the_trigger_kinds_are_worded() -> void:
@@ -635,6 +719,14 @@ func test_exiling_another_target_and_returning_the_exiled_card_are_worded() -> v
 	assert_eq(AbilityText.things(Scenario.is_not(IsPlayerFilter.new())), "permanents", "Anything but a player is a permanent.")
 
 
+func test_exiling_until_this_leaves_the_battlefield_is_worded() -> void:
+	# Leyline Binding's trigger (CR 610.3).
+	var binding: MmCardDefinition = Scenario.free_binding("Binding")
+
+	assert_eq(AbilityText.of_ability(binding.abilities[0], "this enchantment"), "When this enchantment enters, exile target "
+		+ "nonland permanent an opponent controls until this enchantment leaves the battlefield.")
+
+
 func test_up_to_targets_are_worded_with_each_of_for_counters() -> void:
 	var gird: MmAbility = Scenario.free_gird("Gird").abilities[0]
 	var savior: MmAbility = Scenario.savior().abilities[0]
@@ -666,6 +758,8 @@ func test_the_static_abilities_no_authored_card_uses_yet_are_worded() -> void:
 	assert_eq(AbilityText.of_ability(extra_land, "this artifact"), "You may play an additional land on each of your turns.")
 	assert_eq(AbilityText.of_ability(extra_blocks, "this creature"), "This creature can block two additional creatures each combat.")
 	assert_eq(AbilityText.of_ability(DamageStaysAbility.new(), "this creature"), "Damage isn't removed from this creature during cleanup steps.")
+	assert_eq(AbilityText.of_ability(EntersTappedAbility.new(), "this land"), "This land enters tapped.")
+	assert_eq(AbilityText.of_ability(EntersTappedAbility.new(), "this creature"), "This creature enters tapped.")
 	assert_eq(AbilityText.of_ability(anthem, "this enchantment"), "Each white creature gets +1/+1.")
 	assert_eq(AbilityText.of_ability(Scenario.protection_from(Scenario.of_type(CardType.ARTIFACT)), "this creature"), "Protection from artifacts")
 	assert_eq(AbilityText.of_ability(HasteAbility.new(), "this creature"), "Haste")
@@ -684,6 +778,25 @@ func test_a_static_ability_says_has_and_is_where_an_effect_says_gains_and_become
 	assert_eq(AbilityText.of_ability(knighted, "this creature"), "This creature is a Knight in addition to its other types.")
 	assert_eq(AbilityText.of_ability(elves, "this creature"), "Each Knight creature is an Elf Warrior in addition to its other types.")
 	assert_eq(AbilityText.of_ability(spell, "Sample"), "Target creature becomes a Knight in addition to its other types until end of turn.")
+
+
+func test_all_five_basic_land_types_read_as_every_basic_land_type() -> void:
+	# Nylea's Presence's last line (CR 305.7).
+	var presence: MmCardDefinition = Scenario.aura("Presence", null,
+		[Scenario.continuous_static([Scenario.every_basic_land_type(Scenario.attached())])])
+	var four: MmCardDefinition = Scenario.aura("Four", null, [Scenario.continuous_static([
+		Scenario.add_subtypes(["Plains", "Island", "Swamp", "Mountain"], Scenario.attached())])])
+	var spell: SpellAbility = SpellAbility.new()
+	spell.targets = [Scenario.target(Scenario.of_type(CardType.LAND))]
+	spell.effects = [Scenario.until_end_of_turn(Scenario.every_basic_land_type(Scenario.targeted(0)))]
+
+	assert_eq(AbilityText.of_card(presence.abilities, presence.card_types, presence.supertypes, presence.name),
+		"Enchant land\nEnchanted land is every basic land type in addition to its other types.")
+	assert_eq(AbilityText.of_ability(spell, "Sample"),
+		"Target land becomes every basic land type in addition to its other types until end of turn.")
+	assert_eq(AbilityText.of_card(four.abilities, four.card_types, four.supertypes, four.name),
+		"Enchant land\nEnchanted land is a Plains Island Swamp Mountain in addition to its other types.",
+		"Only all five read as every one.")
 
 
 func test_a_conditional_static_ability_is_one_sentence_that_calls_its_source_it_after_the_condition() -> void:
@@ -783,6 +896,37 @@ func test_an_ability_restricted_only_to_sorcery_timing_says_so() -> void:
 	assert_eq(AbilityText.of_ability(ability, "this creature"), "{1}: Regenerate this creature. Activate only as a sorcery.")
 
 
+func test_an_ability_that_costs_less_for_each_basic_land_type_says_so_after_what_it_does() -> void:
+	# Jodah's Codex; its "Domain —" ability word is not printed, as Gaea's Might's is not.
+	var codex: MmCardDefinition = Scenario.codex()
+
+	assert_eq(AbilityText.of_card(codex.abilities, codex.card_types, codex.supertypes, "Codex"),
+		"{5}, {T}: Draw a card. This ability costs {1} less to activate for each basic land type among lands you control.")
+
+
+func test_an_ability_that_costs_less_by_another_value_says_what_x_is() -> void:
+	var ability: ActivatedAbility = Scenario.regenerate_ability(Scenario.mana_cost(3))
+	ability.generic_reduction = Scenario.count_yours(Scenario.of_type(CardType.ARTIFACT))
+
+	assert_eq(AbilityText.of_ability(ability, "this creature"),
+		"{3}: Regenerate this creature. This ability costs {X} less to activate, where X is the number of artifacts you control.")
+
+
+func test_a_spell_that_costs_less_for_each_basic_land_type_says_so() -> void:
+	# Leyline Binding's, without its "Domain —" ability word.
+	var binding: MmCardDefinition = Scenario.domain_reduced_instant("Binding", Scenario.mana_cost(5, [MmMana.Type.WHITE]))
+
+	assert_eq(AbilityText.of_card(binding.abilities, binding.card_types, binding.supertypes, "Binding"),
+		"This spell costs {1} less to cast for each basic land type among lands you control.\nYou gain 1 life.")
+
+
+func test_a_spell_that_costs_less_by_another_value_says_what_x_is() -> void:
+	var reduction: CostReductionAbility = Scenario.cost_reduction(Scenario.count_yours(Scenario.of_type(CardType.ARTIFACT)))
+
+	assert_eq(AbilityText.of_ability(reduction, "this spell"),
+		"This spell costs {X} less to cast, where X is the number of artifacts you control.")
+
+
 func test_equip_prints_as_a_keyword_with_its_cost_and_on_the_stack_as_what_it_does() -> void:
 	var equip: EquipAbility = EquipAbility.new()
 	equip.mana_cost = Scenario.mana_cost(1)
@@ -875,6 +1019,19 @@ func test_becoming_a_target_and_counter_unless_paid_are_worded() -> void:
 	assert_eq(AbilityText.of_ability(leak, "Sample"), "Counter target spell unless its controller pays {3}.")
 
 
+func test_becoming_tapped_is_worded() -> void:
+	var gain: Array[MmEffect] = [Scenario.gain_life(1, Scenario.you())]
+	var counter: Array[MmEffect] = [Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, TriggeringObjectSelection.new())]
+	var creature: MmFilter = Scenario.of_type(CardType.CREATURE)
+
+	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.becomes_tapped(), gain), "this creature"),
+		"Whenever this creature becomes tapped, you gain 1 life.")
+	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.becomes_tapped(creature, Whose.YOU), counter), "Sample"),
+		"Whenever a creature you control becomes tapped, put a +1/+1 counter on that creature.")
+	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.becomes_tapped(creature, Whose.OPPONENT), gain), "Sample"),
+		"Whenever a creature an opponent controls becomes tapped, you gain 1 life.")
+
+
 func test_typecycling_prints_its_type_attached_to_cycling_and_its_cost() -> void:
 	var landcycling: CyclingAbility = Scenario.landcycling(Scenario.mana_cost(1, [MmMana.Type.GREEN]))
 	var plains: HasSubtypeFilter = HasSubtypeFilter.new()
@@ -959,6 +1116,32 @@ func test_a_toughness_filter_is_worded_after_its_noun() -> void:
 		"Not 4 or greater is 3 or less.")
 	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(Scenario.toughness(2))])),
 		"creatures with toughness 3 or greater")
+
+
+func test_a_bound_from_a_value_is_worded_inline_and_the_x_paid_as_x() -> void:
+	var creature: MmFilter = Scenario.of_type(CardType.CREATURE)
+	var domain_or_greater: ToughnessFilter = Scenario.toughness_from(Scenario.domain(), ToughnessFilter.Comparison.OR_GREATER)
+
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.is_not(domain_or_greater)])),
+		"creatures with toughness less than the number of basic land types among lands you control")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.toughness_from(Scenario.domain())])),
+		"creatures with toughness less than or equal to the number of basic land types among lands you control",
+		"A number in words is not followed by \"or less\".")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.toughness_from(Scenario.constant(2))])),
+		"creatures with toughness 2 or less")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, Scenario.toughness_from(Scenario.paid_x())])),
+		"creatures with toughness X or less")
+	assert_eq(AbilityText.things(Scenario.all_of([creature,
+		Scenario.is_not(Scenario.mana_value_from(Scenario.domain(), ManaValueFilter.Comparison.OR_GREATER))])),
+		"creatures with mana value less than the number of basic land types among lands you control")
+
+
+func test_zar_ojanens_ability_is_worded_as_printed_without_its_ability_word() -> void:
+	var scion: MmCardDefinition = Scenario.scion()
+
+	assert_eq(AbilityText.of_ability(scion.abilities[0], "this creature"),
+		"Whenever this creature becomes tapped, put a +1/+1 counter on each creature you control with toughness less "
+		+ "than the number of basic land types among lands you control.")
 
 func test_looking_at_and_casting_from_the_top_of_the_library_are_worded_as_printed() -> void:
 	var look: LookAtTopOfLibraryAbility = LookAtTopOfLibraryAbility.new()

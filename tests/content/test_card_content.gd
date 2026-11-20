@@ -997,6 +997,40 @@ func test_oblivion_ring_exiles_a_noncreature_permanent_until_it_leaves() -> void
 	assert_eq(Scenario.exiled_by_owner(engine, engine.villain()).size(), 0)
 
 
+func test_leyline_binding_costs_w_with_five_land_types_and_exiles_a_creature_until_it_leaves() -> void:
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var hand: Array[MmCardDefinition] = [Scenario.free_land_fetch(), _card("dominaria_united", "leyline_binding"),
+		Scenario.free_disenchant("Disenchant")]
+	var lands: Array[MmCardDefinition] = []
+	for land: String in BASIC_LANDS:
+		lands.append(_alpha(land.to_lower()))
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(no_cards, [bears], hand + lands),
+		no_cards, [bears], hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero_id: int = engine.hero().id
+	assert_eq(Scenario.fetch_lands(engine, BASIC_LANDS), "")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Leyline Binding"), "", "{5}{W} less five basic land types is {W}.")
+	var tapped: Array[String] = []
+	for land: String in BASIC_LANDS:
+		if engine.game_state().object(Scenario.permanent_named(engine, hero_id, land)).is_tapped:
+			tapped.append(land)
+	assert_eq(tapped, ["Plains"] as Array[String])
+	var creature: int = Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears")
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(creature)), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears"), -1)
+	assert_eq(Scenario.exiled_by_owner(engine, engine.villain()).size(), 1)
+
+	var binding: int = Scenario.permanent_named(engine, hero_id, "Leyline Binding")
+	assert_eq(Scenario.cast_and_resolve(engine, "Disenchant", [MmReference.to_object(binding)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_ne(Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears"), -1, "Back when the Binding leaves.")
+	assert_eq(Scenario.exiled_by_owner(engine, engine.villain()).size(), 0)
+
+
 func test_short_sword_is_equipped_for_one_mana_and_gives_its_creature_plus_one_plus_one() -> void:
 	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
 	var sword: MmCardDefinition = Scenario.free_copy(_card("dominaria", "short_sword"))
@@ -1039,6 +1073,33 @@ func test_kemba_attaches_the_equipment_its_controller_targets_to_a_cat_that_ente
 	assert_eq(Scenario.attached_to(engine, equipment), cat, "Attached to that creature, with no equip cost paid.")
 	assert_eq(Scenario.pt(engine, cat), [4, 3], "+1/+1 from the Sword and +1/+1 from Kemba.")
 	assert_eq(Scenario.pt(engine, Scenario.permanent_named(engine, hero_id, kemba.name)), [2, 2], "Kemba is unequipped.")
+
+
+func test_nyleas_presence_on_a_forest_draws_a_card_and_lets_the_forest_tap_for_white() -> void:
+	var presence: MmCardDefinition = Scenario.free_copy(_card("theros", "nyleas_presence"))
+	var dawn: MmCardDefinition = Scenario.instant("Dawn", Scenario.mana_cost(0, [MmMana.Type.WHITE]), [],
+		[Scenario.gain_life(1, Scenario.you())])
+	var hand: Array[MmCardDefinition] = [_alpha("forest"), presence, dawn]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(no_cards, no_cards, hand),
+		no_cards, no_cards, hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var in_hand: int = Scenario.card_in_hand(engine, engine.hero(), "Forest")
+	assert_eq(engine.submit(Scenario.play_land_index(engine.pending_decision() as PriorityDecision, in_hand)), "")
+	var forest: int = Scenario.permanent_named(engine, engine.hero().id, "Forest")
+	var hand_before: int = engine.hero().hand.size()
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Nylea's Presence", [MmReference.to_object(forest)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var aura: int = Scenario.permanent_named(engine, engine.hero().id, "Nylea's Presence")
+	assert_eq(Scenario.attached_to(engine, aura), forest)
+	assert_eq(engine.hero().hand.size(), hand_before, "The Aura left the hand and its trigger drew a card.")
+	assert_eq(Scenario.now(engine, forest).subtypes, ["Forest", "Plains", "Island", "Swamp", "Mountain"] as Array[String])
+	var life: int = engine.hero().life
+	assert_eq(Scenario.cast_and_resolve(engine, "Dawn"), "", "The Forest taps for {W}.")
+	assert_eq(engine.hero().life, life + 1)
+	assert_true(engine.game_state().object(forest).is_tapped)
 
 
 func test_adventuring_gear_pumps_the_creature_equipped_as_its_landfall_resolves_and_nothing_while_unattached() -> void:
@@ -1245,6 +1306,33 @@ func test_topiary_panther_landcycles_for_a_forest_paid_by_two_forests() -> void:
 	assert_eq(hero.hand.size(), hand_size, "One card out, one Forest found.")
 	assert_eq(hero.library.size(), library - 1)
 	assert_ne(Scenario.card_in_hand(engine, hero, "Forest"), -1)
+
+
+func test_pride_sovereign_exerted_with_one_other_cat_makes_two_lifelink_cats_and_becomes_five_five() -> void:
+	var housecat: MmCardDefinition = Scenario.creature("Housecat", 1, 1)
+	housecat.subtypes = ["Cat"] as Array[String]
+	var yours: Array[MmCardDefinition] = [Scenario.free_copy(_card("hour_of_devastation", "pride_sovereign")),
+		housecat, Scenario.elf()]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(yours, no_cards),
+		yours, no_cards, no_cards, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var sovereign: int = Scenario.permanent_named(engine, engine.hero().id, "Pride Sovereign")
+	assert_eq(Scenario.pt(engine, sovereign), [3, 3], "+1/+1 for the Housecat, not for itself.")
+
+	assert_eq(Scenario.activate(engine, sovereign), "", "{W} paid by the Elf.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var tokens: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(tokens.size(), 2)
+	for token: int in tokens:
+		assert_eq(Scenario.pt(engine, token), [1, 1])
+		assert_eq(Scenario.now(engine, token).subtypes, ["Cat"] as Array[String])
+		assert_true(Scenario.now(engine, token).has_ability(LifelinkAbility))
+	assert_eq(Scenario.pt(engine, sovereign), [5, 5], "Three other Cats now.")
+	var exerted: MmGameObject = engine.game_state().object(sovereign)
+	assert_true(exerted.is_tapped)
+	assert_eq(exerted.exerted_by_player_id, engine.hero().id)
 
 
 func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:

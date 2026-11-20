@@ -27,7 +27,7 @@ static func kinds() -> Dictionary[Script, String]:
 		ChooseCreatureTypeDecision: "the Creature Type Window, a search box and a row for each type (CreatureTypeChoice)",
 		ChooseCardsInLibraryDecision: "the Hero's Library window, opened by itself, and the pass button (CardPicks)",
 		ChooseYesOrNoDecision: "the Info Panel's No button and the pass button, which says Yes (game ADR 0060), or Pay, clicked only, for a ward cost (ADR 0062)",
-		ChooseXToPayDecision: "none yet: the presenter declines it for the Hero, so only the Villain pays X (ADR 0061)",
+		ChooseXToPayDecision: "the Info Panel's X stepper and No button, and the pass button, which pays the X shown, clicked only (game ADR 0063)",
 	}
 
 

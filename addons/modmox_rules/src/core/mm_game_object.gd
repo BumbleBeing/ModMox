@@ -96,6 +96,9 @@ var permission_used_spell_name: Dictionary[int, String] = {}
 ## can find "the exiled card" (CR 607.2a); 0 for anything else. The object that exiled it
 ## may have left the battlefield since, and is then known only by this ID.
 var exiled_with_object_id: int = 0
+## For a card in exile: true when it was exiled "until [that object] leaves the
+## battlefield" (CR 610.3, ADR 0065), so it comes back once that object has left.
+var returns_when_exiler_leaves: bool = false
 ## For a permanent attached to another, such as an Equipment (CR 301.5): the ID of the
 ## permanent it is attached to; 0 when it is attached to nothing. That permanent may have
 ## left the battlefield since, until state-based actions unattach this one (CR 704.5n).
@@ -107,6 +110,10 @@ var is_token: bool = false
 ## For a permanent with "As this enters, choose a creature type": the type chosen as it
 ## entered (CR 614.12, ADR 0052), or "". Public, like the permanent.
 var chosen_creature_type: String = ""
+## For an exerted permanent (CR 701.43): the player who exerted it, whose next untap step it
+## won't untap in; MmGameState.NO_PLAYER for one not exerted. That untap step ends it, and a
+## zone change leaves it behind with the old object (ADR 0008). Public, like the permanent.
+var exerted_by_player_id: int = MmGameState.NO_PLAYER
 ## Weak, because the zone already holds this object strongly; a strong reference both ways
 ## is a cycle that reference counting never frees.
 var _zone_ref: WeakRef = null
@@ -149,9 +156,11 @@ func duplicate_object() -> MmGameObject:
 	copy.permission_used_game_turn = permission_used_game_turn.duplicate()
 	copy.permission_used_spell_name = permission_used_spell_name.duplicate()
 	copy.exiled_with_object_id = exiled_with_object_id
+	copy.returns_when_exiler_leaves = returns_when_exiler_leaves
 	copy.attached_to_object_id = attached_to_object_id
 	copy.is_token = is_token
 	copy.chosen_creature_type = chosen_creature_type
+	copy.exerted_by_player_id = exerted_by_player_id
 	return copy
 
 
@@ -209,6 +218,16 @@ func attach_to(object_id: int) -> void:
 ## Event-only: taps or untaps this permanent.
 func set_tapped(tapped: bool) -> void:
 	is_tapped = tapped
+
+
+## Event-only: exerts this permanent for [param player_id]'s next untap step.
+func exert(player_id: int) -> void:
+	exerted_by_player_id = player_id
+
+
+## Event-only: the untap step this permanent was exerted for has come.
+func end_exertion() -> void:
+	exerted_by_player_id = MmGameState.NO_PLAYER
 
 
 ## Event-only: marks [param amount] more damage on this permanent.
@@ -312,9 +331,11 @@ func forget_who_knows() -> void:
 	known_to_player_ids.clear()
 
 
-## Event-only: an ability of the object [param object_id] exiled this card (CR 607.2a).
-func record_exiled_with(object_id: int) -> void:
+## Event-only: an ability of the object [param object_id] exiled this card (CR 607.2a),
+## until that object leaves the battlefield when [param until_it_leaves] (CR 610.3).
+func record_exiled_with(object_id: int, until_it_leaves: bool = false) -> void:
 	exiled_with_object_id = object_id
+	returns_when_exiler_leaves = until_it_leaves
 
 
 ## Event-only: the once-each-game ability at [param ability_index] was activated.

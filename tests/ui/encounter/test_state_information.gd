@@ -116,6 +116,16 @@ func test_a_summoning_sick_creature_says_so_and_a_land_never_does() -> void:
 	assert_eq(StateInformation.of(land, _view()).size(), 0)
 
 
+func test_an_exerted_permanent_says_it_wont_untap_after_summoning_sickness() -> void:
+	var bears: MmObjectView = _bears()
+	bears.is_exerted = true
+	bears.is_summoning_sick = true
+
+	assert_eq(_texts(StateInformation.of(bears, _view())), [
+		["Summoning Sick", "Can't attack or tap until its controller's next turn."],
+		["Exerted", "Won't untap during its controller's next untap step."]])
+
+
 func test_a_token_says_it_ceases_to_exist_if_it_leaves_and_comes_first() -> void:
 	var cat: MmObjectView = _bears()
 	cat.is_token = true

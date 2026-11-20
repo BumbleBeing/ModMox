@@ -19,7 +19,7 @@ func test_every_keyword_has_an_icon() -> void:
 		ProtectionAbility.new(), EquipAbility.new(), FlashbackAbility.new(), WardAbility.new(),
 	]
 
-	var chips: Array[KeywordChip] = KeywordChips.chips_for(abilities)
+	var chips: Array[KeywordChip] = KeywordChips.chips_for(abilities, KeywordChips.Place.ANYWHERE)
 
 	var icons: Array[String] = []
 	for chip: KeywordChip in chips:
