@@ -65,3 +65,15 @@ func test_the_clay_is_dithered_by_the_pixel_under_the_rings_shadow() -> void:
 	assert_eq(disc.get_pixel(16, 16).a, 1.0, "Clay fills the middle.")
 	assert_gt(colors.size(), 1, "Dithered: neighbors in a row differ.")
 	assert_lt(disc.get_pixel(16, 5).v, disc.get_pixel(16, 8).v, "Shadowed under the ring's top.")
+
+
+## A jeweled disc (milestone 19) is painted on a copy of the plain disc's picture, which it
+## leaves as it was: the Stage Map's Boss keeps its red ring after Run Won has drawn one.
+func test_a_jeweled_disc_leaves_the_plain_disc_as_it_was() -> void:
+	var ring: Color = BossDisc.pixel_disc().get_image().get_pixel(16, 3)
+	var clay: Color = BossDisc.pixel_disc().get_image().get_pixel(16, 16)
+
+	BossDisc.jeweled_disc(Color(0.13, 0.71, 0.42))
+
+	assert_eq(BossDisc.pixel_disc().get_image().get_pixel(16, 3), ring, "The ring is still red.")
+	assert_eq(BossDisc.pixel_disc().get_image().get_pixel(16, 16), clay, "The clay is still clay.")

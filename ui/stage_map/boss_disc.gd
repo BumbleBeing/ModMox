@@ -159,12 +159,14 @@ static func pixel_disc() -> Texture2D:
 ## round the disc by how it faces the light from the top left, from the stone darkened to
 ## it lightened, the inner pixel a little deeper than the outer, a white sparkle where the
 ## light strikes and a glint on the inner edge on the far side. The dark edge stays. Made
-## once for each color.
+## once for each color, on a copy of the plain disc's picture: a headless run's
+## get_image() hands back the texture's own Image, so painting on it would repaint the
+## Stage Map's Boss.
 static func jeweled_disc(ground: Color) -> Texture2D:
 	var key: String = "jewel/" + ground.to_html()
 	if _made.has(key):
 		return _made[key]
-	var image: Image = pixel_disc().get_image()
+	var image: Image = pixel_disc().get_image().duplicate() as Image
 	var middle: Vector2 = Vector2.ONE * RING_PIXELS / 2.0
 	var inside: float = RING_OUTER - RING_WIDE
 	var stone: Color = Color.from_hsv(ground.h, maxf(JEWEL_SATURATION, minf(1.0, ground.s * 1.6)), JEWEL_VALUE)
