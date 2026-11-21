@@ -1,0 +1,185 @@
+[gd_resource type="Resource" script_class="MmPlayerSetup" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_run_card.gd" id="1_egjl7"]
+[ext_resource type="Resource" path="res://content/cards/lorwyn_eclipsed/bark_of_doran.tres" id="2_37gcq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="3_croon"]
+[ext_resource type="Resource" path="res://content/cards/tarkir_dragonstorm/coordinated_maneuver.tres" id="4_05ahl"]
+[ext_resource type="Resource" path="res://content/cards/alpha/forest.tres" id="5_2w7fg"]
+[ext_resource type="Resource" path="res://content/cards/ikoria_lair_of_behemoths/frondland_felidar.tres" id="6_h0ib2"]
+[ext_resource type="Resource" path="res://content/cards/streets_of_new_capenna/jewel_thief.tres" id="7_xyjpd"]
+[ext_resource type="Resource" path="res://content/cards/ikoria_lair_of_behemoths/maned_serval.tres" id="8_0mlfg"]
+[ext_resource type="Resource" path="res://content/cards/lorwyn/oblivion_ring.tres" id="9_4mk1x"]
+[ext_resource type="Resource" path="res://content/cards/streets_of_new_capenna/ominous_parcel.tres" id="10_1e4en"]
+[ext_resource type="Resource" path="res://content/cards/alpha/plains.tres" id="11_bk72g"]
+[ext_resource type="Resource" path="res://content/cards/foundations/prideful_parent.tres" id="12_uarju"]
+[ext_resource type="Resource" path="res://content/cards/zendikar_rising/prowling_felidar.tres" id="13_qau8y"]
+[ext_resource type="Resource" path="res://content/cards/fifth_dawn/skyhunter_prowler.tres" id="14_46ql3"]
+[ext_resource type="Resource" path="res://content/cards/ravnica_city_of_guilds/temple_garden.tres" id="15_eb8ba"]
+[ext_resource type="Resource" path="res://content/cards/tarkir_dragonstorm/undergrowth_leopard.tres" id="16_rnpft"]
+[ext_resource type="Resource" path="res://content/cards/mirrodin_besieged/viridian_claw.tres" id="17_evh7w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="18_noo0w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="19_v6y6x"]
+
+[sub_resource type="Resource" id="Resource_08boe"]
+script = ExtResource("1_egjl7")
+base = ExtResource("2_37gcq")
+
+[sub_resource type="Resource" id="Resource_on7i2"]
+script = ExtResource("1_egjl7")
+base = ExtResource("2_37gcq")
+
+[sub_resource type="Resource" id="Resource_pwuda"]
+script = ExtResource("1_egjl7")
+base = ExtResource("4_05ahl")
+
+[sub_resource type="Resource" id="Resource_l4qhx"]
+script = ExtResource("1_egjl7")
+base = ExtResource("4_05ahl")
+
+[sub_resource type="Resource" id="Resource_0nufj"]
+script = ExtResource("1_egjl7")
+base = ExtResource("5_2w7fg")
+
+[sub_resource type="Resource" id="Resource_sw4nd"]
+script = ExtResource("1_egjl7")
+base = ExtResource("5_2w7fg")
+
+[sub_resource type="Resource" id="Resource_y4thb"]
+script = ExtResource("1_egjl7")
+base = ExtResource("5_2w7fg")
+
+[sub_resource type="Resource" id="Resource_jbu1q"]
+script = ExtResource("1_egjl7")
+base = ExtResource("5_2w7fg")
+
+[sub_resource type="Resource" id="Resource_qy34v"]
+script = ExtResource("1_egjl7")
+base = ExtResource("5_2w7fg")
+
+[sub_resource type="Resource" id="Resource_uacle"]
+script = ExtResource("1_egjl7")
+base = ExtResource("5_2w7fg")
+
+[sub_resource type="Resource" id="Resource_ho25p"]
+script = ExtResource("1_egjl7")
+base = ExtResource("5_2w7fg")
+
+[sub_resource type="Resource" id="Resource_0cy8m"]
+script = ExtResource("1_egjl7")
+base = ExtResource("6_h0ib2")
+
+[sub_resource type="Resource" id="Resource_hfcwi"]
+script = ExtResource("1_egjl7")
+base = ExtResource("6_h0ib2")
+
+[sub_resource type="Resource" id="Resource_xjn7g"]
+script = ExtResource("1_egjl7")
+base = ExtResource("7_xyjpd")
+
+[sub_resource type="Resource" id="Resource_4smqn"]
+script = ExtResource("1_egjl7")
+base = ExtResource("8_0mlfg")
+
+[sub_resource type="Resource" id="Resource_ijnut"]
+script = ExtResource("1_egjl7")
+base = ExtResource("8_0mlfg")
+
+[sub_resource type="Resource" id="Resource_chh6l"]
+script = ExtResource("1_egjl7")
+base = ExtResource("9_4mk1x")
+
+[sub_resource type="Resource" id="Resource_qdyup"]
+script = ExtResource("1_egjl7")
+base = ExtResource("9_4mk1x")
+
+[sub_resource type="Resource" id="Resource_fr4vt"]
+script = ExtResource("1_egjl7")
+base = ExtResource("10_1e4en")
+
+[sub_resource type="Resource" id="Resource_emjpc"]
+script = ExtResource("1_egjl7")
+base = ExtResource("10_1e4en")
+
+[sub_resource type="Resource" id="Resource_5rovf"]
+script = ExtResource("1_egjl7")
+base = ExtResource("11_bk72g")
+
+[sub_resource type="Resource" id="Resource_1gxr0"]
+script = ExtResource("1_egjl7")
+base = ExtResource("11_bk72g")
+
+[sub_resource type="Resource" id="Resource_s7eua"]
+script = ExtResource("1_egjl7")
+base = ExtResource("11_bk72g")
+
+[sub_resource type="Resource" id="Resource_gepba"]
+script = ExtResource("1_egjl7")
+base = ExtResource("11_bk72g")
+
+[sub_resource type="Resource" id="Resource_bjpc6"]
+script = ExtResource("1_egjl7")
+base = ExtResource("11_bk72g")
+
+[sub_resource type="Resource" id="Resource_ppf60"]
+script = ExtResource("1_egjl7")
+base = ExtResource("11_bk72g")
+
+[sub_resource type="Resource" id="Resource_uudrv"]
+script = ExtResource("1_egjl7")
+base = ExtResource("11_bk72g")
+
+[sub_resource type="Resource" id="Resource_lh4jp"]
+script = ExtResource("1_egjl7")
+base = ExtResource("11_bk72g")
+
+[sub_resource type="Resource" id="Resource_mdma8"]
+script = ExtResource("1_egjl7")
+base = ExtResource("12_uarju")
+
+[sub_resource type="Resource" id="Resource_2xnt2"]
+script = ExtResource("1_egjl7")
+base = ExtResource("12_uarju")
+
+[sub_resource type="Resource" id="Resource_d7d6i"]
+script = ExtResource("1_egjl7")
+base = ExtResource("13_qau8y")
+
+[sub_resource type="Resource" id="Resource_yqnic"]
+script = ExtResource("1_egjl7")
+base = ExtResource("13_qau8y")
+
+[sub_resource type="Resource" id="Resource_0ongh"]
+script = ExtResource("1_egjl7")
+base = ExtResource("14_46ql3")
+
+[sub_resource type="Resource" id="Resource_whc7j"]
+script = ExtResource("1_egjl7")
+base = ExtResource("14_46ql3")
+
+[sub_resource type="Resource" id="Resource_15hyk"]
+script = ExtResource("1_egjl7")
+base = ExtResource("15_eb8ba")
+
+[sub_resource type="Resource" id="Resource_dvrd8"]
+script = ExtResource("1_egjl7")
+base = ExtResource("15_eb8ba")
+
+[sub_resource type="Resource" id="Resource_0cotd"]
+script = ExtResource("1_egjl7")
+base = ExtResource("16_rnpft")
+
+[sub_resource type="Resource" id="Resource_m84u1"]
+script = ExtResource("1_egjl7")
+base = ExtResource("16_rnpft")
+
+[sub_resource type="Resource" id="Resource_ihgt3"]
+script = ExtResource("1_egjl7")
+base = ExtResource("16_rnpft")
+
+[sub_resource type="Resource" id="Resource_a8r5f"]
+script = ExtResource("1_egjl7")
+base = ExtResource("17_evh7w")
+
+[resource]
+script = ExtResource("19_v6y6x")
+deck = Array[ExtResource("1_egjl7")]([SubResource("Resource_08boe"), SubResource("Resource_on7i2"), SubResource("Resource_pwuda"), SubResource("Resource_l4qhx"), SubResource("Resource_0nufj"), SubResource("Resource_sw4nd"), SubResource("Resource_y4thb"), SubResource("Resource_jbu1q"), SubResource("Resource_qy34v"), SubResource("Resource_uacle"), SubResource("Resource_ho25p"), SubResource("Resource_0cy8m"), SubResource("Resource_hfcwi"), SubResource("Resource_xjn7g"), SubResource("Resource_4smqn"), SubResource("Resource_ijnut"), SubResource("Resource_chh6l"), SubResource("Resource_qdyup"), SubResource("Resource_fr4vt"), SubResource("Resource_emjpc"), SubResource("Resource_5rovf"), SubResource("Resource_1gxr0"), SubResource("Resource_s7eua"), SubResource("Resource_gepba"), SubResource("Resource_bjpc6"), SubResource("Resource_ppf60"), SubResource("Resource_uudrv"), SubResource("Resource_lh4jp"), SubResource("Resource_mdma8"), SubResource("Resource_2xnt2"), SubResource("Resource_d7d6i"), SubResource("Resource_yqnic"), SubResource("Resource_0ongh"), SubResource("Resource_whc7j"), SubResource("Resource_15hyk"), SubResource("Resource_dvrd8"), SubResource("Resource_0cotd"), SubResource("Resource_m84u1"), SubResource("Resource_ihgt3"), SubResource("Resource_a8r5f")])

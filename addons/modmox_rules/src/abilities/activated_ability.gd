@@ -44,6 +44,20 @@ func is_mana_ability() -> bool:
 	return adds_mana
 
 
+## The colors its activator chooses among as it is activated (CR 605.3a, ADR 0072): the
+## five colors, in WUBRG order, for a mana ability that adds mana of any color, and none for
+## any other ability.
+func mana_types_to_choose() -> Array[MmMana.Type]:
+	var none: Array[MmMana.Type] = []
+	if not is_mana_ability():
+		return none  # Later: an ability that uses the stack asks its color as it resolves.
+	for effect: MmEffect in effects:
+		var add_mana: AddManaEffect = effect as AddManaEffect
+		if add_mana != null and add_mana.is_any_color:
+			return MmMana.COLORS.duplicate()
+	return none
+
+
 ## Whether this ability works where [param source] is now (CR 113.6): from the hand if it
 ## says so, and otherwise anywhere but the hand.
 func works_in(state: MmGameState, source: MmGameObject) -> bool:

@@ -8,7 +8,8 @@
 #
 # An existing .aseprite file is kept (and its PNG exported again) unless forced, so icons
 # touched up by hand are safe. The sheet lands in tools/sprites/preview/. New sprites get
-# the shared palette, tools/sprites/modmox.gpl.
+# the shared palette, tools/sprites/modmox.gpl. Every build also gathers the Portrait grids'
+# credit lines into ui/sprites/portraits/art.json (gather_portrait_credits.sh).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 : "${ASEPRITE:?Set ASEPRITE to the Aseprite binary}"
@@ -34,4 +35,6 @@ output="$("$ASEPRITE" -b \
 	--script-param force="$force" \
 	--script tools/sprites/build_sprites.lua 2>&1)" || true
 echo "$output"
+# The Portraits' credits, for the Credits' Art Attribution page (milestone 19).
+tools/sprites/gather_portrait_credits.sh
 grep -q "^OK: " <<<"$output"

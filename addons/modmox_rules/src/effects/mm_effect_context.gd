@@ -1,8 +1,8 @@
 class_name MmEffectContext
 extends RefCounted
 ## Who and what an effect is resolving for: the controller of the spell or ability, its
-## source, its targets, for a triggered ability what triggered it, and what was chosen and
-## paid as it resolves.
+## source, its targets, for a triggered ability what triggered it, what was chosen and
+## paid as it resolves, and for a mana ability the color chosen as it was activated.
 
 ## [member paid_x] when no X has been paid (ADR 0061).
 const NONE_PAID: int = -1
@@ -29,6 +29,9 @@ var choices: Dictionary[int, MmReference] = {}
 ## The X paid for a "you may pay {X}" as the spell or ability resolved (ADR 0061), or
 ## NONE_PAID. Every effect after the payment reads it through PaidXValue.
 var paid_x: int = NONE_PAID
+## The color an "Add one mana of any color" adds: an MmMana.Type, chosen as its mana ability
+## was activated (CR 605.3a, ADR 0072), or MmMana.NO_TYPE.
+var chosen_mana_type: int = MmMana.NO_TYPE
 
 
 func _init(controlling_player_id: int, source_id: int, chosen_targets: Array[MmReference] = [],
@@ -76,23 +79,34 @@ func targets_of(requirement_index: int) -> Array[MmReference]:
 ## This context with [param chosen] as choice [param index]. A context is never changed
 ## once made, so a resolving spell or ability takes a new one for each choice.
 func with_choice(index: int, chosen: MmReference) -> MmEffectContext:
-	var copy: MmEffectContext = MmEffectContext.new(controller_id, source_object_id, targets,
-		triggering_player_id, triggering_object_id)
-	copy.own_object_id = own_object_id
-	copy.target_counts = target_counts.duplicate()
-	copy.choices = choices.duplicate()
+	var copy: MmEffectContext = _copy()
 	copy.choices[index] = chosen
-	copy.paid_x = paid_x
 	return copy
 
 
 ## This context with [param x] as the X paid (ADR 0061), a new context as with_choice()
 ## makes.
 func with_paid_x(x: int) -> MmEffectContext:
+	var copy: MmEffectContext = _copy()
+	copy.paid_x = x
+	return copy
+
+
+## This context with [param type], an MmMana.Type or MmMana.NO_TYPE, as the color chosen
+## for mana of any color (ADR 0072), a new context as with_choice() makes.
+func with_chosen_mana_type(type: int) -> MmEffectContext:
+	var copy: MmEffectContext = _copy()
+	copy.chosen_mana_type = type
+	return copy
+
+
+## A new context holding everything this one does.
+func _copy() -> MmEffectContext:
 	var copy: MmEffectContext = MmEffectContext.new(controller_id, source_object_id, targets,
 		triggering_player_id, triggering_object_id)
 	copy.own_object_id = own_object_id
 	copy.target_counts = target_counts.duplicate()
 	copy.choices = choices.duplicate()
-	copy.paid_x = x
+	copy.paid_x = paid_x
+	copy.chosen_mana_type = chosen_mana_type
 	return copy

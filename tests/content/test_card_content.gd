@@ -1167,6 +1167,33 @@ func test_adventuring_gear_pumps_the_creature_equipped_as_its_landfall_resolves_
 	assert_eq(Scenario.pt(engine, bear), [2, 2], "Until end of turn.")
 
 
+func test_viridian_claw_gives_the_equipped_creature_plus_one_plus_zero_and_first_strike_and_both_move_with_it() -> void:
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var lions: MmCardDefinition = Scenario.free_copy(_alpha("savannah_lions"))
+	var claw: MmCardDefinition = Scenario.free_copy(_card("mirrodin_besieged", "viridian_claw"))
+	var rock: MmCardDefinition = Scenario.artifact("Rock", [Scenario.tap_for_mana(MmMana.Type.COLORLESS, 1)])
+	var permanents: Array[MmCardDefinition] = [bears, lions, claw, rock]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(permanents, no_cards),
+		permanents, no_cards, no_cards, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	var lion: int = Scenario.permanent_named(engine, engine.hero().id, "Savannah Lions")
+	var equipment: int = Scenario.permanent_named(engine, engine.hero().id, "Viridian Claw")
+	assert_false(Scenario.now(engine, bear).has_ability(FirstStrikeAbility), "Unattached, it gives nothing.")
+
+	assert_eq(Scenario.equip_and_resolve(engine, equipment, bear), "")
+	assert_eq(Scenario.pt(engine, bear), [3, 2])
+	assert_true(Scenario.now(engine, bear).has_ability(FirstStrikeAbility))
+
+	assert_eq(Scenario.play_until_step(engine, 5, MmTurn.Step.PRECOMBAT_MAIN), "")
+	assert_eq(Scenario.equip_and_resolve(engine, equipment, lion), "")
+	assert_eq(Scenario.pt(engine, lion), [3, 1])
+	assert_true(Scenario.now(engine, lion).has_ability(FirstStrikeAbility))
+	assert_eq(Scenario.pt(engine, bear), [2, 2])
+	assert_false(Scenario.now(engine, bear).has_ability(FirstStrikeAbility))
+
+
 func test_hero_of_the_pride_pumps_its_controllers_creatures_when_their_spell_targets_it() -> void:
 	var hero: MmCardDefinition = Scenario.free_copy(_card("theros_beyond_death", "hero_of_the_pride"))
 	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
@@ -1311,6 +1338,33 @@ func _assert_is_a_white_vigilant_cat_soldier(engine: MmEngine, token_id: int) ->
 	assert_true(characteristics.has_ability(VigilanceAbility), "The content token's vigilance.")
 
 
+func test_frondland_felidar_lets_a_vigilant_creature_you_control_tap_target_creature() -> void:
+	var felidar_card: MmCardDefinition = Scenario.free_copy(_card("ikoria_lair_of_behemoths", "frondland_felidar"))
+	var watchman: MmCardDefinition = Scenario.creature("Watchman", 1, 1, [VigilanceAbility.new()])
+	var yours: Array[MmCardDefinition] = [felidar_card, watchman, Scenario.free_copy(_alpha("grizzly_bears"))]
+	var theirs: Array[MmCardDefinition] = [Scenario.free_copy(_alpha("grizzly_bears"))]
+	var hand: Array[MmCardDefinition] = [_alpha("forest")]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(yours, theirs, hand),
+		yours, theirs, hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var felidar: int = Scenario.permanent_named(engine, engine.hero().id, "Frondland Felidar")
+	var vigilant: int = Scenario.permanent_named(engine, engine.hero().id, "Watchman")
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	var their_bears: int = Scenario.permanent_named(engine, engine.villain().id, "Grizzly Bears")
+	Scenario.play_first_land(engine)
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+
+	assert_eq(Scenario.activate_index(decision, bears), -1, "Without vigilance, the Bears have no such ability.")
+	assert_ne(Scenario.activate_index(decision, felidar), -1, "The Felidar has vigilance, so it has the ability too.")
+	assert_eq(Scenario.activate(engine, vigilant, [MmReference.to_object(their_bears)]), "")
+	assert_true(engine.game_state().object(vigilant).is_tapped, "The {T} is the Watchman's own.")
+	assert_false(engine.game_state().object(felidar).is_tapped)
+	Scenario.resolve_stack(engine)
+
+	assert_true(engine.game_state().object(their_bears).is_tapped)
+
+
 func test_felidar_savior_puts_a_counter_on_each_of_up_to_two_other_creatures_its_controller_chooses() -> void:
 	var savior: MmCardDefinition = Scenario.free_copy(_card("foundations", "felidar_savior"))
 	var hand: Array[MmCardDefinition] = [savior]
@@ -1416,6 +1470,56 @@ func test_pride_sovereign_exerted_with_one_other_cat_makes_two_lifelink_cats_and
 	var exerted: MmGameObject = engine.game_state().object(sovereign)
 	assert_true(exerted.is_tapped)
 	assert_eq(exerted.exerted_by_player_id, engine.hero().id)
+
+
+func test_the_treasure_token_is_a_colorless_treasure_artifact_that_sacrifices_itself_for_one_mana_of_any_color() -> void:
+	# CR 111.10a, engine ADR 0072.
+	var treasure: MmCardDefinition = load("res://content/tokens/treasure.tres") as MmCardDefinition
+	var printed: MmCharacteristics = MmCharacteristics.printed(treasure)
+	assert_eq(printed.name, "Treasure Token", "CR 111.4.")
+	assert_eq(printed.card_types, [MmCardTypes.CardType.ARTIFACT] as Array[MmCardTypes.CardType])
+	assert_eq(printed.subtypes, ["Treasure"] as Array[String])
+	assert_eq(printed.colors, [] as Array[MmCardTypes.CardColor])
+	var hoard: Array[MmCardDefinition] = [Scenario.free_tokens("Hoard", treasure)]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(no_cards, no_cards, hoard),
+		no_cards, no_cards, hoard, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Hoard"), "")
+	var made: int = Scenario.tokens_on_battlefield(engine)[0]
+	var actions: Array[MmAction] = (engine.pending_decision() as PriorityDecision).actions
+	assert_eq(Scenario.colors_offered(actions, made), [0, 1, 2, 3, 4] as Array[int], "One action for each color, WUBRG.")
+
+	assert_eq(Scenario.activate_for(engine, made, MmMana.Type.BLUE), "")
+
+	assert_eq(engine.hero().mana_pool().size(), 1)
+	assert_eq(engine.hero().mana_pool()[0].type, MmMana.Type.BLUE)
+	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int], "Sacrificed, then gone (CR 111.7).")
+	assert_eq(Scenario.last_reason_into(engine, MmZone.Kind.GRAVEYARD), ZoneChangeEvent.Reason.SACRIFICE)
+
+
+func test_jewel_thief_entering_makes_its_controller_a_treasure_whose_white_pays_for_savannah_lions() -> void:
+	var thief: MmCardDefinition = Scenario.free_copy(_card("streets_of_new_capenna", "jewel_thief"))
+	var held: Array[MmCardDefinition] = [thief, _alpha("savannah_lions")]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(no_cards, no_cards, held),
+		no_cards, no_cards, held, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_and_resolve(engine, thief.name), "")
+	assert_eq(Scenario.resolve_stack(engine), "", "Its enters trigger resolves.")
+
+	var made: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(made.size(), 1)
+	assert_eq(engine.game_state().object(made[0]).controller_id, engine.hero().id, "CR 111.2.")
+	assert_eq(Scenario.now(engine, made[0]).subtypes, ["Treasure"] as Array[String])
+	var lions: int = Scenario.card_in_hand(engine, engine.hero(), "Savannah Lions")
+	var cast: int = Scenario.cast_index(engine.pending_decision() as PriorityDecision, lions)
+	assert_ne(cast, -1, "No land, but the Treasure can pay {W}.")
+	assert_eq(engine.submit(cast), "")
+	assert_eq(Scenario.pay_for(engine, made[0], MmMana.Type.WHITE), "")
+
+	assert_eq(Scenario.names(engine, engine.game_state().stack), ["Savannah Lions"] as Array[String], "Paid in full, so cast.")
+	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int], "Sacrificed to pay.")
 
 
 func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:

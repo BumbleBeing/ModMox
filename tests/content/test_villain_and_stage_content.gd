@@ -78,15 +78,18 @@ func test_a_villain_with_another_number_of_setups_is_invalid() -> void:
 	assert_ne(villain.validate(), "")
 
 
-func test_there_is_one_tier_one_placeholder_stage_of_each_color() -> void:
-	var colors: Array[MmCardTypes.CardColor] = []
-	for stage: StageDefinition in ContentStages.all():
-		assert_eq(stage.tier, 1, stage.name)
-		colors.append(stage.color)
+## One Stage of each color at each Tier: Tier 1's since milestone 17, and Tiers 2 to 5's
+## placeholders since milestone 19.
+func test_there_is_one_stage_of_each_color_at_each_tier() -> void:
+	for tier: int in range(1, Villain.TIERS + 1):
+		var colors: Array[MmCardTypes.CardColor] = []
+		for stage: StageDefinition in ContentStages.all():
+			if stage.tier == tier:
+				colors.append(stage.color)
 
-	colors.sort()
-	assert_eq(colors, [MmCardTypes.CardColor.WHITE, MmCardTypes.CardColor.BLUE, MmCardTypes.CardColor.BLACK,
-		MmCardTypes.CardColor.RED, MmCardTypes.CardColor.GREEN] as Array[MmCardTypes.CardColor])
+		colors.sort()
+		assert_eq(colors, [MmCardTypes.CardColor.WHITE, MmCardTypes.CardColor.BLUE, MmCardTypes.CardColor.BLACK,
+			MmCardTypes.CardColor.RED, MmCardTypes.CardColor.GREEN] as Array[MmCardTypes.CardColor], "Tier %d" % tier)
 
 
 ## T10: every Stage is valid under ADR 0024, and has its color's placeholder Villain as a

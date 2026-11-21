@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="StageDefinition" format=3]
+
+[ext_resource type="Script" path="res://run/villain.gd" id="1_m3fde"]
+[ext_resource type="Resource" path="res://content/villains/white_black.tres" id="2_hwp1w"]
+[ext_resource type="Resource" path="res://content/villains/arahbo_the_first_fang.tres" id="3_gjrhh"]
+[ext_resource type="Resource" path="res://content/villains/zar_ojanen_scion_of_efrava.tres" id="4_pqbk3"]
+[ext_resource type="Resource" path="res://content/villains/brimaz_king_of_oreskos.tres" id="5_wh3nw"]
+[ext_resource type="Resource" path="res://content/villains/blue_red.tres" id="6_g3qm8"]
+[ext_resource type="Resource" path="res://content/villains/steppe_lynx.tres" id="7_gjsfj"]
+[ext_resource type="Resource" path="res://content/villains/kemba_kha_enduring.tres" id="8_ra3s0"]
+[ext_resource type="Resource" path="res://content/villains/frondland_felidar.tres" id="9_3fo2n"]
+[ext_resource type="Resource" path="res://content/villains/charmed_stray.tres" id="10_lfyb0"]
+[ext_resource type="Resource" path="res://content/villains/vanguard_of_brimaz.tres" id="11_lgada"]
+[ext_resource type="Resource" path="res://content/villains/king_of_the_pride.tres" id="12_s3av3"]
+[ext_resource type="Script" path="res://run/scenery_kind.gd" id="13_gm5df"]
+[ext_resource type="Script" path="res://run/stage_definition.gd" id="14_i246y"]
+
+[resource]
+script = ExtResource("14_i246y")
+name = "Placeholder White"
+tier = 5
+lesser_villains = Array[ExtResource("1_m3fde")]([ExtResource("10_lfyb0"), ExtResource("11_lgada"), ExtResource("12_s3av3")])
+elite_villains = Array[ExtResource("1_m3fde")]([ExtResource("6_g3qm8"), ExtResource("7_gjsfj"), ExtResource("8_ra3s0"), ExtResource("9_3fo2n")])
+bosses = Array[ExtResource("1_m3fde")]([ExtResource("2_hwp1w"), ExtResource("3_gjrhh"), ExtResource("4_pqbk3"), ExtResource("5_wh3nw")])

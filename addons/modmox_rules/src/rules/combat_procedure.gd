@@ -56,6 +56,21 @@ static func combat_damage(state: MmGameState) -> CombatProcedure:
 	return procedure
 
 
+## The combat damage [param creature] assigns (CR 510.1a): its power, or its toughness
+## while an AssignsCombatDamageByToughnessAbility on the battlefield or in the command zone
+## reaches it. Asked as the damage is assigned, with every layer applied (ADR 0018). Its
+## power itself is unchanged, so whatever else reads power, such as a fight, reads it as ever.
+static func combat_damage_amount(state: MmGameState, creature: MmGameObject) -> int:
+	var characteristics: MmCharacteristics = state.characteristics_of(creature)
+	# Zone order: whether any ability reaches it cannot depend on which is asked first.
+	for source: MmGameObject in state.battlefield.objects() + state.command.objects():
+		for ability: MmAbility in state.characteristics_of(source).abilities:
+			var by_toughness: AssignsCombatDamageByToughnessAbility = ability as AssignsCombatDamageByToughnessAbility
+			if by_toughness != null and by_toughness.applies_to(state, source, creature):
+				return characteristics.toughness
+	return characteristics.power
+
+
 func _init(state: MmGameState, kind: Kind) -> void:
 	_state = state
 	_kind = kind
@@ -213,24 +228,24 @@ func _strikes_in_this_step(id: int) -> bool:
 func _assign_or_ask(attacker_id: int) -> DivideCombatDamageDecision:
 	var attacker: MmGameObject = _state.object(attacker_id)
 	var characteristics: MmCharacteristics = _state.characteristics_of(attacker)
-	var power: int = characteristics.power
-	if power <= 0:
-		return null  # CR 510.1a: a creature with 0 or less power assigns no combat damage.
+	var amount: int = combat_damage_amount(_state, attacker)
+	if amount <= 0:
+		return null  # CR 510.1a: a creature that would assign 0 or less assigns no combat damage.
 	var combat: MmCombat = _state.combat
 	var defending_player: MmReference = MmReference.to_player(combat.defending_player_id)
 	var tramples: bool = characteristics.has_ability(TrampleAbility)
 	if not combat.is_blocked(attacker_id):
-		_assign(attacker_id, defending_player, power)  # CR 510.1a
+		_assign(attacker_id, defending_player, amount)  # CR 510.1a
 		return null
 	var blockers: Array[int] = combat.blockers_of(_state, attacker_id)
 	if blockers.is_empty():
 		# CR 510.1c: a blocked creature with no blockers left assigns no damage, unless it
 		# has trample, when it assigns all of it to the player (CR 702.19e).
 		if tramples:
-			_assign(attacker_id, defending_player, power)
+			_assign(attacker_id, defending_player, amount)
 		return null
-	if blockers.size() == 1 and (not tramples or power <= _lethal_damage(blockers[0], attacker_id)):
-		_assign(attacker_id, MmReference.to_object(blockers[0]), power)  # CR 510.1c
+	if blockers.size() == 1 and (not tramples or amount <= _lethal_damage(blockers[0], attacker_id)):
+		_assign(attacker_id, MmReference.to_object(blockers[0]), amount)  # CR 510.1c
 		return null
 	var recipients: Array[MmReference] = []
 	var lethal: Array[int] = []
@@ -239,7 +254,7 @@ func _assign_or_ask(attacker_id: int) -> DivideCombatDamageDecision:
 		lethal.append(_lethal_damage(blocker_id, attacker_id))
 	if tramples:
 		recipients.append(defending_player)
-	return DivideCombatDamageDecision.new(attacker.controller_id, attacker_id, power, recipients, lethal)
+	return DivideCombatDamageDecision.new(attacker.controller_id, attacker_id, amount, recipients, lethal)
 
 
 ## CR 702.19b: lethal damage counts damage already marked on the creature and damage
@@ -263,19 +278,19 @@ func _lethal_damage(creature_id: int, source_id: int) -> int:
 ## decision, or null once the damage is assigned.
 func _assign_blocker_or_ask(blocker_id: int) -> DivideCombatDamageDecision:
 	var blocker: MmGameObject = _state.object(blocker_id)
-	var power: int = _state.characteristics_of(blocker).power
+	var amount: int = combat_damage_amount(_state, blocker)
 	var blocked: Array[int] = _state.combat.attackers_blocked_by(_state, blocker_id)
-	if power <= 0 or blocked.is_empty():
+	if amount <= 0 or blocked.is_empty():
 		return null
 	if blocked.size() == 1:
-		_assign(blocker_id, MmReference.to_object(blocked[0]), power)
+		_assign(blocker_id, MmReference.to_object(blocked[0]), amount)
 		return null
 	var recipients: Array[MmReference] = []
 	var lethal: Array[int] = []
 	for attacker_id: int in blocked:
 		recipients.append(MmReference.to_object(attacker_id))
 		lethal.append(_lethal_damage(attacker_id, blocker_id))
-	return DivideCombatDamageDecision.new(blocker.controller_id, blocker_id, power, recipients, lethal)
+	return DivideCombatDamageDecision.new(blocker.controller_id, blocker_id, amount, recipients, lethal)
 
 
 ## CR 510.2: all combat damage in the step is dealt at once. State-based actions are then

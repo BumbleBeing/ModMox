@@ -1,0 +1,24 @@
+# The Credits' roll (milestone 19, signed off as step 3 of prototypes/run_ends).
+# One line of the roll to a line here, top to bottom:
+#   "= " the title, "== " a heading, a blank line a gap, "{godot_license}" Godot's license
+#   text as Engine.get_license_text() gives it, any other line plain; lines starting "# "
+#   are comments, like these.
+
+= ModMox
+
+A game by Jackson 'BumbleBeing' Cmelak
+
+== Made with Godot Engine
+This game uses Godot Engine, available under the following license:
+{godot_license}
+
+== Art
+The artists whose work the game borrows are named under Art Attribution, at the top right.
+
+== Fonts
+Linux Libertine by Philipp H. Poll, under the SIL Open Font License
+TeX Gyre Schola by the GUST e-foundry, under the GUST Font License
+
+ModMox is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
+
+= Thanks for playing

@@ -704,7 +704,8 @@ func _exit_tree() -> void:
 ## the key is that row's, Escape only stopping the wait. Otherwise Escape lets the Pinned
 ## card go if there is one, and if not opens and closes the Pause Menu; and while the menu
 ## is closed any other key does what the Key Bindings say: it passes, undoes, or cancels
-## as the Info Panel's Cancel button does when that is showing (ADR 0034).
+## as the Info Panel's Cancel button does when that is showing (ADR 0034). Cancel closes an
+## open Option Menu before it cancels anything (ADR 0073).
 func press_key(keycode: Key) -> void:
 	if _is_paused and _pause_menu.is_waiting_for_key():
 		_pause_menu.take_key(keycode)
@@ -722,7 +723,10 @@ func press_key(keycode: Key) -> void:
 			KeyBindings.Action.UNDO:
 				undo()
 			KeyBindings.Action.CANCEL:
-				if _info.cancel_button() != null:
+				# An open Option Menu closes first; the next press cancels the cast (ADR 0073).
+				if _option_menu.is_open():
+					_option_menu.close()
+				elif _info.cancel_button() != null:
 					_command(_presenter.cancel_cast)
 			KeyBindings.Action.PREVIOUS_ANSWER:
 				_select_answer(InfoPanel.AFFIRMATIVE)

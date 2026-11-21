@@ -136,13 +136,15 @@ func test_a_debug_run_holds_the_playtest_bolt_in_every_encounter() -> void:
 	assert_eq(run.hero_setup().emblems[0].name, "Playtest Bolt")
 
 
-## T8: beating the Boss wins the run.
-func test_beating_the_boss_wins_the_run() -> void:
+## T8 (milestone 17): beating the Boss beats the Stage; only the fifth wins the run
+## (milestone 19).
+func test_beating_the_boss_beats_the_stage() -> void:
 	var run: Run = Run.debug(5)
 
 	_walk(run)
 
-	assert_true(run.is_won())
+	assert_true(run.is_stage_beaten())
+	assert_false(run.is_won(), "A Tier 1 Boss does not win the run.")
 	assert_eq(run.hearts, Run.STARTING_HEARTS)
 
 
@@ -244,7 +246,7 @@ func test_a_modded_card_keeps_its_mods_in_the_setup() -> void:
 ## encounter won. Says which Villains were met, in order.
 func _walk(run: Run) -> Array[String]:
 	var met: Array[String] = []
-	while not run.is_won():
+	while not run.is_stage_beaten():
 		if run.stage_visit.must_play():
 			met.append(run.stage_visit.meeting.name)
 			run.record_encounter(true)

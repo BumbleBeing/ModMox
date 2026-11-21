@@ -121,7 +121,7 @@ func _gang_blocks(blocks: Dictionary[int, int]) -> void:
 ## The least valuable free blockers block the biggest unblocked attackers while life is
 ## in danger.
 func _chump_blocks(blocks: Dictionary[int, int]) -> void:
-	for attacker_id: int in _attackers_by_power():
+	for attacker_id: int in _attackers_by_damage():
 		if not _in_danger(blocks):
 			return
 		if blocks.values().has(attacker_id):
@@ -139,7 +139,7 @@ func _is_lethal(blocks: Dictionary[int, int]) -> bool:
 	return _life_after(blocks) <= 0
 
 
-## Life after combat damage: unblocked attackers hit, and so does a blocked trampler's power
+## Life after combat damage: unblocked attackers hit, and so does a blocked trampler's damage
 ## beyond its blockers' toughness.
 func _life_after(blocks: Dictionary[int, int]) -> int:
 	var damage: int = 0
@@ -148,14 +148,14 @@ func _life_after(blocks: Dictionary[int, int]) -> int:
 		for blocker_id: int in blocks:
 			if blocks[blocker_id] == attacker_id:
 				blockers.append(blocker_id)
-		var power: int = maxi(_characteristics(attacker_id).power, 0)
+		var assigned: int = maxi(_combat_damage(attacker_id), 0)
 		if blockers.is_empty():
-			damage += power
+			damage += assigned
 		elif _characteristics(attacker_id).has_ability(TrampleAbility):
 			var absorbed: int = 0
 			for blocker_id: int in blockers:
 				absorbed += _characteristics(blocker_id).toughness
-			damage += maxi(power - absorbed, 0)
+			damage += maxi(assigned - absorbed, 0)
 	return _state.player(_player_id).life - damage
 
 
@@ -173,10 +173,10 @@ func _attackers_by_threat() -> Array[int]:
 	return attackers
 
 
-func _attackers_by_power() -> Array[int]:
+func _attackers_by_damage() -> Array[int]:
 	var attackers: Array[int] = _decision.attacker_ids.duplicate()
 	attackers.sort_custom(func(first: int, second: int) -> bool:
-		return _characteristics(first).power > _characteristics(second).power)
+		return _combat_damage(first) > _combat_damage(second))
 	return attackers
 
 
@@ -192,3 +192,9 @@ func _value(object_id: int) -> int:
 
 func _characteristics(object_id: int) -> MmCharacteristics:
 	return _state.characteristics_of(_state.object(object_id))
+
+
+## The combat damage [param object_id] would assign: its power, or its toughness when an
+## ability says so (CombatProcedure.combat_damage_amount()).
+func _combat_damage(object_id: int) -> int:
+	return CombatProcedure.combat_damage_amount(_state, _state.object(object_id))

@@ -38,6 +38,10 @@ _Avoid_: Curse, debuff
 
 ## Runs
 
+**Run**:
+One attempt at the game, from Choose your Hero to Run Won or Run Lost: five Stages, one per Tier, played while Hearts last. Its end screens call it a trial, their titles reading "Trial won" and "Trial lost"; the two words mean the same thing, and every other term keeps "run".
+_Avoid_: Game (an encounter is a game of Magic), playthrough, session
+
 **Tier**:
 One of a run's five steps of difficulty, each offering one Stage of every color. A run plays one Stage per Tier and never the same color twice. Each Tier's Stage is rolled from the Run Seed among the colors not yet played; the Hero never chooses it.
 _Avoid_: Level, act, round
@@ -99,12 +103,20 @@ A Node that is an encounter with a Villain of that Rank. Every Stage ends on its
 _Avoid_: Fight, battle, boss node
 
 **Store**:
-A Node that buys and sells cards and Items for gold, buying at a fraction of the price it sells at. Every Stage has one right after its Start Node and one right before its Boss Encounter.
+A Node that sells nine goods for gold, most of them cards from its Tier's Store Pool and the rest Potions and Armor, and buys those kinds at a third of the price it sells at. What it stocks is set when the Hero arrives and is never restocked. Some of its cards already carry Mods, which raise their price, or Hexes, which lower it. Every Stage has one right after its Start Node and one right before its Boss Encounter.
 _Avoid_: Shop, merchant, vendor
 
 **Workshop**:
-A Node that buys and sells Mods for gold, and removes a Mod from a card for a price, a higher one for a Hex. Every Stage has one right after its Start Node and one right before its Boss Encounter.
+A Node that sells Mods for gold and buys them at a third of the price it sells at, and offers Removal and one Duplication each visit. What it stocks is set when the Hero arrives and is never restocked. Every Stage has one right after its Start Node and one right before its Boss Encounter.
 _Avoid_: Forge, smith, mod shop
+
+**Duplication**:
+The Workshop's making of an exact second Run Card of a card in the Collection, its Mods and Hexes included, for what a Store would charge for that card as it is. The new Run Card joins the Collection but no Deck. A Power-9 card, a card with a Unique Mod and a plain basic land cannot be duplicated.
+_Avoid_: Copy (a rules term), clone, forging
+
+**Removal**:
+The Workshop's taking of one Mod or Hex off a card in the Collection, for one flat price, the same for either. A removed Mod goes back into the Satchel; a removed Hex is gone.
+_Avoid_: Unmodding, stripping, Mod removal service
 
 **Trove**:
 The Node that follows an Elite Encounter and holds treasure. The Hero reaches it whether the Elite Encounter was won or lost, and it is never found anywhere else.
@@ -127,7 +139,7 @@ The screen that opens when the Hero arrives at an encounter, before the Deckbox.
 _Avoid_: Versus screen, matchup screen, Stage Intro (the screen that opens a Stage)
 
 **Spoils**:
-What the Hero wins for beating a Villain: gold and cards, and now and then an Item. They are paid the moment the win is counted and the Hero takes all of them; the Spoils screen only shows what was won. How many cards follows the Villain's Rank (a Lesser Villain pays 1 to 3, mostly 1, an Elite or a Unique Villain 1 to 3 more evenly, a Boss 2 or 3), and how much gold its Rank and the Tier. The cards are drawn evenly from the copies in the Villain's own deck at that Tier, never its basic lands, so their quality is whatever that deck holds. A loss pays nothing.
+What the Hero wins for beating a Villain: gold and cards, and now and then an Item, which a Boss always pays. They are paid the moment the win is counted and the Hero takes all of them; the Spoils screen only shows what was won. How many cards follows the Villain's Rank (a Lesser Villain pays 1 to 3, mostly 1, an Elite or a Unique Villain 1 to 3 more evenly, a Boss 2 or 3), and how much gold its Rank and the Tier. The cards are drawn evenly from the copies in the Villain's own deck at that Tier, never its basic lands, so their quality is whatever that deck holds. A loss pays nothing.
 _Avoid_: Loot, rewards, drops
 
 **Item**:
@@ -147,7 +159,7 @@ A Potion's picture: a 32 × 32 pixel icon on a raised plate in its Rarity's colo
 _Avoid_: Potion art, potion sprite, potion card
 
 **Mod**:
-An Item the Hero holds (a Hex aside) and can apply, in the deckbuilder only, to a card to change it for the rest of the run. It has a name, an Augmentation, a Mod Cost, a Rarity and the card types it accepts. Applied, its Augmentation and Mod Cost become that Run Card's Modifications, the rules engine's word for the changes themselves. Applying one is final the moment it is confirmed, and it fills one of the card's Mod Slots. A Mod is applicable to a card that has an empty Mod Slot and has any of the Mod's card types as it reads now, after the Mods already on it, a basic land included; a Mod may add a rule of its own, such as needing a mana cost. A Mod that accepts lands accepts only lands. The same Mod may go on one card more than once, each copy adding its whole Augmentation and Mod Cost, unless the Mod is once per card, as every Unique one is. What a Mod does is written out from its Augmentation and Mod Cost, never by hand, wherever it is shown off a card. Its name becomes part of the card's Modded Name.
+An Item the Hero holds (a Hex aside) and can apply, in the deckbuilder only, to a card to change it for the rest of the run. It has a name, an Augmentation, a Mod Cost, a Rarity and the card types it accepts. Applied, its Augmentation and Mod Cost become that Run Card's Modifications, the rules engine's word for the changes themselves. Applying one is final the moment it is confirmed, and it fills one of the card's Mod Slots. A Mod is applicable to a card that has an empty Mod Slot and has any of the Mod's card types as it reads now, after the Mods already on it, a basic land included; a Mod may add a rule of its own, such as needing a mana cost. The same Mod may go on one card more than once, each copy adding its whole Augmentation and Mod Cost, unless the Mod is once per card, as every Unique one is. What a Mod does is written out from its Augmentation and Mod Cost, never by hand, wherever it is shown off a card. Its name becomes part of the card's Modded Name.
 _Avoid_: Modification (the engine's term), upgrade, enchantment
 
 **Hex**:
@@ -162,6 +174,10 @@ _Avoid_: Effect (a rules term), bonus, stats
 What a Mod adds to the cost of casting the card it is on: mana symbols, each a fixed color or generic, or an additional cost such as sacrificing a creature, discarding a card or paying life. A Mod that accepts lands has none, and every other Mod has one. A downside that is not paid as the card is cast belongs in the Augmentation.
 _Avoid_: Price (what the Workshop charges), tax, upkeep
 
+**Omni Mod**:
+A Mod that accepts every card type, lands included, such as one that gives cycling. Like any Mod that accepts lands, it has no Mod Cost.
+_Avoid_: Universal Mod, any-card Mod
+
 **Modded Name**:
 What a card with Mods or Hexes is called: the name of each one on it, in alphabetical order of the Mods' and Hexes' names together, in front of the card's own, whose capitalization never changes. A Grizzly Bears with the Mod Violent is Violent Grizzly Bears. A Mod on the card twice is named once with Very in front, and three times with Extremely: Very Violent Grizzly Bears, Extremely Violent Grizzly Bears. Very and Extremely stand right in front of their Mod's name and play no part in the order: a Plains with Ancient once and Violent twice is Ancient Very Violent Plains. An effect that asks for cards "originally named" something goes by the Original's name, so a Violent Charmed Stray is still originally named Charmed Stray.
 _Avoid_: Prefix, title, nickname
@@ -171,11 +187,11 @@ One of the three places a card has for Mods, Hexes included. A basic land has th
 _Avoid_: Mod pip, socket, upgrade slot
 
 **Armor**:
-An Item the Hero wears. Each Armor is a Helm, Greaves or Boots, and fills the Armor Slot of that name. It holds one or more Starting Conditions, as a Status does, and they count only while it is Worn: the two share one system and differ only in how they are come by. A Status is picked on Choose your Hero and lasts the run; an Armor is won, bought and sold, and put on or taken off between encounters, in the Satchel, as often as the Hero likes. Held but not Worn, it does nothing. It has an Armor Icon and no Rarity, though Armor is the scarcest and most valuable kind of Item.
-_Avoid_: Gear, equipment (an Equipment is a card), armor type (a Helm, Greaves or Boots is told by its Armor Slot)
+An Item the Hero wears. Each Armor is a Helm, Cuirass or Greaves, and fills the Armor Slot of that name. It holds one or more Starting Conditions, as a Status does, and they count only while it is Worn: the two share one system and differ only in how they are come by. A Status is picked on Choose your Hero and lasts the run; an Armor is won, bought and sold, and put on or taken off between encounters, in the Satchel, as often as the Hero likes. Held but not Worn, it does nothing. It has an Armor Icon and no Rarity, though Armor is the scarcest and most valuable kind of Item.
+_Avoid_: Gear, equipment (an Equipment is a card), armor type (a Helm, Cuirass or Greaves is told by its Armor Slot)
 
 **Armor Slot**:
-One of the Hero's three places for Armor: Helm, Greaves and Boots. Each holds one Armor of its own kind at a time. A Status can bar one or more of them, a Named Hero's own Status included. A **Barred** Armor Slot holds nothing and is drawn under a red X; an Armor for it can still be held and sold, but not put on.
+One of the Hero's three places for Armor: Helm, Cuirass and Greaves. Each holds one Armor of its own kind at a time. A Status can bar one or more of them, a Named Hero's own Status included. A **Barred** Armor Slot holds nothing and is drawn under a red X; an Armor for it can still be held and sold, but not put on.
 _Avoid_: Armor type, equipment slot, Mod Slot (a card's place for a Mod); for Barred: blocked (a rules term), locked, disabled
 
 **Worn**:
@@ -183,7 +199,7 @@ Said of an Armor that is in its Armor Slot. An Armor is put on and taken off, an
 _Avoid_: Attached (a rules term, for an Aura or an Equipment), equipped (equip is a rules keyword), active
 
 **Armor Icon**:
-An Armor's picture: a 32 × 32 pixel icon, shown on its entry in the Satchel and in its Armor Slot while it is Worn. It has no ground of its own: on its entry it is drawn straight on the parchment, and in its Armor Slot on the slot's dark square. A Potion Icon, unlike it, stands on its Rarity's plate. An empty Armor Slot shows a faint outline of a helm, greaves or boots in its place.
+An Armor's picture: a 32 × 32 pixel icon, shown on its entry in the Satchel and in its Armor Slot while it is Worn. It has no ground of its own: on its entry it is drawn straight on the parchment, and in its Armor Slot on the slot's dark square. A Potion Icon, unlike it, stands on its Rarity's plate. An empty Armor Slot shows a faint outline of a helm, cuirass or greaves in its place.
 _Avoid_: Armor art, armor sprite, Armor Slot (the place, not the picture)
 
 **Heart**:
@@ -193,6 +209,10 @@ _Avoid_: Life (a rules term), health, HP
 **Starting Pool**:
 The cards a run's first Collection is dealt from, authored and divided by color. The deal is semi-random and weighted toward the Hero's color. Achievements can add cards to it, some of them new and powerful.
 _Avoid_: Starter deck, card pool, starting collection
+
+**Store Pool**:
+The cards a Store's stock is drawn from: one for each Tier, authored apart from the Starting Pool and not divided by color, so a Store's cards favor no color, the Hero's included. It never holds a basic land.
+_Avoid_: Shop pool, store list, card pool
 
 **Achievement**:
 A goal met across runs, kept in the Profile, shown in the Gallery. Some add cards to the Starting Pool or unlock a Boon; nothing an Achievement unlocks is sold in the Bazaar.
@@ -219,7 +239,7 @@ The gold kept between runs: whatever gold the Hero still holds when a run is won
 _Avoid_: Bank, meta-currency, savings
 
 **Bazaar**:
-The store on the main menu where gold from the Vault buys unlocks: new cards and Items for future runs. An unlocked card joins the Starting Pool and can be stocked by Stores; an unlocked Item can turn up wherever Items do. Nothing sold here is also an Achievement's reward.
+The store on the main menu where gold from the Vault buys unlocks: new cards and Items for future runs. An unlocked card joins the Store Pool of each Tier it is unlocked for, and never the Starting Pool, which only Achievements add to; an unlocked Item can turn up wherever Items do. Nothing sold here is also an Achievement's reward.
 _Avoid_: Meta shop, unlock store, Store (a Node in a run)
 
 **Profile**:
@@ -231,11 +251,11 @@ A guided, staged run offered on Choose your Hero: a step-by-step guide to deckbu
 _Avoid_: Onboarding, training, first run
 
 **Run Won**:
-The screen a run ends on when its fifth Boss is beaten: the five Stages played, each with its Boss, the gold still held and the Hearts left. It leads to the Credits.
+The screen a run ends on when its fifth Boss is beaten, titled "Trial won": the five Stages played, each with its Boss, the gold still held and the Hearts left. It leads to the Credits.
 _Avoid_: Victory screen, win screen, Run Won notice (the plain stand-in it replaced)
 
 **Run Lost**:
-The screen a run ends on when its last Heart is lost: the Villain that took it, the Stage and Tier where it fell, and the Stages already beaten. It leads to the main menu.
+The screen a run ends on when its last Heart is lost, titled "Trial lost": the Villain that took it, the Stage and Tier where it fell, and the Stages already beaten. It leads to the main menu.
 _Avoid_: Game over, defeat screen, death screen
 
 **Run Bar**:
@@ -291,6 +311,10 @@ _Avoid_: Draft (a Magic term), deck in progress, scratch deck
 **Modify Window**:
 The window in the deckbuilder where a held Mod is applied to the selected card. It shows every kind of Mod the Hero holds, the card as it is, and the card as the chosen Mod would make it, and asks once more before applying, because applying is final.
 _Avoid_: Mod popup, mod dialog
+
+**Collection Window**:
+The window at a Store or a Workshop where a card of the Collection is chosen for a sale, a Removal or a Duplication. It lays the Collection out as the deckbuilder's Collection column does, with an Inspector, marks each card that is in a Deck, grays those it cannot take, and gives the price on the one button that confirms.
+_Avoid_: Card picker, sell window, Deckbox (the window of Decks)
 
 **Hall of Fame**:
 The read-only copies of Active Decks, Mods included, kept from runs the Hero won. It is a page of the Gallery, and its decks are never played.
@@ -508,7 +532,7 @@ A hurt player is Winded: their Portrait sinks quickly to the bottom of its Breat
 _Avoid_: Breathless, stunned
 
 **Key Binding**:
-The key that does one of the four actions that have a key: passing priority (Space), undo (Z), cancel (X) and holding priority (Control). Any single key can be bound to any of them, a modifier included; never Escape, which is the Pause Menu's, and never a combination or a mouse button. Two actions may share a key: a press of it does only the first of pass, undo and cancel bound to it, and holding priority goes with any of them. Buttons that name a key name the one bound. They are kept in the settings file.
+The key that does one of the four actions that have a key: passing priority (Space), undo (Z), cancel (X) and holding priority (Control). Any single key can be bound to any of them, a modifier included; never Escape, which is the Pause Menu's, and never a combination or a mouse button. Two actions may share a key: a press of it does only the first of pass, undo and cancel bound to it, and holding priority goes with any of them. Cancel closes an open Option Menu before it cancels a cast. Buttons that name a key name the one bound. They are kept in the settings file.
 _Avoid_: Hotkey, shortcut, keymap, control (the key)
 
 **Controls Page**:
@@ -532,7 +556,7 @@ The "− 3 +" on a creature, or on a player's portrait, that says how much comba
 _Avoid_: Spinner, counter (a rules term), slider
 
 **Option Menu**:
-The dropdown that opens where a card was clicked when the click could mean more than one thing, with a row for each: a permanent's abilities now, and later choices such as kicker or which half of an adventure card to cast. It shows three rows and scrolls for more.
+The dropdown that opens where a card was clicked when the click could mean more than one thing, with a row for each: a permanent's abilities now, and later choices such as kicker or which half of an adventure card to cast. It shows three rows and scrolls for more, except that a choice of the color of mana of any color shows all five, a row each, "Add {W}" to "Add {G}" (ADR 0073). A row draws its mana symbols as pips, and while the Hero pays by hand a color that pays something still owed glows green. It closes without choosing at a click anywhere else, or a press of the cancel key, which then cancels nothing more.
 _Avoid_: Ability menu, context menu, popup
 
 **Pause Menu**:

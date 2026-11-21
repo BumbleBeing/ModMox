@@ -11,3 +11,7 @@ Until 13g the Encounter Screen compared key codes itself: Space passed, Z undid,
 **The Controls Page is a page of the Pause Menu** (A485), reached from a Controls button on its settings page, with Back leading to the settings. It was asked for as a window of its own and built as a page: it reuses the menu's pages and nothing else on the screen can be clicked while the menu is open anyway. A row that is clicked waits for a key. While one waits, the screen hands the next key pressed to the menu before anything else looks at it, so the key is bound and does not also pass or undo; Escape then only stops the row waiting and leaves the menu open. No bound key acts while the Pause Menu is open, as before.
 
 **Buttons name the key bound** (A481). The Pass Button reads "Pass Priority [SPACE]", the Undo button "Undo [Z]" and the Cancel button "Cancel [X]", each with whatever key does it now. The screen tells the three of them when a binding changes and at every redraw; each remembers the name, so one that is built again still shows it.
+
+## Addendum: cancel closes an open Option Menu first (ADR 0073)
+
+While the Option Menu is open the cancel key closes it without choosing, and does nothing else: a cast being paid for goes on, and the next press cancels it as the Cancel button does. Before, it did nothing at priority while the menu was open, and canceled the cast while paying.

@@ -713,9 +713,9 @@ static func land_order(names: Array[String]) -> Array[int]:
 
 ## Where an Option Menu of [param row_count] rows opens when a card is clicked at
 ## [param at]: there, moved as little as keeps it inside [param field]. It shows at most
-## MENU_ROWS_SHOWN rows and scrolls for the rest.
-static func menu_rect(at: Vector2, row_count: int, field: Rect2) -> Rect2:
-	var shown: int = clampi(row_count, 1, MENU_ROWS_SHOWN)
+## [param most_shown] rows, MENU_ROWS_SHOWN unless told otherwise, and scrolls for the rest.
+static func menu_rect(at: Vector2, row_count: int, field: Rect2, most_shown: int = MENU_ROWS_SHOWN) -> Rect2:
+	var shown: int = clampi(row_count, 1, most_shown)
 	var menu: Vector2 = Vector2(MENU_WIDTH, shown * MENU_ROW + (shown - 1) * MENU_GAP + MENU_PAD * 2.0)
 	return Rect2(Vector2(
 		clampf(at.x, field.position.x, field.end.x - menu.x),

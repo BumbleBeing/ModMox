@@ -2,8 +2,9 @@ extends GutTest
 ## How the debug run moves between screens (milestones 16 and 17): the Deckbox first, the
 ## Stage Intro, the Stage Map, the Deckbox before each encounter met there, the encounter,
 ## and back to the Stage Map, through the Spoils screen after a win (milestone 18); the Boss
-## again after losing to it; the main menu when the run is lost or, from the "Run won"
-## notice, won.
+## again after losing to it. A beaten Boss's Spoils lead to the next Tier's Stage Intro, and
+## the fifth Boss's to Run Won, the Credits and the main menu; the last Heart lost leads to
+## Run Lost and the main menu (milestone 19).
 
 
 func before_each() -> void:
@@ -85,26 +86,67 @@ func test_losing_to_the_boss_opens_the_deckbox_against_it_again() -> void:
 	assert_eq(RunFlow.villain, run.stage_visit.boss)
 
 
-## T10: a beaten Boss's Spoils come first, then the Stage Map with the run won.
-func test_beating_the_boss_shows_its_spoils_then_the_stage_map_with_the_run_won() -> void:
+## T9: a Boss beaten at Tiers 1 to 4 pays its Spoils, whose Continue opens the next Tier's
+## Stage Intro and then its Stage Map, on its Start Node.
+func test_a_beaten_bosss_spoils_lead_to_the_next_tiers_stage_intro() -> void:
 	var run: Run = _on_the_map()
 	_walk_to_the_boss(run)
 	RunFlow.arrive()
 
 	assert_eq(RunFlow.finish_encounter(true), RunFlow.Screen.SPOILS)
-	assert_true(run.is_won())
-	assert_eq(RunFlow.finish_spoils(), RunFlow.Screen.STAGE_MAP)
-	assert_eq(RunFlow.finish_run(), RunFlow.Screen.MENU)
+	assert_eq(RunFlow.finish_spoils(), RunFlow.Screen.STAGE_INTRO)
+	assert_eq(run.stage_visit.stage.tier, 2)
+	assert_eq(RunFlow.finish_intro(), RunFlow.Screen.STAGE_MAP)
+	assert_eq(run.stage_visit.node().kind, StageMap.Kind.START)
+	assert_eq(RunFlow.back_from_deckbox, RunFlow.Screen.STAGE_MAP)
+
+
+## T9: the fifth Boss's Spoils open Run Won, whose Continue opens the Credits, which end at
+## the main menu.
+func test_the_fifth_bosss_spoils_lead_to_run_won_the_credits_and_the_main_menu() -> void:
+	var run: Run = Run.debug(4, null, Run.LAST_TIER)
+	RunFlow.start(run)
+	RunFlow.finish_intro()
+	_walk_to_the_boss(run)
+	RunFlow.arrive()
+
+	assert_eq(RunFlow.finish_encounter(true), RunFlow.Screen.SPOILS)
+	assert_eq(RunFlow.finish_spoils(), RunFlow.Screen.RUN_WON)
+	assert_eq(RunFlow.run, run, "Run Won reads the run.")
+	assert_eq(RunFlow.finish_run_won(), RunFlow.Screen.CREDITS)
+	assert_eq(RunFlow.finish_credits(), RunFlow.Screen.MENU)
 	assert_null(RunFlow.run)
 
 
-func test_losing_the_last_heart_ends_the_run_at_the_main_menu() -> void:
+## T9: losing the last Heart opens Run Lost, whose Main Menu goes there.
+func test_losing_the_last_heart_opens_run_lost_then_the_main_menu() -> void:
 	var run: Run = _on_the_map()
 	run.hearts = 1
 	_move_to_an_encounter(run)
 	RunFlow.arrive()
 
-	assert_eq(RunFlow.finish_encounter(false), RunFlow.Screen.MENU)
+	assert_eq(RunFlow.finish_encounter(false), RunFlow.Screen.RUN_LOST)
+	assert_eq(RunFlow.run, run, "Run Lost reads the run.")
+	assert_null(RunFlow.villain)
+	assert_eq(RunFlow.finish_run_lost(), RunFlow.Screen.MENU)
+	assert_null(RunFlow.run)
+
+
+## T9: losing the last Heart to the Boss opens Run Lost, not the Boss again.
+func test_losing_the_last_heart_to_the_boss_opens_run_lost() -> void:
+	var run: Run = _on_the_map()
+	run.hearts = 1
+	_walk_to_the_boss(run)
+	RunFlow.arrive()
+
+	assert_eq(RunFlow.finish_encounter(false), RunFlow.Screen.RUN_LOST)
+	assert_eq(run.fell_to, run.stage_visit.boss)
+
+
+## The Credits opened with no run, as the main menu will open them (milestone 28), lead
+## back to the main menu.
+func test_the_credits_without_a_run_lead_to_the_main_menu() -> void:
+	assert_eq(RunFlow.finish_credits(), RunFlow.Screen.MENU)
 	assert_null(RunFlow.run)
 
 

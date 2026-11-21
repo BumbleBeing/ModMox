@@ -55,6 +55,15 @@
 		"set_name": "Murders at Karlov Manor",
 		"type_line": "Enchantment"
 	},
+	"bark_of_doran": {
+		"mana_cost": "{1}{W}",
+		"name": "Bark of Doran",
+		"oracle_id": "db3ba239-2239-4e9d-ad70-cff32ed24578",
+		"oracle_text": "Equipped creature gets +0/+1.\nAs long as equipped creature's toughness is greater than its power, it assigns combat damage equal to its toughness rather than its power.\nEquip {1} ({1}: Attach to target creature you control. Equip only as a sorcery.)",
+		"rarity": "uncommon",
+		"set_name": "Lorwyn Eclipsed",
+		"type_line": "Artifact — Equipment"
+	},
 	"battlegrowth": {
 		"mana_cost": "{G}",
 		"name": "Battlegrowth",
@@ -266,6 +275,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Forest"
+	},
+	"frondland_felidar": {
+		"mana_cost": "{2}{G}{W}",
+		"name": "Frondland Felidar",
+		"oracle_id": "bb504fb1-1d19-4d0b-958f-e8f2433e0575",
+		"oracle_text": "Vigilance\nCreatures you control with vigilance have \"{1}, {T}: Tap target creature.\"",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Ikoria: Lair of Behemoths",
+		"toughness": "5",
+		"type_line": "Creature — Cat Beast"
 	},
 	"frozen_shade": {
 		"mana_cost": "{2}{B}",
@@ -496,6 +516,17 @@
 		"set_name": "Antiquities",
 		"type_line": "Artifact"
 	},
+	"jewel_thief": {
+		"mana_cost": "{2}{G}",
+		"name": "Jewel Thief",
+		"oracle_id": "470f0bbf-a0c9-4216-96f0-d400dac17aef",
+		"oracle_text": "Vigilance, trample\nWhen this creature enters, create a Treasure token. (It's an artifact with \"{T}, Sacrifice this token: Add one mana of any color.\")",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Streets of New Capenna",
+		"toughness": "3",
+		"type_line": "Creature — Cat Rogue"
+	},
 	"jodahs_codex": {
 		"mana_cost": "{5}",
 		"name": "Jodah's Codex",
@@ -650,6 +681,17 @@
 		"set_name": "The Lost Caverns of Ixalan",
 		"toughness": "3",
 		"type_line": "Creature — Cat Warrior"
+	},
+	"maned_serval": {
+		"mana_cost": "{1}{W}",
+		"name": "Maned Serval",
+		"oracle_id": "ac230f29-6d3b-4fe1-bcb0-6ffab95a1bd7",
+		"oracle_text": "Vigilance",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Ikoria: Lair of Behemoths",
+		"toughness": "4",
+		"type_line": "Creature — Cat"
 	},
 	"merfolk_of_the_pearl_trident": {
 		"mana_cost": "{U}",
@@ -955,6 +997,17 @@
 		"set_name": "Dominaria",
 		"type_line": "Artifact — Equipment"
 	},
+	"skyhunter_prowler": {
+		"mana_cost": "{2}{W}",
+		"name": "Skyhunter Prowler",
+		"oracle_id": "5e0d13b0-d5d0-4c5f-945e-5cda7d980670",
+		"oracle_text": "Flying, vigilance (This creature can't be blocked except by creatures with flying or reach, and attacking doesn't cause this creature to tap.)",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Fifth Dawn",
+		"toughness": "3",
+		"type_line": "Creature — Cat Knight"
+	},
 	"skyknight_squire": {
 		"mana_cost": "{1}{W}",
 		"name": "Skyknight Squire",
@@ -1113,6 +1166,17 @@
 		"set_name": "Time Spiral",
 		"type_line": "Sorcery"
 	},
+	"undergrowth_leopard": {
+		"mana_cost": "{1}{G}",
+		"name": "Undergrowth Leopard",
+		"oracle_id": "511fa8a3-0a65-47fc-9f3b-57eaef2698cd",
+		"oracle_text": "Vigilance\n{1}, Sacrifice this creature: Destroy target artifact or enchantment.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Tarkir: Dragonstorm",
+		"toughness": "2",
+		"type_line": "Creature — Cat"
+	},
 	"uthden_troll": {
 		"mana_cost": "{2}{R}",
 		"name": "Uthden Troll",
@@ -1134,6 +1198,15 @@
 		"set_name": "Born of the Gods",
 		"toughness": "2",
 		"type_line": "Creature — Cat Soldier"
+	},
+	"viridian_claw": {
+		"mana_cost": "{2}",
+		"name": "Viridian Claw",
+		"oracle_id": "11ba27f4-decf-4447-9808-0d58844655cf",
+		"oracle_text": "Equipped creature gets +1/+0 and has first strike.\nEquip {1}",
+		"rarity": "uncommon",
+		"set_name": "Mirrodin Besieged",
+		"type_line": "Artifact — Equipment"
 	},
 	"wall_of_stone": {
 		"mana_cost": "{1}{R}{R}",

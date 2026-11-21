@@ -1,10 +1,12 @@
 class_name AiPaymentPlanner
 extends RefCounted
 ## Chooses how to pay one step of a mana cost (A157, A169): mana already in the pool first,
-## then the source that is cheapest to lose: a land, then another source, then a creature.
+## then the source that is cheapest to lose: a land, then another source, then a creature,
+## then a source its mana ability sacrifices, such as a Treasure, which is lost for good.
 ## Colored symbols are paid before generic mana, with sources making that color, so a
-## payment the engine offered is always finished. Auto-tap (game glossary) pays for the
-## Hero with it too, so both players pay the same way.
+## payment the engine offered is always finished; mana of any color is made only in a color
+## that pays something (ADR 0072). Auto-tap (game glossary) pays for the Hero with it too,
+## so both players pay the same way.
 
 ## Tiers, cheapest to use first.
 const _POOL_FOR_COLOR: int = 0
@@ -13,7 +15,8 @@ const _POOL: int = 2
 const _LAND: int = 3
 const _OTHER_SOURCE: int = 4
 const _CREATURE: int = 5
-const _UNUSABLE: int = 6
+const _SACRIFICED: int = 6
+const _UNUSABLE: int = 7
 
 
 ## The index of the action in [param decision] to take next, reading [param state].
@@ -46,6 +49,8 @@ static func colors_needed_by_hand(state: MmGameState, player_id: int) -> Diction
 static func mana_type_of(state: MmGameState, action: MmAction, pool: Array[MmMana]) -> int:
 	if action is PayWithManaAction:
 		return pool[(action as PayWithManaAction).unit_index].type
+	if action is ActivateAbilityAction and (action as ActivateAbilityAction).mana_type != MmMana.NO_TYPE:
+		return (action as ActivateAbilityAction).mana_type  # ADR 0072: the color it was offered for.
 	var ability: ActivatedAbility = AiTiming.activated_ability_of(state, action)
 	if ability != null:
 		for effect: MmEffect in ability.effects:
@@ -70,8 +75,12 @@ static func _rank(state: MmGameState, decision: PayManaDecision, action: MmActio
 	return [kind, 0, demand, _object_id(action)]
 
 
-## The tier of the source [param action] taps: a land, a creature, or anything else.
+## The tier of the source [param action] taps: one its mana ability sacrifices, a land, a
+## creature, or anything else.
 static func _kind_of(state: MmGameState, action: ActivateAbilityAction) -> int:
+	for cost: MmCost in AiTiming.activated_ability_of(state, action).costs:
+		if cost is SacrificeThisCost:
+			return _SACRIFICED
 	var characteristics: MmCharacteristics = state.characteristics_of(state.object(action.object_id))
 	if characteristics.has_card_type(MmCardTypes.CardType.CREATURE):
 		return _CREATURE

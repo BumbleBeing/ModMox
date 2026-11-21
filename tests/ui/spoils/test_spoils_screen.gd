@@ -151,24 +151,18 @@ func test_continue_opens_the_stage_map_with_the_gold() -> void:
 	map.set_process(false)
 	map.begin(_run)
 	assert_eq(map.run_bar().gold_text(), str(paid))
-	assert_null(map.notice())
 
 
-## S6: after a Boss, Continue opens the Stage Map with "Run won" over it.
-func test_after_a_boss_continue_opens_the_stage_map_with_run_won() -> void:
+## S6: after a Boss before the fifth, Continue opens the next Tier's Stage Intro
+## (milestone 19), its Stage entered.
+func test_after_a_boss_continue_opens_the_next_tiers_stage_intro() -> void:
 	_beat_the_boss()
 	await _open()
 
 	await _click(_screen.continue_button())
 
-	assert_eq(_went_to, [Screens.STAGE_MAP] as Array[String])
-	var map: StageMapScreen = StageMapScreen.new()
-	map.starts_itself = false
-	add_child_autofree(map)
-	map.size = SCREEN
-	map.set_process(false)
-	map.begin(_run)
-	assert_not_null(map.notice())
+	assert_eq(_went_to, [Screens.STAGE_INTRO] as Array[String])
+	assert_eq(_run.stage_visit.stage.tier, 2)
 
 
 ## S7: the ground is the Stage Intro's: the Stage's own color, or the slate.

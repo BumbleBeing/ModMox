@@ -86,7 +86,8 @@ static func _play_until_resolved(copy: MmEngine, player_id: int, profile: AiProf
 static func _index_of(decision: PriorityDecision, activate: ActivateAbilityAction) -> int:
 	for index: int in decision.actions.size():
 		var other: ActivateAbilityAction = decision.actions[index] as ActivateAbilityAction
-		if other != null and other.object_id == activate.object_id and other.ability_index == activate.ability_index:
+		if other != null and other.object_id == activate.object_id and other.ability_index == activate.ability_index \
+				and other.mana_type == activate.mana_type:
 			return index
 	return -1
 

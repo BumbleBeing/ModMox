@@ -160,9 +160,9 @@ func test_letting_go_of_a_card_with_two_kinds_opens_the_option_menu_with_both() 
 	_screen.release_hand(at + Vector2(0, -400))
 
 	assert_true(_screen.option_menu().is_open())
-	var rows: Array[Button] = _screen.option_menu().rows()
-	assert_eq(rows.size(), 2)
-	assert_eq([rows[0].text, rows[1].text], ["Cast Trinket", "Cycling {0}"], "The row reads as the ability is printed.")
+	var words: Array[SymbolLabel] = _screen.option_menu().words()
+	assert_eq(words.size(), 2)
+	assert_eq([words[0].written(), words[1].written()], ["Cast Trinket", "Cycling {0}"], "The row reads as the ability is printed.")
 	_screen.cancel_drag()
 
 

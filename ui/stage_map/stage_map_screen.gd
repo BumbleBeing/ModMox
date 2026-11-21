@@ -9,11 +9,13 @@ extends Control
 ## lit. The Stage's Map Backdrop lies behind it all, scrolling with the map, its Scenery
 ## over it, and each Node stands in a halo that sets it off from the picture (ADR 0038). Hovering a Node names it.
 ## The Boss breathes in its disc. Arriving at an encounter opens the Deckbox against its
-## Villain; once the Boss is beaten the "Run won" notice covers the map.
+## Villain. A beaten Boss's Spoils lead on to the next Tier's Stage Intro, or to Run Won
+## (milestone 19), so the map is never shown with its Boss beaten.
 ##
 ## Opened on its own (godot --path . res://ui/stage_map/stage_map_screen.tscn, or the main
 ## menu's --stage-map) it begins a debug run: --run-seed=N picks the run, --stage=red its
-## Stage, and --screenshot=/absolute/path.png saves a picture and quits.
+## Tier 1 Stage, --tier=N walks it up to Tier N, and --screenshot=/absolute/path.png saves
+## a picture and quits.
 
 const FLAG: String = "--stage-map"
 const ICONS: String = "res://ui/sprites/map_nodes/%s.png"
@@ -71,13 +73,13 @@ const LABEL_MARGIN: float = 8.0
 var starts_itself: bool = true
 ## How the screen opens another scene. Tests replace it.
 var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get_tree(), scene)
-## Whether labels, links and the notice ease in and out. Off in a screen a test makes, which
+## Whether labels and links ease in and out. Off in a screen a test makes, which
 ## shows each at once; glides always take their time, stepped by advance().
 var is_paced: bool = false
 var game_speed: GameSpeed.Speed = GameSpeed.Speed.FAST
 
-## Whether the screen has led to the main menu, so the menu's --stage-map does not open it
-## again.
+## Whether a run has ended at the main menu, so the menu's --stage-map does not open its
+## Stage Map again. Run Lost and the Credits set it as they lead there.
 static var has_left: bool = false
 
 var _run: Run = null
@@ -87,7 +89,6 @@ var _bar: RunBar
 var _label: PanelContainer
 var _label_text: Label
 var _label_tween: Tween
-var _notice: RunWonNotice = null
 var _links: StageMapLinks = StageMapLinks.new()
 ## The Stage's Scenery, placed once, the lower last.
 var _scenery: Array[SceneryPiece] = []
@@ -129,23 +130,26 @@ func _ready() -> void:
 
 
 ## The debug run the command line asks for: --run-seed=N (1 if not given) and, with
-## --stage=red or another color, that Tier 1 Stage in place of a rolled one.
+## --stage=red or another color, that Tier 1 Stage in place of a rolled one; with --tier=N,
+## walked up to Tier N, its earlier Stages counted as won (milestone 19).
 static func debug_run_from(arguments: PackedStringArray) -> Run:
 	var run_seed: int = 1
 	var stage: StageDefinition = null
+	var tier: int = Run.FIRST_TIER
 	for argument: String in arguments:
 		if argument.begins_with("--run-seed="):
 			run_seed = int(argument.trim_prefix("--run-seed="))
+		elif argument.begins_with("--tier="):
+			tier = clampi(int(argument.trim_prefix("--tier=")), Run.FIRST_TIER, Run.LAST_TIER)
 		elif argument.begins_with("--stage="):
 			var color: String = argument.trim_prefix("--stage=")
 			for each: StageDefinition in ContentStages.all():
-				if each.backdrop() == color:
+				if each.backdrop() == color and each.tier == Run.FIRST_TIER:
 					stage = each
-	return Run.debug(run_seed, stage)
+	return Run.debug(run_seed, stage, tier)
 
 
-## Shows [param run]'s Stage, the view framing the Hero's row; and the "Run won" notice if
-## its Boss is beaten.
+## Shows [param run]'s Stage, the view framing the Hero's row.
 func begin(run: Run) -> void:
 	_run = run
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -163,8 +167,6 @@ func begin(run: Run) -> void:
 	_links.ease_toward(run.stage_visit, -1, 1.0)
 	_ease_glows(1.0)
 	_scenery = SceneryLayout.place(run.stage_visit)
-	if run.is_won():
-		_open_notice()
 	queue_redraw()
 
 
@@ -216,7 +218,7 @@ func hero_spot() -> Vector2:
 
 ## The Nodes that glow now: those the Hero may move to, while they stand still.
 func glowing() -> Array[int]:
-	if _gliding_to != -1 or _notice != null:
+	if _gliding_to != -1:
 		return []
 	return _run.stage_visit.choices()
 
@@ -251,10 +253,6 @@ func label_rect() -> Rect2:
 	return _label.get_rect()
 
 
-func notice() -> RunWonNotice:
-	return _notice
-
-
 ## A click at [param point]: on a glowing Node, the Hero sets off for it. Says whether it
 ## did anything.
 func click_at(point: Vector2) -> bool:
@@ -274,7 +272,7 @@ func click_at(point: Vector2) -> bool:
 ## where the cursor is; tests call it.
 func point_at(point: Vector2) -> void:
 	var id: int = -1
-	if _gliding_to == -1 and _notice == null:
+	if _gliding_to == -1:
 		id = StageMapLayout.node_at(point, _run.stage_visit, _scroll_row)
 	_point(id)
 
@@ -305,7 +303,7 @@ func _process(delta: float) -> void:
 	point_at(get_local_mouse_position())
 
 
-## A press on the map itself; buttons, the Run Bar and the notice take their own.
+## A press on the map itself; buttons and the Run Bar take their own.
 func _gui_input(event: InputEvent) -> void:
 	var press: InputEventMouseButton = event as InputEventMouseButton
 	if press == null or not press.pressed or press.button_index != MOUSE_BUTTON_LEFT or _run == null:
@@ -333,16 +331,6 @@ func _hero_row() -> float:
 	if _gliding_to == -1:
 		return row
 	return lerpf(row, _run.stage_visit.map.nodes[_gliding_to].row, StageMapLayout.eased(_glide))
-
-
-func _open_notice() -> void:
-	_notice = RunWonNotice.new()
-	_notice.boss_name = _run.stage_visit.boss.name
-	_notice.fade_seconds = GameSpeed.seconds(RunWonNotice.FADE_SECONDS, game_speed) if is_paced else 0.0
-	_notice.main_menu = func() -> void:
-		has_left = true
-		navigate.call(Screens.scene(RunFlow.finish_run()))
-	add_child(_notice)
 
 
 func _point(id: int) -> void:

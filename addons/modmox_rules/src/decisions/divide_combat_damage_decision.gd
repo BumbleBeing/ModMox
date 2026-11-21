@@ -9,7 +9,8 @@ extends MmPendingDecision
 
 ## The creature whose damage is divided.
 var source_id: int
-## The combat damage to divide: its power.
+## The combat damage to divide: its power, or its toughness when it assigns by toughness
+## (CombatProcedure.combat_damage_amount()).
 var amount: int
 ## The creatures it is blocked by, or blocking, in ID order, then the player being attacked
 ## if an attacker has trample.

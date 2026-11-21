@@ -580,6 +580,89 @@ func test_up_to_targets_glow_as_targets_and_are_picked_on_the_board() -> void:
 	assert_eq(clicks.clickable_ids().size(), 0, "A click picks it (CardPicks), and answers nothing alone.")
 
 
+func test_a_treasure_has_a_row_for_each_color_in_wubrg_order_reading_add_and_its_symbol() -> void:
+	# Game ADR 0073: the engine offers an action for each color (engine ADR 0072), and each
+	# is a row of the Option Menu reading "Add {W}", worded in full for the Info Panel.
+	var view: MmPlayerView = _view()
+	view.battlefield.append(_treasure(40))
+	var actions: Array[MmAction] = [PassAction.new()]
+	actions.append_array(ActivateAbilityAction.each_for(40, 0, _treasure(40).abilities[0] as ActivatedAbility))
+
+	var clicks: DecisionClicks = DecisionClicks.of(PriorityDecision.new(HERO, actions), view)
+
+	var options: Array[ClickOption] = clicks.options_of(40)
+	assert_eq(options.map(func(option: ClickOption) -> String: return option.row_text),
+		["Add {W}", "Add {U}", "Add {B}", "Add {R}", "Add {G}"])
+	assert_eq(options.map(func(option: ClickOption) -> String: return option.text), [
+		"{T}, Sacrifice this token: Add {W}.", "{T}, Sacrifice this token: Add {U}.",
+		"{T}, Sacrifice this token: Add {B}.", "{T}, Sacrifice this token: Add {R}.",
+		"{T}, Sacrifice this token: Add {G}.",
+	])
+	assert_eq(options.map(func(option: ClickOption) -> int: return option.answer), [1, 2, 3, 4, 5])
+	assert_eq(options.map(func(option: ClickOption) -> int: return option.mana_type),
+		[MmMana.Type.WHITE, MmMana.Type.BLUE, MmMana.Type.BLACK, MmMana.Type.RED, MmMana.Type.GREEN])
+	assert_true(options.all(func(option: ClickOption) -> bool: return option.is_mana))
+	assert_eq(_kinds(clicks), {40: [DecisionClicks.Kind.MANA]}, "One source of mana, glowing blue.")
+
+
+func test_at_priority_no_row_glows() -> void:
+	var view: MmPlayerView = _view()
+	view.battlefield.append(_treasure(40))
+	var actions: Array[MmAction] = [PassAction.new(), ActivateAbilityAction.new(LAND_ID, 0)]
+	actions.append_array(ActivateAbilityAction.each_for(40, 0, _treasure(40).abilities[0] as ActivatedAbility))
+
+	var clicks: DecisionClicks = DecisionClicks.of(PriorityDecision.new(HERO, actions), view)
+
+	assert_true(clicks.options_of(40).all(func(option: ClickOption) -> bool: return not option.has_glow),
+		"Every color can be chosen, so a Glow would say nothing.")
+	assert_false(clicks.options_of(LAND_ID)[0].has_glow)
+
+
+func test_while_paying_by_hand_a_color_row_glows_only_if_it_pays_something_still_owed() -> void:
+	var view: MmPlayerView = _view()
+	view.battlefield.append(_treasure(40))
+	var colors: Array[MmAction] = ActivateAbilityAction.each_for(40, 0, _treasure(40).abilities[0] as ActivatedAbility)
+	var white: PayManaDecision = PayManaDecision.new(HERO, colors, 0, [MmMana.Type.WHITE] as Array[MmMana.Type])
+	var white_and_green: PayManaDecision = PayManaDecision.new(HERO, colors, 0,
+		[MmMana.Type.WHITE, MmMana.Type.GREEN] as Array[MmMana.Type])
+	var generic: PayManaDecision = PayManaDecision.new(HERO, colors, 1, [] as Array[MmMana.Type])
+
+	var glows: Callable = func(decision: PayManaDecision) -> Array:
+		return DecisionClicks.of(decision, view).options_of(40).map(func(option: ClickOption) -> bool: return option.has_glow)
+
+	assert_eq(glows.call(white), [true, false, false, false, false], "Savannah Lions' {W}: only white pays.")
+	assert_eq(glows.call(white_and_green), [true, false, false, false, true])
+	assert_eq(glows.call(generic), [true, true, true, true, true], "Any color pays generic mana.")
+
+
+func test_every_other_row_reads_in_full_and_never_glows_while_paying() -> void:
+	var view: MmPlayerView = _view()
+	view.battlefield.append(_permanent(6, [_ping(), Scenario.tap_for_mana(MmMana.Type.RED, 1)]))
+	var decision: PayManaDecision = PayManaDecision.new(HERO, [
+		ActivateAbilityAction.new(LAND_ID, 0), ActivateAbilityAction.new(6, 1),
+	] as Array[MmAction], 1, [MmMana.Type.GREEN] as Array[MmMana.Type])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	var forest: ClickOption = clicks.options_of(LAND_ID)[0]
+	assert_eq(forest.row_text, forest.text, "A row reads as the ability is printed.")
+	assert_eq(forest.row_text, "{T}: Add {G}.")
+	assert_eq(forest.mana_type, MmMana.NO_TYPE)
+	assert_false(forest.has_glow, "Only a choice of color glows: every source here pays.")
+	assert_eq(clicks.options_of(6)[0].row_text, "{T}: Add {R}.")
+	assert_false(clicks.options_of(6)[0].has_glow)
+
+
+## A Treasure on the battlefield, as content/tokens/treasure.tres makes it.
+func _treasure(id: int) -> MmObjectView:
+	var definition: MmCardDefinition = load("res://content/tokens/treasure.tres") as MmCardDefinition
+	var seen: MmObjectView = _card(id, definition.name)
+	seen.card_types = definition.card_types.duplicate()
+	seen.abilities = definition.abilities.duplicate()
+	seen.is_token = true
+	return seen
+
+
 ## A creature on the battlefield with [param abilities].
 func _permanent(id: int, abilities: Array[MmAbility]) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()

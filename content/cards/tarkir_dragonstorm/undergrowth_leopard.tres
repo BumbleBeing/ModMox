@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_r8sgu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_82fgu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="2_koe4e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_kr68k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_r2fbo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/sacrifice_this_cost.gd" id="4_gtp5u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_qr77l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/destroy_effect.gd" id="6_ud2h5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="7_mtppq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="9_64kgq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_uwft4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_8rpx3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_b21k2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="13_gey8r"]
+
+[sub_resource type="Resource" id="Resource_s27we"]
+script = ExtResource("2_koe4e")
+
+[sub_resource type="Resource" id="Resource_el1tu"]
+script = ExtResource("4_gtp5u")
+
+[sub_resource type="Resource" id="Resource_d0avu"]
+script = ExtResource("7_mtppq")
+
+[sub_resource type="Resource" id="Resource_ca67d"]
+script = ExtResource("6_ud2h5")
+selection = SubResource("Resource_d0avu")
+
+[sub_resource type="Resource" id="Resource_upwkj"]
+script = ExtResource("2_82fgu")
+generic = 1
+
+[sub_resource type="Resource" id="Resource_v26nx"]
+script = ExtResource("12_b21k2")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_sfkbb"]
+script = ExtResource("12_b21k2")
+card_type = 2
+
+[sub_resource type="Resource" id="Resource_81mrk"]
+script = ExtResource("13_gey8r")
+filters = Array[ExtResource("11_8rpx3")]([SubResource("Resource_v26nx"), SubResource("Resource_sfkbb")])
+
+[sub_resource type="Resource" id="Resource_oqk4m"]
+script = ExtResource("10_uwft4")
+filter = SubResource("Resource_81mrk")
+
+[sub_resource type="Resource" id="Resource_mqcv7"]
+script = ExtResource("9_64kgq")
+mana_cost = SubResource("Resource_upwkj")
+costs = Array[ExtResource("3_r2fbo")]([SubResource("Resource_el1tu")])
+targets = Array[ExtResource("10_uwft4")]([SubResource("Resource_oqk4m")])
+effects = Array[ExtResource("5_qr77l")]([SubResource("Resource_ca67d")])
+
+[sub_resource type="Resource" id="Resource_yun73"]
+script = ExtResource("2_82fgu")
+generic = 1
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_kr68k")
+name = "Undergrowth Leopard"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat"])
+mana_cost = SubResource("Resource_yun73")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_r8sgu")]([SubResource("Resource_s27we"), SubResource("Resource_mqcv7")])

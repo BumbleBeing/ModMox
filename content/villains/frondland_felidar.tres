@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Villain" format=3]
+
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/frondland_felidar_pain.png" id="1_sukvy"]
+[ext_resource type="Script" path="res://run/villain.gd" id="2_yc1a4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/core/mm_player_setup.gd" id="3_wsjyk"]
+[ext_resource type="Resource" path="res://content/decks/frondland_felidar.tres" id="4_stib8"]
+[ext_resource type="Texture2D" path="res://ui/sprites/portraits/frondland_felidar.png" id="5_tcp2c"]
+
+[resource]
+script = ExtResource("2_yc1a4")
+name = "Frondland Felidar"
+sprite = ExtResource("5_tcp2c")
+pain_sprite = ExtResource("1_sukvy")
+setups = Array[ExtResource("3_wsjyk")]([ExtResource("4_stib8")])

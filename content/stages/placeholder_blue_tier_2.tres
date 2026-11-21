@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="StageDefinition" format=3]
+
+[ext_resource type="Script" path="res://run/villain.gd" id="1_5nle2"]
+[ext_resource type="Resource" path="res://content/villains/blue_red.tres" id="2_47hs6"]
+[ext_resource type="Resource" path="res://content/villains/white_black.tres" id="3_1ckec"]
+[ext_resource type="Resource" path="res://content/villains/red_green.tres" id="4_1uum1"]
+[ext_resource type="Script" path="res://run/scenery_kind.gd" id="5_5po52"]
+[ext_resource type="Script" path="res://run/stage_definition.gd" id="6_bddjh"]
+
+[resource]
+script = ExtResource("6_bddjh")
+name = "Placeholder Blue"
+color = 1
+tier = 2
+lesser_villains = Array[ExtResource("1_5nle2")]([ExtResource("4_1uum1")])
+elite_villains = Array[ExtResource("1_5nle2")]([ExtResource("3_1ckec")])
+bosses = Array[ExtResource("1_5nle2")]([ExtResource("2_47hs6")])

@@ -37,6 +37,20 @@ func test_two_different_activated_abilities_count_separately() -> void:
 	assert_eq(tricky, plain + 20)
 
 
+func test_a_creature_that_assigns_damage_by_toughness_is_worth_what_it_assigns() -> void:
+	# A 0/4 that assigns combat damage equal to its toughness hits as hard as a 4/4, with its
+	# rules ability counted as nothing more.
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Plain", 4, 4),
+		Scenario.creature("Oak", 0, 4, [Scenario.by_toughness()])], [])
+	assert_not_null(engine)
+	var state: MmGameState = engine.game_state()
+
+	var plain: int = AiBoardEvaluator.creature_value(state, state.object(Scenario.permanent_named(engine, engine.hero().id, "Plain")))
+	var oak: int = AiBoardEvaluator.creature_value(state, state.object(Scenario.permanent_named(engine, engine.hero().id, "Oak")))
+
+	assert_eq(oak, plain)
+
+
 # --- Never on top of itself --------------------------------------------------------
 
 func test_an_ability_is_not_activated_on_top_of_itself() -> void:
@@ -455,6 +469,22 @@ func test_an_equipment_goes_on_the_creature_that_gains_most_from_being_equipped(
 		var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
 
 		assert_eq(target.id, shikari, "Equipped, it also has first strike and lifelink.")
+
+
+func test_an_equipment_that_makes_its_creature_assign_damage_by_toughness_goes_on_the_one_it_makes_hit_hardest() -> void:
+	# After Bark of Doran: equipped, the 2/2 Bear would assign 3 combat damage and the 0/4 Oak
+	# 5. The Board Evaluator reads the damage a creature assigns, not its power alone.
+	for difficulty: AiDifficulty in [AiDifficulty.easy(), AiDifficulty.normal()]:
+		var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2), Scenario.creature("Oak", 0, 4), Scenario.bark()], [])
+		assert_not_null(engine)
+		var bark: int = Scenario.permanent_named(engine, engine.hero().id, "Bark")
+		var oak: int = Scenario.permanent_named(engine, engine.hero().id, "Oak")
+		assert_eq(engine.submit(Scenario.activate_index(engine.pending_decision() as PriorityDecision, bark)), "")
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+
+		assert_eq(target.id, oak, "Equipped, it assigns 5 combat damage, against the Bear's 3.")
 
 
 func test_an_instant_speed_equip_is_a_combat_trick_outside_sorcery_timing() -> void:

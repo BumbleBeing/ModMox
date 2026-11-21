@@ -114,6 +114,10 @@ _Avoid_: Prompt, callback, request
 Something a player may do while holding priority, such as passing, playing a land or casting a spell. A priority decision offers the legal Actions as its options.
 _Avoid_: Move, play, command
 
+**Mana of Any Color**:
+Mana whose color is chosen as it is made, as a Treasure's "Add one mana of any color" (CR 106.1a). A mana ability that adds it is offered as one Action for each color, in WUBRG order, at priority and while paying, and the Action carries the color to the effect (ADR 0072).
+_Avoid_: Color choice (nothing is asked: the color is the Action's), rainbow mana
+
 **Turn Number**:
 How many turns a particular player has begun this encounter; shown to people as "<name>'s Turn 3". A player who has not had a turn yet is on Turn Number 0.
 _Avoid_: Game Turn (when one player's count is meant), round
@@ -275,6 +279,10 @@ _Avoid_: Is attacking (that is a state)
 
 **Blocks**:
 A creature blocks as it is declared as a blocker (CR 509.1); it blocks a creature once for each attacker it is declared blocking (CR 509.3b). A creature put onto the battlefield blocking is blocking but never blocked (CR 509.7).
+
+**Assigning by Toughness**:
+A creature assigning combat damage equal to its toughness rather than its power (CR 510.1a) because a static ability says so, as Bark of Doran's does for the creature it equips while that creature's toughness is greater than its power. Only the amount of combat damage changes: its power is unchanged for everything else, fighting included, and it gains no ability.
+_Avoid_: Toughness damage, "deals damage with its toughness"
 
 **Fight**:
 A keyword action: two creatures each deal damage equal to their power to the other, at once (CR 701.14a), as Bushwhack's "Target creature you control fights target creature you don't control". The creatures are the sources, so deathtouch and lifelink apply, and it is not combat damage. If either has left the battlefield, is no longer a creature or has become an illegal target, neither deals any (CR 701.14b).

@@ -54,9 +54,11 @@ static func permanent_value(state: MmGameState, permanent: MmGameObject, profile
 ## A creature's worth as it is now, before summoning sickness.
 static func creature_value(state: MmGameState, creature: MmGameObject) -> int:
 	var characteristics: MmCharacteristics = state.characteristics_of(creature)
-	var power: int = characteristics.power
+	# Its worth in a fight is the combat damage it assigns: its power, or its toughness when
+	# an ability says so (CombatProcedure.combat_damage_amount()).
+	var damage: int = CombatProcedure.combat_damage_amount(state, creature)
 	var toughness: int = characteristics.toughness
-	var value: int = 80 + 15 * power + 10 * toughness + 5 * characteristics.mana_value()
+	var value: int = 80 + 15 * damage + 10 * toughness + 5 * characteristics.mana_value()
 	# A keyword a creature has twice does nothing more than one, so each counts once.
 	var counted: Dictionary[Script, bool] = {}
 	for ability: MmAbility in characteristics.abilities:
@@ -66,25 +68,25 @@ static func creature_value(state: MmGameState, creature: MmGameObject) -> int:
 				continue
 			counted[kind] = true
 		if ability is FlyingAbility:
-			value += 10 * power
+			value += 10 * damage
 		elif ability is DeathtouchAbility:
 			value += 25
 		elif ability is LifelinkAbility:
-			value += 10 + 10 * power
+			value += 10 + 10 * damage
 		elif ability is DoubleStrikeAbility:
-			value += 10 + 15 * power
+			value += 10 + 15 * damage
 		elif ability is FirstStrikeAbility:
-			value += 10 + 5 * power
+			value += 10 + 5 * damage
 		elif ability is VigilanceAbility:
-			value += 5 * (power + toughness)
+			value += 5 * (damage + toughness)
 		elif ability is TrampleAbility:
-			value += 5 * (power - 1)
+			value += 5 * (damage - 1)
 		elif ability is IndestructibleAbility:
 			value += 70
 		elif ability is ProtectionAbility:
 			value += 20
 		elif ability is DefenderAbility:
-			value -= 9 * power + 40
+			value -= 9 * damage + 40
 		elif ability is ActivatedAbility:
 			value += 10
 	return value

@@ -18,4 +18,4 @@ Tokens arrived with Prideful Parent, on the card track: "When this creature ente
 
 **"Nontoken" is a NotFilter of `IsTokenFilter`**, which reads `is_token` on the object or its last known information, so a token that has died is still seen as one (Arahbo, the First Fang: "another nontoken Cat you control").
 
-Left out until a card needs it (ADR 0001): a token that is a copy of something (CR 111.10, 707), predefined tokens such as Treasure (CR 111.10), a Token Definition with abilities in its rules text ("with flying"), and the number of tokens worked out by a Value.
+Left out until a card needs it (ADR 0001): a token that is a copy of something (CR 111.10, 707), predefined tokens other than Treasure (CR 111.10), a Token Definition with abilities in its rules text ("with flying"), and the number of tokens worked out by a Value. A predefined token is a Token Definition like any other: the Treasure came for Jewel Thief (ADR 0072), and only its words are its own, "create a Treasure token".

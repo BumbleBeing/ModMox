@@ -73,7 +73,7 @@ func test_beating_the_boss_pays_a_bosss_spoils() -> void:
 
 	run.record_encounter(true)
 
-	assert_true(run.is_won())
+	assert_true(run.is_stage_beaten())
 	assert_between(run.last_spoils.gold, 60, 90)
 	assert_between(run.last_spoils.cards.size(), 2, 3)
 	assert_eq(run.gold, gold_before + run.last_spoils.gold)
@@ -89,7 +89,7 @@ func test_the_same_run_seed_pays_the_same_spoils() -> void:
 ## win paid, in order.
 func _spoils_of_a_walk(run: Run) -> Array[String]:
 	var paid: Array[String] = []
-	while not run.is_won():
+	while not run.is_stage_beaten():
 		if run.stage_visit.must_play():
 			run.record_encounter(true)
 			var names: PackedStringArray = []

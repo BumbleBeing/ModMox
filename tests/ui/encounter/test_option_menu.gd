@@ -36,8 +36,8 @@ func test_it_opens_at_the_click_with_a_row_for_each_option() -> void:
 	assert_eq(menu.box_rect(), EncounterLayout.menu_rect(Vector2(600, 300), 2, FIELD))
 	assert_eq(menu.box_rect().position, Vector2(600, 300))
 	assert_eq(menu.rows().size(), 2)
-	assert_eq(menu.rows()[0].text, "Option 1")
-	assert_eq(menu.rows()[1].text, "Option 2")
+	assert_eq(menu.words()[0].written(), "Option 1")
+	assert_eq(menu.words()[1].written(), "Option 2")
 	assert_eq(menu.rows()[0].custom_minimum_size.y, EncounterLayout.MENU_ROW)
 
 
@@ -171,6 +171,79 @@ func test_a_row_brightens_under_the_cursor() -> void:
 	assert_gt(hover.get_luminance(), normal.get_luminance())
 
 
+func test_every_row_draws_its_mana_symbols_as_pips() -> void:
+	# Game ADR 0073: a row is written with a SymbolLabel, as the Info Panel is, never as a
+	# button's text, which shows the braces.
+	var menu: OptionMenu = _menu()
+	var options: Array[ClickOption] = [ClickOption.new(3, "{T}: Add {G}.", true), ClickOption.new(4, "{T}: Add {W}.", true)]
+
+	menu.open(options, Vector2(600, 300), FIELD)
+
+	assert_eq(menu.words().size(), 2)
+	assert_eq(menu.words()[0].written(), "{T}: Add {G}.")
+	assert_eq(menu.words()[0].symbols(), ["t", "g"] as Array[String])
+	assert_eq(menu.words()[1].symbols(), ["t", "w"] as Array[String])
+	assert_eq(menu.rows()[0].text, "", "No braces drawn.")
+	assert_true(menu.rows()[0].is_ancestor_of(menu.words()[0]))
+	assert_eq(menu.words()[0].mouse_filter, Control.MOUSE_FILTER_IGNORE, "The row takes the click.")
+
+
+func test_a_row_reads_its_row_text_and_the_info_panel_is_told_its_text_in_full() -> void:
+	var menu: OptionMenu = _menu()
+	var white: ClickOption = ClickOption.new(7, "{T}, Sacrifice this token: Add {W}.", true)
+	white.row_text = "Add {W}"
+	menu.open([white] as Array[ClickOption], Vector2(600, 300), FIELD)
+	_pointed.clear()
+
+	menu.rows()[0].mouse_entered.emit()
+
+	assert_eq(menu.words()[0].written(), "Add {W}")
+	assert_eq(menu.words()[0].symbols(), ["w"] as Array[String])
+	assert_eq(_pointed, ["{T}, Sacrifice this token: Add {W}."] as Array[String])
+
+
+func test_a_row_reads_its_text_unless_told_otherwise() -> void:
+	assert_eq(ClickOption.new(3, "{T}: Add {G}.", true).row_text, "{T}: Add {G}.")
+	assert_eq(ClickOption.new(3, "Cast Hill Giant").mana_type, MmMana.NO_TYPE)
+	assert_false(ClickOption.new(3, "Cast Hill Giant").has_glow)
+
+
+func test_a_menu_of_the_five_colors_shows_all_five_rows() -> void:
+	var menu: OptionMenu = _menu()
+
+	menu.open(_colors(), Vector2(600, 300), FIELD)
+
+	assert_eq(menu.rows().size(), 5)
+	assert_eq(menu.box_rect().size, EncounterLayout.menu_rect(Vector2(600, 300), 5, FIELD, 5).size)
+	var five: float = 5.0 * EncounterLayout.MENU_ROW + 4.0 * EncounterLayout.MENU_GAP + EncounterLayout.MENU_PAD * 2.0
+	assert_eq(menu.box_rect().size.y, five, "Every color in sight, none scrolled to.")
+	var scroll: ScrollContainer = menu.rows()[0].get_parent().get_parent() as ScrollContainer
+	assert_gte(scroll.custom_minimum_size.y, five - EncounterLayout.MENU_PAD * 2.0)
+
+
+func test_only_a_menu_of_colors_shows_more_than_three_rows() -> void:
+	var five: Array[ClickOption] = _options(5)
+
+	assert_eq(OptionMenu.most_rows_shown(five), EncounterLayout.MENU_ROWS_SHOWN, "A286: three, and scroll.")
+	assert_eq(OptionMenu.most_rows_shown(_colors()), 5)
+	assert_eq(OptionMenu.most_rows_shown(_options(2)), EncounterLayout.MENU_ROWS_SHOWN)
+
+
+func test_a_row_that_has_a_glow_glows_green_and_the_others_do_not() -> void:
+	var menu: OptionMenu = _menu()
+	var options: Array[ClickOption] = _colors()
+	options[0].has_glow = true
+
+	menu.open(options, Vector2(600, 300), FIELD)
+
+	var green: Color = DecisionClicks.color_of(DecisionClicks.Kind.PLAY)
+	assert_eq(BorderEffects.glow_colors(menu.rows()[0]), [green] as Array[Color])
+	for index: int in range(1, 5):
+		assert_eq(BorderEffects.glow_colors(menu.rows()[index]), [] as Array[Color], "Row %d pays nothing owed." % index)
+	var scroll: ScrollContainer = menu.rows()[0].get_parent().get_parent() as ScrollContainer
+	assert_false(scroll.clip_contents, "Nothing scrolls, so the Glow is not cut off at the menu's edge.")
+
+
 func _options(count: int) -> Array[ClickOption]:
 	var options: Array[ClickOption] = []
 	for index: int in count:
@@ -184,3 +257,14 @@ func _menu() -> OptionMenu:
 	menu.chosen.connect(func(answer: int) -> void: _chosen.append(answer))
 	menu.pointed.connect(func(text: String) -> void: _pointed.append(text))
 	return menu
+
+
+## A row for each color of a Treasure's mana, as DecisionClicks makes them.
+func _colors() -> Array[ClickOption]:
+	var options: Array[ClickOption] = []
+	for color: MmMana.Type in MmMana.COLORS:
+		var option: ClickOption = ClickOption.new(20 + color, "{T}, Sacrifice this token: Add {%s}." % MmMana.SYMBOLS[color], true)
+		option.row_text = "Add {%s}" % MmMana.SYMBOLS[color]
+		option.mana_type = color
+		options.append(option)
+	return options

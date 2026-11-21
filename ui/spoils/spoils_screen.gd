@@ -120,7 +120,7 @@ static func debug_run_from(arguments: PackedStringArray) -> Run:
 		if argument.begins_with("--rank="):
 			rank = RANKS.get(argument.trim_prefix("--rank=").to_lower(), rank)
 	var visit: StageVisit = run.stage_visit
-	while not run.is_won():
+	while not visit.is_won:
 		if visit.must_play():
 			var is_there: bool = visit.node().kind == rank
 			run.record_encounter(true)

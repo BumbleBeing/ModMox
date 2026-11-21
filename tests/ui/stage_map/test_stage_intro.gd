@@ -1,6 +1,6 @@
 extends GutTest
-## The plain Stage Intro (milestone 17): the Stage's name and Tier, and its Boss; Continue
-## opens the Stage Map.
+## The Stage Intro (milestone 17): the Stage's name, its Tier Track (milestone 19,
+## test_tier_track.gd), and its Boss; Continue opens the Stage Map.
 
 var _run: Run
 var _intro: StageIntro
@@ -28,12 +28,13 @@ func _open() -> void:
 	await wait_process_frames(1)
 
 
-## S10: the Stage Intro shows the Stage and its Boss.
-func test_the_intro_names_the_stage_its_tier_and_its_boss() -> void:
+## S10: the Stage Intro shows the Stage and its Boss; its Tier is the Tier Track's
+## (milestone 19), no longer in words.
+func test_the_intro_names_the_stage_and_its_boss() -> void:
 	await _open()
 	var visit: StageVisit = _run.stage_visit
 
-	assert_eq(_intro.texts(), [visit.stage.name, "Tier 1", "Boss", visit.boss.name] as Array[String])
+	assert_eq(_intro.texts(), [visit.stage.name, "Boss", visit.boss.name] as Array[String])
 
 
 ## S10: Continue opens the Stage Map.

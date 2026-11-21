@@ -2595,3 +2595,98 @@ static func blocking_brimaz(made: MmCardDefinition = null, abilities: Array[MmAb
 static func free_foliage(card_name: String = "Foliage") -> MmCardDefinition:
 	var attacking: AllOfFilter = all_of([of_type(MmCardTypes.CardType.CREATURE), IsAttackingFilter.new()])
 	return instant(card_name, mana_cost(0), [target(attacking)], [blocking_tokens(cat(), 1, targeted(0))])
+
+
+# --- Card track: assigning combat damage by toughness ----------------------------------
+
+
+## "[affected] assigns combat damage equal to its toughness rather than its power" (CR
+## 510.1a): "this creature" unless another Selection is given, and "As long as [condition],
+## ..." with [param condition].
+static func by_toughness(affected: MmSelection = null, condition: MmCondition = null) -> AssignsCombatDamageByToughnessAbility:
+	var ability: AssignsCombatDamageByToughnessAbility = AssignsCombatDamageByToughnessAbility.new()
+	ability.affected = affected if affected != null else SourceSelection.new()
+	ability.condition = condition
+	return ability
+
+
+## "Equipped creature's toughness is greater than its power": not "toughness [its power] or
+## less".
+static func toughness_greater_than_power() -> SelectionMatchesCondition:
+	var its_power: PowerValue = PowerValue.new()
+	its_power.selection = attached()
+	return condition(attached(), is_not(toughness_from(its_power)))
+
+
+## An Equipment costing {0} with Bark of Doran's abilities: "Equipped creature gets +0/+1. As
+## long as equipped creature's toughness is greater than its power, it assigns combat damage
+## equal to its toughness rather than its power. Equip {0}".
+static func bark(card_name: String = "Bark") -> MmCardDefinition:
+	var definition: MmCardDefinition = artifact(card_name, [
+		continuous_static([modify_pt(0, 1, attached())]),
+		by_toughness(attached(), toughness_greater_than_power()),
+		equip(mana_cost(0))])
+	definition.subtypes = ["Equipment"]
+	return definition
+
+
+# --- Card track: mana of any color (ADR 0072) -------------------------------------------
+
+
+## "Add one mana of any color" (CR 106.1a), its color chosen as its ability is activated.
+static func any_color() -> AddManaEffect:
+	var effect: AddManaEffect = AddManaEffect.new()
+	effect.is_any_color = true
+	effect.amount = constant(1)
+	return effect
+
+
+## A Treasure Token Definition made in code (CR 111.10a): a colorless Treasure artifact token
+## with "{T}, Sacrifice this token: Add one mana of any color." Load
+## content/tokens/treasure.tres when its art matters.
+static func treasure() -> MmCardDefinition:
+	var definition: MmCardDefinition = MmCardDefinition.new()
+	definition.name = "Treasure Token"
+	definition.card_types = [MmCardTypes.CardType.ARTIFACT]
+	definition.subtypes = ["Treasure"]
+	definition.abilities = [activated(null, [TapCost.new(), SacrificeThisCost.new()], [any_color()])]
+	return definition
+
+
+## The color of mana each of [param actions] that activates an ability of [param object_id]
+## makes, in order: MmMana.NO_TYPE for an activation that chooses none.
+static func colors_offered(actions: Array[MmAction], object_id: int) -> Array[int]:
+	var colors: Array[int] = []
+	for action: MmAction in actions:
+		var activate: ActivateAbilityAction = action as ActivateAbilityAction
+		if activate != null and activate.object_id == object_id:
+			colors.append(activate.mana_type)
+	return colors
+
+
+## Activates [param object_id]'s ability that adds one mana of any color, for [param type],
+## while holding priority.
+static func activate_for(engine: MmEngine, object_id: int, type: MmMana.Type) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var index: int = _color_index(decision.actions, object_id, type)
+	return "Object %d makes no %s." % [object_id, MmMana.Type.find_key(type)] if index == -1 else engine.submit(index)
+
+
+## Pays one step of the pending payment with [param object_id]'s ability that adds one mana
+## of any color, for [param type].
+static func pay_for(engine: MmEngine, object_id: int, type: MmMana.Type) -> String:
+	var decision: PayManaDecision = engine.pending_decision() as PayManaDecision
+	if decision == null:
+		return "Not a payment decision."
+	var index: int = _color_index(decision.actions, object_id, type)
+	return "Object %d makes no %s." % [object_id, MmMana.Type.find_key(type)] if index == -1 else engine.submit(index)
+
+
+static func _color_index(actions: Array[MmAction], object_id: int, type: MmMana.Type) -> int:
+	for index: int in actions.size():
+		var activate: ActivateAbilityAction = actions[index] as ActivateAbilityAction
+		if activate != null and activate.object_id == object_id and activate.mana_type == type:
+			return index
+	return -1

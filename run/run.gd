@@ -1,9 +1,12 @@
 class_name Run
 extends RefCounted
 ## One run's state: its Run Seed, the Collection, the Deckbox and its Active Deck, the Mods
-## held, Hearts and gold (milestone 16), and the Stage being walked (milestone 17). It
-## knows nothing of screens; they change it only through its own methods. Gold is held but
-## not yet spent.
+## held, Hearts and gold (milestone 16), the Stage being walked (milestone 17) and the
+## Stages beaten before it (milestone 19). A run plays five Stages, Tiers 1 to 5 in order,
+## each rolled on entering it among the colors not yet played; everything the Hero holds
+## carries from one to the next, and Hearts never refill. The fifth Boss wins it and the
+## last Heart, at any Tier, loses it. It knows nothing of screens; they change it only
+## through its own methods. Gold is held but not yet spent.
 
 const STARTING_HEARTS: int = 3
 const DEBUG_DECK: String = "red_green"
@@ -14,8 +17,9 @@ const BASIC_LANDS: String = "res://content/cards/alpha/%s.tres"
 const BASIC_LAND_FILES: Array[String] = ["plains", "island", "swamp", "mountain", "forest"]
 ## The Emblem the Hero holds in every debug run, to end encounters quickly when playtesting.
 const PLAYTEST_EMBLEM: String = "res://content/emblems/playtest_bolt.tres"
-## Later (milestone 19): the run's Stages come one Tier after another.
 const FIRST_TIER: int = 1
+## The Tier whose Boss wins the run.
+const LAST_TIER: int = Villain.TIERS
 
 var run_seed: int
 var collection: Collection = Collection.new()
@@ -32,8 +36,12 @@ var stage_visit: StageVisit = null
 ## What the last encounter recorded paid (milestone 18, ADR 0039), which the Spoils screen
 ## shows; null after a loss, or before any win.
 var last_spoils: Spoils = null
+## The Villain that took the last Heart, once the run is lost; null until then.
+var fell_to: Villain = null
 
 var _random: RunRandom
+## The Stages whose Bosses were beaten before the one being walked, in Tier order.
+var _beaten: Array[StageVisit] = []
 
 
 func _init(seed_of_run: int) -> void:
@@ -47,8 +55,10 @@ func _init(seed_of_run: int) -> void:
 ## [constant DEBUG_COPIES] copies of every nonland card in Content, more of a card some
 ## Villain's deck has more of; a Deck built from each Villain's deck, named after it, with
 ## the one built from red_green first as the Active Deck; the Playtest Bolt, and a Tier 1
-## Stage rolled from the Run Seed, entered; or [param stage], when given.
-static func debug(seed_of_run: int, stage: StageDefinition = null) -> Run:
+## Stage rolled from the Run Seed, entered; or [param stage], when given. Asked for at a
+## later [param tier], it walks there, each Stage before it counted as won (its Boss beaten
+## and nothing paid), for pictures and playtesting.
+static func debug(seed_of_run: int, stage: StageDefinition = null, tier: int = FIRST_TIER) -> Run:
 	var run: Run = Run.new(seed_of_run)
 	var red_green: MmPlayerSetup = ContentDecks.load_deck(DEBUG_DECK)
 	var lists: Array[MmPlayerSetup] = [red_green]
@@ -90,17 +100,50 @@ static func debug(seed_of_run: int, stage: StageDefinition = null) -> Run:
 	run.deckbox.set_active(run.deckbox.decks()[0])
 	run.hero_emblems.append(load(PLAYTEST_EMBLEM) as MmCardDefinition)
 	run.enter_stage(stage if stage != null else run.roll_stage(FIRST_TIER))
+	while run.stage_visit.stage.tier < clampi(tier, FIRST_TIER, LAST_TIER):
+		run.stage_visit.is_won = true
+		run.enter_next_stage()
 	return run
 
 
-## A Stage of [param tier] from Content, rolled from the Run Seed among every color.
-## Later (milestone 19): only among the colors not yet played.
+## A Stage of [param tier] from Content, rolled from the Run Seed among the colors not yet
+## played in this run.
 func roll_stage(tier: int) -> StageDefinition:
+	var played: Dictionary[MmCardTypes.CardColor, bool] = {}
+	for visit: StageVisit in stages_played():
+		played[visit.stage.color] = true
 	var stages: Array[StageDefinition] = []
 	for stage: StageDefinition in ContentStages.all():
-		if stage.tier == tier:
+		if stage.tier == tier and not played.has(stage.color):
 			stages.append(stage)
 	return stages[_random.pick(RunRandom.STAGES, stages.size())]
+
+
+## Enters the next Tier's Stage, rolled among the colors not yet played, once the Boss of
+## the Stage being walked is beaten. Everything the Hero holds goes with them.
+func enter_next_stage() -> void:
+	assert(is_stage_beaten() and not is_won(), "The next Stage is entered once a Boss before the last is beaten.")
+	var tier: int = stage_visit.stage.tier + 1
+	_beaten.append(stage_visit)
+	enter_stage(roll_stage(tier))
+
+
+## The Stages whose Bosses were beaten before the one being walked, in Tier order.
+func stages_beaten() -> Array[StageVisit]:
+	return _beaten.duplicate()
+
+
+## Every Stage entered, in Tier order: those beaten, then the one being walked.
+func stages_played() -> Array[StageVisit]:
+	var played: Array[StageVisit] = stages_beaten()
+	if stage_visit != null:
+		played.append(stage_visit)
+	return played
+
+
+## Whether the Boss of the Stage being walked has been beaten.
+func is_stage_beaten() -> bool:
+	return stage_visit != null and stage_visit.is_won
 
 
 ## Enters [param stage]: its map is built, its Boss picked and where each Node is drawn
@@ -137,6 +180,8 @@ func record_encounter(won: bool) -> void:
 	last_spoils = null
 	if not won:
 		hearts = maxi(0, hearts - 1)
+		if hearts == 0 and fell_to == null and stage_visit != null:
+			fell_to = stage_visit.meeting
 	if stage_visit == null:
 		return
 	if won and stage_visit.meeting != null:
@@ -153,9 +198,9 @@ func _pay(spoils: Spoils) -> void:
 	last_spoils = spoils
 
 
-## Whether the Boss has been beaten. Later (milestone 19): a run is won after the fifth.
+## Whether the run is won: the fifth Boss, the last Tier's, has been beaten.
 func is_won() -> bool:
-	return stage_visit != null and stage_visit.is_won
+	return is_stage_beaten() and stage_visit.stage.tier == LAST_TIER
 
 
 func is_lost() -> bool:

@@ -9,6 +9,12 @@ enum Type { WHITE = 0, BLUE = 1, BLACK = 2, RED = 3, GREEN = 4, COLORLESS = 5 }
 const SYMBOLS: Dictionary[Type, String] = {
 	Type.WHITE: "W", Type.BLUE: "U", Type.BLACK: "B", Type.RED: "R", Type.GREEN: "G", Type.COLORLESS: "C",
 }
+## The five colors of mana in WUBRG order (CR 105.1, 106.1a), as "one mana of any color"
+## offers them (ADR 0072).
+const COLORS: Array[Type] = [Type.WHITE, Type.BLUE, Type.BLACK, Type.RED, Type.GREEN]
+## No type of mana, where one may have been chosen: an activation of an ability that does
+## not add mana of any color (ADR 0072).
+const NO_TYPE: int = -1
 
 var type: Type
 ## The object whose ability produced this mana.

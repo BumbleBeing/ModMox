@@ -21,35 +21,48 @@ static func symbol_paid_by(type: MmMana.Type, symbols: Array[MmMana.Type], gener
 
 ## Whether [param player_id] could pay [param cost] right now with their pool and the mana
 ## abilities they could activate. Exact: each source permanent is used for at most one of
-## its mana abilities, since they share the {T} cost.
+## its mana abilities, since they share the {T} cost, and mana of any color is any one color
+## (ADR 0072).
 static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost) -> bool:
 	if cost == null:
 		return false
 	var available: Array[MmMana.Type] = []
 	for unit: MmMana in state.player(player_id).mana_pool():
 		available.append(unit.type)
-	# Later: costs other than {T} on mana abilities, which could let one source pay twice.
+	# A source pays once: its mana abilities share {T}, and a Treasure's one ability also
+	# sacrifices it. Later: a mana ability that could be activated twice, as one costing
+	# only life could, or two that do not share {T}, either of which could let one source
+	# pay twice.
 	var choices_per_source: Array = []
 	for source: MmGameObject in sorted_sources_of(state, player_id):
 		var choices: Array = []
 		var abilities: Array[MmAbility] = state.characteristics_of(source).abilities
 		for index: int in abilities.size():
 			var ability: ActivatedAbility = abilities[index] as ActivatedAbility
-			if ability != null and pays_while_paying(state, source, ability, index):
-				choices.append(mana_made_by(state, ability, MmEffectContext.new(player_id, source.id)))
+			if ability == null or not pays_while_paying(state, source, ability, index):
+				continue
+			var context: MmEffectContext = MmEffectContext.new(player_id, source.id)
+			var colors: Array[MmMana.Type] = ability.mana_types_to_choose()
+			if colors.is_empty():
+				choices.append(mana_made_by(state, ability, context))
+			for color: MmMana.Type in colors:
+				choices.append(mana_made_by(state, ability, context.with_chosen_mana_type(color)))
 		if not choices.is_empty():
 			choices_per_source.append(choices)
 	return _covers_with_choices(available, choices_per_source, 0, cost)
 
 
-## The types of mana [param ability] would add, one entry per unit.
+## The types of mana [param ability] would add, one entry per unit, with the color
+## [param context] says was chosen for mana of any color (ADR 0072), which adds nothing
+## when none was.
 static func mana_made_by(state: MmGameState, ability: ActivatedAbility, context: MmEffectContext) -> Array[MmMana.Type]:
 	var made: Array[MmMana.Type] = []
 	for effect: MmEffect in ability.effects:
 		var add_mana: AddManaEffect = effect as AddManaEffect
-		if add_mana != null:
-			for _index: int in add_mana.amount.evaluate(state, context):
-				made.append(add_mana.mana_type)
+		if add_mana == null or add_mana.type_added(context) == MmMana.NO_TYPE:
+			continue
+		for _index: int in add_mana.amount.evaluate(state, context):
+			made.append(add_mana.type_added(context) as MmMana.Type)
 	return made
 
 

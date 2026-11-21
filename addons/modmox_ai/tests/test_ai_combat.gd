@@ -200,6 +200,44 @@ func test_a_creature_defining_its_power_attacks_for_lethal_by_that_power() -> vo
 	assert_eq(agent.explain(), AiAgent.Reason.LETHAL_ATTACK, "Its 3 power is the Villain's last 3 life.")
 
 
+# --- Assigning combat damage by toughness ---------------------------------------------
+# "This creature assigns combat damage equal to its toughness rather than its power" (CR
+# 510.1a): the estimates read the damage a creature assigns, never its power alone.
+
+
+func test_a_creature_that_assigns_damage_by_toughness_attacks_for_lethal_by_its_toughness() -> void:
+	var no_creatures: Array[MmCardDefinition] = []
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Oak", 0, 4, [Scenario.by_toughness()])], no_creatures, [], [],
+		Step.DECLARE_ATTACKERS, 4)
+	assert_not_null(engine)
+	var agent: AiAgent = AiAgent.new()
+
+	assert_eq((AiScenario.ask(engine, agent) as Array).size(), 1)
+	assert_eq(agent.explain(), AiAgent.Reason.LETHAL_ATTACK, "Its toughness, 4, is the Villain's last 4 life.")
+
+
+func test_chump_blocks_an_attacker_whose_toughness_would_be_lethal() -> void:
+	var oak: MmCardDefinition = Scenario.creature("Oak", 1, 6, [Scenario.by_toughness()])
+	var engine: MmEngine = _villain_to_block([oak], [Scenario.creature("Cub", 1, 1)], 6)
+	var agent: AiAgent = AiAgent.new()
+
+	var blocks: Array = AiScenario.ask(engine, agent)
+
+	assert_eq(blocks.size(), 1, "Its power is 1, but it assigns 6, the Villain's last 6 life.")
+	assert_eq(agent.explain(), AiAgent.Reason.LIFE_IN_DANGER)
+
+
+func test_the_quick_guess_at_a_fight_reads_the_damage_a_creature_assigns_by_toughness() -> void:
+	# A CHEAP Agent's duels (A178): the 1/4 assigns 4, enough for the 2/3, which deals it 2.
+	var engine: MmEngine = Scenario.combat_ready([Scenario.creature("Oak", 1, 4, [Scenario.by_toughness()])],
+		[Scenario.creature("Ogre", 2, 3)])
+	assert_not_null(engine)
+	var oak: int = Scenario.permanent_named(engine, engine.hero().id, "Oak")
+	var ogre: int = Scenario.permanent_named(engine, engine.villain().id, "Ogre")
+
+	assert_eq(AiQuickCombat.duel(engine.game_state(), oak, ogre), [false, true])
+
+
 func test_attacking_with_a_creature_that_triggers_on_becoming_tapped_sets_off_its_trigger() -> void:
 	# Zar Ojanen's ability: the attack taps it, and the trigger resolves before blockers.
 	var scion: MmCardDefinition = Scenario.scion()

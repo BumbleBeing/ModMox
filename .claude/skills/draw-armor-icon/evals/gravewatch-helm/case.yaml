@@ -1,0 +1,5 @@
+# Its liked result is a worked example in references/examples.md, so a run can copy it: test new Armor instead.
+schema_version: "1.1"
+name: gravewatch-helm
+expected_outcome: |
+  A 32 × 32 Armor Icon named gravewatch_helm.png in the shape of the helm template, in the palette, its edge intact, pale bone shaded as a solid form, with green eyes glowing in its otherwise dark T-shaped opening.

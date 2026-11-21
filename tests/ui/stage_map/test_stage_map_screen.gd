@@ -1,8 +1,8 @@
 extends GutTest
 ## The Stage Map screen (milestone 17, signed off as prototypes/stage_map_screen): clicking a
 ## glowing Node to glide there, the view following, encounters opening the Deckbox, the
-## walked Path drawn apart, hover labels, the Boss's Node, the Run Bar and the "Run won"
-## notice.
+## walked Path drawn apart, hover labels, the Boss's Node and the Run Bar. The "Run won"
+## notice it once showed gave way to Run Won (milestone 19).
 
 var _run: Run
 var _screen: StageMapScreen
@@ -196,25 +196,6 @@ func test_satchel_does_nothing_and_deckbox_opens_the_deckbox_with_close() -> voi
 	assert_eq(_went_to, [Screens.DECKBOX] as Array[String])
 	assert_null(RunFlow.villain)
 	assert_eq(RunFlow.back_from_deckbox, RunFlow.Screen.STAGE_MAP)
-
-
-## S11: beating the Boss shows "Run won", and Main Menu goes there.
-func test_beating_the_boss_shows_run_won_and_main_menu_goes_there() -> void:
-	while _run.stage_visit.node().kind != StageMap.Kind.BOSS:
-		if _run.stage_visit.must_play():
-			_run.record_encounter(true)
-		else:
-			_run.move_to(_run.stage_visit.choices()[0])
-	RunFlow.arrive()
-	RunFlow.finish_encounter(true)
-	await _open()
-
-	assert_not_null(_screen.notice())
-	assert_true(_screen.glowing().is_empty())
-	_screen.notice().button().pressed.emit()
-	assert_eq(_went_to, [Screens.MENU] as Array[String])
-	assert_null(RunFlow.run)
-	StageMapScreen.has_left = false
 
 
 ## The Glow is a 32 x 32 sprite at seven-tenths opacity on the Nodes the Hero can move to.

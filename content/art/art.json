@@ -59,6 +59,16 @@
 		"scryfall_id": "f5bcb21a-8559-4791-8cd0-482e7b8dcfd2",
 		"set": "mkm"
 	},
+	"bark_of_doran": {
+		"artist": "Jorge Jacinto",
+		"collector_number": "6",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "98210276-1b85-4db5-8ab4-ecb08f5d2ee2",
+		"set": "ecl"
+	},
 	"battlegrowth": {
 		"artist": "John Matson",
 		"collector_number": "113",
@@ -278,6 +288,16 @@
 		],
 		"scryfall_id": "6f1c8cb0-38eb-408b-94e8-16db83999b3b",
 		"set": "lea"
+	},
+	"frondland_felidar": {
+		"artist": "Steve Prescott",
+		"collector_number": "186",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "ab220695-e1a9-45ec-a1b1-5a82c9c90a03",
+		"set": "iko"
 	},
 	"frozen_shade": {
 		"artist": "Douglas Shuler",
@@ -509,6 +529,16 @@
 		"scryfall_id": "a5f23039-45ca-4c15-af50-bfd40ea26453",
 		"set": "atq"
 	},
+	"jewel_thief": {
+		"artist": "Joe Slucher",
+		"collector_number": "151",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "736e498e-1245-40c1-96a4-c9bcfd1cfe1f",
+		"set": "snc"
+	},
 	"jodahs_codex": {
 		"artist": "Aaron Miller",
 		"collector_number": "233",
@@ -658,6 +688,16 @@
 		],
 		"scryfall_id": "b92a6ba0-cea0-4084-92f1-2bd60ea25fb0",
 		"set": "lci"
+	},
+	"maned_serval": {
+		"artist": "Jonathan Kuo",
+		"collector_number": "23",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "5ac51e35-e2c5-4457-981c-e59894584288",
+		"set": "iko"
 	},
 	"merfolk_of_the_pearl_trident": {
 		"artist": "Jeff A. Menges",
@@ -959,6 +999,16 @@
 		"scryfall_id": "cb79a623-21c3-4310-bc76-310935511d45",
 		"set": "dom"
 	},
+	"skyhunter_prowler": {
+		"artist": "Vance Kovacs",
+		"collector_number": "15",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "7e4065bb-8deb-46d5-a57e-d61c77493274",
+		"set": "5dn"
+	},
 	"skyknight_squire": {
 		"artist": "Alexander Mokhov",
 		"collector_number": "23",
@@ -1159,6 +1209,16 @@
 		"scryfall_id": "d0f3bd3d-08cf-4783-ae31-03770c8be69c",
 		"set": "tsos"
 	},
+	"tokens/treasure": {
+		"artist": "Forrest Imel",
+		"collector_number": "17",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "93116d98-2dad-4b80-a3af-9e36e34da6d4",
+		"set": "tsnc"
+	},
 	"topiary_panther": {
 		"artist": "Xabi Gaztelua",
 		"collector_number": "179",
@@ -1179,6 +1239,16 @@
 		"scryfall_id": "832b67f4-60ec-44ad-9bcc-c3d247c22705",
 		"set": "tsp"
 	},
+	"undergrowth_leopard": {
+		"artist": "Iris Compiet",
+		"collector_number": "165",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "67ab8f9a-b17c-452f-b4ef-a3f91909e3de",
+		"set": "tdm"
+	},
 	"uthden_troll": {
 		"artist": "Douglas Shuler",
 		"collector_number": "180",
@@ -1198,6 +1268,16 @@
 		],
 		"scryfall_id": "adb38717-97d5-4763-9e6c-46251df704ed",
 		"set": "bng"
+	},
+	"viridian_claw": {
+		"artist": "Marc Simonetti",
+		"collector_number": "143",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "2154e3c6-ab69-4661-b1ef-a50cc0f6f763",
+		"set": "mbs"
 	},
 	"wall_of_stone": {
 		"artist": "Dan Frazier",

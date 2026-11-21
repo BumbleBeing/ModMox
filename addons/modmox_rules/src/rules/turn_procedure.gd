@@ -298,7 +298,9 @@ func _current_step() -> MmTurn.Step:
 ## graveyard with flashback (CR 702.34a), then the top card of the library with a
 ## permission (ADR 0054), then abilities of permanents, then
 ## abilities of Emblems and Potions (ADR 0036), then abilities of cards in the hand, such
-## as cycling (ADR 0059), each by object ID and abilities by their order on the object.
+## as cycling (ADR 0059), each by object ID and abilities by their order on the object. A
+## mana ability that adds mana of any color is offered once for each color, in WUBRG order
+## (ADR 0072).
 func _legal_actions(player_id: int) -> Array[MmAction]:
 	var actions: Array[MmAction] = [PassAction.new()]
 	var player: MmPlayer = _state.player(player_id)
@@ -323,7 +325,7 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 		for index: int in abilities.size():
 			var ability: ActivatedAbility = abilities[index] as ActivatedAbility
 			if ability != null and _may_activate(player, source, ability, index):
-				actions.append(ActivateAbilityAction.new(source.id, index))
+				actions.append_array(ActivateAbilityAction.each_for(source.id, index, ability))
 	return actions
 
 
@@ -501,7 +503,9 @@ func _activate(action: ActivateAbilityAction, player_id: int) -> void:
 		if ability.is_once_each_game:
 			_state.perform(AbilitySpentEvent.new(source.id, action.ability_index))
 		ability.pay_costs(_state, source)
-		ability.resolve_effects(_state, MmEffectContext.new(source.controller_id, source.id))
+		var context: MmEffectContext = MmEffectContext.new(source.controller_id, source.id)
+		# ADR 0072: the color of mana of any color was chosen with the action.
+		ability.resolve_effects(_state, context.with_chosen_mana_type(action.mana_type))
 		_passes_in_succession = 0
 	else:
 		_cast = CastProcedure.activate_ability(_state, player_id, source, action.ability_index)

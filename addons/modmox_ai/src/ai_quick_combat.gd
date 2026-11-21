@@ -1,7 +1,8 @@
 class_name AiQuickCombat
 extends RefCounted
-## A fast guess at who survives a one-on-one fight, from power, toughness, first strike,
-## deathtouch and indestructible. Used by CHEAP Agents, which must not simulate (A178); a
+## A fast guess at who survives a one-on-one fight, from the combat damage each assigns
+## (CombatProcedure.combat_damage_amount()), toughness, first strike, deathtouch and
+## indestructible. Used by CHEAP Agents, which must not simulate (A178); a
 ## FULL Agent asks the Combat Oracle, which runs the engine's own combat instead.
 
 
@@ -24,11 +25,12 @@ static func duel(state: MmGameState, attacker_id: int, blocker_id: int) -> Array
 static func _kills(state: MmGameState, source: MmGameObject, victim: MmGameObject) -> bool:
 	var dealer: MmCharacteristics = state.characteristics_of(source)
 	var target: MmCharacteristics = state.characteristics_of(victim)
-	if dealer.power <= 0 or target.has_ability(IndestructibleAbility):
+	var damage: int = CombatProcedure.combat_damage_amount(state, source)
+	if damage <= 0 or target.has_ability(IndestructibleAbility):
 		return false
 	if dealer.has_ability(DeathtouchAbility):
 		return true
-	return dealer.power >= target.toughness - victim.damage_marked
+	return damage >= target.toughness - victim.damage_marked
 
 
 static func _strikes_first(state: MmGameState, creature: MmGameObject) -> bool:

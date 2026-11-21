@@ -1,0 +1,5 @@
+# Its liked result is a worked example in references/examples.md, so a run can copy it: test new Armor instead.
+schema_version: "1.1"
+name: hornward-helm
+expected_outcome: |
+  A 32 × 32 Armor Icon named hornward_helm.png in the shape of the helm template, in the palette, its edge and T-shaped face opening intact, blackened iron that still reads in the dark Armor Slot, with curled ram's horns standing out at its sides.

@@ -730,8 +730,8 @@ func test_a_permanent_with_two_abilities_opens_the_option_menu_where_it_was_clic
 	assert_true(menu.is_open())
 	assert_true(_presenter.snapshot().decision is PriorityDecision, "Nothing is answered until a row is picked.")
 	assert_eq(menu.rows().size(), 2)
-	assert_eq(menu.rows()[0].text, "{T}: Add {R}.")
-	assert_eq(menu.rows()[1].text, "{T}: This artifact deals 1 damage to any target.")
+	assert_eq(menu.words()[0].written(), "{T}: Add {R}.")
+	assert_eq(menu.words()[1].written(), "{T}: This artifact deals 1 damage to any target.")
 	assert_true(EncounterLayout.regions(SCREEN)["battlefield"].encloses(menu.box_rect()))
 
 	menu.rows()[1].pressed.emit()
@@ -2139,7 +2139,8 @@ func test_in_a_run_a_loss_costs_a_heart_and_continue_returns_to_the_stage_map() 
 	RunFlow.clear()
 
 
-func test_in_a_run_losing_the_last_heart_continues_to_the_main_menu() -> void:
+## Milestone 19's T9: losing the last Heart continues to Run Lost, the run kept for it.
+func test_in_a_run_losing_the_last_heart_continues_to_run_lost() -> void:
 	var run: Run = Run.debug(2)
 	RunFlow.start(run)
 	run.hearts = 1
@@ -2148,5 +2149,6 @@ func test_in_a_run_losing_the_last_heart_continues_to_the_main_menu() -> void:
 	_screen.navigate = func(scene: String) -> void: _went_to.append(scene)
 	_presenter.concede()
 	_banner_button("Continue").pressed.emit()
-	assert_eq(_went_to, [Screens.MENU] as Array[String])
-	assert_null(RunFlow.run)
+	assert_eq(_went_to, [Screens.RUN_LOST] as Array[String])
+	assert_true(RunFlow.run.is_lost())
+	RunFlow.clear()

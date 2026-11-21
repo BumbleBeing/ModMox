@@ -1,10 +1,10 @@
 class_name StageIntro
 extends Control
-## The Stage Intro (game glossary; milestone 17, signed off as prototypes/stage_map_screen),
-## in its plain form: the Stage's name, its Tier in words, and its Boss, breathing in the
+## The Stage Intro (game glossary; milestone 17, signed off as prototypes/stage_map_screen):
+## the Stage's name, the Tier Track under it (milestone 19), and its Boss, breathing in the
 ## Boss's disc with its name under it, on a ground of the Stage's own color shaded with
-## Dither Shading, or the slate for a Stage without one (ADR 0038). Continue opens the Stage Map. Later (milestone 19):
-## the Tier graphic.
+## Dither Shading, or the slate for a Stage without one (ADR 0038). Continue opens the Stage
+## Map.
 ##
 ## Opened on its own (godot --path . res://ui/stage_map/stage_intro.tscn) it begins a debug
 ## run from the command line as the Stage Map does; --screenshot=/absolute/path.png saves a
@@ -34,6 +34,7 @@ var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get
 
 var _run: Run = null
 var _ring: Control
+var _track: TierTrack
 var _texts: Array[Label] = []
 var _button: Button
 var _time: float = 0.0
@@ -77,7 +78,9 @@ func begin(run: Run) -> void:
 	column.add_theme_constant_override("separation", 12)
 	centered.add_child(column)
 	column.add_child(_text(visit.stage.name, 64, text, true))
-	column.add_child(_text("Tier %d" % visit.stage.tier, 30, muted, false))
+	_track = TierTrack.new()
+	_track.show_run(run)
+	column.add_child(_track)
 	column.add_child(_gap())
 	column.add_child(_text("Boss", 24, muted, false))
 	_ring = Control.new()
@@ -106,6 +109,18 @@ func texts() -> Array[String]:
 	for label: Label in _texts:
 		said.append(label.text)
 	return said
+
+
+func tier_track() -> TierTrack:
+	return _track
+
+
+## The label that says [param text], or null.
+func label_of(text: String) -> Label:
+	for label: Label in _texts:
+		if label.text == text:
+			return label
+	return null
 
 
 ## The color the ground is shaded in: the Stage's own, or the slate.

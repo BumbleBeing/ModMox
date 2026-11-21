@@ -51,11 +51,11 @@ func plan(candidate_ids: Array[int]) -> Array[int]:
 ## Whether attacking with everything kills even if each blocker stops a different one of the
 ## biggest attackers it can block.
 func _is_lethal(candidate_ids: Array[int]) -> bool:
-	var by_power: Array[int] = candidate_ids.duplicate()
-	by_power.sort_custom(func(first: int, second: int) -> bool: return _power(first) > _power(second))
+	var by_damage: Array[int] = candidate_ids.duplicate()
+	by_damage.sort_custom(func(first: int, second: int) -> bool: return _combat_damage(first) > _combat_damage(second))
 	var used: Array[int] = []
 	var unblocked: int = 0
-	for attacker_id: int in by_power:
+	for attacker_id: int in by_damage:
 		var stopped: bool = false
 		for blocker_id: int in _blockers_of(attacker_id):
 			if not used.has(blocker_id):
@@ -63,19 +63,19 @@ func _is_lethal(candidate_ids: Array[int]) -> bool:
 				stopped = true
 				break
 		if not stopped:
-			unblocked += _power(attacker_id)
+			unblocked += _combat_damage(attacker_id)
 	return unblocked >= _state.opponent_of(_player_id).life
 
 
 func _aggression(candidate_ids: Array[int]) -> Aggression:
 	if _blockable.is_empty():
 		return Aggression.ALL_OUT
-	var my_power: int = 0
+	var my_damage: int = 0
 	for attacker_id: int in candidate_ids:
-		my_power += maxi(_power(attacker_id), 0)
-	var their_power: int = _their_attack_power()
-	var turns_to_win: int = ceili(float(_state.opponent_of(_player_id).life) / maxi(my_power, 1))
-	var turns_to_lose: int = 99 if their_power == 0 else ceili(float(_state.player(_player_id).life) / their_power)
+		my_damage += maxi(_combat_damage(attacker_id), 0)
+	var their_damage: int = _their_attack_damage()
+	var turns_to_win: int = ceili(float(_state.opponent_of(_player_id).life) / maxi(my_damage, 1))
+	var turns_to_lose: int = 99 if their_damage == 0 else ceili(float(_state.player(_player_id).life) / their_damage)
 	if turns_to_win + 1 < turns_to_lose:
 		return Aggression.EXPECT_TRADES
 	if turns_to_win < turns_to_lose:
@@ -143,27 +143,27 @@ func _hold_back(attacking: Array[int]) -> Array[int]:
 ## The damage the other player's creatures could deal next turn if each creature left
 ## untapped by this attack blocks one of the biggest.
 func _swing_back(attacking: Array[int]) -> int:
-	var powers: Array[int] = []
+	var damages: Array[int] = []
 	for creature: MmGameObject in _creatures_of(1 - _player_id):
 		if not _has(creature.id, DefenderAbility):
-			powers.append(_power(creature.id))
-	powers.sort()
-	powers.reverse()
+			damages.append(_combat_damage(creature.id))
+	damages.sort()
+	damages.reverse()
 	var defenders: int = 0
 	for creature: MmGameObject in _creatures_of(_player_id):
 		if not attacking.has(creature.id) or _has(creature.id, VigilanceAbility):
 			defenders += 1
 	var total: int = 0
-	for index: int in range(defenders, powers.size()):
-		total += powers[index]
+	for index: int in range(defenders, damages.size()):
+		total += damages[index]
 	return total
 
 
-func _their_attack_power() -> int:
+func _their_attack_damage() -> int:
 	var total: int = 0
 	for creature: MmGameObject in _creatures_of(1 - _player_id):
 		if not _has(creature.id, DefenderAbility):
-			total += maxi(_power(creature.id), 0)
+			total += maxi(_combat_damage(creature.id), 0)
 	return total
 
 
@@ -183,8 +183,10 @@ func _creatures_of(player_id: int) -> Array[MmGameObject]:
 	return creatures
 
 
-func _power(object_id: int) -> int:
-	return _state.characteristics_of(_state.object(object_id)).power
+## The combat damage [param object_id] would assign: its power, or its toughness when an
+## ability says so (CombatProcedure.combat_damage_amount()).
+func _combat_damage(object_id: int) -> int:
+	return CombatProcedure.combat_damage_amount(_state, _state.object(object_id))
 
 
 func _toughness(object_id: int) -> int:

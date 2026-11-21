@@ -17,6 +17,7 @@
 [ext_resource type="Resource" path="res://content/villains/king_of_the_pride.tres" id="8_axcsg"]
 [ext_resource type="Texture2D" path="res://ui/sprites/scenery/flower_bush.png" id="8_rkirp"]
 [ext_resource type="Texture2D" path="res://ui/sprites/scenery/hay_bale.png" id="9_dx840"]
+[ext_resource type="Resource" path="res://content/villains/frondland_felidar.tres" id="9_o1p7k"]
 [ext_resource type="Texture2D" path="res://ui/sprites/scenery/ginger_cat_0.png" id="10_nbhat"]
 [ext_resource type="Texture2D" path="res://ui/sprites/scenery/ginger_cat_1.png" id="11_yxd1v"]
 [ext_resource type="Texture2D" path="res://ui/sprites/scenery/ginger_cat_2.png" id="12_0ds10"]
@@ -77,7 +78,7 @@ most = 2
 script = ExtResource("5_besua")
 name = "Kitty Keep"
 lesser_villains = Array[ExtResource("1_55mbs")]([ExtResource("5_3wb0c"), ExtResource("7_dy8ix"), ExtResource("8_axcsg")])
-elite_villains = Array[ExtResource("1_55mbs")]([ExtResource("3_xdi4n"), ExtResource("5_xgxq3"), ExtResource("6_ipkip")])
+elite_villains = Array[ExtResource("1_55mbs")]([ExtResource("3_xdi4n"), ExtResource("5_xgxq3"), ExtResource("6_ipkip"), ExtResource("9_o1p7k")])
 bosses = Array[ExtResource("1_55mbs")]([ExtResource("2_rhaj0"), ExtResource("3_3wb0c"), ExtResource("4_impsd"), ExtResource("5_hu2ih")])
 map_backdrop = ExtResource("5_gruod")
 intro_color = Color(0.9254902, 0.87058824, 0.7294118, 1)

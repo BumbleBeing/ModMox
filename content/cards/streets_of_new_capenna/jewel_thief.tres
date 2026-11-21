@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_6sec5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="2_52mdg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_spgtf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ghhui"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/trample_ability.gd" id="3_o2xe1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_qvrud"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="5_lkfjs"]
+[ext_resource type="Resource" path="res://content/tokens/treasure.tres" id="6_a4ghl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_xikku"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_bqqm1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_fcomq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="10_rrd7q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="11_y64ot"]
+
+[sub_resource type="Resource" id="Resource_v8sk7"]
+script = ExtResource("2_52mdg")
+
+[sub_resource type="Resource" id="Resource_ajevf"]
+script = ExtResource("3_o2xe1")
+
+[sub_resource type="Resource" id="Resource_khpyd"]
+script = ExtResource("5_lkfjs")
+token = ExtResource("6_a4ghl")
+
+[sub_resource type="Resource" id="Resource_r6udf"]
+script = ExtResource("10_rrd7q")
+
+[sub_resource type="Resource" id="Resource_7bxrm"]
+script = ExtResource("11_y64ot")
+filter = SubResource("Resource_r6udf")
+
+[sub_resource type="Resource" id="Resource_8d3uo"]
+script = ExtResource("8_bqqm1")
+trigger = SubResource("Resource_7bxrm")
+effects = Array[ExtResource("4_qvrud")]([SubResource("Resource_khpyd")])
+
+[sub_resource type="Resource" id="Resource_hd7dv"]
+script = ExtResource("2_spgtf")
+generic = 2
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_ghhui")
+name = "Jewel Thief"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat", "Rogue"])
+mana_cost = SubResource("Resource_hd7dv")
+power = 3
+toughness = 3
+abilities = Array[ExtResource("1_6sec5")]([SubResource("Resource_v8sk7"), SubResource("Resource_ajevf"), SubResource("Resource_8d3uo")])

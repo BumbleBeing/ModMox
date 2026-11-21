@@ -5,8 +5,9 @@ extends Control
 ## (--hero=, --villain= or --seed=) skips it and opens the Encounter Screen (A246), unless
 ## it names something that does not exist, which the menu then says. --deckbuilder opens
 ## the deckbuilder on a made-up run, for pictures. --stage-map opens the Stage Map of a
-## debug run (--run-seed=N, --stage=red), for pictures, and --spoils the Spoils screen of
-## a win in one (--rank=lesser, elite or boss). Start Run (debug) begins a debug
+## debug run (--run-seed=N, --stage=red, --tier=N), for pictures, and --spoils the Spoils
+## screen of a win in one (--rank=lesser, elite or boss). --run-won and --run-lost open the
+## end of a debug run, and --credits the Credits (milestone 19). Start Run (debug) begins a debug
 ## run at the Deckbox, in Kitty Keep, the Stage being built first (milestones 16 and 17).
 ## The Menu Soldier stands on top of the window, playing his animations, casting the Soldier
 ## Shadow on it; the two are centered on the screen together. The Wisp floats about them,
@@ -75,6 +76,17 @@ func _ready() -> void:
 		RunFlow.start(SpoilsScreen.debug_run_from(arguments))
 		RunFlow.finish_intro()
 		navigate.call_deferred(Screens.SPOILS)
+		return
+	for flag: String in [RunEndScreen.WON_FLAG, RunEndScreen.LOST_FLAG]:
+		if arguments.has(flag) and not RunEndScreen.has_left:
+			_is_skipping = true
+			var is_won: bool = flag == RunEndScreen.WON_FLAG
+			RunFlow.start(RunEndScreen.debug_run_from(arguments, is_won))
+			navigate.call_deferred(Screens.RUN_WON if is_won else Screens.RUN_LOST)
+			return
+	if arguments.has(CreditsScreen.FLAG) and not CreditsScreen.has_left:
+		_is_skipping = true
+		navigate.call_deferred(Screens.CREDITS)
 		return
 	var asked_for: EncounterRequest = EncounterRequest.from_arguments(arguments)
 	if asked_for != null:

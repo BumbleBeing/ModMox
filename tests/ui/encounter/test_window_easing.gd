@@ -112,7 +112,7 @@ func test_the_option_menu_eases_in_and_out_and_takes_no_clicks_once_closed() -> 
 
 	assert_true(menu.is_open(), "Opened at once somewhere else.")
 	assert_eq(menu.mouse_behavior_recursive, Control.MOUSE_BEHAVIOR_INHERITED)
-	assert_eq(menu.rows()[0].text, "Two")
+	assert_eq(menu.words()[0].written(), "Two")
 	await wait_seconds(SECONDS * 1.5)
 	assert_false(is_instance_valid(box), "The old box is gone once faded.")
 	assert_true(menu.visible)

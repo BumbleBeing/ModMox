@@ -44,6 +44,11 @@ const PLURAL_AS_SINGULAR: Array[String] = ["Equipment", "Plains"]
 ## What a triggered ability limited to once each turn says after what it does (engine ADR
 ## 0054's addendum).
 const ONCE_EACH_TURN: String = "This ability triggers only once each turn."
+## The predefined tokens the game has (CR 111.10), by subtype, which is a token's name less
+## "Token" (CR 111.4). One is created by that word alone, "create a Treasure token", since
+## the rules give its characteristics, and calls itself "this token", as CR 111.10a words a
+## Treasure's ability. Only Treasure so far (ADR 0001).
+const PREDEFINED_TOKENS: Array[String] = ["Treasure"]
 
 ## What the ability's source calls itself.
 var _noun: String
@@ -59,6 +64,9 @@ var _named: Dictionary[int, bool] = {}
 var _names_again_with_that: bool = false
 ## What "X" stands for in the sentence being written, or "".
 var _where: String = ""
+## The color an Option Menu row's activation makes of mana of any color (ADR 0072), an
+## MmMana.Type, or MmMana.NO_TYPE to say "one mana of any color".
+var _chosen_mana_type: int = MmMana.NO_TYPE
 ## Whether the words written so far say "that creature", the object a trigger's event was
 ## about.
 var _says_triggering_object: bool = false
@@ -75,9 +83,12 @@ class FilterWords:
 
 ## What a card with [param card_types] named [param card_name] calls itself in its own
 ## text. A card with reconfigure is "this permanent", as Oracle words it: it is a creature
-## only while it is not attached (CR 702.151b).
+## only while it is not attached (CR 702.151b). A predefined token is "this token"
+## (CR 111.10a).
 static func self_noun(card_types: Array[MmCardTypes.CardType], card_name: String,
 		abilities: Array[MmAbility] = []) -> String:
+	if PREDEFINED_TOKENS.has(card_name.trim_suffix(" Token")):
+		return "this token"
 	for ability: MmAbility in abilities:
 		if ability is ReconfigureAbility:
 			return "this permanent"
@@ -142,9 +153,13 @@ static func enchanted_words(abilities: Array[MmAbility]) -> String:
 
 ## [param ability] as a row of the Option Menu reads it: as the card prints it, except that
 ## each of reconfigure's two abilities says which it is, "Reconfigure {2}: attach" and
-## "Reconfigure {2}: unattach".
-static func option_of(ability: MmAbility, noun: String) -> String:
-	var text: String = of_ability(ability, noun)
+## "Reconfigure {2}: unattach", and that an activation of mana of any color for
+## [param mana_type], an MmMana.Type, adds that color: "{T}, Sacrifice this token: Add {W}."
+## (ADR 0072). An ActivateAbilityAction's mana_type is the one to pass.
+static func option_of(ability: MmAbility, noun: String, mana_type: int = MmMana.NO_TYPE) -> String:
+	var writer: AbilityText = AbilityText.new(noun)
+	writer._chosen_mana_type = mana_type
+	var text: String = writer._ability(ability)
 	if ability is ReconfigureAbility:
 		return text + (": unattach" if (ability as ReconfigureAbility).unattaches else ": attach")
 	return text
@@ -363,6 +378,8 @@ func _ability(ability: MmAbility) -> String:
 		return "%s can block %s each combat." % [_capitalized(_noun), _additional((ability as BlockAdditionalAbility).count, "creature")]
 	if ability is DamageStaysAbility:
 		return "Damage isn't removed from %s during cleanup steps." % _noun
+	if ability is AssignsCombatDamageByToughnessAbility:
+		return _by_toughness(ability as AssignsCombatDamageByToughnessAbility)
 	if ability is AsEntersChooseCreatureTypeAbility:
 		return "As %s enters, choose a creature type." % _noun
 	if ability is EntersTappedAbility:
@@ -645,6 +662,9 @@ func _condition(condition: MmCondition) -> String:
 	if matches == null:
 		return _fallback(condition, "_condition")
 	var subject: String = _selection(matches.selection)
+	var toughness: String = _toughness_condition(subject, matches.filter)
+	if toughness != "":
+		return toughness
 	if matches.filter is HasCountersFilter:
 		return "%s has %s" % [subject, _counters_on(matches.filter as HasCountersFilter)]
 	if matches.filter is IsPermanentFilter:
@@ -654,6 +674,32 @@ func _condition(condition: MmCondition) -> String:
 	if words.noun != "" or is_what == "":
 		is_what = _with_article(_noun_phrase(matches.filter, false))
 	return "%s %s %s" % [subject, "are" if subject == "you" else "is", is_what]
+
+
+## "[subject]'s toughness is 4 or greater": a condition on toughness alone, a ToughnessFilter
+## or a NotFilter around one, says whose toughness it is, and a power of that same subject in
+## its bound is "its power", as Bark of Doran's "equipped creature's toughness is greater than
+## its power". Otherwise "".
+func _toughness_condition(subject: String, filter: MmFilter) -> String:
+	var is_negated: bool = filter is NotFilter
+	var toughness: ToughnessFilter = ((filter as NotFilter).filter if is_negated else filter) as ToughnessFilter
+	if toughness == null:
+		return ""
+	var bound: String = _toughness_bound(toughness, is_negated)
+	return "%s toughness is %s" % [_possessive(subject), bound.replace(_possessive(subject) + " power", "its power")]
+
+
+## "Equipped creature assigns combat damage equal to its toughness rather than its power."; with
+## a condition, "As long as [condition], it assigns ...", "it" when the condition was said of
+## what assigns.
+func _by_toughness(ability: AssignsCombatDamageByToughnessAbility) -> String:
+	var affected: String = _selection(ability.affected)
+	var assigns: String = " assigns combat damage equal to its toughness rather than its power."
+	if ability.condition == null:
+		return _capitalized(affected) + assigns
+	var matches: SelectionMatchesCondition = ability.condition as SelectionMatchesCondition
+	var subject: String = "it" if matches != null and _selection(matches.selection) == affected else affected
+	return "As long as %s, %s%s" % [_condition(ability.condition), subject, assigns]
 
 
 ## A sentence for each effect, "Each white creature gets +1/+1."; or, with a condition, one
@@ -668,7 +714,7 @@ func _static(ability: ContinuousStaticAbility) -> String:
 			var clause: String = _continuous(continuous, true)
 			if _where != "":
 				clause += ", where X is " + _where
-			clauses.append(_capitalized(clause) + ".")
+			clauses.append(_ended(_capitalized(clause)))
 		return " ".join(clauses)
 	var condition: String = _condition(ability.condition)
 	var noun: String = _noun
@@ -685,7 +731,13 @@ func _static(ability: ContinuousStaticAbility) -> String:
 			clause = clause.substr(subject.length() + 1)
 		clauses.append(clause)
 	_noun = noun
-	return "As long as %s, %s." % [condition, _listed(clauses)]
+	return _ended("As long as %s, %s" % [condition, _listed(clauses)])
+
+
+## [param sentence] with its period, unless it ends in a quoted ability whose own period
+## closes it, as Oracle prints "have \"{1}, {T}: Tap target creature.\"".
+static func _ended(sentence: String) -> String:
+	return sentence if sentence.ends_with(".\"") else sentence + "."
 
 
 ## "A and B", or "A, B, and C".
@@ -877,19 +929,36 @@ func _instead(effect: InsteadEffect) -> String:
 ## Oracle's token wording (CR 111.4): "a 1/1 white Cat creature token", "two ... tokens",
 ## and a token's keywords after "with": "a 1/1 white Cat Soldier creature token with vigilance",
 ## then "that's attacking" (or "that are attacking") last, as Brimaz, King of Oreskos says,
-## or "that's blocking that creature" (or "that are blocking").
+## or "that's blocking that creature" (or "that are blocking"). A predefined token is named
+## alone: "a Treasure token" (CR 111.10).
 func _tokens(effect: CreateTokenEffect) -> String:
 	if effect.token == null:
 		return _fallback(effect, "_tokens")
-	var keywords: PackedStringArray = PackedStringArray()
-	for ability: MmAbility in effect.token.abilities:
-		var keyword: String = _keyword(ability)
-		if keyword == "":
-			# Later: a token's other abilities, in quotation marks (CR 111.4).
-			return _fallback(effect, "_tokens")
-		keywords.append(keyword.to_lower())
-	var with: String = "" if keywords.is_empty() else " with " + _listed(keywords)
-	var printed: MmCharacteristics = MmCharacteristics.printed(effect.token)
+	var predefined: String = effect.token.name.trim_suffix(" Token")
+	var phrase: String = predefined
+	var with: String = ""
+	if not PREDEFINED_TOKENS.has(predefined):
+		var keywords: PackedStringArray = PackedStringArray()
+		for ability: MmAbility in effect.token.abilities:
+			var keyword: String = _keyword(ability)
+			if keyword == "":
+				# Later: a token's other abilities, in quotation marks (CR 111.4).
+				return _fallback(effect, "_tokens")
+			keywords.append(keyword.to_lower())
+		with = "" if keywords.is_empty() else " with " + _listed(keywords)
+		phrase = _token_phrase(MmCharacteristics.printed(effect.token))
+	var combat: String = ""
+	if effect.attacking:
+		combat = " that's attacking" if effect.amount == 1 else " that are attacking"
+	elif effect.blocking != null:
+		combat = (" that's blocking " if effect.amount == 1 else " that are blocking ") + _selection(effect.blocking)
+	if effect.amount == 1:
+		return _with_article(phrase + " token") + with + combat
+	return "%s %s tokens%s%s" % [_number_word(effect.amount), phrase, with, combat]
+
+
+## What a token with [param printed] is, before "token": "1/1 white Cat creature".
+func _token_phrase(printed: MmCharacteristics) -> String:
 	var words: PackedStringArray = PackedStringArray()
 	if printed.has_card_type(MmCardTypes.CardType.CREATURE):
 		words.append("%d/%d" % [printed.base_power, printed.base_toughness])
@@ -901,20 +970,19 @@ func _tokens(effect: CreateTokenEffect) -> String:
 		words.append(subtype)
 	for card_type: MmCardTypes.CardType in printed.card_types:
 		words.append(_type_word(card_type))
-	var phrase: String = " ".join(words)
-	var combat: String = ""
-	if effect.attacking:
-		combat = " that's attacking" if effect.amount == 1 else " that are attacking"
-	elif effect.blocking != null:
-		combat = (" that's blocking " if effect.amount == 1 else " that are blocking ") + _selection(effect.blocking)
-	if effect.amount == 1:
-		return _with_article(phrase + " token") + with + combat
-	return "%s %s tokens%s%s" % [_number_word(effect.amount), phrase, with, combat]
+	return " ".join(words)
 
 
+## "{G}", "{B}{B}{B}", or for mana of any color "one mana of any color" (CR 106.1a), or the
+## symbol of the color an Option Menu row's activation makes (ADR 0072).
 func _mana(effect: AddManaEffect) -> String:
-	var symbol: String = "{%s}" % MmMana.SYMBOLS[effect.mana_type]
 	var constant: ConstantValue = effect.amount as ConstantValue
+	if effect.is_any_color and _chosen_mana_type == MmMana.NO_TYPE:
+		if constant != null and constant.value == 1:
+			return "one mana of any color"
+		return _fallback(effect, "_mana")  # Later: "two mana of any one color".
+	var type: MmMana.Type = _chosen_mana_type as MmMana.Type if effect.is_any_color else effect.mana_type
+	var symbol: String = "{%s}" % MmMana.SYMBOLS[type]
 	if constant != null and constant.value >= 1 and constant.value <= 10:
 		return symbol.repeat(constant.value)
 	return "%s %s" % [_amount(effect.amount), symbol]

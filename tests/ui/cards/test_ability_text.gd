@@ -8,6 +8,8 @@ const CONTENT_ROOT: String = "res://content/cards/alpha"
 const SETS_ROOT: String = "res://content/cards"
 const CardType := MmCardTypes.CardType
 const Whose := MmTrigger.Whose
+## The Treasure Token Definition (CR 111.10a), a predefined token.
+const TREASURE: String = "res://content/tokens/treasure.tres"
 
 ## What each authored card with abilities prints.
 const PRINTED: Dictionary[String, String] = {
@@ -17,6 +19,9 @@ const PRINTED: Dictionary[String, String] = {
 	"arahbo_the_first_fang": "Each other Cat creature you control gets +1/+1.\nWhenever a nontoken Cat creature you control enters, create a 1/1 white Cat creature token.",
 	"artillery_blast": "Artillery Blast deals damage to target tapped creature equal to 1 plus the number of basic land types among lands you control.",
 	"assemble_the_players": "You may look at the top card of your library any time.\nOnce each turn, you may cast a creature spell with power 2 or less from the top of your library.",
+	"bark_of_doran": "Equipped creature gets +0/+1.\n"
+		+ "As long as equipped creature's toughness is greater than its power, it assigns combat damage equal to its toughness rather than its power.\n"
+		+ "Equip {1}",
 	"battlegrowth": "Put a +1/+1 counter on target creature.",
 	"black_knight": "First strike\nProtection from white",
 	"brimaz_king_of_oreskos": "Vigilance\n"
@@ -47,6 +52,7 @@ const PRINTED: Dictionary[String, String] = {
 		+ "• Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.",
 	"felidar_savior": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each of up to two other target creatures you control.",
 	"fog": "Prevent all combat damage that would be dealt this turn.",
+	"frondland_felidar": "Vigilance\nEach creature you control with vigilance has \"{1}, {T}: Tap target creature.\"",
 	"forest": "({T}: Add {G}.)",
 	"frozen_shade": "{B}: This creature gets +1/+1 until end of turn.",
 	"gaeas_might": "Target creature gets +X/+X until end of turn, where X is the number of basic land types among lands you control.",
@@ -66,6 +72,7 @@ const PRINTED: Dictionary[String, String] = {
 	"ironpaw_aspirant": "When this creature enters, put a +1/+1 counter on target creature.",
 	"island": "({T}: Add {U}.)",
 	"ivory_tower": "At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.",
+	"jewel_thief": "Vigilance, trample\nWhen this creature enters, create a Treasure token.",
 	"jodahs_codex": "{5}, {T}: Draw a card. This ability costs {1} less to activate for each basic land type among lands you control.",
 	"keldon_warlord": "This creature's power and toughness are each equal to the number of non-Wall creatures you control.",
 	"kemba_kha_enduring": "Whenever a Cat creature you control enters, attach up to one target Equipment you control to that creature.\nEach equipped creature you control gets +1/+1.\n{3}{W}{W}: Create a 2/2 white Cat creature token.",
@@ -81,6 +88,7 @@ const PRINTED: Dictionary[String, String] = {
 	"lightshield_parry": "Target creature gets +2/+2 until end of turn.\nCycling {2}",
 	"llanowar_elves": "{T}: Add {G}.",
 	"malamet_war_scribe": "When this creature enters, each creature you control gets +2/+1 until end of turn.",
+	"maned_serval": "Vigilance",
 	"mountain": "({T}: Add {R}.)",
 	"nishoba_brawler": "Trample\nThis creature's power is equal to the number of basic land types among lands you control.",
 	"nyleas_presence": "Enchant land\nWhen this Aura enters, draw a card.\nEnchanted land is every basic land type in addition to its other types.",
@@ -112,6 +120,7 @@ const PRINTED: Dictionary[String, String] = {
 	"shatter": "Destroy target artifact.",
 	"shivan_dragon": "Flying\n{R}: This creature gets +1/+0 until end of turn.",
 	"short_sword": "Equipped creature gets +1/+1.\nEquip {1}",
+	"skyhunter_prowler": "Flying, vigilance",
 	"skyknight_squire": "Whenever another creature you control enters, put a +1/+1 counter on this creature.\n"
 		+ "As long as this creature has three or more +1/+1 counters on it, it has flying and is a Knight in addition to its other types.",
 	"slash_of_light": "Slash of Light deals damage to target creature equal to the number of creatures you control plus the number of Equipment you control.",
@@ -130,8 +139,10 @@ const PRINTED: Dictionary[String, String] = {
 		+ "This ability triggers only once each turn.",
 	"topiary_panther": "Trample\nBasic landcycling {1}{G}",
 	"tromp_the_domains": "Each creature you control gains trample until end of turn. Each creature you control gets +X/+X until end of turn, where X is the number of basic land types among lands you control.",
+	"undergrowth_leopard": "Vigilance\n{1}, Sacrifice this creature: Destroy target artifact or enchantment.",
 	"uthden_troll": "{R}: Regenerate this creature.",
 	"vanguard_of_brimaz": "Vigilance\nWhenever you cast a spell that targets this creature, create a 1/1 white Cat Soldier creature token with vigilance.",
+	"viridian_claw": "Equipped creature gets +1/+0. Equipped creature has first strike.\nEquip {1}",
 	"wall_of_stone": "Defender",
 	"wary_thespian": "When this creature enters, surveil 1.\nWhen this creature dies, surveil 1.",
 	"white_knight": "First strike\nProtection from black",
@@ -414,6 +425,49 @@ func test_a_tokens_keywords_are_listed_as_oracle_lists_them() -> void:
 		"Create a 4/4 white Angel creature token with flying and vigilance.")
 	assert_eq(AbilityText.of_card(three.abilities, three.card_types, three.supertypes, "Three"),
 		"Create a 4/4 white Angel creature token with flying, first strike, and lifelink.")
+
+
+func test_a_treasure_prints_as_cr_111_10a_words_it() -> void:
+	var treasure: MmCardDefinition = load(TREASURE) as MmCardDefinition
+
+	var text: String = AbilityText.of_card(treasure.abilities, treasure.card_types, treasure.supertypes, treasure.name)
+
+	assert_eq(text, "{T}, Sacrifice this token: Add one mana of any color.")
+	assert_eq(CardLook.of_definition(treasure).rules_text, text, "As its face prints it.")
+
+
+func test_a_predefined_token_is_created_by_its_name_alone() -> void:
+	# CR 111.10: its characteristics are the rules', so its abilities are not spelled out.
+	var treasure: MmCardDefinition = load(TREASURE) as MmCardDefinition
+	var one: MmCardDefinition = Scenario.free_tokens("One", treasure)
+	var two: MmCardDefinition = Scenario.free_tokens("Two", treasure, 2)
+	var thief: MmCardDefinition = Scenario.creature("Thief", 3, 3,
+		[Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.create_tokens(treasure)])])
+
+	assert_eq(AbilityText.of_card(one.abilities, one.card_types, one.supertypes, "One"), "Create a Treasure token.")
+	assert_eq(AbilityText.of_card(two.abilities, two.card_types, two.supertypes, "Two"), "Create two Treasure tokens.")
+	assert_eq(AbilityText.of_card(thief.abilities, thief.card_types, thief.supertypes, "Thief"),
+		"When this creature enters, create a Treasure token.", "As Jewel Thief words it.")
+
+
+func test_mana_of_any_color_is_worded_as_oracle_words_it() -> void:
+	var ability: ActivatedAbility = Scenario.activated(null, [TapCost.new()], [Scenario.any_color()])
+
+	assert_eq(AbilityText.of_ability(ability, "this artifact"), "{T}: Add one mana of any color.")
+
+
+func test_an_option_row_says_which_color_its_activation_adds() -> void:
+	# ADR 0072: each color is an action of its own, and its Option Menu row says which.
+	var treasure: MmCardDefinition = load(TREASURE) as MmCardDefinition
+	var ability: MmAbility = treasure.abilities[0]
+	var noun: String = AbilityText.self_noun(treasure.card_types, treasure.name, treasure.abilities)
+
+	assert_eq(AbilityText.option_of(ability, noun, MmMana.Type.WHITE), "{T}, Sacrifice this token: Add {W}.")
+	assert_eq(AbilityText.option_of(ability, noun, MmMana.Type.GREEN), "{T}, Sacrifice this token: Add {G}.")
+	assert_eq(AbilityText.option_of(ability, noun), "{T}, Sacrifice this token: Add one mana of any color.",
+		"With no color chosen, as printed.")
+	assert_eq(AbilityText.option_of(Scenario.tap_for_mana(MmMana.Type.RED, 1), "this land", MmMana.Type.WHITE),
+		"{T}: Add {R}.", "A color chosen changes only mana of any color.")
 
 
 func test_a_mode_with_a_counted_amount_says_what_x_is() -> void:
@@ -897,6 +951,20 @@ func test_all_five_basic_land_types_read_as_every_basic_land_type() -> void:
 		"Only all five read as every one.")
 
 
+func test_a_static_ability_that_ends_in_a_quoted_ability_ends_with_the_quotation() -> void:
+	# Oracle wording: the granted ability's own period closes the sentence, as Frondland
+	# Felidar's does, so no second one follows the quotation mark.
+	var tapper: ActivatedAbility = Scenario.activated(Scenario.mana_cost(1), [TapCost.new()],
+		[Scenario.tap(Scenario.targeted(0))], [Scenario.target(Scenario.of_type(CardType.CREATURE))])
+	var lord: ContinuousStaticAbility = Scenario.continuous_static([Scenario.gain_abilities([tapper], Scenario.each_creature())])
+	var squire: ContinuousStaticAbility = Scenario.continuous_static([Scenario.gain_abilities([tapper], SourceSelection.new())],
+		Scenario.condition(SourceSelection.new(), Scenario.has_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1)))
+
+	assert_eq(AbilityText.of_ability(lord, "this creature"), "Each creature has \"{1}, {T}: Tap target creature.\"")
+	assert_eq(AbilityText.of_ability(squire, "this creature"),
+		"As long as this creature has a +1/+1 counter on it, it has \"{1}, {T}: Tap target creature.\"")
+
+
 func test_a_conditional_static_ability_is_one_sentence_that_calls_its_source_it_after_the_condition() -> void:
 	var plus: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE
 	var squire: ContinuousStaticAbility = Scenario.continuous_static(
@@ -933,6 +1001,26 @@ func test_equipped_is_worded_as_an_adjective_and_unequipped_when_negated() -> vo
 	assert_eq(AbilityText.of_ability(reunite, "Reunite"), "Each equipped creature you control gains indestructible until end of turn.")
 	assert_eq(AbilityText.things(Scenario.all_of([Scenario.of_type(CardType.CREATURE), Scenario.is_not(Scenario.equipped())])),
 		"unequipped creatures")
+
+
+func test_assigning_combat_damage_by_toughness_is_worded_as_bark_of_doran_words_it() -> void:
+	var bark: MmCardDefinition = Scenario.bark()
+	var assigns: String = " assigns combat damage equal to its toughness rather than its power."
+
+	assert_eq(AbilityText.of_card(bark.abilities, bark.card_types, bark.supertypes, bark.name),
+		"Equipped creature gets +0/+1.\nAs long as equipped creature's toughness is greater than its power, it" + assigns
+		+ "\nEquip {0}")
+	assert_eq(AbilityText.of_ability(Scenario.by_toughness(Scenario.attached()), "this artifact"), "Equipped creature" + assigns)
+	assert_eq(AbilityText.of_ability(Scenario.by_toughness(), "this creature"), "This creature" + assigns)
+	assert_eq(AbilityText.of_ability(Scenario.by_toughness(Scenario.each_creature()), "Doran"), "Each creature" + assigns,
+		"As Doran, the Siege Tower words it.")
+
+
+func test_a_condition_on_toughness_alone_says_whose_toughness_it_is() -> void:
+	var sturdy: ContinuousStaticAbility = Scenario.continuous_static([Scenario.gain_abilities([FlyingAbility.new()], SourceSelection.new())],
+		Scenario.condition(SourceSelection.new(), Scenario.toughness(4, ToughnessFilter.Comparison.OR_GREATER)))
+
+	assert_eq(AbilityText.of_ability(sturdy, "this creature"), "As long as this creature's toughness is 4 or greater, it has flying.")
 
 
 func test_a_counter_filter_is_worded_after_its_noun() -> void:

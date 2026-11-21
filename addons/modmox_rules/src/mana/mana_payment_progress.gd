@@ -49,6 +49,9 @@ func apply_answer(state: MmGameState, paying: PayManaDecision, index: int) -> vo
 
 
 ## Unit spends from the pool first, then mana abilities, each in a fixed order (ADR 0012).
+## Only what pays something still owed is offered, except that a mana ability adding mana
+## of any color is offered in every color, in WUBRG order, once any color would pay
+## something (ADR 0072): mana that pays nothing goes to the pool (CR 605.3a).
 func _options(state: MmGameState) -> Array[MmAction]:
 	var options: Array[MmAction] = []
 	var pool: Array[MmMana] = state.player(player_id).mana_pool()
@@ -63,12 +66,23 @@ func _options(state: MmGameState) -> Array[MmAction]:
 				continue
 			if ability.mana_cost != null:
 				continue  # Later: mana abilities with mana in their cost.
-			var context: MmEffectContext = MmEffectContext.new(player_id, source.id)
-			for type: MmMana.Type in ManaPayment.mana_made_by(state, ability, context):
-				if ManaPayment.symbol_paid_by(type, remaining_symbols, remaining_generic) != ManaPayment.CANNOT_PAY:
-					options.append(ActivateAbilityAction.new(source.id, ability_index))
+			var activations: Array[MmAction] = ActivateAbilityAction.each_for(source.id, ability_index, ability)
+			for activation: MmAction in activations:
+				if _pays_something(state, ability, activation as ActivateAbilityAction):
+					options.append_array(activations)
 					break
 	return options
+
+
+## Whether some of the mana [param activation] of [param ability] would make pays something
+## still owed.
+func _pays_something(state: MmGameState, ability: ActivatedAbility, activation: ActivateAbilityAction) -> bool:
+	var context: MmEffectContext = MmEffectContext.new(player_id, activation.object_id)
+	context = context.with_chosen_mana_type(activation.mana_type)
+	for type: MmMana.Type in ManaPayment.mana_made_by(state, ability, context):
+		if ManaPayment.symbol_paid_by(type, remaining_symbols, remaining_generic) != ManaPayment.CANNOT_PAY:
+			return true
+	return false
 
 
 ## Spends the pool unit at [param unit_index] on whatever it should pay.
@@ -84,7 +98,8 @@ func _spend(state: MmGameState, unit_index: int) -> void:
 
 
 ## CR 605.3a: mana abilities may be activated while paying. The new mana goes straight to
-## the cost; whatever the cost no longer needs stays in the pool.
+## the cost; whatever the cost no longer needs stays in the pool, as mana of any color does
+## in a color owed nothing.
 func _pay_with_mana_ability(state: MmGameState, action: ActivateAbilityAction) -> void:
 	var source: MmGameObject = state.object(action.object_id)
 	var ability: ActivatedAbility = state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
@@ -92,7 +107,8 @@ func _pay_with_mana_ability(state: MmGameState, action: ActivateAbilityAction) -
 	if ability.is_once_each_game:
 		state.perform(AbilitySpentEvent.new(source.id, action.ability_index))  # CR 602.5b
 	ability.pay_costs(state, source)
-	ability.resolve_effects(state, MmEffectContext.new(source.controller_id, source.id))
+	var context: MmEffectContext = MmEffectContext.new(source.controller_id, source.id)
+	ability.resolve_effects(state, context.with_chosen_mana_type(action.mana_type))  # ADR 0072
 	var unit_index: int = pool_size_before
 	while unit_index < state.player(player_id).mana_pool().size():
 		var type: MmMana.Type = state.player(player_id).mana_pool()[unit_index].type

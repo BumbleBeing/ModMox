@@ -5,13 +5,15 @@ extends RefCounted
 ## leads to the Stage Intro and on to the Stage Map. Arriving at an encounter there opens
 ## the Deckbox against its Villain, with Start; after a won encounter the Spoils screen
 ## (milestone 18) and then the Stage Map open, after a lost one the Stage Map at once, or
-## the Deckbox against the Boss after losing to it. Losing the last Heart ends
-## the run at the main menu; beating the Boss leaves the Stage Map to say so.
+## the Deckbox against the Boss after losing to it. A beaten Boss's Spoils lead to the next
+## Tier's Stage Intro, and the fifth Boss's to Run Won, then the Credits, then the main
+## menu; losing the last Heart, at any Tier, leads to Run Lost and then the main menu
+## (milestone 19).
 
 ## The screens a run moves between. RunFlow says which comes next and never which scene it
 ## is: only the GUI knows that, so the run knows nothing of the scene tree. NONE means
 ## staying where the Hero is.
-enum Screen { NONE, MENU, DECKBOX, DECKBUILDER, STAGE_INTRO, STAGE_MAP, SPOILS }
+enum Screen { NONE, MENU, DECKBOX, DECKBUILDER, STAGE_INTRO, STAGE_MAP, SPOILS, RUN_WON, RUN_LOST, CREDITS }
 
 static var run: Run = null
 ## The Villain the Deckbox shows before an encounter, or null when it is opened to close.
@@ -62,13 +64,13 @@ static func arrive() -> Screen:
 	return Screen.DECKBOX
 
 
-## Counts the encounter's end and says which Screen opens next.
+## Counts the encounter's end and says which Screen opens next: Run Lost once the last
+## Heart is gone, the run kept for it to show.
 static func finish_encounter(won: bool) -> Screen:
 	run.record_encounter(won)
-	if run.is_lost():
-		clear()
-		return Screen.MENU
 	villain = null
+	if run.is_lost():
+		return Screen.RUN_LOST
 	if run.stage_visit.must_play():
 		villain = run.stage_visit.meeting
 		return Screen.DECKBOX
@@ -77,14 +79,31 @@ static func finish_encounter(won: bool) -> Screen:
 	return Screen.STAGE_MAP
 
 
-## The Spoils screen is closed; says which Screen opens: the Stage Map, which says the run
-## is won if the Boss was beaten.
+## The Spoils screen is closed; says which Screen opens: Run Won after the fifth Boss, the
+## next Tier's Stage Intro after any other Boss, its Stage entered, and otherwise the Stage
+## Map.
 static func finish_spoils() -> Screen:
+	if run.is_won():
+		return Screen.RUN_WON
+	if run.is_stage_beaten():
+		run.enter_next_stage()
+		return Screen.STAGE_INTRO
 	return Screen.STAGE_MAP
 
 
-## The run is won and its notice closed; says which Screen opens: the main menu.
-static func finish_run() -> Screen:
+## Run Won's Continue; says which Screen opens: the Credits.
+static func finish_run_won() -> Screen:
+	return Screen.CREDITS
+
+
+## Run Lost's Main Menu; the run is over, and the main menu opens.
+static func finish_run_lost() -> Screen:
+	clear()
+	return Screen.MENU
+
+
+## The Credits' Main Menu; any run is over, and the main menu opens.
+static func finish_credits() -> Screen:
 	clear()
 	return Screen.MENU
 

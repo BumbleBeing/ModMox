@@ -96,6 +96,62 @@ func test_the_stage_map_flag_no_longer_skips_the_menu_once_the_run_has_ended() -
 	assert_not_null(menu.button("Start Encounter"))
 
 
+## Milestone 19's S12: --tier=N with --stage-map walks the debug run up to Tier N.
+func test_the_stage_map_flag_walks_up_to_the_tier_asked_for() -> void:
+	_menu(PackedStringArray(["--stage-map", "--run-seed=7", "--stage=red", "--tier=4"]))
+	await wait_process_frames(2)
+
+	assert_eq(_went_to, [Screens.STAGE_MAP] as Array[String])
+	assert_eq(RunFlow.run.stage_visit.stage.tier, 4)
+	assert_eq(RunFlow.run.stages_beaten().size(), 3)
+	assert_eq(RunFlow.run.stages_beaten()[0].stage.backdrop(), "red", "--stage= is the Tier 1 Stage.")
+	RunFlow.clear()
+
+
+## Milestone 19's S12: --run-won opens Run Won of a debug run that has beaten all five Bosses.
+func test_the_run_won_flag_opens_run_won() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(["--run-won", "--run-seed=7"]))
+	await wait_process_frames(2)
+
+	assert_eq(_went_to, [Screens.RUN_WON] as Array[String])
+	assert_true(RunFlow.run.is_won())
+	assert_null(menu.button("Start Encounter"), "The menu was never drawn.")
+	RunFlow.clear()
+
+
+## Milestone 19's S12: --run-lost opens Run Lost of a debug run lost to the Boss of --tier=N.
+func test_the_run_lost_flag_opens_run_lost_at_the_tier_asked_for() -> void:
+	_menu(PackedStringArray(["--run-lost", "--run-seed=7", "--tier=3"]))
+	await wait_process_frames(2)
+
+	assert_eq(_went_to, [Screens.RUN_LOST] as Array[String])
+	assert_true(RunFlow.run.is_lost())
+	assert_eq(RunFlow.run.stage_visit.stage.tier, 3)
+	assert_eq(RunFlow.run.fell_to, RunFlow.run.stage_visit.boss)
+	RunFlow.clear()
+
+
+## Milestone 19's S12: --credits opens the Credits.
+func test_the_credits_flag_opens_the_credits() -> void:
+	_menu(PackedStringArray(["--credits"]))
+	await wait_process_frames(2)
+
+	assert_eq(_went_to, [Screens.CREDITS] as Array[String])
+
+
+func test_the_run_end_and_credits_flags_no_longer_skip_the_menu_once_left() -> void:
+	RunEndScreen.has_left = true
+	CreditsScreen.has_left = true
+
+	var menu: MainMenu = _menu(PackedStringArray(["--run-won", "--credits"]))
+	await wait_process_frames(2)
+	RunEndScreen.has_left = false
+	CreditsScreen.has_left = false
+
+	assert_eq(_went_to, [] as Array[String])
+	assert_not_null(menu.button("Start Encounter"))
+
+
 func test_quit_game_quits() -> void:
 	var menu: MainMenu = _menu(PackedStringArray())
 

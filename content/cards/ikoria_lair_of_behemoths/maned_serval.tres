@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_xoand"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="2_7udrh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_41qp6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_7udrh"]
+
+[sub_resource type="Resource" id="Resource_y6bla"]
+script = ExtResource("2_7udrh")
+
+[sub_resource type="Resource" id="Resource_e8jto"]
+script = ExtResource("2_41qp6")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_7udrh")
+name = "Maned Serval"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat"])
+mana_cost = SubResource("Resource_e8jto")
+power = 1
+toughness = 4
+abilities = Array[ExtResource("1_xoand")]([SubResource("Resource_y6bla")])

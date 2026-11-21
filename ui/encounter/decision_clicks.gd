@@ -17,6 +17,10 @@ extends RefCounted
 ## A card in hand that can be cast or played, or has an ability used from there, glows too,
 ## but one click on it answers nothing (A371): what it offers is kept apart, in
 ## hand_options_of(), for the Drag Card and a double-click.
+##
+## A mana ability that adds mana of any color offers a row of the Option Menu for each color,
+## "Add {W}" to "Add {G}"; while the Hero pays by hand, a color that pays something still
+## owed has a green Glow on its row (game ADR 0073).
 
 enum Kind { TARGET, MANA, COMBAT, ABILITY, PLAY, OTHER }
 
@@ -33,6 +37,9 @@ const COLORS: Dictionary[Kind, Color] = {
 const SHARED: Array[Kind] = [Kind.PLAY, Kind.ABILITY, Kind.MANA]
 ## How many colors a Glow shows at most.
 const MOST_COLORS: int = 2
+## What the Option Menu row of one color of mana of any color reads, with that color's
+## symbol: "Add {W}" (game ADR 0073).
+const COLOR_ROW: String = "Add {%s}"
 
 ## Player ID → the kind of Glow that player's panel has.
 var players: Dictionary[int, Kind] = {}
@@ -83,7 +90,8 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 		for index: int in actions.size():
 			var spend: PayWithManaAction = actions[index] as PayWithManaAction
 			if spend == null:
-				clicks._add_ability(index, actions[index] as ActivateAbilityAction, view)
+				clicks._add_ability(index, actions[index] as ActivateAbilityAction, view,
+					decision as PayManaDecision)
 			elif spend.unit_index < pool.size():
 				var type: MmMana.Type = (pool[spend.unit_index] as MmMana).type
 				if not clicks.pool_answers.has(type):
@@ -273,8 +281,10 @@ func clickable_ids() -> Array[int]:
 
 ## An ability that [param answer] activates: a permanent's is clicked on it, an Emblem's or
 ## a Potion's on its entry in its window, and one of a card in hand is offered when the card
-## is let go.
-func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView) -> void:
+## is let go. One color of mana of any color reads "Add {W}" and, while the Hero pays
+## [param paying] by hand, glows when that color pays something still owed (game ADR 0073).
+func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView,
+		paying: PayManaDecision = null) -> void:
 	var text: String = "Ability %d" % (action.ability_index + 1)
 	var is_mana: bool = false
 	var permanent: MmObjectView = _find(view.battlefield, action.object_id)
@@ -291,13 +301,20 @@ func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView
 		var noun: String = AbilityText.self_noun(seen.card_types, seen.name, seen.abilities)
 		if held != null:
 			noun = CardLook.noun_of(CardLook.Kind.EMBLEM if emblem != null else CardLook.Kind.POTION)
-		text = AbilityText.option_of(ability, noun)
+		text = AbilityText.option_of(ability, noun, action.mana_type)
+	var option: ClickOption = ClickOption.new(answer, text, is_mana)
+	if action.mana_type != MmMana.NO_TYPE:
+		option.mana_type = action.mana_type
+		option.row_text = COLOR_ROW % MmMana.SYMBOLS[action.mana_type as MmMana.Type]
+		# At priority every color can be chosen, so none glows (game ADR 0073).
+		option.has_glow = paying != null and ManaPayment.symbol_paid_by(action.mana_type as MmMana.Type,
+			paying.remaining_symbols, paying.remaining_generic) != ManaPayment.CANNOT_PAY
 	# What the Hero holds and can use now is green, as a card to play is (A537).
 	_add_kind(action.object_id, Kind.MANA if is_mana else (Kind.PLAY if held != null else Kind.ABILITY))
 	if permanent != null or held != null:
-		_append(_options, action.object_id, ClickOption.new(answer, text, is_mana))
+		_append(_options, action.object_id, option)
 	elif in_hand != null:
-		_append(_hand_abilities, action.object_id, ClickOption.new(answer, text, is_mana))
+		_append(_hand_abilities, action.object_id, option)
 
 
 ## Casting a card or playing it as a land, which [param answer] does. A card in the

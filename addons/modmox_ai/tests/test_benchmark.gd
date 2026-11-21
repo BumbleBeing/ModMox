@@ -304,6 +304,8 @@ func _payment_answer(engine: MmEngine, decision: PayManaDecision) -> int:
 
 
 func _mana_type_made(state: MmGameState, action: ActivateAbilityAction) -> int:
+	if action.mana_type != MmMana.NO_TYPE:
+		return action.mana_type  # ADR 0072: the color of mana of any color it was offered for.
 	var source: MmGameObject = state.object(action.object_id)
 	var ability: ActivatedAbility = state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
 	if ability != null:

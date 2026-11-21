@@ -3,7 +3,7 @@ extends GutTest
 
 
 func test_every_deck_in_content_is_listed_in_order() -> void:
-	assert_eq(ContentDecks.names(), ["arahbo_the_first_fang", "blue_red", "brimaz_king_of_oreskos", "charmed_stray", "kemba_kha_enduring", "king_of_the_pride", "red_green", "steppe_lynx", "vanguard_of_brimaz", "white_black", "zar_ojanen_scion_of_efrava"] as Array[String])
+	assert_eq(ContentDecks.names(), ["arahbo_the_first_fang", "blue_red", "brimaz_king_of_oreskos", "charmed_stray", "frondland_felidar", "kemba_kha_enduring", "king_of_the_pride", "red_green", "steppe_lynx", "vanguard_of_brimaz", "white_black", "zar_ojanen_scion_of_efrava"] as Array[String])
 
 
 func test_a_deck_is_found_by_its_name() -> void:

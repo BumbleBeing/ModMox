@@ -384,7 +384,7 @@ func _play_key(action: MmAction) -> String:
 		return "cast %d" % (action as CastSpellAction).object_id
 	if action is ActivateAbilityAction:
 		var activate: ActivateAbilityAction = action as ActivateAbilityAction
-		return "activate %d %d" % [activate.object_id, activate.ability_index]
+		return "activate %d %d %d" % [activate.object_id, activate.ability_index, activate.mana_type]
 	return ""
 
 
@@ -554,7 +554,8 @@ func _best_land(decision: PriorityDecision, world: MmGameState) -> int:
 	return best
 
 
-## The types of mana the mana abilities of a land with [param characteristics] add.
+## The types of mana the mana abilities of a land with [param characteristics] add, every
+## color for mana of any color.
 static func _mana_made_by_land(characteristics: MmCharacteristics) -> Array[MmMana.Type]:
 	var made: Array[MmMana.Type] = []
 	for ability: MmAbility in characteristics.abilities:
@@ -562,8 +563,12 @@ static func _mana_made_by_land(characteristics: MmCharacteristics) -> Array[MmMa
 		if activated == null:
 			continue
 		for effect: MmEffect in activated.effects:
-			if effect is AddManaEffect and not made.has((effect as AddManaEffect).mana_type):
-				made.append((effect as AddManaEffect).mana_type)
+			var add_mana: AddManaEffect = effect as AddManaEffect
+			if add_mana == null:
+				continue
+			for type: MmMana.Type in add_mana.possible_types():
+				if not made.has(type):
+					made.append(type)
 	return made
 
 
