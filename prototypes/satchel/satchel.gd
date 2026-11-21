@@ -1,5 +1,5 @@
 extends Control
-## PROTOTYPE (milestone 22, step 3 of 3): the Satchel window's layout and its clicks (steps
+## PROTOTYPE (milestone 24, step 3 of 3): the Satchel window's layout and its clicks (steps
 ## 1 and 2, signed off), and opening and closing it over the Stage Map of a debug run. Throwaway: deleted after sign-off, once the real window is ported
 ## test-first. Nothing here changes a run: the Items are samples made in this file.
 ##

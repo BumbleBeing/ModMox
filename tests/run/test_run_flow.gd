@@ -143,7 +143,7 @@ func test_losing_the_last_heart_to_the_boss_opens_run_lost() -> void:
 	assert_eq(run.fell_to, run.stage_visit.boss)
 
 
-## The Credits opened with no run, as the main menu will open them (milestone 28), lead
+## The Credits opened with no run, as the main menu will open them (milestone 35), lead
 ## back to the main menu.
 func test_the_credits_without_a_run_lead_to_the_main_menu() -> void:
 	assert_eq(RunFlow.finish_credits(), RunFlow.Screen.MENU)

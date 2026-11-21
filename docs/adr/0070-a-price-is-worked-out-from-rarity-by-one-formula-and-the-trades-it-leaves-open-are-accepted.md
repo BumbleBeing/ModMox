@@ -1,6 +1,6 @@
 # A price is worked out from Rarity by one formula, and the trades it leaves open are accepted
 
-Everything the Hero buys, sells or pays for in a run is priced from one short list by one formula, rather than each good carrying a price of its own. The numbers are tunable constants and live in the code and the roadmap (milestones 22 and 23). What is written here is the shape, and the trades it allows that would otherwise look like mistakes to fix.
+Everything the Hero buys, sells or pays for in a run is priced from one short list by one formula, rather than each good carrying a price of its own. The numbers are tunable constants and live in the code and the roadmap (milestones 24 and 25). What is written here is the shape, and the trades it allows that would otherwise look like mistakes to fix.
 
 **One price for each kind and Rarity.** Cards, Potions and Mods each have a price at Common, Uncommon, Rare and Mythic. An Armor has no Rarity, so each Armor carries its own price. A Power-9 card and a Unique Mod are never for sale, so neither has a buying price. There is no random variance and no sale, so a player learns that a Rare costs the same everywhere. Prices stay flat across the Tiers: a later Tier raises the Rarity of what is stocked, not what a Rarity costs, and the Spoils' gold rises with the Tier instead. So later Stages feel richer, and what is left at the end of a won run goes to the Vault. Prices that rise with the Tier, as the Spoils' gold does, were rejected: every Stage would shop alike, and the list would no longer be learnable.
 

@@ -1,5 +1,5 @@
 extends RefCounted
-## PROTOTYPE (milestone 22): the Satchel prototype's own sample icons, painted in code so
+## PROTOTYPE (milestone 24): the Satchel prototype's own sample icons, painted in code so
 ## that nothing is added to ui/sprites/ for a throwaway. Each Armor Icon and Potion Icon is
 ## 32 × 32 pixels in the palette's colors (tools/sprites/modmox.gpl), with the palette's
 ## darkest neutral as its outline. The real icons are drawn by hand, as text grids.

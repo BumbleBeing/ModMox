@@ -3,7 +3,7 @@ extends RefCounted
 ## Rolls the Spoils of a win (milestone 18, ADR 0039) from the Villain's Rank where it was
 ## met, the Stage's Tier and the Villain's deck for that Tier, each part from a stream of
 ## its own of the Run Seed (ADR 0025). The numbers are placeholders until the Store sets
-## prices (milestone 22).
+## prices (milestone 24).
 
 ## The gold each Rank pays at Tier 1, from the first number to the second.
 const GOLD: Dictionary[StageMap.Kind, Vector2i] = {
@@ -13,8 +13,7 @@ const GOLD: Dictionary[StageMap.Kind, Vector2i] = {
 }
 ## Each Tier past the first adds this share of Tier 1's gold to both ends of the range.
 const GOLD_PER_TIER: float = 0.5
-## How often each Rank pays 1, 2 or 3 cards, in tenths. A Unique Villain will pay as an
-## Elite does (milestone 26).
+## How often each Rank pays 1, 2 or 3 cards, in tenths.
 const CARD_ODDS: Dictionary[StageMap.Kind, Array] = {
 	StageMap.Kind.LESSER: [6, 3, 1],
 	StageMap.Kind.ELITE: [4, 4, 2],

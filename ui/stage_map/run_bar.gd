@@ -74,7 +74,7 @@ func _init() -> void:
 	var buttons: HBoxContainer = HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	# Later (milestone 22): the Satchel opens.
+	# Later (milestone 24): the Satchel opens.
 	_add_button(buttons, SATCHEL, "satchel", func() -> void: pass)
 	_add_button(buttons, DECKBOX, "deckbox", deckbox_pressed.emit)
 	row.add_child(buttons)

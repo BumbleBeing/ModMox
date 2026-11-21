@@ -119,27 +119,35 @@ The Workshop's taking of one Mod or Hex off a card in the Collection, for one fl
 _Avoid_: Unmodding, stripping, Mod removal service
 
 **Trove**:
-The Node that follows an Elite Encounter and holds treasure. The Hero reaches it whether the Elite Encounter was won or lost, and it is never found anywhere else.
+The Node that follows an Elite Encounter and offers three Items, of which the Hero takes one. The Hero reaches it whether the Elite Encounter was won or lost, and it is never found anywhere else.
 _Avoid_: Treasure node, chest
 
 **Chaos Node**:
-The Node through which a Unique Villain is met. It never counts as an encounter when a Stage's map is laid out.
-_Avoid_: Mystery Node, event node
+The Node that holds a Twist, drawn when the Hero arrives. It never counts as an encounter when a Stage's map is laid out.
+_Avoid_: Mystery Node, event node, Event (an engine term for a change to the game)
+
+**Twist**:
+What a Chaos Node holds: a Dilemma or a Gamble, one of those authored for the game. It may give or take almost anything the Hero has, such as gold, Hearts, cards, Items, or a Mod or Hex on a card. No Twist comes up twice in one run.
+_Avoid_: Event (an engine term for a change to the game), encounter (an encounter is with a Villain), Phenomenon (a Magic card type)
+
+**Dilemma**:
+A Twist that offers two or three choices whose outcomes are stated, with nothing left to chance. It may force a choice, though most let the Hero walk away.
+_Avoid_: Choice event, mode (a rules term)
+
+**Gamble**:
+A Twist whose outcome is left to chance. Its odds are never shown: its words hint at how risky it is. The Hero can always decline it.
+_Avoid_: Bet, wager, roll
 
 **Rank**:
-How dangerous a Villain is where it is met: Lesser, Elite, Boss or Unique. A Stage says which Villains it has at each of the first three Ranks, so Rank belongs to the meeting, not to the Villain. The Rank decides how many cards the Spoils pay, and the Rank with the Stage's Tier how much gold.
+How dangerous a Villain is where it is met: Lesser, Elite or Boss. A Stage says which Villains it has at each Rank, so Rank belongs to the meeting, not to the Villain. The Rank decides how many cards the Spoils pay, and the Rank with the Stage's Tier how much gold.
 _Avoid_: Difficulty (AI Difficulty is the one global setting for how hard every Villain thinks), level, class
-
-**Unique Villain**:
-A Villain of Unique Rank, met only through a Chaos Node. It can turn up at any Stage, with a stronger deck at each Tier.
-_Avoid_: Mystery enemy, mini-boss, special
 
 **Encounter Reveal**:
 The screen that opens when the Hero arrives at an encounter, before the Deckbox. A short animation reveals which Villain it is and comes to rest on a still of the Hero against the Villain. From that still the Hero can open the Satchel, or start the encounter, which opens the Deckbox with its Start button.
 _Avoid_: Versus screen, matchup screen, Stage Intro (the screen that opens a Stage)
 
 **Spoils**:
-What the Hero wins for beating a Villain: gold and cards, and now and then an Item, which a Boss always pays. They are paid the moment the win is counted and the Hero takes all of them; the Spoils screen only shows what was won. How many cards follows the Villain's Rank (a Lesser Villain pays 1 to 3, mostly 1, an Elite or a Unique Villain 1 to 3 more evenly, a Boss 2 or 3), and how much gold its Rank and the Tier. The cards are drawn evenly from the copies in the Villain's own deck at that Tier, never its basic lands, so their quality is whatever that deck holds. A loss pays nothing.
+What the Hero wins for beating a Villain: gold and cards, and now and then an Item, which a Boss always pays. They are paid the moment the win is counted and the Hero takes all of them; the Spoils screen only shows what was won. How many cards follows the Villain's Rank (a Lesser Villain pays 1 to 3, mostly 1, an Elite 1 to 3 more evenly, a Boss 2 or 3), and how much gold its Rank and the Tier. The cards are drawn evenly from the copies in the Villain's own deck at that Tier, never its basic lands, so their quality is whatever that deck holds. A loss pays nothing.
 _Avoid_: Loot, rewards, drops
 
 **Item**:
@@ -203,11 +211,11 @@ An Armor's picture: a 32 × 32 pixel icon, shown on its entry in the Satchel and
 _Avoid_: Armor art, armor sprite, Armor Slot (the place, not the picture)
 
 **Heart**:
-One of the losses a run can survive. Losing an encounter costs one, and the run is lost when none are left.
+One of the losses a run can survive. Losing an encounter costs one, and a Twist may cost one or give one back. The run is lost when none are left.
 _Avoid_: Life (a rules term), health, HP
 
 **Starting Pool**:
-The cards a run's first Collection is dealt from, authored and divided by color. The deal is semi-random and weighted toward the Hero's color. Achievements can add cards to it, some of them new and powerful.
+The cards a run's first Collection is dealt from, authored and divided into the five colors, colorless cards, multicolored cards and lands, never a basic land; a multicolored card is in the multicolored group, whatever its colors. The deal is semi-random: about a third of it is of the Hero Color, and the rest is spread over the other groups. Achievements can add cards to it, some of them new and powerful.
 _Avoid_: Starter deck, card pool, starting collection
 
 **Store Pool**:
@@ -227,7 +235,7 @@ A Hero that is a Magic planeswalker, offered on Choose your Hero. Its name, its 
 _Avoid_: Character, class, preset
 
 **Custom Hero**:
-The Hero the player makes on Choose your Hero. The player gives its name and, alone among Heroes, chooses its Hero Color, or none, and the Statuses it takes. Its Portrait is one of a set kept for Custom Heroes.
+The Hero the player makes on Choose your Hero. The player gives its name and, alone among Heroes, chooses its Hero Color, or none, and the Statuses it takes. Its Portrait is one of a set kept for Custom Heroes, some of them drawn after planeswalkers, so a Named Hero may share its Portrait with that set.
 _Avoid_: Custom character, blank Hero, player-made Hero
 
 **Hero Color**:
@@ -243,12 +251,16 @@ The store on the main menu where gold from the Vault buys unlocks: new cards and
 _Avoid_: Meta shop, unlock store, Store (a Node in a run)
 
 **Profile**:
-Everything kept between runs: the Vault, the Bazaar's unlocks, the Achievements and the Gallery. There is one per installation, kept apart from the saved run, and losing or abandoning a run never touches it.
+Everything kept between runs: the Vault, the Bazaar's unlocks, the Achievements, the Gallery and the Hints already seen. There is one per installation, kept apart from the saved run, and losing or abandoning a run never touches it.
 _Avoid_: Save, account, meta-save
 
 **Tutorial**:
 A guided, staged run offered on Choose your Hero: a step-by-step guide to deckbuilding, then a guided visit to a Store and a Workshop, then a staged encounter against a demo Villain with stacked decks and set plays. It uses an authored Collection, keeping only the Hero's name and Portrait from Choose your Hero, ends on a notice that it is complete and returns to the main menu. It leaves nothing behind: no saved run, nothing in the Profile, no Achievements.
 _Avoid_: Onboarding, training, first run
+
+**Hint**:
+A short note shown once, the first time a screen opens, saying what that screen is for and how it is used. Hints teach the game's screens, never Magic's rules. Those already seen are kept in the Profile, so a later run does not repeat them.
+_Avoid_: Tutorial (the guided, staged run), tooltip, coach mark, popup
 
 **Run Won**:
 The screen a run ends on when its fifth Boss is beaten, titled "Trial won": the five Stages played, each with its Boss, the gold still held and the Hearts left. It leads to the Credits.
@@ -269,6 +281,10 @@ _Avoid_: Inventory, bag, Satchel screen (it is a window), Potions window (the en
 **Run Seed**:
 The single number from which all randomness in a run is derived: each Stage's map, which Villain a Node gives, the Spoils, and every Encounter Seed. A run is exactly replayable from it and the human's choices.
 _Avoid_: Random seed, world seed
+
+**Run Log**:
+The record a run writes as it goes of every choice the Hero makes, in order, each with the options it was chosen from: the Nodes walked, what is bought and sold, each Removal and Duplication, the Mods applied, the Armor put on and taken off, the Decks saved, every answer given in an encounter, and how each encounter ended. With the Run Seed it replays the run exactly. It is kept for the game's makers to study and is never shown in the game.
+_Avoid_: History, replay, telemetry, saved run (what Continue resumes)
 
 **Gallery**:
 The main menu's record of everything seen across runs, in four pages: Achievements, the Card Encyclopedia (every card collected or seen, with its Modded versions), the Stage Encyclopedia (every Stage and its Villains seen) and the Hall of Fame.
@@ -624,7 +640,7 @@ What one keyword means, in a sentence, shown in the Inspector beside its Keyword
 _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 
 **Rarity**:
-How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a Unique Villain or a rare Chaos Node event, never in other Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique, and Unique here is not the Villain Rank. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. A Potion Icon's plate is the same color, but for a Mythic's, which is sienna so that it is not taken for Rare's gold; a Unique Item's plate is light purple. An Emblem has none, and neither has an Armor.
+How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a rare Twist, never in Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. A Potion Icon's plate is the same color, but for a Mythic's, which is sienna so that it is not taken for Rare's gold; a Unique Item's plate is light purple. An Emblem has none, and neither has an Armor.
 _Avoid_: Tier (a part of a run), quality, grade
 
 **Divider**:

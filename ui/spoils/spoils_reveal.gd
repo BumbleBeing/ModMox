@@ -12,7 +12,7 @@ const RISE: float = 24.0
 const GOLD_AT: float = 0.25
 const PANEL_IN: float = 0.15
 const COUNT_SECONDS: float = 0.6
-## Later (milestone 22): an Item fades in at ITEM_AT, over PANEL_IN.
+## Later (milestone 24): an Item fades in at ITEM_AT, over PANEL_IN.
 const ITEM_AT: float = 0.4
 ## Each card drops DROP pixels into place face down, fading in, over DROP_SECONDS, then
 ## flips face up over FLIP_SECONDS; the next starts DEAL_GAP after it.

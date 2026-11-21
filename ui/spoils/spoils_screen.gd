@@ -5,7 +5,7 @@ extends Control
 ## ground, one window: "Found Items" on a dithered gray bar, the gold on parchment, a Card
 ## Face for each card glowing its Rarity, and Continue, which opens the Stage Map. It is
 ## revealed at the Game Speed (SpoilsReveal), and a click during the reveal ends it.
-## Later (milestone 22): an Item on parchment beside the gold.
+## Later (milestone 24): an Item on parchment beside the gold.
 ##
 ## --spoils opens it on a debug run's win (--run-seed=N, --stage=red, --rank=lesser, elite
 ## or boss), honoring --screenshot=/absolute/path.png.
@@ -208,7 +208,7 @@ func gold_panel() -> Control:
 	return _gold_panel
 
 
-## Later (milestone 22): the Item's panel. None yet.
+## Later (milestone 24): the Item's panel. None yet.
 func item_panel() -> Control:
 	return null
 
