@@ -386,11 +386,52 @@ func test_the_window_keeps_its_smallest_size_when_the_menu_is_skipped() -> void:
 	assert_eq(get_window().min_size, MainMenu.MIN_WINDOW)
 
 
-func _menu(arguments: PackedStringArray) -> MainMenu:
+## Milestone 20's T1: the project names a version, and the main menu reads it at its bottom
+## right as "Demo <version>", in the Credits' muted 18-point text.
+func test_the_main_menu_shows_the_demo_version_at_its_bottom_right() -> void:
+	var version: String = str(ProjectSettings.get_setting(MainMenu.VERSION_SETTING, ""))
+	assert_not_null(RegEx.create_from_string("^\\d+\\.\\d+\\.\\d+$").search(version), "A version such as 0.0.1.")
+
+	var menu: MainMenu = _menu(PackedStringArray())
+
+	var label: Label = menu.version_label()
+	assert_not_null(label)
+	assert_eq(label.text, "Demo " + version)
+	assert_eq(label.get_theme_font_size("font_size"), 18)
+	assert_eq(label.get_theme_color("font_color"), CreditsScreen.MUTED)
+	assert_eq(Vector2(label.anchor_left, label.anchor_top), Vector2.ONE, "Anchored at the bottom right.")
+
+
+## Milestone 20's T3: a playtest build's main menu offers Quit Game alone, its developer
+## entries hidden.
+func test_a_playtest_menu_offers_quit_game_alone() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(), true)
+
+	for entry: String in MainMenu.DEVELOPER_ENTRIES:
+		assert_null(menu.button(entry), "%s is hidden." % entry)
+	menu.button("Quit Game").pressed.emit()
+	assert_true(_has_quit)
+
+
+## Milestone 20's T3: any other build's menu has the developer entries as well, and the
+## feature that hides them is the one the export presets set.
+func test_a_developer_menu_has_its_developer_entries() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+
+	assert_eq(MainMenu.DEVELOPER_ENTRIES, ["Start Encounter", "Start Run (debug)", "Card Gallery"] as Array[String])
+	for entry: String in MainMenu.DEVELOPER_ENTRIES:
+		assert_not_null(menu.button(entry), entry)
+	assert_not_null(menu.button("Quit Game"))
+	assert_eq(MainMenu.PLAYTEST_FEATURE, "playtest")
+	assert_false(OS.has_feature(MainMenu.PLAYTEST_FEATURE), "Tests run as a developer build.")
+
+
+func _menu(arguments: PackedStringArray, is_playtest: bool = false) -> MainMenu:
 	var menu: MainMenu = MainMenu.new()
 	menu.navigate = _go
 	menu.quit = func() -> void: _has_quit = true
 	menu.arguments = arguments
+	menu.is_playtest = is_playtest
 	add_child_autofree(menu)
 	return menu
 

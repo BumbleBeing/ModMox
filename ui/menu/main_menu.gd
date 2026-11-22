@@ -9,7 +9,9 @@ extends Control
 ## screen of a win in one (--rank=lesser, elite or boss). --run-won and --run-lost open the
 ## end of a debug run, and --credits the Credits (milestone 19). Start Run (debug) begins a debug
 ## run at the Deckbox, in Kitty Keep, the Stage being built first (milestones 16 and 17).
-## The Menu Soldier stands on top of the window, playing his animations, casting the Soldier
+## A playtest build (the playtest feature its export sets, milestone 20) hides those
+## developer entries, though every flag above still works in it; every build shows its
+## version at the screen's bottom right. The Menu Soldier stands on top of the window, playing his animations, casting the Soldier
 ## Shadow on it; the two are centered on the screen together. The Wisp floats about them,
 ## bringing him his effects, and casts the Wisp Light on the window when it comes near. As
 ## he takes each effect on, its Effect Callout floats off from him.
@@ -29,6 +31,16 @@ const REFUSAL_COLOR: Color = Color("#e08a7a")
 const BUTTON_GAP: int = SpoilsScreen.ROW_GAP
 ## How wide the window's edge is, in pixels.
 const WINDOW_EDGE_WIDTH: int = 2
+## The project setting that names the build's version, which the menu shows as "Demo 0.0.1"
+## (milestone 20), in the Credits' muted 18-point text, VERSION_INSET pixels in from the
+## screen's bottom right corner: the Credits' buttons' inset.
+const VERSION_SETTING: String = "application/config/version"
+const VERSION_SIZE: int = 18
+const VERSION_INSET: int = 32
+## The custom feature every playtest export sets (milestone 20), and the entries a build
+## with it does not offer.
+const PLAYTEST_FEATURE: String = "playtest"
+const DEVELOPER_ENTRIES: Array[String] = ["Start Encounter", "Start Run (debug)", "Card Gallery"]
 
 ## How the menu opens another scene, and how it quits. Tests replace both. A scene asked
 ## for on the command line opens at once, so that a --screenshot is not taken mid-fade; one
@@ -41,8 +53,11 @@ var navigate: Callable = func(scene: String) -> void:
 var quit: Callable = func() -> void: get_tree().quit()
 ## The command line, as given after "--". Tests replace it.
 var arguments: PackedStringArray = OS.get_cmdline_user_args()
+## Whether this is a playtest build, whose menu leaves out DEVELOPER_ENTRIES. Tests replace it.
+var is_playtest: bool = OS.has_feature(PLAYTEST_FEATURE)
 
 var _buttons: Dictionary[String, Button] = {}
+var _version: Label
 var _window: PanelContainer
 var _soldier: MenuSoldier
 ## Over everything, so that the Soldier Shadow lies on the window.
@@ -103,6 +118,7 @@ func _ready() -> void:
 	background.color = StageIntro.GROUND
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
+	_add_version()
 	var center: CenterContainer = CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
@@ -161,9 +177,10 @@ func _ready() -> void:
 		reason.add_theme_font_size_override("font_size", 20 + UiText.RAISE)
 		reason.add_theme_color_override("font_color", REFUSAL_COLOR)
 		column.add_child(reason)
-	_add(column, "Start Encounter", func() -> void: navigate.call(START_FORM))
-	_add(column, "Start Run (debug)", func() -> void: navigate.call(Screens.scene(RunFlow.start(Run.debug(randi(), load(DEMO_STAGE) as StageDefinition)))))
-	_add(column, "Card Gallery", func() -> void: navigate.call(CARD_GALLERY))
+	if not is_playtest:
+		_add(column, "Start Encounter", func() -> void: navigate.call(START_FORM))
+		_add(column, "Start Run (debug)", func() -> void: navigate.call(Screens.scene(RunFlow.start(Run.debug(randi(), load(DEMO_STAGE) as StageDefinition)))))
+		_add(column, "Card Gallery", func() -> void: navigate.call(CARD_GALLERY))
 	_add(column, "Quit Game", func() -> void: quit.call())
 
 
@@ -210,6 +227,23 @@ func shadow_blocks() -> Array[Rect2]:
 ## The button labeled [param text], or null.
 func button(text: String) -> Button:
 	return _buttons.get(text, null) as Button
+
+
+## The build's version at the screen's bottom right, or null when the menu went straight to
+## another scene.
+func version_label() -> Label:
+	return _version
+
+
+func _add_version() -> void:
+	_version = Label.new()
+	_version.name = "Version"
+	_version.text = "Demo %s" % ProjectSettings.get_setting(VERSION_SETTING, "")
+	_version.add_theme_font_size_override("font_size", VERSION_SIZE)
+	_version.add_theme_color_override("font_color", CreditsScreen.MUTED)
+	_version.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_version)
+	_version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, VERSION_INSET)
 
 
 func _add(column: VBoxContainer, text: String, on_press: Callable) -> void:

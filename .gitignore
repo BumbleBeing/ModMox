@@ -21,3 +21,6 @@
 /content/art/*.jpg.import
 /content/art/tokens/*.jpg
 /content/art/tokens/*.jpg.import
+
+# Exported playtest builds (tools/export/export.sh)
+/build/

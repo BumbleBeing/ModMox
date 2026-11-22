@@ -136,6 +136,8 @@ static func _card_files(folder: String) -> PackedStringArray:
 	var files: PackedStringArray = DirAccess.get_files_at(folder)
 	files.sort()
 	for file: String in files:
-		if file.ends_with(".tres"):
-			found.append(folder + file)
+		# An exported game lists a resource as "name.tres.remap".
+		var card: String = file.trim_suffix(".remap")
+		if card.ends_with(".tres"):
+			found.append(folder + card)
 	return found
