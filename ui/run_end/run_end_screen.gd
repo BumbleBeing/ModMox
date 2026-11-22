@@ -83,6 +83,7 @@ var _length: float = 0.0
 var _holders: Array[Control] = []
 var _part_count: int = 0
 var _title: Label
+var _run_seed: Label = null
 var _title_holder: Control
 var _button: Button
 var _button_frame: Control
@@ -168,10 +169,29 @@ func begin(run: Run) -> void:
 		_build_lost(column)
 	_time = 0.0 if is_paced else _length
 	_pose()
+	_add_run_seed()
 
 
 func title() -> String:
 	return _title.text
+
+
+## The Run Seed at the bottom right (milestone 21), or null before begin().
+func run_seed_label() -> Label:
+	return _run_seed
+
+
+## The Run Seed, muted, where the main menu shows the version.
+func _add_run_seed() -> void:
+	_run_seed = Label.new()
+	_run_seed.name = "RunSeed"
+	_run_seed.text = PauseMenu.RUN_SEED % _run.run_seed
+	_run_seed.add_theme_font_size_override("font_size", MainMenu.VERSION_SIZE)
+	_run_seed.add_theme_color_override("font_color", CreditsScreen.MUTED)
+	_run_seed.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_run_seed)
+	_run_seed.set_anchors_and_offsets_preset(
+		Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, MainMenu.VERSION_INSET)
 
 
 ## Everything the screen says, top to bottom, the gold and the button's words left out.

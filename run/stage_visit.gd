@@ -96,6 +96,41 @@ func record(won: bool) -> void:
 	meeting = null
 
 
+## The walk as plain data, for a saved run (ADR 0074): its Stage, Boss and the Villain being
+## met by their Content paths.
+func to_data() -> Dictionary:
+	var saved_offsets: Dictionary = {}
+	for id: int in offsets:
+		saved_offsets[str(id)] = [offsets[id].x, offsets[id].y]
+	var walked: Array = []
+	for link: Vector2i in _walked:
+		walked.append([link.x, link.y])
+	return {
+		"stage": SavedRun.path_of(stage), "map": map.to_data(), "boss": SavedRun.path_of(boss),
+		"current": current, "meeting": SavedRun.path_of(meeting) if meeting != null else "", "is_won": is_won,
+		"offsets": saved_offsets, "scenery_seed": scenery_seed, "visited": _visited.keys(), "walked": walked,
+	}
+
+
+## The walk [param data] holds, as to_data() made it.
+static func from_data(data: Dictionary) -> StageVisit:
+	var visit: StageVisit = StageVisit.new(
+		load(str(data["stage"])) as StageDefinition, StageMap.from_data(data["map"]), load(str(data["boss"])) as Villain)
+	visit.current = int(data["current"])
+	visit.meeting = null if str(data["meeting"]) == "" else load(str(data["meeting"])) as Villain
+	visit.is_won = bool(data["is_won"])
+	visit.scenery_seed = int(data["scenery_seed"])
+	var saved_offsets: Dictionary = data["offsets"]
+	for id: String in saved_offsets:
+		visit.offsets[int(id)] = Vector2(float(saved_offsets[id][0]), float(saved_offsets[id][1]))
+	visit._visited.clear()
+	for id: Variant in data["visited"]:
+		visit._visited[int(id)] = true
+	for link: Array in data["walked"]:
+		visit._walked[Vector2i(int(link[0]), int(link[1]))] = true
+	return visit
+
+
 func is_visited(id: int) -> bool:
 	return _visited.has(id)
 

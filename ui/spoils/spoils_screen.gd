@@ -63,6 +63,8 @@ const MOST_CARDS: int = 3
 
 ## Whether the screen reads the run from RunFlow when it is ready. Tests hand it one.
 var starts_itself: bool = true
+## The Pause Menu over the screen (milestone 21), made by begin().
+var run_pause: RunPause = null
 ## How the screen opens another scene. Tests replace it.
 var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get_tree(), scene)
 ## Whether the reveal plays; a screen that is not paced shows everything at once.
@@ -192,6 +194,8 @@ func begin(run: Run) -> void:
 	_shade_window()
 	_reveal_time = 0.0 if is_paced else SpoilsReveal.length(_spoils.cards.size())
 	_pose()
+	run_pause = RunPause.over(self, func(scene: String) -> void: navigate.call(scene),
+		GameSettings.PATH if starts_itself else "")
 
 
 ## The text of the bar across the window's top.

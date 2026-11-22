@@ -180,6 +180,20 @@ func collection_cell(index: int) -> Rect2:
 	return Rect2(place, card)
 
 
+## The Collection's cells near the view, of [param count]: the first and one past the last,
+## when the grid is scrolled [param top] pixels down and [param view_height] of it shows.
+## [param margin] of a view's rows above it and below it are near too, half by default, so a
+## little scrolling finds its faces already made; with none, only the rows in view.
+func collection_cells_near(top: float, view_height: float, count: int, margin: float = 0.5) -> Vector2i:
+	var row: float = collection_card_height + CARD_GAP
+	var across: int = collection_columns()
+	var room: float = view_height * margin
+	# A hair's room either way, so a row that only touches the edge is not counted.
+	var first_row: int = maxi(0, floori((top - room) / row + 0.001))
+	var end_row: int = ceili((top + view_height + room) / row - 0.001)
+	return Vector2i(mini(first_row * across, count), mini(end_row * across, count))
+
+
 ## How tall the Collection grid is with [param count] cards in it.
 func collection_grid_height(count: int) -> float:
 	return 0.0 if count == 0 else collection_cell(count - 1).end.y

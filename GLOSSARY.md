@@ -283,7 +283,7 @@ The single number from which all randomness in a run is derived: each Stage's ma
 _Avoid_: Random seed, world seed
 
 **Run Log**:
-The record a run writes as it goes of every choice the Hero makes, in order, each with the options it was chosen from: the Nodes walked, what is bought and sold, each Removal and Duplication, the Mods applied, the Armor put on and taken off, the Decks saved, every answer given in an encounter, and how each encounter ended. With the Run Seed it replays the run exactly. It is kept for the game's makers to study and is never shown in the game.
+The record a run writes as it goes of every choice the Hero makes, in order, each with the options it was chosen from: the Nodes walked, what is bought and sold, each Removal and Duplication, the Mods applied, the Armor put on and taken off, the Decks saved, every answer given in an encounter, the Villain's as well as the Hero's, and how each encounter ended. With the Run Seed it replays the run exactly, without running the AI. It is kept for the game's makers to study and is never shown in the game.
 _Avoid_: History, replay, telemetry, saved run (what Continue resumes)
 
 **Gallery**:
@@ -576,7 +576,7 @@ The dropdown that opens where a card was clicked when the click could mean more 
 _Avoid_: Ability menu, context menu, popup
 
 **Pause Menu**:
-The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings, Quit to main menu and Abandon Run, and it can be opened on the Stage Map and at any Node too, where it has no Concede. Quitting keeps the run saved; Abandon Run, once confirmed, ends the run as lost and deletes its save. Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap, and the Controls button that opens the Controls Page.
+The fixed window over the battlefield that Escape opens and closes. While it is open nothing in the encounter moves or can be clicked. It offers Resume, Concede, Settings, Quit to main menu and Abandon Run, and it can be opened on the Stage Map and at any Node too, where it has no Concede. Quitting keeps the run saved, and an encounter quit starts over on Continue; Abandon Run, once confirmed, ends the run as lost and deletes its save. In a run, the Run Seed is shown at its foot. Settings is a page of its own, which holds the Game Speed, Auto-pass and Auto-tap, and the Controls button that opens the Controls Page.
 _Avoid_: Escape menu, options screen, system menu
 
 **Opening-Hand Overlay**:

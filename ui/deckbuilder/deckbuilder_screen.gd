@@ -83,6 +83,9 @@ const LAND_COLORS: Dictionary[String, Color] = {
 	"Plains": Color("#b3a97c"), "Island": Color("#2f6fb5"), "Swamp": Color("#544a5e"),
 	"Mountain": Color("#b8452f"), "Forest": Color("#2f7d4a"),
 }
+## How long making the Collection's faces near the view may take in a frame, in milliseconds:
+## a face loads its card's art, which off a cold disk takes a few.
+const FACE_BUDGET_MSEC: int = 6
 
 ## Whether the deckbuilder has been left for the main menu in this run of the game. The
 ## menu's --deckbuilder shortcut works only until then, so that Exit does not bounce back.
@@ -166,6 +169,10 @@ var _drop_column: int = WorkingDeck.NO_COLUMN
 ## The place in that column it would drop to: above the card now at this place.
 var _drop_place: int = 0
 var _collection_faces: Dictionary[int, CardFace] = {}
+## The Collection's cards the filter lets through, in the order they are laid out.
+var _collection_shown: Array[DeckbuilderCard] = []
+## The shown cards near the view whose faces are still to be made, a few each frame.
+var _faces_to_make: Array[DeckbuilderCard] = []
 var _count_label: Label = null
 var _name_box: LineEdit = null
 var _filter_bar: FilterBar = null
@@ -265,10 +272,23 @@ func column_face(card: DeckbuilderCard) -> CardFace:
 	return _column_faces.get(card.id, null) as CardFace
 
 
-## The face of a card in the Collection pane, or null if it is filtered out.
+## The face of a card in the Collection pane, made now if it was not yet, or null if it is
+## filtered out.
 func collection_face(card: DeckbuilderCard) -> CardFace:
-	var face: CardFace = _collection_faces.get(card.id, null) as CardFace
-	return null if face != null and not face.visible else face
+	if not _collection_faces.has(card.id):
+		var index: int = _collection_shown.find(card)
+		if index == -1:
+			return null
+		_make_collection_face(card, index, layout())
+		if card == _selected:
+			_show_selection()
+	var face: CardFace = _collection_faces[card.id]
+	return null if not face.visible else face
+
+
+## The Collection's cards the filter lets through, in the order they are laid out.
+func shown_cards() -> Array[DeckbuilderCard]:
+	return _collection_shown.duplicate()
 
 
 func working_deck() -> WorkingDeck:
@@ -463,10 +483,10 @@ func _on_mod_applied(mod: Mod) -> void:
 				faces[card.id] = faces[old_id]
 				faces.erase(old_id)
 	if _collection_faces.has(card.id):
+		# Made again as it is now when it is next near the view.
 		_forget(_collection_faces[card.id])
 		_collection_faces[card.id].queue_free()
-	_collection_faces[card.id] = _new_face(card, _collection_built_height)
-	_collection_grid.add_child(_collection_faces[card.id])
+		_collection_faces.erase(card.id)
 	if _column_faces.has(card.id):
 		var old: CardFace = _column_faces[card.id]
 		var fresh: CardFace = _new_face(card, old.size.y)
@@ -591,6 +611,7 @@ func move_divider(height: float) -> void:
 	_collection_height = places.collection_height
 	_collection_pane.size = places.collection().size
 	_collection_scroll.size = _collection_pane.size - 2.0 * Vector2(DeckbuilderLayout.PAD, DeckbuilderLayout.PAD)
+	_build_near_view()
 	_divider.position = places.divider_grab().position
 	var strip: Rect2 = places.deck()
 	_deck_scroll.position = strip.position
@@ -652,8 +673,9 @@ func card_at(point: Vector2) -> DeckbuilderCard:
 		return null
 	if _collection_scroll.get_global_rect().has_point(point):
 		for card: DeckbuilderCard in _run.collection.cards():
-			var face: CardFace = _collection_faces[card.id]
-			if face.visible and face.get_global_rect().has_point(point):
+			# A face not made yet is far from the view, and so not under the point.
+			var face: CardFace = _collection_faces.get(card.id, null) as CardFace
+			if face != null and face.visible and face.get_global_rect().has_point(point):
 				return card
 	return null
 
@@ -759,7 +781,7 @@ func double_click_at(point: Vector2) -> void:
 		_working_deck.remove(card)
 	else:
 		_working_deck.add_to_own_column(card)
-		var source: CardFace = _collection_faces[card.id]
+		var source: CardFace = collection_face(card)
 		var copy: CardFace = _new_face(card, source.size.y)
 		_root.add_child(copy)
 		copy.scale = source.scale
@@ -800,6 +822,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	_make_faces_near_view()
 	if _notice != null and _notice.visible:
 		_notice_left -= delta
 		_notice.modulate.a = clampf(_notice_left / NOTICE_FADE, 0.0, 1.0)
@@ -869,7 +892,7 @@ func _face_at(point: Vector2) -> CardFace:
 	var card: DeckbuilderCard = card_at(point)
 	if card == null:
 		return null
-	return _column_faces[card.id] if column_at(point) != WorkingDeck.NO_COLUMN else _collection_faces[card.id]
+	return _column_faces[card.id] if column_at(point) != WorkingDeck.NO_COLUMN else collection_face(card)
 
 
 ## [param face]'s glowing border, made unseen the first time it is asked for.
@@ -914,7 +937,7 @@ func _lift() -> bool:
 ## The face the pressed card is lifted from, or null if it may not be lifted from there.
 func _source_face(card: DeckbuilderCard, point: Vector2) -> CardFace:
 	if not _working_deck.contains(card):
-		return _collection_faces[card.id]
+		return collection_face(card)
 	return _column_faces[card.id] if column_at(point) != WorkingDeck.NO_COLUMN else null
 
 
@@ -1358,40 +1381,97 @@ func _draw_collection(places: DeckbuilderLayout) -> void:
 	_collection_grid = Control.new()
 	_collection_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_collection_scroll.add_child(_collection_grid)
+	_collection_scroll.get_v_scroll_bar().value_changed.connect(func(_value: float) -> void: _build_near_view())
 	_build_collection_faces()
 	_lay_out_collection(true)
 
 
-## Makes every Collection card's face at the size the zoom asks for, in place of any there.
+## Throws every Collection face away, to be made again at the size the zoom asks for as each
+## comes near the view.
 func _build_collection_faces() -> void:
 	for face: CardFace in _collection_faces.values():
 		_forget(face)
 		face.queue_free()
 	_collection_faces.clear()
 	_collection_built_height = _collection_card_height
-	for card: DeckbuilderCard in _run.collection.cards():
-		var face: CardFace = _new_face(card, _collection_built_height)
-		_collection_grid.add_child(face)
-		_collection_faces[card.id] = face
 
 
 ## Shows the faces the filter lets through, in its order, and hides the rest. Returns how
 ## many are showing. A change of filter goes back to the top; a change of Deck stays put.
+## Only the faces near the view are made: a face loads its card's art, and making one for
+## every card of a Collection of hundreds took seconds.
 func _lay_out_collection(resets_scroll: bool) -> int:
 	var places: DeckbuilderLayout = layout()
-	var shown: Array[DeckbuilderCard] = _filter.apply(_run.collection.cards())
+	_collection_shown = _filter.apply(_run.collection.cards())
 	for face: CardFace in _collection_faces.values():
 		face.visible = false
-	for index: int in shown.size():
-		var face: CardFace = _collection_faces[shown[index].id]
-		face.visible = true
-		face.scale = Vector2.ONE * (_collection_card_height / _collection_built_height)
-		face.position = places.collection_cell(index).position
-		face.modulate.a = IN_DECK_DIM if _working_deck.contains(shown[index]) else 1.0
-	_collection_grid.custom_minimum_size = Vector2(0, places.collection_grid_height(shown.size()))
+	for index: int in _collection_shown.size():
+		if _collection_faces.has(_collection_shown[index].id):
+			_place_collection_face(_collection_shown[index], index, places)
+	_collection_grid.custom_minimum_size = Vector2(0, places.collection_grid_height(_collection_shown.size()))
 	if resets_scroll:
 		_collection_scroll.scroll_vertical = 0
-	return shown.size()
+	_build_near_view()
+	return _collection_shown.size()
+
+
+## Makes the faces of the shown cards in view that are not made yet, each in its cell, and
+## puts those near the view in line to be made a few each frame.
+func _build_near_view() -> void:
+	if _collection_grid == null:
+		return
+	var places: DeckbuilderLayout = layout()
+	var top: float = _collection_scroll.scroll_vertical
+	var view: float = _collection_scroll.size.y
+	var in_view: Vector2i = places.collection_cells_near(top, view, _collection_shown.size(), 0.0)
+	var has_made: bool = false
+	for index: int in range(in_view.x, in_view.y):
+		if not _collection_faces.has(_collection_shown[index].id):
+			_make_collection_face(_collection_shown[index], index, places)
+			has_made = true
+	if has_made:
+		_show_selection()
+	_faces_to_make.clear()
+	var near: Vector2i = places.collection_cells_near(top, view, _collection_shown.size())
+	for index: int in range(near.x, near.y):
+		if not _collection_faces.has(_collection_shown[index].id):
+			_faces_to_make.append(_collection_shown[index])
+
+
+## Makes faces put in line by _build_near_view() for as long as FACE_BUDGET_MSEC allows this
+## frame, one at least, so making them never stalls a frame for long.
+func _make_faces_near_view() -> void:
+	if _faces_to_make.is_empty():
+		return
+	var started: int = Time.get_ticks_msec()
+	var places: DeckbuilderLayout = layout()
+	var has_made: bool = false
+	while not _faces_to_make.is_empty() and (not has_made or Time.get_ticks_msec() - started < FACE_BUDGET_MSEC):
+		var card: DeckbuilderCard = _faces_to_make.pop_front()
+		var index: int = _collection_shown.find(card)
+		if index == -1 or _collection_faces.has(card.id):
+			continue
+		_make_collection_face(card, index, places)
+		has_made = true
+	if has_made:
+		_show_selection()
+
+
+## Makes [param card]'s face in the Collection grid, in the cell of [param index].
+func _make_collection_face(card: DeckbuilderCard, index: int, places: DeckbuilderLayout) -> void:
+	var face: CardFace = _new_face(card, _collection_built_height)
+	_collection_grid.add_child(face)
+	_collection_faces[card.id] = face
+	_place_collection_face(card, index, places)
+
+
+## Shows [param card]'s face in the cell of [param index], dimmed while it is in the Deck.
+func _place_collection_face(card: DeckbuilderCard, index: int, places: DeckbuilderLayout) -> void:
+	var face: CardFace = _collection_faces[card.id]
+	face.visible = true
+	face.scale = Vector2.ONE * (_collection_card_height / _collection_built_height)
+	face.position = places.collection_cell(index).position
+	face.modulate.a = IN_DECK_DIM if _working_deck.contains(card) else 1.0
 
 
 ## Draws a column's pane, heading and the scrolling fan its cards go in, on the strip's

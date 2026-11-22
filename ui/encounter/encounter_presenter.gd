@@ -133,6 +133,73 @@ func _init(setup: MmEncounterSetup, villain_agent: MmAgent) -> void:
 	_driver.decision_cap = 1
 
 
+## What the encounter gives the Run Log (milestone 21, ADR 0074), as record_of() works it
+## out. Ask it only once the encounter is over or stopped, never while the Villain thinks.
+func record() -> Dictionary:
+	return record_of(_setup, _engine.decision_log())
+
+
+## What the encounter from [param setup] answered with [param answers] gives the Run Log:
+## each answer, the Villain's as well as the Hero's, in order, as "by" ("hero" or
+## "villain"), its "decision"'s words and the "answer" itself, and for a choice among
+## Actions how many "options" there were and the words of the one "chosen", with its card's
+## name; a concession is one too. Then the "winner" ("hero", "villain", "draw", or "" while it
+## goes on), the "turns" played and both players' life. It is worked out on an engine of its
+## own fed the same answers, which is how the Run Log is replayed too.
+static func record_of(setup: MmEncounterSetup, answers: Array) -> Dictionary:
+	var engine: MmEngine = MmEngine.start(setup)
+	var lines: Array = []
+	for answer: Variant in answers:
+		if answer is Array and answer.size() == 2 and str(answer[0]) == MmEngine.CONCEDE:
+			var conceding: MmPlayer = engine.game_state().player(int(answer[1]))
+			lines.append({"by": _who(int(answer[1])), "decision": "concede", "answer": answer})
+			engine.concede(conceding)
+			continue
+		var decision: MmPendingDecision = engine.pending_decision()
+		if decision == null:
+			break
+		var line: Dictionary = {"by": _who(decision.player_id), "decision": decision.describe(), "answer": answer}
+		var actions: Array[MmAction] = _actions_of(decision)
+		if not actions.is_empty() and typeof(answer) == TYPE_INT and answer >= 0 and answer < actions.size():
+			line["options"] = actions.size()
+			line["chosen"] = _words_of(engine, actions[answer])
+		lines.append(line)
+		var refusal: String = engine.submit(answer)
+		if refusal != "":
+			line["refused"] = refusal
+			break
+	var winners: Dictionary[MmEngine.Outcome, String] = {
+		MmEngine.Outcome.HERO_WON: "hero", MmEngine.Outcome.VILLAIN_WON: "villain", MmEngine.Outcome.DRAW: "draw",
+	}
+	return {
+		"answers": lines, "winner": winners.get(engine.outcome(), ""), "turns": engine.game_state().game_turn,
+		"hero_life": engine.hero().life, "villain_life": engine.villain().life,
+	}
+
+
+static func _who(player_id: int) -> String:
+	return "hero" if player_id == HERO else "villain"
+
+
+## The Actions [param decision] is answered from by index, or none.
+static func _actions_of(decision: MmPendingDecision) -> Array[MmAction]:
+	if decision is PriorityDecision:
+		return (decision as PriorityDecision).actions
+	if decision is PayManaDecision:
+		return (decision as PayManaDecision).actions
+	return []
+
+
+## [param action]'s own words, with the name of the card it is about.
+static func _words_of(engine: MmEngine, action: MmAction) -> String:
+	var words: String = action.describe()
+	if "object_id" in action:
+		var game_object: MmGameObject = engine.game_state().object(int(action.get("object_id")))
+		if game_object != null:
+			words += " (%s)" % engine.game_state().characteristics_of(game_object).name
+	return words
+
+
 ## Hands out the first snapshot and sets the Villain thinking if it is theirs to decide.
 ## Returns at once: the thinking happens on a worker thread.
 func start() -> void:

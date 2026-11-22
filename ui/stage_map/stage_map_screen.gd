@@ -78,6 +78,9 @@ var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get
 var is_paced: bool = false
 var game_speed: GameSpeed.Speed = GameSpeed.Speed.FAST
 
+## The Pause Menu over the screen (milestone 21), made by begin().
+var run_pause: RunPause = null
+
 ## Whether a run has ended at the main menu, so the menu's --stage-map does not open its
 ## Stage Map again. Run Lost and the Credits set it as they lead there.
 static var has_left: bool = false
@@ -163,6 +166,8 @@ func begin(run: Run) -> void:
 	add_child(_bar)
 	_bar.show_run(run)
 	_bar.deckbox_pressed.connect(func() -> void: navigate.call(Screens.scene(RunFlow.open_deckbox())))
+	run_pause = RunPause.over(self, func(scene: String) -> void: navigate.call(scene),
+		GameSettings.PATH if starts_itself else "")
 	_scroll_row = StageMapLayout.framed_row(_hero_row())
 	_links.ease_toward(run.stage_visit, -1, 1.0)
 	_ease_glows(1.0)

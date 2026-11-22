@@ -165,3 +165,51 @@ func test_the_screens_own_text_is_set_in_linux_libertine_and_the_cards_keep_thei
 	assert_ne(CardFonts.title(), libertine)
 	assert_ne(CardFonts.body(), libertine)
 
+
+
+## Opening builds only the Collection faces in view, not a face for every card: a run with
+## hundreds of cards took seconds to open, most of it loading art no one could see yet. The
+## half view of rows round them is made a few faces a frame after, so scrolling finds them
+## made and never stalls.
+func test_opening_builds_only_the_collection_faces_in_view_then_those_near_it() -> void:
+	var places: DeckbuilderLayout = _screen.layout()
+	var view: float = _screen.collection_scroll().size.y
+	var count: int = _sample.collection.cards().size()
+	var in_view: Vector2i = places.collection_cells_near(0.0, view, count, 0.0)
+	var near: Vector2i = places.collection_cells_near(0.0, view, count)
+
+	assert_eq(_collection_faces_built(), in_view.y - in_view.x, "Only those in view at once.")
+	await wait_process_frames(30)
+	assert_eq(_collection_faces_built(), near.y - near.x, "Then those near it, a few a frame.")
+	assert_lt(_collection_faces_built(), count / 4, "Far fewer faces than cards.")
+
+
+## Scrolling builds the faces that come near the view, each in its own cell.
+func test_scrolling_builds_the_faces_that_come_into_view() -> void:
+	var cards: Array[DeckbuilderCard] = _screen.shown_cards()
+	var last: int = cards.size() - 1
+	await wait_process_frames(2)
+
+	_screen.collection_scroll().scroll_vertical = int(_screen.layout().collection_grid_height(cards.size()))
+	await wait_process_frames(1)
+
+	var bottom: Vector2 = _screen.layout().collection_cell(last).position
+	var at_bottom: Array[Node] = _screen.collection_grid().get_children().filter(
+		func(face: Node) -> bool: return (face as Control).visible and (face as Control).position == bottom)
+	assert_eq(at_bottom.size(), 1, "The last card's face is made once it is near the view.")
+	assert_gt(_collection_faces_built(), _screen.layout().collection_columns(), "The first rows are kept.")
+
+
+## A card's face is made when it is asked for, wherever it is in the grid.
+func test_a_far_cards_face_is_made_when_asked_for() -> void:
+	var cards: Array[DeckbuilderCard] = _screen.shown_cards()
+	var last: DeckbuilderCard = cards[cards.size() - 1]
+
+	var face: CardFace = _screen.collection_face(last)
+
+	assert_not_null(face)
+	assert_eq(face.position, _screen.layout().collection_cell(cards.size() - 1).position)
+
+
+func _collection_faces_built() -> int:
+	return _screen.collection_grid().get_children().filter(func(face: Node) -> bool: return face is CardFace).size()

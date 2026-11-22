@@ -44,6 +44,9 @@ var starts_itself: bool = true
 ## How the screen opens another scene. Tests replace it.
 var navigate: Callable = func(scene: String) -> void: SceneFade.change_scene(get_tree(), scene)
 
+## The Pause Menu over the screen (milestone 21), made by begin().
+var run_pause: RunPause = null
+
 var _run: Run = null
 var _villain: Villain = null
 var _selected: Deck = null
@@ -81,6 +84,8 @@ func begin(run: Run, villain: Villain) -> void:
 	_villain = villain
 	_build()
 	_refresh()
+	run_pause = RunPause.over(self, func(scene: String) -> void: navigate.call(scene),
+		GameSettings.PATH if starts_itself else "")
 
 
 func selected() -> Deck:
@@ -481,11 +486,12 @@ func _on_selection_button(text: String) -> void:
 
 func _start() -> void:
 	EncounterScreen.request = EncounterRequest.for_run(_run)
+	RunFlow.begin_encounter()
 	navigate.call(ENCOUNTER)
 
 
 func _close() -> void:
-	navigate.call(Screens.scene(RunFlow.back_from_deckbox))
+	navigate.call(Screens.scene(RunFlow.close_deckbox()))
 
 
 ## The confirmation before a Deck is deleted, in the list's dark gray with its gray edge.

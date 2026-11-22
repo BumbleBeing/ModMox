@@ -340,7 +340,8 @@ func test_the_settings_page_has_a_keys_button_that_opens_the_controls_page() -> 
 	assert_null(menu.key_button(PASS), "The rows are on the Controls Page only.")
 	assert_lt(menu.button(PauseMenu.CONTROLS).position.y, menu.button(PauseMenu.BACK).position.y)
 	assert_gt(menu.button(PauseMenu.CONTROLS).position.y, menu.auto_tap_button().position.y)
-	assert_eq(menu.window_rect(), EncounterLayout.pause_rect(6, FIELD))
+	# Four rows of settings, then Controls, Open Run Logs folder (milestone 21) and Back.
+	assert_eq(menu.window_rect(), EncounterLayout.pause_rect(7, FIELD))
 
 	menu.button(PauseMenu.CONTROLS).pressed.emit()
 

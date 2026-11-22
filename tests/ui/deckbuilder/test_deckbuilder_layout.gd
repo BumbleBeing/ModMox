@@ -179,3 +179,22 @@ func test_the_divider_is_the_gutter_and_is_grabbed_a_little_into_either_pane() -
 	assert_eq(divider.size.x, _layout.collection().size.x)
 	assert_eq(grab, divider.grow_individual(0.0, DeckbuilderLayout.DIVIDER_REACH, 0.0, DeckbuilderLayout.DIVIDER_REACH))
 	assert_gt(DeckbuilderLayout.DIVIDER_REACH, 0.0)
+
+
+## The Collection's cells near the view: the rows it shows when scrolled [param top] pixels
+## down, and half a view's rows above and below, so that a little scrolling finds its cards
+## already made.
+func test_the_collection_cells_near_the_view() -> void:
+	var across: int = _layout.collection_columns()
+	var row: float = _layout.collection_card_height + DeckbuilderLayout.CARD_GAP
+	var view: float = row * 2.0
+
+	assert_eq(_layout.collection_cells_near(0.0, view, 500), Vector2i(0, across * 3),
+		"Two rows in view and one under them; none above the top.")
+	assert_eq(_layout.collection_cells_near(row * 10.0, view, 500), Vector2i(across * 9, across * 13),
+		"Rows 10 and 11 in view, with row 9 above and row 12 below.")
+	assert_eq(_layout.collection_cells_near(row * 10.0, view, across * 11 + 2), Vector2i(across * 9, across * 11 + 2),
+		"No further than the last card.")
+	assert_eq(_layout.collection_cells_near(0.0, view, 0), Vector2i(0, 0))
+	assert_eq(_layout.collection_cells_near(row * 10.0, view, 500, 0.0), Vector2i(across * 10, across * 12),
+		"With no margin, only the rows in view.")

@@ -2152,3 +2152,74 @@ func test_in_a_run_losing_the_last_heart_continues_to_run_lost() -> void:
 	assert_eq(_went_to, [Screens.RUN_LOST] as Array[String])
 	assert_true(RunFlow.run.is_lost())
 	RunFlow.clear()
+
+
+## Milestone 21's S3: in a run, Quit asks once, saying the encounter will start over, then
+## leaves for the main menu with the run kept, the encounter's answers so far in its Run Log.
+func test_in_a_run_quit_keeps_the_run_and_logs_the_answers_so_far() -> void:
+	var run: Run = _a_run_in_its_encounter()
+	_presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	_presenter.wait_until_idle()
+	_screen.set_paused(true)
+
+	_screen.pause_menu().button(PauseMenu.QUIT).pressed.emit()
+	assert_eq(_screen.pause_menu().heading_text(), "Quit to the main menu?\nThis encounter will start over when you continue.")
+	_screen.pause_menu().button(PauseMenu.QUIT_NOW).pressed.emit()
+
+	assert_eq(_went_to, [Screens.MENU] as Array[String])
+	assert_null(RunFlow.run)
+	var kinds: Array[String] = _kinds_logged(run)
+	assert_has(kinds, "answer")
+	assert_eq(kinds.slice(-2), ["encounter_quit", "quit"] as Array[String])
+	RunFlow.clear()
+
+
+## Milestone 21's S5: Abandon Run in a run's encounter asks once, then ends the run.
+func test_in_a_run_abandon_run_ends_the_run() -> void:
+	var run: Run = _a_run_in_its_encounter()
+	_screen.set_paused(true)
+
+	_screen.pause_menu().button(PauseMenu.ABANDON).pressed.emit()
+	_screen.pause_menu().button(PauseMenu.ABANDON_NOW).pressed.emit()
+
+	assert_eq(_went_to, [Screens.MENU] as Array[String])
+	assert_null(RunFlow.run)
+	assert_eq(_kinds_logged(run).slice(-2), ["encounter_quit", "run_ended"] as Array[String])
+	RunFlow.clear()
+
+
+## Milestone 21's S7: Continue gives the Run Log the encounter's answers, the concession among
+## them, and how it ended.
+func test_in_a_run_continue_logs_the_encounter() -> void:
+	var run: Run = _a_run_in_its_encounter()
+	_presenter.concede()
+
+	_banner_button("Continue").pressed.emit()
+
+	var lines: Array[Dictionary] = run.run_log.lines()
+	var ended: Dictionary = lines[lines.size() - 1]
+	assert_eq(ended["kind"], "encounter_ended")
+	assert_eq(ended["winner"], "villain")
+	assert_eq(ended["won"], false)
+	assert_eq(lines[lines.size() - 2]["decision"], "concede")
+	RunFlow.clear()
+
+
+## A debug run on its Stage Map, in an encounter of it against the Bears.
+func _a_run_in_its_encounter() -> Run:
+	var run: Run = Run.debug(2)
+	RunFlow.start(run)
+	RunFlow.finish_intro()
+	RunFlow.begin_encounter()
+	_open(_bear_setup())
+	_screen.is_in_run = true
+	_screen.pause_menu().show_run(run.run_seed)
+	_screen.navigate = func(scene: String) -> void: _went_to.append(scene)
+	return run
+
+
+func _kinds_logged(run: Run) -> Array[String]:
+	var kinds: Array[String] = []
+	for line: Dictionary in run.run_log.lines():
+		kinds.append(str(line["kind"]))
+	return kinds

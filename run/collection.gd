@@ -50,6 +50,30 @@ func remove(owned: DeckbuilderCard) -> void:
 	_cards.erase(owned)
 
 
+## The Collection as plain data, for a saved run (ADR 0074): each card's identity, its Card
+## Definition's path and the paths of its Mods, in the order earned.
+func to_data() -> Dictionary:
+	var saved: Array = []
+	for owned: DeckbuilderCard in _cards:
+		saved.append({"id": owned.id, "base": SavedRun.path_of(owned.run_card.base), "mods": SavedRun.paths_of(owned.mods)})
+	return {"next_id": _next_id, "cards": saved}
+
+
+## The Collection [param data] holds, as to_data() made it: each card a new Run Card of its
+## Card Definition, with its Mods attached again in order.
+static func from_data(data: Dictionary) -> Collection:
+	var collection: Collection = Collection.new()
+	for entry: Dictionary in data["cards"]:
+		var run_card: MmRunCard = MmRunCard.new()
+		run_card.base = load(str(entry["base"])) as MmCardDefinition
+		var owned: DeckbuilderCard = DeckbuilderCard.new(int(entry["id"]), run_card)
+		for path: Variant in entry["mods"]:
+			owned.attach(load(str(path)) as Mod)
+		collection._cards.append(owned)
+	collection._next_id = int(data["next_id"])
+	return collection
+
+
 ## The identity the next card taken in will get. It is part of the run's state.
 func next_id() -> int:
 	return _next_id

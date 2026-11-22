@@ -24,3 +24,7 @@
 
 # Exported playtest builds (tools/export/export.sh)
 /build/
+
+# The Discord webhook Run Logs are shared to (milestone 21): kept out of the public repo,
+# carried by exports.
+/config/run_log_webhook.txt

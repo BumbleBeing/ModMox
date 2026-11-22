@@ -10,6 +10,9 @@ const NEW_DECK_NAME: String = "New Deck"
 ## A Deck is legal at this many cards or more (A540).
 const MINIMUM_SIZE: int = 40
 
+## Where the Deckbox's changes are logged (milestone 21), or null for none.
+var run_log: RunLog = null
+
 var _decks: Array[Deck] = []
 var _active: Deck = null
 
@@ -26,10 +29,13 @@ func is_name_taken(name: String, except: Deck = null) -> bool:
 	return false
 
 
-## Keeps [param deck]. A Deck already kept stays where it is.
+## Keeps [param deck], as it is saved. A Deck already kept stays where it is.
 func put(deck: Deck) -> void:
 	if not _decks.has(deck):
 		_decks.append(deck)
+	_log("deck_saved", deck, {
+		"name": deck.name, "card_ids": deck.card_ids.duplicate(), "basic_lands": deck.basic_lands.duplicate(),
+	})
 
 
 ## The Active Deck, or null when there is none.
@@ -45,6 +51,7 @@ func is_active(deck: Deck) -> bool:
 func set_active(deck: Deck) -> void:
 	if _decks.has(deck):
 		_active = deck
+		_log("active_deck", deck)
 
 
 func is_legal(deck: Deck) -> bool:
@@ -59,6 +66,7 @@ func duplicate_deck(deck: Deck) -> Deck:
 	copy.card_ids = deck.card_ids.duplicate()
 	copy.basic_lands = deck.basic_lands.duplicate()
 	copy.name = free_name(deck.name)
+	_log("deck_duplicated", deck)
 	_decks.insert(_decks.find(deck) + 1, copy)
 	return copy
 
@@ -76,6 +84,15 @@ func free_name(name: String) -> String:
 	return "%s (%d)" % [base, number]
 
 
+## Logs a line of [param kind] naming [param deck] by its place, with [param fields].
+func _log(kind: String, deck: Deck, fields: Dictionary = {}) -> void:
+	if run_log == null:
+		return
+	var line: Dictionary = {"deck": _decks.find(deck)}
+	line.merge(fields)
+	run_log.record(kind, line)
+
+
 func _without_number(name: String) -> String:
 	var found: RegExMatch = RegEx.create_from_string("^(.*\\S) \\((\\d+)\\)$").search(name)
 	return found.get_string(1) if found != null else name
@@ -84,9 +101,37 @@ func _without_number(name: String) -> String:
 ## Throws [param deck] away; its cards stay in the Collection. Deleting the Active Deck
 ## leaves none.
 func delete(deck: Deck) -> void:
+	_log("deck_deleted", deck)
 	_decks.erase(deck)
 	if _active == deck:
 		_active = null
+
+
+## The Decks as plain data, for a saved run (ADR 0074), in their order, with the Active
+## Deck's place among them, or -1.
+func to_data() -> Dictionary:
+	var saved: Array = []
+	for deck: Deck in _decks:
+		saved.append({"name": deck.name, "card_ids": deck.card_ids.duplicate(), "basic_lands": deck.basic_lands.duplicate()})
+	return {"decks": saved, "active": _decks.find(_active)}
+
+
+## The Deckbox [param data] holds, as to_data() made it.
+static func from_data(data: Dictionary) -> Deckbox:
+	var deckbox: Deckbox = Deckbox.new()
+	for entry: Dictionary in data["decks"]:
+		var deck: Deck = Deck.new()
+		deck.name = str(entry["name"])
+		for id: Variant in entry["card_ids"]:
+			deck.card_ids.append(int(id))
+		var lands: Dictionary = entry["basic_lands"]
+		for land: String in lands:
+			deck.basic_lands[land] = int(lands[land])
+		deckbox._decks.append(deck)
+	var active: int = int(data.get("active", -1))
+	if active >= 0 and active < deckbox._decks.size():
+		deckbox._active = deckbox._decks[active]
+	return deckbox
 
 
 ## Takes the Run Card with identity [param id] out of every Deck, for a card that has left

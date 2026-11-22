@@ -15,6 +15,11 @@ extends Control
 ## Shadow on it; the two are centered on the screen together. The Wisp floats about them,
 ## bringing him his effects, and casts the Wisp Light on the window when it comes near. As
 ## he takes each effect on, its Effect Callout floats off from him.
+##
+## Continue heads the menu while a run of this build's format is saved (milestone 21), and
+## takes it up where it was saved; starting a new run asks before replacing one. A saved run
+## of another format is refused with a notice and deleted. A playtest build asks once, on its
+## first launch, whether to share Run Logs. Questions and notices are MenuDialogs.
 
 const START_FORM: String = "res://ui/encounter/start_form.tscn"
 const ENCOUNTER: String = "res://ui/encounter/encounter_screen.tscn"
@@ -41,6 +46,19 @@ const VERSION_INSET: int = 32
 ## with it does not offer.
 const PLAYTEST_FEATURE: String = "playtest"
 const DEVELOPER_ENTRIES: Array[String] = ["Start Encounter", "Start Run (debug)", "Card Gallery"]
+const CONTINUE: String = "Continue"
+const START_RUN: String = "Start Run (debug)"
+const REPLACE_TITLE: String = "Start a new run?"
+const REPLACE_BODY: String = "Your saved run will be lost."
+const REPLACE: String = "Start new run"
+const BACK: String = "Back"
+const REFUSAL_TITLE: String = "Your saved run can't be continued"
+const REFUSAL_BODY: String = "It was saved by Demo %s, and this is Demo %s."
+const OK: String = "OK"
+const OPT_IN_TITLE: String = "Share your Run Logs?"
+const OPT_IN_BODY: String = "When a run ends, ModMox can send its Run Log, a record of every choice made in the run, to the developer's Discord to help improve the game. Nothing else is sent, and a copy is always kept on your computer. You can change this in Settings."
+const SHARE: String = "Share"
+const DONT_SHARE: String = "Don't share"
 
 ## How the menu opens another scene, and how it quits. Tests replace both. A scene asked
 ## for on the command line opens at once, so that a --screenshot is not taken mid-fade; one
@@ -55,6 +73,11 @@ var quit: Callable = func() -> void: get_tree().quit()
 var arguments: PackedStringArray = OS.get_cmdline_user_args()
 ## Whether this is a playtest build, whose menu leaves out DEVELOPER_ENTRIES. Tests replace it.
 var is_playtest: bool = OS.has_feature(PLAYTEST_FEATURE)
+## Where runs are saved, Run Logs written and settings kept: the game's own files, which
+## main_menu.tscn names. A menu made in a test keeps none unless it is given files.
+@export var save_path: String = ""
+@export var log_folder: String = ""
+@export var settings_path: String = ""
 
 var _buttons: Dictionary[String, Button] = {}
 var _version: Label
@@ -69,6 +92,11 @@ var _wisp: MenuWisp
 var _refusal: String = ""
 ## Whether the menu is going straight to a scene the command line asked for.
 var _is_skipping: bool = false
+## The saved run of this build's format, as plain data, or empty.
+var _saved: Dictionary = {}
+## The dialog showing, and those waiting their turn.
+var _dialog: MenuDialog = null
+var _waiting: Array[MenuDialog] = []
 
 
 func _ready() -> void:
@@ -114,6 +142,7 @@ func _ready() -> void:
 		# A deck, difficulty or backdrop that does not exist: the menu opens and says so.
 		push_error(_refusal)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_read_saved_run()
 	var background: ColorRect = ColorRect.new()
 	background.color = StageIntro.GROUND
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -132,7 +161,7 @@ func _ready() -> void:
 	stack.add_child(_soldier)
 	var window: PanelContainer = PanelContainer.new()
 	window.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	window.resized.connect(func() -> void: _shade_window(window))
+	window.resized.connect(func() -> void: shade_window(window))
 	stack.add_child(window)
 	_window = window
 	_shadow_layer = Control.new()
@@ -161,7 +190,7 @@ func _ready() -> void:
 	column.custom_minimum_size = Vector2(360, 0)
 	column.add_theme_constant_override("separation", BUTTON_GAP)
 	window.add_child(column)
-	_shade_window(window)
+	shade_window(window)
 	var title: Label = Label.new()
 	title.text = "ModMox"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -177,11 +206,15 @@ func _ready() -> void:
 		reason.add_theme_font_size_override("font_size", 20 + UiText.RAISE)
 		reason.add_theme_color_override("font_color", REFUSAL_COLOR)
 		column.add_child(reason)
+	if not _saved.is_empty():
+		_add(column, CONTINUE, func() -> void: navigate.call(Screens.scene(RunFlow.continue_run(_saved))))
 	if not is_playtest:
 		_add(column, "Start Encounter", func() -> void: navigate.call(START_FORM))
-		_add(column, "Start Run (debug)", func() -> void: navigate.call(Screens.scene(RunFlow.start(Run.debug(randi(), load(DEMO_STAGE) as StageDefinition)))))
+		_add(column, START_RUN, _ask_to_start_run)
 		_add(column, "Card Gallery", func() -> void: navigate.call(CARD_GALLERY))
 	_add(column, "Quit Game", func() -> void: quit.call())
+	_ask_to_share()
+	_show_next_dialog()
 
 
 ## Why the request on the command line could not be played, or "" if there was none or it
@@ -246,7 +279,8 @@ func _add_version() -> void:
 	_version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, VERSION_INSET)
 
 
-func _add(column: VBoxContainer, text: String, on_press: Callable) -> void:
+## One of the menu's buttons reading [param text]: the Spoils screen's, in its Steel Frame.
+static func menu_button(text: String) -> Button:
 	var made: Button = Button.new()
 	made.text = text
 	made.custom_minimum_size = Vector2(0, SpoilsScreen.BUTTON_HEIGHT)
@@ -254,9 +288,12 @@ func _add(column: VBoxContainer, text: String, on_press: Callable) -> void:
 	made.add_theme_font_override("font", UiText.bold())
 	made.add_theme_font_size_override("font_size", 24)
 	made.add_theme_color_override("font_color", SpoilsScreen.TEXT)
-	var fill: Color = SpoilsScreen.BUTTON_FILL
-	var height: int = SpoilsScreen.BUTTON_HEIGHT
-	SteelFrame.frame_roomy(made, fill, height)
+	SteelFrame.frame_roomy(made, SpoilsScreen.BUTTON_FILL, SpoilsScreen.BUTTON_HEIGHT)
+	return made
+
+
+func _add(column: VBoxContainer, text: String, on_press: Callable) -> void:
+	var made: Button = menu_button(text)
 	made.pressed.connect(on_press)
 	column.add_child(_shadowed(made))
 	_buttons[text] = made
@@ -285,8 +322,73 @@ func _draw_light() -> void:
 		_light_layer.draw_rect(Rect2(block.position - _light_layer.global_position, block.size), color)
 
 
+## The dialog over the menu, or null when none is open.
+func dialog() -> MenuDialog:
+	return _dialog
+
+
+## Hands RunFlow the game's files, and reads the saved run: one of this build's format is
+## Continue's; one of another is refused with a notice, and deleted.
+func _read_saved_run() -> void:
+	if save_path == "":
+		return
+	RunFlow.use_storage(save_path, log_folder)
+	RunFlow.run_ended = RunLogShare.send
+	var data: Dictionary = SavedRun.read(save_path)
+	if data.is_empty():
+		return
+	if SavedRun.is_current(data):
+		_saved = data
+		return
+	SavedRun.delete(save_path)
+	_queue_dialog(MenuDialog.make(REFUSAL_TITLE, REFUSAL_BODY % [SavedRun.build_of(data), SavedRun.build()], [OK]),
+		func(_answer: String) -> void: pass)
+
+
+## Start Run (debug): a debug run begins at once, or once the player agrees to lose the saved
+## one.
+func _ask_to_start_run() -> void:
+	var start: Callable = func() -> void:
+		navigate.call(Screens.scene(RunFlow.start(Run.debug(randi(), load(DEMO_STAGE) as StageDefinition))))
+	if _saved.is_empty():
+		start.call()
+		return
+	_queue_dialog(MenuDialog.make(REPLACE_TITLE, REPLACE_BODY, [REPLACE, BACK]), func(answer: String) -> void:
+		if answer == REPLACE:
+			start.call())
+	_show_next_dialog()
+
+
+## A playtest build asks once whether to share Run Logs, and keeps the answer.
+func _ask_to_share() -> void:
+	var settings: GameSettings = GameSettings.load_from(settings_path)
+	if not is_playtest or settings.has_answered_sharing:
+		return
+	_queue_dialog(MenuDialog.make(OPT_IN_TITLE, OPT_IN_BODY, [SHARE, DONT_SHARE]), func(answer: String) -> void:
+		var kept: GameSettings = GameSettings.load_from(settings_path)
+		kept.has_answered_sharing = true
+		kept.is_sharing_run_logs = answer == SHARE
+		kept.save_to(settings_path))
+
+
+## Puts [param made] in line to be shown, [param on_answer] called with the answer.
+func _queue_dialog(made: MenuDialog, on_answer: Callable) -> void:
+	made.chosen.connect(func(answer: String) -> void:
+		_dialog = null
+		on_answer.call(answer)
+		_show_next_dialog())
+	_waiting.append(made)
+
+
+func _show_next_dialog() -> void:
+	if _dialog != null or _waiting.is_empty():
+		return
+	_dialog = _waiting.pop_front()
+	add_child(_dialog)
+
+
 ## The window the menu sits in: the Spoils screen's, shaded over its own height.
-func _shade_window(window: PanelContainer) -> void:
+static func shade_window(window: PanelContainer) -> void:
 	var color: Color = SpoilsScreen.WINDOW_COLOR
 	var radius: int = SpoilsScreen.WINDOW_RADIUS
 	var face: StyleBoxTexture = DitherShading.plate(color.lightened(0.06), color.darkened(0.3), SpoilsScreen.WINDOW_EDGE,

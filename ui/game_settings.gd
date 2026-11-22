@@ -9,12 +9,17 @@ const SECTION: String = "game"
 const SPEED_KEY: String = "speed"
 const AUTO_PASS_KEY: String = "auto_pass"
 const AUTO_TAP_KEY: String = "auto_tap"
+const SHARE_KEY: String = "share_run_logs"
 
 var game_speed: GameSpeed.Speed = GameSpeed.Speed.NORMAL
 ## Auto-pass (game glossary). On unless the file says "false".
 var is_auto_passing: bool = true
 ## Auto-tap (game glossary). On unless the file says "false".
 var is_auto_tapping: bool = true
+## Whether the player agreed to share their Run Logs (milestone 21), and whether they have
+## been asked yet: a playtest build asks once, on its first launch.
+var is_sharing_run_logs: bool = false
+var has_answered_sharing: bool = false
 ## The Key Bindings (game glossary). A key the file does not name, or names wrongly, is
 ## its action's default.
 var key_bindings: KeyBindings = KeyBindings.new()
@@ -38,6 +43,9 @@ static func load_from(path: String) -> GameSettings:
 			settings.is_auto_passing = value != "false"
 		elif parts[0].strip_edges() == AUTO_TAP_KEY:
 			settings.is_auto_tapping = value != "false"
+		elif parts[0].strip_edges() == SHARE_KEY:
+			settings.has_answered_sharing = true
+			settings.is_sharing_run_logs = value == "true"
 		else:
 			for action: KeyBindings.Action in KeyBindings.ACTIONS:
 				if parts[0].strip_edges() == KeyBindings.FILE_KEYS[action]:
@@ -57,6 +65,8 @@ func save_to(path: String) -> bool:
 		SECTION, SPEED_KEY, GameSpeed.name_of(game_speed), AUTO_PASS_KEY, "true" if is_auto_passing else "false",
 		AUTO_TAP_KEY, "true" if is_auto_tapping else "false",
 	])
+	if has_answered_sharing:
+		file.store_string("%s=%s\n" % [SHARE_KEY, "true" if is_sharing_run_logs else "false"])
 	for action: KeyBindings.Action in KeyBindings.ACTIONS:
 		file.store_string("%s=\"%s\"\n" % [KeyBindings.FILE_KEYS[action], key_bindings.save_name_of(action)])
 	file.close()

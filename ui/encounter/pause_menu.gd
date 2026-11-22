@@ -8,6 +8,12 @@ extends Control
 ## a key, which waits for the next key pressed once it is clicked, with "Reset controls" under
 ## them. Rows that share a key are red (ADR 0034).
 ##
+## In a run (milestone 21) it also offers Abandon Run under Quit, which asks once more, and
+## shows the Run Seed at its foot; on a run's screens away from an encounter it has no
+## Concede, and Quit goes at once, since nothing is lost there. In a run's encounter Quit
+## says the encounter will start over. The settings page has the Open Run Logs folder button,
+## and in a playtest build the Share Run Logs box.
+##
 ## It is drawn as the Spoils screen's window is (WindowLook): an edged, well rounded window
 ## with Dither Shading, and rounded, dithered slate-gray buttons; the Game Speed in use has
 ## a gold ring.
@@ -26,8 +32,14 @@ signal auto_tap_chosen(is_on: bool)
 
 ## A row of the Controls Page was given another key, or every key was reset.
 signal keys_changed
+## Abandoning the run was confirmed.
+signal abandon_confirmed
+## The Share Run Logs box was pressed on the settings page: it is now [param is_on].
+signal share_logs_chosen(is_on: bool)
+## Open Run Logs folder was pressed.
+signal open_logs_pressed
 
-enum Page { MENU, CONCEDE, QUIT, SETTINGS, CONTROLS }
+enum Page { MENU, CONCEDE, QUIT, SETTINGS, CONTROLS, ABANDON }
 
 const RESUME: String = "Resume  [ESC]"
 const CONCEDE: String = "Concede"
@@ -41,6 +53,12 @@ const WAITING: String = "Press a key…"
 ## Rows of the Controls Page whose actions share a key.
 const SHARED: Color = Color("#ff5c4d")
 const QUIT_NOW: String = "Quit"
+const ABANDON: String = "Abandon Run"
+const ABANDON_NOW: String = "Abandon"
+const OPEN_LOGS: String = "Open Run Logs folder"
+const SHARE_LOGS: String = "Share Run Logs"
+const RUN_SEED: String = "Run Seed %d"
+const RUN_SEED_SIZE: int = 18
 const SPEED_HEADING: String = "Game speed"
 const AUTO_PASS: String = "Auto-pass"
 const AUTO_TAP: String = "Auto-tapping"
@@ -57,6 +75,17 @@ static var _rings: Dictionary[int, StyleBoxTexture] = {}
 
 ## How long it takes to ease in or out; the Encounter Screen sets it.
 var ease_seconds: float = 0.0
+## Whether it offers Concede: in an encounter, and not on a run's other screens.
+var has_concede: bool = true
+## Whether Quit asks once more before it happens: in an encounter, where something is lost.
+var asks_before_quitting: bool = true
+## Whether the settings page has the Share Run Logs box: in a playtest build.
+var has_share_box: bool = false
+var _is_in_run: bool = false
+var _run_seed: int = 0
+var _is_sharing: bool = false
+var _share_box: Button = null
+var _run_seed_label: Label = null
 var _field: Rect2 = Rect2()
 var _can_concede: bool = true
 var _page: Page = Page.MENU
@@ -109,6 +138,30 @@ func page() -> Page:
 
 func heading_text() -> String:
 	return _heading.text
+
+
+## Shows the menu as a run's: Abandon Run under Quit, and [param run_seed] at its foot.
+func show_run(run_seed: int) -> void:
+	_is_in_run = true
+	_run_seed = run_seed
+
+
+## The Run Seed at the first page's foot, or null outside a run or on another page.
+func run_seed_label() -> Label:
+	return _run_seed_label
+
+
+## Marks the Share Run Logs box [param is_on].
+func show_share_logs(is_on: bool) -> void:
+	_is_sharing = is_on
+	if _share_box != null:
+		_share_box.text = _box_text(is_on, SHARE_LOGS)
+
+
+## The settings page's Share Run Logs box, or null on any other page or outside a playtest
+## build.
+func share_box() -> Button:
+	return _share_box
 
 
 ## The button reading [param text] on the page showing, or null.
@@ -220,33 +273,46 @@ func _show_page(shown: Page) -> void:
 	_speed_buttons.clear()
 	_auto_pass = null
 	_auto_tap = null
+	_share_box = null
+	_run_seed_label = null
 	var dim: ColorRect = ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.6)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
 	var title: String = "Paused"
-	var names: Array[String] = [RESUME, CONCEDE, SETTINGS, QUIT]
+	var names: Array[String] = [RESUME]
+	if has_concede:
+		names.append(CONCEDE)
+	names.append_array([SETTINGS, QUIT])
+	if _is_in_run:
+		names.append(ABANDON)
 	if shown == Page.CONCEDE:
 		title = "Concede this encounter?"
 		names = [CONCEDE, BACK]
 	elif shown == Page.QUIT:
-		title = "Quit to the main menu?\nThis encounter will be lost."
+		title = "Quit to the main menu?\nThis encounter will %s." % ("start over when you continue" if _is_in_run else "be lost")
 		names = [QUIT_NOW, BACK]
+	elif shown == Page.ABANDON:
+		title = "Abandon this run?\nIt can't be continued."
+		names = [ABANDON_NOW, BACK]
 	elif shown == Page.SETTINGS:
 		title = "Settings"
-		names = [CONTROLS, BACK]
+		names = [CONTROLS, OPEN_LOGS, BACK]
 	elif shown == Page.CONTROLS:
 		title = "Controls"
 		names = [RESET_KEYS, BACK]
 	# The settings page has four rows above its buttons: a heading, the speeds, Auto-pass
 	# and Auto-tapping. The Controls Page has a row for each action.
+	# A playtest build's settings page has the Share Run Logs box under them. The first page
+	# of a run's menu has a row under its buttons for the Run Seed.
 	var rows_above: int = 0
 	if shown == Page.SETTINGS:
-		rows_above = 4
+		rows_above = 5 if has_share_box else 4
 	elif shown == Page.CONTROLS:
 		rows_above = KeyBindings.ACTIONS.size()
-	var rect: Rect2 = EncounterLayout.pause_rect(names.size() + rows_above, _field)
+	var rows_below: int = 1 if shown == Page.MENU and _is_in_run else 0
+	var rect: Rect2 = EncounterLayout.pause_rect(names.size() + rows_above + rows_below, _field)
 	_window = Panel.new()
 	_window.position = rect.position
 	_window.size = rect.size
@@ -268,11 +334,16 @@ func _show_page(shown: Page) -> void:
 		_window.add_child(made)
 		_buttons[names[index]] = made
 	if shown == Page.MENU:
-		_buttons[CONCEDE].disabled = not _can_concede
+		if has_concede:
+			_buttons[CONCEDE].disabled = not _can_concede
+		if _is_in_run:
+			_add_run_seed(rect.size.x, names.size())
 	elif shown == Page.SETTINGS:
 		_add_speeds(rect.size.x)
 		_add_auto_pass(rect.size.x)
 		_add_auto_tap(rect.size.x)
+		if has_share_box:
+			_add_share_box(rect.size.x)
 	elif shown == Page.CONTROLS:
 		_add_key_rows(rect.size.x)
 
@@ -368,6 +439,31 @@ func _add_auto_tap(window_width: float) -> void:
 	_window.add_child(_auto_tap)
 
 
+## The settings page's Share Run Logs box, under Auto-tapping.
+func _add_share_box(window_width: float) -> void:
+	_share_box = _button(_box_text(_is_sharing, SHARE_LOGS), 19)
+	_share_box.position = Vector2(60, EncounterLayout.PAUSE_HEADING + EncounterLayout.PAUSE_ROW * 4.0)
+	_share_box.size = Vector2(window_width - 120, EncounterLayout.PAUSE_ROW - 12)
+	_shade(_share_box)
+	_share_box.pressed.connect(func() -> void:
+		show_share_logs(not _is_sharing)
+		share_logs_chosen.emit(_is_sharing))
+	_window.add_child(_share_box)
+
+
+## The Run Seed, muted, in the row under the first page's [param button_count] buttons.
+func _add_run_seed(window_width: float, button_count: int) -> void:
+	_run_seed_label = Label.new()
+	_run_seed_label.text = RUN_SEED % _run_seed
+	_run_seed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_run_seed_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_run_seed_label.add_theme_font_size_override("font_size", RUN_SEED_SIZE)
+	_run_seed_label.add_theme_color_override("font_color", CreditsScreen.MUTED)
+	_run_seed_label.position = Vector2(20, EncounterLayout.PAUSE_HEADING + button_count * EncounterLayout.PAUSE_ROW)
+	_run_seed_label.size = Vector2(window_width - 40, EncounterLayout.PAUSE_ROW - 12)
+	_window.add_child(_run_seed_label)
+
+
 func _on_auto_tap_pressed() -> void:
 	show_auto_tap(not _is_auto_tapping)
 	auto_tap_chosen.emit(_is_auto_tapping)
@@ -396,7 +492,7 @@ func _button(text: String, font_size: int = 21) -> Button:
 	made.text = text
 	made.focus_mode = Control.FOCUS_NONE
 	made.add_theme_font_size_override("font_size", font_size)
-	if [RESUME, CONCEDE, SETTINGS, QUIT, BACK, QUIT_NOW, CONTROLS, RESET_KEYS].has(text):
+	if [RESUME, CONCEDE, SETTINGS, QUIT, BACK, QUIT_NOW, CONTROLS, RESET_KEYS, ABANDON, ABANDON_NOW, OPEN_LOGS].has(text):
 		made.pressed.connect(_on_pressed.bind(text))
 	return made
 
@@ -431,8 +527,16 @@ func _on_pressed(text: String) -> void:
 		keys_changed.emit()
 	elif text == BACK:
 		_show_page(Page.MENU)
-	elif text == QUIT:
+	elif text == QUIT and asks_before_quitting:
 		_show_page(Page.QUIT)
+	elif text == QUIT:
+		quit_confirmed.emit()
+	elif text == ABANDON:
+		_show_page(Page.ABANDON)
+	elif text == ABANDON_NOW:
+		abandon_confirmed.emit()
+	elif text == OPEN_LOGS:
+		open_logs_pressed.emit()
 	elif text == SETTINGS:
 		_show_page(Page.SETTINGS)
 	elif text == QUIT_NOW:

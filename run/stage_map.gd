@@ -45,6 +45,35 @@ func boss() -> MapNode:
 	return in_row(ROWS)[0]
 
 
+## The map as plain data, for a saved run (ADR 0074): each Node's kind by its name, since
+## the kinds' numbers may change.
+func to_data() -> Dictionary:
+	var saved: Array = []
+	for node: MapNode in nodes:
+		saved.append({
+			"id": node.id, "row": node.row, "column": node.column, "kind": Kind.keys()[node.kind],
+			"forward": node.forward.duplicate(), "side": node.side,
+		})
+	return {"attempts": attempts, "nodes": saved}
+
+
+## The map [param data] holds, as to_data() made it.
+static func from_data(data: Dictionary) -> StageMap:
+	var map: StageMap = StageMap.new()
+	map.attempts = int(data.get("attempts", 0))
+	for entry: Dictionary in data.get("nodes", []):
+		var node: MapNode = MapNode.new()
+		node.id = int(entry["id"])
+		node.row = int(entry["row"])
+		node.column = int(entry["column"])
+		node.kind = Kind.get(str(entry["kind"]), Kind.NONE) as Kind
+		for id: Variant in entry["forward"]:
+			node.forward.append(int(id))
+		node.side = int(entry["side"])
+		map.nodes.append(node)
+	return map
+
+
 ## Whether [param node] is a Lesser, Elite or Boss Encounter, the Nodes that are played.
 static func is_encounter(node: MapNode) -> bool:
 	return node.kind in [Kind.LESSER, Kind.ELITE, Kind.BOSS]

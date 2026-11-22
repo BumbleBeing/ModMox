@@ -87,6 +87,8 @@ const LOSS_REASONS: Dictionary[MmPlayer.LossReason, String] = {
 static var request: EncounterRequest = null
 ## Whether this encounter is part of a run, so that its end goes back into the run.
 var is_in_run: bool = false
+## What the Pause Menu's Open Run Logs folder does. Tests replace it.
+var open_folder: Callable = func() -> void: RunLogShare.open_folder()
 
 ## Whether _ready() starts the requested encounter. Tests turn it off and call begin().
 var starts_itself: bool = true
@@ -413,9 +415,14 @@ func _ready() -> void:
 	_option_menu.pointed.connect(func(text: String) -> void: _info.show_option(text))
 	add_child(_option_menu)
 	_pause_menu = PauseMenu.new()
+	_pause_menu.show_share_logs(_settings.is_sharing_run_logs)
 	_pause_menu.resume_pressed.connect(set_paused.bind(false))
 	_pause_menu.concede_confirmed.connect(_concede)
-	_pause_menu.quit_confirmed.connect(leave.bind(MENU))
+	_pause_menu.quit_confirmed.connect(_quit)
+	_pause_menu.abandon_confirmed.connect(_abandon_run)
+	_pause_menu.share_logs_chosen.connect(_set_sharing)
+	_pause_menu.open_logs_pressed.connect(func() -> void: open_folder.call())
+	_pause_menu.has_share_box = OS.has_feature(MainMenu.PLAYTEST_FEATURE)
 	_pause_menu.speed_chosen.connect(set_game_speed)
 	_pause_menu.auto_pass_chosen.connect(set_auto_passing)
 	_pause_menu.auto_tap_chosen.connect(set_auto_tapping)
@@ -430,6 +437,8 @@ func _ready() -> void:
 	if request == null:
 		request = EncounterRequest.new()
 	is_in_run = request.run != null
+	if is_in_run:
+		_pause_menu.show_run(request.run.run_seed)
 	_panels[VILLAIN].portrait_override = request.villain_portrait
 	_panels[VILLAIN].pain_override = request.villain_pain_portrait
 	show_backdrop(request.backdrop)
@@ -518,6 +527,7 @@ func load_settings() -> void:
 	_settings = GameSettings.load_from(settings_path)
 	_speed = _settings.game_speed
 	_pause_menu.key_bindings = _settings.key_bindings
+	_pause_menu.show_share_logs(_settings.is_sharing_run_logs)
 	_pause_menu.show_game_speed(_speed)
 	_apply_speed()
 
@@ -1847,6 +1857,29 @@ func _show_held_windows() -> void:
 	_held_windows.follow(_snapshot)
 	for held_window: HeldWindows.Kind in _held_windows.to_reopen:
 		_held_window(held_window).open()
+
+
+## Quit to main menu, confirmed. In a run, the run stays saved and the encounter starts over
+## on Continue; its answers so far go to the Run Log (milestone 21).
+func _quit() -> void:
+	if not is_in_run:
+		leave(MENU)
+		return
+	_presenter.stop()
+	leave(Screens.scene(RunFlow.quit(_presenter.record())))
+
+
+## Abandon Run, confirmed: the run ends, its save is deleted, and the main menu opens.
+func _abandon_run() -> void:
+	_presenter.stop()
+	leave(Screens.scene(RunFlow.abandon(_presenter.record())))
+
+
+## The Share Run Logs box was pressed: the choice is kept with the other settings.
+func _set_sharing(is_on: bool) -> void:
+	_settings.has_answered_sharing = true
+	_settings.is_sharing_run_logs = is_on
+	_settings.save_to(settings_path)
 
 
 func _concede() -> void:
@@ -3598,7 +3631,9 @@ func _draw_banner(view: MmPlayerView) -> void:
 		# The run counts the ending and says where to go: the Deckbox, or with no Hearts
 		# left the main menu (milestone 16).
 		var won: bool = not _snapshot.is_draw() and view.winner_id == HERO
-		var onward: Button = _button("Continue", func() -> void: leave(Screens.scene(RunFlow.finish_encounter(won))), 18)
+		var onward: Button = _button("Continue", func() -> void:
+			_presenter.stop()
+			leave(Screens.scene(RunFlow.finish_encounter(won, _presenter.record()))), 18)
 		onward.position = Vector2(210, 170)
 		onward.size = Vector2(200, 44)
 		_shade_as_window(onward)

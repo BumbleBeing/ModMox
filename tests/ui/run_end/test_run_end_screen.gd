@@ -250,3 +250,20 @@ func test_each_screen_is_its_scene() -> void:
 		assert_true(scene is RunEndScreen)
 		assert_eq((scene as RunEndScreen).is_won, pair[1])
 		scene.free()
+
+
+## S12 (milestone 21): Trial won and Trial lost show the Run Seed, muted, at the bottom right,
+## where the main menu shows the version.
+func test_both_ends_show_the_run_seed_at_the_bottom_right() -> void:
+	for won: bool in [true, false]:
+		var run: Run = _won_run() if won else _lost_run(1, false)
+		_open(run, won)
+		await wait_process_frames(1)
+
+		var label: Label = _screen.run_seed_label()
+		assert_eq(label.text, "Run Seed 7")
+		assert_eq(label.get_theme_color("font_color"), CreditsScreen.MUTED)
+		assert_eq(label.get_theme_font_size("font_size"), MainMenu.VERSION_SIZE)
+		var rect: Rect2 = label.get_global_rect()
+		assert_almost_eq(rect.end.x, SCREEN.x - MainMenu.VERSION_INSET, 1.0)
+		assert_almost_eq(rect.end.y, SCREEN.y - MainMenu.VERSION_INSET, 1.0)

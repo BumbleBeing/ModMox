@@ -37,6 +37,22 @@ func next_seed(stream: String) -> int:
 	return _stream(stream).randi()
 
 
+## Where each stream drawn from so far has reached, by name, for a saved run (ADR 0074).
+## A state is a 64-bit number, kept as text so that no reader rounds it.
+func to_data() -> Dictionary:
+	var data: Dictionary = {}
+	for stream: String in _streams:
+		data[stream] = str(_streams[stream].state)
+	return data
+
+
+## Puts each stream in [param data] back where it had reached. A stream it does not name
+## starts from the beginning when it is first drawn from, as it would have.
+func restore(data: Dictionary) -> void:
+	for stream: String in data:
+		_stream(stream).state = str(data[stream]).to_int()
+
+
 func _stream(stream: String) -> RandomNumberGenerator:
 	if not _streams.has(stream):
 		var made: RandomNumberGenerator = RandomNumberGenerator.new()

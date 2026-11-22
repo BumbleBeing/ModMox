@@ -2,7 +2,9 @@
 # Exports the playtest builds (milestone 20): build/linux/ModMox.x86_64 and
 # build/windows/ModMox.exe, each a release build with its pck embedded and LICENSES.txt
 # beside it. Card and token art is gitignored, so it refuses to export until every card and
-# token has its art: run tools/art/fetch_art.gd first.
+# token has its art: run tools/art/fetch_art.gd first. The Discord webhook Run Logs are
+# shared to (milestone 21) is gitignored too, in config/run_log_webhook.txt: without it the
+# build exports, but shares nothing, and it says so.
 #
 #   GODOT=~/Desktop/Godot_v4.7.2-stable_linux.x86_64 tools/export/export.sh
 #   tools/export/export.sh --linux-only    the Linux build alone
@@ -30,6 +32,11 @@ if (( ${#missing[@]} > 0 )); then
 	printf '  %s\n' "${missing[@]}" >&2
 	echo "Run: \$GODOT --headless --path . -s res://tools/art/fetch_art.gd" >&2
 	exit 1
+fi
+
+if [[ ! -s config/run_log_webhook.txt ]]; then
+	echo "Warning: no config/run_log_webhook.txt, so this build will share no Run Logs." >&2
+	echo "Put the Discord webhook's address in it to have playtesters' runs posted." >&2
 fi
 
 engine=$("$GODOT" --version | grep -oE '^[0-9]+(\.[0-9]+)+\.[a-z0-9]+')
