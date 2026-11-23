@@ -1,0 +1,60 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_w7ffa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_aisjt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/counter_effect.gd" id="3_76yhj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/triggering_object_selection.gd" id="4_hefut"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="5_vo4hg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_o3pja"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ward_ability.gd" id="7_7uov7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_vopqe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_kbemk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/becomes_target_trigger.gd" id="10_w1qsg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_ability_modification.gd" id="11_tuvkv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="12_x2xfy"]
+[ext_resource type="Script" path="res://run/mod.gd" id="13_sdsbt"]
+
+[sub_resource type="Resource" id="Resource_g4uaj"]
+script = ExtResource("4_hefut")
+
+[sub_resource type="Resource" id="Resource_xg03o"]
+script = ExtResource("5_vo4hg")
+generic = 1
+
+[sub_resource type="Resource" id="Resource_1ad40"]
+script = ExtResource("3_76yhj")
+selection = SubResource("Resource_g4uaj")
+unless_paid = SubResource("Resource_xg03o")
+
+[sub_resource type="Resource" id="Resource_afuuh"]
+script = ExtResource("9_kbemk")
+
+[sub_resource type="Resource" id="Resource_s2fmp"]
+script = ExtResource("10_w1qsg")
+filter = SubResource("Resource_afuuh")
+whose = 2
+
+[sub_resource type="Resource" id="Resource_fr0dm"]
+script = ExtResource("7_7uov7")
+mana_cost = SubResource("Resource_xg03o")
+trigger = SubResource("Resource_s2fmp")
+effects = Array[ExtResource("2_aisjt")]([SubResource("Resource_1ad40")])
+
+[sub_resource type="Resource" id="Resource_y5116"]
+script = ExtResource("11_tuvkv")
+ability = SubResource("Resource_fr0dm")
+
+[sub_resource type="Resource" id="Resource_nmrib"]
+script = ExtResource("5_vo4hg")
+
+[sub_resource type="Resource" id="Resource_f1kll"]
+script = ExtResource("12_x2xfy")
+cost = SubResource("Resource_nmrib")
+
+[resource]
+script = ExtResource("13_sdsbt")
+name = "Aversive"
+rarity = 1
+augmentation = Array[ExtResource("1_w7ffa")]([SubResource("Resource_y5116")])
+mod_cost = SubResource("Resource_f1kll")
+card_types = Array[int]([1])

@@ -33,6 +33,15 @@ func test_menaces_chip_comes_after_trample() -> void:
 	assert_eq(_letters(KeywordChips.chips_for(abilities)), ["T", "M", "I"])
 
 
+func test_hexproofs_chip_comes_after_ward() -> void:
+	var abilities: Array[MmAbility] = [HexproofAbility.new(), Scenario.ward(), FlyingAbility.new()]
+
+	var chips: Array[KeywordChip] = KeywordChips.chips_for(abilities)
+
+	assert_eq(_letters(chips), ["F", "W", "HX"])
+	assert_eq(chips[2].icon, "hexproof")
+
+
 func test_flashback_gets_no_chip_on_the_battlefield() -> void:
 	var abilities: Array[MmAbility] = [FlashbackAbility.new(), FlyingAbility.new()]
 

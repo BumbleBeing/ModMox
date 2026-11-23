@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_okltg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_power_toughness_modification.gd" id="2_7ji5a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="3_51qvy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="4_6v770"]
+[ext_resource type="Script" path="res://run/mod.gd" id="5_m8svm"]
+
+[sub_resource type="Resource" id="Resource_ig1nh"]
+script = ExtResource("2_7ji5a")
+power = 4
+toughness = 3
+
+[sub_resource type="Resource" id="Resource_v27id"]
+script = ExtResource("3_51qvy")
+generic = 1
+symbols = Array[int]([4])
+
+[sub_resource type="Resource" id="Resource_lrdgu"]
+script = ExtResource("4_6v770")
+cost = SubResource("Resource_v27id")
+
+[resource]
+script = ExtResource("5_m8svm")
+name = "Titanic"
+rarity = 3
+augmentation = Array[ExtResource("1_okltg")]([SubResource("Resource_ig1nh")])
+mod_cost = SubResource("Resource_lrdgu")
+card_types = Array[int]([1])

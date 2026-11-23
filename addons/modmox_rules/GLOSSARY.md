@@ -283,6 +283,10 @@ _Avoid_: Buffer, barrier, charge
 "Protection from [quality]": a permanent with it can't be dealt damage, blocked, or targeted by anything with that quality, which is a Filter, such as "black" or "creatures".
 _Avoid_: Immunity, ward (a different keyword), hexproof (a different keyword)
 
+**Hexproof**:
+A keyword: the permanent can't be the target of spells or abilities its controller's opponents control (CR 702.11b). Its controller may still target it, and an effect that does not target, such as an overloaded spell's, still reaches it. It is checked wherever protection is: as targets are chosen and again as the spell or ability resolves.
+_Avoid_: Shroud (no player may target it), ward, protection (different keywords)
+
 **Chosen Creature Type**:
 The creature type chosen for a permanent with "As this enters, choose a creature type" as it enters (ADR 0052), before it is on the battlefield, and kept on it from the moment it arrives, so its abilities that say "the chosen type" mean it at once. It is chosen from every creature type there is (CR 205.3m), is public, and is forgotten when the permanent leaves, since it becomes a new Game Object.
 _Avoid_: Named type, selected type, tribe

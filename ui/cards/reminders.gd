@@ -23,6 +23,7 @@ const TEXTS: Dictionary[String, String] = {
 	"equip": "Pay its cost to attach it to target creature you control. Equip only as a sorcery.",
 	"flashback": "You may cast this card from your graveyard for its flashback cost. Then exile it.",
 	"ward": "Whenever it becomes the target of a spell or ability an opponent controls, counter that unless its controller pays the ward cost.",
+	"hexproof": "It can't be the target of spells or abilities your opponents control.",
 }
 
 

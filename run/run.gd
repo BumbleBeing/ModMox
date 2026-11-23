@@ -322,3 +322,15 @@ func hero_setup() -> MmPlayerSetup:
 			fresh.base = land
 			setup.deck.append(fresh)
 	return setup
+
+
+## The Modded Name of each Run Card in the Active Deck that has a Mod or a Hex (ADR 0029),
+## for the encounter to call it by: the engine never learns a Mod was involved, so it names
+## each card after its Original.
+func modded_names() -> Dictionary[MmRunCard, String]:
+	var names: Dictionary[MmRunCard, String] = {}
+	for id: int in deckbox.active().card_ids:
+		var card: DeckbuilderCard = collection.card(id)
+		if card.is_modified():
+			names[card.run_card] = card.card_name()
+	return names

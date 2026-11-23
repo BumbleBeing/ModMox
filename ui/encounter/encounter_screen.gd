@@ -453,6 +453,7 @@ func _ready() -> void:
 	_warmup.warm(setup)
 	var presenter: EncounterPresenter = EncounterPresenter.new(setup, request.villain_agent())
 	presenter.names = request.names()
+	presenter.card_names = request.card_names
 	var picture: String = screenshot_path(OS.get_cmdline_user_args())
 	if picture == "":
 		settings_path = GameSettings.PATH

@@ -1242,6 +1242,14 @@ func test_changeling_is_a_keyword_that_shares_a_line() -> void:
 	assert_eq(AbilityText.of_card(abilities, [CardType.CREATURE], [], "Sample"), "Changeling, flying")
 
 
+func test_hexproof_is_a_keyword_that_shares_a_line() -> void:
+	var abilities: Array[MmAbility] = [FlyingAbility.new(), HexproofAbility.new()]
+
+	assert_eq(AbilityText.of_ability(HexproofAbility.new(), "this creature"), "Hexproof")
+	assert_true(AbilityText.is_keyword(HexproofAbility.new()))
+	assert_eq(AbilityText.of_card(abilities, [CardType.CREATURE], [], "Sample"), "Flying, hexproof")
+
+
 func test_exalted_is_a_keyword_that_shares_a_line() -> void:
 	var abilities: Array[MmAbility] = [ExaltedAbility.new(), FlyingAbility.new()]
 

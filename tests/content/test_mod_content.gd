@@ -6,6 +6,8 @@ extends GutTest
 const CONTENT_ROOT: String = "res://content/mods/"
 ## Each Mod's file name and the text ModText wrote for it when it was accepted.
 const ACCEPTED: Dictionary[String, String] = {
+	"aversive": "Modified card gains ward {1}.",
+	"brazen": "Modified card gets +2/+1. It costs {1} more to cast.",
 	"bulky": "Modified card gets +1/+1. It costs {1} more to cast.",
 	"built": "Modified card gets +2/+2. It costs {2} more to cast.",
 	"erupting": "Modified card gains \"Each creature you control has haste.\" and \"Whenever a creature you control enters, "
@@ -16,10 +18,14 @@ const ACCEPTED: Dictionary[String, String] = {
 	"impervious": "Modified card gains indestructible. It costs {2} more to cast.",
 	"immaterial": "Modified card gains \"This creature can't be blocked.\"",
 	"overloaded": "Modified card has every \"target\" in its text changed to \"each.\" It costs {3} more to cast.",
+	"overgrown": "Modified card gets +2/+2. It costs {G} more to cast.",
 	"protective": "Modified card gets +0/+1 and gains vigilance and lifelink. It costs {W} more to cast.",
 	"sharp": "Modified card gets +2/+0. It costs {1} more to cast.",
+	"slippery": "Modified card gains hexproof. It costs {G/U} more to cast.",
 	"spiny": "Modified card gets +0/+2. It costs {1} more to cast.",
+	"steely": "Modified card gets +1/+2. It costs {1} more to cast.",
 	"strong": "Modified card gets +1/+0.",
+	"titanic": "Modified card gets +4/+3. It costs {1}{G} more to cast.",
 	"tough": "Modified card gets +0/+1.",
 	"unstoppable": "Modified card gets +1/+1 and gains trample and deathtouch. It costs {G} more to cast.",
 	"untouchable": "Modified card gains first strike and deathtouch. It costs {B} more to cast.",

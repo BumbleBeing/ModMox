@@ -45,6 +45,9 @@ const NOT_CHECKED: int = -1
 var stops: StepStops = StepStops.new()
 ## What each player is called, handed on in every snapshot. Set it before start().
 var names: PlayerNames = PlayerNames.new()
+## The Modded Name of each Run Card that has one (ADR 0029), which the engine never learns:
+## the cards and their abilities are called by it in every snapshot. Set it before start().
+var card_names: Dictionary[MmRunCard, String] = {}
 ## Whether the Hold Key is down, which the screen keeps this equal to. While it is, nothing
 ## is passed for the Hero: not by auto-pass, not by a Yield, and not after their own spell
 ## or ability goes on the stack.
@@ -119,6 +122,8 @@ var _plans: Dictionary[int, PaymentPlan] = {}
 var _x_plans: Dictionary[int, PaymentPlan] = {}
 ## The Original of each card seen so far, by Card Identity.
 var _originals: Dictionary[int, CardLook] = {}
+## The printed name of each Run Card in card_names, which its Modded Name takes the place of.
+var _printed_names: Dictionary[MmRunCard, String] = {}
 ## The setup the encounter began from, which says what each Emblem and Potion was authored
 ## as: the engine's views carry no file names.
 var _setup: MmEncounterSetup
@@ -774,6 +779,7 @@ func _emit() -> void:
 	if step_wait_msec > 0 and Pacing.starts_step(made.events):
 		_step_shown_until = _shown_at + step_wait_msec
 	for seen: MmObjectView in made.visible_objects():
+		_use_modded_name(seen)
 		_add_look(made, seen)
 		_add_original(made, seen)
 	# A Tucked Card says what exiled it (game ADR 0043), so the cards in exile are asked too.
@@ -787,6 +793,29 @@ func _emit() -> void:
 	_snapshot = made
 	_plans.clear()
 	_x_plans.clear()
+
+
+## Calls [param seen] by its card's Modded Name, or an ability by its source's, as the
+## deckbuilder does (ADR 0029). Only the card's printed name is replaced: a name an effect
+## gave it, such as a copy's, is left as the engine gives it. The view is the snapshot's own,
+## so the rules never see the change.
+func _use_modded_name(seen: MmObjectView) -> void:
+	var card_id: int = seen.card_id if seen.card_id != MmGameObject.NO_CARD else seen.source_card_id
+	var run_card: MmRunCard = _engine.run_card(card_id)
+	if run_card == null or not card_names.has(run_card):
+		return
+	if not _printed_names.has(run_card):
+		_printed_names[run_card] = run_card.flatten().name
+	var printed: String = _printed_names[run_card]
+	var modded: String = card_names[run_card]
+	if seen.ability != null:
+		if seen.name == printed + " ability":
+			seen.name = modded + " ability"
+		return
+	if seen.name == printed:
+		seen.name = modded
+	if seen.adventurer != null and seen.adventurer.name == printed:
+		seen.adventurer.name = modded
 
 
 ## Gives [param made] the look of [param seen]: a card's, an Emblem's, a Potion's, or that

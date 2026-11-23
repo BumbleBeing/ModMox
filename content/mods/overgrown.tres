@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_8t5ce"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_power_toughness_modification.gd" id="2_rf6n2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="3_tv2lr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="4_bqjye"]
+[ext_resource type="Script" path="res://run/mod.gd" id="5_7hwot"]
+
+[sub_resource type="Resource" id="Resource_hu8yp"]
+script = ExtResource("2_rf6n2")
+power = 2
+toughness = 2
+
+[sub_resource type="Resource" id="Resource_crhsy"]
+script = ExtResource("3_tv2lr")
+symbols = Array[int]([4])
+
+[sub_resource type="Resource" id="Resource_i0vq3"]
+script = ExtResource("4_bqjye")
+cost = SubResource("Resource_crhsy")
+
+[resource]
+script = ExtResource("5_7hwot")
+name = "Overgrown"
+rarity = 2
+augmentation = Array[ExtResource("1_8t5ce")]([SubResource("Resource_hu8yp")])
+mod_cost = SubResource("Resource_i0vq3")
+card_types = Array[int]([1])

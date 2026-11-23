@@ -137,6 +137,23 @@ func test_the_encounter_is_against_the_villain_met_in_front_of_the_stages_backdr
 	assert_eq(request.validate(), "")
 
 
+func test_the_encounter_is_told_the_modded_name_of_each_card_in_the_active_deck_with_a_mod() -> void:
+	var run: Run = Run.debug(3)
+	_move_to_an_encounter(run)
+	var active: Array[int] = run.deckbox.active().card_ids
+	var modded: DeckbuilderCard = run.collection.card(active[0])
+	var plain: DeckbuilderCard = run.collection.card(active[1])
+	var shiny: Mod = Mod.new()
+	shiny.name = "Shiny"
+	modded.attach(shiny)
+
+	var request: EncounterRequest = EncounterRequest.for_run(run)
+
+	assert_eq(request.card_names.get(modded.run_card, ""), "Shiny " + modded.run_card.base.name)
+	assert_false(request.card_names.has(plain.run_card), "A card with no Mod goes by its own name.")
+	assert_eq(request.card_names.size(), 1)
+
+
 func _names(definitions: Array[MmCardDefinition]) -> Array[String]:
 	var names: Array[String] = []
 	for definition: MmCardDefinition in definitions:

@@ -476,6 +476,8 @@ static func _keyword(ability: MmAbility) -> String:
 		return "Lifelink"
 	if ability is IndestructibleAbility:
 		return "Indestructible"
+	if ability is HexproofAbility:
+		return "Hexproof"
 	if ability is FlashAbility:
 		return "Flash"
 	if ability is ExaltedAbility:

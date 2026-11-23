@@ -36,6 +36,9 @@ var hero_setup: MmPlayerSetup = null
 var villain_setup: MmPlayerSetup = null
 ## The run this encounter is part of, or null.
 var run: Run = null
+## The Modded Name of each of the Hero's Run Cards that has one (ADR 0029), from a run's
+## Active Deck. Empty outside a run.
+var card_names: Dictionary[MmRunCard, String] = {}
 
 
 ## The encounter against the Villain the Hero of [param run] is meeting, with the Hero
@@ -49,6 +52,7 @@ static func for_run(run: Run) -> EncounterRequest:
 	request.villain_pain_portrait = villain.pain_sprite
 	request.backdrop = run.stage_visit.stage.backdrop()
 	request.hero_setup = run.hero_setup()
+	request.card_names = run.modded_names()
 	request.encounter_seed = run.next_encounter_seed()
 	request.run = run
 	return request

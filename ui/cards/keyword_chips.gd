@@ -34,11 +34,13 @@ static func chips_for(abilities: Array[MmAbility], place: Place = Place.BATTLEFI
 		FlyingAbility, ReachAbility, VigilanceAbility, HasteAbility, DeathtouchAbility,
 		LifelinkAbility, DefenderAbility, FirstStrikeAbility, DoubleStrikeAbility, TrampleAbility,
 		MenaceAbility, IndestructibleAbility, ProtectionAbility, EquipAbility, FlashbackAbility, WardAbility,
+		HexproofAbility,
 	]
-	var letters: Array[String] = ["F", "R", "V", "H", "DT", "LL", "DF", "FS", "DS", "T", "M", "I", "P", "EQ", "FB", "W"]
+	var letters: Array[String] = ["F", "R", "V", "H", "DT", "LL", "DF", "FS", "DS", "T", "M", "I", "P", "EQ", "FB", "W", "HX"]
 	var icons: Array[String] = [
 		"flying", "reach", "vigilance", "haste", "deathtouch", "lifelink", "defender",
 		"first_strike", "double_strike", "trample", "menace", "indestructible", "protection", "equip", "flashback", "ward",
+		"hexproof",
 	]
 	var chips: Array[KeywordChip] = []
 	var seen: Dictionary[String, bool] = {}

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_otyud"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_power_toughness_modification.gd" id="2_6db03"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="3_er4yv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="4_r8fem"]
+[ext_resource type="Script" path="res://run/mod.gd" id="5_0y2fg"]
+
+[sub_resource type="Resource" id="Resource_n3mdg"]
+script = ExtResource("2_6db03")
+power = 1
+toughness = 2
+
+[sub_resource type="Resource" id="Resource_6h12j"]
+script = ExtResource("3_er4yv")
+generic = 1
+
+[sub_resource type="Resource" id="Resource_076t5"]
+script = ExtResource("4_r8fem")
+cost = SubResource("Resource_6h12j")
+
+[resource]
+script = ExtResource("5_0y2fg")
+name = "Steely"
+rarity = 2
+augmentation = Array[ExtResource("1_otyud")]([SubResource("Resource_n3mdg")])
+mod_cost = SubResource("Resource_076t5")
+card_types = Array[int]([1])

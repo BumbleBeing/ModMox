@@ -144,9 +144,13 @@ func _matches(state: MmGameState, candidate: MmReference, context: MmEffectConte
 
 ## CR 702.16b: a permanent can't be the target of a spell, or an ability from a source, that
 ## it has protection from. The context's source is the spell itself or the ability's source.
+## CR 702.11b: nor of one an opponent controls while it has hexproof; the context's
+## controller is the spell's or the ability's.
 func _is_protected(state: MmGameState, candidate: MmReference, context: MmEffectContext) -> bool:
-	# CR 113.6: protection works only on the battlefield, so a spell, an ability on the
-	# stack and a card in a graveyard are never protected.
+	# CR 113.6: protection and hexproof work only on the battlefield, so a spell, an ability
+	# on the stack and a card in a graveyard are never protected.
 	if not candidate.is_object() or among != Among.PLAYERS_AND_PERMANENTS:
 		return false
-	return ProtectionRules.protects(state, state.object(candidate.id), context.source_object_id)
+	var permanent: MmGameObject = state.object(candidate.id)
+	return ProtectionRules.protects(state, permanent, context.source_object_id) \
+		or HexproofRules.shields(state, permanent, context.controller_id)
