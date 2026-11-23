@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_1icgt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/overload_modification.gd" id="2_5cir5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="3_pibfl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="4_aaqoa"]
+[ext_resource type="Script" path="res://run/mod.gd" id="5_xdm7i"]
+
+[sub_resource type="Resource" id="Resource_2a6ck"]
+script = ExtResource("2_5cir5")
+
+[sub_resource type="Resource" id="Resource_syt02"]
+script = ExtResource("3_pibfl")
+generic = 3
+
+[sub_resource type="Resource" id="Resource_0fyvi"]
+script = ExtResource("4_aaqoa")
+cost = SubResource("Resource_syt02")
+
+[resource]
+script = ExtResource("5_xdm7i")
+name = "Overloaded"
+rarity = 3
+augmentation = Array[ExtResource("1_1icgt")]([SubResource("Resource_2a6ck")])
+mod_cost = SubResource("Resource_0fyvi")
+card_types = Array[int]([3, 5])
+is_once_per_card = true

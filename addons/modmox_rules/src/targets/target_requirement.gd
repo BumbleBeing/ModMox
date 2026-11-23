@@ -69,6 +69,18 @@ func legal_targets(state: MmGameState, context: MmEffectContext) -> Array[MmRefe
 	return result
 
 
+## What this requirement finds once an overload has changed its "target" to "each"
+## (CR 702.96b, ADR 0014): everything it could choose right now, in the same order, however
+## many [member most] allows. Nothing is targeted, so protection keeps nothing out
+## (CR 702.16b), but the spell it belongs to is still never among them (CR 115.5).
+func found_when_overloaded(state: MmGameState, context: MmEffectContext) -> Array[MmReference]:
+	var result: Array[MmReference] = []
+	for candidate: MmReference in _candidates(state, context):
+		if filter == null or filter.matches(state, candidate, context):
+			result.append(candidate)
+	return result
+
+
 ## Whether [param target] is still a legal choice, as rechecked on resolution (CR 608.2b).
 ## A target that changed zones is a new object and so no longer exists (ADR 0008).
 func is_still_legal(state: MmGameState, target: MmReference, context: MmEffectContext) -> bool:

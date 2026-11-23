@@ -49,6 +49,15 @@ func test_cant_be_countered_is_quoted_as_said_of_the_spell_on_any_card_type() ->
 	assert_eq(ModText.of(mod), "Modified card gains \"This spell can't be countered.\"")
 
 
+func test_an_overload_says_what_it_changes_in_the_cards_text() -> void:
+	var mod: Mod = Mod.new()
+	mod.augmentation = [OverloadModification.new()] as Array[MmModification]
+	mod.mod_cost = Fixture.mana_cost(3)
+	mod.card_types = [CardType.INSTANT, CardType.SORCERY] as Array[MmCardTypes.CardType]
+
+	assert_eq(ModText.of(mod), "Modified card has every \"target\" in its text changed to \"each.\" It costs {3} more to cast.")
+
+
 func test_a_hex_takes_power_and_toughness_away() -> void:
 	var mod: Mod = _creature_mod([_power_toughness(-1, -1)], Fixture.mana_cost(1))
 	mod.is_hex = true

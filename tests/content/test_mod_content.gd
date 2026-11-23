@@ -6,12 +6,21 @@ extends GutTest
 const CONTENT_ROOT: String = "res://content/mods/"
 ## Each Mod's file name and the text ModText wrote for it when it was accepted.
 const ACCEPTED: Dictionary[String, String] = {
+	"bulky": "Modified card gets +1/+1. It costs {1} more to cast.",
+	"built": "Modified card gets +2/+2. It costs {2} more to cast.",
 	"erupting": "Modified card gains \"Each creature you control has haste.\" and \"Whenever a creature you control enters, "
 		+ "it deals 1 damage to each opponent.\" It costs {R} more to cast.",
+	"finessing": "Modified card gains double strike. It costs {R/W} more to cast.",
 	"flashy": "Modified card gains flash.",
 	"holy": "Modified card gets +1/+1 and gains flying and lifelink. It costs {W} more to cast.",
 	"impervious": "Modified card gains indestructible. It costs {2} more to cast.",
 	"immaterial": "Modified card gains \"This creature can't be blocked.\"",
+	"overloaded": "Modified card has every \"target\" in its text changed to \"each.\" It costs {3} more to cast.",
+	"protective": "Modified card gets +0/+1 and gains vigilance and lifelink. It costs {W} more to cast.",
+	"sharp": "Modified card gets +2/+0. It costs {1} more to cast.",
+	"spiny": "Modified card gets +0/+2. It costs {1} more to cast.",
+	"strong": "Modified card gets +1/+0.",
+	"tough": "Modified card gets +0/+1.",
 	"unstoppable": "Modified card gets +1/+1 and gains trample and deathtouch. It costs {G} more to cast.",
 	"untouchable": "Modified card gains first strike and deathtouch. It costs {B} more to cast.",
 	"violent": "Modified card gets +1/+1 and gains haste and trample. It costs {R/G} more to cast.",

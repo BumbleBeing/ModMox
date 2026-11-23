@@ -43,11 +43,13 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 	var resolving: MmGameObject = state.stack.objects().back()
 	procedure._object_id = resolving.id
 	var specs: Array[TargetRequirement] = []
+	var overloaded_specs: Array[TargetRequirement] = []
 	if resolving.is_card():
 		var spell: SpellAbility = CastProcedure.spell_ability_of(state.characteristics_of(resolving))
 		if spell != null:
 			# ADR 0046: a modal spell does only what its chosen mode does.
 			specs = spell.targets_for(resolving.chosen_mode)
+			overloaded_specs = spell.overloaded_targets_for(resolving.chosen_mode)
 			procedure._effects = spell.effects_for(resolving.chosen_mode)
 	elif resolving.ability is TriggeredAbility:
 		var triggered: TriggeredAbility = resolving.ability as TriggeredAbility
@@ -78,6 +80,16 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 		any_legal = false  # CR 603.4: the intervening "if" no longer holds, so it does nothing.
 	procedure._resolves = any_legal
 	procedure._context = MmEffectContext.of_stack_object(resolving, targets, TargetRequirement.place_counts(specs))
+	if not overloaded_specs.is_empty():
+		# CR 702.96b, ADR 0014: what each "each" finds is fixed now, before any effect, so the
+		# controller of a creature exiled by the first effect is still found by the second.
+		var found: Array[MmReference] = []
+		var counts: Array[int] = []
+		for overloaded_spec: TargetRequirement in overloaded_specs:
+			var each: Array[MmReference] = overloaded_spec.found_when_overloaded(state, checking)
+			found.append_array(each)
+			counts.append(each.size())
+		procedure._context = procedure._context.with_overloaded(found, counts)
 	return procedure
 
 

@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_jck3q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_power_toughness_modification.gd" id="2_doot2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="3_eh26b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_ability_modification.gd" id="4_fetyb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/lifelink_ability.gd" id="5_yan2c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="6_876w6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="7_8ejn4"]
+[ext_resource type="Script" path="res://run/mod.gd" id="8_xdmjo"]
+
+[sub_resource type="Resource" id="Resource_hmttl"]
+script = ExtResource("2_doot2")
+toughness = 1
+
+[sub_resource type="Resource" id="Resource_y4yt6"]
+script = ExtResource("3_eh26b")
+
+[sub_resource type="Resource" id="Resource_bfcal"]
+script = ExtResource("4_fetyb")
+ability = SubResource("Resource_y4yt6")
+
+[sub_resource type="Resource" id="Resource_tx6f8"]
+script = ExtResource("5_yan2c")
+
+[sub_resource type="Resource" id="Resource_qd5dp"]
+script = ExtResource("4_fetyb")
+ability = SubResource("Resource_tx6f8")
+
+[sub_resource type="Resource" id="Resource_otnm2"]
+script = ExtResource("6_876w6")
+symbols = Array[int]([0])
+
+[sub_resource type="Resource" id="Resource_8svo0"]
+script = ExtResource("7_8ejn4")
+cost = SubResource("Resource_otnm2")
+
+[resource]
+script = ExtResource("8_xdmjo")
+name = "Protective"
+rarity = 2
+augmentation = Array[ExtResource("1_jck3q")]([SubResource("Resource_hmttl"), SubResource("Resource_bfcal"), SubResource("Resource_qd5dp")])
+mod_cost = SubResource("Resource_8svo0")
+card_types = Array[int]([1])

@@ -1,9 +1,13 @@
 class_name ControllerOfSelection
 extends MmSelection
 ## "Its controller": the controller of each object [member selection] finds, each player
-## once, using last-known information for an object that has left the battlefield.
+## once, using last-known information for an object that has left the battlefield. With
+## [member is_once_for_each], as an overloaded "its controller" is (CR 702.96b), a player is
+## found once for each object of theirs, so "its controller gains 3 life" gains them 3 for
+## each.
 
 @export var selection: MmSelection
+@export var is_once_for_each: bool = false
 
 
 func select(state: MmGameState, context: MmEffectContext) -> Array[MmReference]:
@@ -17,7 +21,7 @@ func select(state: MmGameState, context: MmEffectContext) -> Array[MmReference]:
 		var already: bool = false
 		for each: MmReference in result:
 			already = already or each.id == controller_id
-		if controller_id != MmGameState.NO_PLAYER and not already:
+		if controller_id != MmGameState.NO_PLAYER and (is_once_for_each or not already):
 			result.append(MmReference.to_player(controller_id))
 	return result
 

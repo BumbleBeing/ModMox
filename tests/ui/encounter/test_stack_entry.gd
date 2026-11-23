@@ -24,6 +24,21 @@ func test_a_long_first_line_does_not_make_the_entry_taller_or_wider() -> void:
 	assert_eq(long.get_combined_minimum_size().x, short.get_combined_minimum_size().x)
 
 
+func test_a_first_line_with_line_breaks_is_kept_to_one_line_and_makes_the_entry_no_taller() -> void:
+	# A modal ability says every mode until one is chosen, each on a line of its own.
+	var short: StackEntry = _entry("Bolt", "Hero")
+	var modal: StackEntry = _entry("Choose one —\n• Create a 2/2 white Cat Beast creature token."
+		+ "\n• Put a +1/+1 counter on each creature you control.", "Hero")
+	short.size.x = 300
+	modal.size.x = 300
+	await wait_process_frames(2)
+
+	assert_eq(modal.name_text(),
+		"Choose one — • Create a 2/2 white Cat Beast creature token. • Put a +1/+1 counter on each creature you control.")
+	assert_eq(modal.size.y, short.size.y)
+	assert_eq(modal.get_combined_minimum_size(), short.get_combined_minimum_size())
+
+
 func test_a_stack_object_has_its_color_on_its_border_and_its_stripe() -> void:
 	var entry: StackEntry = _entry("Bolt", "Hero")
 

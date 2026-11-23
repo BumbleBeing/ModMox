@@ -2,7 +2,8 @@ class_name StackEntry
 extends PanelContainer
 ## One spell or ability in the Stack Window, or one trigger still being put in order
 ## there. Art on its left and two lines, each kept to one line and cut short with an
-## ellipsis (A338): what it is, then who controls it and what it targets. A stack object
+## ellipsis (A338): what it is, then who controls it and what it targets. Words given on
+## several lines, as a modal ability's modes are, run on in one. A stack object
 ## has its own color on its border and a stripe down its left side; a trigger being ordered
 ## is plain with a dashed border, and has a grip to drag it by (A339, A345, A393).
 
@@ -165,7 +166,8 @@ func _draw_grip() -> void:
 
 func _cut_label(text: String, font_size: int) -> Label:
 	var label: Label = Label.new()
-	label.text = text
+	# A line break would make the label, and the entry with it, a line taller.
+	label.text = text.replace("\n", " ")
 	label.clip_text = true
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.add_theme_font_size_override("font_size", font_size + UiText.RAISE)

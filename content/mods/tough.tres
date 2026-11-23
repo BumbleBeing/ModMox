@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_rn4wc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_power_toughness_modification.gd" id="2_dxqve"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="3_es8j6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="4_lpnqp"]
+[ext_resource type="Script" path="res://run/mod.gd" id="5_oowdm"]
+
+[sub_resource type="Resource" id="Resource_rn626"]
+script = ExtResource("2_dxqve")
+toughness = 1
+
+[sub_resource type="Resource" id="Resource_kv1sr"]
+script = ExtResource("3_es8j6")
+
+[sub_resource type="Resource" id="Resource_5k5dr"]
+script = ExtResource("4_lpnqp")
+cost = SubResource("Resource_kv1sr")
+
+[resource]
+script = ExtResource("5_oowdm")
+name = "Tough"
+augmentation = Array[ExtResource("1_rn4wc")]([SubResource("Resource_rn626")])
+mod_cost = SubResource("Resource_5k5dr")
+card_types = Array[int]([1])

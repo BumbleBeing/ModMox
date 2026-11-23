@@ -262,6 +262,23 @@ func test_triggers_to_order_stand_dashed_above_the_stack_with_their_whole_text()
 	assert_null(BorderEffects.glow_color(_screen.face_of(_permanent("Chime"))), "Their sources take no click, so they do not glow.")
 
 
+func test_a_modal_trigger_to_order_is_as_tall_as_any_other_with_its_modes_on_one_line() -> void:
+	_open([Scenario.free_retreat("Retreat", Scenario.at_step(MmTurn.Step.UPKEEP, MmTrigger.Whose.YOU)), _chime("Chime", 1)])
+	_cast("Retreat")
+	_cast("Chime")
+	_pass_until(func() -> bool: return _presenter.snapshot().decision is OrderTriggersDecision)
+	await wait_process_frames(2)
+
+	var entries: Array[StackEntry] = _screen.trigger_entries()
+	assert_eq(entries.size(), 2)
+	var texts: Array[String] = [entries[0].name_text(), entries[1].name_text()]
+	var retreat: StackEntry = entries[0] if texts[0].contains("choose one") else entries[1]
+	assert_string_contains(retreat.name_text(), "choose one — • Create a 2/2 white Cat Beast creature token. • Put")
+	assert_false(retreat.name_text().contains("\n"))
+	assert_eq(entries[0].size.y, entries[1].size.y)
+	assert_eq(entries[0].get_combined_minimum_size().y, entries[1].get_combined_minimum_size().y)
+
+
 func test_dragging_a_trigger_down_and_confirming_makes_the_new_top_one_resolve_first() -> void:
 	_reach_trigger_order()
 	_presenter.is_hold_key_down = true
@@ -598,6 +615,18 @@ func test_a_modal_trigger_opens_the_choice_window_titled_by_its_source_with_no_c
 		"Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.")
 	assert_not_null(_screen.choice_catcher(0))
 	assert_not_null(_screen.choice_catcher(1))
+
+
+func test_a_modal_trigger_whose_mode_is_being_chosen_says_every_mode_on_its_entrys_one_line() -> void:
+	_reach_retreat_mode()
+	await wait_process_frames(2)
+
+	var entry: StackEntry = _screen.stack_entries()[0]
+	assert_eq(entry.name_text(), "Choose one — • Create a 2/2 white Cat Beast creature token. • Put a +1/+1 counter on each "
+		+ "creature you control. Each creature you control gains vigilance until end of turn.")
+	var plain: StackEntry = StackEntry.new("", "Bolt", "Hero", StackColors.PLAIN)
+	add_child_autofree(plain)
+	assert_eq(entry.get_combined_minimum_size().y, plain.get_combined_minimum_size().y, "No taller than any other.")
 
 
 func test_hovering_a_triggers_mode_shows_it_in_full() -> void:

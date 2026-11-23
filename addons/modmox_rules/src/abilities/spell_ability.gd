@@ -9,6 +9,9 @@ const NO_MODE: int = -1
 
 @export var targets: Array[TargetRequirement] = []
 @export var effects: Array[MmEffect] = []
+## The target requirements an overload changed to "each" (CR 702.96b, ADR 0014), numbered
+## as they were; its effects find what each could have chosen through OverloadedSelection.
+@export var overloaded_targets: Array[TargetRequirement] = []
 ## "Choose one —": one entry for each "•" line. Empty for a spell that is not modal.
 @export var modes: Array[AbilityMode] = []
 
@@ -26,6 +29,12 @@ func is_modal() -> bool:
 ## The target requirements of mode [param mode_index], or this ability's own for NO_MODE.
 func targets_for(mode_index: int) -> Array[TargetRequirement]:
 	return modes[mode_index].targets if mode_index != NO_MODE else targets
+
+
+## The overloaded target requirements of mode [param mode_index], or this ability's own for
+## NO_MODE.
+func overloaded_targets_for(mode_index: int) -> Array[TargetRequirement]:
+	return modes[mode_index].overloaded_targets if mode_index != NO_MODE else overloaded_targets
 
 
 ## The effects of mode [param mode_index], or this ability's own for NO_MODE.

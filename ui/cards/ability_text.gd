@@ -56,6 +56,15 @@ var _noun: String
 var _enchanted: String = ""
 var _targets: Array[TargetRequirement] = []
 var _trigger: MmTrigger = null
+## The target requirements an overload changed to "each" (CR 702.96b), by number.
+var _overloaded: Array[TargetRequirement] = []
+## The overloaded requirements already named, which are "those" from then on.
+var _named_overloaded: Dictionary[int, bool] = {}
+## What an overloaded "its controller" stands for each of, "those creatures", which the
+## sentence then begins with: "For each of those creatures, its controller gains 3 life."
+var _for_each_of: String = ""
+## Whether the spell exiled what an overload found, so "the exiled card" is several cards.
+var _exiles_several: bool = false
 ## The target requirements already named, which are "it" from then on.
 var _named: Dictionary[int, bool] = {}
 ## Whether a target already named is "that creature" rather than "it", as it is in what an
@@ -175,6 +184,7 @@ static func effect_of(ability: MmAbility, noun: String, mode_index: int = SpellA
 		return writer._choose_one(ability) if mode_index == SpellAbility.NO_MODE else mode_text(ability, mode_index, noun)
 	if ability is SpellAbility:
 		writer._targets = (ability as SpellAbility).targets
+		writer._overloaded = (ability as SpellAbility).overloaded_targets
 		return writer._sentences((ability as SpellAbility).effects, true)
 	if ability is ActivatedAbility:
 		writer._targets = (ability as ActivatedAbility).targets
@@ -194,8 +204,10 @@ static func offered_words(ability: MmAbility, effect: MmEffect, noun: String, mo
 	var writer: AbilityText = AbilityText.new(noun)
 	if not ability.modes_or_none().is_empty() and mode_index != SpellAbility.NO_MODE:
 		writer._targets = ability.modes_or_none()[mode_index].targets
+		writer._overloaded = ability.modes_or_none()[mode_index].overloaded_targets
 	elif ability is SpellAbility:
 		writer._targets = (ability as SpellAbility).targets
+		writer._overloaded = (ability as SpellAbility).overloaded_targets
 	elif ability is ActivatedAbility:
 		writer._targets = (ability as ActivatedAbility).targets
 	elif ability is TriggeredAbility:
@@ -211,6 +223,7 @@ static func mode_text(ability: MmAbility, mode_index: int, noun: String) -> Stri
 	var writer: AbilityText = AbilityText.new(noun)
 	var mode: AbilityMode = ability.modes_or_none()[mode_index]
 	writer._targets = mode.targets
+	writer._overloaded = mode.overloaded_targets
 	if ability is TriggeredAbility:
 		writer._trigger = (ability as TriggeredAbility).trigger  # "that creature" and the like.
 	return writer._sentences(mode.effects, true)
@@ -343,6 +356,7 @@ func _ability(ability: MmAbility) -> String:
 		return _choose_one(ability)
 	if ability is SpellAbility:
 		_targets = (ability as SpellAbility).targets
+		_overloaded = (ability as SpellAbility).overloaded_targets
 		return _sentences((ability as SpellAbility).effects, true)
 	if ability is EquipAbility:
 		# A keyword prints its cost and nothing else (CR 702.6); what it does is its Reminder.
@@ -825,14 +839,17 @@ func _sentences(effects: Array[MmEffect], starts_sentence: bool) -> String:
 	var sentences: PackedStringArray = []
 	for effect: MmEffect in effects:
 		_where = ""
+		_for_each_of = ""
 		var clause: String = _effect(effect)
 		if _where != "":
 			clause += ", where X is " + _where
+		if _for_each_of != "":
+			clause = "for each of %s, %s" % [_for_each_of, clause]
 		var is_first: bool = sentences.is_empty()
 		sentences.append((clause if is_first and not starts_sentence else _capitalized(clause)) + ".")
 		var destroy: DestroyEffect = effect as DestroyEffect
 		if destroy != null and not destroy.can_be_regenerated:
-			sentences.append("It can't be regenerated.")
+			sentences.append("They can't be regenerated." if destroy.selection is OverloadedSelection else "It can't be regenerated.")
 	return " ".join(sentences)
 
 
@@ -876,14 +893,17 @@ func _effect(effect: MmEffect) -> String:
 		var exiling: ExileEffect = effect as ExileEffect
 		# CR 610.3: "until" its source leaves, as Leyline Binding's.
 		var until: String = " until %s leaves the battlefield" % _noun if exiling.until_source_leaves else ""
+		_exiles_several = _exiles_several or exiling.selection is OverloadedSelection
 		return "exile " + _selection(exiling.selection) + until
 	if effect is ReturnToBattlefieldEffect:
 		var back: ReturnToBattlefieldEffect = effect as ReturnToBattlefieldEffect
 		# A card that can only be your own returns under your control, so Oracle leaves out
 		# "under its owner's control", as Helping Hand does.
+		var is_several: bool = _is_several(back.selection)
 		var text: String = "return %s to the battlefield%s%s" % [_selection(back.selection), " tapped" if back.tapped else "",
-			"" if _is_yours(back.selection) else " under its owner's control"]
-		return text if back.counters == null else text + " with %s on it" % _counters(back.counters, back.counter_kind)
+			"" if _is_yours(back.selection) else (" under their owners' control" if is_several else " under its owner's control")]
+		return text if back.counters == null else text + " with %s on %s" % [_counters(back.counters, back.counter_kind),
+			"each of them" if is_several else "it"]
 	if effect is MillEffect:
 		# CR 701.17a, as Oracle words it: "mill four cards", "each opponent mills four cards".
 		var milling: MillEffect = effect as MillEffect
@@ -1142,15 +1162,22 @@ func _selection(selection: MmSelection) -> String:
 		_says_triggering_object = true
 		return "that " + _triggering_noun()
 	if selection is ControllerOfSelection:
-		return _possessive(_selection((selection as ControllerOfSelection).selection)) + " controller"
+		var controller: ControllerOfSelection = selection as ControllerOfSelection
+		var overloaded: OverloadedSelection = controller.selection as OverloadedSelection
+		if overloaded != null and controller.is_once_for_each and _named_overloaded.has(overloaded.overloaded_index):
+			_for_each_of = _overloaded_words(overloaded.overloaded_index)
+			return "its controller"
+		return _possessive(_selection(controller.selection)) + " controller"
 	if selection is EachSelection:
 		return "each " + _noun_phrase((selection as EachSelection).filter, false)
 	if selection is ChosenSelection:
 		return _with_article(_noun_phrase((selection as ChosenSelection).filter, false))
 	if selection is TargetSelection:
 		return _target((selection as TargetSelection).target_index)
+	if selection is OverloadedSelection:
+		return _overloaded_words((selection as OverloadedSelection).overloaded_index)
 	if selection is ExiledWithSourceSelection:
-		return "the exiled card"
+		return "the exiled cards" if _exiles_several else "the exiled card"
 	if selection is AttachedToSelection:
 		# An Aura's is what it enchants (CR 303.4), and an Equipment's a creature (CR 301.5).
 		if _enchanted != "":
@@ -1186,6 +1213,37 @@ func _target(index: int) -> String:
 	return "target " + phrase
 
 
+## What an overloaded "target" says (CR 702.96b): "each creature", "each creature and each
+## player" for "any target", "each other spell" (it can't find itself, CR 115.5), "each
+## creature card from your graveyard"; then "those creatures" once it has been named.
+func _overloaded_words(index: int) -> String:
+	if index >= _overloaded.size():
+		return "each of them"
+	var spec: TargetRequirement = _overloaded[index]
+	if _named_overloaded.has(index):
+		if spec.among != TargetRequirement.Among.PLAYERS_AND_PERMANENTS:
+			return "them"
+		var noun: String = "player" if spec.filter is IsPlayerFilter else _filter_words(spec.filter).noun
+		noun = noun if noun != "" else "permanent"
+		return "those " + (noun if PLURAL_AS_SINGULAR.has(noun) else noun + "s")
+	_named_overloaded[index] = true
+	if spec.among == TargetRequirement.Among.SPELLS:
+		return "each other " + _spell_phrase(spec.filter)
+	if spec.among == TargetRequirement.Among.ABILITIES:
+		return "each activated or triggered ability"
+	if spec.among == TargetRequirement.Among.GRAVEYARD_CARDS:
+		return "each " + _graveyard_phrase(spec.filter)
+	if _is_any_target(spec.filter):
+		return "each creature and each player"
+	return "each " + _noun_phrase(spec.filter, false)
+
+
+## Whether [param selection] finds several things: what an overload found, or the cards
+## exiled by one.
+func _is_several(selection: MmSelection) -> bool:
+	return selection is OverloadedSelection or (selection is ExiledWithSourceSelection and _exiles_several)
+
+
 ## "Up to two target creatures", "up to two other target creatures you control": "other"
 ## comes before "target", as "another" does.
 func _up_to_targets(spec: TargetRequirement) -> String:
@@ -1208,6 +1266,10 @@ func _is_several_targets(selection: MmSelection) -> bool:
 ## Whether [param selection] is a targeted card that can only be one its controller owns,
 ## as in "target creature card from your graveyard", which goes back "to your hand".
 func _is_yours(selection: MmSelection) -> bool:
+	var overloaded: OverloadedSelection = selection as OverloadedSelection
+	if overloaded != null:
+		return overloaded.overloaded_index < _overloaded.size() \
+			and _filter_words(_overloaded[overloaded.overloaded_index].filter).after.has(YOU_OWN)
 	var targeted: TargetSelection = selection as TargetSelection
 	if targeted == null or targeted.target_index >= _targets.size():
 		return false

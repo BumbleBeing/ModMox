@@ -2478,6 +2478,18 @@ static func free_fight(card_name: String = "Fight") -> MmCardDefinition:
 		[fight(targeted(0), targeted(1))])
 
 
+## [param definition] with every "target" in its text changed to "each" (CR 702.96b): the
+## card an OverloadModification flattens it into, named [param card_name] when one is given.
+static func overloaded(definition: MmCardDefinition, card_name: String = "") -> MmCardDefinition:
+	var run_card: MmRunCard = MmRunCard.new()
+	run_card.base = definition
+	run_card.modifications = [OverloadModification.new()]
+	var flattened: MmCardDefinition = run_card.flatten()
+	if card_name != "":
+		flattened.name = card_name
+	return flattened
+
+
 ## An activated ability: "[param mana], [costs]: [effects]", with [param targets].
 static func activated(mana: MmManaCost, costs: Array[MmCost], effects: Array[MmEffect],
 		targets: Array[TargetRequirement] = []) -> ActivatedAbility:

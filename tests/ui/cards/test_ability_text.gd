@@ -184,12 +184,54 @@ const PRINTED_ADVENTURES: Dictionary[String, String] = {
 	"most_decrepit_old_bird": "Mill four cards. Put an instant or sorcery card from among them into your hand.",
 }
 
+## Each authored instant and sorcery with a target, as it reads with every "target" changed
+## to "each" by an OverloadModification (CR 702.96b): the same review as PRINTED's.
+const OVERLOADED: Dictionary[String, String] = {
+	"ancestral_recall": "Each player draws three cards.",
+	"artillery_blast": "Artillery Blast deals damage to each tapped creature equal to 1 plus the number of basic land types among lands you control.",
+	"battlegrowth": "Put a +1/+1 counter on each creature.",
+	"bushwhack": "Choose one —\n• Search your library for a basic land card, reveal it, put it into your hand, then shuffle.\n• Each creature you control fights each creature you don't control.",
+	"coordinated_maneuver": "Choose one —\n• Coordinated Maneuver deals damage to each creature equal to the number of creatures you control.\n• Destroy each enchantment.",
+	"counterspell": "Counter each other spell.",
+	"daydream": "Exile each creature you control. Return the exiled cards to the battlefield under their owners' control with a +1/+1 counter on each of them.\nFlashback {2}{W}",
+	"deep_analysis": "Each player draws two cards.\nFlashback—{1}{U}, Pay 3 life",
+	"defiant_strike": "Each creature gets +1/+0 until end of turn. Draw a card.",
+	"destroy_evil": "Choose one —\n• Destroy each creature with toughness 4 or greater.\n• Destroy each enchantment.",
+	"gaeas_might": "Each creature gets +X/+X until end of turn, where X is the number of basic land types among lands you control.",
+	"giant_growth": "Each creature gets +3/+3 until end of turn.",
+	"gideons_reproach": "Gideon's Reproach deals 4 damage to each attacking or blocking creature.",
+	"gird_for_battle": "Put a +1/+1 counter on each creature.",
+	"helping_hand": "Return each creature card with mana value 3 or less from your graveyard to the battlefield tapped.",
+	"honor": "Put a +1/+1 counter on each creature. Draw a card.",
+	"instill_infection": "Put a -1/-1 counter on each creature. Draw a card.",
+	"lay_down_arms": "Exile each creature with mana value less than or equal to the number of Plains you control. For each of those creatures, its controller gains 3 life.",
+	"lightning_bolt": "Lightning Bolt deals 3 damage to each creature and each player.",
+	"lightshield_parry": "Each creature gets +2/+2 until end of turn.\nCycling {2}",
+	"outflank": "Outflank deals damage to each attacking or blocking creature equal to the number of creatures you control.",
+	"raise_dead": "Return each creature card from your graveyard to your hand.",
+	"resistance_reunited": "Each creature gets +2/+2 until end of turn. Each equipped creature you control gains indestructible until end of turn.",
+	"shatter": "Destroy each artifact.",
+	"slash_of_light": "Slash of Light deals damage to each creature equal to the number of creatures you control plus the number of Equipment you control.",
+	"stifle": "Counter each activated or triggered ability.",
+	"terror": "Destroy each nonartifact, nonblack creature. They can't be regenerated.",
+}
+
 
 func test_each_authored_card_prints_its_oracle_wording() -> void:
 	for file_name: String in PRINTED:
 		assert_eq(_look(file_name).rules_text, PRINTED[file_name], file_name)
 	for file_name: String in PRINTED_ADVENTURES:
 		assert_eq(_look(file_name).adventure.rules_text, PRINTED_ADVENTURES[file_name], file_name)
+
+
+func test_each_authored_spell_with_a_target_reads_each_once_overloaded() -> void:
+	for file_name: String in OVERLOADED:
+		var definition: MmCardDefinition = null
+		for set_name: String in DirAccess.get_directories_at(SETS_ROOT):
+			var path: String = "%s/%s/%s.tres" % [SETS_ROOT, set_name, file_name]
+			if ResourceLoader.exists(path):
+				definition = load(path) as MmCardDefinition
+		assert_eq(_text(Scenario.overloaded(definition)), OVERLOADED[file_name], file_name)
 
 
 func test_no_ability_of_any_authored_card_falls_back_to_a_class_name() -> void:

@@ -90,6 +90,14 @@ _Avoid_: Controller, input, brain
 One instance of the word "target" on a spell or ability, with a Filter saying what may be chosen for it. An "up to" one, as in "up to two target creatures", chooses any number of different objects from none to its most, and can always be chosen, since none is a legal choice.
 _Avoid_: Target slot, targeting rule
 
+**Overload**:
+A Modification that changes every "target" on an instant or sorcery to "each" (CR 702.96b), so the spell affects everything it could have targeted: overloaded Lightning Bolt deals 3 damage to each creature and each player. Its Target Requirements become Overloaded Requirements, and the spell targets nothing, so ward never triggers, protection keeps nothing out of what it finds, and it always resolves. An Adventure is a card of its own and keeps its targets, and so do an ability the spell grants and a token it creates. An overloaded "its controller" names a player once for each object of theirs, so "its controller gains 3 life" gains 3 for each.
+_Avoid_: Mass spell, sweeper, each-mode
+
+**Overloaded Requirement**:
+A Target Requirement an Overload changed to "each". As the spell begins to resolve, it finds everything it could have chosen, where it would have looked (players and permanents, spells, abilities, or cards in graveyards), never the spell itself and however many its "up to" allowed, and what it finds then is fixed and shared by every effect, as targets are.
+_Avoid_: Each requirement, overloaded target
+
 **Modal Spell**:
 An instant or sorcery that says "Choose one —" and lists its Modes (CR 700.2). Its controller chooses the Mode as it is cast, before any target; a Mode whose targets could not all be chosen can't be, and when only one can, it is chosen without asking.
 _Avoid_: Charm (a card name, not a rule), choice spell
@@ -99,7 +107,7 @@ One "•" line of a Modal Spell or of a modal triggered ability, with Target Req
 _Avoid_: Option (an Option Menu's row), branch, choice
 
 **Selection**:
-Who or what an effect applies to: the target chosen for a Target Requirement, each player or permanent matching a Filter, a permanent the controller chooses as the effect resolves ("a creature you control", not a target), or the controller.
+Who or what an effect applies to: the target chosen for a Target Requirement, what an Overloaded Requirement found, each player or permanent matching a Filter, a permanent the controller chooses as the effect resolves ("a creature you control", not a target), or the controller.
 _Avoid_: Target (unless an actual target is meant), recipient list, scope
 
 **Filter**:
@@ -301,7 +309,7 @@ A creature assigning combat damage equal to its toughness rather than its power 
 _Avoid_: Toughness damage, "deals damage with its toughness"
 
 **Fight**:
-A keyword action: two creatures each deal damage equal to their power to the other, at once (CR 701.14a), as Bushwhack's "Target creature you control fights target creature you don't control". The creatures are the sources, so deathtouch and lifelink apply, and it is not combat damage. If either has left the battlefield, is no longer a creature or has become an illegal target, neither deals any (CR 701.14b).
+A keyword action: two creatures each deal damage equal to their power to the other, at once (CR 701.14a), as Bushwhack's "Target creature you control fights target creature you don't control". The creatures are the sources, so deathtouch and lifelink apply, and it is not combat damage. If either has left the battlefield, is no longer a creature or has become an illegal target, neither deals any (CR 701.14b). Overloaded, "each creature you control fights each creature you don't control", every creature on one side fights every creature on the other, all at once: each deals damage equal to its power to each creature on the other side.
 _Avoid_: Duel, brawl, combat (fighting is not combat)
 
 **Summoning Sickness**:

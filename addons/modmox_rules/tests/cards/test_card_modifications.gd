@@ -125,6 +125,75 @@ func test_flattening_again_starts_from_the_base() -> void:
 	assert_eq(flattened.abilities.size(), 1)
 
 
+func test_overloading_moves_the_targets_and_turns_each_target_into_each() -> void:
+	var run_card: MmRunCard = _run_card(Scenario.free_shock("Shock", 3))
+	run_card.modifications.append(OverloadModification.new())
+
+	var spell: SpellAbility = run_card.flatten().abilities[0] as SpellAbility
+
+	assert_eq(spell.targets.size(), 0, "CR 702.96b: it has no targets.")
+	assert_eq(spell.overloaded_targets.size(), 1)
+	var damage: DealDamageEffect = spell.effects[0] as DealDamageEffect
+	assert_true(damage.recipients is OverloadedSelection)
+	assert_eq((damage.recipients as OverloadedSelection).overloaded_index, 0)
+	var base_spell: SpellAbility = run_card.base.abilities[0] as SpellAbility
+	assert_eq(base_spell.targets.size(), 1, "The base is never changed.")
+	assert_true((base_spell.effects[0] as DealDamageEffect).recipients is TargetSelection)
+
+
+func test_overloading_reaches_a_target_inside_another_selection() -> void:
+	var disarm: MmCardDefinition = Scenario.instant("Disarm", Scenario.mana_cost(0), [Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))],
+		[Scenario.gain_life(3, Scenario.controller_of(Scenario.targeted(0)))])
+	var run_card: MmRunCard = _run_card(disarm)
+	run_card.modifications.append(OverloadModification.new())
+
+	var gain: GainLifeEffect = (run_card.flatten().abilities[0] as SpellAbility).effects[0] as GainLifeEffect
+
+	var controller: ControllerOfSelection = gain.players as ControllerOfSelection
+	assert_true(controller.selection is OverloadedSelection)
+	assert_true(controller.is_once_for_each, "\"Its controller\" is once for each object it was.")
+
+
+func test_overloading_reaches_each_mode() -> void:
+	var run_card: MmRunCard = _run_card(Scenario.free_charm("Charm"))
+	run_card.modifications.append(OverloadModification.new())
+
+	var spell: SpellAbility = run_card.flatten().abilities[0] as SpellAbility
+
+	for mode: AbilityMode in spell.modes:
+		assert_eq(mode.targets.size(), 0)
+		assert_eq(mode.overloaded_targets.size(), 1)
+	assert_true((spell.modes[1].effects[0] as DestroyEffect).selection is OverloadedSelection)
+
+
+func test_overloading_leaves_a_granted_abilitys_own_targets() -> void:
+	var ping: ActivatedAbility = Scenario.activated(Scenario.mana_cost(0), [TapCost.new()],
+		[Scenario.deal_damage(1, Scenario.targeted(0))], [Scenario.any_target()])
+	var gift: MmCardDefinition = Scenario.instant("Gift", Scenario.mana_cost(0), [Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))],
+		[Scenario.until_end_of_turn(Scenario.gain_abilities([ping], Scenario.targeted(0)))])
+	var run_card: MmRunCard = _run_card(gift)
+	run_card.modifications.append(OverloadModification.new())
+
+	var created: CreateContinuousEffect = (run_card.flatten().abilities[0] as SpellAbility).effects[0] as CreateContinuousEffect
+
+	var granted: GainAbilitiesContinuousEffect = created.continuous as GainAbilitiesContinuousEffect
+	assert_true(granted.affected is OverloadedSelection)
+	var granted_ability: ActivatedAbility = granted.abilities[0] as ActivatedAbility
+	assert_eq(granted_ability.targets.size(), 1, "The granted ability's target is its own.")
+	assert_true((granted_ability.effects[0] as DealDamageEffect).recipients is TargetSelection)
+
+
+func test_overloading_leaves_an_adventure_alone() -> void:
+	var guide: MmCardDefinition = Scenario.creature("Guide", 1, 1)
+	guide.adventure = Scenario.free_shock("Gift", 2)
+	var run_card: MmRunCard = _run_card(guide)
+	run_card.modifications.append(OverloadModification.new())
+
+	var adventure: MmCardDefinition = run_card.flatten().adventure
+
+	assert_eq((adventure.abilities[0] as SpellAbility).targets.size(), 1)
+
+
 func _run_card(definition: MmCardDefinition) -> MmRunCard:
 	var run_card: MmRunCard = MmRunCard.new()
 	run_card.base = definition

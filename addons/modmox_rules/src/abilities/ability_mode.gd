@@ -6,4 +6,7 @@ extends Resource
 
 @export var targets: Array[TargetRequirement] = []
 @export var effects: Array[MmEffect] = []
+## The target requirements an overload changed to "each" (CR 702.96b, ADR 0014), numbered
+## as they were; its effects find what each could have chosen through OverloadedSelection.
+@export var overloaded_targets: Array[TargetRequirement] = []
 

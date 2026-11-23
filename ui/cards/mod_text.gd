@@ -6,12 +6,18 @@ extends RefCounted
 ## every ability after one "gains", keywords before quoted abilities, joined as Oracle text
 ## joins them. A quoted ability calls the card what its own text would (AbilityText).
 ##
+## An overload changes words on the card rather than adding to it (CR 702.96b): "Modified
+## card has every "target" in its text changed to "each."", its period inside the
+## quotation marks, as a quoted ability's is.
+##
 ## A Modification there are no words for yet is written as its class name in square
 ## brackets, as AbilityText writes what it has no words for.
 
 const SUBJECT: String = "Modified card"
 ## What a quoted ability calls a card that is none of the types AbilityText names.
 const ANY_CARD_NOUN: String = "this card"
+## What an OverloadModification does to the card (CR 702.96b).
+const OVERLOADED: String = "has every \"target\" in its text changed to \"each\""
 
 
 ## The whole text of [param mod]: its Augmentation's sentence, then its Mod Cost's if it has
@@ -32,6 +38,7 @@ static func augmentation_of(mod: Mod) -> String:
 	var keywords: Array[String] = []
 	var quoted: Array[String] = []
 	var unknown: Array[String] = []
+	var is_overloaded: bool = false
 	for modification: MmModification in mod.augmentation:
 		if modification is AddPowerToughnessModification:
 			var added: AddPowerToughnessModification = modification as AddPowerToughnessModification
@@ -46,6 +53,8 @@ static func augmentation_of(mod: Mod) -> String:
 				keywords.append(words.left(1).to_lower() + words.substr(1))
 			else:
 				quoted.append("\"%s\"" % words)
+		elif modification is OverloadModification:
+			is_overloaded = true
 		else:
 			var script: Script = modification.get_script()
 			var class_label: String = script.get_global_name()
@@ -57,10 +66,17 @@ static func augmentation_of(mod: Mod) -> String:
 		var abilities: Array[String] = keywords.duplicate()
 		abilities.append_array(quoted)
 		clauses.append("gains " + joined(abilities))
+	if is_overloaded:
+		clauses.append(OVERLOADED)
 	clauses.append_array(unknown)
 	var sentence: String = "%s %s" % [SUBJECT, " and ".join(PackedStringArray(clauses))]
-	# A quoted ability ends with its own period, inside the quotation marks.
-	return sentence if sentence.ends_with("\"") else sentence + "."
+	# A quoted ability ends with its own period, inside the quotation marks, and so does a
+	# sentence ending in a quoted word.
+	if sentence.ends_with(".\""):
+		return sentence
+	if sentence.ends_with("\""):
+		return sentence.left(sentence.length() - 1) + ".\""
+	return sentence + "."
 
 
 ## The sentence for what [param mod_cost] adds to the card's mana cost.

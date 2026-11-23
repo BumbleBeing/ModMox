@@ -20,6 +20,12 @@ var targets: Array[MmReference] = []
 ## How many places of [member targets] each requirement takes, in order. Empty means one
 ## each, as in a context made by hand.
 var target_counts: Array[int] = []
+## What each target requirement an overload changed to "each" found as the spell began to
+## resolve (CR 702.96b, ADR 0014), one after another in the requirements' order, fixed then
+## so that every effect finds the same.
+var overloaded: Array[MmReference] = []
+## How many of [member overloaded] each overloaded requirement found, in order.
+var overloaded_counts: Array[int] = []
 ## For a triggered ability: what its event was about ("that player", "that creature").
 var triggering_player_id: int = -1
 var triggering_object_id: int = 0
@@ -79,6 +85,26 @@ func targets_of(requirement_index: int) -> Array[MmReference]:
 	return found
 
 
+## What overloaded requirement [param overloaded_index] found as the spell began to resolve,
+## in order, whether or not each is still where it was.
+func overloaded_of(overloaded_index: int) -> Array[MmReference]:
+	if overloaded_index >= overloaded_counts.size():
+		return []
+	var first: int = 0
+	for earlier: int in overloaded_index:
+		first += overloaded_counts[earlier]
+	return overloaded.slice(first, first + overloaded_counts[overloaded_index])
+
+
+## This context with [param found] as what its overloaded requirements found, [param counts]
+## of them each, a new context as with_choice() makes.
+func with_overloaded(found: Array[MmReference], counts: Array[int]) -> MmEffectContext:
+	var copy: MmEffectContext = _copy()
+	copy.overloaded = found.duplicate()
+	copy.overloaded_counts = counts.duplicate()
+	return copy
+
+
 ## This context with [param chosen] as choice [param index]. A context is never changed
 ## once made, so a resolving spell or ability takes a new one for each choice.
 func with_choice(index: int, chosen: MmReference) -> MmEffectContext:
@@ -120,4 +146,6 @@ func _copy() -> MmEffectContext:
 	copy.paid_x = paid_x
 	copy.chosen_mana_type = chosen_mana_type
 	copy.moved_ids = moved_ids.duplicate()
+	copy.overloaded = overloaded.duplicate()
+	copy.overloaded_counts = overloaded_counts.duplicate()
 	return copy
