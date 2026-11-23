@@ -215,7 +215,7 @@ func _least_blockers(attackers: Array[int]) -> Dictionary[int, int]:
 func _can_block(blocker: MmGameObject, attacker: MmGameObject) -> bool:
 	if _state.characteristics_of(attacker).has_ability(CantBeBlockedAbility):
 		return false
-	if ProtectionAbility.protects(_state, attacker, blocker.id):
+	if ProtectionRules.protects(_state, attacker, blocker.id):
 		return false
 	if not _state.characteristics_of(attacker).has_ability(FlyingAbility):
 		return true

@@ -46,17 +46,33 @@ func test_choosing_no_targets_resolves_and_does_nothing() -> void:
 		"CR 608.2b: it is not targeting anything, so it is not kept from resolving.")
 
 
-func test_it_can_be_cast_with_nothing_to_target_and_nothing_is_asked() -> void:
+func test_it_can_be_cast_with_nothing_to_target_once_choosing_none_is_confirmed() -> void:
 	var engine: MmEngine = _hero_main([], [], [Scenario.free_gird()])
 	var gird: int = _hand(engine, "Gird")
 	assert_true(Scenario.offers_cast(engine, gird), "CR 601.2c: none is a legal number of targets.")
 
-	assert_eq(Scenario.cast_up_to(engine, gird, []), "")
+	assert_eq(engine.submit(Scenario.cast_index(engine.pending_decision() as PriorityDecision, gird)), "")
 
+	var choice: ChooseTargetsDecision = engine.pending_decision() as ChooseTargetsDecision
+	assert_not_null(choice, "A spell's caster still confirms choosing none, and may cancel instead.")
+	assert_eq(choice.candidates.size(), 0)
+	assert_eq(Scenario.choose_targets(engine, []), "")
+	assert_eq(Scenario.auto_pay(engine), "")
 	assert_eq(Scenario.stack_ids(engine).size(), 1)
-	assert_true(engine.pending_decision() is PriorityDecision, "Choosing none is the only answer, so it is not asked.")
 	assert_eq(Scenario.resolve_stack(engine), "")
 	assert_eq(Scenario.last_reason_into(engine, MmZone.Kind.GRAVEYARD), ZoneChangeEvent.Reason.RESOLVED)
+
+
+func test_a_cast_with_nothing_to_target_can_be_canceled_at_its_choice() -> void:
+	var engine: MmEngine = _hero_main([], [], [Scenario.free_gird()])
+	var gird: int = _hand(engine, "Gird")
+	assert_eq(engine.submit(Scenario.cast_index(engine.pending_decision() as PriorityDecision, gird)), "")
+	assert_true(engine.pending_decision() is ChooseTargetsDecision)
+
+	assert_eq(engine.cancel_cast(), "")
+
+	assert_true(engine.pending_decision() is PriorityDecision)
+	assert_true(Scenario.offers_cast(engine, _hand(engine, "Gird")), "CR 728: back in the hand, as before the cast.")
 
 
 func test_the_choice_offers_every_creature_and_says_how_many() -> void:

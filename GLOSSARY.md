@@ -496,7 +496,7 @@ The words on a card for what its abilities do. They are generated from the abili
 _Avoid_: Oracle text (the real card's), description, tooltip
 
 **Glow**:
-The colored outline on everything a Pending Decision can choose: orange-red for targets, blue for mana sources, gold for attackers and blockers to choose, purple for abilities to activate, green for anything else (cards that can be cast or played, among others). Something that offers two kinds of thing glows in both colors, split: the first along the top and left, the second along the bottom and right. A permanent with a mana ability and another ability is purple and blue; a card in hand that can be cast and has an ability used from there is green and purple. Whatever a click answers something on always glows. It eases in and out rather than popping.
+The colored outline on everything a Pending Decision can choose: orange-red for targets, blue for mana sources, gold for attackers and blockers to choose, purple for abilities to activate, green for anything else (cards that can be cast or played, among others). Something that offers two kinds of thing glows in both colors, split: the first along the top and left, the second along the bottom and right. A permanent with a mana ability and another ability is purple and blue; a card in hand that can be cast and has an ability used from there is green and purple. Whatever a click answers something on always glows. A creature that is attacking or blocking glows gold too, until combat ends, though no decision offers it and it takes no click for it; where a decision offers something on it as well, its Glow is split, that color first and gold second. It eases in and out rather than popping.
 _Avoid_: Highlight, selection, halo
 
 **Info Panel**:

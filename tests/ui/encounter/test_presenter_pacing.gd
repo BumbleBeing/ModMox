@@ -448,25 +448,7 @@ func test_with_the_hold_key_down_the_heros_ability_is_held_not_passed() -> void:
 
 func test_a_pass_the_hero_makes_that_would_resolve_too_soon_is_put_off() -> void:
 	var presenter: EncounterPresenter = _hanging(_fountain_setup())
-	presenter.start()
-	# With the clock standing still, the Villain's trigger is still young when the Hero is asked.
-	for tick: int in 400:
-		var snapshot: EncounterSnapshot = presenter.snapshot()
-		if snapshot.decision is PriorityDecision and not snapshot.view.stack.is_empty() \
-				and snapshot.view.stack.back().controller_id == VILLAIN:
-			break
-		if snapshot.is_villain_thinking:
-			_let_the_villain_answer(presenter)
-			presenter.poll()
-			if presenter.snapshot() == snapshot:
-				_now += HANG
-		elif snapshot.decision != null:
-			presenter.answer(Scenario.default_answer(snapshot.decision))
-		else:
-			_now += HANG
-			presenter.poll()
-	var asked: EncounterSnapshot = presenter.snapshot()
-	assert_true(asked.view.stack.back().ability is TriggeredAbility, "The Villain's upkeep trigger, which the Villain has passed.")
+	var asked: EncounterSnapshot = _asked_over_the_villains_young_trigger(presenter)
 
 	assert_eq(presenter.pass_priority(), "")
 	var held: EncounterSnapshot = presenter.snapshot()
@@ -480,6 +462,24 @@ func test_a_pass_the_hero_makes_that_would_resolve_too_soon_is_put_off() -> void
 	presenter.poll()
 
 	assert_lt(presenter.snapshot().view.stack.size(), asked.view.stack.size(), "Now it resolved.")
+	presenter.wait_until_idle()
+
+
+func test_a_pass_the_hero_made_that_is_put_off_stays_made_when_a_setting_changes() -> void:
+	var presenter: EncounterPresenter = _hanging(_fountain_setup())
+	var asked: EncounterSnapshot = _asked_over_the_villains_young_trigger(presenter)
+	assert_eq(presenter.pass_priority(), "")
+
+	presenter.set_auto_tapping(true)
+
+	assert_true(presenter.is_passing_for_hero(), "The Hero is not asked again.")
+	assert_true(_is_held.call(presenter.snapshot()))
+	_now += HANG - 1
+	presenter.poll()
+	assert_eq(presenter.snapshot().view.stack.size(), asked.view.stack.size(), "Still for the whole hangtime.")
+	_now += 1
+	presenter.poll()
+	assert_lt(presenter.snapshot().view.stack.size(), asked.view.stack.size(), "Then the pass is made.")
 	presenter.wait_until_idle()
 
 
@@ -556,6 +556,31 @@ func _fountain_setup() -> MmEncounterSetup:
 func _spring() -> MmCardDefinition:
 	var upkeep: StepBeganTrigger = Scenario.at_step(MmTurn.Step.UPKEEP, MmTrigger.Whose.YOU)
 	return Scenario.emblem("Spring", [Scenario.triggered(upkeep, [Scenario.gain_life(1, YouSelection.new())])])
+
+
+## Starts [param presenter] and plays on, the clock standing still, until the Hero has
+## priority with the Villain's upkeep trigger, which the Villain has passed, still young on
+## top of the stack. Returns the snapshot that asks them.
+func _asked_over_the_villains_young_trigger(presenter: EncounterPresenter) -> EncounterSnapshot:
+	presenter.start()
+	for tick: int in 400:
+		var snapshot: EncounterSnapshot = presenter.snapshot()
+		if snapshot.decision is PriorityDecision and not snapshot.view.stack.is_empty() \
+				and snapshot.view.stack.back().controller_id == VILLAIN:
+			break
+		if snapshot.is_villain_thinking:
+			_let_the_villain_answer(presenter)
+			presenter.poll()
+			if presenter.snapshot() == snapshot:
+				_now += HANG
+		elif snapshot.decision != null:
+			presenter.answer(Scenario.default_answer(snapshot.decision))
+		else:
+			_now += HANG
+			presenter.poll()
+	var asked: EncounterSnapshot = presenter.snapshot()
+	assert_true(asked.view.stack.back().ability is TriggeredAbility, "The Villain's upkeep trigger.")
+	return asked
 
 
 ## A presenter that hangs what is on the stack and waits for nothing else, remembering its

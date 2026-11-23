@@ -24,9 +24,9 @@ static func each_for(source_object_id: int, index: int, ability: ActivatedAbilit
 	var actions: Array[MmAction] = []
 	var colors: Array[MmMana.Type] = ability.mana_types_to_choose()
 	if colors.is_empty():
-		actions.append(ActivateAbilityAction.new(source_object_id, index))
+		actions.append(new(source_object_id, index))
 	for color: MmMana.Type in colors:
-		actions.append(ActivateAbilityAction.new(source_object_id, index, color))
+		actions.append(new(source_object_id, index, color))
 	return actions
 
 

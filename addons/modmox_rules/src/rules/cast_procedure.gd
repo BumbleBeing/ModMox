@@ -85,6 +85,7 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	# CR 602.2b: an activation's mana is paid like a spell's (CR 601.2f-h), less any
 	# reduction, fixed now (ADR 0050).
 	procedure._payment = ManaPaymentProgress.of_cost(player_id, ability.mana_to_pay(state, source))
+	procedure._payment.tapping_source_id = ability.tapping_source_id(source)
 	var put: AbilityPutOnStackEvent = AbilityPutOnStackEvent.new(source.id, ability_index, player_id)
 	state.perform(put)
 	procedure._stack_object_id = put.new_object_id
@@ -215,11 +216,10 @@ func next_decision() -> MmPendingDecision:
 				if _next_target >= _target_requirements.size():
 					_stage = Stage.PAY_COSTS
 				else:
-					var choice: MmPendingDecision = TargetChoice.decision_for(_state, _player_id, _stack_object_id,
-						_target_requirements, _next_target, _context())
-					if choice != null:
-						return choice
-					_next_target += 1  # An "up to" with nothing to choose chooses none, unasked.
+					# ADR 0014: an "up to" with nothing to choose is still asked, so the
+					# caster may cancel rather than confirm none.
+					return TargetChoice.decision_for(_state, _player_id, _stack_object_id,
+						_target_requirements, _next_target, _context(), true)
 			Stage.PAY_COSTS:
 				while _next_cost < _costs.size():
 					var cost: MmCost = _costs[_next_cost]

@@ -58,6 +58,24 @@ func test_stepping_selects_the_stepper_and_the_pass_button_casts_with_the_x_show
 	assert_eq(_presenter.snapshot().view.life_totals[HERO], 22, "X = 2 life gained.")
 
 
+func test_the_next_answer_key_selects_nothing_since_casting_has_no_no() -> void:
+	_open_asked()
+
+	_screen.press_key(KEY_RIGHT)
+
+	assert_eq(_screen.info_panel().selected(), InfoPanel.NOTHING)
+	assert_eq(_screen.pass_button().shown_text(), "Choose an answer")
+	_screen.press_key(KEY_SPACE)
+	_presenter.wait_until_idle()
+	assert_true(_presenter.snapshot().decision is ChooseXDecision, "Nothing is cast.")
+
+	_screen.info_panel().x_stepper().pressed.emit()
+	_screen.press_key(KEY_RIGHT)
+
+	assert_true(_screen.info_panel().x_stepper().is_selected(), "The stepper stays selected.")
+	assert_eq(_screen.pass_button().shown_text(), "Cast with {3}")
+
+
 func test_cancel_puts_bounty_back_in_hand() -> void:
 	_open_asked()
 

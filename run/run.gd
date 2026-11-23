@@ -59,7 +59,8 @@ func _init(seed_of_run: int) -> void:
 ## The run the main menu's Start Run (debug) begins, for playtesting: at least
 ## [constant DEBUG_COPIES] copies of every nonland card in Content, more of a card some
 ## Villain's deck has more of; a Deck built from each Villain's deck, named after it, with
-## the one built from red_green first as the Active Deck; the Playtest Bolt, and a Tier 1
+## the one built from red_green first as the Active Deck; the Playtest Bolt; one of every
+## Mod in Content that is not a Hex, to try them out; and a Tier 1
 ## Stage rolled from the Run Seed, entered; or [param stage], when given. Asked for at a
 ## later [param tier], it walks there, each Stage before it counted as won (its Boss beaten
 ## and nothing paid), for pictures and playtesting.
@@ -105,6 +106,11 @@ static func debug(seed_of_run: int, stage: StageDefinition = null, tier: int = F
 		run.deckbox.put(deck)
 	run.deckbox.set_active(run.deckbox.decks()[0])
 	run.hero_emblems.append(load(PLAYTEST_EMBLEM) as MmCardDefinition)
+	# For playtesting the Mods until a Workshop or the Spoils hand them out. A Hex is never
+	# held (ADR 0029).
+	for mod: Mod in ContentMods.all():
+		if not mod.is_hex:
+			run.held_mods.add(mod)
 	run.enter_stage(stage if stage != null else run.roll_stage(FIRST_TIER))
 	while run.stage_visit.stage.tier < clampi(tier, FIRST_TIER, LAST_TIER):
 		run.stage_visit.is_won = true

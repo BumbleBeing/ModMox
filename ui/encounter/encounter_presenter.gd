@@ -92,6 +92,8 @@ var _step_shown_until: int = 0
 ## snapshot asks them nothing.
 var _is_passing_for_hero: bool = false
 var _pass_due_at: int = 0
+## Whether the pass being put off is one the Hero made themselves. No setting takes it back.
+var _is_own_pass_put_off: bool = false
 ## When each object on the stack was first shown there, by Game Object ID.
 var _stack_shown_at: Dictionary[int, int] = {}
 ## When the Villain's answer that has come in may be collected for the hangtime, or
@@ -369,6 +371,7 @@ func answer(hero_answer: Variant) -> String:
 	if priority != null and hero_answer is int and hero_answer == AutoPass.pass_index(priority) \
 			and priority.actions[hero_answer] is PassAction and _put_off_pass():
 		# The pass is taken now and made once the hangtime is over.
+		_is_own_pass_put_off = true
 		_is_holding = false
 		_emit()
 		changed.emit(_snapshot)
@@ -414,6 +417,7 @@ func stop() -> void:
 		_task = -1
 	_has_stopped = true
 	_is_passing_for_hero = false
+	_is_own_pass_put_off = false
 	_is_paying_for_hero = false
 
 
@@ -491,8 +495,10 @@ func _rewind(rewind: Callable) -> String:
 func _reconsider() -> void:
 	_is_reconsider_due = _is_paused
 	# A payment being shown a tap at a time carries on at its own pace, and the next
-	# snapshot it makes reads the new setting.
-	if _has_started and _task == -1 and not _is_paused and not _is_paying_for_hero:
+	# snapshot it makes reads the new setting. So does a pass the Hero made themselves
+	# that is put off for the hangtime: it stays made, where one made for them is asked
+	# again.
+	if _has_started and _task == -1 and not _is_paused and not _is_paying_for_hero and not _is_own_pass_put_off:
 		_advance()
 
 
@@ -523,6 +529,7 @@ func _advance(is_passing_now: bool = false) -> void:
 	_wait = 0
 	var is_pass_due: bool = is_passing_now and _is_passing_for_hero
 	_is_passing_for_hero = false
+	_is_own_pass_put_off = false
 	_is_paying_for_hero = false
 	_pass_due_at = 0
 	while not _engine.is_over():

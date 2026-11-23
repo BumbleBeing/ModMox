@@ -10,6 +10,9 @@ extends RefCounted
 ## between the colors of the first two: a permanent with a mana ability and another
 ## ability is purple and blue.
 ##
+## A creature attacking or blocking glows gold until combat ends, though no decision offers
+## it (glow_in_combat(), which the screen calls): alone, or as the second color of a split.
+##
 ## A card in the Hero's graveyard that can be cast with flashback is clicked in the
 ## Graveyard window, and its pile glows green (game ADR 0049); so is the top card of the
 ## Hero's library, cast with a permission, in the Library window (game ADR 0055).
@@ -130,8 +133,8 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 	elif decision is ChooseCardsToDiscardDecision:
 		clicks._add_ids((decision as ChooseCardsToDiscardDecision).candidate_ids, Kind.OTHER)
 	elif decision is ChooseTargetsDecision:
-		# "Up to two targets": picked one click at a time with a CardPicks, and confirmed
-		# with the pass button. Only permanents, so far.
+		# "Up to two targets": picked one click at a time with a CardPicks, answered by the
+		# pick that leaves nothing more to pick or by the pass button. Only permanents, so far.
 		var targetable: Array[int] = []
 		for candidate: MmReference in (decision as ChooseTargetsDecision).candidates:
 			targetable.append(candidate.id)
@@ -256,6 +259,17 @@ func glowing_ids() -> Array[int]:
 ## Makes Game Object [param object_id] glow as [param kind] alone, whatever it glowed as.
 func glow_as(object_id: int, kind: Kind) -> void:
 	_kinds[object_id] = [kind]
+
+
+## Makes Game Object [param object_id], a creature attacking or blocking, glow gold after
+## whatever else it glows as: what a click on it does keeps the first place, and with two
+## such kinds its gold is not shown. Gold offers nothing, so no click answer comes with it.
+## Call it once everything the decision offers has its kinds.
+func glow_in_combat(object_id: int) -> void:
+	var kinds: Array = _kinds.get(object_id, [])
+	if not kinds.has(Kind.COMBAT):
+		kinds.append(Kind.COMBAT)
+	_kinds[object_id] = kinds
 
 
 ## What letting go of the card in hand that is Game Object [param object_id] offers:

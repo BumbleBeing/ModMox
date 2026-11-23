@@ -41,7 +41,7 @@ static func of(state: MmGameState, player_id: int, object_id: int, modes: Array[
 			reach.append(reachable)
 	if choosable.is_empty():
 		return null
-	return ChooseModeDecision.new(player_id, object_id, choosable, reach)
+	return new(player_id, object_id, choosable, reach)
 
 
 func validate(answer: Variant) -> String:

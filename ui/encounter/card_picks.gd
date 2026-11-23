@@ -158,6 +158,12 @@ func is_complete() -> bool:
 	return is_active() and _picked.size() == _count
 
 
+## Whether no more can be picked: as many as asked for, or every candidate. Picking up to
+## some number of targets answers once this is so (game ADR 0022).
+func has_nothing_left_to_pick() -> bool:
+	return _picked.size() >= mini(_count, _candidates.size())
+
+
 ## What confirming a search does, on the pass button: "Find nothing", "Find Forest" or
 ## "Find 2 cards" (game ADR 0058). [param view] names the card.
 func search_confirm_text(view: MmPlayerView) -> String:

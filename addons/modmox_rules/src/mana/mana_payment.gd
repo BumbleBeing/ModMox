@@ -31,8 +31,9 @@ static func symbol_paid_by(type: MmMana.Type, symbols: Array[MmMana.Type], gener
 ## Whether [param player_id] could pay [param cost] right now with their pool and the mana
 ## abilities they could activate. Exact: each source permanent is used for at most one of
 ## its mana abilities, since they share the {T} cost, and mana of any color is any one color
-## (ADR 0072).
-static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost) -> bool:
+## (ADR 0072). [param tapping_source_id] is the permanent whose own {T} the same cost will
+## pay, or 0: it cannot tap for the mana too (pays_while_paying()).
+static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost, tapping_source_id: int = 0) -> bool:
 	if cost == null:
 		return false
 	var available: Array[MmMana.Type] = []
@@ -48,7 +49,7 @@ static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost) -> 
 		var abilities: Array[MmAbility] = state.characteristics_of(source).abilities
 		for index: int in abilities.size():
 			var ability: ActivatedAbility = abilities[index] as ActivatedAbility
-			if ability == null or not pays_while_paying(state, source, ability, index):
+			if ability == null or not pays_while_paying(state, source, ability, index, tapping_source_id):
 				continue
 			var context: MmEffectContext = MmEffectContext.new(player_id, source.id)
 			var colors: Array[MmMana.Type] = ability.mana_types_to_choose()
@@ -78,8 +79,15 @@ static func mana_made_by(state: MmGameState, ability: ActivatedAbility, context:
 ## Whether [param ability], number [param ability_index] of [param source], is a mana
 ## ability that could be activated in the middle of paying a cost (CR 605.3a): its costs
 ## can be paid, and no Activation Restriction forbids it. "Only as a sorcery" always does
-## there, since something is on the stack (CR 602.5d).
-static func pays_while_paying(state: MmGameState, source: MmGameObject, ability: ActivatedAbility, ability_index: int) -> bool:
+## there, since something is on the stack (CR 602.5d). The permanent
+## [param tapping_source_id], whose own {T} is part of the cost being paid, cannot pay with
+## a mana ability that taps it: one {T} pays once (CR 107.5, ADR 0048). Later: other costs
+## two abilities of one source cannot both be paid, as sacrificing it for mana and for the
+## cost.
+static func pays_while_paying(state: MmGameState, source: MmGameObject, ability: ActivatedAbility, ability_index: int,
+		tapping_source_id: int = 0) -> bool:
+	if source.id == tapping_source_id and ability.has_tap_cost():
+		return false
 	if not ability.is_mana_ability() or not ability.works_in(state, source) or not ability.can_pay_costs(state, source):
 		return false
 	return not ability.is_sorcery_speed and not (ability.is_once_each_game and source.is_ability_spent(ability_index)) \

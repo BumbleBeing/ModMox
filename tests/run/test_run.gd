@@ -136,6 +136,16 @@ func test_a_debug_run_holds_the_playtest_bolt_in_every_encounter() -> void:
 	assert_eq(run.hero_setup().emblems[0].name, "Playtest Bolt")
 
 
+func test_a_debug_run_holds_one_of_every_mod_in_content_and_no_hex() -> void:
+	var run: Run = Run.debug(1)
+
+	var mods: Array[Mod] = ContentMods.all()
+	assert_false(mods.is_empty(), "Content has Mods.")
+	for mod: Mod in mods:
+		assert_eq(run.held_mods.count_of(mod), 0 if mod.is_hex else 1, mod.name)
+	assert_eq(run.held_mods.kinds().size(), mods.filter(func(mod: Mod) -> bool: return not mod.is_hex).size())
+
+
 ## T8 (milestone 17): beating the Boss beats the Stage; only the fifth wins the run
 ## (milestone 19).
 func test_beating_the_boss_beats_the_stage() -> void:

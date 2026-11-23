@@ -82,7 +82,7 @@ func _init(leaving: MmGameObject, destination: MmZone, at_position: int, why: Re
 ## The same move, not yet performed, for a replacement effect to change (ADR 0019): the
 ## original may be shared with a copy of the state, so it is never changed itself.
 func copy(state: MmGameState) -> ZoneChangeEvent:
-	var same: ZoneChangeEvent = ZoneChangeEvent.new(state.object(object_id), state.zone(to_zone_kind, to_owner_id), position,
+	var same: ZoneChangeEvent = new(state.object(object_id), state.zone(to_zone_kind, to_owner_id), position,
 		reason, can_be_regenerated)
 	same.exiled_with_object_id = exiled_with_object_id
 	same.exiled_until_source_leaves = exiled_until_source_leaves

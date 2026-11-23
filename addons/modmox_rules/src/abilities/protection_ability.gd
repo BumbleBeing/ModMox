@@ -7,6 +7,7 @@ extends StaticAbility
 ## - blocked by a matching creature (CR 702.16c);
 ## - targeted by a matching spell or an ability from a matching source (CR 702.16b);
 ## - equipped by a matching Equipment (CR 702.16d, asked by AttachmentRules).
+## ProtectionRules asks whether a permanent has protection from something.
 ## Later: can't be enchanted (CR 702.16d), once Auras exist.
 
 @export var from: MmFilter
@@ -20,15 +21,6 @@ func matches(state: MmGameState, protected: MmGameObject, source_id: int) -> boo
 		source_id = source.source_object_id
 	var context: MmEffectContext = MmEffectContext.new(protected.controller_id, protected.id)
 	return from != null and from.matches(state, MmReference.to_object(source_id), context)
-
-
-## Whether [param protected] has protection from [param source_id] right now.
-static func protects(state: MmGameState, protected: MmGameObject, source_id: int) -> bool:
-	for ability: MmAbility in state.characteristics_of(protected).abilities:
-		var protection: ProtectionAbility = ability as ProtectionAbility
-		if protection != null and protection.matches(state, protected, source_id):
-			return true
-	return false
 
 
 ## The prevention effect this ability generates for its permanent: all damage from matching

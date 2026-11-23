@@ -1,8 +1,9 @@
 extends GutTest
 ## "Up to N" targets on the Encounter Screen (game ADR 0022): each permanent that can be
 ## targeted glows as a target, a click picks it (white, where it stands, never turned) or
-## lets it go, and only the pass button answers, "No targets" with none picked and
-## "Confirm targets" otherwise, since fewer than the most may be wanted.
+## lets it go, and the click that leaves nothing more to pick answers. Fewer are answered
+## with the pass button, "No targets" with none picked and "Confirm targets" otherwise, and
+## a spell with nothing to target still waits for it.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const DefaultAnswerAgent := preload("res://addons/modmox_rules/tests/support/default_answer_agent.gd")
@@ -38,9 +39,52 @@ func test_a_click_picks_a_target_white_where_it_stands_and_answers_nothing() -> 
 	assert_false(_screen.is_drawn_tapped(bears[0]), "A target is not tapped.")
 	assert_eq(_screen.info_panel().prompt_text(), "Choose up to two targets for Gird (1 of 2)")
 	assert_eq(_screen.pass_button().shown_text(), "Confirm targets")
+	assert_true(_presenter.snapshot().decision is ChooseTargetsDecision, "One more may be picked.")
+
+
+func test_the_pick_that_reaches_the_most_answers_with_the_targets_picked() -> void:
+	_open_choosing_gird_targets()
+	var bears: Array[int] = _bears()
+	_presenter.is_hold_key_down = true  # So it stays on the stack to be seen.
+
 	_screen.click_catcher(bears[1]).clicked.emit()
+	_screen.click_catcher(bears[0]).clicked.emit()
 	_presenter.wait_until_idle()
-	assert_true(_presenter.snapshot().decision is ChooseTargetsDecision, "Even the last pick waits for the pass button.")
+
+	var stack: Array[MmObjectView] = _presenter.snapshot().view.stack
+	assert_eq(stack.size(), 1)
+	assert_eq(stack[0].targets.size(), 2)
+	assert_eq(stack[0].targets[0].id, bears[1], "In the order picked.")
+	assert_eq(stack[0].targets[1].id, bears[0])
+
+
+func test_picking_the_only_target_answers_though_the_most_is_more() -> void:
+	_open_choosing_gird_targets(1)
+	var bears: Array[int] = _bears()
+	_presenter.is_hold_key_down = true
+
+	_screen.click_catcher(bears[0]).clicked.emit()
+	_presenter.wait_until_idle()
+
+	var stack: Array[MmObjectView] = _presenter.snapshot().view.stack
+	assert_eq(stack.size(), 1)
+	assert_eq(stack[0].targets.size(), 1)
+	assert_eq(stack[0].targets[0].id, bears[0])
+
+
+func test_with_nothing_to_target_the_pass_button_confirms_choosing_none() -> void:
+	_open_choosing_gird_targets(0)
+	assert_eq(_screen.info_panel().prompt_text(), "Choose up to two targets for Gird (0 of 2)")
+	assert_eq(_screen.pass_button().shown_text(), "No targets")
+	assert_not_null(_screen.info_panel().cancel_button(), "The cast may still be canceled.")
+	_presenter.is_hold_key_down = true
+
+	_screen.pass_priority()
+	_presenter.wait_until_idle()
+
+	var stack: Array[MmObjectView] = _presenter.snapshot().view.stack
+	assert_eq(stack.size(), 1)
+	assert_eq(stack[0].targets.size(), 0)
 
 
 func test_the_pass_button_answers_with_the_targets_picked() -> void:
@@ -73,9 +117,9 @@ func test_a_pick_clicked_again_is_let_go_and_undo_takes_back_a_click() -> void:
 
 
 ## The Hero's deck cycles free Bears and Gird, "Put a +1/+1 counter on each of up to two
-## target creatures"; a seed deals two Bears and a Gird. The Hero casts both Bears and
-## begins casting Gird, which asks for its targets.
-func _open_choosing_gird_targets() -> void:
+## target creatures"; a seed deals two Bears and a Gird. The Hero casts [param bears_cast]
+## of the Bears and begins casting Gird, which asks for its targets.
+func _open_choosing_gird_targets(bears_cast: int = 2) -> void:
 	var bear: MmCardDefinition = Scenario.creature("Bear", 2, 2)
 	var cards: Array[MmCardDefinition] = Scenario.cycled([bear, bear.duplicate(), Scenario.free_gird()])
 	var chosen: MmEncounterSetup = null
@@ -102,8 +146,8 @@ func _open_choosing_gird_targets() -> void:
 			break
 		_presenter.pass_priority()
 		_presenter.wait_until_idle()
-	_cast("Bear", true)
-	_cast("Bear", true)
+	for cast: int in bears_cast:
+		_cast("Bear", true)
 	_cast("Gird", false)
 	assert_true(_presenter.snapshot().decision is ChooseTargetsDecision, "Gird asks for its targets.")
 

@@ -137,4 +137,4 @@ func _is_protected(state: MmGameState, candidate: MmReference, context: MmEffect
 	# stack and a card in a graveyard are never protected.
 	if not candidate.is_object() or among != Among.PLAYERS_AND_PERMANENTS:
 		return false
-	return ProtectionAbility.protects(state, state.object(candidate.id), context.source_object_id)
+	return ProtectionRules.protects(state, state.object(candidate.id), context.source_object_id)

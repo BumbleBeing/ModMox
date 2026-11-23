@@ -29,4 +29,4 @@ static func can_be_attached(state: MmGameState, attachment: MmGameObject, to: Mm
 		if enchant != null and not enchant.may_enchant(state, to, attachment):
 			return false
 	# CR 702.16d: a permanent can't be enchanted or equipped by anything it has protection from.
-	return not ProtectionAbility.protects(state, to, attachment.id)
+	return not ProtectionRules.protects(state, to, attachment.id)

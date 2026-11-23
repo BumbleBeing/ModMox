@@ -74,6 +74,20 @@ func is_attachment_allowed(state: MmGameState, source: MmGameObject) -> bool:
 		and state.characteristics_of(attached_to).has_card_type(MmCardTypes.CardType.CREATURE)
 
 
+## Whether {T} is part of its cost (CR 107.5), so that paying it taps its source.
+func has_tap_cost() -> bool:
+	for cost: MmCost in costs:
+		if cost is TapCost:
+			return true
+	return false
+
+
+## The ID of [param source] if paying this ability taps it, or 0: what a payment of its
+## mana must leave untapped ([method ManaPayment.can_afford]).
+func tapping_source_id(source: MmGameObject) -> int:
+	return source.id if has_tap_cost() else 0
+
+
 ## Whether every cost can be paid right now with [param source] as the ability's source,
 ## by its controller.
 func can_pay_costs(state: MmGameState, source: MmGameObject) -> bool:

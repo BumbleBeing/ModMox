@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://c4vemor1grrmc"
+path="res://.godot/imported/rg.svg-cd997fa971fcdfd8fe60ee6821a2e048.image"
+
+[deps]
+
+source_file="res://assets/card_frames/pips/rg.svg"
+dest_files=["res://.godot/imported/rg.svg-cd997fa971fcdfd8fe60ee6821a2e048.image"]
+
+[params]
+

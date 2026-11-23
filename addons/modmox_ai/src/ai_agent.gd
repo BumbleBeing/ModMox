@@ -607,7 +607,9 @@ static func _less_one(cost: MmManaCost, type: MmMana.Type) -> MmManaCost:
 ## FULL: simulates each target; a tap, through the turn, with the CHEAP pick the default.
 ## CHEAP: harmful effects at the most valuable opposing creature they would kill, else the
 ## opponent; a tap at the most valuable untapped one; helpful ones at its own best
-## creature; a counter at the other player's most expensive spell. A fight (CR 701.14) sends
+## creature; a counter at the other player's most expensive spell. With none of those, the
+## most valuable on that side all the same, never one on the other side while that side has
+## a candidate. A fight (CR 701.14) sends
 ## in its own most powerful creature, then aims at what that creature's power would kill. An Aura spell is aimed
 ## only at its own permanents (_is_helpful_aura()), an untapped one first in CHEAP.
 func _target(decision: ChooseTargetDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
@@ -654,6 +656,9 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 	var is_aura: bool = _is_helpful_aura(world, decision.stack_object_id)
 	var best: int = -1
 	var best_value: int = -1
+	# The most valuable on the right side that the effect would be wasted on.
+	var wasted: int = -1
+	var wasted_value: int = -1
 	var player_index: int = -1
 	for index: int in decision.candidates.size():
 		var candidate: MmReference = decision.candidates[index]
@@ -664,17 +669,18 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 		var target: MmGameObject = world.object(candidate.id)
 		if (target.controller_id != me) != harmful:
 			continue
-		if not _can_pay_ward_of(world, me, target, decision.stack_object_id):
-			continue
-		if harmful and damage > 0 and world.characteristics_of(target).toughness - target.damage_marked > damage:
-			continue
-		if taps and target.is_tapped:
-			continue
-		if tag == AiTiming.Tag.COUNTER and world.characteristics_of(target).has_ability(CantBeCounteredAbility):
-			continue
 		var value: int = AiBoardEvaluator.creature_value(world, target)
 		if tag == AiTiming.Tag.COUNTER:
 			value = world.characteristics_of(target).mana_value()
+		var is_wasted: bool = not _can_pay_ward_of(world, me, target, decision.stack_object_id) \
+			or (harmful and damage > 0 and world.characteristics_of(target).toughness - target.damage_marked > damage) \
+			or (taps and target.is_tapped) \
+			or (tag == AiTiming.Tag.COUNTER and world.characteristics_of(target).has_ability(CantBeCounteredAbility))
+		if is_wasted:
+			if value > wasted_value:
+				wasted = index
+				wasted_value = value
+			continue
 		if is_aura and not target.is_tapped:
 			value += UNTAPPED_AURA_TARGET_BONUS  # What it gives can be used this turn.
 		if value > best_value:
@@ -683,7 +689,10 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 	_reason = Reason.BEST_SCORE
 	if best != -1:
 		return best
-	return player_index if player_index != -1 else 0
+	if player_index != -1:
+		return player_index
+	# Wasted on the right side is still better than landing on the wrong one.
+	return wasted if wasted != -1 else 0
 
 
 ## The fight among [param effects] (CR 701.14), or null.

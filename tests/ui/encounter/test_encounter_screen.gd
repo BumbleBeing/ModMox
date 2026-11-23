@@ -1175,6 +1175,113 @@ func test_confirming_declares_the_attack_and_the_attackers_move_to_the_left_in_i
 	assert_null(_screen.face_of(bears[1]).get_node_or_null("CombatTag"), "No ATTACKING tag (A316).")
 
 
+func test_attackers_keep_their_gold_glow_once_the_attack_is_declared() -> void:
+	_open_combat([_free_bear()])
+	_reach_attackers(3)
+	var bears: Array[int] = _permanents("Bear")
+	var gold: Color = DecisionClicks.color_of(DecisionClicks.Kind.COMBAT)
+	_click(bears[1])
+	_click(bears[2])
+
+	_screen.pass_button().pressed.emit()
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is PriorityDecision, "The attack is declared and the Hero has priority.")
+	assert_eq(BorderEffects.glow_color(_screen.face_of(bears[1])), gold)
+	assert_eq(BorderEffects.glow_color(_screen.face_of(bears[2])), gold)
+	assert_null(BorderEffects.glow_color(_screen.face_of(bears[0])), "The Bear that stayed home does not glow.")
+	assert_null(_screen.click_catcher(bears[1]), "It glows because it attacks: a click on it answers nothing.")
+
+
+func test_an_attacker_with_an_ability_to_activate_glows_purple_split_with_gold() -> void:
+	var pump: ActivatedAbility = ActivatedAbility.new()
+	pump.mana_cost = Scenario.mana_cost(0)
+	pump.effects = [Scenario.until_end_of_turn(Scenario.modify_pt(1, 0, SourceSelection.new()))]
+	_open_combat([Scenario.creature("Bear", 2, 2, [pump], Scenario.mana_cost(0))])
+	_reach_attackers(2)
+	var bears: Array[int] = _permanents("Bear")
+	var gold: Color = DecisionClicks.color_of(DecisionClicks.Kind.COMBAT)
+	var purple: Color = DecisionClicks.color_of(DecisionClicks.Kind.ABILITY)
+	_click(bears[1])
+
+	_screen.pass_button().pressed.emit()
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is PriorityDecision, "The attack is declared and the Hero has priority.")
+	assert_eq(BorderEffects.glow_colors(_screen.face_of(bears[1])), [purple, gold] as Array[Color], "What a click does first, then gold.")
+	assert_eq(BorderEffects.glow_colors(_screen.face_of(bears[0])), [purple] as Array[Color], "The Bear that stayed home has no gold.")
+	assert_not_null(_screen.click_catcher(bears[1]), "Its ability is still clicked on it.")
+
+
+func test_an_attacker_picked_as_one_of_up_to_two_targets_keeps_its_gold() -> void:
+	var rally: MmCardDefinition = Scenario.instant("Rally", Scenario.mana_cost(0),
+		[Scenario.up_to_targets(Scenario.of_type(MmCardTypes.CardType.CREATURE), 2)],
+		[Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, Scenario.targeted(0))])
+	_open_combat([_free_bear(), rally])
+	# Rally can be cast at any time; a Bear only in the Hero's own main phase.
+	_pass_until(func() -> bool:
+		var snapshot: EncounterSnapshot = _presenter.snapshot()
+		var priority: PriorityDecision = snapshot.decision as PriorityDecision
+		return priority != null and priority.actions.any(func(action: MmAction) -> bool:
+			return action is CastSpellAction and EncounterSnapshot.name_in(snapshot.view, DecisionClicks.object_of(action)) == "Bear"))
+	for cast: int in 2:
+		_do(CastSpellAction, "Bear")
+		_presenter.wait_until_idle()
+	_pass_until(func() -> bool:
+		var attackers: DeclareAttackersDecision = _presenter.snapshot().decision as DeclareAttackersDecision
+		return attackers != null and attackers.candidate_ids.size() == 2)
+	var bears: Array[int] = _permanents("Bear")
+	var gold: Color = DecisionClicks.color_of(DecisionClicks.Kind.COMBAT)
+	var target: Color = DecisionClicks.color_of(DecisionClicks.Kind.TARGET)
+	_click(bears[1])
+	_screen.pass_button().pressed.emit()
+	_presenter.wait_until_idle()
+
+	_do(CastSpellAction, "Rally")
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is ChooseTargetsDecision)
+	assert_eq(BorderEffects.glow_colors(_screen.face_of(bears[1])), [target, gold] as Array[Color], "A target in combat.")
+	assert_eq(BorderEffects.glow_colors(_screen.face_of(bears[0])), [target] as Array[Color], "A target that stayed home.")
+
+	_click(bears[1])
+
+	assert_eq(BorderEffects.glow_colors(_screen.face_of(bears[1])), [Color.WHITE, gold] as Array[Color], "Picked, it is white and still gold.")
+
+
+func test_the_glow_of_a_creature_in_combat_goes_when_combat_ends() -> void:
+	_open_combat([_free_bear()])
+	_reach_attackers(3)
+	_screen.info_panel().all_attack_button().pressed.emit()
+	_screen.pass_button().pressed.emit()
+	_presenter.wait_until_idle()
+	assert_ne(_attacking("Bear"), 0, "The Bears attack.")
+
+	_pass_until(func() -> bool: return _presenter.snapshot().decision is PriorityDecision and _attacking("Bear") == 0)
+
+	assert_gt(_permanents("Bear").size(), 0, "A Bear lived through the combat.")
+	for bear: int in _permanents("Bear"):
+		assert_null(BorderEffects.glow_color(_screen.face_of(bear)), "Combat is over, and nothing is offered on a Bear.")
+
+
+func test_nothing_glows_as_attacking_once_the_encounter_is_over() -> void:
+	_open_combat([_free_bear()])
+	_reach_attackers(3)
+	_screen.info_panel().all_attack_button().pressed.emit()
+	_screen.pass_button().pressed.emit()
+	_presenter.wait_until_idle()
+	var bear: int = _attacking("Bear")
+	assert_ne(bear, 0, "The Bears attack.")
+
+	_screen.press_key(KEY_ESCAPE)
+	_screen.pause_menu().button(PauseMenu.CONCEDE).pressed.emit()
+	_screen.pause_menu().button(PauseMenu.CONCEDE).pressed.emit()
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().is_over())
+	assert_null(BorderEffects.glow_color(_screen.face_of(bear)))
+
+
 func test_all_attack_chooses_every_candidate_without_confirming() -> void:
 	_open_combat([_free_bear()])
 	_reach_attackers(3)
@@ -1318,7 +1425,8 @@ func test_a_blocker_is_picked_up_and_paired_with_the_attacker_clicked() -> void:
 	assert_eq(info.hint_text(), "Click one or more creatures, then the attacker they block.")
 	assert_eq(_screen.pass_button().shown_text(), "No blocks")
 	assert_null(_screen.click_catcher(ogres[0]), "An attacker is clicked only for a blocker in hand.")
-	assert_null(BorderEffects.glow_color(_screen.face_of(ogres[0])))
+	assert_eq(BorderEffects.glow_color(_screen.face_of(ogres[0])), DecisionClicks.color_of(DecisionClicks.Kind.COMBAT),
+		"Until then it glows only as a creature in combat does.")
 	var rest_y: float = _screen.face_of(bears[0]).get_global_rect().get_center().y
 
 	_click(bears[0])
@@ -1333,7 +1441,9 @@ func test_a_blocker_is_picked_up_and_paired_with_the_attacker_clicked() -> void:
 
 	assert_eq(_screen.selection().pairs(), [[bears[0], ogres[0]]])
 	assert_false(BorderEffects.has_pointer(_screen.face_of(bears[0])), "Paired, it is put down.")
-	assert_null(BorderEffects.glow_color(_screen.face_of(ogres[0])))
+	assert_null(_screen.click_catcher(ogres[0]), "With nothing in hand the attacker takes no click again,")
+	assert_eq(BorderEffects.glow_color(_screen.face_of(ogres[0])), DecisionClicks.color_of(DecisionClicks.Kind.COMBAT),
+		"and is gold again, no longer a target.")
 	assert_eq(_screen.block_lines().line_count(), 1)
 	assert_eq(_screen.block_lines().line_color(0), BlockLines.CHOSEN)
 	assert_almost_eq(rest_y - _screen.face_of(bears[0]).get_global_rect().get_center().y, EncounterLayout.COMBAT_STEP, 0.5,
@@ -1532,6 +1642,32 @@ func test_confirmed_blocks_are_declared_and_drawn_white_with_the_blockers_to_the
 		assert_null(_screen.face_of(bears[1]).get_node_or_null("CombatTag"), "No BLOCKING tag (A316).")
 	else:
 		fail_test("The blockers should still be on the battlefield while the Hero has priority after blocking.")
+
+
+func test_attackers_and_blockers_glow_gold_through_the_blocks_and_after_them() -> void:
+	_open_combat([_free_bear()])
+	_reach_blockers(3)
+	var bears: Array[int] = _permanents("Bear")
+	var ogre: int = _attacking("Ogre")
+	var gold: Color = DecisionClicks.color_of(DecisionClicks.Kind.COMBAT)
+	assert_eq(BorderEffects.glow_color(_screen.face_of(ogre)), gold, "The Villain's attacker glows while the Hero chooses blocks,")
+
+	_click(bears[2])
+
+	assert_eq(BorderEffects.glow_colors(_screen.face_of(ogre)), [DecisionClicks.color_of(DecisionClicks.Kind.TARGET), gold] as Array[Color],
+		"as a target too while a blocker that can block it is picked up (A431), split with its gold,")
+
+	_click(ogre)
+
+	assert_eq(BorderEffects.glow_color(_screen.face_of(ogre)), gold, "and gold again once that blocker is put down.")
+
+	_screen.pass_button().pressed.emit()
+	_presenter.wait_until_idle()
+
+	assert_eq(_view_of(bears[2]).blocking_ids, [ogre] as Array[int])
+	assert_eq(BorderEffects.glow_color(_screen.face_of(bears[2])), gold, "The blocker glows on once the blocks are declared,")
+	assert_eq(BorderEffects.glow_color(_screen.face_of(ogre)), gold, "and so does what it blocks.")
+	assert_null(BorderEffects.glow_color(_screen.face_of(bears[0])), "The Bear that blocks nothing does not.")
 
 
 func test_the_villains_blocks_are_drawn_the_same_way() -> void:

@@ -1,9 +1,9 @@
 extends GutTest
-## Guards the conventions' rule against a script naming itself (see "Tests", "The run ends
-## clean"): a script that exports an Array or Dictionary of a script class never uses its
-## own class as a value. Godot 4.7.2 then fails to clear every script loaded earlier when
-## it quits, if one script's compiling was the first to load that class and then this one,
-## and the run ends with "ObjectDB instances were leaked".
+## Guards the conventions' rules against a script naming itself (see "Tests", "The run ends
+## clean"): a script that exports an Array or Dictionary of a script class, or that extends
+## a script class, never uses its own class as a value. Godot 4.7.2 then fails to clear
+## every script loaded earlier when it quits, if one script's compiling was the first to
+## load that class and then this one, and the run ends with "ObjectDB instances were leaked".
 
 const FOLDERS: Array[String] = [
 	"res://addons/modmox_rules/", "res://addons/modmox_ai/", "res://run/", "res://ui/", "res://tools/",
@@ -13,6 +13,7 @@ const FOLDERS: Array[String] = [
 var _class_name: RegEx = RegEx.create_from_string("(?m)^class_name\\s+(\\w+)")
 var _exported_container: RegEx = RegEx.create_from_string(
 	"@export[^\\n]*?:\\s*(?:Array|Dictionary)\\[([^\\]]+)\\]")
+var _extends: RegEx = RegEx.create_from_string("(?m)^extends\\s+(\\w+)")
 var _comment_or_string: RegEx = RegEx.create_from_string("#[^\\n]*|\"(?:[^\"\\\\\\n]|\\\\.)*\"")
 
 
@@ -28,6 +29,19 @@ func test_no_script_that_exports_a_list_of_a_script_class_names_itself() -> void
 
 	assert_true(checked.has("StageDefinition"), "The scan found the scripts the rule is about.")
 	assert_true(checked.has("MmCardDefinition"))
+
+
+func test_no_script_that_extends_a_script_class_names_itself() -> void:
+	var sources: Dictionary[String, String] = _sources_by_class()
+	var classes: Array[String] = sources.keys()
+	var checked: Array[String] = []
+	for own: String in classes:
+		if _extends_a_script_class(sources[own], classes):
+			checked.append(own)
+			assert_false(_uses_itself_as_a_value(sources[own], own), "%s names itself." % own)
+
+	assert_true(checked.has("ActivateAbilityAction"), "The scan found the scripts the rule is about.")
+	assert_true(checked.has("ProtectionAbility"))
 
 
 func test_a_script_naming_itself_in_a_cast_a_check_a_list_or_a_call_is_found() -> void:
@@ -50,6 +64,20 @@ func test_only_an_exported_list_of_a_script_class_counts() -> void:
 	assert_false(_exports_a_list_of_a_script_class("var others: Array[Other] = []", classes))
 	assert_false(_exports_a_list_of_a_script_class("@export var other: Other", classes))
 	assert_false(_exports_a_list_of_a_script_class("@export var frames: Array[Texture2D] = []", classes))
+
+
+func test_only_a_script_that_extends_a_script_class_counts() -> void:
+	var classes: Array[String] = ["Probe", "Other"]
+
+	assert_true(_extends_a_script_class("class_name Probe\nextends Other\n", classes))
+	assert_false(_extends_a_script_class("class_name Probe\nextends RefCounted\n", classes))
+	assert_false(_extends_a_script_class("class_name Probe\n## It extends Other.\n", classes))
+
+
+## Whether [param source] extends one of [param classes].
+func _extends_a_script_class(source: String, classes: Array[String]) -> bool:
+	var found: RegExMatch = _extends.search(source)
+	return found != null and classes.has(found.get_string(1))
 
 
 ## Whether [param source] exports an Array or Dictionary of one of [param classes].

@@ -447,7 +447,8 @@ func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbi
 	if ability.mana_cost != null:
 		if ability.is_mana_ability():
 			return false  # Later: mana abilities with mana in their cost, such as "{1}: Add {R}".
-		if not ManaPayment.can_afford(_state, player.id, ability.mana_to_pay(_state, source)):
+		var mana: MmManaCost = ability.mana_to_pay(_state, source)
+		if not ManaPayment.can_afford(_state, player.id, mana, ability.tapping_source_id(source)):
 			return false
 	return ability.is_mana_ability() or _every_requirement_has_a_target(ability.targets, player.id, source.id)
 

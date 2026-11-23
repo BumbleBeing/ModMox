@@ -62,10 +62,12 @@ func next_decision() -> MmPendingDecision:
 		if _stack_object_id != 0 and _next_target < _target_requirements.size():
 			var context: MmEffectContext = MmEffectContext.of_stack_object(_state.object(_stack_object_id))
 			var choice: MmPendingDecision = TargetChoice.decision_for(_state, _controller_id, _stack_object_id,
-				_target_requirements, _next_target, context)
+				_target_requirements, _next_target, context, false)
 			if choice != null:
 				return choice
-			_next_target += 1  # An "up to" with nothing to choose chooses none, unasked.
+			# ADR 0014: an "up to" with nothing to choose chooses none, unasked, since a
+			# trigger cannot be canceled.
+			_next_target += 1
 			continue
 		_stack_object_id = 0
 		if _ordering_player_id != MmGameState.NO_PLAYER:

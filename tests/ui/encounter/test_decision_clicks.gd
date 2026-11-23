@@ -394,6 +394,31 @@ func test_the_tap_preview_keeps_blue_only_on_what_the_plan_taps() -> void:
 	assert_eq(clicks.colors_of(32), [blue] as Array[Color], "Nothing about the clicks themselves changes.")
 
 
+func test_a_creature_in_combat_glows_gold_after_whatever_else_it_glows_as() -> void:
+	var view: MmPlayerView = _view()
+	view.battlefield.append(_permanent(6, [Scenario.tap_for_mana(MmMana.Type.RED, 1), _ping()]))
+	view.battlefield.append(_permanent(9, [_ping()]))
+	var clicks: DecisionClicks = DecisionClicks.of(PriorityDecision.new(HERO, [
+		PassAction.new(), ActivateAbilityAction.new(6, 0), ActivateAbilityAction.new(6, 1), ActivateAbilityAction.new(9, 0),
+	] as Array[MmAction]), view)
+	var gold: Color = DecisionClicks.color_of(DecisionClicks.Kind.COMBAT)
+	var blue: Color = DecisionClicks.color_of(DecisionClicks.Kind.MANA)
+	var purple: Color = DecisionClicks.color_of(DecisionClicks.Kind.ABILITY)
+
+	clicks.glow_in_combat(9)
+	clicks.glow_in_combat(6)
+	clicks.glow_in_combat(40)
+	clicks.glow_in_combat(40)
+
+	assert_eq(clicks.colors_of(9), [purple, gold] as Array[Color], "What a click does first, then gold.")
+	assert_eq(clicks.colors_of(40), [gold] as Array[Color], "Offered nothing, it is gold alone,")
+	assert_eq(clicks.kinds_of(40), [DecisionClicks.Kind.COMBAT] as Array[DecisionClicks.Kind], "and only once.")
+	assert_true(clicks.options_of(40).is_empty(), "Gold comes with no click answer.")
+	assert_eq(clicks.colors_of(6), [purple, blue] as Array[Color], "Three kinds show the first two: what it offers.")
+	assert_eq(clicks.preview_colors_of(6, PaymentPlan.new()), [purple, gold] as Array[Color],
+		"When the Tap Preview takes its blue away, gold has room.")
+
+
 func test_while_auto_tap_pays_what_is_left_to_tap_glows_and_nothing_takes_a_click() -> void:
 	var left: PaymentPlan = PaymentPlan.new()
 	left.add_source(LAND_ID)

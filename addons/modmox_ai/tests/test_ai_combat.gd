@@ -37,6 +37,43 @@ func test_attacks_with_everything_when_that_is_lethal() -> void:
 	assert_eq(agent.explain(), AiAgent.Reason.LETHAL_ATTACK)
 
 
+func test_an_attack_is_not_lethal_when_the_blockers_can_stop_every_attacker_between_them() -> void:
+	# The Spider can block either, the Wall only the Ogre: Spider on the Hawk, Wall on the
+	# Ogre, and no damage is dealt.
+	var hero_creatures: Array[MmCardDefinition] = [Scenario.creature("Ogre", 5, 5),
+		Scenario.creature("Hawk", 4, 4, [FlyingAbility.new()])]
+	var villain_creatures: Array[MmCardDefinition] = [Scenario.creature("Spider", 1, 6, [ReachAbility.new()]),
+		Scenario.creature("Wall", 1, 6)]
+	var engine: MmEngine = AiScenario.ready_with(hero_creatures, villain_creatures, [], [], Step.DECLARE_ATTACKERS, 4)
+	assert_not_null(engine)
+	var agent: AiAgent = AiAgent.new()
+
+	AiScenario.ask(engine, agent)
+
+	assert_eq(agent.explain(), AiAgent.Reason.AGGRESSION, "The Villain is at 4, but takes none.")
+
+
+func test_a_tapped_creature_is_not_counted_on_to_block_the_swing_back() -> void:
+	# At 4 life against two Ogres: the Elf is tapped, so the Hawk must stay home to block one.
+	var hawk: MmCardDefinition = Scenario.creature("Hawk", 2, 2, [FlyingAbility.new()])
+	var elf: MmCardDefinition = Scenario.creature("Elf", 1, 1, [Scenario.tap_for_mana(MmMana.Type.GREEN, 1)])
+	var ogre: MmCardDefinition = Scenario.creature("Ogre", 3, 3)
+	var hero_creatures: Array[MmCardDefinition] = [hawk, elf]
+	var villain_creatures: Array[MmCardDefinition] = [ogre, ogre]
+	var setup: MmEncounterSetup = Scenario.combat_setup(hero_creatures, villain_creatures)
+	setup.hero.starting_life = 4
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, hero_creatures, villain_creatures, no_cards, no_cards,
+		3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine)
+	var elf_id: int = Scenario.permanent_named(engine, engine.hero().id, "Elf")
+	engine.submit(Scenario.activate_index(engine.pending_decision() as PriorityDecision, elf_id))
+	assert_eq(AiScenario.pass_to(engine, engine.hero().id, DeclareAttackersDecision), "")
+	assert_true(engine.game_state().object(elf_id).is_tapped)
+
+	assert_eq(AiScenario.ask(engine, AiAgent.new()), [])
+
+
 func test_a_flyer_attacks_past_ground_blockers() -> void:
 	var engine: MmEngine = Scenario.combat_ready([AiScenario.free_alpha("serra_angel")], [AiScenario.free_alpha("hill_giant")])
 	assert_not_null(engine)

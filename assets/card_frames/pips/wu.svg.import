@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://ccys50tbmolb2"
+path="res://.godot/imported/wu.svg-e2829de9c87ddeeaaface66132adf06f.image"
+
+[deps]
+
+source_file="res://assets/card_frames/pips/wu.svg"
+dest_files=["res://.godot/imported/wu.svg-e2829de9c87ddeeaaface66132adf06f.image"]
+
+[params]
+

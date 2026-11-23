@@ -569,6 +569,19 @@ func test_an_enchantment_that_exiles_as_it_enters_is_cast_and_aimed_at_the_oppos
 	assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP))).id, giant)
 
 
+func test_a_cheap_agent_aims_damage_that_kills_nothing_at_the_other_players_creature_not_its_own() -> void:
+	var sear: MmCardDefinition = Scenario.instant("Sear", Scenario.mana_cost(0),
+		[Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))], [Scenario.deal_damage(3, Scenario.targeted(0))])
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Scout", 2, 2)], [Scenario.creature("Giant", 4, 4)], [sear])
+	assert_not_null(engine)
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	engine.submit(Scenario.cast_index(decision, Scenario.card_in_hand(engine, engine.hero(), "Sear")))
+
+	var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP)))
+
+	assert_eq(target.id, Scenario.permanent_named(engine, engine.villain().id, "Giant"), "3 damage will not kill it.")
+
+
 func test_tapping_is_harmful_but_keeps_its_timing_tag() -> void:
 	var tap: Array[MmEffect] = [Scenario.tap(Scenario.targeted(0))]
 

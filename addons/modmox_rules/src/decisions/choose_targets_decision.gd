@@ -2,8 +2,10 @@ class_name ChooseTargetsDecision
 extends MmPendingDecision
 ## The caster chooses the targets of an "up to" requirement [member target_index] of the
 ## spell or ability being put on the stack, "up to two target creatures" (CR 601.2c): any
-## number of different objects from none to [member most] (CR 115.3). Never asked with
-## nothing to choose, since none is then the only answer. Answer: an Array of distinct
+## number of different objects from none to [member most] (CR 115.3). With nothing to
+## choose it is asked only as a spell is cast or an ability activated, so that choosing none
+## is confirmed or the cast canceled; a trigger then chooses none unasked (ADR 0014).
+## Answer: an Array of distinct
 ## indexes into [member candidates], from none up to [member most] of them (ADR 0016).
 
 var stack_object_id: int

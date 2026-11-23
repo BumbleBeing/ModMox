@@ -13,6 +13,8 @@ extends Control
 ## here, outside the redrawn nodes: creatures chosen to attack or block step into the lane,
 ## lines join blockers to their attackers, and damage is divided with steppers on the
 ## recipients. The pass button confirms it, and undo takes back one click at a time.
+## Once declared, a creature attacking or blocking glows gold until combat ends, split
+## with the color of anything a decision offers on it.
 ##
 ## The Stack Window gives each spell and ability its own color (StackColors, kept here too)
 ## and marks what the entry under the cursor is about: its source with a solid border and
@@ -855,9 +857,12 @@ func _on_pass_button_pressed() -> void:
 
 
 ## Selects answer [param index] of the question being asked, InfoPanel.AFFIRMATIVE or
-## NO_ANSWER, and answers nothing: the Pass Button gives it (game ADR 0066).
+## NO_ANSWER, and answers nothing: the Pass Button gives it (game ADR 0066). X chosen as a
+## spell is cast has no "No" to select: Cancel stands in its place (engine ADR 0076).
 func _select_answer(index: int) -> void:
 	if _is_paused or _answer_asked == null or index == _selected_answer:
+		return
+	if index == InfoPanel.NO_ANSWER and _answer_asked is ChooseXDecision:
 		return
 	_selected_answer = index
 	_redraw()
@@ -1907,10 +1912,15 @@ func _on_object_clicked(object_id: int) -> void:
 			_redraw()
 		return
 	if _picks.is_targeting():
-		# "Up to" targets: a click picks a target or lets it go; only the pass button
-		# answers, since fewer may be wanted (game ADR 0022).
+		# "Up to" targets: a click picks a target or lets it go. The pick that leaves
+		# nothing more to pick answers; fewer are answered with the pass button (game
+		# ADR 0022).
+		var was_picked: bool = _picks.is_picked(object_id)
 		if _picks.toggle(object_id):
-			_redraw()
+			if not was_picked and _picks.has_nothing_left_to_pick():
+				_confirm_picks()
+			else:
+				_redraw()
 		return
 	if _picks.is_picking_permanents():
 		# The click that makes the last pick answers at once: nothing is left to decide
@@ -2004,6 +2014,12 @@ func _redraw() -> void:
 	# While blockers are picked up, the attackers any of them can block glow as targets (A313, A431).
 	for attacker_id: int in _selection.target_ids():
 		glow.glow_as(attacker_id, DecisionClicks.Kind.TARGET)
+	# A creature the engine has attacking or blocking glows gold until combat ends, after
+	# whatever else it glows as (game ADR 0022). It takes no click for that.
+	if not _snapshot.is_over():
+		for permanent: MmObjectView in view.battlefield:
+			if _is_fighting(permanent):
+				glow.glow_in_combat(permanent.id)
 	_clicks = glow
 	var regions: Dictionary[String, Rect2] = EncounterLayout.regions(size)
 	_regions = regions
@@ -2384,13 +2400,16 @@ func _remember_face(object_id: int, face: Control, face_size: Vector2, glow: Dec
 	var is_pickable: bool = _picks.is_picking_on_battlefield() and _picks.is_candidate(object_id)
 	if is_pickable:
 		# Picked glows white; the rest green, or as targets for targets, while more can be
-		# picked, and not at all once every pick is made (game ADR 0049, 0022).
+		# picked, and not at all once every pick is made (game ADR 0049, 0022). A creature
+		# in combat keeps its gold after any of them.
 		colors = []
 		if _picks.is_picked(object_id):
 			colors.append(PICKED_GLOW)
 		elif _picks.can_pick(object_id):
 			var kind: DecisionClicks.Kind = DecisionClicks.Kind.TARGET if _picks.is_targeting() else DecisionClicks.Kind.OTHER
 			colors.append(DecisionClicks.color_of(kind))
+		if glow.kinds_of(object_id).has(DecisionClicks.Kind.COMBAT):
+			colors.append(DecisionClicks.color_of(DecisionClicks.Kind.COMBAT))
 	if not colors.is_empty():
 		BorderEffects.add_glow_of(face, face_size, colors, _glow_seconds_for(object_id, colors))
 	if not glow.options_of(object_id).is_empty() or _selection.is_clickable(object_id) or is_pickable:

@@ -40,7 +40,7 @@ func _init(deciding_player_id: int, object_id: int, offered: MmEffect, to_pay: M
 
 ## Whether to pay [param to_pay] so that [param entering_id] enters untapped (ADR 0052).
 static func as_entering(deciding_player_id: int, entering_id: int, to_pay: MmCost) -> ChooseYesOrNoDecision:
-	var asked: ChooseYesOrNoDecision = ChooseYesOrNoDecision.new(deciding_player_id, 0, null)
+	var asked: ChooseYesOrNoDecision = new(deciding_player_id, 0, null)
 	asked.entering_object_id = entering_id
 	asked.entry_cost = to_pay
 	return asked

@@ -4,4 +4,4 @@ The frame, land frame, Adventure frame (`adventure/`), crown, power/toughness bo
 
 The game imports the PNG and SVG files as Images and bakes them at half size (1005 × 1407) when drawing a card; the originals here are full size (2010 × 2814).
 
-Two files here are ModMox's own, made from those: `pips/br.svg`, a hybrid mana symbol drawn by `tools/art/hybrid_pip.py` from the `b` and `r` pips, and `masks/hybrid_blend.png`, drawn by `tools/art/hybrid_blend_mask.py` (engine ADR 0077).
+Some files here are ModMox's own, made from those: the ten hybrid mana symbols in `pips/` (`wu.svg` to `gu.svg`, such as `br.svg`), each drawn by `tools/art/hybrid_pip.py` from its two colors' pips, and `masks/hybrid_blend.png`, drawn by `tools/art/hybrid_blend_mask.py` (engine ADR 0077).

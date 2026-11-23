@@ -161,6 +161,28 @@ func test_up_to_targets_are_picked_on_the_board_and_answer_with_any_number_up_to
 	assert_eq(decision.validate(picks.answer()), "")
 
 
+func test_up_to_targets_have_nothing_left_to_pick_at_the_most() -> void:
+	var candidates: Array[MmReference] = [MmReference.to_object(3), MmReference.to_object(4), MmReference.to_object(6)]
+	var picks: CardPicks = CardPicks.new(ChooseTargetsDecision.new(HERO, 20, 0, candidates, 2))
+
+	assert_true(picks.toggle(4))
+	assert_false(picks.has_nothing_left_to_pick(), "One more may be picked.")
+	assert_true(picks.toggle(6))
+	assert_true(picks.has_nothing_left_to_pick())
+	assert_true(picks.toggle(6))
+	assert_false(picks.has_nothing_left_to_pick(), "Let go, so one more may be picked again.")
+
+
+func test_up_to_targets_have_nothing_left_to_pick_once_every_candidate_is() -> void:
+	var candidates: Array[MmReference] = [MmReference.to_object(3)]
+	var picks: CardPicks = CardPicks.new(ChooseTargetsDecision.new(HERO, 20, 0, candidates, 2))
+	assert_false(picks.has_nothing_left_to_pick())
+
+	assert_true(picks.toggle(3))
+
+	assert_true(picks.has_nothing_left_to_pick(), "Up to two, but only one could be targeted.")
+
+
 func _bottom(count: int) -> ChooseCardsToBottomDecision:
 	return ChooseCardsToBottomDecision.new(HERO, count, HAND)
 

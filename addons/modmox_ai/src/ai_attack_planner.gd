@@ -86,23 +86,34 @@ func _cares_about_attacking_alone() -> bool:
 	return false
 
 
-## Whether attacking with everything kills even if each blocker stops a different one of the
-## biggest attackers it can block.
+## Whether attacking with everything kills even if each blocker stops a different attacker,
+## and they stop the most damage they can between them. Exact: the biggest attacker first,
+## each stopped whenever the blockers can stop it and every one already stopped.
 func _is_lethal(candidate_ids: Array[int]) -> bool:
 	var by_damage: Array[int] = candidate_ids.duplicate()
 	by_damage.sort_custom(func(first: int, second: int) -> bool: return _combat_damage(first) > _combat_damage(second))
-	var used: Array[int] = []
+	var stopped_by: Dictionary[int, int] = {}
 	var unblocked: int = 0
 	for attacker_id: int in by_damage:
-		var stopped: bool = false
-		for blocker_id: int in _blockers_of(attacker_id):
-			if not used.has(blocker_id):
-				used.append(blocker_id)
-				stopped = true
-				break
-		if not stopped:
+		var tried: Array[int] = []
+		if not _can_stop(attacker_id, stopped_by, tried):
 			unblocked += _combat_damage(attacker_id)
 	return unblocked >= _state.opponent_of(_player_id).life
+
+
+## Whether a blocker can stop [param attacker_id] while every attacker in
+## [param stopped_by] (blocker ID → the attacker it stops) is still stopped, moving those to
+## other blockers where that frees one. When it can, [param stopped_by] says how.
+## [param tried] is the blockers already asked for this attacker.
+func _can_stop(attacker_id: int, stopped_by: Dictionary[int, int], tried: Array[int]) -> bool:
+	for blocker_id: int in _blockers_of(attacker_id):
+		if tried.has(blocker_id):
+			continue
+		tried.append(blocker_id)
+		if not stopped_by.has(blocker_id) or _can_stop(stopped_by[blocker_id], stopped_by, tried):
+			stopped_by[blocker_id] = attacker_id
+			return true
+	return false
 
 
 func _aggression(candidate_ids: Array[int]) -> Aggression:
@@ -180,7 +191,8 @@ func _hold_back(attacking: Array[int]) -> Array[int]:
 
 
 ## The damage the other player's creatures could deal next turn if each creature left
-## untapped by this attack blocks one of the biggest.
+## untapped by this attack blocks one of the biggest. A creature tapped already stays
+## tapped through their turn, so it blocks nothing.
 func _swing_back(attacking: Array[int]) -> int:
 	var damages: Array[int] = []
 	for creature: MmGameObject in _creatures_of(1 - _player_id):
@@ -190,6 +202,8 @@ func _swing_back(attacking: Array[int]) -> int:
 	damages.reverse()
 	var defenders: int = 0
 	for creature: MmGameObject in _creatures_of(_player_id):
+		if creature.is_tapped:
+			continue
 		if not attacking.has(creature.id) or _has(creature.id, VigilanceAbility):
 			defenders += 1
 	var total: int = 0

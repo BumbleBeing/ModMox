@@ -10,6 +10,9 @@ var remaining_generic: int = 0
 var remaining_symbols: Array[MmMana.Type] = []
 ## The hybrid symbols still owed (CR 107.4e, ADR 0077).
 var remaining_hybrid_symbols: Array[Vector2i] = []
+## The permanent whose own {T} is part of the cost this mana is paid for, or 0. It cannot
+## tap for this mana too ([method ManaPayment.pays_while_paying]).
+var tapping_source_id: int = 0
 
 
 func _init(paying_player_id: int, generic: int = 0, symbols: Array[MmMana.Type] = [],
@@ -28,7 +31,10 @@ static func of_cost(paying_player_id: int, cost: MmManaCost) -> ManaPaymentProgr
 
 
 func copy() -> ManaPaymentProgress:
-	return ManaPaymentProgress.new(player_id, remaining_generic, remaining_symbols, remaining_hybrid_symbols)
+	var progress: ManaPaymentProgress = ManaPaymentProgress.new(player_id, remaining_generic, remaining_symbols,
+		remaining_hybrid_symbols)
+	progress.tapping_source_id = tapping_source_id
+	return progress
 
 
 func is_paid() -> bool:
@@ -66,7 +72,8 @@ func _options(state: MmGameState) -> Array[MmAction]:
 		var abilities: Array[MmAbility] = state.characteristics_of(source).abilities
 		for ability_index: int in abilities.size():
 			var ability: ActivatedAbility = abilities[ability_index] as ActivatedAbility
-			if ability == null or not ManaPayment.pays_while_paying(state, source, ability, ability_index):
+			if ability == null \
+					or not ManaPayment.pays_while_paying(state, source, ability, ability_index, tapping_source_id):
 				continue
 			if ability.mana_cost != null:
 				continue  # Later: mana abilities with mana in their cost.
