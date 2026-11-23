@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_0joy8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/cant_be_blocked_ability.gd" id="2_rrnxt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_ability_modification.gd" id="3_ud72h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="4_r4c5g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="5_7uq7n"]
+[ext_resource type="Script" path="res://run/mod.gd" id="6_vhxx0"]
+
+[sub_resource type="Resource" id="Resource_7vf8p"]
+script = ExtResource("2_rrnxt")
+
+[sub_resource type="Resource" id="Resource_gbhrh"]
+script = ExtResource("3_ud72h")
+ability = SubResource("Resource_7vf8p")
+
+[sub_resource type="Resource" id="Resource_8gpuy"]
+script = ExtResource("4_r4c5g")
+
+[sub_resource type="Resource" id="Resource_ixo3r"]
+script = ExtResource("5_7uq7n")
+cost = SubResource("Resource_8gpuy")
+
+[resource]
+script = ExtResource("6_vhxx0")
+name = "Immaterial"
+rarity = 3
+augmentation = Array[ExtResource("1_0joy8")]([SubResource("Resource_gbhrh")])
+mod_cost = SubResource("Resource_ixo3r")
+card_types = Array[int]([1])

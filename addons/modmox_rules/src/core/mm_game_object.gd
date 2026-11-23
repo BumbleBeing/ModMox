@@ -52,6 +52,12 @@ var chosen_x: int = 0
 ## For a spell on the stack: cast from a graveyard for its flashback cost, so it is exiled
 ## instead of going anywhere else as it leaves the stack (CR 702.34a).
 var cast_with_flashback: bool = false
+## For a spell on the stack: an Adventurer card cast as its Adventure (CR 715.3), so it has
+## only its Adventure's characteristics and, if it resolves, is exiled on an adventure.
+var is_adventure_spell: bool = false
+## For a card in exile: exiled on an adventure as its Adventure resolved (CR 715.3d), so its
+## owner may cast it as the creature while it stays there (engine ADR 0078).
+var is_on_adventure: bool = false
 ## For a spell on the stack: cast from the top of its owner's library with a
 ## CastFromTopOfLibraryAbility's permission (ADR 0054). Both players see it.
 var cast_from_library: bool = false
@@ -147,6 +153,8 @@ func duplicate_object() -> MmGameObject:
 	copy.chosen_mode = chosen_mode
 	copy.chosen_x = chosen_x
 	copy.cast_with_flashback = cast_with_flashback
+	copy.is_adventure_spell = is_adventure_spell
+	copy.is_on_adventure = is_on_adventure
 	copy.cast_from_library = cast_from_library
 	copy.is_being_cast_from_library = is_being_cast_from_library
 	copy.ability = ability
@@ -289,6 +297,16 @@ func record_control_since(game_turn: int) -> void:
 ## Event-only: freezes this object's last-known information as it leaves the battlefield.
 func freeze_last_known(characteristics: MmCharacteristics) -> void:
 	last_known_characteristics = characteristics
+
+
+## Event-only: marks a spell as cast as its Adventure (CR 715.3), as it is put on the stack.
+func record_cast_as_adventure() -> void:
+	is_adventure_spell = true
+
+
+## Event-only: marks a card exiled on an adventure (CR 715.3d), as it arrives in exile.
+func record_on_adventure() -> void:
+	is_on_adventure = true
 
 
 ## Event-only: marks a spell as cast with flashback (CR 702.34a), as it is put on the stack.

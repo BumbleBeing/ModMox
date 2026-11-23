@@ -331,6 +331,15 @@ func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
 	if _find(view.libraries.get(view.viewer_id, []), object_id) != null:
 		_add_pile_play(answer, object_id, "Cast %s from the top of your library" % card_name, MmZone.Kind.LIBRARY)
 		return
+	var exiled: MmObjectView = _find(view.exiles.get(view.viewer_id, []), object_id)
+	if exiled != null and exiled.is_on_adventure:
+		# Engine ADR 0078, game ADR 0079: cast from the Exile window, as flashback is.
+		_add_pile_play(answer, object_id, "Cast %s from exile" % card_name, MmZone.Kind.EXILE)
+		return
+	var cast: CastSpellAction = action as CastSpellAction
+	var in_hand: MmObjectView = _find(view.hand, object_id)
+	if cast != null and cast.as_adventure and in_hand != null and in_hand.adventure != null:
+		card_name = in_hand.adventure.name  # "Cast Gift of the Fae", after "Cast Faerie Guidemother".
 	_append(_hand_options, object_id, ClickOption.new(answer, "%s %s" % [verb, card_name]))
 
 

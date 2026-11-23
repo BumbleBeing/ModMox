@@ -6,6 +6,13 @@ extends GutTest
 const CONTENT_ROOT: String = "res://content/mods/"
 ## Each Mod's file name and the text ModText wrote for it when it was accepted.
 const ACCEPTED: Dictionary[String, String] = {
+	"holy": "Modified card gets +1/+1 and gains flying and lifelink. It costs {W} more to cast.",
+	"impervious": "Modified card gains indestructible. It costs {2} more to cast.",
+	"immaterial": "Modified card gains \"This creature can't be blocked.\"",
+	"untouchable": "Modified card gains first strike and deathtouch. It costs {B} more to cast.",
+	"violent": "Modified card gets +1/+1 and gains haste and trample. It costs {R/G} more to cast.",
+	"vexing": "Modified card gains \"This spell can't be countered.\"",
+	"viscious": "Modified card gets +1/+0 and gains menace and deathtouch. It costs {B} more to cast.",
 }
 
 

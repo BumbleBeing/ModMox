@@ -48,6 +48,16 @@ var cast_with_flashback: bool = false
 ## For a spell on the stack: cast from the top of its owner's library (ADR 0054). Both
 ## players see it.
 var cast_from_library: bool = false
+## For an Adventurer card (CR 715.2): its Adventure's characteristics as printed, for drawing
+## the card whole. Null for any other card, and for a spell cast as its Adventure.
+var adventure: MmCharacteristics = null
+## For a spell on the stack: cast as its Adventure (CR 715.3). Both players see it.
+var is_adventure_spell: bool = false
+## For a spell cast as its Adventure: its card's creature half as printed, so the whole
+## card can be drawn with the Adventure's page lit (engine ADR 0078). Null otherwise.
+var adventurer: MmCharacteristics = null
+## For a card in exile: on an adventure, so its owner may cast it as the creature (CR 715.3d).
+var is_on_adventure: bool = false
 ## The cast permissions of this permanent Spent this turn (ADR 0054), by their place among
 ## its abilities, each with the name of the spell it cast. Public, like the permanent.
 var permissions_used_this_turn: Dictionary[int, String] = {}
@@ -128,6 +138,11 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.chosen_mode = game_object.chosen_mode
 	view.cast_with_flashback = game_object.cast_with_flashback
 	view.cast_from_library = game_object.cast_from_library
+	view.is_adventure_spell = game_object.is_adventure_spell
+	view.is_on_adventure = game_object.is_on_adventure
+	if game_object.is_adventure_spell and game_object.definition != null:
+		# Not the spell's characteristics, which are the Adventure's: the card it is printed on.
+		view.adventurer = MmCharacteristics.printed(game_object.definition)
 	for index: int in game_object.permission_used_game_turn:
 		if game_object.is_permission_used_in(index, state.game_turn):
 			view.permissions_used_this_turn[index] = game_object.permission_used_spell_name[index]
@@ -138,6 +153,7 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	var characteristics: MmCharacteristics = state.characteristics_of(game_object)
 	view.colors = characteristics.colors.duplicate()
 	view.card_types = characteristics.card_types.duplicate()
+	view.adventure = characteristics.adventure
 	view.supertypes = characteristics.supertypes.duplicate()
 	view.subtypes = characteristics.subtypes.duplicate()
 	view.is_every_creature_type = characteristics.is_every_creature_type

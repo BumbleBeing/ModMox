@@ -39,6 +39,32 @@ func test_monocolored_hybrid_and_phyrexian_symbols_are_refused() -> void:
 		assert_eq(reading.refusals, PackedStringArray(["mana cost: %s is not a symbol the engine has" % symbol]), symbol)
 
 
+func test_an_adventure_card_is_read_as_its_creature_with_its_adventure() -> void:
+	var reading: OracleReading = _reading({"name": "Faerie Guidemother // Gift of the Fae", "layout": "adventure",
+		"power": "1", "toughness": "1", "card_faces": [
+			{"name": "Faerie Guidemother", "mana_cost": "{W}", "type_line": "Creature — Faerie", "oracle_text": "Flying"},
+			{"name": "Gift of the Fae", "mana_cost": "{1}{W}", "type_line": "Sorcery — Adventure",
+				"oracle_text": "Target creature gets +2/+1 and gains flying until end of turn."},
+		]})
+
+	assert_eq(reading.refusals, PackedStringArray())
+	var creature: MmCardDefinition = reading.definition
+	assert_eq([creature.name, creature.mana_cost.describe(), creature.card_types, creature.subtypes, creature.power, creature.toughness],
+		["Faerie Guidemother", "{W}", [CardType.CREATURE], ["Faerie"], 1, 1])
+	assert_eq(reading.file_name, "faerie_guidemother", "Named for its creature, as Content calls it.")
+	var adventure: MmCardDefinition = creature.adventure
+	assert_not_null(adventure, "Engine ADR 0078.")
+	assert_eq([adventure.name, adventure.mana_cost.describe(), adventure.card_types, adventure.subtypes],
+		["Gift of the Fae", "{1}{W}", [CardType.SORCERY], ["Adventure"]])
+
+
+func test_two_faced_cards_of_other_layouts_are_still_set_aside() -> void:
+	var reading: OracleReading = _reading({"name": "Front // Back", "layout": "transform", "card_faces": [
+		{"name": "Front", "mana_cost": "{G}", "type_line": "Creature — Human"}, {"name": "Back", "type_line": "Creature — Wolf"}]})
+
+	assert_eq(reading.refusals, PackedStringArray(["two faces (transform): Set Aside"]))
+
+
 func test_a_cost_of_zero_is_not_no_cost() -> void:
 	# CR 202.1b: a card with no mana cost is different from one that costs {0}.
 	var reading: OracleReading = _reading({"mana_cost": "{0}"})

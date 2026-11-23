@@ -30,6 +30,11 @@ enum Rarity { COMMON, UNCOMMON, RARE, MYTHIC, POWER_NINE }
 ## land's mana ability, are added by the characteristics query.
 @export var abilities: Array[MmAbility] = []
 @export var rarity: Rarity = Rarity.COMMON
+## An Adventurer card's Adventure (CR 715.2): its second set of characteristics, an instant
+## or sorcery with the subtype Adventure, used only while it is cast as one (engine ADR
+## 0078). Null for any other card. A Modification never reaches it: a Run Card's changes
+## are to the card's own, front half.
+@export var adventure: MmCardDefinition = null
 
 ## The Original: the base Card Definition this one was flattened from, set by
 ## MmRunCard.flatten() and null on a definition that was never flattened (ADR 0004). Not a

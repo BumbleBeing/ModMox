@@ -28,6 +28,9 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 		entries.append(StateEntry.new("Triggered this turn", "Won't trigger again this turn."))
 	entries.append_array(_attachment_entries(seen, view))
 	entries.append_array(_exile_entries(seen, view))
+	if seen.is_on_adventure:
+		# Engine ADR 0078, game ADR 0079.
+		entries.append(StateEntry.new("On an Adventure", "May be cast as %s." % seen.name))
 	if seen.damage_marked > 0:
 		entries.append(StateEntry.new("Damaged", "Has %d damage marked on it." % seen.damage_marked))
 	for active: ActiveContinuousEffect in seen.continuous_effects:

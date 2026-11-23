@@ -67,13 +67,24 @@ static func of(card: Dictionary) -> OracleReading:
 	reading.definition.name = card_name
 	reading.file_name = file_name_of(card_name)
 	reading.folder = folder_of(str(card.get("set_name", "")))
-	if card.has("card_faces"):
+	if card.has("card_faces") and card.get("layout", "") != "adventure":
 		reading.refusals.append("two faces (%s): Set Aside" % card.get("layout", ""))
 		return reading
-	reading._read_mana_cost(str(card.get("mana_cost", "")))
-	reading._read_type_line(str(card.get("type_line", "")))
-	reading.definition.power = reading._read_number(card, "power")
-	reading.definition.toughness = reading._read_number(card, "toughness")
+	var front: Dictionary = card
+	if card.has("card_faces"):
+		# An Adventurer card (CR 715, engine ADR 0078): the creature is the card, named and
+		# filed for it, and its Adventure is read from the second face.
+		var faces: Array = card.get("card_faces", []) as Array  # Array of Variants: parsed JSON.
+		front = faces[0] as Dictionary
+		reading.definition.name = str(front.get("name", ""))
+		reading.file_name = file_name_of(reading.definition.name)
+		var back: OracleReading = OracleReading.new()
+		back._read_face(faces[1] as Dictionary, {})
+		back.definition.name = str((faces[1] as Dictionary).get("name", ""))
+		reading.definition.adventure = back.definition
+		for refusal: String in back.refusals:
+			reading.refusals.append("adventure: " + refusal)
+	reading._read_face(front, card)
 	reading._read_rarity(str(card.get("rarity", "")), card_name)
 	return reading
 
@@ -86,6 +97,15 @@ static func folder_of(set_name: String) -> String:
 ## The name, without ".tres", of the file the card [param card_name] is written to.
 static func file_name_of(card_name: String) -> String:
 	return _snake_case(card_name)
+
+
+## Reads [param face]'s mana cost and type line, and the power and toughness [param numbers]
+## gives, a whole card's or an Adventurer card's, which keeps them outside its faces.
+func _read_face(face: Dictionary, numbers: Dictionary) -> void:
+	_read_mana_cost(str(face.get("mana_cost", "")))
+	_read_type_line(str(face.get("type_line", "")))
+	definition.power = _read_number(numbers, "power")
+	definition.toughness = _read_number(numbers, "toughness")
 
 
 func _read_mana_cost(text: String) -> void:

@@ -37,6 +37,10 @@ var exiled_with_object_id: int = 0
 var exiled_until_source_leaves: bool = false
 ## For a card cast from a graveyard for its flashback cost (CR 702.34a): marks the spell.
 var cast_with_flashback: bool = false
+## For an Adventurer card cast as its Adventure (CR 715.3): marks the spell.
+var cast_as_adventure: bool = false
+## For a spell cast as an Adventure that resolved (CR 715.3d): marks the card in exile.
+var exiled_on_adventure: bool = false
 ## For a card entering the battlefield: the counters it enters with (CR 122.6), on it as it
 ## arrives so that its "enters" abilities see them.
 var counters_on_arrival: Dictionary[MmCounter.Kind, int] = {}
@@ -83,6 +87,8 @@ func copy(state: MmGameState) -> ZoneChangeEvent:
 	same.exiled_with_object_id = exiled_with_object_id
 	same.exiled_until_source_leaves = exiled_until_source_leaves
 	same.cast_with_flashback = cast_with_flashback
+	same.cast_as_adventure = cast_as_adventure
+	same.exiled_on_adventure = exiled_on_adventure
 	same.counters_on_arrival = counters_on_arrival.duplicate()
 	same.tapped_on_arrival = tapped_on_arrival
 	same.chosen_creature_type_on_arrival = chosen_creature_type_on_arrival
@@ -130,6 +136,10 @@ func apply(state: MmGameState) -> void:
 				arriving.make_known_to(player.id)
 	if cast_with_flashback:
 		arriving.record_cast_with_flashback()
+	if cast_as_adventure and to_zone_kind == MmZone.Kind.STACK:
+		arriving.record_cast_as_adventure()
+	if exiled_on_adventure and to_zone_kind == MmZone.Kind.EXILE:
+		arriving.record_on_adventure()
 	if reason == Reason.CAST and from_zone_kind == MmZone.Kind.LIBRARY:
 		arriving.record_cast_from_library()  # ADR 0054
 	for kind: MmCounter.Kind in counters_on_arrival:

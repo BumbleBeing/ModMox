@@ -137,7 +137,7 @@ static func _tag_of_flash_permanent(state: MmGameState, action: MmAction) -> Tag
 	var cast: CastSpellAction = action as CastSpellAction
 	if cast == null:
 		return Tag.NONE
-	var characteristics: MmCharacteristics = state.characteristics_of(state.object(cast.object_id))
+	var characteristics: MmCharacteristics = characteristics_of_cast(state, cast)
 	if not characteristics.is_permanent() or not characteristics.has_ability(FlashAbility):
 		return Tag.NONE
 	var effects: Array[MmEffect] = []
@@ -195,12 +195,19 @@ static func tag_of_spell(spell: SpellAbility) -> Tag:
 	return shared
 
 
+## The characteristics of what [param cast] casts: its card's, or its Adventure's when it
+## casts the card as one (CR 715.3b, engine ADR 0078).
+static func characteristics_of_cast(state: MmGameState, cast: CastSpellAction) -> MmCharacteristics:
+	var characteristics: MmCharacteristics = state.characteristics_of(state.object(cast.object_id))
+	return characteristics.adventure if cast.as_adventure and characteristics.adventure != null else characteristics
+
+
 ## The modal spell [param action] casts, or null if it casts none.
 static func modal_spell_of_action(state: MmGameState, action: MmAction) -> SpellAbility:
 	var cast: CastSpellAction = action as CastSpellAction
 	if cast == null:
 		return null
-	for ability: MmAbility in state.characteristics_of(state.object(cast.object_id)).abilities:
+	for ability: MmAbility in characteristics_of_cast(state, cast).abilities:
 		var spell: SpellAbility = ability as SpellAbility
 		if spell != null and spell.is_modal():
 			return spell
@@ -214,7 +221,7 @@ static func effects_of_action(state: MmGameState, action: MmAction) -> Array[MmE
 	var effects: Array[MmEffect] = []
 	var cast: CastSpellAction = action as CastSpellAction
 	if cast != null:
-		var characteristics: MmCharacteristics = state.characteristics_of(state.object(cast.object_id))
+		var characteristics: MmCharacteristics = characteristics_of_cast(state, cast)
 		if characteristics.is_permanent():
 			return effects
 		for ability: MmAbility in characteristics.abilities:

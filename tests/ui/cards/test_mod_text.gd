@@ -34,6 +34,21 @@ func test_menace_is_a_keyword_listed_in_the_augmentations_order() -> void:
 	assert_eq(ModText.of(mod), "Modified card gets +1/+0 and gains menace and deathtouch. It costs {B} more to cast.")
 
 
+func test_cant_be_blocked_is_quoted_and_a_mod_cost_of_0_has_no_cost_sentence() -> void:
+	var mod: Mod = _creature_mod([_ability(CantBeBlockedAbility.new())], Fixture.mana_cost(0))
+
+	assert_eq(ModText.of(mod), "Modified card gains \"This creature can't be blocked.\"")
+
+
+func test_cant_be_countered_is_quoted_as_said_of_the_spell_on_any_card_type() -> void:
+	var mod: Mod = Mod.new()
+	mod.augmentation = [_ability(CantBeCounteredAbility.new())] as Array[MmModification]
+	mod.mod_cost = Fixture.mana_cost(0)
+	mod.card_types = [CardType.CREATURE, CardType.INSTANT] as Array[MmCardTypes.CardType]
+
+	assert_eq(ModText.of(mod), "Modified card gains \"This spell can't be countered.\"")
+
+
 func test_a_hex_takes_power_and_toughness_away() -> void:
 	var mod: Mod = _creature_mod([_power_toughness(-1, -1)], Fixture.mana_cost(1))
 	mod.is_hex = true

@@ -118,6 +118,14 @@ _Avoid_: Move, play, command
 Mana whose color is chosen as it is made, as a Treasure's "Add one mana of any color" (CR 106.1a). A mana ability that adds it is offered as one Action for each color, in WUBRG order, at priority and while paying, and the Action carries the color to the effect (ADR 0072).
 _Avoid_: Color choice (nothing is asked: the color is the Action's), rainbow mana
 
+**Adventure**:
+An Adventurer card's second half (CR 715): an instant or sorcery with the subtype Adventure, printed on the left page of the card's book, which the card may be cast as from the hand instead of the creature. Cast that way, the spell has only the Adventure's characteristics (ADR 0078). A Mod never changes it.
+_Avoid_: Back face, second face, split card
+
+**On an Adventure**:
+A card exiled as its Adventure resolved (CR 715.3d). Its owner may cast it from exile as the creature, never as the Adventure again, for as long as it stays there.
+_Avoid_: Adventuring, exiled with an Adventure
+
 **Hybrid Symbol**:
 A mana symbol in a cost that either of two colors pays, such as {B/R} (CR 107.4e). It counts one toward mana value and makes its card both colors. A unit of mana pays a plain symbol of its type before a Hybrid Symbol of its color, and that before generic mana (ADR 0077). Only two-color ones are in the game.
 _Avoid_: Split symbol, dual symbol, either-or mana

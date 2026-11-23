@@ -55,6 +55,7 @@ const PRINTED: Dictionary[String, String] = {
 	"drudge_skeletons": "{B}: Regenerate this creature.",
 	"elvish_archers": "First strike",
 	"explore": "You may play an additional land this turn. Draw a card.",
+	"faerie_guidemother": "Flying",
 	"felidar_retreat": "Whenever a land you control enters, choose one —\n"
 		+ "• Create a 2/2 white Cat Beast creature token.\n"
 		+ "• Put a +1/+1 counter on each creature you control. Each creature you control gains vigilance until end of turn.",
@@ -175,10 +176,18 @@ const PRINTED: Dictionary[String, String] = {
 	"zar_ojanen_scion_of_efrava": "Whenever this creature becomes tapped, put a +1/+1 counter on each creature you control with toughness less than the number of basic land types among lands you control.",
 }
 
+## Each authored Adventurer card's Adventure (engine ADR 0078), as its half reads: the same
+## review as PRINTED's.
+const PRINTED_ADVENTURES: Dictionary[String, String] = {
+	"faerie_guidemother": "Target creature gets +2/+1 until end of turn. It gains flying until end of turn.",
+}
+
 
 func test_each_authored_card_prints_its_oracle_wording() -> void:
 	for file_name: String in PRINTED:
 		assert_eq(_look(file_name).rules_text, PRINTED[file_name], file_name)
+	for file_name: String in PRINTED_ADVENTURES:
+		assert_eq(_look(file_name).adventure.rules_text, PRINTED_ADVENTURES[file_name], file_name)
 
 
 func test_no_ability_of_any_authored_card_falls_back_to_a_class_name() -> void:
@@ -192,6 +201,8 @@ func test_no_ability_of_any_authored_card_falls_back_to_a_class_name() -> void:
 		var look: CardLook = _look(file.get_basename())
 		checked += 1
 		assert_false(AbilityText.has_fallback(look.rules_text), "%s: %s" % [file, look.rules_text])
+		if look.adventure != null:
+			assert_false(AbilityText.has_fallback(look.adventure.rules_text), "%s: %s" % [file, look.adventure.rules_text])
 		if look.abilities.is_empty():
 			assert_eq(look.rules_text, "", file)
 		else:
@@ -458,6 +469,24 @@ func test_menace_is_a_keyword() -> void:
 		[] as Array[MmCardTypes.Supertype], "Brute"),
 		"Menace, deathtouch")
 	assert_true(AbilityText.is_keyword(MenaceAbility.new()))
+
+
+func test_cant_be_blocked_is_worded_as_phantom_warrior_words_it_and_is_no_keyword() -> void:
+	var abilities: Array[MmAbility] = [CantBeBlockedAbility.new()]
+
+	assert_eq(AbilityText.of_card(abilities, [MmCardTypes.CardType.CREATURE] as Array[MmCardTypes.CardType],
+		[] as Array[MmCardTypes.Supertype], "Phantom"),
+		"This creature can't be blocked.")
+	assert_false(AbilityText.is_keyword(CantBeBlockedAbility.new()))
+
+
+func test_cant_be_countered_calls_any_card_this_spell_as_carnage_tyrant_does() -> void:
+	var abilities: Array[MmAbility] = [CantBeCounteredAbility.new()]
+
+	assert_eq(AbilityText.of_card(abilities, [MmCardTypes.CardType.CREATURE] as Array[MmCardTypes.CardType],
+		[] as Array[MmCardTypes.Supertype], "Tyrant"),
+		"This spell can't be countered.")
+	assert_false(AbilityText.is_keyword(CantBeCounteredAbility.new()))
 
 
 func test_a_treasure_prints_as_cr_111_10a_words_it() -> void:

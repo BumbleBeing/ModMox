@@ -36,6 +36,10 @@ var is_power_variable: bool = false
 var is_toughness_variable: bool = false
 ## Written abilities first, then abilities granted by rules, in a fixed order.
 var abilities: Array[MmAbility] = []
+## For an Adventurer card (CR 715.2): its Adventure's characteristics as printed, which it has
+## only while cast as its Adventure (CR 715.3b, engine ADR 0078). Null for any other card,
+## and for a spell cast as an Adventure, which is the Adventure alone.
+var adventure: MmCharacteristics = null
 
 
 ## The characteristics a Card Definition has before anything in a game affects it: what
@@ -69,6 +73,8 @@ static func printed(definition: MmCardDefinition) -> MmCharacteristics:
 		if ability is ChangelingAbility:
 			result.is_every_creature_type = true
 	result.add_basic_land_abilities()
+	if definition.adventure != null:
+		result.adventure = printed(definition.adventure)
 	return result
 
 

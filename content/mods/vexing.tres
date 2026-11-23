@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_rcnsg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/cant_be_countered_ability.gd" id="2_gkpat"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_ability_modification.gd" id="3_051jy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="4_cu070"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="5_ead7q"]
+[ext_resource type="Script" path="res://run/mod.gd" id="6_ywxlu"]
+
+[sub_resource type="Resource" id="Resource_xou32"]
+script = ExtResource("2_gkpat")
+
+[sub_resource type="Resource" id="Resource_mdjew"]
+script = ExtResource("3_051jy")
+ability = SubResource("Resource_xou32")
+
+[sub_resource type="Resource" id="Resource_bttrq"]
+script = ExtResource("4_cu070")
+
+[sub_resource type="Resource" id="Resource_mtlmb"]
+script = ExtResource("5_ead7q")
+cost = SubResource("Resource_bttrq")
+
+[resource]
+script = ExtResource("6_ywxlu")
+name = "Vexing"
+rarity = 1
+augmentation = Array[ExtResource("1_rcnsg")]([SubResource("Resource_mdjew")])
+mod_cost = SubResource("Resource_mtlmb")
+card_types = Array[int]([0, 1, 2, 3, 5])

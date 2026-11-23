@@ -10,6 +10,9 @@ extends MmEffect
 ## the stack and they could pay it now. Yes pays it one PayManaDecision at a time, as a
 ## cast's mana is, and nothing is countered; no counters it. One who could not pay is not
 ## asked, and it is countered.
+##
+## A spell with CantBeCounteredAbility is passed over (CR 101.2): it may be targeted, but it
+## is never countered, and no one is asked to pay to keep it from being countered.
 # Later: "unless [a player] pays" for a cost that is not mana ("Ward—Pay 3 life"), and for
 # several spells at once, each once a card needs it.
 
@@ -60,11 +63,15 @@ func selections() -> Array[MmSelection]:
 	return [selection]
 
 
-## What [member selection] finds that is still on the stack.
+## What [member selection] finds that is still on the stack and can be countered.
 func _on_the_stack(state: MmGameState, context: MmEffectContext) -> Array[MmGameObject]:
 	var found_on_stack: Array[MmGameObject] = []
 	for found: MmReference in selection.select(state, context):
 		var countered: MmGameObject = state.object(found.id) if found.is_object() else null
-		if countered != null and countered.zone() == state.stack:
-			found_on_stack.append(countered)
+		if countered == null or countered.zone() != state.stack:
+			continue
+		# CR 101.2: "can't be countered" beats the counter.
+		if countered.is_card() and state.characteristics_of(countered).has_ability(CantBeCounteredAbility):
+			continue
+		found_on_stack.append(countered)
 	return found_on_stack

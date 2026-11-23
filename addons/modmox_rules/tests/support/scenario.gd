@@ -2811,3 +2811,41 @@ static func remove_counters(amount: int = 1, kind: MmCounter.Kind = MmCounter.Ki
 	cost.kind = kind
 	cost.amount = amount
 	return cost
+
+
+# --- Adventure (CR 715, engine ADR 0078) ---------------------------------------------------
+
+
+## An Adventurer card after Faerie Guidemother: "Guide", a 1/1 creature with flying costing
+## [param creature_cost] ({0} unless given), whose Adventure is "Gift", a sorcery — Adventure
+## costing [param adventure_cost] ({0} unless given): "Target creature gets +2/+1 until end
+## of turn."
+static func adventurer(creature_cost: MmManaCost = null, adventure_cost: MmManaCost = null) -> MmCardDefinition:
+	var guide: MmCardDefinition = creature("Guide", 1, 1, [FlyingAbility.new()], creature_cost)
+	var gift: MmCardDefinition = sorcery("Gift", mana_cost(0) if adventure_cost == null else adventure_cost,
+		[target(of_type(MmCardTypes.CardType.CREATURE))], [until_end_of_turn(modify_pt(2, 1, targeted(0)))])
+	gift.subtypes = ["Adventure"]
+	guide.adventure = gift
+	return guide
+
+
+## The index of the priority action that casts [param object_id], as its Adventure when
+## [param as_adventure], or -1.
+static func cast_index_as(decision: PriorityDecision, object_id: int, as_adventure: bool) -> int:
+	return action_index(decision, func(action: MmAction) -> bool:
+		var cast: CastSpellAction = action as CastSpellAction
+		return cast != null and cast.object_id == object_id and cast.as_adventure == as_adventure)
+
+
+## Casts [param object_id] as its Adventure, aimed at [param chosen], and pays automatically.
+static func cast_adventure(engine: MmEngine, object_id: int, chosen: MmReference) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var index: int = cast_index_as(decision, object_id, true)
+	if index == -1:
+		return "Object %d cannot be cast as an Adventure." % object_id
+	var error: String = engine.submit(index)
+	if error == "" and engine.pending_decision() is ChooseTargetDecision:
+		error = choose_target(engine, chosen)
+	return error if error != "" else auto_pay(engine)

@@ -69,6 +69,20 @@ func test_declining_counters_the_spell() -> void:
 	assert_eq(engine.game_state().object(warden).damage_marked, 0)
 
 
+func test_a_spell_that_cant_be_countered_is_not_asked_to_pay_and_resolves() -> void:
+	var stubborn: MmCardDefinition = _zap_card()
+	stubborn.abilities.append(CantBeCounteredAbility.new())
+	var engine: MmEngine = _hero_main([Scenario.mana_bird()], [stubborn])
+	var warden: int = _warden(engine)
+	var zap: int = _zap_warden(engine)
+	assert_eq(Scenario.stack_ids(engine).size(), 2, "Ward still triggers.")
+
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_false(_was_countered(engine, zap), "Autoplay declines a ward cost, so being asked would have countered it.")
+	assert_eq(engine.game_state().object(warden).damage_marked, 1)
+
+
 func test_paying_lets_the_spell_resolve() -> void:
 	var engine: MmEngine = _hero_main([Scenario.mana_bird()])
 	var warden: int = _warden(engine)

@@ -319,6 +319,16 @@
 		"scryfall_id": "d8f81e8a-e309-4bac-81de-326756cd8901",
 		"set": "wwk"
 	},
+	"faerie_guidemother": {
+		"artist": "Mila Pesic",
+		"collector_number": "11",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "e8bbece8-9620-44d9-b991-350fe952538a",
+		"set": "eld"
+	},
 	"felidar_retreat": {
 		"artist": "Ralph Horsley",
 		"collector_number": "16",

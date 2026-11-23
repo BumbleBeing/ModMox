@@ -1,0 +1,95 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_rjovt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_3b4c5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_se3un"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_b5idd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_us04j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_slrfa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_cuqly"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="6_1213u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="7_na3he"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="8_odq6d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="9_wwsf1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="10_t5b05"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_06qug"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_6o5ot"]
+
+[sub_resource type="Resource" id="Resource_re1kk"]
+script = ExtResource("2_3b4c5")
+
+[sub_resource type="Resource" id="Resource_0a4tt"]
+script = ExtResource("4_slrfa")
+
+[sub_resource type="Resource" id="Resource_7vi21"]
+script = ExtResource("5_cuqly")
+value = 2
+
+[sub_resource type="Resource" id="Resource_irpwq"]
+script = ExtResource("5_cuqly")
+value = 1
+
+[sub_resource type="Resource" id="Resource_j7om0"]
+script = ExtResource("6_1213u")
+power = SubResource("Resource_7vi21")
+toughness = SubResource("Resource_irpwq")
+affected = SubResource("Resource_0a4tt")
+
+[sub_resource type="Resource" id="Resource_60ln5"]
+script = ExtResource("7_na3he")
+continuous = SubResource("Resource_j7om0")
+
+[sub_resource type="Resource" id="Resource_1nx37"]
+script = ExtResource("2_3b4c5")
+
+[sub_resource type="Resource" id="Resource_qi1xy"]
+script = ExtResource("4_slrfa")
+
+[sub_resource type="Resource" id="Resource_ycv2y"]
+script = ExtResource("8_odq6d")
+abilities = Array[ExtResource("1_rjovt")]([SubResource("Resource_1nx37")])
+affected = SubResource("Resource_qi1xy")
+
+[sub_resource type="Resource" id="Resource_sj1fx"]
+script = ExtResource("7_na3he")
+continuous = SubResource("Resource_ycv2y")
+
+[sub_resource type="Resource" id="Resource_6cqs2"]
+script = ExtResource("12_6o5ot")
+
+[sub_resource type="Resource" id="Resource_and5m"]
+script = ExtResource("11_06qug")
+filter = SubResource("Resource_6cqs2")
+
+[sub_resource type="Resource" id="Resource_42ytf"]
+script = ExtResource("10_t5b05")
+targets = Array[ExtResource("11_06qug")]([SubResource("Resource_and5m")])
+effects = Array[ExtResource("3_b5idd")]([SubResource("Resource_60ln5"), SubResource("Resource_sj1fx")])
+
+[sub_resource type="Resource" id="Resource_ephxg"]
+script = ExtResource("2_se3un")
+generic = 1
+symbols = Array[int]([0])
+
+[sub_resource type="Resource" id="Resource_hdbxr"]
+script = ExtResource("3_us04j")
+name = "Gift of the Fae"
+card_types = Array[int]([5])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_ephxg")
+abilities = Array[ExtResource("1_rjovt")]([SubResource("Resource_42ytf")])
+
+[sub_resource type="Resource" id="Resource_or4pm"]
+script = ExtResource("2_se3un")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_us04j")
+name = "Faerie Guidemother"
+card_types = Array[int]([1])
+subtypes = Array[String](["Faerie"])
+mana_cost = SubResource("Resource_or4pm")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_rjovt")]([SubResource("Resource_re1kk")])
+adventure = SubResource("Resource_hdbxr")

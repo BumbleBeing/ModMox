@@ -262,6 +262,11 @@ func _leave_stack() -> void:
 				and _context.targets[0] != null and _context.targets[0].is_object():
 			entering.attached_to_on_arrival = _context.targets[0].id
 		_state.perform(entering)
+	elif resolving.is_card() and _resolves and resolving.is_adventure_spell:
+		# CR 715.3d: an Adventure that resolves is exiled instead, on an adventure.
+		var away: ZoneChangeEvent = ZoneChangeEvent.new(resolving, _state.exile, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED)
+		away.exiled_on_adventure = true
+		_state.perform(away)
 	elif resolving.is_card():
 		# CR 608.2n: an instant or sorcery goes to its owner's graveyard.
 		var reason: ZoneChangeEvent.Reason = ZoneChangeEvent.Reason.RESOLVED if _resolves else ZoneChangeEvent.Reason.DID_NOT_RESOLVE

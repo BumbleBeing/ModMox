@@ -58,6 +58,11 @@ var art_key: String = ""
 ## is made from characteristics or a view (A333). Only a basic land's is in parentheses:
 ## what a keyword means is a Reminder, listed by the Inspector (ADR 0033).
 var rules_text: String = ""
+## An Adventurer card's Adventure (engine ADR 0078), drawn on the left page of its book, or
+## null. A spell cast as its Adventure is drawn as the whole card, with this half lit.
+var adventure: CardLook = null
+## Drawn as a spell cast as its Adventure: the creature's page is dimmed (game ADR 0079).
+var is_adventure_cast: bool = false
 
 ## For an Emblem or a Potion: its abilities' text, one to an entry in the order of
 ## abilities, and which of them are Spent (ADR 0036), so each can be drawn apart.
@@ -84,11 +89,26 @@ static func of_characteristics(characteristics: MmCharacteristics, card_art_key:
 	look.abilities = characteristics.abilities.duplicate()
 	look.art_key = card_art_key
 	look.rules_text = AbilityText.of_card(look.abilities, look.card_types, look.supertypes, look.name)
+	if characteristics.adventure != null:
+		look.adventure = of_characteristics(characteristics.adventure)
 	return look
 
 
-## The look of a Game Object as a Player View shows it.
+## The look of a Game Object as a Player View shows it. A spell cast as its Adventure looks
+## like the whole card, the Adventure's page lit and the creature's dimmed (game ADR 0079).
 static func of_view(view: MmObjectView, card_art_key: String = "") -> CardLook:
+	if view.is_adventure_spell and view.adventurer != null:
+		var whole: CardLook = of_characteristics(view.adventurer, card_art_key)
+		whole.adventure = _of_view_alone(view, card_art_key)
+		whole.is_adventure_cast = true
+		return whole
+	var look: CardLook = _of_view_alone(view, card_art_key)
+	if view.adventure != null:
+		look.adventure = of_characteristics(view.adventure)
+	return look
+
+
+static func _of_view_alone(view: MmObjectView, card_art_key: String) -> CardLook:
 	var look: CardLook = CardLook.new()
 	look.name = view.name
 	look.colors = view.colors.duplicate()
@@ -203,6 +223,20 @@ func type_line() -> String:
 ## The type line in runs, one for each of type_line_colors(): all of it in one, except that
 ## a look of every creature type ends in a run of its own, "(All)", which stands for its
 ## creature types after any other subtypes (ADR 0075).
+## An Adventure's lines as the Inspector's Card Text writes them under its creature's text:
+## its name and mana cost, its type line, then its rules (game ADR 0079).
+func adventure_text_lines() -> Array[String]:
+	var lines: Array[String] = []
+	if adventure == null:
+		return lines
+	lines.append(adventure.name + ("" if adventure.mana_cost == null else " " + adventure.mana_cost.describe()))
+	lines.append("".join(adventure.type_line_texts()))
+	for line: String in adventure.printed_rules_text().split("\n"):
+		if line != "":
+			lines.append(line)
+	return lines
+
+
 func type_line_texts() -> Array[String]:
 	var words: PackedStringArray = []
 	if is_token:

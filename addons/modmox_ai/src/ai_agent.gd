@@ -386,7 +386,8 @@ func _mana_unlocks_a_play(decision: PriorityDecision, index: int, source: MmSimu
 ## "" for any other action. Object IDs do not change while a card stays where it is.
 func _play_key(action: MmAction) -> String:
 	if action is CastSpellAction:
-		return "cast %d" % (action as CastSpellAction).object_id
+		var cast: CastSpellAction = action as CastSpellAction
+		return "cast %d%s" % [cast.object_id, " adventure" if cast.as_adventure else ""]
 	if action is ActivateAbilityAction:
 		var activate: ActivateAbilityAction = action as ActivateAbilityAction
 		return "activate %d %d %d" % [activate.object_id, activate.ability_index, activate.mana_type]
@@ -426,7 +427,7 @@ func _cheap_priority(decision: PriorityDecision, world: MmGameState, passing: in
 			continue
 		if _life_it_would_pay(world, cast) >= world.player(me).life:
 			continue  # Never pay the life it has left.
-		var cost: int = world.characteristics_of(world.object(cast.object_id)).mana_value()
+		var cost: int = AiTiming.characteristics_of_cast(world, cast).mana_value()
 		var from_library: bool = world.object(cast.object_id).zone().kind == MmZone.Kind.LIBRARY
 		if cost > best_cost or (cost == best_cost and from_library and not best_from_library):
 			best = index
@@ -454,7 +455,7 @@ static func _life_it_would_pay(world: MmGameState, cast: CastSpellAction) -> int
 ## permanent its first target requirement accepts, so that it is never left with only its
 ## own. Removal that targets nothing needs only an opposing creature.
 func _has_something_to_remove(world: MmGameState, cast: CastSpellAction, me: int) -> bool:
-	for ability: MmAbility in world.characteristics_of(world.object(cast.object_id)).abilities:
+	for ability: MmAbility in AiTiming.characteristics_of_cast(world, cast).abilities:
 		var spell: SpellAbility = ability as SpellAbility
 		if spell == null:
 			continue
@@ -490,7 +491,8 @@ func _cheap_counter(decision: PriorityDecision, world: MmGameState) -> int:
 	if world.stack.is_empty():
 		return -1
 	var top: MmGameObject = world.stack.objects().back()
-	if not top.is_card() or top.controller_id == decision.player_id:
+	if not top.is_card() or top.controller_id == decision.player_id \
+			or world.characteristics_of(top).has_ability(CantBeCounteredAbility):
 		return -1
 	var top_cost: int = world.characteristics_of(top).mana_value()
 	var best: int = -1
@@ -499,7 +501,7 @@ func _cheap_counter(decision: PriorityDecision, world: MmGameState) -> int:
 		var cast: CastSpellAction = decision.actions[index] as CastSpellAction
 		if cast == null or AiTiming.tag_of_action(world, cast) != AiTiming.Tag.COUNTER or not _targets_spells(world, cast):
 			continue
-		var cost: int = world.characteristics_of(world.object(cast.object_id)).mana_value()
+		var cost: int = AiTiming.characteristics_of_cast(world, cast).mana_value()
 		if cost < best_cost:
 			best = index
 			best_cost = cost
@@ -508,7 +510,7 @@ func _cheap_counter(decision: PriorityDecision, world: MmGameState) -> int:
 
 ## Whether the spell [param cast] casts has a target requirement that asks for a spell.
 func _targets_spells(world: MmGameState, cast: CastSpellAction) -> bool:
-	for ability: MmAbility in world.characteristics_of(world.object(cast.object_id)).abilities:
+	for ability: MmAbility in AiTiming.characteristics_of_cast(world, cast).abilities:
 		var spell: SpellAbility = ability as SpellAbility
 		if spell == null:
 			continue
@@ -667,6 +669,8 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 		if harmful and damage > 0 and world.characteristics_of(target).toughness - target.damage_marked > damage:
 			continue
 		if taps and target.is_tapped:
+			continue
+		if tag == AiTiming.Tag.COUNTER and world.characteristics_of(target).has_ability(CantBeCounteredAbility):
 			continue
 		var value: int = AiBoardEvaluator.creature_value(world, target)
 		if tag == AiTiming.Tag.COUNTER:
@@ -1289,7 +1293,8 @@ func _divide_damage(decision: DivideCombatDamageDecision, world: MmGameState) ->
 	return amounts
 
 
-## Blocks a CHEAP Agent assumes possible: flying attackers only by flying or reach.
+## Blocks a CHEAP Agent assumes possible: flying attackers only by flying or reach, and
+## none of an attacker that can't be blocked.
 func _guess_blockable(world: MmGameState, me: int, candidate_ids: Array[int]) -> Dictionary[int, Array]:
 	var blockable: Dictionary[int, Array] = {}
 	for blocker: MmGameObject in _creatures_of(world, 1 - me):
@@ -1299,7 +1304,10 @@ func _guess_blockable(world: MmGameState, me: int, candidate_ids: Array[int]) ->
 			or world.characteristics_of(blocker).has_ability(ReachAbility)
 		var attackers: Array = []
 		for attacker_id: int in candidate_ids:
-			if reaches or not world.characteristics_of(world.object(attacker_id)).has_ability(FlyingAbility):
+			var attacker: MmCharacteristics = world.characteristics_of(world.object(attacker_id))
+			if attacker.has_ability(CantBeBlockedAbility):
+				continue
+			if reaches or not attacker.has_ability(FlyingAbility):
 				attackers.append(attacker_id)
 		if not attackers.is_empty():
 			blockable[blocker.id] = attackers

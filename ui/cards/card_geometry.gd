@@ -24,6 +24,17 @@ const RULES: Rect2 = Rect2(0.086, 0.6303, 0.828, 0.2875)
 const POWER_TOUGHNESS_TEXT: Rect2 = Rect2(0.7928, 0.902, 0.1367, 0.0372)
 ## Where the artist is credited, in the black border under the frame.
 const ARTIST: Rect2 = Rect2(0.075, 0.936, 0.6, 0.024)
+## An Adventurer card's book (engine ADR 0078), where CardConjurer's Adventure pack puts its
+## text: the Adventure's name bar (its mana cost right-aligned in it, its pips this tall),
+## type bar and rules on the left page; the creature's rules on the right page. The pages
+## themselves are where adventure/bookLeft.png and bookRight.png are opaque.
+const ADVENTURE_TITLE: Rect2 = Rect2(0.0814, 0.6391, 0.4, 0.0296)
+const ADVENTURE_TYPE_LINE: Rect2 = Rect2(0.0814, 0.6839, 0.4, 0.0296)
+const ADVENTURE_RULES: Rect2 = Rect2(0.0854, 0.7358, 0.3947, 0.15)
+const ADVENTURE_PIP: float = 60.0 / 2100.0
+const CREATURE_PAGE_RULES: Rect2 = Rect2(0.5267, 0.65, 0.3867, 0.2358)
+const LEFT_PAGE: Rect2 = Rect2(73.0 / 1500.0, 1313.0 / 2100.0, 680.0 / 1500.0, 625.0 / 2100.0)
+const RIGHT_PAGE: Rect2 = Rect2(753.0 / 1500.0, 1312.0 / 2100.0, 679.0 / 1500.0, 626.0 / 2100.0)
 
 ## Mana cost pips: right edge, top and diameter (of the height), and the drop shadow's
 ## offset (x of the width, y of the height).

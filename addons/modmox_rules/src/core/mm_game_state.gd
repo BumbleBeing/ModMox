@@ -539,6 +539,10 @@ func fingerprint() -> String:
 				entries.append("%d exerted by %d" % [game_object.id, game_object.exerted_by_player_id])
 			if game_object.cast_with_flashback:
 				entries.append("%d flashback" % game_object.id)
+			if game_object.is_adventure_spell:
+				entries.append("%d adventure spell" % game_object.id)
+			if game_object.is_on_adventure:
+				entries.append("%d on an adventure" % game_object.id)
 			if game_object.cast_from_library:
 				entries.append("%d from library%s" % [game_object.id, " casting" if game_object.is_being_cast_from_library else ""])
 			for index: int in game_object.permission_used_game_turn:

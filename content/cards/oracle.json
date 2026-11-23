@@ -309,6 +309,41 @@
 		"set_name": "Worldwake",
 		"type_line": "Sorcery"
 	},
+	"faerie_guidemother": {
+		"card_faces": [
+			{
+				"artist": "Mila Pesic",
+				"artist_id": "81c5ec23-220b-4efa-b7df-9e49dd371e8d",
+				"flavor_text": "No one is so lost that a faerie can't find them.",
+				"illustration_id": "baa79d7b-81ac-4580-b56a-9729feac4971",
+				"mana_cost": "{W}",
+				"name": "Faerie Guidemother",
+				"object": "card_face",
+				"oracle_text": "Flying",
+				"power": "1",
+				"toughness": "1",
+				"type_line": "Creature — Faerie"
+			},
+			{
+				"artist": "Mila Pesic",
+				"artist_id": "81c5ec23-220b-4efa-b7df-9e49dd371e8d",
+				"mana_cost": "{1}{W}",
+				"name": "Gift of the Fae",
+				"object": "card_face",
+				"oracle_text": "Target creature gets +2/+1 and gains flying until end of turn. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Sorcery — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{W} // {1}{W}",
+		"name": "Faerie Guidemother // Gift of the Fae",
+		"oracle_id": "04fbb7aa-0dd4-4ac6-837d-822227fb6356",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Throne of Eldraine",
+		"toughness": "1",
+		"type_line": "Creature — Faerie // Sorcery — Adventure"
+	},
 	"felidar_retreat": {
 		"mana_cost": "{3}{W}",
 		"name": "Felidar Retreat",

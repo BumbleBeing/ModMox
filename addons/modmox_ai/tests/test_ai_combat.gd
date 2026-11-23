@@ -139,6 +139,22 @@ func test_a_cheap_agent_never_blocks_a_menace_attacker_with_one_creature() -> vo
 		"One Cub can't block it, lethal or not.")
 
 
+func test_a_creature_that_cant_be_blocked_attacks_past_a_blocker_that_would_kill_it() -> void:
+	var phantom: MmCardDefinition = Scenario.creature("Phantom", 2, 1, [CantBeBlockedAbility.new()])
+	var engine: MmEngine = Scenario.combat_ready([phantom], [AiScenario.free_alpha("hill_giant")])
+	assert_not_null(engine)
+
+	assert_eq((AiScenario.ask(engine, AiAgent.new()) as Array).size(), 1)
+
+
+func test_a_cheap_agent_guesses_that_nothing_blocks_a_creature_that_cant_be_blocked() -> void:
+	var phantom: MmCardDefinition = Scenario.creature("Phantom", 2, 1, [CantBeBlockedAbility.new()])
+	var engine: MmEngine = Scenario.combat_ready([phantom], [AiScenario.free_alpha("hill_giant")])
+	assert_not_null(engine)
+
+	assert_eq((AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP)) as Array).size(), 1)
+
+
 func test_does_not_attack_into_an_even_trade_when_the_race_is_even() -> void:
 	# Even clocks set the SAFE aggression level: only attacks it survives.
 	var engine: MmEngine = Scenario.combat_ready([AiScenario.free_alpha("grizzly_bears")], [AiScenario.free_alpha("grizzly_bears")])

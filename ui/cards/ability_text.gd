@@ -384,6 +384,10 @@ func _ability(ability: MmAbility) -> String:
 		return "As %s enters, choose a creature type." % _noun
 	if ability is EntersTappedAbility:
 		return "%s enters tapped." % _capitalized(_noun)
+	if ability is CantBeBlockedAbility:
+		return "%s can't be blocked." % _capitalized(_noun)
+	if ability is CantBeCounteredAbility:
+		return "This spell can't be countered."  # Only ever said of the card as a spell.
 	if ability is EntersWithCountersAbility:
 		var entering: EntersWithCountersAbility = ability as EntersWithCountersAbility
 		# Later: "where X is ..." for an amount other than a number or the X chosen as it was cast.

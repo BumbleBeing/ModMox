@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://o07gvf2xa8l0"
+path="res://.godot/imported/g.png-4c5900bd831ae101dd872482a90997eb.image"
+
+[deps]
+
+source_file="res://assets/card_frames/adventure/g.png"
+dest_files=["res://.godot/imported/g.png-4c5900bd831ae101dd872482a90997eb.image"]
+
+[params]
+

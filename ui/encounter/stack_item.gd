@@ -49,6 +49,11 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 		if seen.cast_from_library:
 			# Game ADR 0055: both players see where it came from.
 			item.first_line += " (top of library)"
+		if seen.is_adventure_spell and seen.adventurer != null:
+			# Engine ADR 0078, game ADR 0079: both players see it, and what it leaves behind.
+			item.first_line += " (Adventure)"
+			item.full_text += " · Cast as an Adventure: exiled as it resolves, and %s may then be cast from exile." \
+				% seen.adventurer.name
 	item.second_line = called.of(seen.controller_id)
 	var target_names: PackedStringArray = []
 	for target: MmReference in seen.targets:

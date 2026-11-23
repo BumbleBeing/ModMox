@@ -58,9 +58,19 @@ static func mismatches(definition: MmCardDefinition, entry: Dictionary) -> Packe
 			found.append("rebalanced: %s" % field)
 	var oracle: MmCardDefinition = OracleReading.of(entry).definition
 	for field: String in CHECKED_FIELDS:
-		if not rebalanced.has(field) and not _agree(field, definition, oracle):
+		if not rebalanced.has(field) and not _agree_with_adventure(field, definition, oracle):
 			found.append(field)
 	return found
+
+
+## Whether [param definition] agrees with [param oracle] in [param field], and so does its
+## Adventure, if either has one (engine ADR 0078).
+static func _agree_with_adventure(field: String, definition: MmCardDefinition, oracle: MmCardDefinition) -> bool:
+	if not _agree(field, definition, oracle):
+		return false
+	if definition.adventure == null or oracle.adventure == null:
+		return definition.adventure == oracle.adventure
+	return _agree(field, definition.adventure, oracle.adventure)
 
 
 static func _agree(field: String, definition: MmCardDefinition, oracle: MmCardDefinition) -> bool:

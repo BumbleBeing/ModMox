@@ -22,6 +22,9 @@ var is_legendary: bool = false
 ## Frames blend across the middle, under the colorless Frame's silver bars and P/T box, as
 ## printed hybrid cards are. A two-color card with no hybrid symbol of its colors is gold.
 var is_hybrid: bool = false
+## An Adventurer card (engine ADR 0078): CardConjurer's Adventure frame, its rules box an open
+## book, in its color, gold for two or more, and the artifact one for none (game ADR 0079).
+var is_adventure: bool = false
 
 
 ## The Frame for [param look]. A land's color category follows the colors of mana it can
@@ -46,6 +49,7 @@ static func of(look: CardLook) -> FrameSpec:
 				found = [pair[0], pair[1]]
 	spec.letters = found
 	spec.is_hybrid = not spec.is_land and found.size() == 2 and _has_hybrid_of(look.mana_cost, found)
+	spec.is_adventure = not spec.is_land and look.adventure != null
 	return spec
 
 
@@ -55,6 +59,8 @@ func key() -> String:
 	var text: String = "%s%d:%s" % ["land" if is_land else "card", letters.size(), "".join(letters)]
 	if is_hybrid:
 		text += ":hybrid"
+	if is_adventure:
+		text += ":adventure"
 	if is_artifact and not is_land:
 		text += ":artifact"
 	if is_creature:
@@ -72,6 +78,7 @@ func without_power_toughness() -> FrameSpec:
 	copy.is_artifact = is_artifact
 	copy.is_legendary = is_legendary
 	copy.is_hybrid = is_hybrid
+	copy.is_adventure = is_adventure
 	return copy
 
 
@@ -80,6 +87,8 @@ func layers() -> Array[FrameLayer]:
 	var result: Array[FrameLayer] = []
 	var folder: String = "lands" if is_land else "frames"
 	match letters.size():
+		_ when is_adventure:
+			result.append(FrameLayer.full("adventure/" + (letters[0] if letters.size() == 1 else ("a" if letters.is_empty() else "m"))))
 		0:
 			result.append(FrameLayer.full("lands/c" if is_land else ("frames/a" if is_artifact else "frames/c")))
 		1:

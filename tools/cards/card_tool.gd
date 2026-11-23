@@ -199,12 +199,23 @@ func _review(file_names: PackedStringArray) -> bool:
 		var look: CardLook = CardLook.of_definition(load(paths[file_name]) as MmCardDefinition)
 		var entry: Dictionary = library.entries[file_name]
 		print("== %s ==" % entry.get("name", file_name))
-		print("oracle:")
-		for line: String in str(entry.get("oracle_text", "")).split("\n"):
-			print("    " + line)
-		print("generated:")
-		for line: String in look.rules_text.split("\n"):
-			print("    " + line)
+		# An Adventurer card's text is on its faces, the creature's then its Adventure's
+		# (engine ADR 0078); each is reviewed against what is generated for its half.
+		var faces: Array = entry.get("card_faces", [{"oracle_text": entry.get("oracle_text", "")}]) as Array
+		var halves: Array[CardLook] = [look]
+		if look.adventure != null:
+			halves.append(look.adventure)
+		for index: int in faces.size():
+			var face: Dictionary = faces[index] as Dictionary  # Parsed JSON.
+			if faces.size() > 1:
+				print("-- %s --" % face.get("name", ""))
+			print("oracle:")
+			for line: String in str(face.get("oracle_text", "")).split("\n"):
+				print("    " + line)
+			print("generated:")
+			var generated: String = halves[index].rules_text if index < halves.size() else ""
+			for line: String in generated.split("\n"):
+				print("    " + line)
 		print("")
 	return succeeded
 
@@ -222,9 +233,10 @@ func _entry_named(card_name: String) -> Dictionary:
 ## The Oracle Data entry for [param card], a Scryfall card object, with its first printing's
 ## set and rarity, or an empty Dictionary once the reason is printed.
 func _entry_of(card: Dictionary) -> Dictionary:
-	if card.has("card_faces"):
+	if card.has("card_faces") and card.get("layout", "") != "adventure":
 		# Its printings keep their art on each face, so none would be chosen, and the reading
-		# refuses it anyway: it is Set Aside, and has no first set to go in yet.
+		# refuses it anyway: it is Set Aside, and has no first set to go in yet. An Adventurer
+		# card's art is the whole card's, as a one-faced card's is (engine ADR 0078).
 		return OracleData.entry_of(card, {})
 	var first_printing: Dictionary = FirstPrinting.choose(await _scryfall.printings_of(card))
 	if first_printing.is_empty():

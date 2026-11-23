@@ -57,6 +57,20 @@ func test_a_cheap_agent_counters_a_spell_that_costs_at_least_as_much() -> void:
 	assert_eq(AiScenario.cast_name(engine, play), "Counter")
 
 
+func test_a_spell_that_cant_be_countered_is_let_through() -> void:
+	var engine: MmEngine = _villain_facing(_stubborn_wurm(), Scenario.free_counter("Counter"))
+
+	assert_true(Scenario.offers_cast(engine, Scenario.card_in_hand(engine, engine.villain(), "Counter")), "It may still be targeted.")
+	assert_true(AiScenario.action_at(engine, AiScenario.ask(engine, AiAgent.new())) is PassAction)
+
+
+func test_a_cheap_agent_keeps_its_counter_for_a_spell_that_can_be_countered() -> void:
+	var engine: MmEngine = _villain_facing(_stubborn_wurm(), Scenario.free_counter("Counter"))
+	var cheap: AiAgent = AiAgent.new(null, AiAgent.Mode.CHEAP)
+
+	assert_true(AiScenario.action_at(engine, AiScenario.ask(engine, cheap)) is PassAction)
+
+
 func test_a_cheap_agent_keeps_a_counter_that_costs_more_than_the_spell() -> void:
 	var dear: MmCardDefinition = Scenario.instant("Counter", Scenario.mana_cost(1), [Scenario.target_spell()], [Scenario.counter(Scenario.targeted(0))])
 	var engine: MmEngine = AiScenario.ready_with([], [], [Scenario.free_shock("Shock", 2), dear, Scenario.basic_land("Island")],
@@ -165,6 +179,13 @@ func _hero_facing_a_response() -> MmEngine:
 ## The Hero has cast [param spell] and passed, so the Villain, holding [param counter],
 ## has priority with it on the stack. Each held exactly one copy, among lands, so neither
 ## play-out can simply do the same again with the next copy.
+## Craw Wurm, costing {0}, with "This spell can't be countered."
+func _stubborn_wurm() -> MmCardDefinition:
+	var wurm: MmCardDefinition = AiScenario.free_alpha("craw_wurm")
+	wurm.abilities.append(CantBeCounteredAbility.new())
+	return wurm
+
+
 func _villain_facing(spell: MmCardDefinition, counter: MmCardDefinition) -> MmEngine:
 	var setup: MmEncounterSetup = Scenario.setup_with(Scenario.deck_of(Scenario.basic_land("Forest"), 32, spell, 8),
 		Scenario.deck_of(Scenario.basic_land("Island"), 32, counter, 8))

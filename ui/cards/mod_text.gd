@@ -15,10 +15,10 @@ const ANY_CARD_NOUN: String = "this card"
 
 
 ## The whole text of [param mod]: its Augmentation's sentence, then its Mod Cost's if it has
-## one.
+## one that costs anything. A Mod Cost of {0} adds nothing to say.
 static func of(mod: Mod) -> String:
 	var text: String = augmentation_of(mod)
-	if mod.mod_cost != null:
+	if mod.mod_cost != null and (mod.mod_cost.cost.mana_value() > 0 or mod.mod_cost.cost.x_count > 0):
 		text += " " + mod_cost_of(mod.mod_cost)
 	return text
 

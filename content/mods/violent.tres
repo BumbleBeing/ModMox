@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_kj66f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/haste_ability.gd" id="2_mwf2d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_ability_modification.gd" id="3_gnhh4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/trample_ability.gd" id="4_legat"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_power_toughness_modification.gd" id="5_x64e6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="6_lgfm7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="7_0smnm"]
+[ext_resource type="Script" path="res://run/mod.gd" id="8_uep3l"]
+
+[sub_resource type="Resource" id="Resource_3mlaj"]
+script = ExtResource("2_mwf2d")
+
+[sub_resource type="Resource" id="Resource_8bsgo"]
+script = ExtResource("3_gnhh4")
+ability = SubResource("Resource_3mlaj")
+
+[sub_resource type="Resource" id="Resource_ad822"]
+script = ExtResource("4_legat")
+
+[sub_resource type="Resource" id="Resource_3t0px"]
+script = ExtResource("3_gnhh4")
+ability = SubResource("Resource_ad822")
+
+[sub_resource type="Resource" id="Resource_t5yqx"]
+script = ExtResource("5_x64e6")
+power = 1
+toughness = 1
+
+[sub_resource type="Resource" id="Resource_kx5ve"]
+script = ExtResource("6_lgfm7")
+hybrid_symbols = Array[Vector2i]([Vector2i(3, 4)])
+
+[sub_resource type="Resource" id="Resource_srvsb"]
+script = ExtResource("7_0smnm")
+cost = SubResource("Resource_kx5ve")
+
+[resource]
+script = ExtResource("8_uep3l")
+name = "Violent"
+rarity = 3
+augmentation = Array[ExtResource("1_kj66f")]([SubResource("Resource_8bsgo"), SubResource("Resource_3t0px"), SubResource("Resource_t5yqx")])
+mod_cost = SubResource("Resource_srvsb")
+card_types = Array[int]([1])

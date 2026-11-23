@@ -43,6 +43,8 @@ static func compute(state: MmGameState) -> Dictionary[int, MmCharacteristics]:
 ## characteristic-defining abilities applied (CR 604.3).
 static func outside_the_battlefield(state: MmGameState, game_object: MmGameObject) -> MmCharacteristics:
 	var characteristics: MmCharacteristics = MmCharacteristics.printed(game_object.definition)
+	if game_object.is_adventure_spell and characteristics.adventure != null:
+		characteristics = characteristics.adventure  # CR 715.3b: the Adventure alone.
 	_apply_defining_abilities(state, game_object, characteristics)
 	if game_object.zone() == state.stack:
 		characteristics.chosen_x = game_object.chosen_x  # CR 202.3e.

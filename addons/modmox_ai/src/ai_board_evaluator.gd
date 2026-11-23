@@ -83,6 +83,8 @@ static func creature_value(state: MmGameState, creature: MmGameObject) -> int:
 			value += 5 * (damage - 1)
 		elif ability is MenaceAbility:
 			value += 5 * damage
+		elif ability is CantBeBlockedAbility:
+			value += 15 * damage
 		elif ability is IndestructibleAbility:
 			value += 70
 		elif ability is ProtectionAbility:

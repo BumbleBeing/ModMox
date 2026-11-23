@@ -163,7 +163,8 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		elif action is PlayLandAction:
 			_play_land(action as PlayLandAction)
 		elif action is CastSpellAction:
-			_cast = CastProcedure.cast_spell(_state, decision.player_id, _state.object((action as CastSpellAction).object_id))
+			var cast: CastSpellAction = action as CastSpellAction
+			_cast = CastProcedure.cast_spell(_state, decision.player_id, _state.object(cast.object_id), cast.as_adventure)
 		elif action is ActivateAbilityAction:
 			_activate(action as ActivateAbilityAction, decision.player_id)
 		else:
@@ -295,8 +296,9 @@ func _current_step() -> MmTurn.Step:
 
 ## The actions [param player_id] may take while holding priority, in a deterministic order
 ## (ADR 0012): Pass, then land plays, then spells from the hand, then spells from the
-## graveyard with flashback (CR 702.34a), then the top card of the library with a
-## permission (ADR 0054), then abilities of permanents, then
+## graveyard with flashback (CR 702.34a), then cards on an adventure in exile (CR 715.3d),
+## then the top card of the library with a permission (ADR 0054), then abilities of
+## permanents, then
 ## abilities of Emblems and Potions (ADR 0036), then abilities of cards in the hand, such
 ## as cycling (ADR 0059), each by object ID and abilities by their order on the object. A
 ## mana ability that adds mana of any color is offered once for each color, in WUBRG order
@@ -312,8 +314,14 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 	for card: MmGameObject in hand:
 		if _may_cast(player, card):
 			actions.append(CastSpellAction.new(card.id))
+		# CR 715.3: an Adventurer card may be cast as its Adventure too, offered after it.
+		if _state.characteristics_of(card).adventure != null and _may_cast(player, card, true):
+			actions.append(CastSpellAction.new(card.id, true))
 	for card: MmGameObject in _sorted_by_id(player.graveyard.objects()):
 		if _may_cast(player, card):
+			actions.append(CastSpellAction.new(card.id))
+	for card: MmGameObject in _sorted_by_id(_state.exile.objects()):
+		if card.is_on_adventure and card.owner_id == player.id and _may_cast(player, card):
 			actions.append(CastSpellAction.new(card.id))
 	var top: MmGameObject = player.library.top()
 	if top != null and _may_cast(player, top):
@@ -379,9 +387,17 @@ func _sorcery_timing(player: MmPlayer) -> bool:
 ## cost (CR 702.34a); from the top of the library only with a permission not yet Spent
 ## this turn (CR 601.3, ADR 0054), for its mana cost; each is less any cost reduction
 ## (CR 601.2f). Any card but a land may be cast, so permanent spells need no special case
-## (CR 608.3).
-func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
+## (CR 608.3). [param as_adventure]: cast from the hand as its Adventure, with only the
+## Adventure's characteristics (CR 715.3a); from exile only a card on an adventure, and only
+## as the creature (CR 715.3d).
+func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false) -> bool:
 	var characteristics: MmCharacteristics = _state.characteristics_of(card)
+	if as_adventure:
+		if card.zone() != player.hand or characteristics.adventure == null:
+			return false
+		characteristics = characteristics.adventure
+	if card.zone() == _state.exile and not card.is_on_adventure:
+		return false
 	var costs: Array[MmCost] = []
 	if card.zone() == player.graveyard:
 		var flashback: FlashbackAbility = CastProcedure.flashback_of(characteristics)
@@ -410,7 +426,7 @@ func _may_cast(player: MmPlayer, card: MmGameObject) -> bool:
 			return false
 	# A flashback cost with no mana in it needs none. What is paid is less any cost
 	# reduction (CR 601.2f).
-	var to_pay: MmManaCost = CastProcedure.mana_to_pay(_state, player.id, card)
+	var to_pay: MmManaCost = CastProcedure.mana_to_pay(_state, player.id, card, as_adventure)
 	return to_pay == null or ManaPayment.can_afford(_state, player.id, to_pay)
 
 

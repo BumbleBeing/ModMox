@@ -383,6 +383,8 @@ func _fill_text() -> void:
 		var printed: String = _look.printed_rules_text()
 		if printed != "":
 			lines.assign(Array(printed.split("\n")))
+		# Game ADR 0079: an Adventure's name and cost, type line and rules under its creature's.
+		lines.append_array(_look.adventure_text_lines())
 	else:
 		for index: int in _look.rules_lines.size():
 			if _look.is_ability_spent(index):

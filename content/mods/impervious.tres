@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_iynkn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/indestructible_ability.gd" id="2_awmw7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_ability_modification.gd" id="3_olqtw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="4_isemv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="5_g7nbk"]
+[ext_resource type="Script" path="res://run/mod.gd" id="6_j3q3b"]
+
+[sub_resource type="Resource" id="Resource_l0yte"]
+script = ExtResource("2_awmw7")
+
+[sub_resource type="Resource" id="Resource_k1osn"]
+script = ExtResource("3_olqtw")
+ability = SubResource("Resource_l0yte")
+
+[sub_resource type="Resource" id="Resource_pegld"]
+script = ExtResource("4_isemv")
+generic = 2
+
+[sub_resource type="Resource" id="Resource_mibqb"]
+script = ExtResource("5_g7nbk")
+cost = SubResource("Resource_pegld")
+
+[resource]
+script = ExtResource("6_j3q3b")
+name = "Impervious"
+rarity = 3
+augmentation = Array[ExtResource("1_iynkn")]([SubResource("Resource_k1osn")])
+mod_cost = SubResource("Resource_mibqb")
+card_types = Array[int]([0, 1, 2])

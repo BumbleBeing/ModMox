@@ -4,6 +4,9 @@ extends Control
 ## artist. Used wherever a card is read rather than played on: the hand, the stack, zone
 ## viewers and the inspector.
 
+## Over the creature's page of a spell cast as its Adventure, as the prototype dimmed it.
+const ADVENTURE_CAST_SHADE: Color = Color(0, 0, 0, 0.45)
+
 var _look: CardLook
 var _art: TextureRect = null
 var _art_fallback: AnchoredText = null
@@ -11,6 +14,10 @@ var _title: AnchoredText
 var _type_line: AnchoredText
 var _artist: AnchoredText = null
 var _rules: RulesText = null
+## An Adventurer card's left page (game ADR 0079): its Adventure's name, type line and rules.
+var _adventure_title: AnchoredText = null
+var _adventure_type_line: AnchoredText = null
+var _adventure_rules: RulesText = null
 var _shape: Panel = null
 ## The Keyword Chips shown, and where each is, in the face's own coordinates.
 var _chips: Array[KeywordChip] = []
@@ -37,6 +44,8 @@ func setup(look: CardLook, height: float) -> void:
 	_type_line = _text(shape, CardGeometry.on_card(CardGeometry.TYPE_LINE, size_now), look.type_line_texts(),
 			look.type_line_colors(), CardFonts.title(), 0.68, HORIZONTAL_ALIGNMENT_LEFT)
 	_add_rules(shape, size_now, spec)
+	if look.adventure != null:
+		_add_adventure_page(shape, size_now)
 	if spec.is_creature:
 		_text(shape, CardGeometry.on_card(CardGeometry.POWER_TOUGHNESS_TEXT, size_now), look.power_toughness_texts(),
 				look.power_toughness_colors(), CardFonts.title(), 1.1, HORIZONTAL_ALIGNMENT_CENTER)
@@ -81,6 +90,19 @@ func rules() -> RulesText:
 
 func art() -> TextureRect:
 	return _art
+
+
+## An Adventurer card's Adventure name, type line and rules on its left page, or null.
+func adventure_title_text() -> AnchoredText:
+	return _adventure_title
+
+
+func adventure_type_line_text() -> AnchoredText:
+	return _adventure_type_line
+
+
+func adventure_rules() -> RulesText:
+	return _adventure_rules
 
 
 func art_fallback_text() -> AnchoredText:
@@ -157,14 +179,57 @@ func _add_rules(shape: Panel, card_size: Vector2, spec: FrameSpec) -> void:
 	var text: String = _look.printed_rules_text()
 	if text == "":
 		return
-	var box: Rect2 = CardGeometry.on_card(CardGeometry.RULES, card_size)
+	# An Adventurer card's own rules are on the right page of its book (game ADR 0079).
+	var fraction: Rect2 = CardGeometry.CREATURE_PAGE_RULES if _look.adventure != null else CardGeometry.RULES
+	var box: Rect2 = CardGeometry.on_card(fraction, card_size)
 	# The scroll bar stops short of the P/T box, which overlaps the rules box's corner.
 	var bar_height: float = box.size.y
 	if spec.is_creature:
-		bar_height = (CardGeometry.POWER_TOUGHNESS.position.y - CardGeometry.RULES.position.y - 0.004) * card_size.y
+		bar_height = (CardGeometry.POWER_TOUGHNESS.position.y - fraction.position.y - 0.004) * card_size.y
 	_rules = RulesText.new()
 	_rules.setup(box, text, CardGeometry.TYPE_LINE.size.y * card_size.y * 0.68, bar_height)
 	shape.add_child(_rules)
+
+
+## The left page of an Adventurer card's book, where CardConjurer's Adventure pack puts it:
+## the Adventure's name in white with its mana cost right-aligned, its type line in white,
+## and its rules. A spell cast as its Adventure dims the creature's page (game ADR 0079).
+func _add_adventure_page(shape: Panel, card_size: Vector2) -> void:
+	var adventure: CardLook = _look.adventure
+	var title: Rect2 = CardGeometry.on_card(CardGeometry.ADVENTURE_TITLE, card_size)
+	var pip: float = CardGeometry.ADVENTURE_PIP * card_size.y
+	var names: Array[String] = ManaSymbols.pip_names(adventure.mana_cost)
+	var left: float = title.end.x
+	for index: int in range(names.size() - 1, -1, -1):
+		left -= pip
+		var at: Vector2 = Vector2(left, title.position.y + (title.size.y - pip) / 2.0)
+		var shadow: Panel = CardShapes.rounded(Vector2(pip, pip), pip, Color.BLACK)
+		shadow.position = at + CardGeometry.PIP_SHADOW * card_size
+		shape.add_child(shadow)
+		shape.add_child(CardShapes.image(ManaSymbols.texture(names[index]), Rect2(at, Vector2(pip, pip))))
+		left -= pip * 0.04
+	_adventure_title = _text(shape, Rect2(title.position, Vector2(left - title.position.x - pip * 0.3, title.size.y)),
+		[adventure.name], [Color.WHITE], CardFonts.title(), 0.95, HORIZONTAL_ALIGNMENT_LEFT)
+	var type_runs: Array[String] = adventure.type_line_texts()
+	var whites: Array[Color] = []
+	for _run: String in type_runs:
+		whites.append(Color.WHITE)
+	_adventure_type_line = _text(shape, CardGeometry.on_card(CardGeometry.ADVENTURE_TYPE_LINE, card_size),
+		type_runs, whites, CardFonts.title(), 0.95, HORIZONTAL_ALIGNMENT_LEFT)
+	var text: String = adventure.printed_rules_text()
+	if text != "":
+		var box: Rect2 = CardGeometry.on_card(CardGeometry.ADVENTURE_RULES, card_size)
+		_adventure_rules = RulesText.new()
+		_adventure_rules.setup(box, text, CardGeometry.TYPE_LINE.size.y * card_size.y * 0.68, box.size.y)
+		shape.add_child(_adventure_rules)
+	if _look.is_adventure_cast:
+		var shade: ColorRect = ColorRect.new()
+		shade.color = ADVENTURE_CAST_SHADE
+		var page: Rect2 = CardGeometry.on_card(CardGeometry.RIGHT_PAGE, card_size)
+		shade.position = page.position
+		shade.size = page.size
+		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		shape.add_child(shade)
 
 
 static func _text(parent: Control, box: Rect2, texts: Array[String], colors: Array[Color], font: Font,

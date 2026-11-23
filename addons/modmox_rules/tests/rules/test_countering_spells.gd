@@ -201,20 +201,54 @@ func test_only_a_spell_on_the_stack_is_countered() -> void:
 	assert_eq(_moves_with(engine, Reason.COUNTER).size(), 0)
 
 
+func test_a_creature_spell_that_cant_be_countered_resolves_through_a_counter() -> void:
+	var stubborn: MmCardDefinition = Scenario.creature("Greeter", 1, 1, [CantBeCounteredAbility.new(),
+		Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.gain_life(5, Scenario.you())])])
+	var engine: MmEngine = _engine(null, stubborn)
+	var hero: MmPlayer = engine.hero()
+	Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Greeter"))
+	var greeter: int = Scenario.stack_ids(engine)[0]
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Counter"), [MmReference.to_object(greeter)]), "",
+		"CR 101.2: it may still be targeted.")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(Scenario.permanents_named(engine, hero.id, "Greeter").size(), 1)
+	assert_eq(hero.life, 25, "It entered, and its trigger resolved.")
+	assert_eq(_moves_with(engine, Reason.COUNTER).size(), 0)
+	assert_eq(Scenario.names(engine, hero.graveyard), ["Counter"], "The Counter resolved and did nothing.")
+
+
+func test_an_instant_that_cant_be_countered_still_does_what_it_says() -> void:
+	var stubborn: MmCardDefinition = Scenario.free_shock("Shock", 2)
+	stubborn.abilities.append(CantBeCounteredAbility.new())
+	var engine: MmEngine = _engine(null, null, stubborn)
+	var hero: MmPlayer = engine.hero()
+	Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Shock"), [MmReference.to_player(engine.villain().id)])
+
+	Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Counter"), [MmReference.to_object(Scenario.stack_ids(engine)[0])])
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.villain().life, 18)
+	assert_eq(_moves_with(engine, Reason.COUNTER).size(), 0)
+
+
 func _creature_counter() -> MmCardDefinition:
 	return Scenario.instant("Counter", Scenario.mana_cost(0),
 		[Scenario.target_spell(Scenario.of_type(MmCardTypes.CardType.CREATURE))], [Scenario.counter(Scenario.targeted(0))])
 
 
 ## The Hero in their first main phase with a Life Land on the battlefield, holding free
-## Shocks, Greeters ("when this enters, you gain 5 life") and [param counter] spells.
-func _engine(counter: MmCardDefinition = null, creature: MmCardDefinition = null) -> MmEngine:
+## Shocks (or [param shock]), Greeters ("when this enters, you gain 5 life", or
+## [param creature]) and [param counter] spells.
+func _engine(counter: MmCardDefinition = null, creature: MmCardDefinition = null, shock: MmCardDefinition = null) -> MmEngine:
 	var greeter: MmCardDefinition = creature
 	if greeter == null:
 		greeter = Scenario.creature("Greeter", 1, 1,
 			[Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.gain_life(5, Scenario.you())])])
 	var counter_card: MmCardDefinition = Scenario.free_counter("Counter") if counter == null else counter
-	var cards: Array[MmCardDefinition] = Scenario.cycled([Scenario.life_land(), Scenario.free_shock("Shock", 2), counter_card, greeter])
+	var shock_card: MmCardDefinition = Scenario.free_shock("Shock", 2) if shock == null else shock
+	var cards: Array[MmCardDefinition] = Scenario.cycled([Scenario.life_land(), shock_card, counter_card, greeter])
 	return Scenario.find_engine(Scenario.setup_with(cards, Scenario.cycled([])), func(running: MmEngine) -> bool:
 		if not Scenario.ready_in_main(running, 1, 1, "Counter"):
 			return false

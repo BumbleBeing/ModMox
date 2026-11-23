@@ -5,7 +5,7 @@ extends RefCounted
 ## any choice a part of its cost asks (paying that part then), then pay its mana one step
 ## at a time and the rest of its cost. A card cast from its graveyard is cast for its
 ## flashback cost (CR 702.34a), and one cast from the top of its library uses up a
-## permission to (ADR 0054).
+## permission to (ADR 0054). An Adventurer card may be cast as its Adventure (CR 715.3).
 ## When the payment can no longer be finished it reports itself stuck, and the engine
 ## rewinds the whole attempt (CR 728, ADR 0015).
 
@@ -36,9 +36,12 @@ var _paid_cost_indexes: Array[int] = []
 
 ## Begins casting [param card] from [param player_id]'s hand, from their graveyard for its
 ## flashback cost, or from the top of their library with a permission, which is used now
-## (CR 601.3, ADR 0054): CR 601.2a moves it to the stack.
-static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -> CastProcedure:
+## (CR 601.3, ADR 0054): CR 601.2a moves it to the stack. [param as_adventure] casts it as its
+## Adventure, with only the Adventure's characteristics (CR 715.3a-b, engine ADR 0078).
+static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false) -> CastProcedure:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
+	if as_adventure:
+		characteristics = characteristics.adventure
 	var procedure: CastProcedure = CastProcedure.new(state, player_id)
 	var spell: SpellAbility = spell_ability_of(characteristics)
 	procedure._ability = spell
@@ -48,7 +51,7 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -
 		procedure._target_requirements = spell.targets
 	# CR 601.2f: the total cost is fixed now. Choosing modes and targets first, as the rules
 	# order it, can change nothing it counts. Later: cost increases and additional costs.
-	var mana: MmManaCost = mana_to_pay(state, player_id, card)
+	var mana: MmManaCost = mana_to_pay(state, player_id, card, as_adventure)
 	if mana != null and mana.x_count > 0:
 		procedure._x_cost = mana
 		if procedure._stage != Stage.CHOOSE_MODE:
@@ -63,6 +66,7 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -
 		state.perform(CastPermissionUsedEvent.new(permission[0], permission[1], characteristics.name))
 	var move: ZoneChangeEvent = ZoneChangeEvent.new(card, state.stack, MmZone.BOTTOM, ZoneChangeEvent.Reason.CAST)
 	move.cast_with_flashback = is_flashback
+	move.cast_as_adventure = as_adventure
 	state.perform(move)
 	procedure._stack_object_id = move.new_object_id
 	return procedure
@@ -90,8 +94,11 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 ## The mana [param player_id] pays to cast [param card] (CR 601.2f): its mana cost from the
 ## hand or the top of the library, or its flashback cost from its graveyard (an alternative cost, CR 118.9), less
 ## every cost reduction it has (CR 118.7, ADR 0050). Null when that cost has no mana in it.
-static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject) -> MmManaCost:
+## [param as_adventure]: its Adventure's mana cost and reductions (CR 715.3a).
+static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false) -> MmManaCost:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
+	if as_adventure:
+		characteristics = characteristics.adventure
 	var mana: MmManaCost = characteristics.mana_cost
 	if card.zone().kind == MmZone.Kind.GRAVEYARD:
 		var flashback: FlashbackAbility = flashback_of(characteristics)
