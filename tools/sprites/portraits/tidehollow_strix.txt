@@ -1,0 +1,114 @@
+; Tidehollow Strix's Portrait, Pain Portrait and Blink Portrait, facing front: a tawny owl with
+; tall ear tufts dark on their inner edges, a dark streak down its brow between pale eyebrows,
+; angry glowing violet eyes in dark rims, pale cheeks, a short pale beak gaping over a red mouth,
+; a round streaked breast lit from the left, and wings raised behind it, their coverts orange
+; cloud-scrolls outlined in black under a black edge sprouting thorny curls, over layers of rust
+; flight feathers, rose-edged lower down, that run down to the bottom edge.
+; Drawn after the art of Tidehollow Strix: Shards of Alara (ala) #203, by Cyril Van Der Haegen.
+; Scryfall ID: 4aafc65d-faa8-4bfe-83ac-7714c969022b
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= tidehollow_strix
+..1...1..1............1..1...1..
+11.1.1..1i1..........1h1..1.1.11
+1g11.1..1ig1........1fh1..1.11f1
+1ii011..1hif1......1fhg1..110hh1
+1iji0h1.1hihf1....1fghg1.1g0hih1
+1jiii0g1hhihhf1111fgghgg1f0hhhi1
+1ii00ih1hiijihgfffghihhg1gh00hh1
+1i0jh0h1hijjjihffghiiihg1g0gi0h1
+1i0h00g1g00ijjiffhiih00f1f00g0h1
+1hh0hig1g0X00jjffii00W0f1fhg0gg1
+10hhihg1g0*Y*0gfff0*X*0f1fghgg01
+1g00hhg1h0X*U*0on0*U*W0g1fgg00f1
+1hi00gg1hg0000hong0000fg1ff00hg1
+1ihi0gf1gijjjj0on0iiiihf1ff0hgh1
+1ihi0ih1ghijj0cmmc0iihgf1gh0hgh1
+1hih0hg1ghiiji0!!0hihhgf1fg0ghg1
+1ghgfgf1iggijjicchiihffg1ffffgf1
+1ifhgg1jjihgggj00ifffghhg1ffgfh1
+1ihig1iijjjjjiiiiiihhhhhgf1fhgh1
+1ihig1iijijjjhiiihihhghhgf1fhgh1
+1hhig1iijijjjhiiihihhghhgf1fhgg1
+1hghg1iiiiiiiiiiiiihhhhhgf1fgfg1
+1ffhg1ihiiihiiihiihghhhggf1fgff1
+14ggf1ihiiihiiihihhghhhfgf1fffZ1
+14gff1iiiiiiiiiihhhhhhhggf1fffZ1
+14g4g1hiihiiihhhhghhhggggf1fZfZ1
+1Zg4g1hhhghhhghhhghhhfgggf1fZfz1
+1gf4g1hhhhhhhhhhhhhhgggggf1fZff1
+1zfZg1hghhhghhhghhgfgggfgf1fzfz1
+14Zgf1hghhhghhhggggfgggfff1ffzZ1
+14Zzf1ggggggggggggggggffff1fzzZ1
+1Zz4Z1gggfgggfgggfggffffff1zZzz1
+
+= tidehollow_strix_pain
+..1...1...1............1.1...1..
+11.1.1...1i1..........1h1.1.1.11
+1g11.1...1ig1........1fh1.1.11f1
+1ii011...1hif1......1fhg1.110hh1
+1iji0h1..1hihf1....1fghg11g0hih1
+1jiii0g11hhihhf1111fgghgg10hhhi1
+1ii00ihh1hiijihgfffghihhg1h00hh1
+1i0jh0hh1hijjjihffghiiihg10gi0h1
+1i0h00gg1ghhijjiffhiihggf100g0h1
+1hh0higg1gg00ijjffiih00ff1hg0gg1
+10hhihgg1ggii00gfff00hhff1ghgg01
+1g00hhgg1hg00iihonghh00fg1gg00f1
+1hi00ggg1hghijjhongihhgfg1f00hg1
+1ihi0gff1gijjjjhongiiiihf1f0hgh1
+1ihi0ihh1ghijjj0mm0hiihgf1h0hgh1
+1hih0hgg1ghiijii00hhihhgf1g0ghg1
+1ghgfgf1iiggijjijihiihfg1ffffgf1
+1ifhgg1jjiihgggjiihfffghg1ffgfh1
+1ihig1iijjjjjiiiiiihhhhhgf1fhgh1
+1ihig1iijijjjhiiihihhghhgf1fhgh1
+1hhig1iijijjjhiiihihhghhgf1fhgg1
+1hghg1iiiiiiiiiiiiihhhhhgf1fgfg1
+1ffhg1ihiiihiiihiihghhhggf1fgff1
+14ggf1ihiiihiiihihhghhhfgf1fffZ1
+14gff1iiiiiiiiiihhhhhhhggf1fffZ1
+14g4g1hiihiiihhhhghhhggggf1fZfZ1
+1Zg4g1hhhghhhghhhghhhfgggf1fZfz1
+1gf4g1hhhhhhhhhhhhhhgggggf1fZff1
+1zfZg1hghhhghhhghhgfgggfgf1fzfz1
+14Zgf1hghhhghhhggggfgggfff1ffzZ1
+14Zzf1ggggggggggggggggffff1fzzZ1
+1Zz4Z1gggfgggfgggfggffffff1zZzz1
+
+= tidehollow_strix_blink
+..1...1..1............1..1...1..
+11.1.1..1i1..........1h1..1.1.11
+1g11.1..1ig1........1fh1..1.11f1
+1ii011..1hif1......1fhg1..110hh1
+1iji0h1.1hihf1....1fghg1.1g0hih1
+1jiii0g1hhihhf1111fgghgg1f0hhhi1
+1ii00ih1hiijihgfffghihhg1gh00hh1
+1i0jh0h1hijjjihffghiiihg1g0gi0h1
+1i0h00g1g00ijjiffhiih00f1f00g0h1
+1hh0hig1g0h00jjffii00g0f1fhg0gg1
+10hhihg1g0iii0gfff0hhh0f1fghgg01
+1g00hhg1h0gggg0on0ffff0g1fgg00f1
+1hi00gg1hg0000hong0000fg1ff00hg1
+1ihi0gf1gijjjj0on0iiiihf1ff0hgh1
+1ihi0ih1ghijj0cmmc0iihgf1gh0hgh1
+1hih0hg1ghiiji0!!0hihhgf1fg0ghg1
+1ghgfgf1iggijjicchiihffg1ffffgf1
+1ifhgg1jjihgggj00ifffghhg1ffgfh1
+1ihig1iijjjjjiiiiiihhhhhgf1fhgh1
+1ihig1iijijjjhiiihihhghhgf1fhgh1
+1hhig1iijijjjhiiihihhghhgf1fhgg1
+1hghg1iiiiiiiiiiiiihhhhhgf1fgfg1
+1ffhg1ihiiihiiihiihghhhggf1fgff1
+14ggf1ihiiihiiihihhghhhfgf1fffZ1
+14gff1iiiiiiiiiihhhhhhhggf1fffZ1
+14g4g1hiihiiihhhhghhhggggf1fZfZ1
+1Zg4g1hhhghhhghhhghhhfgggf1fZfz1
+1gf4g1hhhhhhhhhhhhhhgggggf1fZff1
+1zfZg1hghhhghhhghhgfgggfgf1fzfz1
+14Zgf1hghhhghhhggggfgggfff1ffzZ1
+14Zzf1ggggggggggggggggffff1fzzZ1
+1Zz4Z1gggfgggfgggfggffffff1zZzz1

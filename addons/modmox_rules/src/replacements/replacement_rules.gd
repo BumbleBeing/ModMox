@@ -63,6 +63,9 @@ static func _from_static_abilities(state: MmGameState, event: MmEvent) -> Array[
 			var enters_tapped: EntersTappedAbility = own[index] as EntersTappedAbility
 			if enters_tapped != null:
 				found.append(ActiveReplacementEffect.of_static(enters_tapped.replacement(), entering, index))
+			var with_counters: EntersWithCountersAbility = own[index] as EntersWithCountersAbility
+			if with_counters != null:
+				found.append(ActiveReplacementEffect.of_static(with_counters.replacement(), entering, index))
 			var unless_paid: AsEntersPayOrEntersTappedAbility = own[index] as AsEntersPayOrEntersTappedAbility
 			if unless_paid != null and not moved.entry_cost_paid:
 				# ADR 0052: unpaid, or never asked, it enters tapped.

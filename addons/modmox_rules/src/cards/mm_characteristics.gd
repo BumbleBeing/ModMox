@@ -14,6 +14,12 @@ var name: String = ""
 var card_types: Array[MmCardTypes.CardType] = []
 var supertypes: Array[MmCardTypes.Supertype] = []
 var subtypes: Array[String] = []
+## CR 702.73a: every creature type, as changeling makes it, besides its own [member subtypes],
+## which keep only what it would otherwise have (ADR 0075). Ask has_subtype(), never the
+## list, for whether it has a subtype.
+var is_every_creature_type: bool = false
+## For a spell on the stack: the X chosen for its mana cost's {X} (CR 202.3e, ADR 0076), or 0.
+var chosen_x: int = 0
 ## Null for a card with no mana cost.
 var mana_cost: MmManaCost = null
 ## CR 105.2: worked out from the mana cost (CR 202.2) and the color indicator (CR 204), in
@@ -59,6 +65,9 @@ static func printed(definition: MmCardDefinition) -> MmCharacteristics:
 		if defining != null:
 			result.is_power_variable = result.is_power_variable or defining.power != null
 			result.is_toughness_variable = result.is_toughness_variable or defining.toughness != null
+		# CR 604.3, 613.3: a characteristic-defining ability, in every zone and first in layer 4.
+		if ability is ChangelingAbility:
+			result.is_every_creature_type = true
 	result.add_basic_land_abilities()
 	return result
 
@@ -97,13 +106,20 @@ func is_permanent() -> bool:
 	return false
 
 
+## Whether this has the subtype [param subtype]: one of its [member subtypes], or any creature
+## type while it is every creature type (CR 702.73a, ADR 0075).
+func has_subtype(subtype: String) -> bool:
+	return subtypes.has(subtype) or (is_every_creature_type and CreatureTypes.is_creature_type(subtype))
+
+
 func has_supertype(supertype: MmCardTypes.Supertype) -> bool:
 	return supertypes.has(supertype)
 
 
-## CR 202.3: 0 for a card with no mana cost.
+## CR 202.3: 0 for a card with no mana cost. On the stack it counts the X chosen for each
+## {X} (CR 202.3e).
 func mana_value() -> int:
-	return 0 if mana_cost == null else mana_cost.mana_value()
+	return 0 if mana_cost == null else mana_cost.mana_value() + chosen_x * mana_cost.x_count
 
 
 ## The intrinsic mana ability of each basic land type, built once and shared. It is a

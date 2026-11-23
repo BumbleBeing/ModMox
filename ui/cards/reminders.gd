@@ -17,6 +17,7 @@ const TEXTS: Dictionary[String, String] = {
 	"first_strike": "It deals combat damage before creatures without first strike.",
 	"double_strike": "It deals both first-strike and regular combat damage.",
 	"trample": "It can deal excess combat damage to the player it is attacking.",
+	"menace": "It can't be blocked except by two or more creatures.",
 	"indestructible": "Damage and effects that say \"destroy\" don't destroy it.",
 	"protection": "It can't be blocked, targeted, dealt damage, enchanted or equipped by anything of that kind.",
 	"equip": "Pay its cost to attach it to target creature you control. Equip only as a sorcery.",

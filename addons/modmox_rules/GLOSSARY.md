@@ -118,6 +118,10 @@ _Avoid_: Move, play, command
 Mana whose color is chosen as it is made, as a Treasure's "Add one mana of any color" (CR 106.1a). A mana ability that adds it is offered as one Action for each color, in WUBRG order, at priority and while paying, and the Action carries the color to the effect (ADR 0072).
 _Avoid_: Color choice (nothing is asked: the color is the Action's), rainbow mana
 
+**Hybrid Symbol**:
+A mana symbol in a cost that either of two colors pays, such as {B/R} (CR 107.4e). It counts one toward mana value and makes its card both colors. A unit of mana pays a plain symbol of its type before a Hybrid Symbol of its color, and that before generic mana (ADR 0077). Only two-color ones are in the game.
+_Avoid_: Split symbol, dual symbol, either-or mana
+
 **Turn Number**:
 How many turns a particular player has begun this encounter; shown to people as "<name>'s Turn 3". A player who has not had a turn yet is on Turn Number 0.
 _Avoid_: Game Turn (when one player's count is meant), round

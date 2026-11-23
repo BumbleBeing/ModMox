@@ -284,6 +284,40 @@ func test_a_you_may_asks_with_its_words_and_offers_no() -> void:
 
 
 
+func test_a_you_may_with_a_cost_asks_with_the_cost_in_its_words() -> void:
+	# Engine ADR 0076: "Wand's ability: remove a +1/+1 counter from this creature?"
+	var view: MmPlayerView = _view()
+	view.battlefield[0].card_types = [MmCardTypes.CardType.CREATURE]
+	var spread: PutCountersEffect = Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, Scenario.each_creature())
+	var paying: MayPayEffect = Scenario.may_pay(Scenario.remove_counters(), spread)
+	var ability: MmObjectView = _object(21, "Wand ability", MmGameObject.NO_CARD)
+	ability.source_object_id = 1
+	ability.ability = Scenario.triggered(Scenario.at_step(MmTurn.Step.BEGINNING_OF_COMBAT, MmTrigger.Whose.YOU), [paying])
+	view.stack = [ability]
+	var asked: ChooseYesOrNoDecision = ChooseYesOrNoDecision.new(HERO, 21, spread)
+	asked.resolution_cost = paying.cost
+
+	var prompt: InfoPrompt = InfoPrompt.of(asked, view)
+
+	assert_eq(prompt.text, "Wand's ability: remove a +1/+1 counter from this creature?")
+	assert_true(prompt.offers_no)
+	assert_false(prompt.can_cancel)
+
+
+func test_x_chosen_as_a_spell_is_cast_asks_with_the_stepper_and_can_be_canceled() -> void:
+	# Engine ADR 0076: "Choose {X} for Bounty", the stepper and Cancel, no No.
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Bounty", 5)]
+
+	var prompt: InfoPrompt = InfoPrompt.of(ChooseXDecision.new(HERO, 20, 4), view)
+
+	assert_eq(prompt.text, "Choose {X} for Bounty")
+	assert_true(prompt.chooses_x)
+	assert_eq(prompt.most_x, 4)
+	assert_false(prompt.offers_no)
+	assert_true(prompt.can_cancel, "A step of the cast.")
+
+
 func test_a_ward_cost_asks_to_pay_ward_for_the_warded_permanent_with_its_cost_after() -> void:
 	# ADR 0062: "Pay ward for Wand: {2}", No in the panel and Pay on the Pass Button.
 	var view: MmPlayerView = _ward_on_top()

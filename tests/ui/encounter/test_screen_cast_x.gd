@@ -1,0 +1,167 @@
+extends GutTest
+## Choosing X as a spell is cast, on the Encounter Screen (engine ADR 0076). The Hero casts
+## Bounty, a sorcery costing {X} ("You gain X life."), while their Mana Bird, which taps for
+## {W}{W}{W}, is untapped, so X runs 0 to 3. The Info Panel reads "Choose {X} for Bounty" with
+## the X stepper, starting at the most, on the left of its Answer Row and Cancel on the right,
+## with no "No". Nothing is selected at first, as for any question that spends mana (game ADR
+## 0066); once the stepper is, the Pass Button reads "Cast with {3}" and casts with that X.
+
+const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
+const DefaultAnswerAgent := preload("res://addons/modmox_rules/tests/support/default_answer_agent.gd")
+const HERO: int = MmEncounterSetup.HERO_PLAYER_ID
+const SCREEN: Vector2 = Vector2(1920, 1080)
+
+var _presenter: EncounterPresenter
+var _screen: EncounterScreen
+
+
+func after_each() -> void:
+	# What a redraw replaced is freed at the end of the frame.
+	await wait_process_frames(2)
+
+
+func test_the_info_panel_asks_for_x_with_the_stepper_and_cancel_and_no_no() -> void:
+	_open_asked()
+	var panel: InfoPanel = _screen.info_panel()
+
+	assert_eq(panel.prompt_text(), "Choose {X} for Bounty")
+	var stepper: XStepper = panel.x_stepper()
+	assert_not_null(stepper)
+	assert_eq(stepper.amount_text(), "3", "The most the Hero could pay.")
+	assert_true(stepper.plus_button().disabled)
+	assert_null(panel.no_button(), "Casting has no No; Cancel stands in its place.")
+	assert_not_null(panel.cancel_button())
+	assert_almost_eq(stepper.size.x, panel.cancel_button().size.x, 0.01, "The two halves of the Answer Row.")
+	assert_gt(panel.cancel_button().position.x, stepper.position.x)
+	assert_eq(panel.selected(), InfoPanel.NOTHING)
+	assert_eq(_screen.pass_button().shown_text(), "Choose an answer")
+
+
+func test_stepping_selects_the_stepper_and_the_pass_button_casts_with_the_x_shown() -> void:
+	_open_asked()
+
+	_screen.info_panel().x_stepper().minus_button().pressed.emit()
+
+	assert_eq(_screen.pass_button().shown_text(), "Cast with {2}")
+	_screen.pass_button().pressed.emit()
+	_presenter.wait_until_idle()
+	var paying: PayManaDecision = _presenter.snapshot().decision as PayManaDecision
+	assert_not_null(paying, "Paid by hand: Auto-tap is off in a test.")
+	assert_eq(paying.remaining_generic, 2)
+	assert_eq(_presenter.answer(_bird_answer()), "")
+	_presenter.wait_until_idle()
+	for attempt: int in 5:
+		if _presenter.snapshot().view.stack.is_empty():
+			break
+		_presenter.pass_priority()
+		_presenter.wait_until_idle()
+	assert_eq(_presenter.snapshot().view.life_totals[HERO], 22, "X = 2 life gained.")
+
+
+func test_cancel_puts_bounty_back_in_hand() -> void:
+	_open_asked()
+
+	_screen.info_panel().cancel_button().pressed.emit()
+	_presenter.wait_until_idle()
+
+	assert_true(_presenter.snapshot().decision is PriorityDecision)
+	assert_true(_presenter.snapshot().view.stack.is_empty())
+
+
+func test_with_auto_tap_what_it_would_tap_for_the_x_shown_glows() -> void:
+	_open_asked()
+	_presenter.set_auto_tapping(true)
+
+	_screen.info_panel().x_stepper().pressed.emit()
+
+	assert_false(BorderEffects.glow_colors(_screen.face_of(_bird_id())).is_empty(), "The Mana Bird would be tapped.")
+	for step: int in 3:
+		_screen.info_panel().x_stepper().minus_button().pressed.emit()
+	assert_true(BorderEffects.glow_colors(_screen.face_of(_bird_id())).is_empty(), "Nothing is tapped for X = 0.")
+
+
+func _bird_id() -> int:
+	for permanent: MmObjectView in _presenter.snapshot().view.battlefield:
+		if permanent.name == "Mana Bird":
+			return permanent.id
+	return -1
+
+
+## The answer that taps the Mana Bird.
+func _bird_answer() -> int:
+	var paying: PayManaDecision = _presenter.snapshot().decision as PayManaDecision
+	for index: int in paying.actions.size():
+		if paying.actions[index] is ActivateAbilityAction:
+			return index
+	return -1
+
+
+## Opens the screen, casts the Hero's Mana Bird on Game Turn 1, and begins casting Bounty in
+## the main phase of Game Turn 3, which asks for X.
+func _open_asked() -> void:
+	var hero_deck: Array[MmCardDefinition] = Scenario.cycled([Scenario.mana_bird(), Scenario.x_gain(),
+		Scenario.basic_land("Plains")])
+	var villain_deck: Array[MmCardDefinition] = Scenario.copies(Scenario.basic_land("Forest"), 40)
+	var chosen: MmEncounterSetup = null
+	for encounter_seed: int in range(1, 400):
+		var setup: MmEncounterSetup = Scenario.setup_with(hero_deck, villain_deck,
+			MmEncounterSetup.StartingPlayerRule.HERO_STARTS, encounter_seed)
+		var engine: MmEngine = MmEngine.start(setup)
+		Scenario.keep_all(engine)
+		var hero_hand: Array = Scenario.names(engine, engine.hero().hand)
+		if hero_hand.has("Mana Bird") and hero_hand.has("Bounty"):
+			chosen = setup
+			break
+	assert_not_null(chosen, "No seed gave the needed cards.")
+	_screen = EncounterScreen.new()
+	_screen.starts_itself = false
+	add_child_autofree(_screen)
+	_screen.size = SCREEN
+	_presenter = EncounterPresenter.new(chosen, DefaultAnswerAgent.new())
+	_presenter.set_auto_passing(false)
+	_screen.begin(_presenter)
+	_presenter.wait_until_idle()
+	_answer_pregame()
+	_play_to(1)
+	_cast("Mana Bird")
+	_play_to(3)
+	_cast("Bounty")
+	assert_true(_presenter.snapshot().decision is ChooseXDecision, "X is asked as Bounty is cast.")
+
+
+func _answer_pregame() -> void:
+	if _presenter.snapshot().decision is ChoosePlayOrDrawDecision:
+		_presenter.answer(ChoosePlayOrDrawDecision.Choice.PLAY)
+		_presenter.wait_until_idle()
+	_presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	_presenter.wait_until_idle()
+
+
+## Passes, declaring no attackers or blockers, until the Hero has priority with an empty
+## stack in the main phase of Game Turn [param game_turn].
+func _play_to(game_turn: int) -> void:
+	for attempt: int in 200:
+		var snapshot: EncounterSnapshot = _presenter.snapshot()
+		var decision: MmPendingDecision = snapshot.decision
+		if decision is PriorityDecision and snapshot.view.game_turn == game_turn \
+				and snapshot.view.step == MmTurn.Step.PRECOMBAT_MAIN and snapshot.view.stack.is_empty():
+			return
+		if decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
+			assert_eq(_presenter.answer([]), "")
+		else:
+			_presenter.pass_priority()
+		_presenter.wait_until_idle()
+	fail_test("Game Turn %d's main phase was never reached." % game_turn)
+
+
+## Casts the Hero's card named [param card_name] from their hand.
+func _cast(card_name: String) -> void:
+	var snapshot: EncounterSnapshot = _presenter.snapshot()
+	var priority: PriorityDecision = snapshot.decision as PriorityDecision
+	for index: int in priority.actions.size():
+		var cast: CastSpellAction = priority.actions[index] as CastSpellAction
+		if cast != null and EncounterSnapshot.name_in(snapshot.view, cast.object_id) == card_name:
+			assert_eq(_presenter.answer(index), "")
+			_presenter.wait_until_idle()
+			return
+	fail_test("%s could not be cast." % card_name)

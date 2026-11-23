@@ -60,6 +60,17 @@ func test_a_full_agent_simulates_at_most_three_types() -> void:
 	assert_eq(easy.explain_detail().split(", ").size(), AiAgent.MOST_TYPES_SIMULATED)
 
 
+func test_a_changeling_counts_toward_every_type() -> void:
+	# CR 702.73a: with a Wolf beside it, its controller controls two Wolves and one of
+	# everything else, its printed Shapeshifter included.
+	var engine: MmEngine = _choosing([Scenario.changeling(), Scenario.typed_creature("Wolf", 1, 1, ["Wolf"])])
+	var cheap: AiAgent = AiAgent.new(null, AiAgent.Mode.CHEAP)
+
+	var answer: int = AiScenario.ask(engine, cheap)
+
+	assert_eq(_named(engine, answer), "Wolf")
+
+
 ## The Hero has [param creatures] on the battlefield and [param extras] in hand, and has just
 ## cast a Rally, whose type is asked.
 func _choosing(creatures: Array[MmCardDefinition], extras: Array[MmCardDefinition] = []) -> MmEngine:

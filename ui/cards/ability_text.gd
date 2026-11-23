@@ -47,8 +47,8 @@ const ONCE_EACH_TURN: String = "This ability triggers only once each turn."
 ## The predefined tokens the game has (CR 111.10), by subtype, which is a token's name less
 ## "Token" (CR 111.4). One is created by that word alone, "create a Treasure token", since
 ## the rules give its characteristics, and calls itself "this token", as CR 111.10a words a
-## Treasure's ability. Only Treasure so far (ADR 0001).
-const PREDEFINED_TOKENS: Array[String] = ["Treasure"]
+## Treasure's ability. Treasure and Clue so far (ADR 0001).
+const PREDEFINED_TOKENS: Array[String] = ["Treasure", "Clue"]
 
 ## What the ability's source calls itself.
 var _noun: String
@@ -384,6 +384,10 @@ func _ability(ability: MmAbility) -> String:
 		return "As %s enters, choose a creature type." % _noun
 	if ability is EntersTappedAbility:
 		return "%s enters tapped." % _capitalized(_noun)
+	if ability is EntersWithCountersAbility:
+		var entering: EntersWithCountersAbility = ability as EntersWithCountersAbility
+		# Later: "where X is ..." for an amount other than a number or the X chosen as it was cast.
+		return "%s enters with %s on it." % [_capitalized(_noun), _counters(entering.amount, entering.kind)]
 	if ability is AsEntersPayOrEntersTappedAbility:
 		var unless_paid: AsEntersPayOrEntersTappedAbility = ability as AsEntersPayOrEntersTappedAbility
 		return "As %s enters, you may %s. If you don't, it enters tapped." % [_noun,
@@ -442,12 +446,18 @@ static func _keyword(ability: MmAbility) -> String:
 		return "Trample"
 	if ability is DeathtouchAbility:
 		return "Deathtouch"
+	if ability is MenaceAbility:
+		return "Menace"
 	if ability is LifelinkAbility:
 		return "Lifelink"
 	if ability is IndestructibleAbility:
 		return "Indestructible"
 	if ability is FlashAbility:
 		return "Flash"
+	if ability is ExaltedAbility:
+		return "Exalted"
+	if ability is ChangelingAbility:
+		return "Changeling"
 	return ""
 
 
@@ -530,6 +540,11 @@ func _cost_parts(mana: MmManaCost, costs: Array[MmCost]) -> PackedStringArray:
 			parts.append("Pay %d life" % (cost as PayLifeCost).amount)
 		elif cost is SacrificeThisCost:
 			parts.append("Sacrifice " + _noun)  # CR 701.21a: "Sacrifice this artifact".
+		elif cost is RemoveCountersCost:
+			var removing: RemoveCountersCost = cost as RemoveCountersCost
+			var how_many: ConstantValue = ConstantValue.new()
+			how_many.value = removing.amount
+			parts.append("Remove %s from %s" % [_counters(how_many, removing.kind), _noun])  # CR 118.3.
 		elif cost is TapCreaturesCost:
 			parts.append("Tap " + _how_many((cost as TapCreaturesCost).count, (cost as TapCreaturesCost).filter))
 		else:
@@ -579,6 +594,11 @@ func _bullets(ability: MmAbility) -> String:
 ## object plays as triggering once for all of them does (engine ADR 0054's addendum).
 func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 	var step: StepBeganTrigger = trigger as StepBeganTrigger
+	if step != null and step.step == MmTurn.Step.BEGINNING_OF_COMBAT:
+		# As Oracle words it: "At the beginning of combat on your turn".
+		if step.whose == MmTrigger.Whose.ANY:
+			return "at the beginning of each combat"
+		return "at the beginning of combat on %s turn" % ("your" if step.whose == MmTrigger.Whose.YOU else "each opponent's")
 	if step != null:
 		var whose: String = "your"
 		if step.whose == MmTrigger.Whose.ANY:
@@ -596,6 +616,15 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 		return "whenever %s %s" % [caster, _with_article(_spell_phrase(cast.filter))]
 	var attack: AttackersDeclaredTrigger = trigger as AttackersDeclaredTrigger
 	if attack != null:
+		if attack.alone:
+			# CR 506.5, as exalted's reminder words it (CR 702.83a).
+			var attacker: String = "a creature" if attack.filter == null else _with_article(_noun_phrase(attack.filter, false))
+			var whose_alone: String = " a player controls"
+			if attack.whose == MmTrigger.Whose.YOU:
+				whose_alone = " you control"
+			elif attack.whose == MmTrigger.Whose.OPPONENT:
+				whose_alone = " an opponent controls"
+			return "whenever %s%s attacks alone" % [attacker, whose_alone]
 		if attack.filter is IsSourceFilter:
 			return "whenever %s attacks" % _noun
 		if attack.filter != null:
@@ -862,6 +891,11 @@ func _effect(effect: MmEffect) -> String:
 	if effect is MayEffect:
 		# CR 603.5: "you may tap target creature".
 		return "you may " + _effect((effect as MayEffect).effect)
+	if effect is MayPayEffect:
+		# ADR 0076: "you may remove a +1/+1 counter from this creature. If you do, ..."
+		var paying: MayPayEffect = effect as MayPayEffect
+		var cost: String = ", ".join(_cost_parts(null, [paying.cost] as Array[MmCost]))
+		return "you may %s. If you do, %s" % [cost.left(1).to_lower() + cost.substr(1), _effect(paying.effect)]
 	if effect is MayPayXEffect:
 		# ADR 0061: "you may pay {X}. If you do, search your library for ...".
 		return "you may pay {X}. If you do, " + _effect((effect as MayPayXEffect).effect)
@@ -1162,6 +1196,8 @@ func _triggering_noun() -> String:
 		return "spell or ability"
 	if _trigger is BlockersDeclaredTrigger:
 		return "creature"  # The attacker it blocks.
+	if _trigger is AttackersDeclaredTrigger:
+		return "creature"  # The one attacking alone (CR 506.5).
 	var moved: ZoneChangeTrigger = _trigger as ZoneChangeTrigger
 	if moved != null:
 		var noun: String = _filter_words(moved.filter).noun
@@ -1414,7 +1450,8 @@ func _amount(value: MmValue) -> String:
 	var constant: ConstantValue = value as ConstantValue
 	if constant != null:
 		return str(constant.value)
-	if not value is PaidXValue:  # ADR 0061: "pay {X}" says what X is already.
+	# ADR 0061: "pay {X}" says what X is already, as {X} in a mana cost does (ADR 0076).
+	if not value is PaidXValue and not value is ChosenXValue:
 		_where = _value_phrase(value)
 	return "X"
 

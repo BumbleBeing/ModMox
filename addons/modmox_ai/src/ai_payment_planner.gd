@@ -3,9 +3,9 @@ extends RefCounted
 ## Chooses how to pay one step of a mana cost (A157, A169): mana already in the pool first,
 ## then the source that is cheapest to lose: a land, then another source, then a creature,
 ## then a source its mana ability sacrifices, such as a Treasure, which is lost for good.
-## Colored symbols are paid before generic mana, with sources making that color, so a
-## payment the engine offered is always finished; mana of any color is made only in a color
-## that pays something (ADR 0072). Auto-tap (game glossary) pays for the Hero with it too,
+## Colored symbols, hybrid ones too (ADR 0077), are paid before generic mana, with sources
+## making that color, so a payment the engine offered is always finished; mana of any color
+## is made only in a color that pays something (ADR 0072). Auto-tap (game glossary) pays for the Hero with it too,
 ## so both players pay the same way.
 
 ## Tiers, cheapest to use first.
@@ -40,9 +40,19 @@ static func colors_needed_by_hand(state: MmGameState, player_id: int) -> Diction
 		var cost: MmManaCost = state.characteristics_of(card).mana_cost
 		if cost == null:
 			continue
-		for symbol: MmMana.Type in cost.symbols:
+		for symbol: MmMana.Type in types_wanted_by(cost):
 			needed[symbol] = needed.get(symbol, 0) + 1
 	return needed
+
+
+## The type of mana each of [param cost]'s symbols wants, once for each symbol, and both of
+## a hybrid symbol's, since either pays it (ADR 0077).
+static func types_wanted_by(cost: MmManaCost) -> Array[MmMana.Type]:
+	var wanted: Array[MmMana.Type] = cost.symbols.duplicate()
+	for hybrid: Vector2i in cost.hybrid_symbols:
+		wanted.append(hybrid.x as MmMana.Type)
+		wanted.append(hybrid.y as MmMana.Type)
+	return wanted
 
 
 ## The type of mana [param action] gives, or -1 if unknown.
@@ -68,9 +78,11 @@ static func _rank(state: MmGameState, decision: PayManaDecision, action: MmActio
 	var demand: int = needed.get(produced, 0)
 	var is_pool: bool = action is PayWithManaAction
 	var kind: int = _POOL if is_pool else _kind_of(state, action as ActivateAbilityAction)
-	if decision.remaining_symbols.has(produced as MmMana.Type):
+	if decision.remaining_symbols.has(produced as MmMana.Type) \
+			or MmManaCost.hybrid_index_in(decision.remaining_hybrid_symbols, produced as MmMana.Type) != -1:
 		return [_POOL_FOR_COLOR if is_pool else _SOURCE_FOR_COLOR, kind, demand, _object_id(action)]
-	if not decision.remaining_symbols.is_empty() and decision.remaining_generic == 0:
+	if (not decision.remaining_symbols.is_empty() or not decision.remaining_hybrid_symbols.is_empty()) \
+			and decision.remaining_generic == 0:
 		return [_UNUSABLE, 0, 0, 0]
 	return [kind, 0, demand, _object_id(action)]
 

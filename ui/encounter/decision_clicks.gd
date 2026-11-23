@@ -308,7 +308,7 @@ func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView
 		option.row_text = COLOR_ROW % MmMana.SYMBOLS[action.mana_type as MmMana.Type]
 		# At priority every color can be chosen, so none glows (game ADR 0073).
 		option.has_glow = paying != null and ManaPayment.symbol_paid_by(action.mana_type as MmMana.Type,
-			paying.remaining_symbols, paying.remaining_generic) != ManaPayment.CANNOT_PAY
+			paying.remaining_symbols, paying.remaining_generic, paying.remaining_hybrid_symbols) != ManaPayment.CANNOT_PAY
 	# What the Hero holds and can use now is green, as a card to play is (A537).
 	_add_kind(action.object_id, Kind.MANA if is_mana else (Kind.PLAY if held != null else Kind.ABILITY))
 	if permanent != null or held != null:

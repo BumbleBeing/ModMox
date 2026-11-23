@@ -9,4 +9,4 @@ func matches(state: MmGameState, candidate: MmReference, _context: MmEffectConte
 	if not candidate.is_object():
 		return false
 	var game_object: MmGameObject = state.object_or_last_known(candidate.id)
-	return game_object != null and state.characteristics_of(game_object).subtypes.has(subtype)
+	return game_object != null and state.characteristics_of(game_object).has_subtype(subtype)

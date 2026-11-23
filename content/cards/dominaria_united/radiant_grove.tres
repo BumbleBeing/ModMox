@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_782fb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_ak5md"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_dcx46"]
+
+[sub_resource type="Resource" id="Resource_e3udy"]
+script = ExtResource("2_ak5md")
+
+[resource]
+script = ExtResource("2_dcx46")
+name = "Radiant Grove"
+card_types = Array[int]([4])
+subtypes = Array[String](["Forest", "Plains"])
+abilities = Array[ExtResource("1_782fb")]([SubResource("Resource_e3udy")])

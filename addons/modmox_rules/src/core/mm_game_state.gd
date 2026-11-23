@@ -548,6 +548,8 @@ func fingerprint() -> String:
 				entries.append("%d ability %d triggered turn %d" % [game_object.id, index, game_object.triggered_game_turn[index]])
 			if game_object.chosen_creature_type != "":
 				entries.append("%d chose %s" % [game_object.id, game_object.chosen_creature_type])
+			if game_object.chosen_x != 0:
+				entries.append("%d X %d" % [game_object.id, game_object.chosen_x])
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 

@@ -181,6 +181,11 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _yes_or_no(decision as ChooseYesOrNoDecision, world, source, rng)
 	if decision is ChooseXToPayDecision:
 		return _choose_x_to_pay(decision as ChooseXToPayDecision, world, source, rng)
+	if decision is ChooseXDecision:
+		# Engine ADR 0076: the most it could pay. Whether to cast at all was weighed already,
+		# with the cast played out by CHEAP Agents, which answer the same.
+		_reason = Reason.ONLY_CHOICE if (decision as ChooseXDecision).most == 0 else Reason.BEST_SCORE
+		return (decision as ChooseXDecision).most
 	if decision is SurveilDecision:
 		return _surveil(decision as SurveilDecision, world)
 	assert(false, "AiAgent cannot answer %s." % decision.describe())
@@ -588,17 +593,11 @@ static func _unlocks_a_spell(world: MmGameState, player_id: int, made: Array[MmM
 
 
 ## [param cost] with one mana of [param type] already paid: a symbol of that type if it has
-## one, else one generic.
+## one, else a hybrid symbol of that type, else one generic, as a payment spends it (ADR 0077).
 static func _less_one(cost: MmManaCost, type: MmMana.Type) -> MmManaCost:
-	var less: MmManaCost = MmManaCost.new()
-	less.generic = cost.generic
-	less.symbols = cost.symbols.duplicate()
-	var index: int = less.symbols.find(type)
-	if index != -1:
-		less.symbols.remove_at(index)
-	elif less.generic > 0:
-		less.generic -= 1
-	return less
+	var one: MmManaCost = MmManaCost.new()
+	one.symbols = [type] as Array[MmMana.Type]
+	return cost.reduced_by(one)
 
 
 # --- Targets, triggers and replacement effects --------------------------------------
@@ -942,9 +941,8 @@ static func _count_creature_types(decision: ChooseCreatureTypeDecision, world: M
 	var characteristics: MmCharacteristics = world.characteristics_of(game_object)
 	if not characteristics.has_card_type(MmCardTypes.CardType.CREATURE):
 		return
-	for subtype: String in characteristics.subtypes:
-		var index: int = decision.creature_types.find(subtype)
-		if index != -1:
+	for index: int in decision.creature_types.size():
+		if characteristics.has_subtype(decision.creature_types[index]):
 			counts[index] = counts.get(index, 0) + 1
 
 
@@ -1176,7 +1174,7 @@ func _search_rank(candidate_ids: Array[int], world: MmGameState, me: int) -> Arr
 		var cost: MmManaCost = world.characteristics_of(card).mana_cost
 		if cost == null or world.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND):
 			continue
-		for symbol: MmMana.Type in cost.symbols:
+		for symbol: MmMana.Type in AiPaymentPlanner.types_wanted_by(cost):
 			lacking[symbol] = lacking.get(symbol, 0) + 1
 	for permanent: MmGameObject in world.battlefield.objects():
 		if permanent.controller_id != me:
@@ -1233,10 +1231,11 @@ func _attackers(decision: DeclareAttackersDecision, world: MmGameState, source: 
 	if mode == Mode.FULL:
 		oracle = AiCombatOracle.new(source, rng.next_seed(), profile)
 		blockable = oracle.blockable(decision.candidate_ids)
-		duel = oracle.duel
+		duel = oracle.duel_among
 	else:
 		blockable = _guess_blockable(world, me, decision.candidate_ids)
-		duel = func(attacker_id: int, blocker_id: int) -> Array[bool]:
+		# The quick guess plays no triggers, so who else attacks changes nothing.
+		duel = func(attacker_id: int, blocker_id: int, _attacking: Array[int]) -> Array[bool]:
 			return AiQuickCombat.duel(world, attacker_id, blocker_id)
 	var planner: AiAttackPlanner = AiAttackPlanner.new(world, me, profile, rng, duel, blockable)
 	var attacking: Array[int] = planner.plan(decision.candidate_ids)
@@ -1461,6 +1460,7 @@ static func _with_cost(total: MmManaCost, more: MmManaCost) -> MmManaCost:
 	var both: MmManaCost = MmManaCost.new()
 	both.generic = total.generic + more.generic
 	both.symbols = total.symbols + more.symbols
+	both.hybrid_symbols = total.hybrid_symbols + more.hybrid_symbols
 	return both
 
 

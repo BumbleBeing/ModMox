@@ -1472,6 +1472,56 @@ func test_pride_sovereign_exerted_with_one_other_cat_makes_two_lifelink_cats_and
 	assert_eq(exerted.exerted_by_player_id, engine.hero().id)
 
 
+func test_guiding_hydra_enters_with_x_counters_and_spreads_one_at_the_beginning_of_combat() -> void:
+	# Engine ADR 0076: {X}{W}, a 1/0 that enters with X +1/+1 counters.
+	var hydra: MmCardDefinition = load("res://content/cards/reality_fracture/guiding_hydra.tres") as MmCardDefinition
+	var hero: Array[MmCardDefinition] = [Scenario.mana_bird(), Scenario.mana_bird("Second Bird")]
+	var hand: Array[MmCardDefinition] = [hydra]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero, no_cards, hand), hero, no_cards, hand,
+		no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+
+	assert_eq(Scenario.cast_with_x(engine, Scenario.card_in_hand(engine, engine.hero(), "Guiding Hydra"), 3), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	var id: int = Scenario.permanent_named(engine, engine.hero().id, "Guiding Hydra")
+	assert_eq(Scenario.pt(engine, id), [4, 3], "1/0 with three +1/+1 counters.")
+	var bird: int = Scenario.permanent_named(engine, engine.hero().id, "Second Bird")
+	assert_eq(Scenario.pass_until_step(engine, MmTurn.Step.BEGINNING_OF_COMBAT), "")
+	assert_eq(Scenario.pass_to_yes_or_no(engine), "")
+	assert_eq(engine.submit(ChooseYesOrNoDecision.Choice.YES), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(Scenario.pt(engine, id), [3, 2])
+	assert_eq(Scenario.counters_on(engine, bird, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 1)
+
+
+func test_the_clue_token_is_a_colorless_clue_artifact_that_sacrifices_itself_for_a_card() -> void:
+	# CR 111.10f.
+	var clue: MmCardDefinition = load("res://content/tokens/clue.tres") as MmCardDefinition
+	var printed: MmCharacteristics = MmCharacteristics.printed(clue)
+	assert_eq(printed.name, "Clue Token", "CR 111.4.")
+	assert_eq(printed.card_types, [MmCardTypes.CardType.ARTIFACT] as Array[MmCardTypes.CardType])
+	assert_eq(printed.subtypes, ["Clue"] as Array[String])
+	assert_eq(printed.colors, [] as Array[MmCardTypes.CardColor])
+	var bird: Array[MmCardDefinition] = [Scenario.mana_bird()]
+	var hoard: Array[MmCardDefinition] = [Scenario.free_tokens("Hoard", clue)]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(bird, no_cards, hoard),
+		bird, no_cards, hoard, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Hoard"), "")
+	var made: int = Scenario.tokens_on_battlefield(engine)[0]
+	var hand: int = engine.hero().hand.size()
+
+	assert_eq(Scenario.activate(engine, made), "")
+	assert_eq(Scenario.auto_pay(engine), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.hero().hand.size(), hand + 1, "It drew a card.")
+	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int], "Sacrificed, then gone (CR 111.7).")
+
+
 func test_the_treasure_token_is_a_colorless_treasure_artifact_that_sacrifices_itself_for_one_mana_of_any_color() -> void:
 	# CR 111.10a, engine ADR 0072.
 	var treasure: MmCardDefinition = load("res://content/tokens/treasure.tres") as MmCardDefinition

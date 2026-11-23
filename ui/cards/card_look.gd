@@ -8,6 +8,9 @@ extends RefCounted
 ## Power or toughness above its printed value prints green, below it red (A221).
 const RAISED: Color = Color("#1f7a2a")
 const LOWERED: Color = Color("#b3261e")
+## A type line names every creature type at once as this (ADR 0075), drawn in its own color.
+const EVERY_CREATURE_TYPE: String = "(All)"
+const EVERY_CREATURE_TYPE_COLOR: Color = Color("#6b2fa0")
 
 ## What kind of thing this is the look of. An Emblem and a Potion are not cards and have no
 ## card type (ADR 0036): whoever makes the look says which it is, with of_held().
@@ -23,6 +26,9 @@ var colors: Array[MmCardTypes.CardColor] = []
 var card_types: Array[MmCardTypes.CardType] = []
 var supertypes: Array[MmCardTypes.Supertype] = []
 var subtypes: Array[String] = []
+## Every creature type besides [member subtypes], as changeling makes it (CR 702.73a): the
+## type line says "(All)" for its creature types (ADR 0075).
+var is_every_creature_type: bool = false
 ## Null for a card with no mana cost, which is not the same as {0}.
 var mana_cost: MmManaCost = null
 var power: int = 0
@@ -67,6 +73,7 @@ static func of_characteristics(characteristics: MmCharacteristics, card_art_key:
 	look.card_types = characteristics.card_types.duplicate()
 	look.supertypes = characteristics.supertypes.duplicate()
 	look.subtypes = characteristics.subtypes.duplicate()
+	look.is_every_creature_type = characteristics.is_every_creature_type
 	look.mana_cost = characteristics.mana_cost
 	look.power = characteristics.power
 	look.toughness = characteristics.toughness
@@ -88,6 +95,7 @@ static func of_view(view: MmObjectView, card_art_key: String = "") -> CardLook:
 	look.card_types = view.card_types.duplicate()
 	look.supertypes = view.supertypes.duplicate()
 	look.subtypes = view.subtypes.duplicate()
+	look.is_every_creature_type = view.is_every_creature_type
 	look.mana_cost = view.mana_cost
 	look.power = view.power
 	look.toughness = view.toughness
@@ -189,6 +197,13 @@ func is_permanent() -> bool:
 
 ## The type line: supertypes, card types, then " — " and the subtypes.
 func type_line() -> String:
+	return "".join(PackedStringArray(type_line_texts()))
+
+
+## The type line in runs, one for each of type_line_colors(): all of it in one, except that
+## a look of every creature type ends in a run of its own, "(All)", which stands for its
+## creature types after any other subtypes (ADR 0075).
+func type_line_texts() -> Array[String]:
 	var words: PackedStringArray = []
 	if is_token:
 		words.append("Token")
@@ -197,9 +212,25 @@ func type_line() -> String:
 	for card_type: MmCardTypes.CardType in card_types:
 		words.append((MmCardTypes.CardType.keys()[card_type] as String).capitalize())
 	var line: String = " ".join(words)
-	if not subtypes.is_empty():
-		line += " — " + " ".join(PackedStringArray(subtypes))
-	return line
+	if not is_every_creature_type:
+		if not subtypes.is_empty():
+			line += " — " + " ".join(PackedStringArray(subtypes))
+		return [line]
+	var others: PackedStringArray = []
+	for subtype: String in subtypes:
+		if not CreatureTypes.is_creature_type(subtype):
+			others.append(subtype)
+	line += " — "
+	if not others.is_empty():
+		line += " ".join(others) + " "
+	return [line, EVERY_CREATURE_TYPE]
+
+
+## The color of each of type_line_texts().
+func type_line_colors() -> Array[Color]:
+	if is_every_creature_type:
+		return [Color.BLACK, EVERY_CREATURE_TYPE_COLOR]
+	return [Color.BLACK]
 
 
 ## Rules text as a Card Face prints it: anything in parentheses is left off, except on a

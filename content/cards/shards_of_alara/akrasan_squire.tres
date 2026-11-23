@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_w7pto"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_b26nu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_nyvpy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_21y1i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/triggering_object_selection.gd" id="3_ls1be"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_avx7x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_3c0nb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_m4f3c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_7taug"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/exalted_ability.gd" id="8_kumef"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_u6a12"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/attackers_declared_trigger.gd" id="10_yvcpg"]
+
+[sub_resource type="Resource" id="Resource_vhw4h"]
+script = ExtResource("3_ls1be")
+
+[sub_resource type="Resource" id="Resource_3o1t8"]
+script = ExtResource("4_avx7x")
+value = 1
+
+[sub_resource type="Resource" id="Resource_ak7nq"]
+script = ExtResource("4_avx7x")
+value = 1
+
+[sub_resource type="Resource" id="Resource_hbvf4"]
+script = ExtResource("5_3c0nb")
+power = SubResource("Resource_3o1t8")
+toughness = SubResource("Resource_ak7nq")
+affected = SubResource("Resource_vhw4h")
+
+[sub_resource type="Resource" id="Resource_x2koi"]
+script = ExtResource("6_m4f3c")
+continuous = SubResource("Resource_hbvf4")
+
+[sub_resource type="Resource" id="Resource_0cuv2"]
+script = ExtResource("10_yvcpg")
+alone = true
+
+[sub_resource type="Resource" id="Resource_mu26t"]
+script = ExtResource("8_kumef")
+trigger = SubResource("Resource_0cuv2")
+effects = Array[ExtResource("2_b26nu")]([SubResource("Resource_x2koi")])
+
+[sub_resource type="Resource" id="Resource_nhy70"]
+script = ExtResource("2_nyvpy")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_21y1i")
+name = "Akrasan Squire"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Soldier"])
+mana_cost = SubResource("Resource_nhy70")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_w7pto")]([SubResource("Resource_mu26t")])

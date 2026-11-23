@@ -3,7 +3,10 @@ extends RefCounted
 ## Chooses attackers (A163), reimplementing the behavior Forge's attack controller is known
 ## for, not its code: attack with everything when that is lethal, otherwise set an
 ## aggression level from 0 to 5 by comparing the two sides' clocks, send each creature that
-## clears that level's bar, and hold back enough to survive the swing back.
+## clears that level's bar, and hold back enough to survive the swing back. Each creature is
+## judged attacking alone; when something its player controls cares whether a creature
+## attacks alone (exalted, CR 506.5), the chosen attackers are judged again beside each
+## other, and the least valuable that no longer clears the bar stays home, until the rest do.
 
 ## The aggression levels.
 enum Aggression { STAY_HOME = 0, EVASION_ONLY = 1, SAFE = 2, GOOD_TRADES = 3, EXPECT_TRADES = 4, ALL_OUT = 5 }
@@ -20,7 +23,8 @@ var _duel: Callable
 var _blockable: Dictionary[int, Array]
 
 
-## [param duel] answers (attacker ID, blocker ID) with [attacker dies, blocker dies].
+## [param duel] answers (attacker ID, blocker ID, the IDs attacking with it, itself
+## included) with [attacker dies, blocker dies].
 ## [param blockable] maps each possible blocker to the attackers it could block.
 func _init(state: MmGameState, player_id: int, profile: AiProfile, rng: MmRng, duel: Callable,
 		blockable: Dictionary[int, Array]) -> void:
@@ -43,9 +47,43 @@ func plan(candidate_ids: Array[int]) -> Array[int]:
 		return candidate_ids.duplicate()
 	aggression = _aggression(candidate_ids)
 	for attacker_id: int in candidate_ids:
-		if _should_attack(attacker_id, aggression):
+		if _should_attack(attacker_id, aggression, [attacker_id] as Array[int]):
 			attacking.append(attacker_id)
+	if _cares_about_attacking_alone():
+		attacking = _together(attacking)
 	return _hold_back(attacking)
+
+
+## [param attacking], each judged again attacking beside the others: while any of them no
+## longer clears the bar, the least valuable of those stays home. One attacker alone was
+## judged so already, so at least one is always left.
+func _together(attacking: Array[int]) -> Array[int]:
+	var kept: Array[int] = attacking.duplicate()
+	while kept.size() > 1:
+		var weakest: int = -1
+		for attacker_id: int in kept:
+			if _should_attack(attacker_id, aggression, kept):
+				continue
+			if weakest == -1 or _value(attacker_id) < _value(weakest):
+				weakest = attacker_id
+		if weakest == -1:
+			break
+		kept.erase(weakest)
+	return kept
+
+
+## Whether a triggered ability of a permanent this player controls waits for a creature
+## attacking alone (CR 506.5), so who else attacks changes what each attacker does.
+func _cares_about_attacking_alone() -> bool:
+	for permanent: MmGameObject in _state.battlefield.objects():
+		if permanent.controller_id != _player_id:
+			continue
+		for ability: MmAbility in _state.characteristics_of(permanent).abilities:
+			var triggered: TriggeredAbility = ability as TriggeredAbility
+			if triggered != null and triggered.trigger is AttackersDeclaredTrigger \
+					and (triggered.trigger as AttackersDeclaredTrigger).alone:
+				return true
+	return false
 
 
 ## Whether attacking with everything kills even if each blocker stops a different one of the
@@ -85,12 +123,13 @@ func _aggression(candidate_ids: Array[int]) -> Aggression:
 	return Aggression.SAFE if _profile.plays_aggressively else Aggression.EVASION_ONLY
 
 
-func _should_attack(attacker_id: int, level: Aggression) -> bool:
+## Whether [param attacker_id] clears [param level]'s bar attacking with [param attacking].
+func _should_attack(attacker_id: int, level: Aggression, attacking: Array[int]) -> bool:
 	var blockers: Array[int] = _blockers_of(attacker_id)
 	var killers: Array[int] = []
 	var victims: Array[int] = []
 	for blocker_id: int in blockers:
-		var outcome: Array[bool] = _duel.call(attacker_id, blocker_id)
+		var outcome: Array[bool] = _duel.call(attacker_id, blocker_id, attacking)
 		if outcome[0]:
 			killers.append(blocker_id)
 		if outcome[1]:
@@ -117,9 +156,9 @@ func _trades_well(attacker_id: int, killers: Array[int], victims: Array[int]) ->
 	for killer_id: int in killers:
 		if not victims.has(killer_id):
 			return false
-	var mine: int = AiBoardEvaluator.creature_value(_state, _state.object(attacker_id))
+	var mine: int = _value(attacker_id)
 	for killer_id: int in killers:
-		if AiBoardEvaluator.creature_value(_state, _state.object(killer_id)) < mine:
+		if _value(killer_id) < mine:
 			return _rng.next_int(100) < _profile.chance_to_attack_into_trade
 	return true
 
@@ -187,6 +226,10 @@ func _creatures_of(player_id: int) -> Array[MmGameObject]:
 ## ability says so (CombatProcedure.combat_damage_amount()).
 func _combat_damage(object_id: int) -> int:
 	return CombatProcedure.combat_damage_amount(_state, _state.object(object_id))
+
+
+func _value(object_id: int) -> int:
+	return AiBoardEvaluator.creature_value(_state, _state.object(object_id))
 
 
 func _toughness(object_id: int) -> int:

@@ -9,7 +9,7 @@ extends RefCounted
 ## When the payment can no longer be finished it reports itself stuck, and the engine
 ## rewinds the whole attempt (CR 728, ADR 0015).
 
-enum Stage { CHOOSE_MODE, CHOOSE_TARGETS, PAY_MANA, DONE, STUCK, PAY_COSTS }
+enum Stage { CHOOSE_MODE, CHOOSE_TARGETS, PAY_MANA, DONE, STUCK, PAY_COSTS, CHOOSE_X }
 
 var _state: MmGameState
 var _player_id: int
@@ -24,6 +24,9 @@ var _next_target: int = 0
 ## The mana still owed (CR 601.2g-h), nothing until the cost is known.
 var _payment: ManaPaymentProgress
 var _stage: Stage = Stage.CHOOSE_TARGETS
+## The mana cost of a spell with {X} in it, whose X is still to be chosen or was (ADR 0076),
+## or null. Card data, never changed.
+var _x_cost: MmManaCost = null
 ## The parts of the cost that are not mana (CR 601.2h): an ability's costs, or a flashback
 ## cost's. Those that ask a choice are paid as it is answered, the rest once the mana is.
 var _costs: Array[MmCost] = []
@@ -46,6 +49,10 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject) -
 	# CR 601.2f: the total cost is fixed now. Choosing modes and targets first, as the rules
 	# order it, can change nothing it counts. Later: cost increases and additional costs.
 	var mana: MmManaCost = mana_to_pay(state, player_id, card)
+	if mana != null and mana.x_count > 0:
+		procedure._x_cost = mana
+		if procedure._stage != Stage.CHOOSE_MODE:
+			procedure._stage = Stage.CHOOSE_X  # CR 601.2b: X after any mode, before targets.
 	var is_flashback: bool = card.zone().kind == MmZone.Kind.GRAVEYARD
 	if is_flashback:
 		procedure._costs = flashback_of(characteristics).costs
@@ -122,6 +129,15 @@ static func top_of_library_permission(state: MmGameState, player_id: int, card: 
 	return []
 
 
+## The largest X [param player_id] could pay now for [param cost], a cost with {X}, with the
+## rest of it (ADR 0076).
+static func most_x(state: MmGameState, player_id: int, cost: MmManaCost) -> int:
+	var x: int = 0
+	while ManaPayment.can_afford(state, player_id, cost.with_x(x + 1)):
+		x += 1
+	return x
+
+
 ## The card's flashback ability (CR 702.34a), or null for a card without flashback.
 static func flashback_of(characteristics: MmCharacteristics) -> FlashbackAbility:
 	for ability: MmAbility in characteristics.abilities:
@@ -162,6 +178,7 @@ func copy_for(state: MmGameState) -> CastProcedure:
 	copy._next_cost = _next_cost
 	copy._paid_cost_indexes = _paid_cost_indexes.duplicate()
 	copy._stage = _stage
+	copy._x_cost = _x_cost
 	return copy
 
 
@@ -185,6 +202,8 @@ func next_decision() -> MmPendingDecision:
 				if decision.modes.size() > 1:
 					return decision
 				_choose_mode(decision.modes[0])  # The only mode that can be chosen needs no asking.
+			Stage.CHOOSE_X:
+				return ChooseXDecision.new(_player_id, _stack_object_id, most_x(_state, _player_id, _x_cost))
 			Stage.CHOOSE_TARGETS:
 				if _next_target >= _target_requirements.size():
 					_stage = Stage.PAY_COSTS
@@ -238,6 +257,11 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	var index: int = answer
 	if decision is ChooseModeDecision:
 		_choose_mode((decision as ChooseModeDecision).modes[index])
+	elif decision is ChooseXDecision:
+		# CR 601.2f: the spell now costs X more for each {X}.
+		_state.perform(XChosenEvent.new(_stack_object_id, index))
+		_payment.remaining_generic += index * _x_cost.x_count
+		_stage = Stage.CHOOSE_TARGETS
 	elif decision is ChooseTargetDecision:
 		TargetChoice.perform_answer(_state, decision, answer, _target_requirements)
 		_next_target += 1
@@ -256,7 +280,7 @@ func _mode_decision() -> ChooseModeDecision:
 func _choose_mode(mode_index: int) -> void:
 	_state.perform(ModeChosenEvent.new(_stack_object_id, mode_index))
 	_target_requirements = (_ability as SpellAbility).modes[mode_index].targets
-	_stage = Stage.CHOOSE_TARGETS
+	_stage = Stage.CHOOSE_X if _x_cost != null else Stage.CHOOSE_TARGETS
 
 
 ## What a part of the cost is paid for: the ability's source, or the spell itself.

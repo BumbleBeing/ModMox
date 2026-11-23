@@ -192,10 +192,13 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 	if decision is ChooseYesOrNoDecision:
 		# A cost asked for, as ward's or as a land enters, is declined, as an X is: autoplay
 		# pays nothing.
-		var paying: bool = (decision as ChooseYesOrNoDecision).cost != null or (decision as ChooseYesOrNoDecision).entry_cost != null
+		var asked: ChooseYesOrNoDecision = decision as ChooseYesOrNoDecision
+		var paying: bool = asked.cost != null or asked.entry_cost != null or asked.resolution_cost != null
 		return ChooseYesOrNoDecision.Choice.NO if paying else ChooseYesOrNoDecision.Choice.YES
 	if decision is ChooseXToPayDecision:
 		return ChooseXToPayDecision.DECLINE
+	if decision is ChooseXDecision:
+		return 0  # As an X to pay on resolution is declined: autoplay pays nothing more.
 	if decision is SurveilDecision:
 		return [[], (decision as SurveilDecision).card_ids.duplicate()]  # Every card kept, in order.
 	if decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
@@ -271,6 +274,15 @@ static func mana_cost(generic: int, symbols: Array[MmMana.Type] = []) -> MmManaC
 	var cost: MmManaCost = MmManaCost.new()
 	cost.generic = generic
 	cost.symbols = symbols
+	return cost
+
+
+## A mana cost of [param generic], [param symbols] and the hybrid symbols [param hybrids],
+## each a pair of mana types such as [code][[BLACK, RED]][/code] for {B/R} (CR 107.4e).
+static func hybrid_cost(generic: int, hybrids: Array, symbols: Array[MmMana.Type] = []) -> MmManaCost:
+	var cost: MmManaCost = mana_cost(generic, symbols)
+	for pair: Array in hybrids:
+		cost.hybrid_symbols.append(Vector2i(pair[0], pair[1]))
 	return cost
 
 
@@ -1841,6 +1853,21 @@ static func typed_creature(card_name: String, power: int, toughness: int, subtyp
 	return definition
 
 
+## A 1/1 Shapeshifter costing {0} with changeling, then [param abilities] (CR 702.73a).
+static func changeling(card_name: String = "Changeling", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [ChangelingAbility.new()]
+	all.append_array(abilities)
+	return typed_creature_with(card_name, 1, 1, ["Shapeshifter"], all)
+
+
+## A creature costing {0} of [param subtypes], with [param abilities].
+static func typed_creature_with(card_name: String, power: int, toughness: int, subtypes: Array[String],
+		abilities: Array[MmAbility]) -> MmCardDefinition:
+	var definition: MmCardDefinition = creature(card_name, power, toughness, abilities)
+	definition.subtypes = subtypes
+	return definition
+
+
 # --- Casting from the top of the library ----------------------------------------------
 
 
@@ -2524,6 +2551,13 @@ static func attacks(filter: MmFilter = null, whose: MmTrigger.Whose = MmTrigger.
 	return trigger
 
 
+## A 1/1 costing {0} with exalted (CR 702.83a), then [param abilities].
+static func squire(card_name: String = "Squire", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [ExaltedAbility.new()]
+	all.append_array(abilities)
+	return creature(card_name, 1, 1, all)
+
+
 ## A 2/2 costing {0}: "Whenever this creature attacks, you gain 1 life", then
 ## [param abilities].
 static func raider(card_name: String = "Raider", abilities: Array[MmAbility] = []) -> MmCardDefinition:
@@ -2690,3 +2724,90 @@ static func _color_index(actions: Array[MmAction], object_id: int, type: MmMana.
 		if activate != null and activate.object_id == object_id and activate.mana_type == type:
 			return index
 	return -1
+
+
+# --- Card track: {X} in a mana cost (ADR 0076) -----------------------------------------
+
+
+## A mana cost with one {X} besides [param generic] and [param symbols] (CR 107.3).
+static func x_cost(generic: int = 0, symbols: Array[MmMana.Type] = []) -> MmManaCost:
+	var cost: MmManaCost = mana_cost(generic, symbols)
+	cost.x_count = 1
+	return cost
+
+
+## "X": the value chosen for {X} as its spell was cast (CR 107.3a, 107.3m).
+static func chosen_x() -> ChosenXValue:
+	return ChosenXValue.new()
+
+
+## A sorcery costing {X}: "You gain X life."
+static func x_gain(card_name: String = "Bounty") -> MmCardDefinition:
+	var gain: GainLifeEffect = gain_life(0, you())
+	gain.amount = chosen_x()
+	return sorcery(card_name, x_cost(), [], [gain])
+
+
+## A sorcery costing {X}: "This spell deals X damage to target creature."
+static func x_blast(card_name: String = "Blast") -> MmCardDefinition:
+	var damage: DealDamageEffect = deal_damage(0, targeted(0))
+	damage.amount = chosen_x()
+	return sorcery(card_name, x_cost(), [target(of_type(MmCardTypes.CardType.CREATURE))], [damage])
+
+
+## "This permanent enters with [param amount] [param kind] counters on it" (CR 614.1c).
+static func enters_with_counters(amount: MmValue, kind: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE) -> EntersWithCountersAbility:
+	var ability: EntersWithCountersAbility = EntersWithCountersAbility.new()
+	ability.kind = kind
+	ability.amount = amount
+	return ability
+
+
+## A 0/0 creature costing {X} with "This creature enters with X +1/+1 counters on it.", then
+## [param abilities].
+static func hydra(card_name: String = "Hydra", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [enters_with_counters(chosen_x())]
+	all.append_array(abilities)
+	return creature(card_name, 0, 0, all, x_cost())
+
+
+## Casts [param object_id] from the priority holder's hand, choosing [param x] for its {X},
+## then [param targets] in order, and pays automatically.
+static func cast_with_x(engine: MmEngine, object_id: int, x: int, targets: Array[MmReference] = []) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var index: int = cast_index(decision, object_id)
+	if index == -1:
+		return "Object %d cannot be cast." % object_id
+	var error: String = engine.submit(index)
+	if error == "":
+		error = choose_cast_x(engine, x)
+	for chosen: MmReference in targets:
+		if error != "":
+			return error
+		error = choose_target(engine, chosen)
+	return error if error != "" else auto_pay(engine)
+
+
+## Answers the pending ChooseXDecision with [param x].
+static func choose_cast_x(engine: MmEngine, x: int) -> String:
+	if not engine.pending_decision() is ChooseXDecision:
+		return "Not an X choice."
+	return engine.submit(x)
+
+
+## "You may [param cost]. If you do, [param effect]." (CR 603.5, 608.2d).
+static func may_pay(cost: MmCost, effect: MmEffect) -> MayPayEffect:
+	var paying: MayPayEffect = MayPayEffect.new()
+	paying.cost = cost
+	paying.effect = effect
+	return paying
+
+
+## "Remove [param amount] [param kind] counters from this permanent" (CR 118.3).
+static func remove_counters(amount: int = 1, kind: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE) -> RemoveCountersCost:
+	var cost: RemoveCountersCost = RemoveCountersCost.new()
+	cost.kind = kind
+	cost.amount = amount
+	return cost

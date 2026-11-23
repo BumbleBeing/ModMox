@@ -489,6 +489,31 @@ func test_what_it_hands_out_cannot_change_it() -> void:
 	assert_eq(divide.amounts(), [1, 2, 3] as Array[int])
 
 
+func test_blocks_cannot_be_confirmed_while_a_menace_attacker_has_one_blocker() -> void:
+	var selection: CombatSelection = CombatSelection.new(_menace_blocks())
+	selection.click(1)
+	selection.click(20)
+
+	assert_false(selection.is_complete(), "CR 702.111b: attacker 20 needs two blockers.")
+	assert_eq(selection.hint(), "A creature with menace needs two or more blockers.")
+
+	selection.click(2)
+	selection.click(20)
+
+	assert_true(selection.is_complete())
+	assert_eq(selection.hint(), "")
+	assert_eq(_menace_blocks().validate(selection.answer()), "")
+
+
+func test_one_blocker_on_an_attacker_without_menace_can_be_confirmed() -> void:
+	var selection: CombatSelection = CombatSelection.new(_menace_blocks())
+	selection.click(1)
+	selection.click(21)
+
+	assert_true(selection.is_complete())
+	assert_eq(selection.hint(), "")
+
+
 ## Creatures 1, 2 and 3 may attack.
 func _attack() -> DeclareAttackersDecision:
 	return DeclareAttackersDecision.new(HERO, [1, 2, 3] as Array[int])
@@ -528,3 +553,10 @@ func test_undeclaring_all_puts_every_attacker_back_and_one_undo_takes_it_back() 
 	selection.undo()
 	assert_eq(selection.answer(), [2, 3] as Array[int], "One undo takes the whole of it back.")
 	assert_false(CombatSelection.new(_blocks()).clear_attackers(), "Only attackers have it.")
+
+
+## Attackers 20, with menace, and 21. Blockers 1 and 2 can block either.
+func _menace_blocks() -> DeclareBlockersDecision:
+	return DeclareBlockersDecision.new(HERO, [1, 2] as Array[int], [20, 21] as Array[int],
+		{1: [20, 21], 2: [20, 21]} as Dictionary[int, Array], {1: 1, 2: 1} as Dictionary[int, int],
+		{20: 2} as Dictionary[int, int])

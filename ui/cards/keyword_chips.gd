@@ -33,12 +33,12 @@ static func chips_for(abilities: Array[MmAbility], place: Place = Place.BATTLEFI
 	var order: Array[Script] = [
 		FlyingAbility, ReachAbility, VigilanceAbility, HasteAbility, DeathtouchAbility,
 		LifelinkAbility, DefenderAbility, FirstStrikeAbility, DoubleStrikeAbility, TrampleAbility,
-		IndestructibleAbility, ProtectionAbility, EquipAbility, FlashbackAbility, WardAbility,
+		MenaceAbility, IndestructibleAbility, ProtectionAbility, EquipAbility, FlashbackAbility, WardAbility,
 	]
-	var letters: Array[String] = ["F", "R", "V", "H", "DT", "LL", "DF", "FS", "DS", "T", "I", "P", "EQ", "FB", "W"]
+	var letters: Array[String] = ["F", "R", "V", "H", "DT", "LL", "DF", "FS", "DS", "T", "M", "I", "P", "EQ", "FB", "W"]
 	var icons: Array[String] = [
 		"flying", "reach", "vigilance", "haste", "deathtouch", "lifelink", "defender",
-		"first_strike", "double_strike", "trample", "indestructible", "protection", "equip", "flashback", "ward",
+		"first_strike", "double_strike", "trample", "menace", "indestructible", "protection", "equip", "flashback", "ward",
 	]
 	var chips: Array[KeywordChip] = []
 	var seen: Dictionary[String, bool] = {}

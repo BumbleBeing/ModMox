@@ -1,0 +1,11 @@
+# Changeling makes an object every creature type as a flag, and its type line says (All)
+
+Universal Automaton brings changeling: "Changeling (This card is every creature type.)" (CR 702.73a). It is the first ability that gives an object every creature type at once, and there are 377 of them (`CreatureTypes.ALL`, CR 205.3m).
+
+**Every creature type is a flag, not a list.** `ChangelingAbility` is a keyword with no fields. `MmCharacteristics.is_every_creature_type` says the object has every creature type besides its own `subtypes`, which keep only what it would have without changeling, so Universal Automaton's still say "Shapeshifter". Rules code asks `MmCharacteristics.has_subtype()`, which answers yes for any subtype in the list and, while the flag is set, for any creature type. `HasSubtypeFilter`, `IsOfChosenTypeFilter`, the Agent's creature-type count and the creature-type choice on screen ask it that way. Writing all 377 types into `subtypes` was rejected: every Player View, CardLook and snapshot would copy them, and a type line would list them.
+
+**It is a characteristic-defining ability** (CR 604.3), so `MmCharacteristics.printed()` sets the flag from the card's abilities. That makes it hold in every zone, on a deck screen as in a library search, and first in layer 4, before the layer's continuous effects (CR 613.3). It applied before layer 6, so an object that then loses all its abilities is still every creature type. Reconfigure's "isn't a creature" clears it along with the creature types it takes away (CR 702.151b, 205.1b).
+
+**Its type line says (All).** `CardLook.type_line_texts()` gives the type line in runs: any subtypes that are not creature types, then "(All)" in a run of its own, drawn in `CardLook.EVERY_CREATURE_TYPE_COLOR` rather than black, as the user asked. Universal Automaton reads "Artifact Creature — (All)": Shapeshifter is a creature type, so it is part of the All. Changeling needs no Keyword Chip, by the user's choice, so it has no Keyword Icon and no Reminder. It prints "Changeling" in the rules text.
+
+Left out until a card needs it (ADR 0001): an effect that gives an object every creature type, or changeling, for a while (Amoeboid Changeling, Maskwood Nexus), which would be a layer 4 continuous effect that sets the flag; and Kindred cards with changeling, since the engine has no Kindred type.

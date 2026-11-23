@@ -4,7 +4,8 @@ extends RefCounted
 ## for, not its code: blocks in rounds that grow more defensive as danger rises. First
 ## blocks the blocker survives, trades worth making and gang blocks, chump-blocking only if
 ## life is in danger; if still in danger, trades and chump blocks lead; if the attack would
-## be lethal, chump blocks lead.
+## be lethal, chump blocks lead. An attacker that needs two or more blockers, as one with
+## menace does, is never blocked alone: only gang blocks and enough chump blockers take it.
 
 ## Why the last plan() chose as it did, for AiAgent.explain().
 var was_in_danger: bool = false
@@ -60,7 +61,7 @@ func plan() -> Array:
 ## kills it, then the least valuable.
 func _good_blocks(blocks: Dictionary[int, int]) -> void:
 	for attacker_id: int in _attackers_by_threat():
-		if blocks.values().has(attacker_id):
+		if blocks.values().has(attacker_id) or _decision.least_blockers_of(attacker_id) > 1:
 			continue
 		var best: int = -1
 		var best_kills: bool = false
@@ -80,7 +81,7 @@ func _good_blocks(blocks: Dictionary[int, int]) -> void:
 ## [param when_even], at least as much.
 func _trade_blocks(blocks: Dictionary[int, int], when_even: bool) -> void:
 	for attacker_id: int in _attackers_by_threat():
-		if blocks.values().has(attacker_id):
+		if blocks.values().has(attacker_id) or _decision.least_blockers_of(attacker_id) > 1:
 			continue
 		for blocker_id: int in _blockers_by_value(_free_blockers(blocks, attacker_id)):
 			var outcome: Array[bool] = _duel.call(attacker_id, blocker_id)
@@ -97,7 +98,7 @@ func _gang_blocks(blocks: Dictionary[int, int]) -> void:
 	if not _gang.is_valid():
 		return
 	for attacker_id: int in _attackers_by_threat():
-		if blocks.values().has(attacker_id):
+		if blocks.values().has(attacker_id) or _decision.least_blockers_of(attacker_id) > 2:
 			continue
 		var free: Array[int] = _blockers_by_value(_free_blockers(blocks, attacker_id))
 		for first: int in range(free.size()):
@@ -119,7 +120,7 @@ func _gang_blocks(blocks: Dictionary[int, int]) -> void:
 
 
 ## The least valuable free blockers block the biggest unblocked attackers while life is
-## in danger.
+## in danger, as many to each as it needs.
 func _chump_blocks(blocks: Dictionary[int, int]) -> void:
 	for attacker_id: int in _attackers_by_damage():
 		if not _in_danger(blocks):
@@ -127,8 +128,10 @@ func _chump_blocks(blocks: Dictionary[int, int]) -> void:
 		if blocks.values().has(attacker_id):
 			continue
 		var free: Array[int] = _blockers_by_value(_free_blockers(blocks, attacker_id))
-		if not free.is_empty():
-			blocks[free[0]] = attacker_id
+		var needed: int = _decision.least_blockers_of(attacker_id)
+		if free.size() >= needed:
+			for index: int in needed:
+				blocks[free[index]] = attacker_id
 
 
 func _in_danger(blocks: Dictionary[int, int]) -> bool:

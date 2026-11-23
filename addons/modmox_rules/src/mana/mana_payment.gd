@@ -7,15 +7,24 @@ extends RefCounted
 const PAYS_GENERIC: int = -2
 ## What symbol_paid_by() returns when the mana cannot pay anything still owed.
 const CANNOT_PAY: int = -1
+## What symbol_paid_by() returns when the mana pays a hybrid symbol: the first in
+## [method MmManaCost.hybrid_index_in] order with its color.
+const PAYS_HYBRID: int = -3
 
 
-## The index in [param symbols] of the symbol a unit of [param type] should pay, PAYS_GENERIC,
-## or CANNOT_PAY. A matching symbol always comes first: with only plain symbols that is
-## never worse, because a symbol can be paid only by its own type and generic by anything.
-static func symbol_paid_by(type: MmMana.Type, symbols: Array[MmMana.Type], generic: int) -> int:
+## The index in [param symbols] of the symbol a unit of [param type] should pay, PAYS_HYBRID,
+## PAYS_GENERIC, or CANNOT_PAY. A matching plain symbol comes first, then a hybrid symbol
+## of its color, then generic (ADR 0077): each of those is never worse than the next,
+## because a plain symbol can be paid by one type, a hybrid symbol by two, and generic by
+## any. Later: two hybrid symbols that share one color, as {B/R}{R/G} do, where the first
+## is not always the one red should pay.
+static func symbol_paid_by(type: MmMana.Type, symbols: Array[MmMana.Type], generic: int,
+		hybrids: Array[Vector2i]) -> int:
 	var index: int = symbols.find(type)
 	if index != -1:
 		return index
+	if MmManaCost.hybrid_index_in(hybrids, type) != -1:
+		return PAYS_HYBRID
 	return PAYS_GENERIC if generic > 0 else CANNOT_PAY
 
 
@@ -117,7 +126,7 @@ static func _covers_with_choices(available: Array[MmMana.Type], choices_per_sour
 
 
 ## Whether the mana in [param available] can pay [param cost]: every symbol by its own type,
-## and the generic amount by whatever is left.
+## each hybrid symbol by either of its types, and the generic amount by whatever is left.
 static func _covers(available: Array[MmMana.Type], cost: MmManaCost) -> bool:
 	var left: Array[MmMana.Type] = available.duplicate()
 	for symbol: MmMana.Type in cost.symbols:
@@ -125,4 +134,20 @@ static func _covers(available: Array[MmMana.Type], cost: MmManaCost) -> bool:
 		if index == -1:
 			return false
 		left.remove_at(index)
-	return left.size() >= cost.generic
+	return _covers_hybrid(left, cost.hybrid_symbols, 0, cost.generic)
+
+
+## Whether [param left] pays the hybrid symbols of [param hybrids] from [param from] on and
+## then [param generic]. Exact: each hybrid symbol tries both its halves (CR 107.4e).
+static func _covers_hybrid(left: Array[MmMana.Type], hybrids: Array[Vector2i], from: int, generic: int) -> bool:
+	if from == hybrids.size():
+		return left.size() >= generic
+	for half: int in [hybrids[from].x, hybrids[from].y]:
+		var index: int = left.find(half as MmMana.Type)
+		if index == -1:
+			continue
+		var rest: Array[MmMana.Type] = left.duplicate()
+		rest.remove_at(index)
+		if _covers_hybrid(rest, hybrids, from + 1, generic):
+			return true
+	return false

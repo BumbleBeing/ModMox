@@ -287,7 +287,7 @@ func _priority_answer(engine: MmEngine, decision: PriorityDecision, attempted_ca
 
 ## Mana of a color still owed if any option gives one, otherwise the first option.
 func _payment_answer(engine: MmEngine, decision: PayManaDecision) -> int:
-	if decision.remaining_symbols.is_empty():
+	if decision.remaining_symbols.is_empty() and decision.remaining_hybrid_symbols.is_empty():
 		return 0
 	var state: MmGameState = engine.game_state()
 	var pool: Array[MmMana] = state.player(decision.player_id).mana_pool()
@@ -298,7 +298,8 @@ func _payment_answer(engine: MmEngine, decision: PayManaDecision) -> int:
 			produced = pool[(action as PayWithManaAction).unit_index].type
 		elif action is ActivateAbilityAction:
 			produced = _mana_type_made(state, action as ActivateAbilityAction)
-		if produced != -1 and decision.remaining_symbols.has(produced as MmMana.Type):
+		if produced != -1 and (decision.remaining_symbols.has(produced as MmMana.Type)
+				or MmManaCost.hybrid_index_in(decision.remaining_hybrid_symbols, produced as MmMana.Type) != -1):
 			return index
 	return 0
 

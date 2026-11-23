@@ -44,6 +44,8 @@ static func compute(state: MmGameState) -> Dictionary[int, MmCharacteristics]:
 static func outside_the_battlefield(state: MmGameState, game_object: MmGameObject) -> MmCharacteristics:
 	var characteristics: MmCharacteristics = MmCharacteristics.printed(game_object.definition)
 	_apply_defining_abilities(state, game_object, characteristics)
+	if game_object.zone() == state.stack:
+		characteristics.chosen_x = game_object.chosen_x  # CR 202.3e.
 	return characteristics
 
 
@@ -61,6 +63,7 @@ static func _apply_reconfigure(game_object: MmGameObject, characteristics: MmCha
 		if not CreatureTypes.is_creature_type(subtype):
 			kept.append(subtype)
 	characteristics.subtypes = kept
+	characteristics.is_every_creature_type = false
 
 
 ## Layer 7a.

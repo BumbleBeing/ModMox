@@ -22,6 +22,23 @@ func test_c_is_the_colorless_symbol() -> void:
 	assert_eq(reading.definition.mana_cost.symbols, [MmMana.Type.COLORLESS] as Array[MmMana.Type])
 
 
+func test_a_two_color_hybrid_symbol_is_read_as_its_two_halves() -> void:
+	var reading: OracleReading = _reading({"mana_cost": "{4}{B/R}"})
+
+	assert_eq(reading.definition.mana_cost.generic, 4)
+	assert_eq(reading.definition.mana_cost.symbols, [] as Array[MmMana.Type])
+	assert_eq(reading.definition.mana_cost.hybrid_symbols, [Vector2i(MmMana.Type.BLACK, MmMana.Type.RED)] as Array[Vector2i],
+		"CR 107.4e, engine ADR 0077.")
+	assert_eq(reading.refusals, PackedStringArray())
+
+
+func test_monocolored_hybrid_and_phyrexian_symbols_are_refused() -> void:
+	for symbol: String in ["{2/W}", "{B/P}", "{G/U/P}", "{C/W}"]:
+		var reading: OracleReading = _reading({"mana_cost": "{1}" + symbol})
+
+		assert_eq(reading.refusals, PackedStringArray(["mana cost: %s is not a symbol the engine has" % symbol]), symbol)
+
+
 func test_a_cost_of_zero_is_not_no_cost() -> void:
 	# CR 202.1b: a card with no mana cost is different from one that costs {0}.
 	var reading: OracleReading = _reading({"mana_cost": "{0}"})
@@ -37,8 +54,21 @@ func test_a_card_with_no_mana_cost_has_none() -> void:
 	assert_eq(reading.refusals, PackedStringArray())
 
 
+func test_x_is_read_as_an_x_symbol() -> void:
+	# CR 107.3, engine ADR 0076.
+	var hydra: OracleReading = _reading({"mana_cost": "{X}{W}"})
+	var double: OracleReading = _reading({"mana_cost": "{X}{X}{2}{R}"})
+
+	assert_eq(hydra.refusals, PackedStringArray())
+	assert_eq(hydra.definition.mana_cost.x_count, 1)
+	assert_eq(hydra.definition.mana_cost.describe(), "{X}{W}")
+	assert_eq(double.definition.mana_cost.x_count, 2)
+	assert_eq(double.definition.mana_cost.generic, 2)
+	assert_eq(double.definition.mana_cost.describe(), "{X}{X}{2}{R}")
+
+
 func test_symbols_the_engine_lacks_are_refused_by_name() -> void:
-	for symbol: String in ["{X}", "{W/U}", "{G/P}", "{S}"]:
+	for symbol: String in ["{2/W}", "{G/P}", "{S}"]:
 		var reading: OracleReading = _reading({"mana_cost": symbol + "{R}"})
 
 		assert_eq(reading.refusals.size(), 1, symbol)

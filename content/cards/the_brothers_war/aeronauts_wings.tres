@@ -1,0 +1,102 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_wcw8g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="2_ecgc5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_upbxi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/attached_to_selection.gd" id="3_5niap"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_cx5xj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_t0qci"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_mxi41"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="6_viqod"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="7_wt8kg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="8_dh8g0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="9_8rig2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="10_ff84t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="11_tqkhd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/attach_effect.gd" id="12_km0qt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="13_if7vn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/equip_ability.gd" id="15_0hy5j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="16_30c2e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="17_762mo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="18_ofl63"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="19_86iu7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="20_wng3r"]
+
+[sub_resource type="Resource" id="Resource_scf7w"]
+script = ExtResource("3_5niap")
+
+[sub_resource type="Resource" id="Resource_vix08"]
+script = ExtResource("4_t0qci")
+value = 1
+
+[sub_resource type="Resource" id="Resource_hfy4v"]
+script = ExtResource("4_t0qci")
+
+[sub_resource type="Resource" id="Resource_rp2iy"]
+script = ExtResource("5_mxi41")
+power = SubResource("Resource_vix08")
+toughness = SubResource("Resource_hfy4v")
+affected = SubResource("Resource_scf7w")
+
+[sub_resource type="Resource" id="Resource_r6utu"]
+script = ExtResource("6_viqod")
+
+[sub_resource type="Resource" id="Resource_vjpep"]
+script = ExtResource("3_5niap")
+
+[sub_resource type="Resource" id="Resource_nu6uh"]
+script = ExtResource("7_wt8kg")
+abilities = Array[ExtResource("1_wcw8g")]([SubResource("Resource_r6utu")])
+affected = SubResource("Resource_vjpep")
+
+[sub_resource type="Resource" id="Resource_m30xg"]
+script = ExtResource("8_dh8g0")
+effects = Array[ExtResource("2_ecgc5")]([SubResource("Resource_rp2iy"), SubResource("Resource_nu6uh")])
+
+[sub_resource type="Resource" id="Resource_0sqfr"]
+script = ExtResource("11_tqkhd")
+
+[sub_resource type="Resource" id="Resource_i7of1"]
+script = ExtResource("13_if7vn")
+
+[sub_resource type="Resource" id="Resource_aitg2"]
+script = ExtResource("12_km0qt")
+attachment = SubResource("Resource_0sqfr")
+to = SubResource("Resource_i7of1")
+
+[sub_resource type="Resource" id="Resource_8j31h"]
+script = ExtResource("2_upbxi")
+generic = 2
+
+[sub_resource type="Resource" id="Resource_167ly"]
+script = ExtResource("18_ofl63")
+
+[sub_resource type="Resource" id="Resource_6s3ui"]
+script = ExtResource("19_86iu7")
+
+[sub_resource type="Resource" id="Resource_t6b0l"]
+script = ExtResource("20_wng3r")
+filters = Array[ExtResource("17_762mo")]([SubResource("Resource_167ly"), SubResource("Resource_6s3ui")])
+
+[sub_resource type="Resource" id="Resource_pxq0m"]
+script = ExtResource("16_30c2e")
+filter = SubResource("Resource_t6b0l")
+
+[sub_resource type="Resource" id="Resource_sft48"]
+script = ExtResource("15_0hy5j")
+mana_cost = SubResource("Resource_8j31h")
+targets = Array[ExtResource("16_30c2e")]([SubResource("Resource_pxq0m")])
+effects = Array[ExtResource("10_ff84t")]([SubResource("Resource_aitg2")])
+is_sorcery_speed = true
+
+[sub_resource type="Resource" id="Resource_eyyd2"]
+script = ExtResource("2_upbxi")
+generic = 2
+
+[resource]
+script = ExtResource("3_cx5xj")
+name = "Aeronaut's Wings"
+card_types = Array[int]([0])
+subtypes = Array[String](["Equipment"])
+mana_cost = SubResource("Resource_eyyd2")
+abilities = Array[ExtResource("1_wcw8g")]([SubResource("Resource_m30xg"), SubResource("Resource_sft48")])

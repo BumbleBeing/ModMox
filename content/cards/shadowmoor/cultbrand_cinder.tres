@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_mxjnp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_i4m60"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_vo24p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_12j8g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_abvfm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_ej13c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="5_hju2d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_jwf6k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_uio0e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_6ldxb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_027oe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="10_pr7hq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="11_015rg"]
+
+[sub_resource type="Resource" id="Resource_v2m28"]
+script = ExtResource("3_abvfm")
+value = 1
+
+[sub_resource type="Resource" id="Resource_h0s0l"]
+script = ExtResource("4_ej13c")
+
+[sub_resource type="Resource" id="Resource_3gg1l"]
+script = ExtResource("5_hju2d")
+kind = 1
+amount = SubResource("Resource_v2m28")
+recipients = SubResource("Resource_h0s0l")
+
+[sub_resource type="Resource" id="Resource_5tvso"]
+script = ExtResource("9_027oe")
+
+[sub_resource type="Resource" id="Resource_rojfu"]
+script = ExtResource("8_6ldxb")
+filter = SubResource("Resource_5tvso")
+
+[sub_resource type="Resource" id="Resource_uavxn"]
+script = ExtResource("10_pr7hq")
+
+[sub_resource type="Resource" id="Resource_5udx2"]
+script = ExtResource("11_015rg")
+filter = SubResource("Resource_uavxn")
+
+[sub_resource type="Resource" id="Resource_mvhjk"]
+script = ExtResource("7_uio0e")
+trigger = SubResource("Resource_5udx2")
+targets = Array[ExtResource("8_6ldxb")]([SubResource("Resource_rojfu")])
+effects = Array[ExtResource("2_vo24p")]([SubResource("Resource_3gg1l")])
+
+[sub_resource type="Resource" id="Resource_e8jjm"]
+script = ExtResource("2_i4m60")
+generic = 4
+hybrid_symbols = Array[Vector2i]([Vector2i(2, 3)])
+
+[resource]
+script = ExtResource("3_12j8g")
+name = "Cultbrand Cinder"
+card_types = Array[int]([1])
+subtypes = Array[String](["Elemental", "Shaman"])
+mana_cost = SubResource("Resource_e8jjm")
+power = 3
+toughness = 3
+abilities = Array[ExtResource("1_mxjnp")]([SubResource("Resource_mvhjk")])

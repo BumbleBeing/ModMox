@@ -169,6 +169,11 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 			_payment = ManaPaymentProgress.of_cost(asked.player_id, asked.cost)
 			_is_paying_for_yes = true
 			return
+		if asked.resolution_cost != null and (answer as int) == ChooseYesOrNoDecision.Choice.YES:
+			# ADR 0076: yes pays at once, for the ability's source; what "if you do" offers
+			# then happens.
+			var nothing_chosen: Array[int] = []
+			asked.resolution_cost.pay(_state, _state.object(_context.source_object_id), asked.player_id, nothing_chosen)
 		_begin_answer = answer as int
 		_has_begin_answer = true
 		return

@@ -48,6 +48,11 @@ func shown_text() -> String:
 	return "".join(PackedStringArray(_texts))
 
 
+## The color of each run of shown_text().
+func run_colors() -> Array[Color]:
+	return _colors.duplicate()
+
+
 func text_width() -> float:
 	var total: float = 0.0
 	for text: String in _texts:

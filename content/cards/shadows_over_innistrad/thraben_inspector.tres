@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_sky5r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_bf6r2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_gvr6e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_phaqq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_xonr7"]
+[ext_resource type="Resource" path="res://content/tokens/clue.tres" id="4_eldu0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_bg0nv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_4hiea"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_idaaf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_dbdv0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_n8tf8"]
+
+[sub_resource type="Resource" id="Resource_b16vo"]
+script = ExtResource("3_phaqq")
+token = ExtResource("4_eldu0")
+
+[sub_resource type="Resource" id="Resource_ljetv"]
+script = ExtResource("8_dbdv0")
+
+[sub_resource type="Resource" id="Resource_t54vr"]
+script = ExtResource("9_n8tf8")
+filter = SubResource("Resource_ljetv")
+
+[sub_resource type="Resource" id="Resource_k0ykr"]
+script = ExtResource("6_4hiea")
+trigger = SubResource("Resource_t54vr")
+effects = Array[ExtResource("2_bf6r2")]([SubResource("Resource_b16vo")])
+
+[sub_resource type="Resource" id="Resource_0fqfq"]
+script = ExtResource("2_gvr6e")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_xonr7")
+name = "Thraben Inspector"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Soldier"])
+mana_cost = SubResource("Resource_0fqfq")
+power = 1
+toughness = 2
+abilities = Array[ExtResource("1_sky5r")]([SubResource("Resource_k0ykr")])

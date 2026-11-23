@@ -12,4 +12,4 @@ func matches(state: MmGameState, candidate: MmReference, context: MmEffectContex
 	if source == null or source.chosen_creature_type == "":
 		return false
 	var game_object: MmGameObject = state.object_or_last_known(candidate.id)
-	return game_object != null and state.characteristics_of(game_object).subtypes.has(source.chosen_creature_type)
+	return game_object != null and state.characteristics_of(game_object).has_subtype(source.chosen_creature_type)

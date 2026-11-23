@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_avq2j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_2bcpp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_u4roa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_08obb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_mobbf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_6fwga"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="5_i3xa1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="6_ji17t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="7_kpgrg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_v4275"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="9_drxo7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_peyd0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_ccia0"]
+
+[sub_resource type="Resource" id="Resource_r8cje"]
+script = ExtResource("3_08obb")
+value = 1
+
+[sub_resource type="Resource" id="Resource_si07y"]
+script = ExtResource("4_6fwga")
+
+[sub_resource type="Resource" id="Resource_5jiu6"]
+script = ExtResource("5_i3xa1")
+amount = SubResource("Resource_r8cje")
+recipients = SubResource("Resource_si07y")
+
+[sub_resource type="Resource" id="Resource_36vdy"]
+script = ExtResource("3_08obb")
+value = 1
+
+[sub_resource type="Resource" id="Resource_e1beh"]
+script = ExtResource("6_ji17t")
+
+[sub_resource type="Resource" id="Resource_om1yr"]
+script = ExtResource("7_kpgrg")
+amount = SubResource("Resource_36vdy")
+players = SubResource("Resource_e1beh")
+
+[sub_resource type="Resource" id="Resource_8rcq2"]
+script = ExtResource("11_ccia0")
+
+[sub_resource type="Resource" id="Resource_pdkpo"]
+script = ExtResource("10_peyd0")
+filter = SubResource("Resource_8rcq2")
+
+[sub_resource type="Resource" id="Resource_v2q4u"]
+script = ExtResource("9_drxo7")
+targets = Array[ExtResource("10_peyd0")]([SubResource("Resource_pdkpo")])
+effects = Array[ExtResource("2_2bcpp")]([SubResource("Resource_5jiu6"), SubResource("Resource_om1yr")])
+
+[sub_resource type="Resource" id="Resource_fn8tg"]
+script = ExtResource("2_u4roa")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_mobbf")
+name = "Honor"
+card_types = Array[int]([5])
+mana_cost = SubResource("Resource_fn8tg")
+abilities = Array[ExtResource("1_avq2j")]([SubResource("Resource_v2q4u")])
+rarity = 1

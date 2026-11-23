@@ -27,6 +27,12 @@ func test_lifelinks_chip_comes_after_deathtouch() -> void:
 	assert_eq(_letters(KeywordChips.chips_for(abilities)), ["DT", "LL", "DF"])
 
 
+func test_menaces_chip_comes_after_trample() -> void:
+	var abilities: Array[MmAbility] = [IndestructibleAbility.new(), MenaceAbility.new(), TrampleAbility.new()]
+
+	assert_eq(_letters(KeywordChips.chips_for(abilities)), ["T", "M", "I"])
+
+
 func test_flashback_gets_no_chip_on_the_battlefield() -> void:
 	var abilities: Array[MmAbility] = [FlashbackAbility.new(), FlyingAbility.new()]
 

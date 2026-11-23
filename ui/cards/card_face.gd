@@ -8,6 +8,7 @@ var _look: CardLook
 var _art: TextureRect = null
 var _art_fallback: AnchoredText = null
 var _title: AnchoredText
+var _type_line: AnchoredText
 var _artist: AnchoredText = null
 var _rules: RulesText = null
 var _shape: Panel = null
@@ -33,8 +34,8 @@ func setup(look: CardLook, height: float) -> void:
 	var title_box: Rect2 = CardGeometry.on_card(CardGeometry.TITLE, size_now)
 	title_box.size.x = pips_left - title_box.position.x - CardGeometry.PIP_DIAMETER * size_now.y * 0.3
 	_title = _text(shape, title_box, [look.name], [Color.BLACK], CardFonts.title(), 0.78, HORIZONTAL_ALIGNMENT_LEFT)
-	_text(shape, CardGeometry.on_card(CardGeometry.TYPE_LINE, size_now), [look.type_line()], [Color.BLACK],
-			CardFonts.title(), 0.68, HORIZONTAL_ALIGNMENT_LEFT)
+	_type_line = _text(shape, CardGeometry.on_card(CardGeometry.TYPE_LINE, size_now), look.type_line_texts(),
+			look.type_line_colors(), CardFonts.title(), 0.68, HORIZONTAL_ALIGNMENT_LEFT)
 	_add_rules(shape, size_now, spec)
 	if spec.is_creature:
 		_text(shape, CardGeometry.on_card(CardGeometry.POWER_TOUGHNESS_TEXT, size_now), look.power_toughness_texts(),
@@ -88,6 +89,10 @@ func art_fallback_text() -> AnchoredText:
 
 func title_text() -> AnchoredText:
 	return _title
+
+
+func type_line_text() -> AnchoredText:
+	return _type_line
 
 
 func artist_text() -> AnchoredText:

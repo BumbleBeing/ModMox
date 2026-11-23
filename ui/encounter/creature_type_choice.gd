@@ -167,8 +167,11 @@ func _find_yours() -> void:
 		return place[a] < place[b])
 
 
-## [param card]'s subtypes that are creature types.
+## [param card]'s subtypes that are creature types: all of them for a card that is every
+## creature type (ADR 0075).
 func _creature_types_of(card: MmObjectView) -> Array[String]:
+	if card.is_every_creature_type:
+		return decision.creature_types.duplicate()
 	var found: Array[String] = []
 	for subtype: String in card.subtypes:
 		if decision.creature_types.has(subtype) and not found.has(subtype):

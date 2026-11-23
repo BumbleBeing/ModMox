@@ -27,6 +27,13 @@ func test_an_ability_that_is_not_a_keyword_is_quoted_after_the_keywords() -> voi
 		+ "\"When this creature enters, this creature deals 1 damage to any target.\" It costs {1}{R} more to cast.")
 
 
+func test_menace_is_a_keyword_listed_in_the_augmentations_order() -> void:
+	var mod: Mod = _creature_mod([_ability(MenaceAbility.new()), _ability(DeathtouchAbility.new()), _power_toughness(1, 0)],
+		Fixture.mana_cost(0, [MmMana.Type.BLACK] as Array[MmMana.Type]))
+
+	assert_eq(ModText.of(mod), "Modified card gets +1/+0 and gains menace and deathtouch. It costs {B} more to cast.")
+
+
 func test_a_hex_takes_power_and_toughness_away() -> void:
 	var mod: Mod = _creature_mod([_power_toughness(-1, -1)], Fixture.mana_cost(1))
 	mod.is_hex = true

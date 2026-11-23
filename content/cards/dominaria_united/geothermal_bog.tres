@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_cb4dh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_f22um"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_rw60f"]
+
+[sub_resource type="Resource" id="Resource_fvabm"]
+script = ExtResource("2_f22um")
+
+[resource]
+script = ExtResource("2_rw60f")
+name = "Geothermal Bog"
+card_types = Array[int]([4])
+subtypes = Array[String](["Swamp", "Mountain"])
+abilities = Array[ExtResource("1_cb4dh")]([SubResource("Resource_fvabm")])

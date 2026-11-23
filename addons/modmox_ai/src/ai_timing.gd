@@ -37,15 +37,18 @@ const COMBAT_STEPS: Array[MmTurn.Step] = [
 
 
 ## [param effects] with each "you may" (MayEffect), "you may pay {X}" (MayPayXEffect,
-## ADR 0061) and "if [condition]" (IfEffect) replaced by the effect it offers, so a spell or
-## ability is read as doing what it may do (CR 603.5).
+## ADR 0061), "you may [cost]" (MayPayEffect, ADR 0076) and "if [condition]" (IfEffect)
+## replaced by the effect it offers, so a spell or ability is read as doing what it may do
+## (CR 603.5).
 static func unwrapped(effects: Array[MmEffect]) -> Array[MmEffect]:
 	var found: Array[MmEffect] = []
 	for effect: MmEffect in effects:
 		var offered: MmEffect = effect
-		while offered is MayEffect or offered is MayPayXEffect or offered is IfEffect:
+		while offered is MayEffect or offered is MayPayXEffect or offered is MayPayEffect or offered is IfEffect:
 			if offered is IfEffect:
 				offered = (offered as IfEffect).effect
+			elif offered is MayPayEffect:
+				offered = (offered as MayPayEffect).effect
 			else:
 				offered = (offered as MayEffect).effect if offered is MayEffect else (offered as MayPayXEffect).effect
 		found.append(offered)

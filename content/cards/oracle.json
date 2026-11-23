@@ -8,6 +8,26 @@
 		"set_name": "Zendikar",
 		"type_line": "Artifact — Equipment"
 	},
+	"aeronauts_wings": {
+		"mana_cost": "{2}",
+		"name": "Aeronaut's Wings",
+		"oracle_id": "e3bad2e2-1024-4261-b3d7-82a6998416fd",
+		"oracle_text": "Equipped creature gets +1/+0 and has flying.\nEquip {2} ({2}: Attach to target creature you control. Equip only as a sorcery.)",
+		"rarity": "common",
+		"set_name": "The Brothers' War",
+		"type_line": "Artifact — Equipment"
+	},
+	"akrasan_squire": {
+		"mana_cost": "{W}",
+		"name": "Akrasan Squire",
+		"oracle_id": "2b8ef83b-1a1d-4299-ab69-e9e296bb224d",
+		"oracle_text": "Exalted (Whenever a creature you control attacks alone, that creature gets +1/+1 until end of turn.)",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Shards of Alara",
+		"toughness": "1",
+		"type_line": "Creature — Human Soldier"
+	},
 	"ancestral_recall": {
 		"mana_cost": "{U}",
 		"name": "Ancestral Recall",
@@ -25,6 +45,17 @@
 		"rarity": "rare",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Artifact"
+	},
+	"anointed_chorister": {
+		"mana_cost": "{W}",
+		"name": "Anointed Chorister",
+		"oracle_id": "61859443-e298-41c7-a179-6e6554de91c9",
+		"oracle_text": "Lifelink (Damage dealt by this creature also causes you to gain that much life.)\n{4}{W}: This creature gets +3/+3 until end of turn.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Core Set 2021",
+		"toughness": "1",
+		"type_line": "Creature — Human Cleric"
 	},
 	"arahbo_the_first_fang": {
 		"mana_cost": "{2}{W}",
@@ -46,6 +77,15 @@
 		"set_name": "Dominaria United",
 		"type_line": "Instant"
 	},
+	"ash_barrens": {
+		"mana_cost": "",
+		"name": "Ash Barrens",
+		"oracle_id": "58257464-278e-45fa-8e0b-bcd9a7500bc1",
+		"oracle_text": "{T}: Add {C}.\nBasic landcycling {1} ({1}, Discard this card: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.)",
+		"rarity": "common",
+		"set_name": "Commander 2016",
+		"type_line": "Land"
+	},
 	"assemble_the_players": {
 		"mana_cost": "{1}{W}",
 		"name": "Assemble the Players",
@@ -54,6 +94,17 @@
 		"rarity": "rare",
 		"set_name": "Murders at Karlov Manor",
 		"type_line": "Enchantment"
+	},
+	"auriok_glaivemaster": {
+		"mana_cost": "{W}",
+		"name": "Auriok Glaivemaster",
+		"oracle_id": "77ec26f9-c7de-4bd8-bafb-8b9825891015",
+		"oracle_text": "As long as this creature is equipped, it gets +1/+1 and has first strike.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Darksteel",
+		"toughness": "1",
+		"type_line": "Creature — Human Soldier"
 	},
 	"bark_of_doran": {
 		"mana_cost": "{1}{W}",
@@ -124,6 +175,15 @@
 		"set_name": "Foundations",
 		"type_line": "Instant"
 	},
+	"contaminated_aquifer": {
+		"mana_cost": "",
+		"name": "Contaminated Aquifer",
+		"oracle_id": "c27b771d-b5ec-459a-a101-f078cb8d0184",
+		"oracle_text": "({T}: Add {U} or {B}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Island Swamp"
+	},
 	"coordinated_maneuver": {
 		"mana_cost": "{1}{W}",
 		"name": "Coordinated Maneuver",
@@ -152,6 +212,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "4",
 		"type_line": "Creature — Wurm"
+	},
+	"cultbrand_cinder": {
+		"mana_cost": "{4}{B/R}",
+		"name": "Cultbrand Cinder",
+		"oracle_id": "cbb030aa-ba4f-4d9e-920d-001a40982f5e",
+		"oracle_text": "When this creature enters, put a -1/-1 counter on target creature.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Shadowmoor",
+		"toughness": "3",
+		"type_line": "Creature — Elemental Shaman"
 	},
 	"dark_ritual": {
 		"mana_cost": "{B}",
@@ -307,6 +378,26 @@
 		"set_name": "Planeshift",
 		"type_line": "Instant"
 	},
+	"garrison_cat": {
+		"mana_cost": "{W}",
+		"name": "Garrison Cat",
+		"oracle_id": "e7bc7c44-946c-4131-b764-add0c5f21020",
+		"oracle_text": "When this creature dies, create a 1/1 white Human Soldier creature token.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Ikoria: Lair of Behemoths",
+		"toughness": "1",
+		"type_line": "Creature — Cat"
+	},
+	"geothermal_bog": {
+		"mana_cost": "",
+		"name": "Geothermal Bog",
+		"oracle_id": "e3b67368-1dd6-419b-a95d-7131b1dba23f",
+		"oracle_text": "({T}: Add {B} or {R}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Swamp Mountain"
+	},
 	"giant_growth": {
 		"mana_cost": "{G}",
 		"name": "Giant Growth",
@@ -387,6 +478,17 @@
 		"set_name": "Secrets of Strixhaven",
 		"type_line": "Sorcery"
 	},
+	"guiding_hydra": {
+		"mana_cost": "{X}{W}",
+		"name": "Guiding Hydra",
+		"oracle_id": "24f1445c-16c9-45c0-be56-0266e6c78cdb",
+		"oracle_text": "This creature enters with X +1/+1 counters on it.\nAt the beginning of combat on your turn, you may remove a +1/+1 counter from this creature. If you do, put a +1/+1 counter on each other creature you control.",
+		"power": "1",
+		"rarity": "rare",
+		"set_name": "Reality Fracture",
+		"toughness": "0",
+		"type_line": "Creature — Hydra Horror"
+	},
 	"haunted_mire": {
 		"mana_cost": "",
 		"name": "Haunted Mire",
@@ -437,6 +539,15 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "3",
 		"type_line": "Creature — Giant"
+	},
+	"honor": {
+		"mana_cost": "{W}",
+		"name": "Honor",
+		"oracle_id": "48c0cd06-465d-4901-bf23-948a003afc0b",
+		"oracle_text": "Put a +1/+1 counter on target creature.\nDraw a card.",
+		"rarity": "uncommon",
+		"set_name": "Edge of Eternities",
+		"type_line": "Sorcery"
 	},
 	"howling_mine": {
 		"mana_cost": "{2}",
@@ -497,6 +608,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "5",
 		"type_line": "Creature — Treefolk"
+	},
+	"isamaru_hound_of_konda": {
+		"mana_cost": "{W}",
+		"name": "Isamaru, Hound of Konda",
+		"oracle_id": "cfb756dd-6fe1-430a-8f04-8b10cac62a86",
+		"oracle_text": "",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Champions of Kamigawa",
+		"toughness": "2",
+		"type_line": "Legendary Creature — Dog"
 	},
 	"island": {
 		"mana_cost": "",
@@ -568,6 +690,17 @@
 		"set_name": "Modern Horizons",
 		"toughness": "1",
 		"type_line": "Creature — Cat"
+	},
+	"law_rune_enforcer": {
+		"mana_cost": "{W}",
+		"name": "Law-Rune Enforcer",
+		"oracle_id": "bd13392e-e72a-4dbb-ba9d-68f68e47e30e",
+		"oracle_text": "{1}, {T}: Tap target creature with mana value 2 or greater.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "War of the Spark",
+		"toughness": "2",
+		"type_line": "Creature — Human Soldier"
 	},
 	"lay_down_arms": {
 		"mana_cost": "{W}",
@@ -704,6 +837,24 @@
 		"toughness": "1",
 		"type_line": "Creature — Merfolk"
 	},
+	"mind_stone": {
+		"mana_cost": "{2}",
+		"name": "Mind Stone",
+		"oracle_id": "c97361b5-af16-4a7b-af85-a429dbaf4ad2",
+		"oracle_text": "{T}: Add {C}.\n{1}, {T}, Sacrifice this artifact: Draw a card.",
+		"rarity": "common",
+		"set_name": "Weatherlight",
+		"type_line": "Artifact"
+	},
+	"molten_tributary": {
+		"mana_cost": "",
+		"name": "Molten Tributary",
+		"oracle_id": "58c592ed-20fc-481b-909b-2315567e5f20",
+		"oracle_text": "({T}: Add {U} or {R}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Island Mountain"
+	},
 	"mountain": {
 		"mana_cost": "",
 		"name": "Mountain",
@@ -712,6 +863,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Mountain"
+	},
+	"myr_scrapling": {
+		"mana_cost": "{1}",
+		"name": "Myr Scrapling",
+		"oracle_id": "1a4ffc1e-2f5e-446a-b1e8-32385b3c083b",
+		"oracle_text": "Sacrifice this creature: Put a +1/+1 counter on target creature.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Modern Horizons 2",
+		"toughness": "1",
+		"type_line": "Artifact Creature — Myr"
 	},
 	"nishoba_brawler": {
 		"mana_cost": "{1}{G}",
@@ -772,6 +934,17 @@
 		"set_name": "Amonkhet",
 		"toughness": "4",
 		"type_line": "Creature — Antelope"
+	},
+	"ornithopter": {
+		"mana_cost": "{0}",
+		"name": "Ornithopter",
+		"oracle_id": "a3a98bc9-caa0-49b7-951c-fe4e4f54e4ba",
+		"oracle_text": "Flying",
+		"power": "0",
+		"rarity": "common",
+		"set_name": "Antiquities",
+		"toughness": "2",
+		"type_line": "Artifact Creature — Thopter"
 	},
 	"outflank": {
 		"mana_cost": "{W}",
@@ -844,6 +1017,15 @@
 		"toughness": "1",
 		"type_line": "Creature — Human Wizard Sorcerer"
 	},
+	"prophetic_prism": {
+		"mana_cost": "{2}",
+		"name": "Prophetic Prism",
+		"oracle_id": "134a9877-5cfb-4a2a-a0f0-930dce45f58b",
+		"oracle_text": "When this artifact enters, draw a card.\n{1}, {T}: Add one mana of any color.",
+		"rarity": "common",
+		"set_name": "Rise of the Eldrazi",
+		"type_line": "Artifact"
+	},
 	"prowling_felidar": {
 		"mana_cost": "{3}{W}",
 		"name": "Prowling Felidar",
@@ -854,6 +1036,15 @@
 		"set_name": "Zendikar Rising",
 		"toughness": "3",
 		"type_line": "Creature — Cat Beast"
+	},
+	"radiant_grove": {
+		"mana_cost": "",
+		"name": "Radiant Grove",
+		"oracle_id": "32c91719-f3dd-4cc7-9e32-7d5ccf18f07c",
+		"oracle_text": "({T}: Add {G} or {W}.)\nThis land enters tapped.",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"type_line": "Land — Forest Plains"
 	},
 	"raise_dead": {
 		"mana_cost": "{B}",
@@ -957,6 +1148,15 @@
 		"toughness": "2",
 		"type_line": "Creature — Cat"
 	},
+	"seam_rip": {
+		"mana_cost": "{W}",
+		"name": "Seam Rip",
+		"oracle_id": "dfd5939e-a71a-4e16-9b93-752162be4ccd",
+		"oracle_text": "When this enchantment enters, exile target nonland permanent an opponent controls with mana value 2 or less until this enchantment leaves the battlefield.",
+		"rarity": "uncommon",
+		"set_name": "Edge of Eternities",
+		"type_line": "Enchantment"
+	},
 	"serra_angel": {
 		"mana_cost": "{3}{W}{W}",
 		"name": "Serra Angel",
@@ -1027,6 +1227,17 @@
 		"rarity": "common",
 		"set_name": "Final Fantasy",
 		"type_line": "Instant"
+	},
+	"sparring_construct": {
+		"mana_cost": "{1}",
+		"name": "Sparring Construct",
+		"oracle_id": "bc948e19-816b-4c13-a36b-73b3e0472dca",
+		"oracle_text": "When this creature dies, put a +1/+1 counter on target creature you control.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Dominaria",
+		"toughness": "1",
+		"type_line": "Artifact Creature — Construct"
 	},
 	"steppe_lynx": {
 		"mana_cost": "{W}",
@@ -1137,6 +1348,17 @@
 		"toughness": "3",
 		"type_line": "Creature — Cat Cleric"
 	},
+	"thraben_inspector": {
+		"mana_cost": "{W}",
+		"name": "Thraben Inspector",
+		"oracle_id": "caa02547-66e3-4e27-a2d3-5e94f3e7a069",
+		"oracle_text": "When this creature enters, investigate. (Create a Clue token. It's an artifact with \"{2}, Sacrifice this token: Draw a card.\")",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Shadows over Innistrad",
+		"toughness": "2",
+		"type_line": "Creature — Human Soldier"
+	},
 	"tocasias_welcome": {
 		"mana_cost": "{2}{W}",
 		"name": "Tocasia's Welcome",
@@ -1157,6 +1379,17 @@
 		"toughness": "5",
 		"type_line": "Creature — Plant Cat"
 	},
+	"traveling_minister": {
+		"mana_cost": "{W}",
+		"name": "Traveling Minister",
+		"oracle_id": "1d789ccd-8192-41b1-a5bb-1e2174657698",
+		"oracle_text": "{T}: Target creature gets +1/+0 until end of turn. You gain 1 life. Activate only as a sorcery.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Innistrad: Crimson Vow",
+		"toughness": "1",
+		"type_line": "Creature — Human Cleric"
+	},
 	"tromp_the_domains": {
 		"mana_cost": "{5}{G}",
 		"name": "Tromp the Domains",
@@ -1176,6 +1409,17 @@
 		"set_name": "Tarkir: Dragonstorm",
 		"toughness": "2",
 		"type_line": "Creature — Cat"
+	},
+	"universal_automaton": {
+		"mana_cost": "{1}",
+		"name": "Universal Automaton",
+		"oracle_id": "d50b1d2e-1825-432a-ab73-068fdc356f50",
+		"oracle_text": "Changeling (This card is every creature type.)",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Modern Horizons",
+		"toughness": "1",
+		"type_line": "Artifact Creature — Shapeshifter"
 	},
 	"uthden_troll": {
 		"mana_cost": "{2}{R}",

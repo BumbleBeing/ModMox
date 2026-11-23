@@ -21,3 +21,7 @@ Left out until a card needs them: an X chosen as a spell is cast (CR 107.3a, 601
 ## Addendum: the stepper is the Pay answer (ADR 0066)
 
 ADR 0066 changes where the stepper and "No" sit and how X is paid. They are the two halves of the Info Panel's Answer Row; the stepper is a plate of its own and no longer the `DamageStepper`. Neither is selected at first, and the Pass Button reads "Choose an answer"; clicking or stepping the stepper selects it, Up and Down step X, and the Pass Button or Space then pays, so "no key presses it" above no longer holds. The words, where the stepper starts and the glow of what Auto-tap would tap stand.
+
+## Addendum: X chosen as a spell is cast (engine ADR 0076)
+
+Guiding Hydra's {X}{W} is chosen as it is cast, with the same stepper. The Info Panel reads "Choose {X} for Guiding Hydra"; the stepper starts at the most the Hero could pay and sits on the left of the Answer Row, and the cast's Cancel takes the right, where No would be, since a cast is canceled rather than declined. The Pass Button reads "Cast with {2}". Nothing is selected at first, and what Auto-tap would tap for the X shown glows, as for "Pay {X}".

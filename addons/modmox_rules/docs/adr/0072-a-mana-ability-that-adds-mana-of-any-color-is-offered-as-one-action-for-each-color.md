@@ -14,4 +14,6 @@ Jewel Thief, cut from the Villain deck `frondland_felidar` until it could be mad
 
 **A Treasure is a Token Definition like any other** (ADR 0044): `content/tokens/treasure.tres`, named "Treasure Token" (CR 111.4). `AbilityText` knows the predefined tokens (CR 111.10) by their subtype, the name less "Token": one is created as "a Treasure token" ("two Treasure tokens"), its abilities left to the rules, and calls itself "this token", as CR 111.10a words it: "{T}, Sacrifice this token: Add one mana of any color."
 
-Left out until a card needs it (ADR 0001): "Add N mana of any one color", mana in any combination of colors, mana of any color from a spell or an ability that uses the stack, which would choose its color as it resolves, and predefined tokens other than Treasure.
+Left out until a card needs it (ADR 0001): "Add N mana of any one color", mana in any combination of colors, mana of any color from a spell or an ability that uses the stack, which would choose its color as it resolves, and predefined tokens other than Treasure and Clue.
+
+**Addendum: the Clue.** Thraben Inspector brings the second predefined token: a Clue is a colorless Clue artifact token with "{2}, Sacrifice this token: Draw a card." (CR 111.10f). It is `content/tokens/clue.tres`, "Clue Token", and `AbilityText.PREDEFINED_TOKENS` names it beside Treasure, so it is created as "a Clue token" and its ability calls it "this token". "Investigate" (CR 701.16a) is printed by its meaning, "create a Clue token", which ADR 0023 accepts; a keyword action of its own was not built.

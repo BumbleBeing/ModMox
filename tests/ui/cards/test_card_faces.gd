@@ -2,6 +2,7 @@ extends GutTest
 ## A Card Face draws a card in full; a Battlefield Face draws a permanent with its border,
 ## name, art, P/T box and keyword chips, turned sideways and darkened when tapped.
 
+const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const ALPHA: String = "res://content/cards/alpha/%s.tres"
 
 
@@ -343,6 +344,44 @@ func test_a_card_without_art_shows_its_name_in_the_art_window() -> void:
 	assert_null(face.art())
 	assert_eq(face.art_fallback_text().shown_text(), "Grizzly Bears")
 	assert_null(face.artist_text())
+
+
+func test_a_type_line_of_every_creature_type_says_all_in_its_own_color() -> void:
+	# ADR 0075: changeling's creature types are "(All)", not every one of them listed.
+	var look: CardLook = _look("grizzly_bears")
+	look.is_every_creature_type = true
+
+	var face: CardFace = _card(look, 400.0)
+
+	assert_eq(look.type_line(), "Creature — (All)", "Bear is a creature type, so it is part of the All.")
+	assert_eq(face.type_line_text().shown_text(), "Creature — (All)")
+	assert_eq(face.type_line_text().run_colors(), [Color.BLACK, CardLook.EVERY_CREATURE_TYPE_COLOR] as Array[Color])
+	assert_ne(CardLook.EVERY_CREATURE_TYPE_COLOR, Color.BLACK)
+
+
+func test_a_type_line_of_every_creature_type_keeps_its_other_subtypes() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	look.subtypes = ["Equipment", "Shapeshifter"]
+	look.is_every_creature_type = true
+
+	assert_eq(look.type_line(), "Artifact Creature — Equipment (All)")
+
+
+func test_an_ordinary_type_line_is_one_black_run() -> void:
+	var face: CardFace = _card(_look("grizzly_bears"), 400.0)
+
+	assert_eq(face.type_line_text().shown_text(), "Creature — Bear")
+	assert_eq(face.type_line_text().run_colors(), [Color.BLACK] as Array[Color])
+
+
+func test_a_look_is_every_creature_type_as_printed_and_as_viewed() -> void:
+	var view: MmObjectView = MmObjectView.new()
+	view.is_every_creature_type = true
+
+	assert_true(CardLook.of_characteristics(MmCharacteristics.printed(Scenario.changeling())).is_every_creature_type)
+	assert_true(CardLook.of_view(view).is_every_creature_type)
+	assert_false(_look("grizzly_bears").is_every_creature_type)
 
 
 func test_a_card_faces_rules_text_leaves_reminder_text_off() -> void:

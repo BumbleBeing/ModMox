@@ -26,6 +26,9 @@ var entering_object_id: int = 0
 ## What saying yes pays as that permanent enters, such as 2 life, or null. Card data, never
 ## changed.
 var entry_cost: MmCost = null
+## For a MayPayEffect: what saying yes pays at once, before what "if you do" offers happens,
+## such as removing a counter (ADR 0076), or null. Card data, never changed.
+var resolution_cost: MmCost = null
 
 
 func _init(deciding_player_id: int, object_id: int, offered: MmEffect, to_pay: MmManaCost = null) -> void:

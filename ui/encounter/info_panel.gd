@@ -145,7 +145,7 @@ func show_selected(index: int) -> void:
 	if _selected == index:
 		return
 	_selected = index
-	if _asked != null and _asked.offers_no:
+	if _asked != null and (_asked.offers_no or _asked.chooses_x):
 		_build_row()
 		_arrange()
 
@@ -308,8 +308,13 @@ func _build_row() -> void:
 	_no = null
 	_x_stepper = null
 	var row: Rect2 = row_rect()
+	var half: float = (row.size.x - ROW_GAP) / 2.0
+	var left: Rect2 = Rect2(row.position, Vector2(half, row.size.y))
+	var right: Rect2 = Rect2(row.position + Vector2(half + ROW_GAP, 0), Vector2(half, row.size.y))
 	if _asked.can_cancel:
-		_cancel = _button(CANCEL_FORMAT % _cancel_key, row, false)
+		# Engine ADR 0076: X chosen as a spell is cast has its stepper on the left and Cancel
+		# where No would be.
+		_cancel = _button(CANCEL_FORMAT % _cancel_key, right if _asked.chooses_x else row, false)
 		_cancel.pressed.connect(func() -> void: cancel_pressed.emit())
 	if _asked.offers_all_attack:
 		_all_attack = _button(UNDECLARE_ALL if _is_undeclaring else ALL_ATTACK, row, false)
@@ -318,11 +323,8 @@ func _build_row() -> void:
 				undeclare_all_pressed.emit()
 			else:
 				all_attack_pressed.emit())
-	if not _asked.offers_no:
+	if not _asked.offers_no and not _asked.chooses_x:
 		return
-	var half: float = (row.size.x - ROW_GAP) / 2.0
-	var left: Rect2 = Rect2(row.position, Vector2(half, row.size.y))
-	var right: Rect2 = Rect2(row.position + Vector2(half + ROW_GAP, 0), Vector2(half, row.size.y))
 	var is_yes: bool = _selected == AFFIRMATIVE
 	if _asked.chooses_x:
 		_x_stepper = XStepper.new(left, _x, _x > 0, _x < _asked.most_x, SELECTED if is_yes else BUTTON, is_yes)
@@ -334,8 +336,9 @@ func _build_row() -> void:
 		var words: String = YES if _owed_text == "" else PAY_FORMAT % _owed_text.strip_edges()
 		_affirmative = _button(_asked.affirmative if _asked.affirmative != "" else words, left, is_yes)
 		_affirmative.pressed.connect(func() -> void: answer_selected.emit(AFFIRMATIVE))
-	_no = _button(NO, right, _selected == NO_ANSWER)
-	_no.pressed.connect(func() -> void: answer_selected.emit(NO_ANSWER))
+	if _asked.offers_no:
+		_no = _button(NO, right, _selected == NO_ANSWER)
+		_no.pressed.connect(func() -> void: answer_selected.emit(NO_ANSWER))
 	if _option != null:
 		move_child(_option, -1)
 	if _flash != null:

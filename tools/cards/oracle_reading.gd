@@ -99,13 +99,28 @@ func _read_mana_cost(text: String) -> void:
 		var symbol: String = found.get_string(1)
 		if symbol.is_valid_int():
 			cost.generic += symbol.to_int()
+		elif symbol == "X":
+			cost.x_count += 1  # CR 107.3, engine ADR 0076.
 		elif MANA_SYMBOLS.has(symbol):
 			cost.symbols.append(MANA_SYMBOLS[symbol])
+		elif _is_two_color_hybrid(symbol):
+			# CR 107.4e, engine ADR 0077: either half pays it.
+			var halves: PackedStringArray = symbol.split("/")
+			cost.hybrid_symbols.append(Vector2i(MANA_SYMBOLS[halves[0]], MANA_SYMBOLS[halves[1]]))
 		else:
 			refusals.append("mana cost: {%s} is not a symbol the engine has" % symbol)
 	if read_length != text.length():
 		refusals.append("mana cost: %s is not only symbols" % text)
 	definition.mana_cost = cost
+
+
+## Whether [param symbol], read between braces, is a hybrid symbol of two different colors,
+## such as B/R. A monocolored hybrid symbol ({2/W}) and Phyrexian ones ({B/P}) are not in the
+## game (ADR 0001).
+static func _is_two_color_hybrid(symbol: String) -> bool:
+	var halves: PackedStringArray = symbol.split("/")
+	return halves.size() == 2 and halves[0] != halves[1] and MmMana.COLORS.has(MANA_SYMBOLS.get(halves[0], -1)) \
+		and MmMana.COLORS.has(MANA_SYMBOLS.get(halves[1], -1))
 
 
 func _read_type_line(text: String) -> void:

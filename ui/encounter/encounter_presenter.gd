@@ -283,7 +283,11 @@ func payment_plan(answer: int) -> PaymentPlan:
 ## Where the Hero's X stepper starts while they are asked how much X to pay (game ADR
 ## 0063): the largest X worth paying, as the Villain's Agent judges it, or 0 when none is.
 ## It reads the engine, so it gives 0 while the Villain is thinking.
+## While X is chosen as a spell is cast, it starts at the most the Hero could pay (engine ADR
+## 0076).
 func starting_x() -> int:
+	if _snapshot != null and _snapshot.decision is ChooseXDecision:
+		return (_snapshot.decision as ChooseXDecision).most
 	var asked: ChooseXToPayDecision = _snapshot.decision as ChooseXToPayDecision if _snapshot != null else null
 	if asked == null or _task != -1:
 		return 0
@@ -291,18 +295,27 @@ func starting_x() -> int:
 	return worth.back() if not worth.is_empty() else 0
 
 
+## The most X [param asked] allows: a ChooseXToPayDecision's or a ChooseXDecision's, or 0.
+static func most_x_of(asked: MmPendingDecision) -> int:
+	if asked is ChooseXDecision:
+		return (asked as ChooseXDecision).most
+	return (asked as ChooseXToPayDecision).most if asked is ChooseXToPayDecision else 0
+
+
 ## What Auto-tap would tap and spend to pay [param x] while the Hero is asked how much X to
-## pay, or null: Auto-tap is off, nothing is asked, or X costs nothing. Kept until the next
+## pay, or as a spell with {X} is cast, or null: Auto-tap is off, nothing is asked, or X costs nothing. Kept until the next
 ## snapshot, as payment_plan()'s are.
 func x_payment_plan(x: int) -> PaymentPlan:
 	if not _is_auto_tapping or _task != -1 or _snapshot == null:
 		return null
-	var asked: ChooseXToPayDecision = _snapshot.decision as ChooseXToPayDecision
-	if asked == null or x <= 0 or x > asked.most:
+	var asked: MmPendingDecision = _snapshot.decision \
+		if _snapshot.decision is ChooseXToPayDecision or _snapshot.decision is ChooseXDecision else null
+	if asked == null or x <= 0 or x > most_x_of(asked):
 		return null
 	if not _x_plans.has(x):
 		var copy: MmEngine = _copy()
-		_x_plans[x] = null if copy.submit(ChooseXToPayDecision.answer_for(x)) != "" else _plan_on(copy)
+		var answer: int = x if asked is ChooseXDecision else ChooseXToPayDecision.answer_for(x)
+		_x_plans[x] = null if copy.submit(answer) != "" else _plan_on(copy)
 	var plan: PaymentPlan = _x_plans[x]
 	return null if plan == null or plan.is_empty() else plan
 

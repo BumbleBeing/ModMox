@@ -18,6 +18,10 @@ var is_land: bool = false
 var is_artifact: bool = false
 var is_creature: bool = false
 var is_legendary: bool = false
+## A two-color card whose colors come from a hybrid symbol (engine ADR 0077): its two colors'
+## Frames blend across the middle, under the colorless Frame's silver bars and P/T box, as
+## printed hybrid cards are. A two-color card with no hybrid symbol of its colors is gold.
+var is_hybrid: bool = false
 
 
 ## The Frame for [param look]. A land's color category follows the colors of mana it can
@@ -41,6 +45,7 @@ static func of(look: CardLook) -> FrameSpec:
 			if pair.contains(found[0]) and pair.contains(found[1]):
 				found = [pair[0], pair[1]]
 	spec.letters = found
+	spec.is_hybrid = not spec.is_land and found.size() == 2 and _has_hybrid_of(look.mana_cost, found)
 	return spec
 
 
@@ -48,6 +53,8 @@ static func of(look: CardLook) -> FrameSpec:
 ## have equal keys, so baked Frames are cached by it.
 func key() -> String:
 	var text: String = "%s%d:%s" % ["land" if is_land else "card", letters.size(), "".join(letters)]
+	if is_hybrid:
+		text += ":hybrid"
 	if is_artifact and not is_land:
 		text += ":artifact"
 	if is_creature:
@@ -64,6 +71,7 @@ func without_power_toughness() -> FrameSpec:
 	copy.is_land = is_land
 	copy.is_artifact = is_artifact
 	copy.is_legendary = is_legendary
+	copy.is_hybrid = is_hybrid
 	return copy
 
 
@@ -76,6 +84,11 @@ func layers() -> Array[FrameLayer]:
 			result.append(FrameLayer.full("lands/c" if is_land else ("frames/a" if is_artifact else "frames/c")))
 		1:
 			result.append(FrameLayer.full(folder + "/" + letters[0]))
+		2 when is_hybrid:
+			result.append(FrameLayer.full("frames/" + letters[0]))
+			result.append(FrameLayer.full("frames/" + letters[1], ["hybrid_blend"]))
+			result.append(FrameLayer.full("frames/c", ["title"]))
+			result.append(FrameLayer.full("frames/c", ["type"]))
 		2:
 			var left: String = folder + "/" + letters[0]
 			var right: String = folder + "/" + letters[1]
@@ -94,7 +107,8 @@ func layers() -> Array[FrameLayer]:
 		result.append(FrameLayer.cover())
 		result.append(FrameLayer.placed("crowns/" + _left_crown(), CardGeometry.CROWN))
 		if letters.size() == 2:
-			result.append(FrameLayer.placed("crowns/" + letters[1], CardGeometry.CROWN, ["right_half"]))
+			result.append(FrameLayer.placed("crowns/" + letters[1], CardGeometry.CROWN,
+				["hybrid_blend" if is_hybrid else "right_half"]))
 	return result
 
 
@@ -105,7 +119,7 @@ func has_artifact_border() -> bool:
 
 
 ## The P/T box image: the color for one color, gold for a two-color or multicolor nonland,
-## colorless for a two-color land, and artifact or colorless for no colors.
+## colorless for a two-color land or a hybrid card, and artifact or colorless for no colors.
 func power_toughness_image() -> String:
 	match letters.size():
 		0:
@@ -113,7 +127,7 @@ func power_toughness_image() -> String:
 		1:
 			return "pt/" + letters[0]
 		2:
-			return "pt/c" if is_land else "pt/m"
+			return "pt/c" if is_land or is_hybrid else "pt/m"
 	return "pt/m"
 
 
@@ -124,6 +138,17 @@ func _left_crown() -> String:
 		1, 2:
 			return letters[0]
 	return "m"
+
+
+## Whether [param cost] has a hybrid symbol of the two colors [param letters] name.
+static func _has_hybrid_of(cost: MmManaCost, letters: Array[String]) -> bool:
+	if cost == null:
+		return false
+	for hybrid: Vector2i in cost.hybrid_symbols:
+		var pair: Array[String] = [LETTERS[hybrid.x], LETTERS[hybrid.y]]
+		if pair.has(letters[0]) and pair.has(letters[1]):
+			return true
+	return false
 
 
 ## The colors of mana [param abilities] can add, once each, ignoring colorless.

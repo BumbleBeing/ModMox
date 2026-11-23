@@ -8,27 +8,31 @@ extends RefCounted
 var player_id: int
 var remaining_generic: int = 0
 var remaining_symbols: Array[MmMana.Type] = []
+## The hybrid symbols still owed (CR 107.4e, ADR 0077).
+var remaining_hybrid_symbols: Array[Vector2i] = []
 
 
-func _init(paying_player_id: int, generic: int = 0, symbols: Array[MmMana.Type] = []) -> void:
+func _init(paying_player_id: int, generic: int = 0, symbols: Array[MmMana.Type] = [],
+		hybrids: Array[Vector2i] = []) -> void:
 	player_id = paying_player_id
 	remaining_generic = generic
 	remaining_symbols = symbols.duplicate()
+	remaining_hybrid_symbols = hybrids.duplicate()
 
 
 ## [param cost] owed by [param paying_player_id], or nothing owed for a null cost.
 static func of_cost(paying_player_id: int, cost: MmManaCost) -> ManaPaymentProgress:
 	if cost == null:
 		return ManaPaymentProgress.new(paying_player_id)
-	return ManaPaymentProgress.new(paying_player_id, cost.generic, cost.symbols)
+	return ManaPaymentProgress.new(paying_player_id, cost.generic, cost.symbols, cost.hybrid_symbols)
 
 
 func copy() -> ManaPaymentProgress:
-	return ManaPaymentProgress.new(player_id, remaining_generic, remaining_symbols)
+	return ManaPaymentProgress.new(player_id, remaining_generic, remaining_symbols, remaining_hybrid_symbols)
 
 
 func is_paid() -> bool:
-	return remaining_generic == 0 and remaining_symbols.is_empty()
+	return remaining_generic == 0 and remaining_symbols.is_empty() and remaining_hybrid_symbols.is_empty()
 
 
 ## The next step of the payment, or null when nothing on offer can pay what is still owed.
@@ -36,7 +40,7 @@ func decision(state: MmGameState) -> PayManaDecision:
 	var options: Array[MmAction] = _options(state)
 	if options.is_empty():
 		return null
-	return PayManaDecision.new(player_id, options, remaining_generic, remaining_symbols)
+	return PayManaDecision.new(player_id, options, remaining_generic, remaining_symbols, remaining_hybrid_symbols)
 
 
 ## Pays with the action at [param index] of [param paying], a validated answer.
@@ -56,7 +60,7 @@ func _options(state: MmGameState) -> Array[MmAction]:
 	var options: Array[MmAction] = []
 	var pool: Array[MmMana] = state.player(player_id).mana_pool()
 	for unit_index: int in pool.size():
-		if ManaPayment.symbol_paid_by(pool[unit_index].type, remaining_symbols, remaining_generic) != ManaPayment.CANNOT_PAY:
+		if _paid_by(pool[unit_index].type) != ManaPayment.CANNOT_PAY:
 			options.append(PayWithManaAction.new(unit_index))
 	for source: MmGameObject in ManaPayment.sorted_sources_of(state, player_id):
 		var abilities: Array[MmAbility] = state.characteristics_of(source).abilities
@@ -80,7 +84,7 @@ func _pays_something(state: MmGameState, ability: ActivatedAbility, activation: 
 	var context: MmEffectContext = MmEffectContext.new(player_id, activation.object_id)
 	context = context.with_chosen_mana_type(activation.mana_type)
 	for type: MmMana.Type in ManaPayment.mana_made_by(state, ability, context):
-		if ManaPayment.symbol_paid_by(type, remaining_symbols, remaining_generic) != ManaPayment.CANNOT_PAY:
+		if _paid_by(type) != ManaPayment.CANNOT_PAY:
 			return true
 	return false
 
@@ -88,11 +92,13 @@ func _pays_something(state: MmGameState, ability: ActivatedAbility, activation: 
 ## Spends the pool unit at [param unit_index] on whatever it should pay.
 func _spend(state: MmGameState, unit_index: int) -> void:
 	var type: MmMana.Type = state.player(player_id).mana_pool()[unit_index].type
-	var paid: int = ManaPayment.symbol_paid_by(type, remaining_symbols, remaining_generic)
+	var paid: int = _paid_by(type)
 	assert(paid != ManaPayment.CANNOT_PAY, "That mana cannot pay anything still owed.")
 	state.perform(ManaSpentEvent.new(player_id, unit_index))
 	if paid == ManaPayment.PAYS_GENERIC:
 		remaining_generic -= 1
+	elif paid == ManaPayment.PAYS_HYBRID:
+		remaining_hybrid_symbols.remove_at(MmManaCost.hybrid_index_in(remaining_hybrid_symbols, type))
 	else:
 		remaining_symbols.remove_at(paid)
 
@@ -112,7 +118,12 @@ func _pay_with_mana_ability(state: MmGameState, action: ActivateAbilityAction) -
 	var unit_index: int = pool_size_before
 	while unit_index < state.player(player_id).mana_pool().size():
 		var type: MmMana.Type = state.player(player_id).mana_pool()[unit_index].type
-		if ManaPayment.symbol_paid_by(type, remaining_symbols, remaining_generic) == ManaPayment.CANNOT_PAY:
+		if _paid_by(type) == ManaPayment.CANNOT_PAY:
 			unit_index += 1
 		else:
 			_spend(state, unit_index)
+
+
+## What a unit of [param type] would pay of what is still owed (ManaPayment.symbol_paid_by()).
+func _paid_by(type: MmMana.Type) -> int:
+	return ManaPayment.symbol_paid_by(type, remaining_symbols, remaining_generic, remaining_hybrid_symbols)

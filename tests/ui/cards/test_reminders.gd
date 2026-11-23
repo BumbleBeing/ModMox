@@ -71,6 +71,13 @@ func test_a_card_with_no_keyword_has_no_reminder() -> void:
 	assert_eq(Reminders.of(_abilities("forest")).size(), 0)
 
 
+func test_menace_is_reminded_that_it_needs_two_blockers() -> void:
+	var reminders: Array[Reminder] = Reminders.of([MenaceAbility.new()] as Array[MmAbility])
+
+	assert_eq(_keywords(reminders), ["Menace"])
+	assert_eq(reminders[0].text, "It can't be blocked except by two or more creatures.")
+
+
 func test_a_keyword_it_has_twice_is_reminded_once() -> void:
 	var abilities: Array[MmAbility] = [FlyingAbility.new(), FlyingAbility.new()]
 

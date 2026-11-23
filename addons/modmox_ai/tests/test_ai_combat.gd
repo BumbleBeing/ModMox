@@ -102,6 +102,43 @@ func test_does_not_gang_block_an_attacker_the_pair_cannot_kill() -> void:
 	assert_eq(AiScenario.ask(engine, AiAgent.new()), [], "Two Bears deal 4 to a 3/5 and one of them dies.")
 
 
+func test_never_blocks_a_menace_attacker_with_one_creature_it_would_kill() -> void:
+	var brute: MmCardDefinition = Scenario.creature("Brute", 2, 2, [MenaceAbility.new()])
+	var engine: MmEngine = _villain_to_block([brute], [AiScenario.free_alpha("hurloon_minotaur")])
+
+	assert_eq(AiScenario.ask(engine, AiAgent.new()), [], "CR 702.111b: one Minotaur can't block it.")
+
+
+func test_gang_blocks_a_menace_attacker_with_two_creatures() -> void:
+	var brute: MmCardDefinition = Scenario.creature("Brute", 3, 3, [MenaceAbility.new()])
+	var bears: MmCardDefinition = AiScenario.free_alpha("grizzly_bears")
+	var engine: MmEngine = _villain_to_block([brute], [bears, bears])
+
+	var blocks: Array = AiScenario.ask(engine, AiAgent.new())
+
+	assert_eq(blocks.size(), 2)
+	assert_eq(engine.submit(blocks), "")
+
+
+func test_chump_blocks_a_menace_attacker_with_two_creatures_when_the_attack_would_be_lethal() -> void:
+	var brute: MmCardDefinition = Scenario.creature("Brute", 6, 6, [MenaceAbility.new()])
+	var cub: MmCardDefinition = Scenario.creature("Cub", 1, 1)
+	var engine: MmEngine = _villain_to_block([brute], [cub, cub, cub], 6)
+
+	var blocks: Array = AiScenario.ask(engine, AiAgent.new())
+
+	assert_eq(blocks.size(), 2, "Two Cubs are enough, and one alone can't block it.")
+	assert_eq(engine.submit(blocks), "")
+
+
+func test_a_cheap_agent_never_blocks_a_menace_attacker_with_one_creature() -> void:
+	var brute: MmCardDefinition = Scenario.creature("Brute", 6, 6, [MenaceAbility.new()])
+	var engine: MmEngine = _villain_to_block([brute], [Scenario.creature("Cub", 1, 1)], 6)
+
+	assert_eq(AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP)), [],
+		"One Cub can't block it, lethal or not.")
+
+
 func test_does_not_attack_into_an_even_trade_when_the_race_is_even() -> void:
 	# Even clocks set the SAFE aggression level: only attacks it survives.
 	var engine: MmEngine = Scenario.combat_ready([AiScenario.free_alpha("grizzly_bears")], [AiScenario.free_alpha("grizzly_bears")])
@@ -135,6 +172,36 @@ func test_attacks_into_an_even_trade_that_its_own_attack_trigger_turns_into_a_wi
 	var attackers: Array = AiScenario.ask(engine, AiAgent.new())
 
 	assert_eq(attackers.size(), 1, "With its +1/+1 counter, a 3/3 kills a 2/2 blocker and survives.")
+
+
+func test_attacks_alone_into_an_even_trade_that_exalted_turns_into_a_win() -> void:
+	# CR 702.83a: the Combat Oracle plays the engine's combat, exalted's trigger included.
+	# Exalted is on an enchantment, so the race is still even and only a safe attack is made,
+	# as with Path of Bravery.
+	var banner: MmCardDefinition = Scenario.enchantment("Banner", [ExaltedAbility.new()])
+	var engine: MmEngine = Scenario.combat_ready([banner, AiScenario.free_alpha("grizzly_bears")],
+		[AiScenario.free_alpha("grizzly_bears")])
+	assert_not_null(engine)
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+
+	var attackers: Array = AiScenario.ask(engine, AiAgent.new())
+
+	assert_eq(attackers, [bears], "Alone, a 3/3 Bears kills a 2/2 blocker and survives.")
+
+
+func test_with_exalted_it_sends_one_attacker_rather_than_two_that_each_counted_on_it() -> void:
+	# CR 506.5: judged alone, the Squire (2/2 with its own exalted) and the Bears (3/3) each
+	# clear the bar, but sent together neither gets exalted and the Squire only dies. The
+	# plan is checked again with each attacker beside the others, and the least valuable
+	# that no longer clears the bar stays home.
+	var engine: MmEngine = Scenario.combat_ready([Scenario.squire(), AiScenario.free_alpha("grizzly_bears")],
+		[AiScenario.free_alpha("grizzly_bears")])
+	assert_not_null(engine)
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+
+	var attackers: Array = AiScenario.ask(engine, AiAgent.new())
+
+	assert_eq(attackers, [bears], "Alone, the Bears is a 3/3.")
 
 
 func test_blocks_with_a_creature_its_own_block_trigger_lets_survive_and_kill() -> void:

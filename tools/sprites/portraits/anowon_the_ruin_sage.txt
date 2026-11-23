@@ -1,0 +1,114 @@
+; Anowon, the Ruin Sage's Portrait, Pain Portrait and Blink Portrait, facing front: a gaunt
+; vampire with pale blue-gray skin, dark hair slicked back into a topknot, a red stripe painted
+; from the crown down the forehead and another from the lower lip down the chin, red eyes under
+; scowling brows, two curved dark horn spikes rising from his collar on either side of his head,
+; and a black cloak lined in crimson, open over a bare chest marked with a red scar that runs
+; down the sternum and branches out across both sides of it, the same on each.
+; Drawn after the art of Anowon, the Ruin Sage: Worldwake (wwk) #49, by Dan Murayama Scott.
+; Scryfall ID: 7b247681-1cf6-42a0-ad44-76261c690596
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= anowon_the_ruin_sage
+..............1111..............
+.............1lkk01.............
+...1.......11lkkk0011.......1...
+..1l1....11klk6!!5kk011....1k1..
+..1m1...1kklkk6!!5k0k001...1k1..
+.1mk1...1klkk06!!5kk0k01...1l01.
+.1mk1...1klk056!!5+0kk01...1l01.
+.1mk1...1lk5666!!555+k01...1l01.
+.1mk1...1k56666!!5555+01...1l01.
+.1mk1...15kk666!!555kk+1...1l01.
+.1mk1...15++kk6!!5kk33+1...1l01.
+.1mk01..15+#!+565+3!5++1..1lk01.
+..1mk1..156555565+++++31..1l01..
+..1mk01.15665556+55++331.1lk01..
+...1mk1..15+5535+35+331..1l01...
+...1mk01.15+555++55+331.1lk01...
+....1mk01.155+22223+31.1lk01....
+....1mk01..155565++31..1lk01....
+....1mk01..1555!!++31..1lk01....
+....1mk01111155!!+311111lk01....
+....1111200ba111111aa0001111....
+..1122000cba1+333331abb0000211..
+.12220000cba15++3331abb00000001.
+122000000cba566++5+3abb000000001
+12000000cbac6666555+cabb00000001
+1200000cba56b66cc55b+3abb0000001
+1000200cba5c6b5bb5b5c3abb0020001
+1000200cba5665bbbb5++3abb0020001
+1000200cba555++bb33++3abb0020001
+1002000cba++cc5bb5cc33abb0002001
+1002000cba5555bbbb5++3abb0002001
+1020000cba+5555cc5+++3abb0000201
+
+= anowon_the_ruin_sage_pain
+...............1111.............
+..............1lkk01............
+...1........11lkkk0011......1...
+..1l1.....11klk6!!5kk011...1k1..
+..1m1....1kklkk6!!5k0k001..1k1..
+.1mk1....1klkk06!!5kk0k01..1l01.
+.1mk1....1klk056!!5+0kk01..1l01.
+.1mk1....1lk5666!!555+k01..1l01.
+.1mk1....1k56kk6!!5kk5+01..1l01.
+.1mk1....15kk666!!555kk+1..1l01.
+.1mk1....15+1556!!5++13+1..1l01.
+.1mk01...15+511565+11+++1.1lk01.
+..1mk1...156155565+++1+31.1l01..
+..1mk01..15665556+55++3311lk01..
+...1mk1...15+5535+35+331.1l01...
+...1mk01..15+5322223+3311lk01...
+....1mk01..1552#6#62+311lk01....
+....1mk01...1532222331.1lk01....
+....1mk01...1555!!++31.1lk01....
+....1mk011111155!!+31111lk01....
+....1111200ba3111111a0001111....
+..1122000cba1+333331abb0000211..
+.12220000cba15++3331abb00000001.
+122000000cba566++5+3abb000000001
+12000000cbac6666555+cabb00000001
+1200000cba56b66cc55b+3abb0000001
+1000200cba5c6b5bb5b5c3abb0020001
+1000200cba5665bbbb5++3abb0020001
+1000200cba555++bb33++3abb0020001
+1002000cba++cc5bb5cc33abb0002001
+1002000cba5555bbbb5++3abb0002001
+1020000cba+5555cc5+++3abb0000201
+
+= anowon_the_ruin_sage_blink
+..............1111..............
+.............1lkk01.............
+...1.......11lkkk0011.......1...
+..1l1....11klk6!!5kk011....1k1..
+..1m1...1kklkk6!!5k0k001...1k1..
+.1mk1...1klkk06!!5kk0k01...1l01.
+.1mk1...1klk056!!5+0kk01...1l01.
+.1mk1...1lk5666!!555+k01...1l01.
+.1mk1...1k56666!!5555+01...1l01.
+.1mk1...15kk666!!555kk+1...1l01.
+.1mk1...15++kk6!!5kk33+1...1l01.
+.1mk01..15+55+565+3++++1..1lk01.
+..1mk1..156335565++22+31..1l01..
+..1mk01.15665556+55++331.1lk01..
+...1mk1..15+5535+35+331..1l01...
+...1mk01.15+555++55+331.1lk01...
+....1mk01.155+22223+31.1lk01....
+....1mk01..155565++31..1lk01....
+....1mk01..1555!!++31..1lk01....
+....1mk01111155!!+311111lk01....
+....1111200ba111111aa0001111....
+..1122000cba1+333331abb0000211..
+.12220000cba15++3331abb00000001.
+122000000cba566++5+3abb000000001
+12000000cbac6666555+cabb00000001
+1200000cba56b66cc55b+3abb0000001
+1000200cba5c6b5bb5b5c3abb0020001
+1000200cba5665bbbb5++3abb0020001
+1000200cba555++bb33++3abb0020001
+1002000cba++cc5bb5cc33abb0002001
+1002000cba5555bbbb5++3abb0002001
+1020000cba+5555cc5+++3abb0000201

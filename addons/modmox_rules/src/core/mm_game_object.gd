@@ -46,6 +46,9 @@ var targets: Array[MmReference] = []
 ## an index into its spell ability's or triggered ability's modes. SpellAbility.NO_MODE for
 ## anything else, or until it is chosen.
 var chosen_mode: int = SpellAbility.NO_MODE
+## For a spell on the stack with {X} in its mana cost: the X chosen as it was cast (CR 107.3a,
+## ADR 0076). 0 for anything else.
+var chosen_x: int = 0
 ## For a spell on the stack: cast from a graveyard for its flashback cost, so it is exiled
 ## instead of going anywhere else as it leaves the stack (CR 702.34a).
 var cast_with_flashback: bool = false
@@ -142,6 +145,7 @@ func duplicate_object() -> MmGameObject:
 	copy.controlled_since_game_turn = controlled_since_game_turn
 	copy.targets = targets.duplicate()  # MmReferences never change, so sharing them is safe.
 	copy.chosen_mode = chosen_mode
+	copy.chosen_x = chosen_x
 	copy.cast_with_flashback = cast_with_flashback
 	copy.cast_from_library = cast_from_library
 	copy.is_being_cast_from_library = is_being_cast_from_library
@@ -326,6 +330,10 @@ func record_chosen_creature_type(creature_type: String) -> void:
 ## 603.3c).
 func set_chosen_mode(mode_index: int) -> void:
 	chosen_mode = mode_index
+
+
+func set_chosen_x(x: int) -> void:
+	chosen_x = x
 
 
 ## Event-only: records the target chosen for place [param index] of the targets.

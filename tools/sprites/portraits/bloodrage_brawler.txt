@@ -1,0 +1,114 @@
+; Bloodrage Brawler's Portrait, Pain Portrait and Blink Portrait, facing front: a white-furred
+; minotaur roaring, ram horns wrapped in red with gold rings, gold-tipped tusks and a ringed beard
+; braid. His arms, in red sleeves with gold bands, angle out from the shoulders past the frame's
+; edge, and furred forearms come back in through gold bracers to fists holding twin steel
+; khopeshes crossed over a broad gold and red collar, their bloodied sickle blades hooking up past
+; his shoulders. A turquoise sash hangs between his fists.
+; Drawn after the art of Bloodrage Brawler: Amonkhet (akh) #121, by Lars Grant-West.
+; Scryfall ID: e6080f9e-2415-4e05-97a1-0fe4ad4fdf3b
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= bloodrage_brawler
+...1111111............1111111...
+..1!!!x!!c1..........1bccwccc1..
+.1!cccwccbx1111111111wabbvbbbc1.
+1!c11111bbx156#6565+1waa11111bc1
+1!c1....1bw15666555+1va1....1bc1
+1xw1....11b15666555+1a11....1vw1
+1!c161...1+566665555+31...151bc1
+1!c169111156666655555+1111851bc1
+1xw11689563+66665555325+84511vw1
+1!c1.11155+33666555223++111.1bc1
+1!c1..1+56!a5666555+ac5+31..1bc1
+.1!cx11+56665666555+555+311wbc1.
+..1bcy$1+566656655+555+31$xba1..
+...11111+5665666555+55+311111...
+...11111$1+566665555+31$11111...
+...15511y1+566998855+31x11++1...
+..1561RSx1+589Z84Z84+31wTS15+1..
+.1yx1RS11w1+5888444+31v11TS1wx1.
+.1!!1bS131v1a#6#656a1u121Tc1cc1.
+1!!c1RS1+5+1a#00006a13+31TS1bcc1
+1xxx1bS1+5+1a000000a13+31Tc1www1
+!!ccb1RS1+31a6cddb5a1231TS1abbcc
+!!ccb11RS55+156655+13++TS11abbcc
+xxwv1+551SSS51u22u1+TTT1++31uvww
+1111yyyyyQQQSS1uu1TTRRRxxxxx1111
+6611!x!x!x!xQQSSTTRRwcwcwcwc1155
+5566111xxxxxx1TTRR1wwwwww11155++
+++55661111111xRRQQw111111155++33
+33++556wx65651x&&w1+5+5wv5++3322
+1133++5wx5+5+1xNNw13+3+wv+332211
+..1133+vw+3+31x&&w12323vu32211..
+....113111111xxNNww111111211....
+
+= bloodrage_brawler_pain
+....1111111............1111111..
+...1!!!x!!c1..........1bccwccc1.
+..1!cccwccbx1111111111wabbvbbbc1
+.1!c11111bbx156#6565+1waa11111bc
+.1!c1....1bw15666555+1va1....1bc
+.1xw1....11b15666555+1a11....1vw
+.1!c161...1+566665555+31...151bc
+.1!c169111156666655555+1111851bc
+.1xw11689563+66665555325+84511vw
+.1!c1.11155+5+6665553+3++111.1bc
+.1!c1..1+56255666555++25+31..1bc
+..1!cx11+56625666555+255+311wbc1
+...1bcy$1+526656655+552+31$xba1.
+....11111+5665666555+55+311111..
+...111111$1+566665555+3111111...
+...155111y1+566998855+3111++1...
+..1561RS1x1+589Z84Z84+31TS15+1..
+.1yx1RS131w1+5888444+31v1TS1wx1.
+.1!!1bS1+31v1aaaaaaaa1u11Tc1cc1.
+1!!c1RS1+5+31##+##+#63+31TS1bcc1
+1xxx1bS1+5+31111111113+31Tc1www1
+!!ccb1RS1++3155+55+5+131TS1abbcc
+!!ccb11RS55+3156655+3++TS11abbcc
+xxwv1+551SSS531u22u+TTT1++31uvww
+1111yyyyyQQQSS1uu1TTRRRxxxxx1111
+6611!x!x!x!xQQSSTTRRwcwcwcwc1155
+5566111xxxxxx1TTRR1wwwwww11155++
+++55661111111xRRQQw111111155++33
+33++556wx65651x&&w1+5+5wv5++3322
+1133++5wx5+5+1xNNw13+3+wv+332211
+..1133+vw+3+31x&&w12323vu32211..
+....113111111xxNNww111111211....
+
+= bloodrage_brawler_blink
+...1111111............1111111...
+..1!!!x!!c1..........1bccwccc1..
+.1!cccwccbx1111111111wabbvbbbc1.
+1!c11111bbx156#6565+1waa11111bc1
+1!c1....1bw15666555+1va1....1bc1
+1xw1....11b15666555+1a11....1vw1
+1!c161...1+566665555+31...151bc1
+1!c169111156666655555+1111851bc1
+1xw11689563+66665555325+84511vw1
+1!c1.11155+33666555223++111.1bc1
+1!c1..1+56655666555++55+31..1bc1
+.1!cx11+56++5666555+335+311wbc1.
+..1bcy$1+566656655+555+31$xba1..
+...11111+5665666555+55+311111...
+...11111$1+566665555+31$11111...
+...15511y1+566998855+31x11++1...
+..1561RSx1+589Z84Z84+31wTS15+1..
+.1yx1RS11w1+5888444+31v11TS1wx1.
+.1!!1bS131v1a#6#656a1u121Tc1cc1.
+1!!c1RS1+5+1a#00006a13+31TS1bcc1
+1xxx1bS1+5+1a000000a13+31Tc1www1
+!!ccb1RS1+31a6cddb5a1231TS1abbcc
+!!ccb11RS55+156655+13++TS11abbcc
+xxwv1+551SSS51u22u1+TTT1++31uvww
+1111yyyyyQQQSS1uu1TTRRRxxxxx1111
+6611!x!x!x!xQQSSTTRRwcwcwcwc1155
+5566111xxxxxx1TTRR1wwwwww11155++
+++55661111111xRRQQw111111155++33
+33++556wx65651x&&w1+5+5wv5++3322
+1133++5wx5+5+1xNNw13+3+wv+332211
+..1133+vw+3+31x&&w12323vu32211..
+....113111111xxNNww111111211....

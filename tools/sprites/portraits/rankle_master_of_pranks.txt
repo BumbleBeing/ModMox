@@ -1,0 +1,114 @@
+; Rankle, Master of Pranks' Portrait, Pain Portrait and Blink Portrait, facing front: a gaunt,
+; pale faerie in a crown of red-brown twigs over sandy hair, with short pointed ears, glowing pink
+; eyes under brows furrowed down to the nose and a sly smirk lifting one corner, in a tall collar
+; of red feathers over a mantle of sage leaves, a fringe of bone fangs on a cord across a dark red
+; tunic, thin bare arms, and pale spotted wings rising behind him on both sides. In pain his eyes
+; squeeze shut and he grits his teeth; blinking, his lids close under the brows.
+; Drawn after the art of Rankle, Master of Pranks: Throne of Eldraine (eld) #101, by Dmitry Burmak.
+; Scryfall ID: 93c2c11d-dfc3-4ba9-8c0f-a98114090396
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= rankle_master_of_pranks
+.........d...c....b...c.........
+...d.....c..dc....bc..b.....c...
+....c.d..c..c......b..b..c.b....
+.d...cc...cbc......bbb...bb...c.
+..c...cc.cbbc.c..b.bbbb.bb...b..
+.1.cc.bcbbnbcbn11nbbbnbbbb.bb.1.
+161.ccbbcbnmnbnnnnbnmnbbbbbb.1+1
+1561dbcbbnmnmbnmmnbmnmnbbbbc1++1
+1561..bcb1mnmnsnnrnmnm1bbb..1++1
+15+61....1sqqtttsssqqr1....1+3+1
+152+1.1..1stsqqtsqqrsr1..1.132+1
+1+561.1s11s8#9qtsq9#8r11r1.1++31
+135+1..1sss498stsr894rrr1..13+31
+1+2531c.1rsttsstsrrssrq1.b13+231
+15+55!b.!1rstsstsrrsrq1!.b!++3+1
+1+25c!!bc1rrssqrqqrrqq1bb!!b+231
+15+!bc!!bc1rspssrrrrq1bb!!bb!3+1
+1+5!!bc!!b1rsspppqqrq1b!!bb!!+31
+125c!!bc!!b1sstsrqrr1b!!bb!!b+21
+11!bc!!bc!!bc1rsrq1bb!!bb!!bb!11
+.1!LNc!!bc!!bc1111bb!!bb!!bML!1.
+1+1NMMLNMbc!!1qqqq1!!bbLMLLLM131
+151MMLNMMLbc!rrsrqq!bbLLLMLLL1+1
+1+1MLNMMLNMllllllllllLMLLLMLL131
+1+51ssMLNMMobobooboboLLMLLrr1+31
+15+1ssrNMMbbbnbnnbnbbbLLMqrr13+1
+1+51ssr1MLbabbbmmbbbabLL1qrr1+31
+1251sss1bNbbabbmmbbabbMb1rrr1+21
+1+51ssr1abbbbabbbbabbbba1qrr1+31
+1+21ssr1abbabbbbbbbbabba1qrr1231
+1+51sss1babbbbabbabbbbab1rrr1+31
+1551ssr1abbbabbbbbbabbba1qrr1++1
+
+= rankle_master_of_pranks_pain
+..........d...c....b...c........
+....d.....c..dc....bc..b.....c..
+.....c.d..c..c......b..b..c.b...
+..d...cc...cbc......bbb...bb...c
+...c...cc.cbbc.c..b.bbbb.bb...b.
+.1..cc.bcbbnbcbn11nbbbnbbbb.bb1.
+161..ccbbcbnmnbnnnnbnmnbbbbbb.+1
+156.1dbcbbnmnmbnmmnbmnmnbbbbc1+1
+156.1..bcb1mnmnsnnrnmnm1bbb..1+1
+15+61.....1sqqtttsssqqr1...1+3+1
+152+1..1..1sprqqtsqqqpr1..1132+1
+1+561..1s11srppqtsqppqr11r11++31
+135+1...1sssprsstsrrqprrr1.13+31
+1+2531c..1rsttsstsrrssrq1b13+231
+15+55!b.!!1rstsstsrrsrq1.b!++3+1
+1+25c!!bc!1rrssqrqqrrqq1b!!b+231
+15+!bc!!bc!1rsqppppqrq1b!!bb!3+1
+1+5!!bc!!bc1rsp6565prq1!!bb!!+31
+125c!!bc!!bc1sspppprr1!!bb!!b+21
+11!bc!!bc!!bc!1rsrq1b!!bb!!bb!11
+.1!LNc!!bc!!bc!1111b!!bb!!bML!1.
+1+1NMMLNMbc!!1qqqq1!!bbLMLLLM131
+151MMLNMMLbc!rrsrqq!bbLLLMLLL1+1
+1+1MLNMMLNMllllllllllLMLLLMLL131
+1+51ssMLNMMobobooboboLLMLLrr1+31
+15+1ssrNMMbbbnbnnbnbbbLLMqrr13+1
+1+51ssr1MLbabbbmmbbbabLL1qrr1+31
+1251sss1bNbbabbmmbbabbMb1rrr1+21
+1+51ssr1abbbbabbbbabbbba1qrr1+31
+1+21ssr1abbabbbbbbbbabba1qrr1231
+1+51sss1babbbbabbabbbbab1rrr1+31
+1551ssr1abbbabbbbbbabbba1qrr1++1
+
+= rankle_master_of_pranks_blink
+.........d...c....b...c.........
+...d.....c..dc....bc..b.....c...
+....c.d..c..c......b..b..c.b....
+.d...cc...cbc......bbb...bb...c.
+..c...cc.cbbc.c..b.bbbb.bb...b..
+.1.cc.bcbbnbcbn11nbbbnbbbb.bb.1.
+161.ccbbcbnmnbnnnnbnmnbbbbbb.1+1
+1561dbcbbnmnmbnmmnbmnmnbbbbc1++1
+1561..bcb1mnmnsnnrnmnm1bbb..1++1
+15+61....1sqqtttsssqqr1....1+3+1
+152+1.1..1stsqqtsqqrsr1..1.132+1
+1+561.1s11sstsqtsqrsrr11r1.1++31
+135+1..1sssrqqstsrqqqrrr1..13+31
+1+2531c.1rsttsstsrrssrq1.b13+231
+15+55!b.!1rstsstsrrsrq1!.b!++3+1
+1+25c!!bc1rrssqrqqrrqq1bb!!b+231
+15+!bc!!bc1rspssrrrrq1bb!!bb!3+1
+1+5!!bc!!b1rsspppqqrq1b!!bb!!+31
+125c!!bc!!b1sstsrqrr1b!!bb!!b+21
+11!bc!!bc!!bc1rsrq1bb!!bb!!bb!11
+.1!LNc!!bc!!bc1111bb!!bb!!bML!1.
+1+1NMMLNMbc!!1qqqq1!!bbLMLLLM131
+151MMLNMMLbc!rrsrqq!bbLLLMLLL1+1
+1+1MLNMMLNMllllllllllLMLLLMLL131
+1+51ssMLNMMobobooboboLLMLLrr1+31
+15+1ssrNMMbbbnbnnbnbbbLLMqrr13+1
+1+51ssr1MLbabbbmmbbbabLL1qrr1+31
+1251sss1bNbbabbmmbbabbMb1rrr1+21
+1+51ssr1abbbbabbbbabbbba1qrr1+31
+1+21ssr1abbabbbbbbbbabba1qrr1231
+1+51sss1babbbbabbabbbbab1rrr1+31
+1551ssr1abbbabbbbbbabbba1qrr1++1

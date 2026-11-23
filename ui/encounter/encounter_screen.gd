@@ -63,6 +63,8 @@ const NO_PREVIEW: int = -1
 ## answer reads (ADR 0062), or the X the stepper shows (game ADR 0063).
 const YES: String = "Yes"
 const PAY_X_FORMAT: String = "Pay {%d}"
+## The Pass Button while X is chosen as a spell is cast (engine ADR 0076).
+const CAST_X_FORMAT: String = "Cast with {%d}"
 ## What it reads, and cannot be pressed, while a question that spends mana has no Selected
 ## Answer yet (game ADR 0066).
 const CHOOSE_AN_ANSWER: String = "Choose an answer"
@@ -103,7 +105,9 @@ var _snapshot: EncounterSnapshot = null
 var _error: String = ""
 ## While how much X to pay is asked: what is asked, and the X the stepper shows, which the
 ## Pass Button pays (game ADR 0063).
-var _x_asked: ChooseXToPayDecision = null
+## The X being chosen with the stepper: a ChooseXToPayDecision (game ADR 0063), or a
+## ChooseXDecision as a spell is cast (engine ADR 0076), or null.
+var _x_asked: MmPendingDecision = null
 var _x_to_pay: int = 0
 ## The Selected Answer (game glossary) of the "you may", ward cost or X being asked, as the
 ## Info Panel numbers them, and the question it is of (game ADR 0066).
@@ -862,6 +866,8 @@ func _select_answer(index: int) -> void:
 ## What the engine is answered for the Selected Answer.
 func _selected_answer_value() -> Variant:
 	var is_yes: bool = _selected_answer == InfoPanel.AFFIRMATIVE
+	if _x_asked is ChooseXDecision:
+		return _x_to_pay
 	if _x_asked != null:
 		return ChooseXToPayDecision.answer_for(_x_to_pay) if is_yes else ChooseXToPayDecision.DECLINE
 	return ChooseYesOrNoDecision.Choice.YES if is_yes else ChooseYesOrNoDecision.Choice.NO
@@ -871,6 +877,8 @@ func _selected_answer_value() -> Variant:
 func _selected_answer_text() -> String:
 	if _selected_answer == InfoPanel.NO_ANSWER:
 		return InfoPanel.NO
+	if _x_asked is ChooseXDecision:
+		return CAST_X_FORMAT % _x_to_pay
 	if _x_asked != null:
 		return PAY_X_FORMAT % _x_to_pay
 	return _info.affirmative_text() if _is_asked_to_pay() else YES
@@ -881,7 +889,7 @@ func _selected_answer_text() -> String:
 func _step_x(by: int) -> void:
 	if _is_paused or _x_asked == null:
 		return
-	var x: int = clampi(_x_to_pay + by, 0, _x_asked.most)
+	var x: int = clampi(_x_to_pay + by, 0, EncounterPresenter.most_x_of(_x_asked))
 	if x != _x_to_pay or _selected_answer != InfoPanel.AFFIRMATIVE:
 		_x_to_pay = x
 		_selected_answer = InfoPanel.AFFIRMATIVE
@@ -1467,13 +1475,14 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	if not _surveil.is_for(snapshot.decision if SurveilChoice.covers(snapshot.decision) else null):
 		_surveil = SurveilChoice.new(snapshot.decision if SurveilChoice.covers(snapshot.decision) else null)
 		_surveil_landed.clear()
-	var asked_x: ChooseXToPayDecision = snapshot.decision as ChooseXToPayDecision
+	var asked_x: MmPendingDecision = snapshot.decision \
+		if snapshot.decision is ChooseXToPayDecision or snapshot.decision is ChooseXDecision else null
 	if asked_x != _x_asked:
 		_x_asked = asked_x
 		_x_to_pay = _presenter.starting_x() if asked_x != null else 0
 	# Game ADR 0066: a "you may" starts on Yes; a question that spends mana, on nothing.
 	var asked_answer: MmPendingDecision = snapshot.decision \
-		if snapshot.decision is ChooseYesOrNoDecision or snapshot.decision is ChooseXToPayDecision else null
+		if snapshot.decision is ChooseYesOrNoDecision or asked_x != null else null
 	if asked_answer != _answer_asked:
 		_answer_asked = asked_answer
 		var is_free: bool = asked_answer is ChooseYesOrNoDecision and (asked_answer as ChooseYesOrNoDecision).cost == null \

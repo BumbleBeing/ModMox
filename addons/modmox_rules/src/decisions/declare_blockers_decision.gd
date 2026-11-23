@@ -5,8 +5,9 @@ extends MmPendingDecision
 ## from [member candidate_blocker_ids] and attackers from [member attacker_ids]. Several
 ## blockers may block one attacker. Each blocker blocks only attackers it legally can (such
 ## as flyers only with flying or reach), each at most once, and at most as many as it may
-## (one, plus any from BlockAdditionalAbility). An empty Array declares no blockers
-## (ADR 0016).
+## (one, plus any from BlockAdditionalAbility). An attacker that needs two or more blockers,
+## as one with menace does, has that many or none (CR 509.1b, 702.111b). An empty Array
+## declares no blockers (ADR 0016).
 
 ## The creatures that may block, in ID order.
 var candidate_blocker_ids: Array[int]
@@ -16,15 +17,26 @@ var attacker_ids: Array[int]
 var blockable_by_blocker: Dictionary[int, Array]
 ## For each candidate blocker, how many attackers it may block.
 var most_blocks_by_blocker: Dictionary[int, int]
+## For each attacker that can't be blocked except by two or more creatures, how many it
+## needs. An attacker left out needs one.
+var least_blockers_by_attacker: Dictionary[int, int]
 
 
 func _init(deciding_player_id: int, blocker_candidate_ids: Array[int], attacking_ids: Array[int],
-		blockable: Dictionary[int, Array], most_blocks: Dictionary[int, int]) -> void:
+		blockable: Dictionary[int, Array], most_blocks: Dictionary[int, int],
+		least_blockers: Dictionary[int, int] = {}) -> void:
 	super(deciding_player_id)
 	candidate_blocker_ids = blocker_candidate_ids.duplicate()
 	attacker_ids = attacking_ids.duplicate()
 	blockable_by_blocker = blockable.duplicate(true)
 	most_blocks_by_blocker = most_blocks.duplicate()
+	least_blockers_by_attacker = least_blockers.duplicate()
+
+
+## How many creatures must block [param attacker_id] if any do: two for one with menace
+## (CR 702.111b), otherwise one.
+func least_blockers_of(attacker_id: int) -> int:
+	return least_blockers_by_attacker.get(attacker_id, 1)
 
 
 func validate(answer: Variant) -> String:
@@ -52,6 +64,15 @@ func validate(answer: Variant) -> String:
 			return "Object %d cannot block more than %d attackers." % [blocker, most_blocks_by_blocker[blocker]]
 		already.append(attacker)
 		blocking[blocker] = already
+	# CR 509.1b: a restriction on how many creatures block an attacker is checked once every
+	# block is made. A blocker of several attackers is one creature on each.
+	for attacker: int in attacker_ids:
+		var count: int = 0
+		for blocker: int in blocking:
+			if blocking[blocker].has(attacker):
+				count += 1
+		if count > 0 and count < least_blockers_of(attacker):
+			return "Object %d can't be blocked except by %d or more creatures." % [attacker, least_blockers_of(attacker)]
 	return ""
 
 

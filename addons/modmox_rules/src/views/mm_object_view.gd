@@ -31,6 +31,9 @@ var colors: Array[MmCardTypes.CardColor] = []
 var card_types: Array[MmCardTypes.CardType] = []
 var supertypes: Array[MmCardTypes.Supertype] = []
 var subtypes: Array[String] = []
+## Every creature type besides its [member subtypes], as changeling makes it (CR 702.73a,
+## ADR 0075).
+var is_every_creature_type: bool = false
 ## Null for a card with no mana cost, which is not the same as {0}.
 var mana_cost: MmManaCost = null
 ## For a spell or ability on the stack: its chosen targets, in order (null if not chosen).
@@ -137,6 +140,7 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.card_types = characteristics.card_types.duplicate()
 	view.supertypes = characteristics.supertypes.duplicate()
 	view.subtypes = characteristics.subtypes.duplicate()
+	view.is_every_creature_type = characteristics.is_every_creature_type
 	view.mana_cost = characteristics.mana_cost
 	view.is_creature = characteristics.has_card_type(MmCardTypes.CardType.CREATURE)
 	view.power = characteristics.power

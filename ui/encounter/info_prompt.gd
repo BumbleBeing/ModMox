@@ -121,6 +121,11 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 			prompt.owed = asked.cost
 			prompt.is_owed_inline = true
 			return prompt
+		if asked.resolution_cost != null:
+			# Engine ADR 0076: "Guiding Hydra's ability: remove a +1/+1 counter from this
+			# creature?", as a "you may" reads (game ADR 0060).
+			prompt.text = "%s: %s?" % [stack_name(view, asked.stack_object_id), paid_words(view, asked)]
+			return prompt
 		prompt.text = "%s: %s?" % [stack_name(view, asked.stack_object_id), offered_words(view, asked)]
 	elif decision is ChooseXToPayDecision:
 		# Game ADR 0063: "Pay {X} for Taj-Nar Swordsmith?"
@@ -130,6 +135,13 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		prompt.chooses_x = true
 		prompt.most_x = choosing.most
 		prompt.offers_no = true
+	elif decision is ChooseXDecision:
+		# Engine ADR 0076: "Choose {X} for Guiding Hydra", the stepper and Cancel below it.
+		var casting: ChooseXDecision = decision as ChooseXDecision
+		prompt.text = "Choose {X} for %s" % stack_name(view, casting.stack_object_id)
+		prompt.chooses_x = true
+		prompt.most_x = casting.most
+		prompt.can_cancel = true
 	elif decision is ChooseCreatureTypeDecision:
 		prompt.text = "Choose a creature type for %s" % stack_name(view, (decision as ChooseCreatureTypeDecision).stack_object_id)
 	elif decision is ChooseLegendToKeepDecision:
@@ -166,6 +178,17 @@ static func offered_words(view: MmPlayerView, asked: ChooseYesOrNoDecision) -> S
 		if ability != null:
 			return AbilityText.offered_words(ability, asked.effect, StackItem.noun_of(item, view), item.chosen_mode)
 	return AbilityText.offered_words(SpellAbility.new(), asked.effect, "this")
+
+
+## What yes pays for a "you may [cost]" (engine ADR 0076), in the words of the spell or
+## ability asking it: "remove a +1/+1 counter from this creature".
+static func paid_words(view: MmPlayerView, asked: ChooseYesOrNoDecision) -> String:
+	var noun: String = "this"
+	for item: MmObjectView in view.stack:
+		if item.id == asked.stack_object_id:
+			noun = StackItem.noun_of(item, view)
+	var words: String = AbilityText.cost_words(asked.resolution_cost, noun)
+	return words.left(1).to_lower() + words.substr(1)
 
 
 ## "Pay ward for Leonin Lightbringer:", after the warded permanent of [param ward], a ward

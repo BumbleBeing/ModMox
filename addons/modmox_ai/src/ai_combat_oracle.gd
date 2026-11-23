@@ -43,6 +43,14 @@ func duel(attacker_id: int, blocker_id: int) -> Array[bool]:
 	return outcome
 
 
+## [attacker dies, blocker dies] if [param blocker_id] alone blocks [param attacker_id]
+## while [param attacking] attack, [param attacker_id] among them, and nothing else blocks.
+func duel_among(attacker_id: int, blocker_id: int, attacking: Array[int]) -> Array[bool]:
+	var result: AiFightResult = fight(attacking, [[blocker_id, attacker_id]])
+	var outcome: Array[bool] = [result.dead_ids.has(attacker_id), result.dead_ids.has(blocker_id)]
+	return outcome
+
+
 ## The outcome of a combat. When the copy is at its player's attackers decision,
 ## [param attacker_ids] attack; at a blockers decision they are already attacking and
 ## are ignored. [param blocks] are [blocker, attacker] pairs.

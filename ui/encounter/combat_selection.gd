@@ -264,11 +264,14 @@ func is_lethal(index: int) -> bool:
 	return divide.lethal_amounts[index] > 0 and _amounts[index] >= divide.lethal_amounts[index]
 
 
-## Whether the answer can be given: always for attackers and blockers, and for a division
-## once all of the damage is assigned.
+## Whether the answer can be given: always for attackers, for blockers unless an attacker
+## has fewer blockers than it needs (menace, CR 702.111b), and for a division once all of
+## the damage is assigned.
 func is_complete() -> bool:
 	if _decision is DivideCombatDamageDecision:
 		return left_to_assign() == 0
+	if _decision is DeclareBlockersDecision:
+		return _short_blocked_ids().is_empty()
 	return _decision != null
 
 
@@ -295,10 +298,15 @@ func confirm_text() -> String:
 	return ""
 
 
-## What the Info Panel adds under its prompt: how blocking is done, until the first block
-## is made (A326).
+## What the Info Panel adds under its prompt: that a creature with menace needs two or
+## more blockers while one has fewer, or how blocking is done until the first block is made
+## (A326).
 func hint() -> String:
-	if _decision is DeclareBlockersDecision and _pairs.is_empty():
+	if not _decision is DeclareBlockersDecision:
+		return ""
+	if not _short_blocked_ids().is_empty():
+		return "A creature with menace needs two or more blockers."
+	if _pairs.is_empty():
 		return "Click one or more creatures, then the attacker they block."
 	return ""
 
@@ -323,6 +331,17 @@ func undo() -> bool:
 
 func _remember() -> void:
 	_history.append([_attackers.duplicate(), _pairs.duplicate(true), _picked.duplicate(), _amounts.duplicate()])
+
+
+## The attackers blocked so far by fewer creatures than they need, in ID order.
+func _short_blocked_ids() -> Array[int]:
+	var blocks: DeclareBlockersDecision = _decision as DeclareBlockersDecision
+	var short: Array[int] = []
+	for attacker_id: int in blocks.attacker_ids:
+		var count: int = _pairs.filter(func(pair: Array) -> bool: return pair[1] == attacker_id).size()
+		if count > 0 and count < blocks.least_blockers_of(attacker_id):
+			short.append(attacker_id)
+	return short
 
 
 func _unassign(blocker_id: int) -> void:

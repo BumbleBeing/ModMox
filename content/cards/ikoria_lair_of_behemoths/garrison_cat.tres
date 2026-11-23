@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_2gxhp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_fwnib"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_n2a5e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_6lnxw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_i88m2"]
+[ext_resource type="Resource" path="res://content/tokens/human_soldier_1_1_white.tres" id="4_aqlcj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_321w7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_rs0h3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_m6rt7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_sv53x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_1kkx8"]
+
+[sub_resource type="Resource" id="Resource_4swja"]
+script = ExtResource("3_6lnxw")
+token = ExtResource("4_aqlcj")
+
+[sub_resource type="Resource" id="Resource_cge7a"]
+script = ExtResource("8_sv53x")
+
+[sub_resource type="Resource" id="Resource_5ah7b"]
+script = ExtResource("9_1kkx8")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_cge7a")
+
+[sub_resource type="Resource" id="Resource_t2310"]
+script = ExtResource("6_rs0h3")
+trigger = SubResource("Resource_5ah7b")
+effects = Array[ExtResource("2_fwnib")]([SubResource("Resource_4swja")])
+
+[sub_resource type="Resource" id="Resource_3jrul"]
+script = ExtResource("2_n2a5e")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_i88m2")
+name = "Garrison Cat"
+card_types = Array[int]([1])
+subtypes = Array[String](["Cat"])
+mana_cost = SubResource("Resource_3jrul")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_2gxhp")]([SubResource("Resource_t2310")])

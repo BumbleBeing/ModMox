@@ -71,7 +71,9 @@ static func _agree(field: String, definition: MmCardDefinition, oracle: MmCardDe
 			if definition.mana_cost == null or oracle.mana_cost == null:
 				return definition.mana_cost == oracle.mana_cost
 			return definition.mana_cost.generic == oracle.mana_cost.generic \
-				and definition.mana_cost.symbols == oracle.mana_cost.symbols
+				and definition.mana_cost.symbols == oracle.mana_cost.symbols \
+				and definition.mana_cost.x_count == oracle.mana_cost.x_count \
+				and definition.mana_cost.hybrid_symbols == oracle.mana_cost.hybrid_symbols
 		"type_line":
 			return definition.supertypes == oracle.supertypes \
 				and definition.card_types == oracle.card_types \

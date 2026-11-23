@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_1qgc4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/menace_ability.gd" id="2_b7pj3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_ability_modification.gd" id="3_mbs1e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/deathtouch_ability.gd" id="4_am05y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_power_toughness_modification.gd" id="5_ec4lp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="6_rnhf4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_mana_cost_modification.gd" id="7_3665l"]
+[ext_resource type="Script" path="res://run/mod.gd" id="8_petd8"]
+
+[sub_resource type="Resource" id="Resource_gcb26"]
+script = ExtResource("2_b7pj3")
+
+[sub_resource type="Resource" id="Resource_2uol1"]
+script = ExtResource("3_mbs1e")
+ability = SubResource("Resource_gcb26")
+
+[sub_resource type="Resource" id="Resource_mbeys"]
+script = ExtResource("4_am05y")
+
+[sub_resource type="Resource" id="Resource_xiuoc"]
+script = ExtResource("3_mbs1e")
+ability = SubResource("Resource_mbeys")
+
+[sub_resource type="Resource" id="Resource_r2g6k"]
+script = ExtResource("5_ec4lp")
+power = 1
+
+[sub_resource type="Resource" id="Resource_n701d"]
+script = ExtResource("6_rnhf4")
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_l51f7"]
+script = ExtResource("7_3665l")
+cost = SubResource("Resource_n701d")
+
+[resource]
+script = ExtResource("8_petd8")
+name = "Viscious"
+rarity = 2
+augmentation = Array[ExtResource("1_1qgc4")]([SubResource("Resource_2uol1"), SubResource("Resource_xiuoc"), SubResource("Resource_r2g6k")])
+mod_cost = SubResource("Resource_l51f7")
+card_types = Array[int]([1])

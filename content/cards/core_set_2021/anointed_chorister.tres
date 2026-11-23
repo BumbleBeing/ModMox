@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_j7ls1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_bl3ib"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/lifelink_ability.gd" id="2_k1ose"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_cnvhr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_phif6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_p85lv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_2xgm0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_ga5rn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="7_nwenx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="8_6o46d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="10_cmecd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_1mabs"]
+
+[sub_resource type="Resource" id="Resource_pd2jn"]
+script = ExtResource("2_k1ose")
+
+[sub_resource type="Resource" id="Resource_sba4w"]
+script = ExtResource("5_2xgm0")
+
+[sub_resource type="Resource" id="Resource_82j5j"]
+script = ExtResource("6_ga5rn")
+value = 3
+
+[sub_resource type="Resource" id="Resource_ctcm5"]
+script = ExtResource("6_ga5rn")
+value = 3
+
+[sub_resource type="Resource" id="Resource_oithb"]
+script = ExtResource("7_nwenx")
+power = SubResource("Resource_82j5j")
+toughness = SubResource("Resource_ctcm5")
+affected = SubResource("Resource_sba4w")
+
+[sub_resource type="Resource" id="Resource_yal0w"]
+script = ExtResource("8_6o46d")
+continuous = SubResource("Resource_oithb")
+
+[sub_resource type="Resource" id="Resource_llxyi"]
+script = ExtResource("2_bl3ib")
+generic = 4
+symbols = Array[int]([0])
+
+[sub_resource type="Resource" id="Resource_q5vu1"]
+script = ExtResource("10_cmecd")
+mana_cost = SubResource("Resource_llxyi")
+effects = Array[ExtResource("4_p85lv")]([SubResource("Resource_yal0w")])
+
+[sub_resource type="Resource" id="Resource_geul7"]
+script = ExtResource("2_bl3ib")
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_cnvhr")
+name = "Anointed Chorister"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Cleric"])
+mana_cost = SubResource("Resource_geul7")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_j7ls1")]([SubResource("Resource_pd2jn"), SubResource("Resource_q5vu1")])

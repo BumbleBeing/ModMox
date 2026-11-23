@@ -52,6 +52,17 @@ func test_the_check_catches_a_card_that_differs_from_its_oracle_data() -> void:
 	assert_eq(OracleData.mismatches(tougher, _entry()), PackedStringArray(["toughness"]))
 
 
+func test_a_plain_symbol_differs_from_a_hybrid_one() -> void:
+	var hybrid: Dictionary = _entry()
+	hybrid["mana_cost"] = "{1}{G/W}"
+	var plain: MmCardDefinition = _bears()
+	plain.mana_cost.symbols = [] as Array[MmMana.Type]
+	plain.mana_cost.hybrid_symbols = [Vector2i(MmMana.Type.GREEN, MmMana.Type.WHITE)] as Array[Vector2i]
+
+	assert_eq(OracleData.mismatches(_bears(), hybrid), PackedStringArray(["mana_cost"]), "{G} is not {G/W}.")
+	assert_eq(OracleData.mismatches(plain, hybrid), PackedStringArray())
+
+
 func test_a_card_with_a_cost_differs_from_oracle_data_with_none() -> void:
 	var land: Dictionary = _entry()
 	land["mana_cost"] = ""

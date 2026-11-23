@@ -110,7 +110,7 @@ func next_decision() -> MmPendingDecision:
 			if not attackers.is_empty():
 				candidates = _blocker_candidates(defending_id, attackers, legal, most)
 			if not candidates.is_empty():
-				return DeclareBlockersDecision.new(defending_id, candidates, attackers, legal, most)
+				return DeclareBlockersDecision.new(defending_id, candidates, attackers, legal, most, _least_blockers(attackers))
 		Kind.COMBAT_DAMAGE:
 			while _next_attacker < _striking_attacker_ids.size():
 				var division: DivideCombatDamageDecision = _assign_or_ask(_striking_attacker_ids[_next_attacker])
@@ -197,6 +197,16 @@ func _blocker_candidates(defending_id: int, attackers: Array[int], legal: Dictio
 				allowed += (ability as BlockAdditionalAbility).count
 		most[permanent.id] = allowed
 	return candidates
+
+
+## CR 702.111b: each of [param attackers] with menace can't be blocked except by two or
+## more creatures. Those that need only one are left out.
+func _least_blockers(attackers: Array[int]) -> Dictionary[int, int]:
+	var least: Dictionary[int, int] = {}
+	for attacker_id: int in attackers:
+		if _state.characteristics_of(_state.object(attacker_id)).has_ability(MenaceAbility):
+			least[attacker_id] = 2
+	return least
 
 
 ## CR 702.9b and 702.17b: a creature with flying can be blocked only by creatures with

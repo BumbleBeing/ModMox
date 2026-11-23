@@ -214,6 +214,63 @@ func test_a_cards_frame_is_the_same_from_printed_characteristics_and_from_a_play
 	assert_eq(from_view.key(), FrameSpec.of(CardLook.of_definition(bears)).key())
 
 
+# --- Hybrid cards (engine ADR 0077) -------------------------------------------------
+
+
+func test_a_hybrid_card_blends_its_two_colors_frames_under_silver_bars_and_a_silver_pt_box() -> void:
+	var cinder: MmCardDefinition = Scenario.creature("Cinder", 3, 3, [], Scenario.hybrid_cost(4, [[MmMana.Type.BLACK, MmMana.Type.RED]]))
+
+	var spec: FrameSpec = FrameSpec.of(_look(cinder))
+
+	assert_eq(spec.letters, ["b", "r"] as Array[String])
+	assert_true(spec.is_hybrid)
+	assert_eq(_layers(spec), [
+		"frames/b",
+		"frames/r through hybrid_blend",
+		"frames/c through title",
+		"frames/c through type",
+		"pt/c",
+	])
+	assert_eq(spec.key(), "card2:br:hybrid:pt")
+
+
+func test_a_red_white_hybrid_card_is_red_on_the_left_in_the_fixed_pair_order() -> void:
+	var recruit: MmCardDefinition = Scenario.creature("Recruit", 1, 1, [], Scenario.hybrid_cost(0, [[MmMana.Type.RED, MmMana.Type.WHITE]]))
+
+	assert_eq(_layers(FrameSpec.of(_look(recruit))).slice(0, 2), ["frames/r", "frames/w through hybrid_blend"])
+
+
+func test_a_two_color_card_without_a_hybrid_symbol_stays_gold() -> void:
+	var gold: MmCardDefinition = Scenario.creature("Gold", 2, 2, [], Scenario.mana_cost(0, [MmMana.Type.BLACK, MmMana.Type.RED]))
+
+	var spec: FrameSpec = FrameSpec.of(_look(gold))
+
+	assert_false(spec.is_hybrid)
+	assert_eq(_layers(spec)[0], "frames/m")
+	assert_eq(spec.power_toughness_image(), "pt/m")
+
+
+func test_a_hybrid_card_made_one_color_gets_that_colors_frame() -> void:
+	var cinder: MmCardDefinition = Scenario.creature("Cinder", 3, 3, [], Scenario.hybrid_cost(4, [[MmMana.Type.BLACK, MmMana.Type.RED]]))
+	var look: CardLook = _look(cinder)
+	look.colors = [MmCardTypes.CardColor.RED] as Array[MmCardTypes.CardColor]
+
+	assert_eq(_layers(FrameSpec.of(look)), ["frames/r", "pt/r"], "ADR 0009: the Frame follows its colors.")
+
+
+func test_a_legendary_hybrid_creature_blends_its_crowns_too() -> void:
+	var legend: MmCardDefinition = Scenario.creature("Legend", 3, 3, [], Scenario.hybrid_cost(0, [[MmMana.Type.BLACK, MmMana.Type.RED]]))
+	legend.supertypes = [MmCardTypes.Supertype.LEGENDARY]
+
+	assert_eq(_layers(FrameSpec.of(_look(legend))).slice(4), ["pt/c", "cover", "crowns/b", "crowns/r through hybrid_blend"])
+
+
+func test_a_hybrid_symbols_pip_is_named_for_its_two_colors_after_the_plain_ones() -> void:
+	assert_eq(ManaSymbols.pip_names(Scenario.hybrid_cost(4, [[MmMana.Type.BLACK, MmMana.Type.RED]], [MmMana.Type.RED])),
+		["4", "r", "br"] as Array[String])
+	assert_eq(ManaSymbols.image_for("{B/R}"), "br", "In rules text too.")
+
+
 func test_mana_cost_pips_come_generic_first_then_each_symbol() -> void:
 	assert_eq(ManaSymbols.pip_names(Scenario.mana_cost(2, [MmMana.Type.RED, MmMana.Type.RED])), ["2", "r", "r"] as Array[String])
 	assert_eq(ManaSymbols.pip_names(Scenario.mana_cost(0)), ["0"] as Array[String])

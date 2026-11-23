@@ -1,0 +1,113 @@
+; Akul the Unrepentant's Portrait, Pain Portrait and Blink Portrait, facing front: a domed steel
+; helm with a nose ridge between glowing orange eyes, and beetle mandibles that rise out and up from
+; its sides, then sweep down round the cheeks and hook back in to points under the eyes, over a black
+; wrap; a teal scarf, a rugged shell body of chevron plates, two raised reddish claws in front of it,
+; each a long outer finger hooking over a shorter inner one, and spiked black wings smoldering with fire.
+; Drawn after the art of Akul the Unrepentant: Outlaws of Thunder Junction (otj) #189, by Kekai Kotaki.
+; Scryfall ID: 68fd8548-50db-4243-9154-377f32408d58
+; Each is 32 rows of 32; see KEY in build_sprites.lua for which character is which color.
+; Once a portrait's .aseprite file is touched up by hand, that file is the truth, not this.
+
+@ size 32
+
+= akul_the_unrepentant
+1..............................1
+b1...........111111...........1b
+aa1..11.....156655+1.....11..1aa
+aba11551...156#6565+1...1++11aba
+bab15+++1.156665+555+1.1333+1bab
+ab!1+355+1+56655++55+313++231!ba
+b!15+315+1+555565++++313+123+1!b
+!$15+1215+1+55565+++313+1213+1$!
+b!15+1221+10$116511$01312213+1!b
+ab!1+1211110!$05+0$!011112131!ba
+bb!15+1322211125+2111222213+1!bb
+ab!15+1222111225+2211122213+1!ba
+ab!$15511151222+32221+111++1$!ba
+bab!1++55+1122211222113++331!bab
+aaab!1111122222222222211111!baaa
+abaaab!132222222222222221!baaaba
+bababab!1322222222222221!bababab
+13111113111111111111111121111121
+31ddc12321NNNMMMLLLMMM12221bcc12
+1dcccc1221MMLMMLKLLKLL1221bbbbc1
+1dc11cc1221LLLLLKKKKK1221bb11bc1
+1dc121cb1121111111111211bb121bc1
+1dc1221b1233112222112221b1221bc1
+1dc11221112233111122221112211bc1
+1dc122211d112233222211c112221bc1
+1dcb12221dc1112222111bc12221bbc1
+1dcb1221dcb1331111221bbc1221bbc1
+1dccb111dcb1223322221bbc111bbbc1
+1dcccbcccbb1112222111bbbbbbbbbc1
+1ccccccccba1331111221abbbbbbbbb1
+1cccbbbbbba1223322221abbbbbbbbb1
+1cbbbbbbbba1112222111abbbbbbbbb1
+
+= akul_the_unrepentant_pain
+1..............................1
+b1............111111..........1b
+aa1...11.....156655+1.....11.1aa
+aba111551...156#6565+1...1++1aba
+baba15+++1.156665+555+1.1333+1ab
+aab!1+355+1+56655++55+313++231!b
+ab!15+315+1+555565++++313+123+1!
+b!$15+1215+1+55565+++313+1213+1$
+ab!15+1221+1!01165110!1312213+1!
+abb!1+1211110$005+00$011112131!b
+bab!15+13222!1125+211!222213+1!b
+aab!15+1222111225+2211122213+1!b
+aba!$15511151222+32221+111++1$!a
+babb!1++55+1122211222113++331!bb
+aaaab!1111122222222222211111!baa
+abaaabb!132222222222222221!baaba
+babababb!1322222222222221!bbabab
+13111113311111111111111111111121
+31ddc12321NNNMMMLLLMMM12221bcc12
+1dcccc1221MMLMMLKLLKLL1221bbbbc1
+1dc11cc1221LLLLLKKKKK1221bb11bc1
+1dc121cb1121111111111211bb121bc1
+1dc1221b1233112222112221b1221bc1
+1dc11221112233111122221112211bc1
+1dc122211d112233222211c112221bc1
+1dcb12221dc1112222111bc12221bbc1
+1dcb1221dcb1331111221bbc1221bbc1
+1dccb111dcb1223322221bbc111bbbc1
+1dcccbcccbb1112222111bbbbbbbbbc1
+1ccccccccba1331111221abbbbbbbbb1
+1cccbbbbbba1223322221abbbbbbbbb1
+1cbbbbbbbba1112222111abbbbbbbbb1
+
+= akul_the_unrepentant_blink
+1..............................1
+b1...........111111...........1b
+aa1..11.....156655+1.....11..1aa
+aba11551...156#6565+1...1++11aba
+bab15+++1.156665+555+1.1333+1bab
+ab!1+355+1+56655++55+313++231!ba
+b!15+315+1+555565++++313+123+1!b
+!$15+1215+1+55565+++313+1213+1$!
+b!15+1221+100116511001312213+1!b
+ab!1+12111100005+000011112131!ba
+bb!15+1322211125+2111222213+1!bb
+ab!15+1222111225+2211122213+1!ba
+ab!$15511151222+32221+111++1$!ba
+bab!1++55+1122211222113++331!bab
+aaab!1111122222222222211111!baaa
+abaaab!132222222222222221!baaaba
+bababab!1322222222222221!bababab
+13111113111111111111111121111121
+31ddc12321NNNMMMLLLMMM12221bcc12
+1dcccc1221MMLMMLKLLKLL1221bbbbc1
+1dc11cc1221LLLLLKKKKK1221bb11bc1
+1dc121cb1121111111111211bb121bc1
+1dc1221b1233112222112221b1221bc1
+1dc11221112233111122221112211bc1
+1dc122211d112233222211c112221bc1
+1dcb12221dc1112222111bc12221bbc1
+1dcb1221dcb1331111221bbc1221bbc1
+1dccb111dcb1223322221bbc111bbbc1
+1dcccbcccbb1112222111bbbbbbbbbc1
+1ccccccccba1331111221abbbbbbbbb1
+1cccbbbbbba1223322221abbbbbbbbb1
+1cbbbbbbbba1112222111abbbbbbbbb1

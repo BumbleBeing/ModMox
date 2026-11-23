@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://dx3x4q7c4jwyg"
+path="res://.godot/imported/hybrid_blend.png-d1f3e812f8940dfdda6d3186fd5cdb15.image"
+
+[deps]
+
+source_file="res://assets/card_frames/masks/hybrid_blend.png"
+dest_files=["res://.godot/imported/hybrid_blend.png-d1f3e812f8940dfdda6d3186fd5cdb15.image"]
+
+[params]
+
