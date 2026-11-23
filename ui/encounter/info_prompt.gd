@@ -90,7 +90,10 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		prompt.can_cancel = not _is_trigger(view, several.stack_object_id)
 	elif decision is ChooseObjectDecision:
 		var choice: ChooseObjectDecision = decision as ChooseObjectDecision
-		prompt.text = "Choose %s for %s" % [AbilityText.chosen_words(choice.filter), stack_name(view, choice.stack_object_id)]
+		# Engine ADR 0080: a card among the cards just milled is "an instant or sorcery card".
+		var words: String = AbilityText.chosen_words(choice.filter) if _is_on_battlefield(view, choice.candidates) \
+			else AbilityText.chosen_card_words(choice.filter)
+		prompt.text = "Choose %s for %s" % [words, stack_name(view, choice.stack_object_id)]
 	elif decision is ChoosePermanentsDecision:
 		# Later: a pick for a cost other than tapping, when a card has one.
 		var pick: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
@@ -250,3 +253,13 @@ static func stack_name(view: MmPlayerView, stack_object_id: int) -> String:
 		var source: String = EncounterSnapshot.name_in(view, item.source_object_id)
 		return item.name if source.begins_with("object ") else "%s's ability" % source
 	return "this"
+
+
+## Whether the first of [param candidates] is a permanent [param view] shows.
+static func _is_on_battlefield(view: MmPlayerView, candidates: Array[MmReference]) -> bool:
+	if candidates.is_empty() or not candidates[0].is_object():
+		return true
+	for permanent: MmObjectView in view.battlefield:
+		if permanent.id == candidates[0].id:
+			return true
+	return false

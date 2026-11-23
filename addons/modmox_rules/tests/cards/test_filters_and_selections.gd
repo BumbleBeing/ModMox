@@ -30,6 +30,21 @@ func test_all_of_any_of_and_not_combine_conditions() -> void:
 	assert_false(untapped_land.matches(state, forest, context), "Tapped now, so not an untapped land.")
 
 
+func test_each_opponent_is_every_player_but_the_controller() -> void:
+	var engine: MmEngine = _engine_with_one_forest()
+	var state: MmGameState = engine.game_state()
+	var each_opponent: EachOpponentSelection = EachOpponentSelection.new()
+
+	var of_hero: Array[MmReference] = each_opponent.select(state, MmEffectContext.new(engine.hero().id, 0))
+	var of_villain: Array[MmReference] = each_opponent.select(state, MmEffectContext.new(engine.villain().id, 0))
+
+	assert_eq(of_hero.size(), 1)
+	assert_true(of_hero[0].is_player() and of_hero[0].id == engine.villain().id)
+	assert_eq(of_villain.size(), 1)
+	assert_true(of_villain[0].is_player() and of_villain[0].id == engine.hero().id, "ADR 0005: relative to the controller.")
+	assert_false(each_opponent.is_targeted())
+
+
 func test_an_effect_targets_only_when_it_uses_a_target_selection() -> void:
 	assert_true(Scenario.deal_damage(3, Scenario.targeted(0)).has_targets())
 	assert_false(Scenario.deal_damage(3, Scenario.each(IsPlayerFilter.new())).has_targets())

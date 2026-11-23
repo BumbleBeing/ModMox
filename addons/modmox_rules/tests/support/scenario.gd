@@ -2849,3 +2849,66 @@ static func cast_adventure(engine: MmEngine, object_id: int, chosen: MmReference
 	if error == "" and engine.pending_decision() is ChooseTargetDecision:
 		error = choose_target(engine, chosen)
 	return error if error != "" else auto_pay(engine)
+
+
+# --- Mill, "from among them" and threshold (engine ADR 0080) --------------------------------
+
+
+## "[players] mill [amount] cards" (CR 701.17a), the controller unless others are given.
+static func mill(amount: int, players: MmSelection = null) -> MillEffect:
+	var effect: MillEffect = MillEffect.new()
+	effect.amount = constant(amount)
+	effect.players = you() if players == null else players
+	return effect
+
+
+## An instant costing {0}: "Mill [amount] cards", or "Each opponent mills [amount] cards"
+## with [param opponents].
+static func free_mill(card_name: String, amount: int, opponents: bool = false) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [], [mill(amount, EachOpponentSelection.new() if opponents else null)])
+
+
+## "Put [a filter] from among them into your hand": a card the controller chooses among the
+## cards the spell's earlier effect moved (MovedCardsSelection), not a target.
+static func put_one_from_among_them(filter: MmFilter, choice_index: int = 0) -> ReturnToHandEffect:
+	var chosen: ChosenSelection = ChosenSelection.new()
+	chosen.filter = filter
+	chosen.choice_index = choice_index
+	chosen.from_among = MovedCardsSelection.new()
+	var effect: ReturnToHandEffect = ReturnToHandEffect.new()
+	effect.selection = chosen
+	return effect
+
+
+## "Instant or sorcery card".
+static func instant_or_sorcery() -> AnyOfFilter:
+	return any_of([of_type(MmCardTypes.CardType.INSTANT), of_type(MmCardTypes.CardType.SORCERY)])
+
+
+## A sorcery costing {0} after Speak Secrets: "Mill four cards, then put an instant or sorcery
+## card from among them into your hand."
+static func free_secrets(card_name: String = "Secrets") -> MmCardDefinition:
+	return sorcery(card_name, mana_cost(0), [], [mill(4), put_one_from_among_them(instant_or_sorcery())])
+
+
+## "The number of cards in [whose] graveyard".
+static func cards_in_graveyard(whose: MmTrigger.Whose = MmTrigger.Whose.YOU) -> CardsInZoneValue:
+	var value: CardsInZoneValue = CardsInZoneValue.new()
+	value.zone = MmZone.Kind.GRAVEYARD
+	value.whose = whose
+	return value
+
+
+## "[value] is [amount] or more".
+static func at_least(value: MmValue, amount: int) -> ValueAtLeastCondition:
+	var condition: ValueAtLeastCondition = ValueAtLeastCondition.new()
+	condition.value = value
+	condition.amount = amount
+	return condition
+
+
+## A 1/1 creature costing {0} after Most Decrepit Old Bird's threshold: "This creature gets
+## +1/+1 as long as there are seven or more cards in your graveyard."
+static func threshold_bird(card_name: String = "Old Bird") -> MmCardDefinition:
+	var pump: ModifyPowerToughnessContinuousEffect = modify_pt(1, 1, SourceSelection.new())
+	return creature(card_name, 1, 1, [continuous_static([pump], at_least(cards_in_graveyard(), 7))])

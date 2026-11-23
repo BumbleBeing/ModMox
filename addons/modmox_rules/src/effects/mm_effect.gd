@@ -47,6 +47,12 @@ func perform_now(state: MmGameState, context: MmEffectContext) -> void:
 		step += 1
 
 
+## Whether the spell or ability remembers the cards this effect moves, for a later effect's
+## "from among them" (MovedCardsSelection, engine ADR 0080), as a MillEffect does.
+func remembers_moved_cards() -> bool:
+	return false
+
+
 ## The Selections this effect uses. Subclasses with Selections override this.
 func selections() -> Array[MmSelection]:
 	return []

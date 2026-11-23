@@ -869,6 +869,16 @@
 		"scryfall_id": "20aff4af-5128-432f-a8c8-65b6909d31ac",
 		"set": "dmu"
 	},
+	"most_decrepit_old_bird": {
+		"artist": "Josu Solano",
+		"collector_number": "49",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "2d838feb-89f2-4cdb-a5ab-ec880f28d873",
+		"set": "hob"
+	},
 	"mountain": {
 		"artist": "Douglas Shuler",
 		"collector_number": "292",

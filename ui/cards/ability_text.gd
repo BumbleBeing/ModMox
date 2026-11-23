@@ -286,6 +286,12 @@ static func chosen_words(filter: MmFilter) -> String:
 	return _with_article(AbilityText.new("this")._noun_phrase(filter, false))
 
 
+## What a choice among cards that are not permanents asks for, such as the cards just
+## milled (engine ADR 0080): "an instant or sorcery card".
+static func chosen_card_words(filter: MmFilter) -> String:
+	return chosen_words(filter) + " card"
+
+
 ## [param count] of what [param filter] matches, as a cost says it: "an untapped creature
 ## you control", "three untapped creatures you control".
 static func how_many_words(count: int, filter: MmFilter) -> String:
@@ -687,6 +693,12 @@ func _move_verb(moved: ZoneChangeTrigger, is_plural: bool = false) -> String:
 
 
 func _condition(condition: MmCondition) -> String:
+	var at_least: ValueAtLeastCondition = condition as ValueAtLeastCondition
+	if at_least != null and at_least.value is CardsInZoneValue:
+		# Threshold's "there are seven or more cards in your graveyard" (engine ADR 0080).
+		var counted: CardsInZoneValue = at_least.value as CardsInZoneValue
+		return "there are %s or more cards in %s %s" % [_number_word(at_least.amount), _whose_words(counted.whose),
+			(ZONE_NAMES[counted.zone] as String).trim_prefix("a ")]
 	if condition is LifeAtLeastStartingCondition:
 		return "your life total is greater than or equal to your starting life total"
 	if condition is TimesResolvedThisTurnCondition:
@@ -750,6 +762,12 @@ func _static(ability: ContinuousStaticAbility) -> String:
 			clauses.append(_ended(_capitalized(clause)))
 		return " ".join(clauses)
 	var condition: String = _condition(ability.condition)
+	if ability.condition is ValueAtLeastCondition:
+		# Threshold, as Oracle words it: "This creature gets +1/+1 as long as there are seven
+		# or more cards in your graveyard." The condition names nothing for "it" to stand for.
+		for continuous: MmContinuousEffect in ability.effects:
+			clauses.append(_continuous(continuous, true))
+		return _ended(_capitalized(_listed(clauses)) + " as long as " + condition)
 	var noun: String = _noun
 	_noun = "it"
 	var subject: String = ""
@@ -821,10 +839,15 @@ func _sentences(effects: Array[MmEffect], starts_sentence: bool) -> String:
 func _effect(effect: MmEffect) -> String:
 	if effect is DealDamageEffect:
 		var damage: DealDamageEffect = effect as DealDamageEffect
+		var dealer: String = _noun
+		if damage.source is TriggeringObjectSelection:
+			dealer = "it"  # Oracle wording: "Whenever a creature you control enters, it deals ...".
+		elif damage.source != null:
+			dealer = _selection(damage.source)
 		if not damage.amount is ConstantValue:
 			# Oracle wording: "deals damage to target creature equal to the number of ...".
-			return "%s deals damage to %s equal to %s" % [_noun, _selection(damage.recipients), _value_phrase(damage.amount)]
-		return "%s deals %s damage to %s" % [_noun, _amount(damage.amount), _selection(damage.recipients)]
+			return "%s deals damage to %s equal to %s" % [dealer, _selection(damage.recipients), _value_phrase(damage.amount)]
+		return "%s deals %s damage to %s" % [dealer, _amount(damage.amount), _selection(damage.recipients)]
 	if effect is DrawCardsEffect:
 		var draw: DrawCardsEffect = effect as DrawCardsEffect
 		if draw.players is YouSelection:
@@ -861,6 +884,16 @@ func _effect(effect: MmEffect) -> String:
 		var text: String = "return %s to the battlefield%s%s" % [_selection(back.selection), " tapped" if back.tapped else "",
 			"" if _is_yours(back.selection) else " under its owner's control"]
 		return text if back.counters == null else text + " with %s on it" % _counters(back.counters, back.counter_kind)
+	if effect is MillEffect:
+		# CR 701.17a, as Oracle words it: "mill four cards", "each opponent mills four cards".
+		var milling: MillEffect = effect as MillEffect
+		if milling.players is YouSelection:
+			return "mill " + _cards(milling.amount)
+		return "%s %s %s" % [_selection(milling.players), _verb(milling.players, "mill"), _cards(milling.amount)]
+	var from_among: ChosenSelection = (effect as ReturnToHandEffect).selection as ChosenSelection if effect is ReturnToHandEffect else null
+	if from_among != null and from_among.from_among is MovedCardsSelection:
+		# Engine ADR 0080: "put an instant or sorcery card from among them into your hand".
+		return "put %s card from among them into your hand" % _with_article(_noun_phrase(from_among.filter, false))
 	if effect is ReturnToHandEffect:
 		var returned: MmSelection = (effect as ReturnToHandEffect).selection
 		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]
@@ -1099,6 +1132,8 @@ func _signed(number: int, zero_is_minus: bool) -> String:
 func _selection(selection: MmSelection) -> String:
 	if selection is YouSelection:
 		return "you"
+	if selection is EachOpponentSelection:
+		return "each opponent"
 	if selection is SourceSelection:
 		return _noun
 	if selection is TriggeringPlayerSelection:
@@ -1557,6 +1592,11 @@ func _value_phrase(value: MmValue) -> String:
 		var counted: CounterCountValue = value as CounterCountValue
 		return "the number of %s counters on %s" % [MmCounter.label(counted.kind), _selection(counted.selection)]
 	return _fallback(value, "_value")
+
+
+## "your" or "an opponent's", for [param whose] zone.
+static func _whose_words(whose: MmTrigger.Whose) -> String:
+	return "an opponent's" if whose == MmTrigger.Whose.OPPONENT else "your"
 
 
 static func _number_word(number: int) -> String:

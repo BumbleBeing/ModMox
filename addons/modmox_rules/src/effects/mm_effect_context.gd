@@ -32,6 +32,9 @@ var paid_x: int = NONE_PAID
 ## The color an "Add one mana of any color" adds: an MmMana.Type, chosen as its mana ability
 ## was activated (CR 605.3a, ADR 0072), or MmMana.NO_TYPE.
 var chosen_mana_type: int = MmMana.NO_TYPE
+## The new objects of the cards an earlier effect of this spell or ability moved and
+## remembers, such as the cards milled: "them" (MovedCardsSelection, engine ADR 0080).
+var moved_ids: Array[int] = []
 
 
 func _init(controlling_player_id: int, source_id: int, chosen_targets: Array[MmReference] = [],
@@ -84,6 +87,13 @@ func with_choice(index: int, chosen: MmReference) -> MmEffectContext:
 	return copy
 
 
+## This context remembering [param ids] as "them" too, a new context as with_choice() makes.
+func with_moved(ids: Array[int]) -> MmEffectContext:
+	var copy: MmEffectContext = _copy()
+	copy.moved_ids.append_array(ids)
+	return copy
+
+
 ## This context with [param x] as the X paid (ADR 0061), a new context as with_choice()
 ## makes.
 func with_paid_x(x: int) -> MmEffectContext:
@@ -109,4 +119,5 @@ func _copy() -> MmEffectContext:
 	copy.choices = choices.duplicate()
 	copy.paid_x = paid_x
 	copy.chosen_mana_type = chosen_mana_type
+	copy.moved_ids = moved_ids.duplicate()
 	return copy

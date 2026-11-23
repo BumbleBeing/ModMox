@@ -112,6 +112,9 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 		for index: int in choices.size():
 			clicks.glow_as(choices[index].id, Kind.TARGET)
 			clicks._options[choices[index].id] = [ClickOption.new(index, "Choose")]
+		# Engine ADR 0080: a card chosen from among the cards just milled is in a graveyard,
+		# so its window opens, as for a target there (game ADR 0032).
+		clicks._find_piles(choices, view)
 	elif decision is ChooseLegendToKeepDecision:
 		# CR 704.5j: one click keeps that legend, and the rest go.
 		var legends: Array[int] = (decision as ChooseLegendToKeepDecision).candidate_ids

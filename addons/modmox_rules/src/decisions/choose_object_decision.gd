@@ -3,7 +3,8 @@ extends MmPendingDecision
 ## The controller of a resolving spell or ability chooses the permanent for choice
 ## [member choice_index], "a [member filter]", as the effect that uses it begins
 ## (CR 608.2d). It is not a target. Answer: the index of the chosen entry in
-## [member candidates], which lists permanents in ID order.
+## [member candidates], which lists permanents in ID order, or cards among those an earlier
+## effect moved, such as the cards milled, in their order (engine ADR 0080).
 
 var stack_object_id: int
 var choice_index: int

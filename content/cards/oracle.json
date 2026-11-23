@@ -890,6 +890,40 @@
 		"set_name": "Dominaria United",
 		"type_line": "Land — Island Mountain"
 	},
+	"most_decrepit_old_bird": {
+		"card_faces": [
+			{
+				"artist": "Josu Solano",
+				"artist_id": "fb7b61a8-13c5-4813-a749-9d3396801906",
+				"illustration_id": "930bb92f-c5e1-448f-a8e5-23daaf84c48c",
+				"mana_cost": "{U}",
+				"name": "Most Decrepit Old Bird",
+				"object": "card_face",
+				"oracle_text": "Flying\nThreshold — This creature gets +1/+1 as long as there are seven or more cards in your graveyard.",
+				"power": "1",
+				"toughness": "1",
+				"type_line": "Creature — Bird"
+			},
+			{
+				"artist": "Josu Solano",
+				"artist_id": "fb7b61a8-13c5-4813-a749-9d3396801906",
+				"mana_cost": "{1}{U}",
+				"name": "Speak Secrets",
+				"object": "card_face",
+				"oracle_text": "Mill four cards, then put an instant or sorcery card from among them into your hand.",
+				"type_line": "Sorcery — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{U} // {1}{U}",
+		"name": "Most Decrepit Old Bird // Speak Secrets",
+		"oracle_id": "34d34f2c-06ff-4acf-8f2f-ff867774b777",
+		"power": "1",
+		"rarity": "rare",
+		"set_name": "The Hobbit",
+		"toughness": "1",
+		"type_line": "Creature — Bird // Sorcery — Adventure"
+	},
 	"mountain": {
 		"mana_cost": "",
 		"name": "Mountain",

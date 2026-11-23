@@ -105,6 +105,7 @@ const PRINTED: Dictionary[String, String] = {
 	"maned_serval": "Vigilance",
 	"mind_stone": "{T}: Add {C}.\n{1}, {T}, Sacrifice this artifact: Draw a card.",
 	"molten_tributary": "This land enters tapped.\n{T}: Add {U}.\n{T}: Add {R}.",
+	"most_decrepit_old_bird": "Flying\nThis creature gets +1/+1 as long as there are seven or more cards in your graveyard.",
 	"mountain": "({T}: Add {R}.)",
 	"myr_scrapling": "Sacrifice this creature: Put a +1/+1 counter on target creature.",
 	"nishoba_brawler": "Trample\nThis creature's power is equal to the number of basic land types among lands you control.",
@@ -180,6 +181,7 @@ const PRINTED: Dictionary[String, String] = {
 ## review as PRINTED's.
 const PRINTED_ADVENTURES: Dictionary[String, String] = {
 	"faerie_guidemother": "Target creature gets +2/+1 until end of turn. It gains flying until end of turn.",
+	"most_decrepit_old_bird": "Mill four cards. Put an instant or sorcery card from among them into your hand.",
 }
 
 
@@ -487,6 +489,16 @@ func test_cant_be_countered_calls_any_card_this_spell_as_carnage_tyrant_does() -
 		[] as Array[MmCardTypes.Supertype], "Tyrant"),
 		"This spell can't be countered.")
 	assert_false(AbilityText.is_keyword(CantBeCounteredAbility.new()))
+
+
+func test_damage_dealt_by_the_creature_that_entered_is_worded_it_deals_to_each_opponent() -> void:
+	var ping: DealDamageEffect = Scenario.deal_damage(1, EachOpponentSelection.new())
+	ping.source = TriggeringObjectSelection.new()
+	var abilities: Array[MmAbility] = [Scenario.triggered(Scenario.enters(Scenario.creature_you_control()), [ping])]
+
+	assert_eq(AbilityText.of_card(abilities, [MmCardTypes.CardType.CREATURE] as Array[MmCardTypes.CardType],
+		[] as Array[MmCardTypes.Supertype], "Eruptor"),
+		"Whenever a creature you control enters, it deals 1 damage to each opponent.")
 
 
 func test_a_treasure_prints_as_cr_111_10a_words_it() -> void:
@@ -1572,3 +1584,15 @@ func test_players_who_control_more_are_worded_with_the_verb_agreeing() -> void:
 		+ "more lands than you.")
 	assert_eq(AbilityText.of_ability(_spell_doing(drained), "this spell"),
 		"Each player who controls more lands than you loses 1 life.")
+
+
+func test_mill_from_among_them_and_a_graveyard_count_are_worded_as_oracle_does() -> void:
+	# Engine ADR 0080, after Most Decrepit Old Bird // Speak Secrets.
+	assert_eq(_text(Scenario.threshold_bird()), "This creature gets +1/+1 as long as there are seven or more cards in your graveyard.")
+	assert_eq(_text(Scenario.free_secrets()), "Mill four cards. Put an instant or sorcery card from among them into your hand.")
+	assert_eq(_text(Scenario.free_mill("Glimpse", 1)), "Mill a card.")
+	assert_eq(_text(Scenario.free_mill("Thought Scour", 2, true)), "Each opponent mills two cards.")
+
+
+func _text(definition: MmCardDefinition) -> String:
+	return CardLook.of_definition(definition).rules_text

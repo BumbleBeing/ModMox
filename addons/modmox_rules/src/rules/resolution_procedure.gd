@@ -145,7 +145,21 @@ func next_decision() -> MmPendingDecision:
 			continue
 		_step += 1
 		_state.perform_resumably(batch)
+		if effect.remembers_moved_cards():
+			_remember_moved(batch)
 	return null
+
+
+## Remembers the new objects of the cards [param batch] moved as "them" (engine ADR 0080).
+# Later: a card whose move a replacement effect is still waiting to change, once one can
+# change a milled card's.
+func _remember_moved(batch: Array[MmEvent]) -> void:
+	var ids: Array[int] = []
+	for event: MmEvent in batch:
+		var move: ZoneChangeEvent = event as ZoneChangeEvent
+		if move != null and move.new_object_id != 0:
+			ids.append(move.new_object_id)
+	_context = _context.with_moved(ids)
 
 
 ## Applies an already-validated answer to a choice this procedure asked.

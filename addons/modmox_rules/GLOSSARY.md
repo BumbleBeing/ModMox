@@ -122,6 +122,10 @@ _Avoid_: Color choice (nothing is asked: the color is the Action's), rainbow man
 An Adventurer card's second half (CR 715): an instant or sorcery with the subtype Adventure, printed on the left page of the card's book, which the card may be cast as from the hand instead of the creature. Cast that way, the spell has only the Adventure's characteristics (ADR 0078). A Mod never changes it.
 _Avoid_: Back face, second face, split card
 
+**Mill**:
+To put the top cards of a library into its owner's graveyard (CR 701.17a). The spell or ability that mills remembers the cards milled, so a later effect of it can choose "from among them" (ADR 0080).
+_Avoid_: Discard from the library, self-mill (as a term)
+
 **On an Adventure**:
 A card exiled as its Adventure resolved (CR 715.3d). Its owner may cast it from exile as the creature, never as the Adventure again, for as long as it stays there.
 _Avoid_: Adventuring, exiled with an Adventure

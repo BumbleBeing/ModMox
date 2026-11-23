@@ -822,7 +822,9 @@ func _order_triggers(decision: OrderTriggersDecision, source: MmSimulationSource
 
 ## A choice made as a spell or ability resolves (CR 608.2d). FULL: simulates each
 ## candidate. CHEAP: its own least valuable permanent, which costs it least to lose or have
-## returned to its hand; with none of its own, the first.
+## returned to its hand; with none of its own, the first. A card chosen from among cards
+## that are not permanents, such as the cards just milled (engine ADR 0080), is going to
+## its hand, so CHEAP takes the one with the greatest mana value.
 func _choose_object(decision: ChooseObjectDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	if decision.candidates.size() == 1:
 		_reason = Reason.ONLY_CHOICE
@@ -833,6 +835,9 @@ func _choose_object(decision: ChooseObjectDecision, world: MmGameState, source: 
 		for index: int in decision.candidates.size():
 			options.append(index)
 		return _best_option(options, _simulate_each(source, rng, options, decision.player_id), rng, 0)
+	var first: MmGameObject = world.object(decision.candidates[0].id)
+	if first != null and first.zone() != world.battlefield:
+		return _greatest_mana_value(decision.candidates, world)
 	var least: int = 0
 	var least_value: int = -1
 	for index: int in decision.candidates.size():
@@ -844,6 +849,20 @@ func _choose_object(decision: ChooseObjectDecision, world: MmGameState, source: 
 			least = index
 			least_value = value
 	return least
+
+
+## The index of the card in [param candidates] with the greatest mana value, the first of
+## those tied.
+static func _greatest_mana_value(candidates: Array[MmReference], world: MmGameState) -> int:
+	var best: int = 0
+	var best_value: int = -1
+	for index: int in candidates.size():
+		var card: MmGameObject = world.object(candidates[index].id)
+		var value: int = world.characteristics_of(card).mana_value() if card != null else -1
+		if value > best_value:
+			best = index
+			best_value = value
+	return best
 
 
 ## The permanents picked to pay part of a cost, such as creatures to tap (CR 601.2h).
