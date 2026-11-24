@@ -1623,6 +1623,46 @@ func test_jewel_thief_entering_makes_its_controller_a_treasure_whose_white_pays_
 	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int], "Sacrificed to pay.")
 
 
+func test_oltec_matterweaver_makes_a_gnome_then_copies_a_treasure() -> void:
+	# Engine ADR 0046: with no artifact token to copy, the copy mode can't be chosen and the
+	# Gnome is made without asking. Then the Gnome and the Treasure may each be copied (CR 707.2).
+	var weavers: Array[MmCardDefinition] = [Scenario.free_copy(_card("the_big_score", "oltec_matterweaver"))]
+	var treasure: MmCardDefinition = load("res://content/tokens/treasure.tres") as MmCardDefinition
+	var held: Array[MmCardDefinition] = [Scenario.creature("Bear", 2, 2), Scenario.creature("Ox", 2, 4),
+		Scenario.free_tokens("Hoard", treasure)]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(weavers, no_cards, held),
+		weavers, no_cards, held, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero: MmPlayer = engine.hero()
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Bear")), "")
+	assert_false(engine.pending_decision() is ChooseModeDecision, "Only the Gnome could be chosen.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	var gnomes: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(gnomes.size(), 1)
+	var gnome: MmCharacteristics = Scenario.now(engine, gnomes[0])
+	assert_eq(gnome.name, "Gnome Token", "CR 111.4.")
+	assert_eq(gnome.card_types, [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE] as Array[MmCardTypes.CardType])
+	assert_eq(gnome.colors, [] as Array[MmCardTypes.CardColor])
+	assert_eq([gnome.power, gnome.toughness], [1, 1])
+	assert_eq(Scenario.cast_and_resolve(engine, "Hoard"), "")
+	var hoarded: int = Scenario.tokens_on_battlefield(engine)[1]
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, hero, "Ox")), "")
+	var modes: ChooseModeDecision = engine.pending_decision() as ChooseModeDecision
+	assert_not_null(modes, "Now there are artifact tokens to copy.")
+	assert_eq(modes.mode_targets[1].size(), 2, "The Gnome and the Treasure.")
+	assert_eq(Scenario.choose_mode(engine, 1), "")
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(hoarded)), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var made: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(made.size(), 3)
+	assert_eq(Scenario.now(engine, made[2]).subtypes, ["Treasure"] as Array[String])
+	assert_eq(engine.game_state().object(made[2]).controller_id, hero.id)
+
+
 func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:
 	for deck_name: String in ["red_green", "white_black", "blue_red"]:
 		var setup: MmPlayerSetup = load("res://content/decks/%s.tres" % deck_name) as MmPlayerSetup

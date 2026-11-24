@@ -35,6 +35,8 @@ const YOU_OWN: String = "you own"
 const OPPONENT_OWNS: String = "an opponent owns"
 ## What a Filter leaving out the source says before its noun: "each other creature".
 const OTHER: String = "other"
+## What an IsTokenFilter names: the noun after any card type, "artifact token" (CR 111.1).
+const TOKEN_NOUN: String = "token"
 ## What a ControlsMoreFilter says after "players", made singular for "a player".
 const WHO_CONTROL: String = "who control"
 const WHO_DONT_CONTROL: String = "who don't control"
@@ -482,6 +484,8 @@ static func _keyword(ability: MmAbility) -> String:
 		return "Flash"
 	if ability is ExaltedAbility:
 		return "Exalted"
+	if ability is BattleCryAbility:
+		return "Battle cry"
 	if ability is ChangelingAbility:
 		return "Changeling"
 	return ""
@@ -1028,6 +1032,12 @@ func _effect(effect: MmEffect) -> String:
 		return _continuous((effect as CreateContinuousEffect).continuous, false) + " until end of turn"
 	if effect is CreateTokenEffect:
 		return "create " + _tokens(effect as CreateTokenEffect)
+	if effect is CreateTokenCopyEffect:
+		# CR 707.2, as Oltec Matterweaver words it.
+		var copy: CreateTokenCopyEffect = effect as CreateTokenCopyEffect
+		if copy.amount == 1:
+			return "create a token that's a copy of " + _selection(copy.selection)
+		return "create %s tokens that are copies of %s" % [_number_word(copy.amount), _selection(copy.selection)]
 	if effect is SearchLibraryEffect:
 		return _search(effect as SearchLibraryEffect)
 	if effect is SurveilEffect:
@@ -1503,6 +1513,10 @@ func _filter_words(filter: MmFilter) -> FilterWords:
 	var words: FilterWords = FilterWords.new()
 	var nouns: Array[String] = []
 	_collect(filter, false, words.adjectives, nouns, words.after)
+	if nouns.has(TOKEN_NOUN):
+		# "Artifact token", "creature tokens": a token is named after its kind, as Oracle words it.
+		nouns.erase(TOKEN_NOUN)
+		nouns.append(TOKEN_NOUN)
 	if not nouns.is_empty():
 		# "Artifact creature": the last kind named is the noun, and the others describe it.
 		words.adjectives.append_array(nouns.slice(0, -1))
@@ -1542,7 +1556,10 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 	elif filter is IsTappedFilter:
 		adjectives.append("untapped" if is_negated else "tapped")
 	elif filter is IsTokenFilter:
-		adjectives.append("nontoken" if is_negated else "token")
+		if is_negated:
+			adjectives.append("nontoken")
+		else:
+			nouns.append(TOKEN_NOUN)
 	elif filter is IsAttackingFilter:
 		adjectives.append("nonattacking" if is_negated else "attacking")
 	elif filter is IsBlockingFilter:

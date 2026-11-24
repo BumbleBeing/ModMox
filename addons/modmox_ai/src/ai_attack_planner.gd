@@ -4,9 +4,11 @@ extends RefCounted
 ## for, not its code: attack with everything when that is lethal, otherwise set an
 ## aggression level from 0 to 5 by comparing the two sides' clocks, send each creature that
 ## clears that level's bar, and hold back enough to survive the swing back. Each creature is
-## judged attacking alone; when something its player controls cares whether a creature
-## attacks alone (exalted, CR 506.5), the chosen attackers are judged again beside each
-## other, and the least valuable that no longer clears the bar stays home, until the rest do.
+## judged attacking alone; while one chosen has battle cry (CR 702.91a), the rest are judged
+## again beside the chosen, and each that clears the bar in their company joins them; when
+## something its player controls cares whether a creature attacks alone (exalted, CR 506.5),
+## the chosen attackers are judged again beside each other, and the least valuable that no
+## longer clears the bar stays home, until the rest do.
 
 ## The aggression levels.
 enum Aggression { STAY_HOME = 0, EVASION_ONLY = 1, SAFE = 2, GOOD_TRADES = 3, EXPECT_TRADES = 4, ALL_OUT = 5 }
@@ -49,9 +51,31 @@ func plan(candidate_ids: Array[int]) -> Array[int]:
 	for attacker_id: int in candidate_ids:
 		if _should_attack(attacker_id, aggression, [attacker_id] as Array[int]):
 			attacking.append(attacker_id)
+	if _any_has(attacking, BattleCryAbility):
+		attacking = _beside_battle_cry(candidate_ids, attacking)
 	if _cares_about_attacking_alone():
 		attacking = _together(attacking)
 	return _hold_back(attacking)
+
+
+## [param attacking] and every other of [param candidate_ids] that clears the bar attacking
+## beside them. Judged alone, a creature never counts the +1/+0 a battle cry attacking with it
+## gives (CR 702.91a), which the duel plays. One that joins may have battle cry too, so the
+## rest are judged again until none joins.
+func _beside_battle_cry(candidate_ids: Array[int], attacking: Array[int]) -> Array[int]:
+	var joined: Array[int] = attacking.duplicate()
+	var has_grown: bool = true
+	while has_grown:
+		has_grown = false
+		for attacker_id: int in candidate_ids:
+			if joined.has(attacker_id):
+				continue
+			var beside: Array[int] = joined.duplicate()
+			beside.append(attacker_id)
+			if _should_attack(attacker_id, aggression, beside):
+				joined.append(attacker_id)
+				has_grown = true
+	return joined
 
 
 ## [param attacking], each judged again attacking beside the others: while any of them no
@@ -252,3 +276,10 @@ func _toughness(object_id: int) -> int:
 
 func _has(object_id: int, kind: Script) -> bool:
 	return _state.characteristics_of(_state.object(object_id)).has_ability(kind)
+
+
+func _any_has(object_ids: Array[int], kind: Script) -> bool:
+	for object_id: int in object_ids:
+		if _has(object_id, kind):
+			return true
+	return false

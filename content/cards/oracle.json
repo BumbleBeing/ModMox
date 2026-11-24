@@ -77,6 +77,41 @@
 		"set_name": "Shards of Alara",
 		"type_line": "Land"
 	},
+	"ardenvale_tactician": {
+		"card_faces": [
+			{
+				"artist": "Jason Rainville",
+				"artist_id": "6ed7e669-579b-443d-b223-e5cbcb2a7483",
+				"flavor_text": "In a castle that prizes loyalty above all, the bond between knight and griffin is unmatched.",
+				"illustration_id": "627d6163-08a5-40b8-938c-264d01ec29bb",
+				"mana_cost": "{1}{W}{W}",
+				"name": "Ardenvale Tactician",
+				"object": "card_face",
+				"oracle_text": "Flying",
+				"power": "2",
+				"toughness": "3",
+				"type_line": "Creature — Human Knight"
+			},
+			{
+				"artist": "Jason Rainville",
+				"artist_id": "6ed7e669-579b-443d-b223-e5cbcb2a7483",
+				"mana_cost": "{1}{W}",
+				"name": "Dizzying Swoop",
+				"object": "card_face",
+				"oracle_text": "Tap up to two target creatures. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Instant — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{1}{W}{W} // {1}{W}",
+		"name": "Ardenvale Tactician // Dizzying Swoop",
+		"oracle_id": "ea27c8bf-33c5-443f-b8b2-51235efc2491",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Throne of Eldraine",
+		"toughness": "3",
+		"type_line": "Creature — Human Knight // Instant — Adventure"
+	},
 	"artillery_blast": {
 		"mana_cost": "{1}{W}",
 		"name": "Artillery Blast",
@@ -133,6 +168,17 @@
 		"set_name": "Mirrodin",
 		"type_line": "Instant"
 	},
+	"benalish_marshal": {
+		"mana_cost": "{W}{W}{W}",
+		"name": "Benalish Marshal",
+		"oracle_id": "2cc439e8-d112-44e6-bc5a-6e99333c519a",
+		"oracle_text": "Other creatures you control get +1/+1.",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Dominaria",
+		"toughness": "3",
+		"type_line": "Creature — Human Knight"
+	},
 	"black_knight": {
 		"mana_cost": "{B}{B}",
 		"name": "Black Knight",
@@ -163,6 +209,28 @@
 		"rarity": "uncommon",
 		"set_name": "The Brothers' War",
 		"type_line": "Sorcery"
+	},
+	"bygone_bishop": {
+		"mana_cost": "{2}{W}",
+		"name": "Bygone Bishop",
+		"oracle_id": "a47d9ea3-95fe-4774-8e72-30e7f56756f4",
+		"oracle_text": "Flying\nWhenever you cast a creature spell with mana value 3 or less, investigate. (Create a Clue token. It's an artifact with \"{2}, Sacrifice this token: Draw a card.\")",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Shadows over Innistrad",
+		"toughness": "3",
+		"type_line": "Creature — Spirit Cleric"
+	},
+	"celestial_unicorn": {
+		"mana_cost": "{2}{W}",
+		"name": "Celestial Unicorn",
+		"oracle_id": "be030639-cbc9-416b-b0ca-1a76439791d8",
+		"oracle_text": "Whenever you gain life, put a +1/+1 counter on this creature.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Adventures in the Forgotten Realms",
+		"toughness": "2",
+		"type_line": "Creature — Unicorn"
 	},
 	"charmed_stray": {
 		"mana_cost": "{W}",
@@ -282,6 +350,17 @@
 		"set_name": "Scars of Mirrodin",
 		"type_line": "Artifact — Equipment"
 	},
+	"dauntless_veteran": {
+		"mana_cost": "{1}{W}{W}",
+		"name": "Dauntless Veteran",
+		"oracle_id": "97b2fb8b-0c69-4ed2-b2d0-8a780f9b5b97",
+		"oracle_text": "Whenever this creature attacks, creatures you control get +1/+1 until end of turn.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Foundations",
+		"toughness": "2",
+		"type_line": "Creature — Human Soldier"
+	},
 	"daybreak_charger": {
 		"mana_cost": "{1}{W}",
 		"name": "Daybreak Charger",
@@ -301,6 +380,17 @@
 		"rarity": "uncommon",
 		"set_name": "Secrets of Strixhaven",
 		"type_line": "Sorcery"
+	},
+	"dazzling_angel": {
+		"mana_cost": "{2}{W}",
+		"name": "Dazzling Angel",
+		"oracle_id": "7de464e3-fae3-44cc-8233-776fc727c00a",
+		"oracle_text": "Flying\nWhenever another creature you control enters, you gain 1 life.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Foundations",
+		"toughness": "3",
+		"type_line": "Creature — Angel"
 	},
 	"deep_analysis": {
 		"mana_cost": "{3}{U}",
@@ -1192,6 +1282,17 @@
 		"set_name": "Lorwyn",
 		"type_line": "Enchantment"
 	},
+	"oltec_matterweaver": {
+		"mana_cost": "{2}{W}",
+		"name": "Oltec Matterweaver",
+		"oracle_id": "3cb91696-242f-4e91-806b-61b1bb45a20c",
+		"oracle_text": "Whenever you cast a creature spell, choose one —\n• Create a 1/1 colorless Gnome artifact creature token.\n• Create a token that's a copy of target artifact token you control.",
+		"power": "2",
+		"rarity": "mythic",
+		"set_name": "The Big Score",
+		"toughness": "4",
+		"type_line": "Creature — Human Artificer"
+	},
 	"ominous_parcel": {
 		"mana_cost": "{1}",
 		"name": "Ominous Parcel",
@@ -1381,6 +1482,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Human Soldier"
 	},
+	"roving_harper": {
+		"mana_cost": "{2}{W}",
+		"name": "Roving Harper",
+		"oracle_id": "6474f6b3-4e8e-4056-a01c-2f5e5e59c8de",
+		"oracle_text": "When this creature enters, draw a card.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Commander Legends: Battle for Baldur's Gate",
+		"toughness": "2",
+		"type_line": "Creature — Elf Scout"
+	},
 	"sacred_peaks": {
 		"mana_cost": "",
 		"name": "Sacred Peaks",
@@ -1420,6 +1532,17 @@
 		"rarity": "uncommon",
 		"set_name": "Khans of Tarkir",
 		"type_line": "Land"
+	},
+	"sanguine_evangelist": {
+		"mana_cost": "{2}{W}",
+		"name": "Sanguine Evangelist",
+		"oracle_id": "a70d9645-7c25-4fcb-9d16-fb73ce8b55e2",
+		"oracle_text": "Battle cry (Whenever this creature attacks, each other attacking creature gets +1/+0 until end of turn.)\nWhen this creature enters or dies, create a 1/1 black Bat creature token with flying.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "The Lost Caverns of Ixalan",
+		"toughness": "1",
+		"type_line": "Creature — Vampire Cleric"
 	},
 	"savage_lands": {
 		"mana_cost": "",

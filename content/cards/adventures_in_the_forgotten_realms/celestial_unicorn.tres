@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_gv1hs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_g2wnn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_m3r4c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_8apui"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_nc1k4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="4_bia06"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="5_ha530"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_157pk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_tbg6q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_dhr6m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/life_gained_trigger.gd" id="9_jb7cs"]
+
+[sub_resource type="Resource" id="Resource_rfj8n"]
+script = ExtResource("3_nc1k4")
+value = 1
+
+[sub_resource type="Resource" id="Resource_85jop"]
+script = ExtResource("4_bia06")
+
+[sub_resource type="Resource" id="Resource_cjud8"]
+script = ExtResource("5_ha530")
+amount = SubResource("Resource_rfj8n")
+recipients = SubResource("Resource_85jop")
+
+[sub_resource type="Resource" id="Resource_rwlkf"]
+script = ExtResource("9_jb7cs")
+
+[sub_resource type="Resource" id="Resource_uhooq"]
+script = ExtResource("7_tbg6q")
+trigger = SubResource("Resource_rwlkf")
+effects = Array[ExtResource("2_m3r4c")]([SubResource("Resource_cjud8")])
+
+[sub_resource type="Resource" id="Resource_4mqj4"]
+script = ExtResource("2_g2wnn")
+generic = 2
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_8apui")
+name = "Celestial Unicorn"
+card_types = Array[int]([1])
+subtypes = Array[String](["Unicorn"])
+mana_cost = SubResource("Resource_4mqj4")
+power = 3
+toughness = 2
+abilities = Array[ExtResource("1_gv1hs")]([SubResource("Resource_uhooq")])

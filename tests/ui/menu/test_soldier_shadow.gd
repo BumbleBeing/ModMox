@@ -24,9 +24,9 @@ func test_only_black_counts_not_a_colored_glow_beside_his_feet() -> void:
 
 
 func test_a_frame_drawn_up_touches_the_ground_with_the_row_that_lands_on_it() -> void:
-	assert_eq_deep(SoldierShadow.contacts_of(_image("protection_1"), 1), STANDING,
+	assert_eq(SoldierShadow.contacts_of(_image("protection_1"), 1), STANDING,
 			"lowered in its sprite: he still stands")
-	assert_eq_deep(SoldierShadow.contacts_of(_image("flying_1"), 1), [] as Array[int],
+	assert_eq(SoldierShadow.contacts_of(_image("flying_1"), 1), [] as Array[int],
 			"not lowered: he is off the ground")
 
 

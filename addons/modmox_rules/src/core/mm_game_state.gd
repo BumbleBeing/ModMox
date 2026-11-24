@@ -267,6 +267,15 @@ func characteristics_of(game_object: MmGameObject) -> MmCharacteristics:
 	return MmCharacteristics.printed(game_object.definition)
 
 
+## The copiable values of [param game_object] (CR 707.2), as a copy of it is made: what its
+## definition gives it, before any continuous effect, counter or status. A token's Token
+## Definition (CR 111.3), or a card as its Run Card's Modifications made it (ADR 0004).
+## Null for an ability on the stack, which has none (CR 113.7a). The definition is never
+## changed (ADR 0004), so a copy shares it, and a copy of the copy has the same values.
+func copiable_values_of(game_object: MmGameObject) -> MmCardDefinition:
+	return game_object.definition
+
+
 ## CR 302.6: whether [param game_object] is a creature whose controller has not controlled
 ## it continuously since their most recent turn began. Such a creature cannot attack or pay
 ## {T} in a cost. A creature with haste never is, for these rules.

@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_1berx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_o5jmt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_olry1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_1rg1p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_lrjdi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/tap_effect.gd" id="4_j68kf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="5_ev6tt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_pvnxn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_r1g7f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="8_2x4ng"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_huqqw"]
+
+[sub_resource type="Resource" id="Resource_fhy26"]
+script = ExtResource("2_olry1")
+
+[sub_resource type="Resource" id="Resource_ko43e"]
+script = ExtResource("5_ev6tt")
+
+[sub_resource type="Resource" id="Resource_0oy2m"]
+script = ExtResource("4_j68kf")
+selection = SubResource("Resource_ko43e")
+
+[sub_resource type="Resource" id="Resource_oto5j"]
+script = ExtResource("9_huqqw")
+
+[sub_resource type="Resource" id="Resource_p5brh"]
+script = ExtResource("7_r1g7f")
+filter = SubResource("Resource_oto5j")
+most = 2
+is_up_to = true
+
+[sub_resource type="Resource" id="Resource_sossf"]
+script = ExtResource("8_2x4ng")
+targets = Array[ExtResource("7_r1g7f")]([SubResource("Resource_p5brh")])
+effects = Array[ExtResource("3_1rg1p")]([SubResource("Resource_0oy2m")])
+
+[sub_resource type="Resource" id="Resource_t5s0c"]
+script = ExtResource("2_o5jmt")
+generic = 1
+symbols = Array[int]([0])
+
+[sub_resource type="Resource" id="Resource_2tyxp"]
+script = ExtResource("3_lrjdi")
+name = "Dizzying Swoop"
+card_types = Array[int]([3])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_t5s0c")
+abilities = Array[ExtResource("1_1berx")]([SubResource("Resource_sossf")])
+
+[sub_resource type="Resource" id="Resource_g3bir"]
+script = ExtResource("2_o5jmt")
+generic = 1
+symbols = Array[int]([0, 0])
+
+[resource]
+script = ExtResource("3_lrjdi")
+name = "Ardenvale Tactician"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Knight"])
+mana_cost = SubResource("Resource_g3bir")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_1berx")]([SubResource("Resource_fhy26")])
+adventure = SubResource("Resource_2tyxp")

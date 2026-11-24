@@ -1,0 +1,70 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_e16s7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="2_df55k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_sfrr3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ddf78"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="3_jc6ut"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_6n7yu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="5_hwdql"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="6_t87p4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="7_hj1ot"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="8_nhnt2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="9_yhiy0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="10_y78bh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="11_fomof"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="12_7oq2r"]
+
+[sub_resource type="Resource" id="Resource_gkvad"]
+script = ExtResource("4_6n7yu")
+
+[sub_resource type="Resource" id="Resource_a7c5l"]
+script = ExtResource("5_hwdql")
+
+[sub_resource type="Resource" id="Resource_o5m3m"]
+script = ExtResource("6_t87p4")
+
+[sub_resource type="Resource" id="Resource_88bh7"]
+script = ExtResource("7_hj1ot")
+filter = SubResource("Resource_o5m3m")
+
+[sub_resource type="Resource" id="Resource_cwbge"]
+script = ExtResource("8_nhnt2")
+filters = Array[ExtResource("3_jc6ut")]([SubResource("Resource_gkvad"), SubResource("Resource_a7c5l"), SubResource("Resource_88bh7")])
+
+[sub_resource type="Resource" id="Resource_dn17e"]
+script = ExtResource("9_yhiy0")
+filter = SubResource("Resource_cwbge")
+
+[sub_resource type="Resource" id="Resource_hpi3c"]
+script = ExtResource("10_y78bh")
+value = 1
+
+[sub_resource type="Resource" id="Resource_ff2r3"]
+script = ExtResource("10_y78bh")
+value = 1
+
+[sub_resource type="Resource" id="Resource_cnv1b"]
+script = ExtResource("11_fomof")
+power = SubResource("Resource_hpi3c")
+toughness = SubResource("Resource_ff2r3")
+affected = SubResource("Resource_dn17e")
+
+[sub_resource type="Resource" id="Resource_pgfd8"]
+script = ExtResource("12_7oq2r")
+effects = Array[ExtResource("2_df55k")]([SubResource("Resource_cnv1b")])
+
+[sub_resource type="Resource" id="Resource_ndlm4"]
+script = ExtResource("2_sfrr3")
+symbols = Array[int]([0, 0, 0])
+
+[resource]
+script = ExtResource("3_ddf78")
+name = "Benalish Marshal"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Knight"])
+mana_cost = SubResource("Resource_ndlm4")
+power = 3
+toughness = 3
+abilities = Array[ExtResource("1_e16s7")]([SubResource("Resource_pgfd8")])
+rarity = 2

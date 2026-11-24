@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_af3si"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_f1pkx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_jpfdg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_gt0ea"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_k77jx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_5hwt1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_xjm2f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_giwus"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_22r74"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_0yrc8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_hcgot"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_gtnxu"]
+
+[sub_resource type="Resource" id="Resource_ut7vi"]
+script = ExtResource("3_gt0ea")
+value = 1
+
+[sub_resource type="Resource" id="Resource_7qbwh"]
+script = ExtResource("4_5hwt1")
+
+[sub_resource type="Resource" id="Resource_800g1"]
+script = ExtResource("5_xjm2f")
+amount = SubResource("Resource_ut7vi")
+players = SubResource("Resource_7qbwh")
+
+[sub_resource type="Resource" id="Resource_l7g3b"]
+script = ExtResource("9_hcgot")
+
+[sub_resource type="Resource" id="Resource_htwxt"]
+script = ExtResource("10_gtnxu")
+filter = SubResource("Resource_l7g3b")
+
+[sub_resource type="Resource" id="Resource_lxvi3"]
+script = ExtResource("7_22r74")
+trigger = SubResource("Resource_htwxt")
+effects = Array[ExtResource("2_jpfdg")]([SubResource("Resource_800g1")])
+
+[sub_resource type="Resource" id="Resource_6mt0r"]
+script = ExtResource("2_f1pkx")
+generic = 2
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_k77jx")
+name = "Roving Harper"
+card_types = Array[int]([1])
+subtypes = Array[String](["Elf", "Scout"])
+mana_cost = SubResource("Resource_6mt0r")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_af3si")]([SubResource("Resource_lxvi3")])

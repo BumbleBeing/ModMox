@@ -79,6 +79,16 @@
 		"scryfall_id": "6edc0681-4252-4d3d-baf3-f03c22af1208",
 		"set": "ala"
 	},
+	"ardenvale_tactician": {
+		"artist": "Jason Rainville",
+		"collector_number": "5",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "c7d5e394-8e41-442e-ae97-a478a61e1b9d",
+		"set": "eld"
+	},
 	"artillery_blast": {
 		"artist": "Julian Kok Joon Wen",
 		"collector_number": "6",
@@ -139,6 +149,16 @@
 		"scryfall_id": "2b34e76b-86b3-464e-93e7-c3f2074028fb",
 		"set": "mrd"
 	},
+	"benalish_marshal": {
+		"artist": "Mark Zug",
+		"collector_number": "6",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "6dd1a7fc-5dbd-4ed2-9b02-9fd5c55bb629",
+		"set": "dom"
+	},
 	"black_knight": {
 		"artist": "Jeff A. Menges",
 		"collector_number": "94",
@@ -168,6 +188,26 @@
 		],
 		"scryfall_id": "712a0640-d9c8-46fc-b38b-bf20a40fa902",
 		"set": "bro"
+	},
+	"bygone_bishop": {
+		"artist": "Jason A. Engle",
+		"collector_number": "8",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "7c45198f-fb2b-4c83-abdc-8b1a0071cfed",
+		"set": "soi"
+	},
+	"celestial_unicorn": {
+		"artist": "Johannes Voss",
+		"collector_number": "5",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "f2d68812-8862-4e34-a992-7d6bbadaf316",
+		"set": "afr"
 	},
 	"charmed_stray": {
 		"artist": "Chris Rahn",
@@ -289,6 +329,16 @@
 		"scryfall_id": "b997c3e6-4b0e-4f4a-9f66-3fc1d8395494",
 		"set": "som"
 	},
+	"dauntless_veteran": {
+		"artist": "Chris Rallis",
+		"collector_number": "8",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "7a136f26-ac66-407f-b389-357222d2c4a2",
+		"set": "fdn"
+	},
 	"daybreak_charger": {
 		"artist": "Forrest Imel",
 		"collector_number": "14",
@@ -308,6 +358,16 @@
 		],
 		"scryfall_id": "e2b16cb2-b8b2-45df-9695-3c16e9d89e28",
 		"set": "sos"
+	},
+	"dazzling_angel": {
+		"artist": "Daneen Wilkerson",
+		"collector_number": "9",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "027dc444-e544-4693-8653-3dcdda530162",
+		"set": "fdn"
 	},
 	"deep_analysis": {
 		"artist": "Daren Bader",
@@ -1139,6 +1199,16 @@
 		"scryfall_id": "1c7fffe8-709c-4cb4-bbad-e4a0c35b616a",
 		"set": "lrw"
 	},
+	"oltec_matterweaver": {
+		"artist": "Villarrte",
+		"collector_number": "3",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "f4f2a818-9fd1-41db-967e-7d2c9b4e4c2f",
+		"set": "big"
+	},
 	"ominous_parcel": {
 		"artist": "Joe Slucher",
 		"collector_number": "241",
@@ -1329,6 +1399,16 @@
 		"scryfall_id": "3e11ad33-b9d7-43ef-840a-61955683b599",
 		"set": "dmu"
 	},
+	"roving_harper": {
+		"artist": "Anastasia Ovchinnikova",
+		"collector_number": "40",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "c6b0ed9c-9a99-4a50-80a9-396420a8dcf9",
+		"set": "clb"
+	},
 	"sacred_peaks": {
 		"artist": "Kamila Szutenberg",
 		"collector_number": "254",
@@ -1368,6 +1448,16 @@
 		],
 		"scryfall_id": "2dd40d90-c939-458a-9a98-27d10da6ff2f",
 		"set": "ktk"
+	},
+	"sanguine_evangelist": {
+		"artist": "Zezhou Chen",
+		"collector_number": "34",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "269ddd84-fdc4-4c94-b183-32ecec56967c",
+		"set": "lci"
 	},
 	"savage_lands": {
 		"artist": "Vance Kovacs",
@@ -1669,6 +1759,16 @@
 		"scryfall_id": "56cd89f1-f9f4-4cb5-a573-79809d0b6dfd",
 		"set": "bro"
 	},
+	"tokens/bat_1_1_black_flying": {
+		"artist": "Steven Russell Black",
+		"collector_number": "6",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "00841e4b-0995-4fb5-93d6-e177beba4934",
+		"set": "tlci"
+	},
 	"tokens/cat_1_1_white": {
 		"artist": "Leonardo Santanna",
 		"collector_number": "1",
@@ -1728,6 +1828,16 @@
 		],
 		"scryfall_id": "3d66ec9c-7e5d-47ca-bce4-46798152d1f4",
 		"set": "tsoi"
+	},
+	"tokens/gnome_1_1_colorless": {
+		"artist": "Villarrte",
+		"collector_number": "5",
+		"focus": [
+			0.5,
+			0.5
+		],
+		"scryfall_id": "a257ae72-2a82-4861-a2fb-a0a09be00646",
+		"set": "tbig"
 	},
 	"tokens/human_soldier_1_1_white": {
 		"artist": "Bram Sels",

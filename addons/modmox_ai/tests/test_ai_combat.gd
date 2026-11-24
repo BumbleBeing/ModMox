@@ -257,6 +257,23 @@ func test_with_exalted_it_sends_one_attacker_rather_than_two_that_each_counted_o
 	assert_eq(attackers, [bears], "Alone, the Bears is a 3/3.")
 
 
+func test_beside_a_battle_cry_it_sends_a_creature_that_only_then_trades() -> void:
+	# CR 702.91a: judged alone, the 2/2 dies to the 2/3 Guard for nothing; beside the flying
+	# Crier, whose battle cry the Combat Oracle plays, it is a 3/2 that trades with it.
+	var crier: MmCardDefinition = Scenario.creature("Crier", 2, 1, [FlyingAbility.new(), BattleCryAbility.new()])
+	var engine: MmEngine = Scenario.combat_ready([crier, AiScenario.free_alpha("grizzly_bears")],
+		[Scenario.creature("Guard", 2, 3)])
+	assert_not_null(engine)
+	var crier_id: int = Scenario.permanent_named(engine, engine.hero().id, "Crier")
+	var bears: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+
+	var attackers: Array = AiScenario.ask(engine, AiAgent.new())
+
+	assert_eq(attackers.size(), 2)
+	assert_true(attackers.has(crier_id), "Nothing can block the Crier.")
+	assert_true(attackers.has(bears), "Beside the Crier, the Bears trades with the Guard.")
+
+
 func test_blocks_with_a_creature_its_own_block_trigger_lets_survive_and_kill() -> void:
 	# The Combat Oracle resolves "whenever this creature blocks a creature" before combat
 	# damage, as the engine does. Without it, the 2/2 would be a chump block at safe life.

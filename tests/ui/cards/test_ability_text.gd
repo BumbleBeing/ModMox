@@ -22,6 +22,7 @@ const PRINTED: Dictionary[String, String] = {
 	"anointed_chorister": "Lifelink\n{4}{W}: This creature gets +3/+3 until end of turn.",
 	"arahbo_the_first_fang": "Each other Cat creature you control gets +1/+1.\nWhenever a nontoken Cat creature you control enters, create a 1/1 white Cat creature token.",
 	"arcane_sanctum": "This land enters tapped.\n{T}: Add {W}, {U}, or {B}.",
+	"ardenvale_tactician": "Flying",
 	"artillery_blast": "Artillery Blast deals damage to target tapped creature equal to 1 plus the number of basic land types among lands you control.",
 	"ash_barrens": "{T}: Add {C}.\nBasic landcycling {1}",
 	"assemble_the_players": "You may look at the top card of your library any time.\nOnce each turn, you may cast a creature spell with power 2 or less from the top of your library.",
@@ -30,6 +31,7 @@ const PRINTED: Dictionary[String, String] = {
 		+ "As long as equipped creature's toughness is greater than its power, it assigns combat damage equal to its toughness rather than its power.\n"
 		+ "Equip {1}",
 	"battlegrowth": "Put a +1/+1 counter on target creature.",
+	"benalish_marshal": "Each other creature you control gets +1/+1.",
 	"black_knight": "First strike\nProtection from white",
 	"brimaz_king_of_oreskos": "Vigilance\n"
 		+ "Whenever this creature attacks, create a 1/1 white Cat Soldier creature token with vigilance that's attacking.\n"
@@ -37,6 +39,8 @@ const PRINTED: Dictionary[String, String] = {
 	"bushwhack":"Choose one —\n"
 		+ "• Search your library for a basic land card, reveal it, put it into your hand, then shuffle.\n"
 		+ "• Target creature you control fights target creature you don't control.",
+	"bygone_bishop": "Flying\nWhenever you cast a creature spell with mana value 3 or less, create a Clue token.",
+	"celestial_unicorn": "Whenever you gain life, put a +1/+1 counter on this creature.",
 	"charmed_stray": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each other creature you control originally named Charmed Stray.",
 	"clarion_spirit": "Whenever you cast your second spell each turn, create a 1/1 white Spirit creature token with flying.",
 	"claws_out": "Affinity for Cats\nEach creature you control gets +2/+2 until end of turn.",
@@ -50,8 +54,10 @@ const PRINTED: Dictionary[String, String] = {
 	"cultbrand_cinder": "When this creature enters, put a -1/-1 counter on target creature.",
 	"dark_ritual": "Add {B}{B}{B}.",
 	"darksteel_axe": "Indestructible\nEquipped creature gets +2/+0.\nEquip {2}",
+	"dauntless_veteran": "Whenever this creature attacks, each creature you control gets +1/+1 until end of turn.",
 	"daybreak_charger": "When this creature enters, target creature gets +2/+0 until end of turn.",
 	"daydream": "Exile target creature you control. Return the exiled card to the battlefield under its owner's control with a +1/+1 counter on it.\nFlashback {2}{W}",
+	"dazzling_angel": "Flying\nWhenever another creature you control enters, you gain 1 life.",
 	"deep_analysis": "Target player draws two cards.\nFlashback—{1}{U}, Pay 3 life",
 	"defiant_strike": "Target creature gets +1/+0 until end of turn. Draw a card.",
 	"destroy_evil": "Choose one —\n"
@@ -132,6 +138,9 @@ const PRINTED: Dictionary[String, String] = {
 	"nyleas_presence": "Enchant land\nWhen this Aura enters, draw a card.\nEnchanted land is every basic land type in addition to its other types.",
 	"oblivion_ring": "When this enchantment enters, exile another target nonland permanent.\n"
 		+ "When this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.",
+	"oltec_matterweaver": "Whenever you cast a creature spell, choose one —\n"
+		+ "• Create a 1/1 colorless Gnome artifact creature token.\n"
+		+ "• Create a token that's a copy of target artifact token you control.",
 	"ominous_parcel": "{2}, {T}, Sacrifice this artifact: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.\n"
 		+ "{5}, {T}, Sacrifice this artifact: This artifact deals 4 damage to target creature.",
 	"opulent_palace": "This land enters tapped.\n{T}: Add {B}, {G}, or {U}.",
@@ -154,9 +163,13 @@ const PRINTED: Dictionary[String, String] = {
 	"resistance_reunited": "Target creature gets +2/+2 until end of turn. "
 		+ "Each equipped creature you control gains indestructible until end of turn.",
 	"resolute_reinforcements": "Flash\nWhen this creature enters, create a 1/1 white Soldier creature token.",
+	"roving_harper": "When this creature enters, draw a card.",
 	"sacred_peaks": "This land enters tapped.\n{T}: Add {R}.\n{T}: Add {W}.",
 	"samite_healer": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
 	"sandsteppe_citadel": "This land enters tapped.\n{T}: Add {W}, {B}, or {G}.",
+	"sanguine_evangelist": "Battle cry\n"
+		+ "When this creature enters, create a 1/1 black Bat creature token with flying.\n"
+		+ "When this creature dies, create a 1/1 black Bat creature token with flying.",
 	"savage_lands": "This land enters tapped.\n{T}: Add {B}, {R}, or {G}.",
 	"scythe_leopard": "Whenever a land you control enters, this creature gets +1/+1 until end of turn.",
 	"scythecat_cub": "Trample\nWhenever a land you control enters, put a +1/+1 counter on target creature you control. "
@@ -208,6 +221,7 @@ const PRINTED: Dictionary[String, String] = {
 ## Each authored Adventurer card's Adventure (engine ADR 0078), as its half reads: the same
 ## review as PRINTED's.
 const PRINTED_ADVENTURES: Dictionary[String, String] = {
+	"ardenvale_tactician": "Tap up to two target creatures.",
 	"faerie_guidemother": "Target creature gets +2/+1 until end of turn. It gains flying until end of turn.",
 	"most_decrepit_old_bird": "Mill four cards. Put an instant or sorcery card from among them into your hand.",
 }
@@ -1021,6 +1035,24 @@ func test_of_two_card_types_the_last_is_the_noun() -> void:
 	assert_eq(AbilityText.things(both), "artifact creatures")
 
 
+func test_a_token_copy_is_worded_as_oltec_matterweaver_words_it() -> void:
+	# CR 707.2.
+	var artifact_token: MmFilter = Scenario.all_of([Scenario.of_type(CardType.ARTIFACT), IsTokenFilter.new(),
+		ControlledByFilter.new()])
+	var one: CreateTokenCopyEffect = CreateTokenCopyEffect.new()
+	one.selection = Scenario.targeted(0)
+	var copier: TriggeredAbility = Scenario.triggered(Scenario.casts(Scenario.of_type(CardType.CREATURE), Whose.YOU), [one])
+	copier.targets = [Scenario.target(artifact_token)]
+	var two: CreateTokenCopyEffect = CreateTokenCopyEffect.new()
+	two.selection = SourceSelection.new()
+	two.amount = 2
+
+	assert_eq(AbilityText.of_ability(copier, "this creature"),
+		"Whenever you cast a creature spell, create a token that's a copy of target artifact token you control.")
+	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [two]), "this creature"),
+		"When this creature enters, create two tokens that are copies of this creature.")
+
+
 func test_token_and_nontoken_are_adjectives_and_a_subtype_stands_next_to_its_noun_with_no_comma() -> void:
 	var creature: MmFilter = Scenario.of_type(CardType.CREATURE)
 	var cat: MmFilter = Scenario.has_subtype("Cat")
@@ -1030,7 +1062,9 @@ func test_token_and_nontoken_are_adjectives_and_a_subtype_stands_next_to_its_nou
 
 	assert_eq(AbilityText.of_ability(maker, "this creature"),
 		"Whenever a nontoken Cat creature you control enters, create a 1/1 white Cat creature token.", "CR 111.1.")
-	assert_eq(AbilityText.things(Scenario.all_of([creature, IsTokenFilter.new()])), "token creatures")
+	assert_eq(AbilityText.things(Scenario.all_of([creature, IsTokenFilter.new()])), "creature tokens")
+	assert_eq(AbilityText.things(Scenario.all_of([IsTokenFilter.new(), creature])), "creature tokens", "Whatever the order.")
+	assert_eq(AbilityText.things(IsTokenFilter.new()), "tokens")
 	assert_eq(AbilityText.things(Scenario.all_of([cat, nontoken, Scenario.is_not(IsSourceFilter.new())])), "other nontoken Cats")
 	assert_eq(AbilityText.things(Scenario.all_of([creature, cat, Scenario.is_not(IsTappedFilter.new())])), "untapped Cat creatures")
 
@@ -1295,6 +1329,23 @@ func test_exalted_is_a_keyword_that_shares_a_line() -> void:
 	assert_eq(AbilityText.of_ability(ExaltedAbility.new(), "this creature"), "Exalted")
 	assert_true(AbilityText.is_keyword(ExaltedAbility.new()))
 	assert_eq(AbilityText.of_card(abilities, [CardType.CREATURE], [], "Sample"), "Exalted, flying")
+
+
+func test_battle_cry_is_a_keyword_that_shares_a_line() -> void:
+	var abilities: Array[MmAbility] = [FlyingAbility.new(), BattleCryAbility.new()]
+
+	assert_eq(AbilityText.of_ability(BattleCryAbility.new(), "this creature"), "Battle cry")
+	assert_true(AbilityText.is_keyword(BattleCryAbility.new()))
+	assert_eq(AbilityText.of_card(abilities, [CardType.CREATURE], [], "Sample"), "Flying, battle cry")
+
+
+func test_battle_crys_parts_are_worded_as_its_rule_says() -> void:
+	# CR 702.91a, as a Modification that copied its trigger and effect would read.
+	var battle_cry: BattleCryAbility = BattleCryAbility.new()
+	var parts: TriggeredAbility = Scenario.triggered(battle_cry.trigger, battle_cry.effects)
+
+	assert_eq(AbilityText.of_ability(parts, "this creature"),
+		"Whenever this creature attacks, each other attacking creature gets +1/+0 until end of turn.")
 
 
 func test_a_creature_attacking_alone_is_worded_as_exalted_reminds_it() -> void:

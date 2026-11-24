@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_kufqo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_had5d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_q88rw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_e7luj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_syjkk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="4_mf64h"]
+[ext_resource type="Resource" path="res://content/tokens/clue.tres" id="5_y2ocl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_3raet"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_q8vda"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_x7whx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="9_xw4cv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="10_oxhux"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mana_value_filter.gd" id="11_wuvdw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="12_6ekv0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="13_ftttj"]
+
+[sub_resource type="Resource" id="Resource_itljn"]
+script = ExtResource("2_had5d")
+
+[sub_resource type="Resource" id="Resource_1xvxb"]
+script = ExtResource("4_mf64h")
+token = ExtResource("5_y2ocl")
+
+[sub_resource type="Resource" id="Resource_5pfo6"]
+script = ExtResource("10_oxhux")
+
+[sub_resource type="Resource" id="Resource_c3mw5"]
+script = ExtResource("11_wuvdw")
+amount = 3
+
+[sub_resource type="Resource" id="Resource_7kr3o"]
+script = ExtResource("12_6ekv0")
+filters = Array[ExtResource("9_xw4cv")]([SubResource("Resource_5pfo6"), SubResource("Resource_c3mw5")])
+
+[sub_resource type="Resource" id="Resource_d1rel"]
+script = ExtResource("13_ftttj")
+filter = SubResource("Resource_7kr3o")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_wajq7"]
+script = ExtResource("7_q8vda")
+trigger = SubResource("Resource_d1rel")
+effects = Array[ExtResource("3_e7luj")]([SubResource("Resource_1xvxb")])
+
+[sub_resource type="Resource" id="Resource_6cswx"]
+script = ExtResource("2_q88rw")
+generic = 2
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_syjkk")
+name = "Bygone Bishop"
+card_types = Array[int]([1])
+subtypes = Array[String](["Spirit", "Cleric"])
+mana_cost = SubResource("Resource_6cswx")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_kufqo")]([SubResource("Resource_itljn"), SubResource("Resource_wajq7")])
+rarity = 2
