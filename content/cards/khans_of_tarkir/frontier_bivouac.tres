@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_qt08h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_av3n2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_uw4i2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_tqhih"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_tkwtv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_0iptc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_6op5y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_bdqe5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_compn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_i2781"]
+
+[sub_resource type="Resource" id="Resource_6h7nt"]
+script = ExtResource("2_av3n2")
+
+[sub_resource type="Resource" id="Resource_gpbsd"]
+script = ExtResource("4_tkwtv")
+
+[sub_resource type="Resource" id="Resource_8b4g6"]
+script = ExtResource("6_6op5y")
+value = 1
+
+[sub_resource type="Resource" id="Resource_pkbdd"]
+script = ExtResource("7_bdqe5")
+amount = SubResource("Resource_8b4g6")
+color_choices = Array[int]([4, 1, 3])
+
+[sub_resource type="Resource" id="Resource_chqt3"]
+script = ExtResource("8_compn")
+costs = Array[ExtResource("3_tqhih")]([SubResource("Resource_gpbsd")])
+effects = Array[ExtResource("5_0iptc")]([SubResource("Resource_pkbdd")])
+
+[resource]
+script = ExtResource("2_uw4i2")
+name = "Frontier Bivouac"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_qt08h")]([SubResource("Resource_6h7nt"), SubResource("Resource_chqt3")])
+rarity = 1

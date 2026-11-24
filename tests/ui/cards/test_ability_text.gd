@@ -21,6 +21,7 @@ const PRINTED: Dictionary[String, String] = {
 	"ankh_of_mishra": "Whenever a land enters, this artifact deals 2 damage to that land's controller.",
 	"anointed_chorister": "Lifelink\n{4}{W}: This creature gets +3/+3 until end of turn.",
 	"arahbo_the_first_fang": "Each other Cat creature you control gets +1/+1.\nWhenever a nontoken Cat creature you control enters, create a 1/1 white Cat creature token.",
+	"arcane_sanctum": "This land enters tapped.\n{T}: Add {W}, {U}, or {B}.",
 	"artillery_blast": "Artillery Blast deals damage to target tapped creature equal to 1 plus the number of basic land types among lands you control.",
 	"ash_barrens": "{T}: Add {C}.\nBasic landcycling {1}",
 	"assemble_the_players": "You may look at the top card of your library any time.\nOnce each turn, you may cast a creature spell with power 2 or less from the top of your library.",
@@ -38,11 +39,13 @@ const PRINTED: Dictionary[String, String] = {
 		+ "• Target creature you control fights target creature you don't control.",
 	"charmed_stray": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each other creature you control originally named Charmed Stray.",
 	"claws_out": "Affinity for Cats\nEach creature you control gets +2/+2 until end of turn.",
+	"cogwork_wrestler": "Flash\nWhen this creature enters, target creature an opponent controls gets -2/-0 until end of turn.",
 	"contaminated_aquifer": "This land enters tapped.\n{T}: Add {U}.\n{T}: Add {B}.",
 	"coordinated_maneuver": "Choose one —\n"
 		+ "• Coordinated Maneuver deals damage to target creature equal to the number of creatures you control.\n"
 		+ "• Destroy target enchantment.",
 	"counterspell": "Counter target spell.",
+	"crumbling_necropolis": "This land enters tapped.\n{T}: Add {U}, {B}, or {R}.",
 	"cultbrand_cinder": "When this creature enters, put a -1/-1 counter on target creature.",
 	"dark_ritual": "Add {B}{B}{B}.",
 	"darksteel_axe": "Indestructible\nEquipped creature gets +2/+0.\nEquip {2}",
@@ -53,6 +56,7 @@ const PRINTED: Dictionary[String, String] = {
 		+ "• Destroy target creature with toughness 4 or greater.\n"
 		+ "• Destroy target enchantment.",
 	"drudge_skeletons": "{B}: Regenerate this creature.",
+	"eidolon_of_philosophy": "{6}{U}, Sacrifice this creature: Draw three cards.",
 	"elvish_archers": "First strike",
 	"explore": "You may play an additional land this turn. Draw a card.",
 	"faerie_guidemother": "Flying",
@@ -63,9 +67,11 @@ const PRINTED: Dictionary[String, String] = {
 	"fog": "Prevent all combat damage that would be dealt this turn.",
 	"frondland_felidar": "Vigilance\nEach creature you control with vigilance has \"{1}, {T}: Tap target creature.\"",
 	"forest": "({T}: Add {G}.)",
+	"frontier_bivouac": "This land enters tapped.\n{T}: Add {G}, {U}, or {R}.",
 	"frozen_shade": "{B}: This creature gets +1/+1 until end of turn.",
 	"gaeas_might": "Target creature gets +X/+X until end of turn, where X is the number of basic land types among lands you control.",
 	"garrison_cat": "When this creature dies, create a 1/1 white Human Soldier creature token.",
+	"gearsmith_prodigy": "This creature gets +1/+0 as long as you control an artifact.",
 	"geothermal_bog": "This land enters tapped.\n{T}: Add {B}.\n{T}: Add {R}.",
 	"giant_growth": "Target creature gets +3/+3 until end of turn.",
 	"giant_spider": "Reach",
@@ -87,6 +93,7 @@ const PRINTED: Dictionary[String, String] = {
 	"ivory_tower": "At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.",
 	"jewel_thief": "Vigilance, trample\nWhen this creature enters, create a Treasure token.",
 	"jodahs_codex": "{5}, {T}: Draw a card. This ability costs {1} less to activate for each basic land type among lands you control.",
+	"jungle_shrine": "This land enters tapped.\n{T}: Add {R}, {G}, or {W}.",
 	"keldon_warlord": "This creature's power and toughness are each equal to the number of non-Wall creatures you control.",
 	"kemba_kha_enduring": "Whenever a Cat creature you control enters, attach up to one target Equipment you control to that creature.\nEach equipped creature you control gets +1/+1.\n{3}{W}{W}: Create a 2/2 white Cat creature token.",
 	"king_of_the_pride": "Each other Cat creature you control gets +2/+1.",
@@ -104,16 +111,22 @@ const PRINTED: Dictionary[String, String] = {
 	"malamet_war_scribe": "When this creature enters, each creature you control gets +2/+1 until end of turn.",
 	"maned_serval": "Vigilance",
 	"mind_stone": "{T}: Add {C}.\n{1}, {T}, Sacrifice this artifact: Draw a card.",
+	"mist_cloaked_herald": "This creature can't be blocked.",
 	"molten_tributary": "This land enters tapped.\n{T}: Add {U}.\n{T}: Add {R}.",
 	"most_decrepit_old_bird": "Flying\nThis creature gets +1/+1 as long as there are seven or more cards in your graveyard.",
 	"mountain": "({T}: Add {R}.)",
 	"myr_scrapling": "Sacrifice this creature: Put a +1/+1 counter on target creature.",
+	"mystic_monastery": "This land enters tapped.\n{T}: Add {U}, {R}, or {W}.",
+	"nephalia_smuggler": "{3}{U}, {T}: Exile another target creature you control. Return the exiled card to the battlefield under its owner's control.",
+	"network_disruptor": "Flying\nWhen this creature enters, tap target permanent.",
 	"nishoba_brawler": "Trample\nThis creature's power is equal to the number of basic land types among lands you control.",
+	"nomad_outpost": "This land enters tapped.\n{T}: Add {R}, {W}, or {B}.",
 	"nyleas_presence": "Enchant land\nWhen this Aura enters, draw a card.\nEnchanted land is every basic land type in addition to its other types.",
 	"oblivion_ring": "When this enchantment enters, exile another target nonland permanent.\n"
 		+ "When this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.",
 	"ominous_parcel": "{2}, {T}, Sacrifice this artifact: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.\n"
 		+ "{5}, {T}, Sacrifice this artifact: This artifact deals 4 damage to target creature.",
+	"opulent_palace": "This land enters tapped.\n{T}: Add {B}, {G}, or {U}.",
 	"oreskos_explorer": "When this creature enters, search your library for up to X Plains cards, reveal them, put them into your hand, "
 		+ "then shuffle, where X is the number of players who control more lands than you.",
 	"ornery_kudu": "When this creature enters, put a -1/-1 counter on target creature you control.",
@@ -134,10 +147,13 @@ const PRINTED: Dictionary[String, String] = {
 		+ "Each equipped creature you control gains indestructible until end of turn.",
 	"sacred_peaks": "This land enters tapped.\n{T}: Add {R}.\n{T}: Add {W}.",
 	"samite_healer": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
+	"sandsteppe_citadel": "This land enters tapped.\n{T}: Add {W}, {B}, or {G}.",
+	"savage_lands": "This land enters tapped.\n{T}: Add {B}, {R}, or {G}.",
 	"scythe_leopard": "Whenever a land you control enters, this creature gets +1/+1 until end of turn.",
 	"scythecat_cub": "Trample\nWhenever a land you control enters, put a +1/+1 counter on target creature you control. "
 		+ "If this is the second time this ability has resolved this turn, double the number of +1/+1 counters on that creature instead.",
 	"seam_rip": "When this enchantment enters, exile target nonland permanent an opponent controls with mana value 2 or less until this enchantment leaves the battlefield.",
+	"seaside_citadel": "This land enters tapped.\n{T}: Add {G}, {W}, or {U}.",
 	"serra_angel": "Flying, vigilance",
 	"shatter": "Destroy target artifact.",
 	"shivan_dragon": "Flying\n{R}: This creature gets +1/+0 until end of turn.",
@@ -581,6 +597,17 @@ func test_mana_of_any_color_is_worded_as_oracle_words_it() -> void:
 	var ability: ActivatedAbility = Scenario.activated(null, [TapCost.new()], [Scenario.any_color()])
 
 	assert_eq(AbilityText.of_ability(ability, "this artifact"), "{T}: Add one mana of any color.")
+
+
+func test_mana_of_one_of_some_colors_is_worded_as_oracle_words_it() -> void:
+	var three: ActivatedAbility = Scenario.activated(null, [TapCost.new()],
+		[Scenario.one_of_colors([MmMana.Type.GREEN, MmMana.Type.BLUE, MmMana.Type.RED])])
+	var two: ActivatedAbility = Scenario.activated(null, [TapCost.new()],
+		[Scenario.one_of_colors([MmMana.Type.WHITE, MmMana.Type.BLUE])])
+
+	assert_eq(AbilityText.of_ability(three, "this land"), "{T}: Add {G}, {U}, or {R}.", "In the order printed.")
+	assert_eq(AbilityText.of_ability(two, "this land"), "{T}: Add {W} or {U}.")
+	assert_eq(AbilityText.option_of(three, "this land", MmMana.Type.BLUE), "{T}: Add {U}.", "ADR 0072.")
 
 
 func test_an_option_row_says_which_color_its_activation_adds() -> void:
@@ -1642,6 +1669,18 @@ func test_mill_from_among_them_and_a_graveyard_count_are_worded_as_oracle_does()
 	assert_eq(_text(Scenario.free_secrets()), "Mill four cards. Put an instant or sorcery card from among them into your hand.")
 	assert_eq(_text(Scenario.free_mill("Glimpse", 1)), "Mill a card.")
 	assert_eq(_text(Scenario.free_mill("Thought Scour", 2, true)), "Each opponent mills two cards.")
+
+
+func test_a_count_of_permanents_you_control_as_a_condition_says_you_control_them() -> void:
+	# After Gearsmith Prodigy: "This creature gets +1/+0 as long as you control an artifact."
+	var artifact: HasCardTypeFilter = Scenario.of_type(MmCardTypes.CardType.ARTIFACT)
+	var one: MmCardDefinition = Scenario.creature("Prodigy", 1, 2, [Scenario.continuous_static(
+		[Scenario.modify_pt(1, 0, SourceSelection.new())], Scenario.at_least(Scenario.count_yours(artifact), 1))])
+	var three: MmCardDefinition = Scenario.creature("Smith", 1, 2, [Scenario.continuous_static(
+		[Scenario.modify_pt(2, 2, SourceSelection.new())], Scenario.at_least(Scenario.count_yours(artifact), 3))])
+
+	assert_eq(_text(one), "This creature gets +1/+0 as long as you control an artifact.")
+	assert_eq(_text(three), "This creature gets +2/+2 as long as you control three or more artifacts.")
 
 
 func _text(definition: MmCardDefinition) -> String:

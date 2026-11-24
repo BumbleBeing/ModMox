@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_wen25"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_ggri1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_l4lux"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_vyeqs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_qb4ag"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_21djt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_nw52c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_cb18f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_8wf82"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_4vjxi"]
+
+[sub_resource type="Resource" id="Resource_8lxef"]
+script = ExtResource("2_ggri1")
+
+[sub_resource type="Resource" id="Resource_spfa3"]
+script = ExtResource("4_qb4ag")
+
+[sub_resource type="Resource" id="Resource_30x6s"]
+script = ExtResource("6_nw52c")
+value = 1
+
+[sub_resource type="Resource" id="Resource_ixeem"]
+script = ExtResource("7_cb18f")
+amount = SubResource("Resource_30x6s")
+color_choices = Array[int]([0, 2, 4])
+
+[sub_resource type="Resource" id="Resource_k0ro6"]
+script = ExtResource("8_8wf82")
+costs = Array[ExtResource("3_vyeqs")]([SubResource("Resource_spfa3")])
+effects = Array[ExtResource("5_21djt")]([SubResource("Resource_ixeem")])
+
+[resource]
+script = ExtResource("2_l4lux")
+name = "Sandsteppe Citadel"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_wen25")]([SubResource("Resource_8lxef"), SubResource("Resource_k0ro6")])
+rarity = 1

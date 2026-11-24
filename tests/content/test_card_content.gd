@@ -1418,6 +1418,57 @@ func test_lightshield_parry_pumps_a_creature_when_cast_and_draws_a_card_when_cyc
 		"Cycled, its spell does not happen.")
 
 
+func test_crumbling_necropolis_enters_tapped_and_later_taps_for_each_of_its_three_colors() -> void:
+	var necropolis: MmCardDefinition = _card("shards_of_alara", "crumbling_necropolis")
+	var engine: MmEngine = MmEngine.start(Scenario.setup_with(Scenario.copies(necropolis, 40), Scenario.copies(Scenario.vanilla("Card"), 40)))
+	assert_eq(Scenario.play_until_step(engine, 1, MmTurn.Step.PRECOMBAT_MAIN), "")
+
+	var played: int = Scenario.play_first_land(engine)
+
+	assert_ne(played, -1)
+	assert_true(engine.game_state().object(played).is_tapped, "This land enters tapped.")
+	assert_eq(Scenario.play_until_step(engine, 3, MmTurn.Step.PRECOMBAT_MAIN), "")
+	assert_false(engine.game_state().object(played).is_tapped, "Untapped in the Hero's next untap step.")
+	var actions: Array[MmAction] = (engine.pending_decision() as PriorityDecision).actions
+	assert_eq(Scenario.colors_offered(actions, played), [MmMana.Type.BLUE, MmMana.Type.BLACK, MmMana.Type.RED])
+	assert_eq(Scenario.activate_for(engine, played, MmMana.Type.BLACK), "")
+	assert_eq(engine.hero().mana_pool()[0].type, MmMana.Type.BLACK)
+
+
+func test_nephalia_smuggler_exiles_another_creature_you_control_and_returns_it_as_a_new_object() -> void:
+	var smuggler: MmCardDefinition = Scenario.free_copy(_card("avacyn_restored", "nephalia_smuggler"))
+	var bear: MmCardDefinition = Scenario.creature("Bear", 2, 2)
+	var creatures: Array[MmCardDefinition] = [smuggler, bear]
+	var extras: Array[MmCardDefinition] = [Scenario.free_land_fetch()]
+	var no_cards: Array[MmCardDefinition] = []
+	var setup: MmEncounterSetup = Scenario.combat_setup(creatures, no_cards, [extras[0], Scenario.basic_land("Island")])
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, creatures, no_cards, extras, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed board.")
+	if engine == null:
+		return
+	assert_eq(Scenario.fetch_lands(engine, ["Island", "Island", "Island", "Island"]), "")
+	var hero: int = engine.hero().id
+	var smuggler_id: int = Scenario.permanent_named(engine, hero, "Nephalia Smuggler")
+	var bear_id: int = Scenario.permanent_named(engine, hero, "Bear")
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	assert_eq(engine.submit(Scenario.activate_index(decision, smuggler_id)), "")
+	var choosing: ChooseTargetDecision = engine.pending_decision() as ChooseTargetDecision
+	assert_not_null(choosing)
+	assert_false(choosing.candidates.any(func(candidate: MmReference) -> bool:
+		return candidate.equals(MmReference.to_object(smuggler_id))), "Another target creature.")
+
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(bear_id)), "")
+	assert_eq(Scenario.auto_pay(engine), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var returned: int = Scenario.permanent_named(engine, hero, "Bear")
+	assert_ne(returned, -1, "The Bear came back.")
+	assert_ne(returned, bear_id, "ADR 0008: a new object.")
+	assert_eq(engine.game_state().object(returned).controller_id, hero)
+	assert_eq(engine.game_state().exile.size(), 0)
+	assert_true(engine.game_state().object(smuggler_id).is_tapped, "{T} was paid.")
+
+
 func test_topiary_panther_landcycles_for_a_forest_paid_by_two_forests() -> void:
 	var panther: MmCardDefinition = _card("murders_at_karlov_manor", "topiary_panther")
 	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha("forest"), 20, panther, 20)

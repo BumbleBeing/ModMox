@@ -68,6 +68,15 @@
 		"toughness": "2",
 		"type_line": "Legendary Creature — Cat Avatar"
 	},
+	"arcane_sanctum": {
+		"mana_cost": "",
+		"name": "Arcane Sanctum",
+		"oracle_id": "7d7cf15c-06b9-4062-a1eb-32614c458a3b",
+		"oracle_text": "This land enters tapped.\n{T}: Add {W}, {U}, or {B}.",
+		"rarity": "uncommon",
+		"set_name": "Shards of Alara",
+		"type_line": "Land"
+	},
 	"artillery_blast": {
 		"mana_cost": "{1}{W}",
 		"name": "Artillery Blast",
@@ -175,6 +184,17 @@
 		"set_name": "Foundations",
 		"type_line": "Instant"
 	},
+	"cogwork_wrestler": {
+		"mana_cost": "{U}",
+		"name": "Cogwork Wrestler",
+		"oracle_id": "db27e3f0-5750-4c4b-9da9-70c3ab627f9c",
+		"oracle_text": "Flash\nWhen this creature enters, target creature an opponent controls gets -2/-0 until end of turn.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "The Lost Caverns of Ixalan",
+		"toughness": "2",
+		"type_line": "Artifact Creature — Gnome"
+	},
 	"contaminated_aquifer": {
 		"mana_cost": "",
 		"name": "Contaminated Aquifer",
@@ -212,6 +232,15 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "4",
 		"type_line": "Creature — Wurm"
+	},
+	"crumbling_necropolis": {
+		"mana_cost": "",
+		"name": "Crumbling Necropolis",
+		"oracle_id": "7190debf-708b-4f41-9714-0d0a5bd5a74e",
+		"oracle_text": "This land enters tapped.\n{T}: Add {U}, {B}, or {R}.",
+		"rarity": "uncommon",
+		"set_name": "Shards of Alara",
+		"type_line": "Land"
 	},
 	"cultbrand_cinder": {
 		"mana_cost": "{4}{B/R}",
@@ -288,6 +317,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "1",
 		"type_line": "Creature — Skeleton"
+	},
+	"eidolon_of_philosophy": {
+		"mana_cost": "{U}",
+		"name": "Eidolon of Philosophy",
+		"oracle_id": "65acea17-c900-4574-b22f-910285552aa2",
+		"oracle_text": "{6}{U}, Sacrifice this creature: Draw three cards.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Theros Beyond Death",
+		"toughness": "2",
+		"type_line": "Enchantment Creature — Spirit"
 	},
 	"elvish_archers": {
 		"mana_cost": "{1}{G}",
@@ -393,6 +433,15 @@
 		"toughness": "5",
 		"type_line": "Creature — Cat Beast"
 	},
+	"frontier_bivouac": {
+		"mana_cost": "",
+		"name": "Frontier Bivouac",
+		"oracle_id": "e4cf6c2f-0f1e-4980-9ef9-e4eabcae42a9",
+		"oracle_text": "This land enters tapped.\n{T}: Add {G}, {U}, or {R}.",
+		"rarity": "uncommon",
+		"set_name": "Khans of Tarkir",
+		"type_line": "Land"
+	},
 	"frozen_shade": {
 		"mana_cost": "{2}{B}",
 		"name": "Frozen Shade",
@@ -423,6 +472,17 @@
 		"set_name": "Ikoria: Lair of Behemoths",
 		"toughness": "1",
 		"type_line": "Creature — Cat"
+	},
+	"gearsmith_prodigy": {
+		"mana_cost": "{U}",
+		"name": "Gearsmith Prodigy",
+		"oracle_id": "589d6b67-17ad-4ca7-9b0c-1b919bf03a27",
+		"oracle_text": "This creature gets +1/+0 as long as you control an artifact.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Core Set 2019",
+		"toughness": "2",
+		"type_line": "Creature — Human Artificer"
 	},
 	"geothermal_bog": {
 		"mana_cost": "",
@@ -693,6 +753,15 @@
 		"set_name": "Dominaria United",
 		"type_line": "Artifact — Book"
 	},
+	"jungle_shrine": {
+		"mana_cost": "",
+		"name": "Jungle Shrine",
+		"oracle_id": "2e69537c-c898-4e13-a72d-ce3957a90304",
+		"oracle_text": "This land enters tapped.\n{T}: Add {R}, {G}, or {W}.",
+		"rarity": "uncommon",
+		"set_name": "Shards of Alara",
+		"type_line": "Land"
+	},
 	"keldon_warlord": {
 		"mana_cost": "{2}{R}{R}",
 		"name": "Keldon Warlord",
@@ -725,6 +794,17 @@
 		"set_name": "Modern Horizons",
 		"toughness": "1",
 		"type_line": "Creature — Cat"
+	},
+	"kraken_hatchling": {
+		"mana_cost": "{U}",
+		"name": "Kraken Hatchling",
+		"oracle_id": "08e6c786-d553-4c23-9137-cfad84146739",
+		"oracle_text": "",
+		"power": "0",
+		"rarity": "common",
+		"set_name": "Zendikar",
+		"toughness": "4",
+		"type_line": "Creature — Kraken"
 	},
 	"law_rune_enforcer": {
 		"mana_cost": "{W}",
@@ -881,6 +961,17 @@
 		"set_name": "Weatherlight",
 		"type_line": "Artifact"
 	},
+	"mist_cloaked_herald": {
+		"mana_cost": "{U}",
+		"name": "Mist-Cloaked Herald",
+		"oracle_id": "74255add-2894-4c31-81c1-d38873fa325f",
+		"oracle_text": "This creature can't be blocked.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Rivals of Ixalan",
+		"toughness": "1",
+		"type_line": "Creature — Merfolk Warrior"
+	},
 	"molten_tributary": {
 		"mana_cost": "",
 		"name": "Molten Tributary",
@@ -944,6 +1035,37 @@
 		"toughness": "1",
 		"type_line": "Artifact Creature — Myr"
 	},
+	"mystic_monastery": {
+		"mana_cost": "",
+		"name": "Mystic Monastery",
+		"oracle_id": "834b8f71-9a45-42ae-9e99-e749fa6fb45e",
+		"oracle_text": "This land enters tapped.\n{T}: Add {U}, {R}, or {W}.",
+		"rarity": "uncommon",
+		"set_name": "Duel Decks: Speed vs. Cunning",
+		"type_line": "Land"
+	},
+	"nephalia_smuggler": {
+		"mana_cost": "{U}",
+		"name": "Nephalia Smuggler",
+		"oracle_id": "f96a2aa6-3259-4bb6-92cd-4d17215d04d0",
+		"oracle_text": "{3}{U}, {T}: Exile another target creature you control, then return that card to the battlefield under your control.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Avacyn Restored",
+		"toughness": "1",
+		"type_line": "Creature — Human Rogue"
+	},
+	"network_disruptor": {
+		"mana_cost": "{U}",
+		"name": "Network Disruptor",
+		"oracle_id": "0d64d150-1716-4da4-9cfe-ee7749b89918",
+		"oracle_text": "Flying\nWhen this creature enters, tap target permanent.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "1",
+		"type_line": "Artifact Creature — Moonfolk Rogue"
+	},
 	"nishoba_brawler": {
 		"mana_cost": "{1}{G}",
 		"name": "Nishoba Brawler",
@@ -954,6 +1076,15 @@
 		"set_name": "Dominaria United",
 		"toughness": "3",
 		"type_line": "Creature — Cat Warrior"
+	},
+	"nomad_outpost": {
+		"mana_cost": "",
+		"name": "Nomad Outpost",
+		"oracle_id": "4619de7e-3d6e-4c6b-8e6e-e24db324839d",
+		"oracle_text": "This land enters tapped.\n{T}: Add {R}, {W}, or {B}.",
+		"rarity": "uncommon",
+		"set_name": "Duel Decks: Speed vs. Cunning",
+		"type_line": "Land"
 	},
 	"nyleas_presence": {
 		"mana_cost": "{1}{G}",
@@ -981,6 +1112,15 @@
 		"rarity": "common",
 		"set_name": "Streets of New Capenna",
 		"type_line": "Artifact"
+	},
+	"opulent_palace": {
+		"mana_cost": "",
+		"name": "Opulent Palace",
+		"oracle_id": "f9e7e855-1e3b-42d3-91b0-64ba8b5b8982",
+		"oracle_text": "This land enters tapped.\n{T}: Add {B}, {G}, or {U}.",
+		"rarity": "uncommon",
+		"set_name": "Khans of Tarkir",
+		"type_line": "Land"
 	},
 	"oreskos_explorer": {
 		"mana_cost": "{1}{W}",
@@ -1173,6 +1313,24 @@
 		"toughness": "2",
 		"type_line": "Creature — Cat"
 	},
+	"sandsteppe_citadel": {
+		"mana_cost": "",
+		"name": "Sandsteppe Citadel",
+		"oracle_id": "544dbabd-cbfc-40da-a5ba-2fea9cddb453",
+		"oracle_text": "This land enters tapped.\n{T}: Add {W}, {B}, or {G}.",
+		"rarity": "uncommon",
+		"set_name": "Khans of Tarkir",
+		"type_line": "Land"
+	},
+	"savage_lands": {
+		"mana_cost": "",
+		"name": "Savage Lands",
+		"oracle_id": "a3292406-3f49-42d6-a547-e43dd5797f84",
+		"oracle_text": "This land enters tapped.\n{T}: Add {B}, {R}, or {G}.",
+		"rarity": "uncommon",
+		"set_name": "Shards of Alara",
+		"type_line": "Land"
+	},
 	"savannah_lions": {
 		"mana_cost": "{W}",
 		"name": "Savannah Lions",
@@ -1225,6 +1383,15 @@
 		"rarity": "uncommon",
 		"set_name": "Edge of Eternities",
 		"type_line": "Enchantment"
+	},
+	"seaside_citadel": {
+		"mana_cost": "",
+		"name": "Seaside Citadel",
+		"oracle_id": "2ae77795-6a80-498b-bf69-6fd612f601e4",
+		"oracle_text": "This land enters tapped.\n{T}: Add {G}, {W}, or {U}.",
+		"rarity": "uncommon",
+		"set_name": "Shards of Alara",
+		"type_line": "Land"
 	},
 	"serra_angel": {
 		"mana_cost": "{3}{W}{W}",

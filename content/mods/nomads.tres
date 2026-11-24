@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="Mod" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_modification.gd" id="1_f773l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_1fyfs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="3_31lf3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/sacrifice_this_cost.gd" id="4_0m571"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_glnnb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_b5e1b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="7_8f5yd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/gain_life_effect.gd" id="8_wb15t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="9_vfno0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="10_2d2jc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_6u7wt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/add_ability_modification.gd" id="12_n7hro"]
+[ext_resource type="Script" path="res://run/mod.gd" id="13_j0mgu"]
+
+[sub_resource type="Resource" id="Resource_vjqp0"]
+script = ExtResource("3_31lf3")
+
+[sub_resource type="Resource" id="Resource_tko2x"]
+script = ExtResource("4_0m571")
+
+[sub_resource type="Resource" id="Resource_3rhuy"]
+script = ExtResource("6_b5e1b")
+value = 4
+
+[sub_resource type="Resource" id="Resource_ynhpe"]
+script = ExtResource("7_8f5yd")
+
+[sub_resource type="Resource" id="Resource_crjd4"]
+script = ExtResource("8_wb15t")
+amount = SubResource("Resource_3rhuy")
+players = SubResource("Resource_ynhpe")
+
+[sub_resource type="Resource" id="Resource_8lemu"]
+script = ExtResource("9_vfno0")
+symbols = Array[int]([0])
+
+[sub_resource type="Resource" id="Resource_w628h"]
+script = ExtResource("10_2d2jc")
+mana_cost = SubResource("Resource_8lemu")
+costs = Array[ExtResource("2_1fyfs")]([SubResource("Resource_vjqp0"), SubResource("Resource_tko2x")])
+effects = Array[ExtResource("5_glnnb")]([SubResource("Resource_crjd4")])
+
+[sub_resource type="Resource" id="Resource_i7ddu"]
+script = ExtResource("12_n7hro")
+ability = SubResource("Resource_w628h")
+
+[resource]
+script = ExtResource("13_j0mgu")
+name = "Nomad's"
+augmentation = Array[ExtResource("1_f773l")]([SubResource("Resource_i7ddu")])
+card_types = Array[int]([4])

@@ -2687,6 +2687,24 @@ static func any_color() -> AddManaEffect:
 	return effect
 
 
+## "Add {U}, {B}, or {R}": one mana of one of [param colors], its color chosen as its ability
+## is activated (ADR 0072).
+static func one_of_colors(colors: Array[MmMana.Type]) -> AddManaEffect:
+	var effect: AddManaEffect = AddManaEffect.new()
+	effect.color_choices = colors.duplicate()
+	effect.amount = constant(1)
+	return effect
+
+
+## A nonbasic land named [param card_name] with "{T}: Add [one of param colors]", such as
+## Crumbling Necropolis's "{T}: Add {U}, {B}, or {R}." without its entering tapped.
+static func choice_land(card_name: String, colors: Array[MmMana.Type]) -> MmCardDefinition:
+	var definition: MmCardDefinition = vanilla(card_name)
+	definition.card_types = [MmCardTypes.CardType.LAND]
+	definition.abilities = [activated(null, [TapCost.new()], [one_of_colors(colors)])]
+	return definition
+
+
 ## A Treasure Token Definition made in code (CR 111.10a): a colorless Treasure artifact token
 ## with "{T}, Sacrifice this token: Add one mana of any color." Load
 ## content/tokens/treasure.tres when its art matters.

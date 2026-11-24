@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_khev3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_3e0k4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_hltte"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_gcdft"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/sacrifice_this_cost.gd" id="3_mn8tb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_fbpsl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_n4cdw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="6_jvplm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="7_30iot"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="9_shk3y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_ubhek"]
+
+[sub_resource type="Resource" id="Resource_nu5kv"]
+script = ExtResource("3_mn8tb")
+
+[sub_resource type="Resource" id="Resource_l4poq"]
+script = ExtResource("5_n4cdw")
+value = 3
+
+[sub_resource type="Resource" id="Resource_gbm06"]
+script = ExtResource("6_jvplm")
+
+[sub_resource type="Resource" id="Resource_m0jv2"]
+script = ExtResource("7_30iot")
+amount = SubResource("Resource_l4poq")
+players = SubResource("Resource_gbm06")
+
+[sub_resource type="Resource" id="Resource_ocd8o"]
+script = ExtResource("2_hltte")
+generic = 6
+symbols = Array[int]([1])
+
+[sub_resource type="Resource" id="Resource_rbms1"]
+script = ExtResource("9_shk3y")
+mana_cost = SubResource("Resource_ocd8o")
+costs = Array[ExtResource("2_3e0k4")]([SubResource("Resource_nu5kv")])
+effects = Array[ExtResource("4_fbpsl")]([SubResource("Resource_m0jv2")])
+
+[sub_resource type="Resource" id="Resource_gcwth"]
+script = ExtResource("2_hltte")
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_gcdft")
+name = "Eidolon of Philosophy"
+card_types = Array[int]([2, 1])
+subtypes = Array[String](["Spirit"])
+mana_cost = SubResource("Resource_gcwth")
+power = 1
+toughness = 2
+abilities = Array[ExtResource("1_khev3")]([SubResource("Resource_rbms1")])

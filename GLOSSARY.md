@@ -195,7 +195,7 @@ One of the three places a card has for Mods, Hexes included. A basic land has th
 _Avoid_: Mod pip, socket, upgrade slot
 
 **Mod Icon**:
-A Mod's picture: a 32 × 32 pixel cog, the same for every Mod, in its Rarity's color: gray, silver, gold, orange and light purple. Rare's and Mythic's have a sheen, a bright band across the cog that deepens on either side, gold to bronze and orange to red; the others are flat. It has no ground of its own: it is drawn straight on the parchment, as an Armor Icon is, since the cog is its Rarity's color itself. It is shown wherever a Mod is held or offered as an Item: on its entry in the Satchel, at a Trove and at a Workshop. A Mod on a card shows in its Mod Slot instead, never as the cog, and a Hex, which is never held, has no Mod Icon.
+A Mod's picture: a 32 × 32 pixel cog, the same for every Mod, in its Rarity's color: gray, silver, gold, orange and light purple. Rare's and Mythic's have a sheen, a bright band across the cog that deepens on either side, gold to bronze and orange to red; the others are flat. It has no ground of its own: it is drawn straight on the parchment, as an Armor Icon is, since the cog is its Rarity's color itself. It is shown wherever a Mod is held or offered as an Item: on its entry in the Satchel, at a Trove and at a Workshop, and on its tile in the Modify Window, where it turns, a quarter turn clockwise every three seconds as the Logo's cogs do, if the Mod can go on the card, and is darkened and still if not. A Mod on a card shows in its Mod Slot instead, never as the cog, and a Hex, which is never held, has no Mod Icon.
 _Avoid_: Mod art, mod sprite, cog (the shape, not the term), Mod Slot (the place on a card, not the picture)
 
 **Armor**:
@@ -329,7 +329,7 @@ The unsaved copy of a Deck being edited in the deckbuilder. Saving writes it to 
 _Avoid_: Draft (a Magic term), deck in progress, scratch deck
 
 **Modify Window**:
-The window in the deckbuilder where a held Mod is applied to the selected card. It shows every kind of Mod the Hero holds, the card as it is, and the card as the chosen Mod would make it, and asks once more before applying, because applying is final.
+The window in the deckbuilder where a held Mod is applied to the selected card, edged in the Steel Rim. It shows every kind of Mod the Hero holds, each with its Mod Icon, the card as it is, and the card as the chosen Mod would make it, and asks once more before applying, because applying is final.
 _Avoid_: Mod popup, mod dialog
 
 **Collection Window**:
@@ -520,7 +520,7 @@ How a button is drawn: a ring of light steel three pixels thick with a dark line
 _Avoid_: Border, outline, bevel, button skin
 
 **Steel Rim**:
-How a window with no border of its own is edged: three bands three pixels wide, near-black outside and in with dark steel between, its corners stepped four deep as a Steel Frame's are and never rounded, round a face Dither Shaded in the window's warm dark gray. The main menu's window and its dialogs, the Spoils window, the Pause Menu and the encounter's ending banner have it. A Zone Window keeps its border in its zone's tint, and the deckbuilder's windows their thin gray edge.
+How a window with no border of its own is edged: three bands three pixels wide, near-black outside and in with dark steel between, its corners stepped four deep as a Steel Frame's are and never rounded, round a face Dither Shaded in the window's warm dark gray. The main menu's window and its dialogs, the Spoils window, the Pause Menu, the encounter's ending banner and the Modify Window have it. A Zone Window keeps its border in its zone's tint, and the deckbuilder's question prompt its thin gray edge.
 _Avoid_: Window border, window frame (a Steel Frame is a button's), outline
 
 **Answer Row**:

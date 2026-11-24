@@ -60,7 +60,7 @@ An approved primitive is built test-first, as `addons/modmox_rules/docs/conventi
 
 ## 4. Compose and save the Ready Mods
 
-Write a throwaway script in the scratchpad, run with `$GODOT --headless --path . -s <script>`, that builds each Mod new and saves it with `ResourceSaver.save()` to `content/mods/<name in snake_case>.tres`, Hexes in the same folder. Build every sub-resource new for each Mod. Set:
+Write a throwaway script in the scratchpad, run with `$GODOT --headless --path . -s <script>`, that builds each Mod new and saves it with `ResourceSaver.save()` to `content/mods/<name in snake_case, apostrophes dropped>.tres` (Nomad's is `nomads.tres`), Hexes in the same folder. Build every sub-resource new for each Mod. Set:
 
 - `name`, `is_hex`, `rarity` (`Mod.Rarity`), `card_types` (`MmCardTypes.CardType`), `is_once_per_card`;
 - `augmentation`: one Modification for each part of the sentence, in its order. Power and toughness are one `AddPowerToughnessModification`; each ability its own `AddAbilityModification`;

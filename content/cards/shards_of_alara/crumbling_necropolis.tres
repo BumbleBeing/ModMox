@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_lf0rf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_4ebjq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_p76ux"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_al2cx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_qgg4l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_53d1c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_dw75q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_g10no"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_udmu5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_vfdfu"]
+
+[sub_resource type="Resource" id="Resource_c322a"]
+script = ExtResource("2_p76ux")
+
+[sub_resource type="Resource" id="Resource_nkmkm"]
+script = ExtResource("4_qgg4l")
+
+[sub_resource type="Resource" id="Resource_4h3rr"]
+script = ExtResource("6_dw75q")
+value = 1
+
+[sub_resource type="Resource" id="Resource_tgdq0"]
+script = ExtResource("7_g10no")
+amount = SubResource("Resource_4h3rr")
+color_choices = Array[int]([1, 2, 3])
+
+[sub_resource type="Resource" id="Resource_4jpif"]
+script = ExtResource("8_udmu5")
+costs = Array[ExtResource("3_al2cx")]([SubResource("Resource_nkmkm")])
+effects = Array[ExtResource("5_53d1c")]([SubResource("Resource_tgdq0")])
+
+[resource]
+script = ExtResource("2_4ebjq")
+name = "Crumbling Necropolis"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_lf0rf")]([SubResource("Resource_c322a"), SubResource("Resource_4jpif")])
+rarity = 1

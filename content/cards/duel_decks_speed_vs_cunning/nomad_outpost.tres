@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_1yuks"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_tqidk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_ymtkt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_j87b7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_v8kto"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_7fib2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_wma5u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_vrgjf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_miuog"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_82h2s"]
+
+[sub_resource type="Resource" id="Resource_wamtv"]
+script = ExtResource("2_ymtkt")
+
+[sub_resource type="Resource" id="Resource_wpl4i"]
+script = ExtResource("4_v8kto")
+
+[sub_resource type="Resource" id="Resource_tocud"]
+script = ExtResource("6_wma5u")
+value = 1
+
+[sub_resource type="Resource" id="Resource_d17ny"]
+script = ExtResource("7_vrgjf")
+amount = SubResource("Resource_tocud")
+color_choices = Array[int]([3, 0, 2])
+
+[sub_resource type="Resource" id="Resource_2us7r"]
+script = ExtResource("8_miuog")
+costs = Array[ExtResource("3_j87b7")]([SubResource("Resource_wpl4i")])
+effects = Array[ExtResource("5_7fib2")]([SubResource("Resource_d17ny")])
+
+[resource]
+script = ExtResource("2_tqidk")
+name = "Nomad Outpost"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_1yuks")]([SubResource("Resource_wamtv"), SubResource("Resource_2us7r")])
+rarity = 1

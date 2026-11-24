@@ -188,7 +188,7 @@ func test_the_ground_is_the_stage_intros() -> void:
 ## run's win at that Rank.
 func test_the_flag_wins_at_the_rank_asked_for() -> void:
 	for rank: String in ["lesser", "elite", "boss"]:
-		# Run Seed 2's red Stage has Elites (7's has none).
+		# Run Seed 2's red Stage has Elites (1's has none).
 		var run: Run = SpoilsScreen.debug_run_from(["--spoils", "--run-seed=2", "--stage=red", "--rank=" + rank])
 		assert_not_null(run.last_spoils, rank)
 		assert_eq(run.stage_visit.stage.backdrop(), "red")
@@ -198,7 +198,7 @@ func test_the_flag_wins_at_the_rank_asked_for() -> void:
 
 ## S8: where the Stage has no Node of the Rank asked for, the flag wins at the Boss.
 func test_the_flag_wins_at_the_boss_when_no_node_of_the_rank_lies_ahead() -> void:
-	var run: Run = SpoilsScreen.debug_run_from(["--spoils", "--run-seed=7", "--stage=red", "--rank=elite"])
+	var run: Run = SpoilsScreen.debug_run_from(["--spoils", "--run-seed=1", "--stage=red", "--rank=elite"])
 	assert_eq(run.stage_visit.node().kind, StageMap.Kind.BOSS)
 	assert_not_null(run.last_spoils)
 

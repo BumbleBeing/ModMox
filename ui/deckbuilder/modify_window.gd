@@ -10,7 +10,9 @@ extends Control
 ## and offers Cancel, and Apply asks once more before it says the Mod was applied, because
 ## applying is final.
 ##
-## The window is as large as what is in it and no larger.
+## The window is as large as what is in it and no larger, and edged in the Steel Rim
+## (WindowLook). Each Mod's tile shows its Mod Icon left of its words: turning when the Mod
+## can go on the card, darkened and still when it cannot.
 ##
 ## It changes nothing itself: it reports [signal applied] and [signal closed].
 
@@ -19,21 +21,22 @@ signal closed
 
 enum State { CHOOSING, CHOSEN, CONFIRMING }
 
-const PAD: float = 20.0
 ## The room between a panel's edge and what is in it.
 const PANEL_PAD: float = 12.0
 const NO_MOD_TITLE: String = "With selected Mod"
-const TILES_WIDTH: float = 380.0
+## The room between a tile's edge and its Mod Icon and words, between the two, and the words'
+## own width, which the list is widened by the icon's room to keep.
+const TILE_PAD: float = 8.0
+const ICON_GAP: float = 8.0
+const WORDS_WIDTH: float = 364.0
+const TILES_WIDTH: float = WORDS_WIDTH + ModIcon.SIZE + ICON_GAP + 2.0 * TILE_PAD
 const FACE_HEIGHT: float = 380.0
 const DIM: Color = Color(0, 0, 0, 0.6)
-const FILL: Color = DeckbuilderLook.PANE
 const BORDER: Color = DeckbuilderLook.PANE_BORDER
 const MUTED: Color = DeckbuilderLook.MUTED
 const CHOSEN_RING: Color = Color("#e8cf8a")
 ## A Mod's tile: darker than the other buttons.
 const TILE: Color = Color("#33363c")
-## The room between a tile's edge and its words.
-const TILE_PAD: float = 8.0
 const TILE_HEIGHT: float = 68.0
 const TILE_FONT_SIZE: int = 18
 ## Set on a button with the Callable that paints its Dither Shading, so that painting it in
@@ -49,6 +52,7 @@ var _previewed: Mod = null
 var _chosen: Mod = null
 var _tiles: Dictionary[Mod, Button] = {}
 var _tile_words: Dictionary[Mod, SymbolLabel] = {}
+var _tile_icons: Dictionary[Mod, ModIcon] = {}
 var _before: CardFace = null
 var _after: CardFace = null
 var _after_place: Control = null
@@ -76,10 +80,11 @@ func setup(card: DeckbuilderCard, held_mods: HeldMods) -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
-	# A Dither Shaded plate casts no shadow, so a flat window behind it casts the shadow.
+	# A Dither Shaded plate casts no shadow, so a frame behind it casts the shadow, and only
+	# that: a fill would show through the rim's stepped corners.
 	var shadow: PanelContainer = PanelContainer.new()
 	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = FILL
+	style.bg_color = Color(0, 0, 0, 0)
 	style.set_corner_radius_all(DeckbuilderLook.WINDOW_RADIUS)
 	style.shadow_color = Color(0, 0, 0, 0.5)
 	style.shadow_size = 16
@@ -87,7 +92,7 @@ func setup(card: DeckbuilderCard, held_mods: HeldMods) -> void:
 	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(shadow)
 	_window = PanelContainer.new()
-	_shade(_window, FILL, DeckbuilderLook.WINDOW_RADIUS, Vector4(PAD, PAD, PAD, PAD))
+	WindowLook.shade(_window)
 	shadow.add_child(_window)
 	var rows: VBoxContainer = VBoxContainer.new()
 	rows.add_theme_constant_override("separation", 14)
@@ -127,6 +132,11 @@ func tile_words(mod: Mod) -> SymbolLabel:
 ## The Mod the "as it would become" face is showing, or null.
 func previewed() -> Mod:
 	return _previewed
+
+
+## The Mod Icon on [param mod]'s tile, or null if none of it is held.
+func tile_icon(mod: Mod) -> ModIcon:
+	return _tile_icons.get(mod, null) as ModIcon
 
 
 ## The Mod that was clicked and is waiting for Apply, or null.
@@ -260,7 +270,7 @@ func _tile_list(column: VBoxContainer) -> void:
 		var words: SymbolLabel = SymbolLabel.new()
 		words.set_font_size(TILE_FONT_SIZE)
 		words.set_anchors_preset(Control.PRESET_FULL_RECT)
-		words.offset_left = TILE_PAD
+		words.offset_left = TILE_PAD + ModIcon.SIZE + ICON_GAP
 		words.offset_top = TILE_PAD
 		words.offset_right = -TILE_PAD
 		words.offset_bottom = -TILE_PAD
@@ -273,6 +283,11 @@ func _tile_list(column: VBoxContainer) -> void:
 		_style_tile(button, false)
 		button.focus_mode = Control.FOCUS_NONE
 		button.disabled = not mod.is_applicable_to(_card)
+		var icon: ModIcon = ModIcon.darkened(mod.rarity) if button.disabled else ModIcon.turning(mod.rarity)
+		button.add_child(icon)
+		button.resized.connect(_place_icon.bind(button, icon))
+		_place_icon(button, icon)
+		_tile_icons[mod] = icon
 		if button.disabled:
 			button.tooltip_text = "This Mod cannot go on this card."
 		button.pressed.connect(choose.bind(mod))
@@ -280,6 +295,12 @@ func _tile_list(column: VBoxContainer) -> void:
 		button.mouse_exited.connect(hover.bind(null))
 		tiles.add_child(button)
 		_tiles[mod] = button
+
+
+## Puts [param icon] at [param button]'s left, centered down it on a whole pixel.
+func _place_icon(button: Button, icon: ModIcon) -> void:
+	icon.position = Vector2(TILE_PAD, floorf((button.size.y - ModIcon.SIZE) / 2.0))
+	icon.size = Vector2(ModIcon.SIZE, ModIcon.SIZE)
 
 
 ## Makes [param button] tall enough for its [param words].

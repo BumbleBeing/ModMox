@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_xube6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_fxnvw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_t3iw7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_4rbpy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_7chjw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_0vbpb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_y0snq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_id33a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_dnxw3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_sxsug"]
+
+[sub_resource type="Resource" id="Resource_qnh2w"]
+script = ExtResource("2_t3iw7")
+
+[sub_resource type="Resource" id="Resource_levpa"]
+script = ExtResource("4_7chjw")
+
+[sub_resource type="Resource" id="Resource_un6ky"]
+script = ExtResource("6_y0snq")
+value = 1
+
+[sub_resource type="Resource" id="Resource_nmkx2"]
+script = ExtResource("7_id33a")
+amount = SubResource("Resource_un6ky")
+color_choices = Array[int]([4, 0, 1])
+
+[sub_resource type="Resource" id="Resource_cwrnj"]
+script = ExtResource("8_dnxw3")
+costs = Array[ExtResource("3_4rbpy")]([SubResource("Resource_levpa")])
+effects = Array[ExtResource("5_0vbpb")]([SubResource("Resource_nmkx2")])
+
+[resource]
+script = ExtResource("2_fxnvw")
+name = "Seaside Citadel"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_xube6")]([SubResource("Resource_qnh2w"), SubResource("Resource_cwrnj")])
+rarity = 1

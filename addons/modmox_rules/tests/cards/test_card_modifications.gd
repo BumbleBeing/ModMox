@@ -98,6 +98,40 @@ func test_a_mana_cost_adds_its_symbols_to_the_cards() -> void:
 	assert_eq(cost.symbols, [Type.GREEN, Type.GREEN] as Array[MmMana.Type])
 
 
+func test_an_added_cost_puts_the_symbols_in_the_order_magic_prints_them() -> void:
+	var cases: Array[Array] = [
+		[[Type.GREEN, Type.WHITE], [Type.GREEN], "{1}{G}{G}{W}", "Pips of one color sit together."],
+		[[Type.WHITE], [Type.GREEN], "{1}{G}{W}", "An allied pair runs clockwise: green then white."],
+		[[Type.BLACK], [Type.WHITE], "{1}{W}{B}", "An enemy pair takes the short way round: W, U, B."],
+		[[Type.WHITE], [Type.RED], "{1}{R}{W}", "R, G, W is shorter than W, U, B, R."],
+		[[Type.WHITE], [Type.GREEN, Type.RED], "{1}{R}{G}{W}", "A shard runs clockwise from its first color."],
+		[[Type.GREEN], [Type.WHITE, Type.BLACK], "{1}{W}{B}{G}", "A wedge steps two colors at a time."],
+		[[Type.BLACK], [Type.RED, Type.WHITE], "{1}{R}{W}{B}", "Mardu is R, W, B."],
+		[[Type.WHITE], [Type.GREEN, Type.RED, Type.BLUE], "{1}{R}{G}{W}{U}", "Four colors start after the missing one."],
+		[[Type.GREEN], [Type.RED, Type.BLUE, Type.WHITE, Type.BLACK], "{1}{W}{U}{B}{R}{G}", "All five are WUBRG."],
+		[[Type.GREEN], [Type.COLORLESS], "{1}{C}{G}", "{C} comes before the colored symbols."],
+	]
+	for case: Array in cases:
+		var base: Array[MmMana.Type] = []
+		base.assign(case[0])
+		var added: Array[MmMana.Type] = []
+		added.assign(case[1])
+		var run_card: MmRunCard = _run_card(Scenario.creature("Bear", 2, 2, [], _cost(1, base)))
+		run_card.modifications.append(_mana_cost(0, added))
+
+		assert_eq(run_card.flatten().mana_cost.describe(), case[2], case[3])
+
+
+func test_an_added_hybrid_symbol_is_written_and_ordered_as_magic_prints_it() -> void:
+	var run_card: MmRunCard = _run_card(Scenario.creature("Bear", 2, 2, [], _cost(1, [Type.WHITE])))
+	var add_hybrids: AddManaCostModification = AddManaCostModification.new()
+	add_hybrids.cost = Scenario.hybrid_cost(0, [[Type.GREEN, Type.RED], [Type.WHITE, Type.RED]], [Type.GREEN])
+	run_card.modifications.append(add_hybrids)
+
+	assert_eq(run_card.flatten().mana_cost.describe(), "{1}{G}{W}{R/G}{R/W}",
+		"R, G, W is the order: {G/R} is printed {R/G}, {W/R} is {R/W}, and {R/G} comes first.")
+
+
 func test_a_card_with_no_mana_cost_takes_the_whole_cost_as_its_own() -> void:
 	var definition: MmCardDefinition = Scenario.creature("Statue", 1, 1)
 	definition.mana_cost = null

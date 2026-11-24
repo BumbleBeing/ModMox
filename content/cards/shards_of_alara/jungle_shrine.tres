@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_m67sn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_70nho"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_gdqcq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_et58a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_ocla7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_kfovb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_aobeu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_nhsk1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_ytb54"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_txw27"]
+
+[sub_resource type="Resource" id="Resource_owqv8"]
+script = ExtResource("2_gdqcq")
+
+[sub_resource type="Resource" id="Resource_x683l"]
+script = ExtResource("4_ocla7")
+
+[sub_resource type="Resource" id="Resource_fnbq2"]
+script = ExtResource("6_aobeu")
+value = 1
+
+[sub_resource type="Resource" id="Resource_a4h7l"]
+script = ExtResource("7_nhsk1")
+amount = SubResource("Resource_fnbq2")
+color_choices = Array[int]([3, 4, 0])
+
+[sub_resource type="Resource" id="Resource_lhwdr"]
+script = ExtResource("8_ytb54")
+costs = Array[ExtResource("3_et58a")]([SubResource("Resource_x683l")])
+effects = Array[ExtResource("5_kfovb")]([SubResource("Resource_a4h7l")])
+
+[resource]
+script = ExtResource("2_70nho")
+name = "Jungle Shrine"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_m67sn")]([SubResource("Resource_owqv8"), SubResource("Resource_lhwdr")])
+rarity = 1

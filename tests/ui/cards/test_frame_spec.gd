@@ -75,6 +75,14 @@ func test_a_three_color_spell_and_a_three_color_land_are_gold() -> void:
 	assert_eq(_layers(FrameSpec.of(_look(land))), ["lands/m"])
 
 
+func test_a_land_adding_one_of_three_colors_is_gold_and_one_of_two_colors_draws_both() -> void:
+	var three: MmCardDefinition = Scenario.choice_land("Necropolis", [MmMana.Type.BLUE, MmMana.Type.BLACK, MmMana.Type.RED])
+	var two: MmCardDefinition = Scenario.choice_land("Plateau", [MmMana.Type.WHITE, MmMana.Type.RED])
+
+	assert_eq(_layers(FrameSpec.of(_look(three))), ["lands/m"])
+	assert_eq(FrameSpec.of(_look(two)).letters, ["r", "w"] as Array[String])
+
+
 func test_pt_boxes_follow_the_color_category() -> void:
 	var gold: MmCardDefinition = Scenario.creature("Gold", 2, 2, [], Scenario.mana_cost(0, [MmMana.Type.WHITE, MmMana.Type.BLUE]))
 	var land: MmCardDefinition = _land("Land Creature", [MmMana.Type.RED, MmMana.Type.WHITE])

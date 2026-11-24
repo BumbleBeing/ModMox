@@ -160,7 +160,8 @@ static func _has_hybrid_of(cost: MmManaCost, letters: Array[String]) -> bool:
 	return false
 
 
-## The colors of mana [param abilities] can add, once each, ignoring colorless.
+## The colors of mana [param abilities] can add, once each, ignoring colorless and mana of
+## any color.
 static func _mana_produced(abilities: Array[MmAbility]) -> Array[MmMana.Type]:
 	var found: Array[MmMana.Type] = []
 	for ability: MmAbility in abilities:
@@ -168,6 +169,9 @@ static func _mana_produced(abilities: Array[MmAbility]) -> Array[MmMana.Type]:
 			continue
 		for effect: MmEffect in (ability as ActivatedAbility).effects:
 			var add_mana: AddManaEffect = effect as AddManaEffect
-			if add_mana != null and add_mana.mana_type != MmMana.Type.COLORLESS and not found.has(add_mana.mana_type):
-				found.append(add_mana.mana_type)
+			if add_mana == null or add_mana.is_any_color:
+				continue
+			for type: MmMana.Type in add_mana.possible_types():
+				if type != MmMana.Type.COLORLESS and not found.has(type):
+					found.append(type)
 	return found

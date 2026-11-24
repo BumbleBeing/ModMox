@@ -43,6 +43,14 @@ func test_the_fixed_rows_are_always_the_same() -> void:
 		assert_eq(_row_of(map, 10), [[5, StageMap.Kind.BOSS]])
 
 
+func test_each_generated_row_has_its_number_of_nodes() -> void:
+	var sizes: Dictionary[int, Array] = {3: [3, 3], 4: [3, 5], 5: [3, 5], 6: [3, 4], 7: [2, 3], 8: [2, 2]}
+	for map: StageMap in _maps():
+		for row: int in sizes:
+			var count: int = map.in_row(row).size()
+			assert_between(count, sizes[row][0], sizes[row][1], "row %d" % row)
+
+
 func test_every_node_can_be_reached_from_the_start_and_can_reach_the_boss() -> void:
 	for map: StageMap in _maps():
 		var reached: Dictionary[int, bool] = _reachable(map, map.start().id, false)

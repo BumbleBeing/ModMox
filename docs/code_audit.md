@@ -406,8 +406,6 @@ No card in Content triggers a bug here today, apart from 6.B1 and 6.C1.
 - **6.C10. Four `# Later:` notes name no milestone.** `ui/cards/ability_text.gd:399`, `:578`, `:1016`, `:1054`.
 - **6.C11. Untyped collections.** `rules_text.gd:202`; `art_library.gd:22`; `ui/run_log_share.gd:35`.
 
-Seen in passing: `content/mods/viscious.tres` is named "Viscious" (Vicious), file name and Mod name both.
-
 ---
 
 ## 7. Screens outside an encounter

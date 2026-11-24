@@ -37,7 +37,7 @@ cost = SubResource("Resource_n701d")
 
 [resource]
 script = ExtResource("8_petd8")
-name = "Viscious"
+name = "Vicious"
 rarity = 2
 augmentation = Array[ExtResource("1_1qgc4")]([SubResource("Resource_2uol1"), SubResource("Resource_xiuoc"), SubResource("Resource_r2g6k")])
 mod_cost = SubResource("Resource_l51f7")

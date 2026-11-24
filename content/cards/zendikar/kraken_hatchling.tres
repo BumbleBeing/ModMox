@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_0eqnw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_y0e03"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_nhg8a"]
+
+[sub_resource type="Resource" id="Resource_ypch6"]
+script = ExtResource("2_y0e03")
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_nhg8a")
+name = "Kraken Hatchling"
+card_types = Array[int]([1])
+subtypes = Array[String](["Kraken"])
+mana_cost = SubResource("Resource_ypch6")
+toughness = 4

@@ -9,20 +9,31 @@ and Mythic have the sheen of a Magic card's set symbol of that Rarity, a bright 
 deepening on either side: gold to bronze for Rare, orange to red for Mythic. Each casts a
 faint drop shadow straight down, a pixel deep, which is part of the picture. The Rarity tones
 are not in the shared palette (tools/sprites/modmox.gpl), which is why this draws the
-pictures itself rather than going through tools/sprites/build.sh. Also writes a review sheet
+pictures itself rather than going through tools/sprites/build.sh.
+
+Each Rarity also turns: <rarity>_turning.png is the cog's frames one under another, a quarter
+turn clockwise over the loop as the Logo's cogs turn, for a Mod Icon shown turning (ModIcon).
+The cog is worked out at each angle by logo.py, which knows it by its shape; upright it has
+the grid's outline. Also writes a review sheet
 to tools/sprites/preview/: each at four times its size on a dark ground and on the Satchel's
 parchment, then at twice its size and at its own.
 """
+import importlib.util
 import math
 import os
+import sys
 
 from PIL import Image, ImageDraw
+
+# Loading logo.py would otherwise leave its bytecode in tools/sprites/.
+sys.dont_write_bytecode = True
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 GRID = os.path.join(ROOT, "tools", "sprites", "mod_icon.txt")
 PALETTE = os.path.join(ROOT, "tools", "sprites", "modmox.gpl")
 OUT = os.path.join(ROOT, "ui", "sprites", "mods")
 SHEET = os.path.join(ROOT, "tools", "sprites", "preview", "mod_icons.png")
+LOGO = os.path.join(ROOT, "tools", "sprites", "logo.py")
 
 SIZE = 32
 # One character for each color of the palette, as KEY in build_sprites.lua has them.
@@ -126,6 +137,23 @@ def draw(rows, rarity, fixed):
     return image
 
 
+def load_logo():
+    """logo.py, which draws the cog at any angle and says how it turns over the loop."""
+    spec = importlib.util.spec_from_file_location("logo", LOGO)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def turning(rarity, fixed, logo):
+    """The cog in the colors of [param rarity], its frames one under another, turning a
+    quarter turn clockwise over the Logo's loop."""
+    sheet = Image.new("RGBA", (SIZE, SIZE * logo.FRAMES), (0, 0, 0, 0))
+    for frame in range(logo.FRAMES):
+        sheet.paste(draw(logo.cog_rows(logo.TURN * frame / logo.FRAMES), rarity, fixed), (0, frame * SIZE))
+    return sheet
+
+
 def band(pictures, scale, ground, width):
     """A strip [param width] wide of [param pictures] at [param scale] times their size on
     [param ground]."""
@@ -140,10 +168,12 @@ def main():
     fixed = palette_tones()
     rows = read_grid()
     os.makedirs(OUT, exist_ok=True)
+    logo = load_logo()
     pictures = []
     for rarity in RARITIES:
         pictures.append(draw(rows, rarity, fixed))
         pictures[-1].save(os.path.join(OUT, rarity + ".png"))
+        turning(rarity, fixed, logo).save(os.path.join(OUT, rarity + "_turning.png"))
     width = PAD + (SIZE * 4 + PAD) * len(pictures)
     bands = [band(pictures, scale, ground, width) for scale in (4, 2, 1) for ground in (DARK, PAPER)]
     sheet = Image.new("RGBA", (width, LABEL_HEIGHT + sum(strip.height for strip in bands)), DARK + (255,))
@@ -155,7 +185,8 @@ def main():
         sheet.alpha_composite(strip, (0, y))
         y += strip.height
     sheet.save(SHEET)
-    print("OK: %d pictures in %s, sheet at %s" % (len(pictures), os.path.relpath(OUT, ROOT), os.path.relpath(SHEET, ROOT)))
+    print("OK: %d pictures and their turning sheets in %s, sheet at %s" % (len(pictures), os.path.relpath(OUT, ROOT),
+            os.path.relpath(SHEET, ROOT)))
 
 
 if __name__ == "__main__":

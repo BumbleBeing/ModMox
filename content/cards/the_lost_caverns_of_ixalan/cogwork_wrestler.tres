@@ -1,0 +1,85 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_cdii2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_1gqj4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flash_ability.gd" id="2_rxue0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_a15ou"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_p36qi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_02uvu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_mcvke"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="6_i3vmm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="7_ejh67"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_bxs5e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="9_p7u4b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_ed4vv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_ejsmu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_2q6di"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="13_x7bgt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="14_6p34p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="15_iytb0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="16_e2dng"]
+
+[sub_resource type="Resource" id="Resource_1s0g5"]
+script = ExtResource("2_rxue0")
+
+[sub_resource type="Resource" id="Resource_0nhfh"]
+script = ExtResource("4_02uvu")
+
+[sub_resource type="Resource" id="Resource_kjsfh"]
+script = ExtResource("5_mcvke")
+value = -2
+
+[sub_resource type="Resource" id="Resource_cr3lc"]
+script = ExtResource("5_mcvke")
+
+[sub_resource type="Resource" id="Resource_vwgvy"]
+script = ExtResource("6_i3vmm")
+power = SubResource("Resource_kjsfh")
+toughness = SubResource("Resource_cr3lc")
+affected = SubResource("Resource_0nhfh")
+
+[sub_resource type="Resource" id="Resource_f11ku"]
+script = ExtResource("7_ejh67")
+continuous = SubResource("Resource_vwgvy")
+
+[sub_resource type="Resource" id="Resource_lcwyf"]
+script = ExtResource("12_2q6di")
+
+[sub_resource type="Resource" id="Resource_rpdvo"]
+script = ExtResource("13_x7bgt")
+whose = 2
+
+[sub_resource type="Resource" id="Resource_p43px"]
+script = ExtResource("14_6p34p")
+filters = Array[ExtResource("11_ejsmu")]([SubResource("Resource_lcwyf"), SubResource("Resource_rpdvo")])
+
+[sub_resource type="Resource" id="Resource_eblvq"]
+script = ExtResource("10_ed4vv")
+filter = SubResource("Resource_p43px")
+
+[sub_resource type="Resource" id="Resource_ikp0x"]
+script = ExtResource("15_iytb0")
+
+[sub_resource type="Resource" id="Resource_ttsd0"]
+script = ExtResource("16_e2dng")
+filter = SubResource("Resource_ikp0x")
+
+[sub_resource type="Resource" id="Resource_2m7h4"]
+script = ExtResource("9_p7u4b")
+trigger = SubResource("Resource_ttsd0")
+targets = Array[ExtResource("10_ed4vv")]([SubResource("Resource_eblvq")])
+effects = Array[ExtResource("3_p36qi")]([SubResource("Resource_f11ku")])
+
+[sub_resource type="Resource" id="Resource_3mtq0"]
+script = ExtResource("2_1gqj4")
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_a15ou")
+name = "Cogwork Wrestler"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Gnome"])
+mana_cost = SubResource("Resource_3mtq0")
+power = 1
+toughness = 2
+abilities = Array[ExtResource("1_cdii2")]([SubResource("Resource_1s0g5"), SubResource("Resource_2m7h4")])

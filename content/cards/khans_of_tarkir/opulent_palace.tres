@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_gopf7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_32aym"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_wnx1x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_36f3u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_ujxl5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_6mrfj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_2jh3c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_clolx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_g5ysh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_6pskp"]
+
+[sub_resource type="Resource" id="Resource_k2n0n"]
+script = ExtResource("2_32aym")
+
+[sub_resource type="Resource" id="Resource_6jaxp"]
+script = ExtResource("4_ujxl5")
+
+[sub_resource type="Resource" id="Resource_qef33"]
+script = ExtResource("6_2jh3c")
+value = 1
+
+[sub_resource type="Resource" id="Resource_pm2lb"]
+script = ExtResource("7_clolx")
+amount = SubResource("Resource_qef33")
+color_choices = Array[int]([2, 4, 1])
+
+[sub_resource type="Resource" id="Resource_i5lny"]
+script = ExtResource("8_g5ysh")
+costs = Array[ExtResource("3_36f3u")]([SubResource("Resource_6jaxp")])
+effects = Array[ExtResource("5_6mrfj")]([SubResource("Resource_pm2lb")])
+
+[resource]
+script = ExtResource("2_wnx1x")
+name = "Opulent Palace"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_gopf7")]([SubResource("Resource_k2n0n"), SubResource("Resource_i5lny")])
+rarity = 1

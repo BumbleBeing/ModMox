@@ -9,7 +9,7 @@ const Kind := StageMap.Kind
 ## After this many failed attempts generation stops with an error.
 const MAX_ATTEMPTS: int = 1000
 ## Row -> [fewest, most] Nodes.
-const ROW_SIZES: Dictionary[int, Array] = {3: [3, 4], 4: [4, 6], 5: [4, 6], 6: [3, 5], 7: [2, 3], 8: [2, 2]}
+const ROW_SIZES: Dictionary[int, Array] = {3: [3, 3], 4: [3, 5], 5: [3, 5], 6: [3, 4], 7: [2, 3], 8: [2, 2]}
 ## Row -> [first, last] column a Node may stand in, which keeps the map a diamond.
 const ROW_COLUMNS: Dictionary[int, Array] = {3: [3, 7], 4: [2, 8], 5: [1, 9], 6: [2, 8], 7: [3, 7], 8: [3, 7]}
 ## Chances (percent) of a Node having 1, 2 or 3 forward links.

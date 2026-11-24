@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_6knqc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_l2bl4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_wwqly"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_v2n38"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_5qedv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_8oqn5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_cqhdy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_4bibi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_5qsx8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_00ixi"]
+
+[sub_resource type="Resource" id="Resource_m2pjb"]
+script = ExtResource("2_wwqly")
+
+[sub_resource type="Resource" id="Resource_wm7i3"]
+script = ExtResource("4_5qedv")
+
+[sub_resource type="Resource" id="Resource_ajna5"]
+script = ExtResource("6_cqhdy")
+value = 1
+
+[sub_resource type="Resource" id="Resource_tnetg"]
+script = ExtResource("7_4bibi")
+amount = SubResource("Resource_ajna5")
+color_choices = Array[int]([2, 3, 4])
+
+[sub_resource type="Resource" id="Resource_wpyed"]
+script = ExtResource("8_5qsx8")
+costs = Array[ExtResource("3_v2n38")]([SubResource("Resource_wm7i3")])
+effects = Array[ExtResource("5_8oqn5")]([SubResource("Resource_tnetg")])
+
+[resource]
+script = ExtResource("2_l2bl4")
+name = "Savage Lands"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_6knqc")]([SubResource("Resource_m2pjb"), SubResource("Resource_wpyed")])
+rarity = 1

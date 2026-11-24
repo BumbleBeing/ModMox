@@ -190,13 +190,57 @@ func test_with_no_mods_held_it_says_so() -> void:
 	assert_not_null(_modify_window.button("close"))
 
 
+func test_the_window_is_edged_in_the_steel_rim() -> void:
+	_open(_fixture.own("grizzly_bears"))
+	await wait_process_frames(2)
+	var window: PanelContainer = _modify_window.window()
+
+	var face: StyleBoxTexture = window.get_theme_stylebox("panel") as StyleBoxTexture
+	assert_eq(window.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_eq(face.texture.get_image().get_data(), WindowLook.plate(int(window.size.y)).texture.get_image().get_data())
+
+
+func test_each_tile_shows_its_mods_icon_left_of_its_words_in_its_raritys_color() -> void:
+	_ember.rarity = Mod.Rarity.RARE
+	_open(_fixture.own("grizzly_bears"))
+	await wait_process_frames(2)
+
+	for mod: Mod in [_ember, _rename]:
+		var icon: ModIcon = _modify_window.tile_icon(mod)
+		assert_not_null(icon, mod.name)
+		assert_eq(icon.rarity(), mod.rarity, mod.name)
+		var tile: Rect2 = _modify_window.tile(mod).get_global_rect()
+		var drawn: Rect2 = icon.get_global_rect()
+		assert_eq(drawn.size, Vector2(ModIcon.SIZE, ModIcon.SIZE), "at its own size")
+		assert_eq(icon.position, icon.position.round(), "on whole pixels in its tile")
+		assert_eq(drawn.position.x - tile.position.x, ModifyWindow.TILE_PAD, "at the tile's left")
+		assert_almost_eq(drawn.get_center().y, tile.get_center().y, 1.0, "centered down the tile")
+		assert_lte(drawn.end.x, _modify_window.tile_words(mod).get_global_rect().position.x, "left of its words")
+
+
+func test_an_applicable_mods_icon_turns_and_an_inapplicable_ones_is_darkened_and_still() -> void:
+	_open(_fixture.own("forest"))
+
+	assert_true(_modify_window.tile_icon(_rename).is_turning(), "A basic land takes a Mod that fits it.")
+	assert_eq(_modify_window.tile_icon(_rename).modulate, Color.WHITE)
+	assert_false(_modify_window.tile_icon(_ember).is_turning(), "A land has no mana cost.")
+	assert_eq(_modify_window.tile_icon(_ember).modulate, ModIcon.DARKENED)
+
+
+func test_the_list_widens_by_the_icons_room_so_the_words_keep_theirs() -> void:
+	_open(_fixture.own("grizzly_bears"))
+	await wait_process_frames(2)
+
+	assert_almost_eq(_modify_window.tile_words(_ember).size.x, ModifyWindow.WORDS_WIDTH, 1.0)
+
+
 func test_three_bordered_panels_of_one_height_carry_their_titles_and_the_window_fits_them() -> void:
 	_open(_fixture.own("grizzly_bears"))
 	await wait_process_frames(2)
 	var panels: Array[PanelContainer] = _modify_window.panels()
 
 	assert_eq(_modify_window.panel_titles(), ["Valid Mods", "Current", "With selected Mod"] as Array[String])
-	for panel: PanelContainer in panels + [_modify_window.window()]:
+	for panel: PanelContainer in panels:
 		var style: StyleBoxTexture = panel.get_theme_stylebox("panel") as StyleBoxTexture
 		assert_not_null(style, "Dither Shaded.")
 		assert_eq(style.texture.get_height(), int(panel.size.y), "Painted for its own height.")
@@ -216,7 +260,7 @@ func test_three_bordered_panels_of_one_height_carry_their_titles_and_the_window_
 	assert_gt(panels[1].size.y, ModifyWindow.FACE_HEIGHT)
 	assert_lt(panels[1].size.y, ModifyWindow.FACE_HEIGHT + 80.0, "A card's height and a little more.")
 	var apply: Button = _modify_window.button("apply")
-	assert_almost_eq(_modify_window.window().get_global_rect().end.y, apply.get_global_rect().end.y + ModifyWindow.PAD, 6.0,
+	assert_almost_eq(_modify_window.window().get_global_rect().end.y, apply.get_global_rect().end.y + WindowLook.MARGIN, 6.0,
 			"Nothing is left empty under the buttons.")
 	assert_almost_eq(apply.global_position.y, panels[0].get_global_rect().end.y + 14.0, 8.0,
 			"Nor between the panels and the buttons.")

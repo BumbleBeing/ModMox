@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_f6fdy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_1di8y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_t00xk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_qbiwx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_sdshv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_ljcjn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_epm4x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_a2jdv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_1mkfg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_aa6xu"]
+
+[sub_resource type="Resource" id="Resource_qhs3s"]
+script = ExtResource("2_1di8y")
+
+[sub_resource type="Resource" id="Resource_3c5jo"]
+script = ExtResource("4_sdshv")
+
+[sub_resource type="Resource" id="Resource_mxcaa"]
+script = ExtResource("6_epm4x")
+value = 1
+
+[sub_resource type="Resource" id="Resource_0nlvg"]
+script = ExtResource("7_a2jdv")
+amount = SubResource("Resource_mxcaa")
+color_choices = Array[int]([1, 3, 0])
+
+[sub_resource type="Resource" id="Resource_sckj1"]
+script = ExtResource("8_1mkfg")
+costs = Array[ExtResource("3_qbiwx")]([SubResource("Resource_3c5jo")])
+effects = Array[ExtResource("5_ljcjn")]([SubResource("Resource_0nlvg")])
+
+[resource]
+script = ExtResource("2_t00xk")
+name = "Mystic Monastery"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_f6fdy")]([SubResource("Resource_qhs3s"), SubResource("Resource_sckj1")])
+rarity = 1

@@ -17,6 +17,7 @@ const ACCEPTED: Dictionary[String, String] = {
 	"holy": "Modified card gets +1/+1 and gains flying and lifelink. It costs {W} more to cast.",
 	"impervious": "Modified card gains indestructible. It costs {2} more to cast.",
 	"immaterial": "Modified card gains \"This creature can't be blocked.\"",
+	"nomads": "Modified card gains \"{W}, {T}, Sacrifice this land: You gain 4 life.\"",
 	"overloaded": "Modified card has every \"target\" in its text changed to \"each.\" It costs {3} more to cast.",
 	"overgrown": "Modified card gets +2/+2. It costs {G} more to cast.",
 	"protective": "Modified card gets +0/+1 and gains vigilance and lifelink. It costs {W} more to cast.",
@@ -31,7 +32,7 @@ const ACCEPTED: Dictionary[String, String] = {
 	"untouchable": "Modified card gains first strike and deathtouch. It costs {B} more to cast.",
 	"violent": "Modified card gets +1/+1 and gains haste and trample. It costs {R/G} more to cast.",
 	"vexing": "Modified card gains \"This spell can't be countered.\"",
-	"viscious": "Modified card gets +1/+0 and gains menace and deathtouch. It costs {B} more to cast.",
+	"vicious": "Modified card gets +1/+0 and gains menace and deathtouch. It costs {B} more to cast.",
 }
 
 
@@ -53,7 +54,7 @@ func test_every_mod_is_named_for_its_file_and_no_two_share_a_name() -> void:
 		var mod: Mod = _load(file_name)
 		if mod == null:
 			continue
-		assert_eq(file_name, mod.name.to_snake_case(), "A Mod's file is named for it.")
+		assert_eq(file_name, mod.name.to_snake_case().replace("'", ""), "A Mod's file is named for it, apostrophes dropped.")
 		assert_false(seen.has(mod.name), "%s and %s are both named %s." % [file_name, seen.get(mod.name, ""), mod.name])
 		seen[mod.name] = file_name
 

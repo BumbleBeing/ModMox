@@ -715,6 +715,9 @@ func _condition(condition: MmCondition) -> String:
 		var counted: CardsInZoneValue = at_least.value as CardsInZoneValue
 		return "there are %s or more cards in %s %s" % [_number_word(at_least.amount), _whose_words(counted.whose),
 			(ZONE_NAMES[counted.zone] as String).trim_prefix("a ")]
+	var controlled: String = "" if at_least == null else _you_control_condition(at_least)
+	if controlled != "":
+		return controlled
 	if condition is LifeAtLeastStartingCondition:
 		return "your life total is greater than or equal to your starting life total"
 	if condition is TimesResolvedThisTurnCondition:
@@ -735,6 +738,35 @@ func _condition(condition: MmCondition) -> String:
 	if words.noun != "" or is_what == "":
 		is_what = _with_article(_noun_phrase(matches.filter, false))
 	return "%s %s %s" % [subject, "are" if subject == "you" else "is", is_what]
+
+
+## "You control an artifact", or "you control three or more artifacts", as Gearsmith
+## Prodigy's condition: [param at_least] over the number of [filter] you control, counted by
+## an EachSelection whose Filter is that and a ControlledByFilter of yours. Otherwise "".
+func _you_control_condition(at_least: ValueAtLeastCondition) -> String:
+	var count: CountValue = at_least.value as CountValue
+	var each: EachSelection = null if count == null else count.selection as EachSelection
+	var all: AllOfFilter = null if each == null else each.filter as AllOfFilter
+	if all == null or at_least.amount < 1:
+		return ""
+	var rest: Array[MmFilter] = []
+	var is_yours: bool = false
+	for part: MmFilter in all.filters:
+		var by: ControlledByFilter = part as ControlledByFilter
+		if by != null and by.whose == MmTrigger.Whose.YOU and not is_yours:
+			is_yours = true
+		else:
+			rest.append(part)
+	if not is_yours or rest.is_empty():
+		return ""
+	var what: MmFilter = rest[0]
+	if rest.size() > 1:
+		var others: AllOfFilter = AllOfFilter.new()
+		others.filters = rest
+		what = others
+	if at_least.amount == 1:
+		return "you control " + _with_article(_noun_phrase(what, false))
+	return "you control %s or more %s" % [_number_word(at_least.amount), _noun_phrase(what, true)]
 
 
 ## "[subject]'s toughness is 4 or greater": a condition on toughness alone, a ToughnessFilter
@@ -1066,15 +1098,24 @@ func _token_phrase(printed: MmCharacteristics) -> String:
 	return " ".join(words)
 
 
-## "{G}", "{B}{B}{B}", or for mana of any color "one mana of any color" (CR 106.1a), or the
-## symbol of the color an Option Menu row's activation makes (ADR 0072).
+## "{G}", "{B}{B}{B}", for mana of any color "one mana of any color" (CR 106.1a), for mana
+## of one of some colors "{U}, {B}, or {R}" in the order printed, or the symbol of the color
+## an Option Menu row's activation makes (ADR 0072).
 func _mana(effect: AddManaEffect) -> String:
 	var constant: ConstantValue = effect.amount as ConstantValue
-	if effect.is_any_color and _chosen_mana_type == MmMana.NO_TYPE:
-		if constant != null and constant.value == 1:
+	var is_chosen: bool = not effect.colors_to_choose().is_empty()
+	if is_chosen and _chosen_mana_type == MmMana.NO_TYPE:
+		if constant == null or constant.value != 1:
+			return _fallback(effect, "_mana")  # Later: "two mana of any one color".
+		if effect.is_any_color:
 			return "one mana of any color"
-		return _fallback(effect, "_mana")  # Later: "two mana of any one color".
-	var type: MmMana.Type = _chosen_mana_type as MmMana.Type if effect.is_any_color else effect.mana_type
+		var symbols: Array[String] = []
+		for color: MmMana.Type in effect.color_choices:
+			symbols.append("{%s}" % MmMana.SYMBOLS[color])
+		if symbols.size() <= 2:
+			return " or ".join(symbols)
+		return ", ".join(symbols.slice(0, -1)) + ", or " + symbols.back()
+	var type: MmMana.Type = _chosen_mana_type as MmMana.Type if is_chosen else effect.mana_type
 	var symbol: String = "{%s}" % MmMana.SYMBOLS[type]
 	if constant != null and constant.value >= 1 and constant.value <= 10:
 		return symbol.repeat(constant.value)

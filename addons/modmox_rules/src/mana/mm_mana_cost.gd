@@ -84,6 +84,49 @@ func with_x(x: int) -> MmManaCost:
 	return result
 
 
+## Puts the symbols in the order Magic prints them, as a cost built from pieces needs: {C}
+## first, then each color's symbols together, the colors in [method printed_color_order] of
+## all the cost's colors; then the hybrid symbols, each with its own two colors in that order
+## ({R/G}, not {G/R}), sorted the same way. {X} and generic mana always come first.
+func put_in_printed_order() -> void:
+	var present: Array[MmMana.Type] = []
+	for type: MmMana.Type in MmMana.COLORS:
+		if symbols.has(type) or hybrid_index_of(type) != -1:
+			present.append(type)
+	var order: Array[MmMana.Type] = printed_color_order(present)
+	var place: Callable = func(type: int) -> int: return order.find(type as MmMana.Type)
+	symbols.sort_custom(func(a: MmMana.Type, b: MmMana.Type) -> bool: return place.call(a) < place.call(b))
+	for index: int in hybrid_symbols.size():
+		var pair: Vector2i = hybrid_symbols[index]
+		var printed: Array[MmMana.Type] = printed_color_order([pair.x as MmMana.Type, pair.y as MmMana.Type])
+		hybrid_symbols[index] = Vector2i(printed[0], printed[1])
+	hybrid_symbols.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var a_place: Vector2i = Vector2i(place.call(a.x), place.call(a.y))
+		var b_place: Vector2i = Vector2i(place.call(b.x), place.call(b.y))
+		return a_place < b_place)
+
+
+## The order Magic prints [param colors] in, each once: evenly spaced round the color wheel
+## (W, U, B, R, G and back to W), a step of one color where they allow it and two where they
+## don't, from the one start that fits. So {G}{W} (an allied pair) and {R}{G}{W} (a shard) run
+## clockwise; {W}{B} and {R}{W} (enemy pairs) take the short way round; {W}{B}{G} (a wedge)
+## steps two at a time; four colors start after the missing one; and all five are WUBRG.
+## Colorless is not a color, and is left out.
+static func printed_color_order(colors: Array[MmMana.Type]) -> Array[MmMana.Type]:
+	var present: Array[MmMana.Type] = []
+	for type: MmMana.Type in MmMana.COLORS:
+		if colors.has(type):
+			present.append(type)
+	for step: int in [1, 2]:
+		for start: MmMana.Type in present:
+			var walk: Array[MmMana.Type] = []
+			for k: int in present.size():
+				walk.append(MmMana.COLORS[(MmMana.COLORS.find(start) + k * step) % MmMana.COLORS.size()])
+			if walk.all(func(type: MmMana.Type) -> bool: return present.has(type)):
+				return walk
+	return present
+
+
 func describe() -> String:
 	var text: String = "{X}".repeat(x_count)
 	text += "{%d}" % generic if generic > 0 or (symbols.is_empty() and hybrid_symbols.is_empty() and x_count == 0) else ""

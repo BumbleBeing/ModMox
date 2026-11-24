@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_sm68a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_15yuf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_ugs8n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_cpq48"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_4oksv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_hu7ja"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_vmg3s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/add_mana_effect.gd" id="7_0fofo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_p0svs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_l203j"]
+
+[sub_resource type="Resource" id="Resource_1ey3b"]
+script = ExtResource("2_ugs8n")
+
+[sub_resource type="Resource" id="Resource_cpcdg"]
+script = ExtResource("4_4oksv")
+
+[sub_resource type="Resource" id="Resource_3lhdn"]
+script = ExtResource("6_vmg3s")
+value = 1
+
+[sub_resource type="Resource" id="Resource_gg72v"]
+script = ExtResource("7_0fofo")
+amount = SubResource("Resource_3lhdn")
+color_choices = Array[int]([0, 1, 2])
+
+[sub_resource type="Resource" id="Resource_m8l87"]
+script = ExtResource("8_p0svs")
+costs = Array[ExtResource("3_cpq48")]([SubResource("Resource_cpcdg")])
+effects = Array[ExtResource("5_hu7ja")]([SubResource("Resource_gg72v")])
+
+[resource]
+script = ExtResource("2_15yuf")
+name = "Arcane Sanctum"
+card_types = Array[int]([4])
+abilities = Array[ExtResource("1_sm68a")]([SubResource("Resource_1ey3b"), SubResource("Resource_m8l87")])
+rarity = 1
