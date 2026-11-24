@@ -383,7 +383,7 @@ func _ready() -> void:
 		if not _is_paused and _selection.clear_attackers():
 			_redraw())
 	# Game ADR 0066: a press of an answer only selects it; the Pass Button gives it.
-	_info.answer_selected.connect(_select_answer)
+	_info.answer_pressed.connect(_on_answer_pressed)
 	_info.x_lowered.connect(_step_x.bind(-1))
 	_info.x_raised.connect(_step_x.bind(1))
 	add_child(_info)
@@ -857,9 +857,24 @@ func _on_pass_button_pressed() -> void:
 	pass_priority()
 
 
+## Answer [param index] of the Answer Row was clicked, InfoPanel.AFFIRMATIVE or NO_ANSWER.
+## It is given at once, one click and no confirming (game ADR 0066's addendum). While an X
+## is asked the click only selects, the stepper too: the X is still being set, and the Pass
+## Button gives it.
+func _on_answer_pressed(index: int) -> void:
+	if _is_paused or _answer_asked == null:
+		return
+	if _x_asked != null:
+		_select_answer(index)
+		return
+	_selected_answer = index
+	_answer(_selected_answer_value())
+
+
 ## Selects answer [param index] of the question being asked, InfoPanel.AFFIRMATIVE or
-## NO_ANSWER, and answers nothing: the Pass Button gives it (game ADR 0066). X chosen as a
-## spell is cast has no "No" to select: Cancel stands in its place (engine ADR 0076).
+## NO_ANSWER, and answers nothing: the Pass Button gives it (game ADR 0066). Left and Right
+## do this, and so does a click while an X is asked. X chosen as a spell is cast has no
+## "No" to select: Cancel stands in its place (engine ADR 0076).
 func _select_answer(index: int) -> void:
 	if _is_paused or _answer_asked == null or index == _selected_answer:
 		return

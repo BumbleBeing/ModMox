@@ -4,9 +4,10 @@ extends Control
 ## the hand's strip. Centered in it, it says what the Hero is being asked and what is still
 ## owed while paying; in red above its Answer Row, why their last answer was refused. The
 ## Answer Row (game glossary) is its bottom row: the two answers of a "you may", a ward cost
-## or an X, which a press only selects, or one action across its whole width, Cancel or
-## "Declare All", which acts at once. While how much X to pay is asked, the affirmative
-## half is the X stepper. Its border flashes white once when a question other than priority
+## or an X, or one action across its whole width, Cancel or "Declare All", which acts at
+## once. A press of an answer is reported and the screen says what it does: it answers at
+## once, or only selects while an X is asked. While how much X to pay is asked, the
+## affirmative half is the X stepper. Its border flashes white once when a question other than priority
 ## arrives. While the cursor is over a row of the Option Menu, it shows that option in full
 ## in place of everything else.
 
@@ -14,8 +15,8 @@ signal cancel_pressed
 signal all_attack_pressed
 ## "Undeclare All" was pressed: the same button, while an attacker is declared (A496).
 signal undeclare_all_pressed
-## An answer was pressed, AFFIRMATIVE or NO_ANSWER: it is selected, and nothing is answered.
-signal answer_selected(index: int)
+## An answer was pressed, AFFIRMATIVE or NO_ANSWER. The panel does nothing with it.
+signal answer_pressed(index: int)
 ## An end of the X stepper was pressed (game ADR 0063).
 signal x_lowered
 signal x_raised
@@ -328,17 +329,17 @@ func _build_row() -> void:
 	var is_yes: bool = _selected == AFFIRMATIVE
 	if _asked.chooses_x:
 		_x_stepper = XStepper.new(left, _x, _x > 0, _x < _asked.most_x, SELECTED if is_yes else BUTTON, is_yes)
-		_x_stepper.pressed.connect(func() -> void: answer_selected.emit(AFFIRMATIVE))
+		_x_stepper.pressed.connect(func() -> void: answer_pressed.emit(AFFIRMATIVE))
 		_x_stepper.lowered.connect(func() -> void: x_lowered.emit())
 		_x_stepper.raised.connect(func() -> void: x_raised.emit())
 		add_child(_x_stepper)
 	else:
 		var words: String = YES if _owed_text == "" else PAY_FORMAT % _owed_text.strip_edges()
 		_affirmative = _button(_asked.affirmative if _asked.affirmative != "" else words, left, is_yes)
-		_affirmative.pressed.connect(func() -> void: answer_selected.emit(AFFIRMATIVE))
+		_affirmative.pressed.connect(func() -> void: answer_pressed.emit(AFFIRMATIVE))
 	if _asked.offers_no:
 		_no = _button(NO, right, _selected == NO_ANSWER)
-		_no.pressed.connect(func() -> void: answer_selected.emit(NO_ANSWER))
+		_no.pressed.connect(func() -> void: answer_pressed.emit(NO_ANSWER))
 	if _option != null:
 		move_child(_option, -1)
 	if _flash != null:

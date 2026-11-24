@@ -2,7 +2,7 @@ class_name SpoilsScreen
 extends Control
 ## The Spoils screen (game glossary; milestone 18, signed off as prototypes/spoils_screen):
 ## what the win just recorded paid, already in the run (ADR 0039). On the Stage Intro's
-## ground, one window: "Found Items" on a dithered gray bar, the gold on parchment, a Card
+## ground, one window edged in the Steel Rim (WindowLook): "Found Items" on a dithered gray bar, the gold on parchment, a Card
 ## Face for each card glowing its Rarity, and Continue, which opens the Stage Map. It is
 ## revealed at the Game Speed (SpoilsReveal), and a click during the reveal ends it.
 ## Later (milestone 24): an Item on parchment beside the gold.
@@ -17,11 +17,6 @@ const RANKS: Dictionary[String, StageMap.Kind] = {
 }
 const HEADING: String = "Found Items"
 const CONTINUE: String = "Continue"
-## The window: a warm dark gray, the "Run won" notice's and the Run Bar's too.
-const WINDOW_COLOR: Color = Color("#4b3f3f")
-const WINDOW_EDGE: Color = Color("#14171c")
-const WINDOW_RADIUS: int = 24
-const WINDOW_MARGIN: int = 24
 const ROW_GAP: int = 24
 const TEXT: Color = Color8(228, 231, 238)
 ## The "Found Items" bar.
@@ -174,8 +169,7 @@ func begin(run: Run) -> void:
 	centered.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_lift.add_child(centered)
 	_window = PanelContainer.new()
-	_window.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_window.resized.connect(_shade_window)
+	WindowLook.shade(_window)
 	centered.add_child(_window)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override("separation", ROW_GAP)
@@ -191,7 +185,6 @@ func begin(run: Run) -> void:
 	_button_frame = _shadowed(_continue_button(), BUTTON_RADIUS + 1, PART_SHADOW_DROP)
 	_button_frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(_button_frame)
-	_shade_window()
 	_reveal_time = 0.0 if is_paced else SpoilsReveal.length(_spoils.cards.size())
 	_pose()
 	run_pause = RunPause.over(self, func(scene: String) -> void: navigate.call(scene),
@@ -288,13 +281,6 @@ func _pose() -> void:
 		_faces[index].visible = dealt.w > 0.5
 		_backs[index].visible = dealt.w <= 0.5
 	_button_frame.modulate.a = SpoilsReveal.button(time, _spoils.cards.size())
-
-
-func _shade_window() -> void:
-	var face: StyleBoxTexture = DitherShading.plate(WINDOW_COLOR.lightened(0.06), WINDOW_COLOR.darkened(0.3),
-			WINDOW_EDGE, WINDOW_RADIUS, 2, 0, maxi(int(_window.size.y), WINDOW_RADIUS * 2 + 4))
-	face.set_content_margin_all(WINDOW_MARGIN)
-	_window.add_theme_stylebox_override("panel", face)
 
 
 ## "Found Items", bold, on a dithered gray bar.

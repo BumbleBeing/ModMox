@@ -5,7 +5,7 @@ extends RefCounted
 ## strength. It is the window's own Dither Shading blocks, four deep as the shadow is, two
 ## solid and two dithered away; it is centered where the Wisp is level with the edge, longer
 ## the nearer the Wisp is, and its ends are dithered away too. It never lies on the window's
-## rounded corners, and never on its bottom edge.
+## stepped corners, and never on its bottom edge.
 
 const STRENGTH: float = 0.5
 ## How near the Wisp's nearest side must come to an edge to light it, and how long the light
@@ -21,7 +21,7 @@ enum Edge { TOP, LEFT, RIGHT }
 
 
 ## The light's blocks on the screen for the Wisp at [param wisp] near [param window], whose
-## rounded corner and edge together are [param corner] pixels across: its dither grid
+## stepped corner and rim together reach [param corner] pixels in: its dither grid
 ## starts that far in from its left and right, and at its top.
 static func blocks(wisp: Rect2, window: Rect2, corner: int) -> Array[Rect2]:
 	var made: Array[Rect2] = []
@@ -50,7 +50,7 @@ static func _along(edge: Edge, gap: float, level: float, window: Rect2, corner: 
 		return made
 	var block: int = DitherShading.BLOCK
 	var half: float = length / 2
-	# The blocks along the edge, past the rounded corners: across the top, from the window's
+	# The blocks along the edge, past the stepped corners: across the top, from the window's
 	# dither grid, which starts past its left corner; down a side, from its top.
 	var first: int
 	var last: int

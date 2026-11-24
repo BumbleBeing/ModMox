@@ -26,6 +26,14 @@ extends Control
 ## To drive it for a picture: --click-entry="Seer's Helm", --click-slot=helm and
 ## --right-slot=boots make that click with a real mouse event before the picture is saved,
 ## as --click-satchel, --click-close and --click-ground do.
+##
+## Since steps 1 and 2 were signed off a Mod's entry shows its Mod Icon (GLOSSARY.md), the
+## cog in its Rarity's color, bare on the parchment whatever ground is being tried.
+
+## PROTOTYPE (the Store's and the Workshop's step 3, prototypes/store_screen/ and
+## prototypes/workshop_screen/): an Item has been sold from the Satchel at a shop, which
+## pays [param price] for it.
+signal sold(price: int)
 
 enum Page { ARMOR, MODS, POTIONS }
 enum Fill { FULL, SPARSE, EMPTY }
@@ -34,6 +42,12 @@ enum Slot { HELM, GREAVES, BOOTS }
 enum Ground { BEIGE_CIRCLE, BARE, DARK_WELL, LEATHER_PLATE, MEDALLION, PAPER_WELL, RARITY_WELL, RARITY_PLATE }
 
 const Icons: GDScript = preload("res://prototypes/satchel/satchel_icons.gd")
+const ShopParts = preload("res://prototypes/store_screen/shop_parts.gd")
+## PROTOTYPE: what a shop sells each sample Armor for; it pays a third, as for anything.
+const ARMOR_PRICES: Dictionary[String, int] = {
+	"Lionguard Helm": 150, "Thornwalker Boots": 180, "Seer's Helm": 300, "Marcher's Greaves": 200,
+	"Stormcaller's Greaves": 280, "Gilded Boots": 240,
+}
 const STAGE_MAP: String = "res://ui/stage_map/stage_map_screen.tscn"
 const SCREEN: Vector2 = Vector2(1920, 1080)
 const DIM: Color = Color(0, 0, 0, 0.6)
@@ -100,7 +114,8 @@ const GROUND_NAMES: Dictionary[Ground, String] = {
 ## The color an icon's plate takes from its Item. A Potion's is its Rarity's: the
 ## Inspector's gray, silver and gold, and sienna for Mythic (the Inspector's Mythic glow is
 ## honey, #e89a2b). A Unique Item's is light purple. An Armor Icon has no plate at all
-## (ARMOR_TINT is only what the sheet's other grounds show an Armor on).
+## (ARMOR_TINT is only what the sheet's other grounds show an Armor on), and neither has a
+## Mod Icon, which is its Rarity's color itself.
 const ARMOR_TINT: Color = Color("#a0522d")
 const UNIQUE_TINT: Color = Color("#c8a8e6")
 const RARITY_TINTS: Dictionary[MmCardDefinition.Rarity, Color] = {
@@ -120,6 +135,8 @@ const EMBLEM_WORDS: String = "You start each encounter with this Emblem:"
 const DIVINERS_BOON: String = "res://content/emblems/diviners_boon.tres"
 const ELECTROMANCERS_BOON: String = "res://content/emblems/electromancers_boon.tres"
 const BIG_GULP: String = "res://content/potions/big_gulp.tres"
+## The Mod Icon, by its Rarity's name in lower case.
+const MOD_ICONS: String = "res://ui/sprites/mods/%s.png"
 
 
 ## One entry of a page: a kind of Item held, and how many.
@@ -131,7 +148,7 @@ class Item extends RefCounted:
 	var words: Array[String] = []
 	## The Emblem an Armor brings, written under its words, or null.
 	var emblem: MmCardDefinition = null
-	## Its Armor Icon or Potion Icon; null for a Mod, which has no picture.
+	## Its Armor Icon, Potion Icon or Mod Icon.
 	var icon: Texture2D = null
 	## An Armor's Armor Slot.
 	var slot: Slot = Slot.HELM
@@ -140,8 +157,12 @@ class Item extends RefCounted:
 	var is_worn: bool = false
 	## An Armor Icon has no ground of its own; a Potion Icon stands on its Rarity's plate.
 	var is_armor: bool = false
+	## A Mod Icon has no ground of its own either: the cog is its Rarity's color itself.
+	var is_mod: bool = false
 	## The color its icon's ground takes: brown for an Armor, its Rarity's for a Potion.
 	var tint: Color = Color("#a0522d")
+	## PROTOTYPE: what a shop pays for one of it.
+	var price: int = 0
 
 
 var _page: Page = Page.ARMOR
@@ -169,6 +190,19 @@ var _worn_node: Control = null
 var _entries: Dictionary[String, Control] = {}
 var _stars: Dictionary[String, Control] = {}
 var _slot_nodes: Dictionary[Slot, Control] = {}
+## PROTOTYPE (the Store's and the Workshop's step 3): set by a shop's prototype before the
+## Satchel is added to it. At a shop it makes no Stage Map and no switch bar of its own,
+## takes no keys, and is opened by open_at_shop().
+var is_at_shop: bool = false
+## The pages whose Items the shop buys, each entry of which has a sell button: Armor and
+## Potions at the Store, Mods at the Workshop.
+var sells: Array = []
+## While a shop is making a picture the cursor is only where its flags put it.
+var is_driven: bool = false
+## How many of each Item, by its name, have been sold at this shop.
+var _sold_counts: Dictionary[String, int] = {}
+## Each entry's sell button, by its Item's name, on the page that is open.
+var _sell_buttons: Dictionary[String, Button] = {}
 
 
 func _ready() -> void:
@@ -198,6 +232,12 @@ func _ready() -> void:
 	if picture == "":
 		_ease_seconds = GameSpeed.seconds(Pacing.EASE_SECONDS, GameSettings.load_from(GameSettings.PATH).game_speed)
 	_is_open = _is_open or _is_sheet
+	if is_at_shop:
+		# No Stage Map under it and nothing of its own to drive: the shop does both.
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_is_open = false
+		_rebuild()
+		return
 	_map = (load(STAGE_MAP) as PackedScene).instantiate() as StageMapScreen
 	_map.starts_itself = false
 	# Arriving at a Node opens nothing here, and neither does the Deckbox button.
@@ -232,7 +272,7 @@ func _ready() -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var key: InputEventKey = event as InputEventKey
-	if key == null or not key.pressed or key.echo:
+	if key == null or not key.pressed or key.echo or is_at_shop:
 		return
 	match key.keycode:
 		KEY_1:
@@ -307,7 +347,8 @@ func _rebuild() -> void:
 	_bar_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_bar_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_bar_layer)
-	_add_prototype_bar()
+	if not is_at_shop:
+		_add_prototype_bar()
 	if _start_scroll > 0 and _is_open and _scroll != null:
 		await get_tree().process_frame
 		await get_tree().process_frame
@@ -555,6 +596,7 @@ func _page_panel(armor: Array[Item]) -> Control:
 	_scroll = null
 	_entries.clear()
 	_stars.clear()
+	_sell_buttons.clear()
 	if items.is_empty():
 		var none: Label = _text(EMPTY_WORDS[_page], 26, CREAM_MUTED, false)
 		none.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -602,7 +644,7 @@ func _entry(item: Item, is_gray: bool) -> Control:
 	row.add_theme_constant_override("separation", 16)
 	panel.add_child(row)
 	if item.icon != null:
-		var tile: Control = _icon_tile(item.icon, Ground.BARE if item.is_armor else _ground, false, item.tint)
+		var tile: Control = _icon_tile(item.icon, Ground.BARE if item.is_armor or item.is_mod else _ground, false, item.tint)
 		tile.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		row.add_child(tile)
 	var column: VBoxContainer = VBoxContainer.new()
@@ -640,13 +682,103 @@ func _entry(item: Item, is_gray: bool) -> Control:
 		emblem.add_child(_words(look.rules_text))
 		inset.add_child(emblem)
 		column.add_child(inset)
+	if is_at_shop and sells.has(_page):
+		row.add_child(_sell_button(item, panel, name_label))
 	if is_gray:
 		panel.modulate = Color(0.6, 0.6, 0.6, 0.7)
 	return panel
 
 
-## An Armor Icon or a Potion Icon on [param ground], one of the grounds being chosen
-## between. [param is_on_dark] says it stands in an Armor Slot, on the Worn column's dark
+## PROTOTYPE (the Store's and the Workshop's step 3): an entry's sell button. It reads
+## "Sell" with the coin and what the shop pays; the first click turns it into "Confirm",
+## the second sells one of the Item, and the cursor leaving it turns it back.
+func _sell_button(item: Item, entry: Control, name_label: Label) -> Button:
+	var button: Button = ShopParts.price_button("Sell")
+	ShopParts.set_button_price(button, item.price, true, true)
+	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var word: Label = button.get_node("Row/Word") as Label
+	var is_armed: Array[bool] = [false]
+	var disarm: Callable = func() -> void:
+		is_armed[0] = false
+		button.remove_meta(ShopParts.HELD_WIDTH)
+		word.text = "Sell"
+		ShopParts.set_button_price(button, item.price, true, true)
+	button.mouse_exited.connect(func() -> void:
+		if not is_driven:
+			disarm.call())
+	button.pressed.connect(func() -> void:
+		if not is_armed[0]:
+			is_armed[0] = true
+			# It keeps the width it has with its price, so that the second click lands on it too.
+			button.set_meta(ShopParts.HELD_WIDTH, button.size.x)
+			word.text = "Confirm"
+			ShopParts.set_button_price(button, -1, true, true)
+			return
+		disarm.call()
+		_sell_one(item, entry, name_label))
+	_sell_buttons[item.name] = button
+	return button
+
+
+## PROTOTYPE: sells one of [param item] to the shop. Its entry counts one fewer, or goes
+## with the last of it, and selling a Worn Armor takes it off.
+func _sell_one(item: Item, entry: Control, name_label: Label) -> void:
+	item.count -= 1
+	_sold_counts[item.name] = _sold_counts.get(item.name, 0) + 1
+	sold.emit(item.price)
+	if item.count > 0:
+		name_label.text = item.name if item.count == 1 else "%s ×%d" % [item.name, item.count]
+		return
+	_sell_buttons.erase(item.name)
+	_entries.erase(item.name)
+	_stars.erase(item.name)
+	Easing.fade_out_and_free(entry, _ease_seconds)
+	if item.is_armor:
+		_armor.erase(item)
+		if _worn.get(item.slot, "") == item.name:
+			_worn.erase(item.slot)
+			_refresh_worn()
+
+
+## PROTOTYPE: takes what has been sold at this shop out of [param items].
+func _take_sold(items: Array[Item]) -> void:
+	for index: int in range(items.size() - 1, -1, -1):
+		items[index].count -= _sold_counts.get(items[index].name, 0)
+		if items[index].count <= 0:
+			items.remove_at(index)
+
+
+## PROTOTYPE: opens the Satchel over a shop, always on the Armor page.
+func open_at_shop() -> void:
+	_open()
+
+
+## PROTOTYPE: drives the Satchel at a shop for a picture, with real mouse events, and
+## returns whether [param argument] asked anything of it: --satchel-page=mods opens that
+## page, --sell="Fogbrew" clicks that entry's sell button once, and --satchel-close
+## clicks Close.
+func drive(argument: String) -> bool:
+	if not _is_open:
+		return false
+	if argument.begins_with("--satchel-page="):
+		for page: Page in PAGE_NAMES:
+			if PAGE_NAMES[page].to_lower() == argument.trim_prefix("--satchel-page=").to_lower():
+				_page = page
+		_rebuild()
+		return true
+	if argument.begins_with("--sell="):
+		if _sell_buttons.has(argument.trim_prefix("--sell=")):
+			_click_at(_sell_buttons[argument.trim_prefix("--sell=")].get_global_rect().get_center(), MOUSE_BUTTON_LEFT)
+		return true
+	if argument == "--satchel-close":
+		if _close_node != null:
+			_click_at(_close_node.get_global_rect().get_center(), MOUSE_BUTTON_LEFT)
+		return true
+	return false
+
+
+## An Armor Icon, a Potion Icon or a Mod Icon on [param ground], one of the grounds being
+## chosen between. [param is_on_dark] says it stands in an Armor Slot, on the Worn column's dark
 ## leather, not on an entry's parchment. [param tint] is its Item's color, for the grounds
 ## that show the Rarity.
 func _icon_tile(icon: Texture2D, ground: Ground, is_on_dark: bool, tint: Color) -> Control:
@@ -872,6 +1004,7 @@ func _sample_armor() -> Array[Item]:
 		items.append(_an_armor("Marcher's Greaves", Slot.GREAVES, Icons.greaves(Icons.IRON, Icons.EARTH), 2, null, 2, false))
 		items.append(_an_armor("Stormcaller's Greaves", Slot.GREAVES, Icons.greaves(Icons.TEAL, Icons.GOLD), 1, electromancer, 1, false))
 		items.append(_an_armor("Gilded Boots", Slot.BOOTS, Icons.boots(Icons.RUST, Icons.GOLD), 4, null, 1, false))
+	_take_sold(items)
 	items.sort_custom(func(a: Item, b: Item) -> bool:
 		return a.slot < b.slot if a.slot != b.slot else a.name.naturalnocasecmp_to(b.name) < 0)
 	return items
@@ -890,6 +1023,7 @@ func _an_armor(armor_name: String, slot: Slot, icon: Texture2D, life: int, emble
 	item.count = count
 	item.is_armor = true
 	item.is_worn = _worn.get(slot, "") == armor_name and not _is_slot_barred(slot)
+	item.price = ARMOR_PRICES.get(armor_name, 150) / 3
 	return item
 
 
@@ -913,6 +1047,7 @@ func _sample_mods() -> Array[Item]:
 		var ancient: Item = _a_mod(_stat_mod("Ancient", 0, 0, [], 0, [], Mod.Rarity.RARE, land), 1)
 		ancient.words = ["Modified card gains \"When this land enters, you gain 1 life.\""]
 		items.append(ancient)
+	_take_sold(items)
 	_sort_by_rarity(items)
 	return items
 
@@ -922,8 +1057,11 @@ func _a_mod(mod: Mod, count: int) -> Item:
 	item.name = mod.name
 	item.count = count
 	item.rarity = mod.rarity
+	item.icon = load(MOD_ICONS % MOD_RARITY_NAMES[mod.rarity].to_lower()) as Texture2D
+	item.is_mod = true
 	item.type_line = "%s Mod for %s" % [MOD_RARITY_NAMES[mod.rarity], _accepted_by(mod)]
 	item.words = [ModText.of(mod)]
+	item.price = ShopParts.MOD_PRICES[mini(mod.rarity, ShopParts.MOD_PRICES.size() - 1)] / 3
 	return item
 
 
@@ -991,6 +1129,7 @@ func _sample_potions() -> Array[Item]:
 				"Draw two cards.", 1))
 		items.append(_a_potion("Dragon's Breath", MmCardDefinition.Rarity.MYTHIC, Icons.potion(Icons.Flask.CONE, Icons.RUST),
 				"Dragon's Breath deals 3 damage to any target.", 1))
+	_take_sold(items)
 	_sort_by_rarity(items)
 	return items
 
@@ -1004,6 +1143,7 @@ func _a_potion(potion_name: String, rarity: MmCardDefinition.Rarity, icon: Textu
 	item.tint = RARITY_TINTS[rarity]
 	item.type_line = "%s Potion" % Inspector.RARITY_NAMES[rarity]
 	item.words = [words]
+	item.price = ShopParts.POTION_PRICES[rarity] / 3
 	return item
 
 

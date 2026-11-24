@@ -92,6 +92,20 @@ func test_starting_a_run_asks_before_replacing_the_saved_one() -> void:
 
 
 ## S6: Start new run replaces the saved run.
+func test_a_dialogs_window_is_edged_in_the_steel_rim_as_the_menus_is() -> void:
+	_save_a_run()
+	var menu: MainMenu = _menu()
+	menu.size = Vector2(1920, 1080)
+
+	menu.button("Start Run (debug)").pressed.emit()
+	await wait_process_frames(2)
+
+	var window: PanelContainer = menu.dialog().window()
+	var face: StyleBoxTexture = window.get_theme_stylebox("panel") as StyleBoxTexture
+	assert_eq(window.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_eq(face.texture.get_image().get_data(), WindowLook.plate(int(window.size.y)).texture.get_image().get_data())
+
+
 func test_start_new_run_replaces_the_saved_one() -> void:
 	_save_a_run()
 	var menu: MainMenu = _menu()

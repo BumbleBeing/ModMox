@@ -35,6 +35,11 @@ func body_text() -> String:
 	return _body.text
 
 
+## The window the dialog's words and buttons sit in, edged in the Steel Rim as the menu's is.
+func window() -> PanelContainer:
+	return _window
+
+
 ## The button reading [param text], or null.
 func button(text: String) -> Button:
 	return _buttons.get(text, null) as Button
@@ -55,10 +60,8 @@ func _build(title: String, body: String, answers: Array[String]) -> void:
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
 	_window = PanelContainer.new()
-	_window.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_window.resized.connect(func() -> void: MainMenu.shade_window(_window))
+	WindowLook.shade(_window)
 	center.add_child(_window)
-	MainMenu.shade_window(_window)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.custom_minimum_size = Vector2(BODY_WIDTH, 0)
 	column.add_theme_constant_override("separation", MainMenu.BUTTON_GAP)

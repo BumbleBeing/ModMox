@@ -3,8 +3,9 @@ extends GutTest
 ## The Hero plays a Shock Forest Plains ("As this land enters, you may pay 2 life. If you
 ## don't, it enters tapped."); while asked, it waits in the hand glowing white, the Info
 ## Panel reads "Have Shock Forest Plains enter untapped?" with "Pay 2 life" and "No" in its
-## Answer Row and neither selected, so the Pass Button reads "Choose an answer". Once one is
-## selected, the Pass Button reads it over SPACE and gives it.
+## Answer Row and neither selected, so the Pass Button reads "Choose an answer". A click on
+## either answers at once (game ADR 0066's addendum); once Left or Right has selected one,
+## the Pass Button reads it over SPACE and gives it.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const CombatAgent := preload("res://tests/ui/encounter/support/combat_agent.gd")
@@ -52,12 +53,24 @@ func test_the_pass_key_does_nothing_until_an_answer_is_selected() -> void:
 	assert_eq(_presenter.snapshot().decision, asked)
 
 
-func test_selecting_pay_makes_the_pass_button_read_it_and_the_pass_key_pays() -> void:
+func test_a_click_on_pay_pays_at_once() -> void:
 	_open_asked()
 	var life: int = _presenter.snapshot().view.life_totals[MmEncounterSetup.HERO_PLAYER_ID]
 
 	_screen.info_panel().affirmative_button().pressed.emit()
+	_presenter.wait_until_idle()
 
+	assert_eq(_presenter.snapshot().view.life_totals[MmEncounterSetup.HERO_PLAYER_ID], life - 2)
+	assert_false(_land().is_tapped)
+
+
+func test_selecting_pay_with_a_key_makes_the_pass_button_read_it_and_the_pass_key_pays() -> void:
+	_open_asked()
+	var life: int = _presenter.snapshot().view.life_totals[MmEncounterSetup.HERO_PLAYER_ID]
+
+	_screen.press_key(KEY_LEFT)
+
+	assert_true(_presenter.snapshot().decision is ChooseYesOrNoDecision, "Selecting pays nothing.")
 	assert_eq(_screen.pass_button().shown_text(), "Pay 2 life")
 	assert_eq(_screen.pass_button().key_text(), "SPACE")
 	assert_false(_screen.pass_button().disabled)
@@ -69,10 +82,21 @@ func test_selecting_pay_makes_the_pass_button_read_it_and_the_pass_key_pays() ->
 	assert_false(_land().is_tapped)
 
 
-func test_no_has_it_enter_tapped() -> void:
+func test_a_click_on_no_has_it_enter_tapped_at_once() -> void:
 	_open_asked()
+	var life: int = _presenter.snapshot().view.life_totals[MmEncounterSetup.HERO_PLAYER_ID]
 
 	_screen.info_panel().no_button().pressed.emit()
+	_presenter.wait_until_idle()
+
+	assert_true(_land().is_tapped)
+	assert_eq(_presenter.snapshot().view.life_totals[MmEncounterSetup.HERO_PLAYER_ID], life)
+
+
+func test_no_selected_with_a_key_is_given_by_the_pass_button() -> void:
+	_open_asked()
+
+	_screen.press_key(KEY_RIGHT)
 	assert_eq(_screen.pass_button().shown_text(), "No")
 	_screen.pass_button().pressed.emit()
 	_presenter.wait_until_idle()

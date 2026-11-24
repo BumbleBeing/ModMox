@@ -4,7 +4,9 @@ extends Control
 ## a border around its art, a large P/T box, and a chip for each keyword. It shows no other
 ## text, and turns sideways and darkens when tapped, with an upright tap symbol over its art.
 ## A creature with damage marked on it shows a Damage Chip over its toughness, and a
-## permanent with counters on it a Counter Chip in the top left corner of its art.
+## permanent with counters on it a Counter Chip in the top left corner of its art. A
+## summoning sick creature is darkened a little, less than a tapped one, and the Sickness
+## Spiral turns over the middle of its art, over everything else on the face.
 ##
 ## An attachment, such as an Equipment on a creature, is drawn attached (game ADR 0042):
 ## sideways whether tapped or not, so that its name runs down the strip of it that shows
@@ -22,6 +24,8 @@ signal rules_scroll_requested(steps: float)
 
 ## How dark a tapped face gets.
 const TAPPED_SHADE: float = 0.45
+## How dark a summoning sick creature's face gets: less than a tapped one.
+const SICK_SHADE: float = 0.25
 ## A P/T box's height on the Card Face, as a fraction of the card's height.
 const CARD_FACE_BOX: float = 0.14
 ## How much of an attached face shows past the permanent it lies behind, of its height:
@@ -38,6 +42,8 @@ var _look: CardLook
 var _card: Control
 var _name: AnchoredText
 var _shade: ColorRect
+var _sick_shade: ColorRect = null
+var _spiral: SicknessSpiral = null
 var _tap_symbol: TextureRect
 var _turn: float = 0.0
 var _damage_chip: DamageChip = null
@@ -139,6 +145,13 @@ func setup(look: CardLook, height: float, is_drawn_attached: bool = false, is_tu
 		_add_power_toughness(shape, spec, height)
 	_add_chips(shape, height, spec.is_creature)
 	_add_tap_marks(shape, face_size, art)
+	# An attached face's art is hidden, so it says nothing of summoning sickness.
+	var is_sick: bool = look.is_summoning_sick and spec.is_creature and not _is_attached
+	if is_sick:
+		_sick_shade = _shade.duplicate() as ColorRect
+		_sick_shade.color.a = SICK_SHADE
+		shape.add_child(_sick_shade)
+		shape.move_child(_sick_shade, _shade.get_index() + 1)
 	for kind: MmCounter.Kind in MmCounter.KINDS:
 		# A permanent never keeps both kinds (CR 704.5q), so the first it has is all it has.
 		if _counter_chip == null and look.counters.get(kind, 0) > 0:
@@ -163,6 +176,10 @@ func setup(look: CardLook, height: float, is_drawn_attached: bool = false, is_tu
 		gray.shader = DIMMED_SHADER
 		_dim.material = gray
 		_card.add_child(_dim)
+	if is_sick:
+		# Last, so it turns over the shades, the tap symbol, the chips and the gray.
+		_spiral = SicknessSpiral.make(art)
+		_card.add_child(_spiral)
 	_card.pivot_offset = face_size / 2.0
 	show_turn(1.0 if look.is_tapped else 0.0)
 
@@ -175,6 +192,11 @@ func card() -> Control:
 ## The gray over a dimmed face (CardLook.is_dimmed), or null.
 func dim() -> Panel:
 	return _dim
+
+
+## The Sickness Spiral over a summoning sick creature's art, or null.
+func sickness_spiral() -> SicknessSpiral:
+	return _spiral
 
 
 func name_text() -> AnchoredText:
@@ -198,7 +220,9 @@ func attached_mark() -> AttachedMark:
 ## says while the face is on its way. Tapped and lying down are the same quarter turn, so
 ## the card is turned by the larger of the two. The tap symbol is kept upright and is as
 ## solid as the card is tapped and not lying down; the Attached Mark is as solid as the card
-## lies down.
+## lies down. A summoning sick creature's shade makes up what the tapped shade lacks of
+## SICK_SHADE, so the face is as dark as the darker of the two and never both, and its
+## Sickness Spiral is kept upright as the tap symbol is, its light at the upper left.
 func show_turn(turn: float, lean: float = AS_DRAWN) -> void:
 	_turn = turn
 	var lying: float = lean if lean != AS_DRAWN else (1.0 if _is_attached else 0.0)
@@ -213,6 +237,9 @@ func show_turn(turn: float, lean: float = AS_DRAWN) -> void:
 	_tap_symbol.rotation_degrees = -90.0 * turned
 	if _attached_mark != null:
 		_attached_mark.modulate.a = lying
+	if _sick_shade != null:
+		_sick_shade.color.a = _shade_over(shade_alpha(), SICK_SHADE)
+		_spiral.rotation_degrees = -90.0 * turned
 
 
 ## How far the card is turned toward sideways, from 0 to 1.
@@ -227,6 +254,13 @@ func is_darkened() -> bool:
 ## How dark the card is drawn: none upright, TAPPED_SHADE sideways.
 func shade_alpha() -> float:
 	return _shade.color.a if _shade.visible else 0.0
+
+
+## How dark the card is drawn by everything that darkens it, the tapped shade and a
+## summoning sick creature's: the darker of the two.
+func darkness() -> float:
+	var sick: float = _sick_shade.color.a if _sick_shade != null else 0.0
+	return 1.0 - (1.0 - shade_alpha()) * (1.0 - sick)
 
 
 ## The upright tap symbol over a tapped face's art, or null when untapped.
@@ -334,6 +368,12 @@ func _add_tap_marks(shape: Panel, face_size: Vector2, art: Rect2) -> void:
 	_tap_symbol = CardShapes.image(ManaSymbols.texture("t"), Rect2(art.get_center() - Vector2(side, side) / 2.0, Vector2(side, side)))
 	_tap_symbol.pivot_offset = Vector2(side, side) / 2.0
 	shape.add_child(_tap_symbol)
+
+
+## How solid a shade laid over one [param under] solid must be for the two together to be
+## [param wanted] solid, or nothing when the one under is already that dark.
+static func _shade_over(under: float, wanted: float) -> float:
+	return maxf(0.0, 1.0 - (1.0 - maxf(under, wanted)) / (1.0 - under))
 
 
 ## How much the baked border is scaled to make a face [param height] pixels tall.

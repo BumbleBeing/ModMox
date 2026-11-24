@@ -286,6 +286,40 @@ func test_the_menu_soldier_stands_on_the_window_and_the_two_are_centered_togethe
 	assert_not_null(soldier.sequence(), "what brings him his effects asks his sequence")
 
 
+func test_the_logo_heads_the_window_under_him_at_twice_its_size_on_whole_pixels() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+	menu.size = Vector2(1920, 1080)
+	await wait_process_frames(2)
+
+	var logo: MenuLogo = menu.logo()
+	var drawn: Rect2 = logo.get_global_rect()
+	var window: Rect2 = menu.window().get_global_rect()
+
+	assert_eq(logo.texture.get_size(), Vector2(MenuLogo.SHEET.get_width(), 32), "one frame")
+	assert_eq(drawn.size, logo.texture.get_size() * 2)
+	assert_eq(drawn.position, drawn.position.round(), "on whole pixels")
+	assert_almost_eq(drawn.get_center().x, window.get_center().x, 1.0, "centered on the window")
+	assert_eq(drawn.position.y, window.position.y + WindowLook.MARGIN, "at the window's head")
+	assert_lt(drawn.end.y, menu.button("Start Encounter").get_global_rect().position.y, "above the buttons")
+
+
+func test_the_window_is_edged_in_the_steel_rim() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+	menu.size = Vector2(1920, 1080)
+	await wait_process_frames(2)
+	var window: PanelContainer = menu.window()
+
+	var face: StyleBoxTexture = window.get_theme_stylebox("panel") as StyleBoxTexture
+	assert_eq(window.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_eq(face.texture.get_image().get_data(), WindowLook.plate(int(window.size.y)).texture.get_image().get_data())
+
+
+func test_there_is_no_logo_when_the_menu_is_skipped() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(["--seed=7"]))
+
+	assert_null(menu.logo())
+
+
 func test_his_shadow_lies_on_the_windows_top_under_where_he_touches_it() -> void:
 	var menu: MainMenu = _menu(PackedStringArray())
 	menu.size = Vector2(1920, 1080)
@@ -302,6 +336,8 @@ func test_his_shadow_lies_on_the_windows_top_under_where_he_touches_it() -> void
 		assert_has(soldier.contacts(), floori((block.get_center().x - his.position.x) / MenuSoldier.SCALE))
 		assert_eq(posmod(int(block.position.y - window.position.y), DitherShading.BLOCK), 0,
 				"in step with the window's dither")
+		assert_eq(posmod(int(block.position.x - window.position.x) - WindowLook.CORNER, DitherShading.BLOCK), 0,
+				"in step with the window's dither across, which starts past its corner")
 
 
 func test_the_wisp_floats_in_front_of_him_on_whole_pixels_and_takes_no_clicks() -> void:
@@ -337,6 +373,8 @@ func test_the_wisp_light_pools_on_the_windows_top_at_his_feet_as_the_wisp_touche
 	for block: Rect2 in blocks:
 		assert_between(block.position.y, window.position.y, window.position.y + DitherShading.BLOCK * 3.0,
 				"on the window's top")
+		assert_eq(posmod(int(block.position.x - window.position.x) - WindowLook.CORNER, DitherShading.BLOCK), 0,
+				"in step with the window's dither across")
 		middle += block.get_center().x
 	assert_almost_eq(middle / blocks.size(), soldier.chest().x, DitherShading.BLOCK * 1.0, "at his feet")
 

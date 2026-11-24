@@ -224,6 +224,93 @@ func test_the_shade_covers_the_card_and_the_tap_symbol_sits_in_the_middle_of_its
 	assert_true(symbol.get_parent() == shade.get_parent() and symbol.get_index() > shade.get_index(), "Over the shade.")
 
 
+func test_a_summoning_sick_creature_is_darkened_a_little_with_the_spiral_over_the_middle_of_its_art() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.is_summoning_sick = true
+
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+
+	var spiral: SicknessSpiral = face.sickness_spiral()
+	var art: Rect2 = BattlefieldFace.art_box(140.0)
+	assert_almost_eq(face.darkness(), BattlefieldFace.SICK_SHADE, 0.0001)
+	assert_lt(BattlefieldFace.SICK_SHADE, BattlefieldFace.TAPPED_SHADE, "Less than a tapped one.")
+	assert_false(face.is_darkened(), "Not as a tapped one is.")
+	assert_null(face.tap_symbol())
+	assert_not_null(spiral)
+	assert_eq(spiral.get_parent(), face.card(), "It moves with the card.")
+	assert_eq(spiral.get_index(), face.card().get_child_count() - 1, "Over everything on the face.")
+	assert_almost_eq(spiral.position + spiral.size / 2.0, art.get_center(), Vector2(0.5, 0.5))
+	assert_eq(spiral.size.x, SicknessSpiral.side_in(art.size))
+
+
+func test_the_sick_shade_covers_the_card_under_the_spiral() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.is_summoning_sick = true
+
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+
+	var shades: Array[Node] = face.card().find_children("*", "ColorRect", true, false)
+	var sick: ColorRect = shades[1] as ColorRect
+	assert_eq(shades.size(), 2, "The tapped shade and the sick one.")
+	assert_true(sick.visible)
+	assert_eq(sick.size, BattlefieldFace.size_for(140.0))
+	assert_eq(Color(sick.color, 1.0), Color.BLACK)
+	assert_almost_eq(sick.color.a, BattlefieldFace.SICK_SHADE, 0.0001)
+	assert_eq(sick.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+
+
+func test_a_creature_that_is_not_summoning_sick_and_a_sick_noncreature_show_nothing_of_it() -> void:
+	var land: CardLook = _look("forest")
+	land.is_summoning_sick = true
+
+	for face: BattlefieldFace in [_battlefield(_look("grizzly_bears"), 140.0), _battlefield(land, 140.0)]:
+		assert_null(face.sickness_spiral())
+		assert_eq(face.darkness(), 0.0)
+
+
+func test_a_tapped_summoning_sick_creature_is_as_dark_as_a_tapped_one_and_its_spiral_stays_upright() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.is_summoning_sick = true
+	look.is_tapped = true
+
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+
+	assert_almost_eq(face.darkness(), BattlefieldFace.TAPPED_SHADE, 0.0001, "The darker of the two, never both.")
+	assert_almost_eq(face.sickness_spiral().get_global_transform().get_rotation(), 0.0, 0.0001, "Its light stays at the upper left.")
+	assert_gt(face.sickness_spiral().get_index(), face.tap_symbol().get_parent().get_index(), "Over the tap symbol.")
+	face.show_turn(0.25)
+	assert_almost_eq(face.darkness(), BattlefieldFace.SICK_SHADE, 0.0001, "Part way to tapped it is no lighter than a sick one.")
+	assert_almost_eq(face.sickness_spiral().get_global_transform().get_rotation(), 0.0, 0.0001)
+
+
+func test_a_dimmed_summoning_sick_creature_keeps_its_spiral_over_the_gray() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.is_summoning_sick = true
+	look.is_dimmed = true
+
+	var face: BattlefieldFace = _battlefield(look, 140.0)
+
+	assert_gt(face.sickness_spiral().get_index(), face.dim().get_index())
+
+
+func test_a_summoning_sick_creature_drawn_attached_shows_no_spiral() -> void:
+	var look: CardLook = _look("grizzly_bears")
+	look.is_summoning_sick = true
+
+	assert_null(_attached(look, 140.0).sickness_spiral(), "Its art is hidden.")
+
+
+func test_a_look_takes_its_summoning_sickness_from_the_view_and_has_none_as_printed() -> void:
+	var seen: MmObjectView = MmObjectView.new()
+	seen.name = "Grizzly Bears"
+
+	assert_false(CardLook.of_view(seen).is_summoning_sick)
+	seen.is_summoning_sick = true
+	assert_true(CardLook.of_view(seen).is_summoning_sick)
+	assert_true(CardLook.of_view(seen).copy().is_summoning_sick)
+	assert_false(_look("grizzly_bears").is_summoning_sick)
+
+
 func test_a_damaged_creature_shows_its_damage_on_a_chip_over_its_toughness() -> void:
 	var look: CardLook = _look("grizzly_bears")
 	look.damage_marked = 2

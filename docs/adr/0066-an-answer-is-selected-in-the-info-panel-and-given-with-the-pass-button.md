@@ -31,3 +31,15 @@ This changes ADR 0060, where "No" was "pressed with the mouse alone" and answere
 **Left as they are:** attackers, blockers, a division of damage, an order of triggers and cards to discard, which already start empty or on a default and are confirmed with the Pass Button; a target and the legend to keep, which are one click on the board; the words of every prompt, and every Stack Mark (ADRs 0060, 0062 and 0063).
 
 Left for later: the text of buttons is sometimes distorted and choppy, which the user saw on the prototype and which is not yet looked into.
+
+## Addendum: a click on an answer gives it, unless an X is asked
+
+After playing with it the user asked for one click less: "Change info panel decisions that don't involve a stepper to confirm on a single click (i.e. temple garden 'Pay 2 life')". A click on an answer of a "you may", a ward cost or a land's entry cost (ADR 0067) now gives that answer at once, Yes, Pay and No alike. For the mouse this takes back "only the Pass Button and its key give it" above, and takes the faster way that section turned down: a click on an answer is aimed at the words it reads, and nothing is left to set up before it.
+
+What stands:
+- **While an X is asked, a click only selects** (ADR 0063, engine ADR 0076): the stepper, and the No beside it. The stepper sets the answer up, so a click on it cannot be the answer, and the Pass Button gives the X shown or the No selected.
+- **Left and Right only select, and the Pass Button and Space give the Selected Answer.** The Pass Button reads as before: "Yes" over "SPACE" for a "you may", and "Choose an answer", which cannot be pressed, for a question that spends mana or life until a key has selected one.
+- **What each question starts on.** No key pays before an answer is selected, so a Hero pressing Space through priority still spends nothing unread.
+- Undo takes an answer back wherever it could before.
+
+The panel no longer says what a press of an answer means: it reports the press (`answer_pressed`), and the Encounter Screen gives the answer, or selects it while an X is asked.

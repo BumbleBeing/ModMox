@@ -1,7 +1,7 @@
 class_name MainMenu
 extends Control
-## The main menu: a plain list of where the game can go, in the Spoils screen's dithered
-## window on the slate ground, with its buttons. A request on the command line
+## The main menu: a plain list of where the game can go, in a window edged in the Steel Rim
+## (WindowLook) on the slate ground, with the Spoils screen's buttons. A request on the command line
 ## (--hero=, --villain= or --seed=) skips it and opens the Encounter Screen (A246), unless
 ## it names something that does not exist, which the menu then says. --deckbuilder opens
 ## the deckbuilder on a made-up run, for pictures. --stage-map opens the Stage Map of a
@@ -12,7 +12,8 @@ extends Control
 ## A playtest build (the playtest feature its export sets, milestone 20) hides those
 ## developer entries, though every flag above still works in it; every build shows its
 ## version at the screen's bottom right. The Menu Soldier stands on top of the window, playing his animations, casting the Soldier
-## Shadow on it; the two are centered on the screen together. The Wisp floats about them,
+## Shadow on it; the two are centered on the screen together. The Logo heads the window,
+## under him, its cogs turning. The Wisp floats about them,
 ## bringing him his effects, and casts the Wisp Light on the window when it comes near. As
 ## he takes each effect on, its Effect Callout floats off from him.
 ##
@@ -34,8 +35,6 @@ const MIN_WINDOW: Vector2i = Vector2i(1280, 720)
 const REFUSAL_COLOR: Color = Color("#e08a7a")
 ## The gap between the menu's rows: the Spoils screen's.
 const BUTTON_GAP: int = SpoilsScreen.ROW_GAP
-## How wide the window's edge is, in pixels.
-const WINDOW_EDGE_WIDTH: int = 2
 ## The project setting that names the build's version, which the menu shows as "Demo 0.0.1"
 ## (milestone 20), in the Credits' muted 18-point text, VERSION_INSET pixels in from the
 ## screen's bottom right corner: the Credits' buttons' inset.
@@ -81,6 +80,7 @@ var is_playtest: bool = OS.has_feature(PLAYTEST_FEATURE)
 
 var _buttons: Dictionary[String, Button] = {}
 var _version: Label
+var _logo: MenuLogo
 var _window: PanelContainer
 var _soldier: MenuSoldier
 ## Over everything, so that the Soldier Shadow lies on the window.
@@ -160,8 +160,7 @@ func _ready() -> void:
 	_soldier.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	stack.add_child(_soldier)
 	var window: PanelContainer = PanelContainer.new()
-	window.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	window.resized.connect(func() -> void: shade_window(window))
+	WindowLook.shade(window)
 	stack.add_child(window)
 	_window = window
 	_shadow_layer = Control.new()
@@ -190,14 +189,10 @@ func _ready() -> void:
 	column.custom_minimum_size = Vector2(360, 0)
 	column.add_theme_constant_override("separation", BUTTON_GAP)
 	window.add_child(column)
-	shade_window(window)
-	var title: Label = Label.new()
-	title.text = "ModMox"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_override("font", CardFonts.title())
-	title.add_theme_font_size_override("font_size", 66)
-	title.add_theme_color_override("font_color", SpoilsScreen.TEXT)
-	column.add_child(title)
+	_logo = MenuLogo.new()
+	_logo.name = "Logo"
+	_logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(_logo)
 	if _refusal != "":
 		var reason: Label = Label.new()
 		reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -234,6 +229,11 @@ func window() -> PanelContainer:
 	return _window
 
 
+## The Logo heading the window, or null when the menu went straight to another scene.
+func logo() -> MenuLogo:
+	return _logo
+
+
 ## The Wisp, or null when the menu went straight to another scene.
 func wisp() -> MenuWisp:
 	return _wisp
@@ -249,7 +249,7 @@ func callouts() -> MenuCallouts:
 func light_blocks() -> Array[Rect2]:
 	if not _wisp.flight().is_flying():
 		return []
-	return WispLight.blocks(_wisp.drawn_rect(), _window.get_global_rect(), SpoilsScreen.WINDOW_RADIUS + WINDOW_EDGE_WIDTH)
+	return WispLight.blocks(_wisp.drawn_rect(), _window.get_global_rect(), WindowLook.CORNER)
 
 
 ## The Soldier Shadow's blocks as they are drawn now, on the screen, faint or strong.
@@ -303,8 +303,8 @@ func _add(column: VBoxContainer, text: String, on_press: Callable) -> void:
 func _shadow_blocks_under(columns: Array[int]) -> Array[Rect2]:
 	var his: Rect2 = _soldier.get_global_rect()
 	var window: Rect2 = _window.get_global_rect()
-	# The window's dither starts past its rounded corner and edge.
-	var grid_left: float = window.position.x + SpoilsScreen.WINDOW_RADIUS + WINDOW_EDGE_WIDTH
+	# The window's dither starts past its stepped corner and rim.
+	var grid_left: float = window.position.x + WindowLook.CORNER
 	return SoldierShadow.blocks(columns, his.position.x, MenuSoldier.SCALE, grid_left, window.position.y)
 
 
@@ -385,16 +385,6 @@ func _show_next_dialog() -> void:
 		return
 	_dialog = _waiting.pop_front()
 	add_child(_dialog)
-
-
-## The window the menu sits in: the Spoils screen's, shaded over its own height.
-static func shade_window(window: PanelContainer) -> void:
-	var color: Color = SpoilsScreen.WINDOW_COLOR
-	var radius: int = SpoilsScreen.WINDOW_RADIUS
-	var face: StyleBoxTexture = DitherShading.plate(color.lightened(0.06), color.darkened(0.3), SpoilsScreen.WINDOW_EDGE,
-			radius, WINDOW_EDGE_WIDTH, 0, maxi(int(window.size.y), radius * 2 + 4))
-	face.set_content_margin_all(SpoilsScreen.WINDOW_MARGIN)
-	window.add_theme_stylebox_override("panel", face)
 
 
 ## [param item] in a frame that draws only the Spoils screen's drop shadow under a button.

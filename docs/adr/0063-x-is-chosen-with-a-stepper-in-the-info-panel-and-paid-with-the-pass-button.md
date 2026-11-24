@@ -25,3 +25,7 @@ ADR 0066 changes where the stepper and "No" sit and how X is paid. They are the 
 ## Addendum: X chosen as a spell is cast (engine ADR 0076)
 
 Guiding Hydra's {X}{W} is chosen as it is cast, with the same stepper. The Info Panel reads "Choose {X} for Guiding Hydra"; the stepper starts at the most the Hero could pay and sits on the left of the Answer Row, and the cast's Cancel takes the right, where No would be, since a cast is canceled rather than declined. The Pass Button reads "Cast with {2}". Nothing is selected at first, and what Auto-tap would tap for the X shown glows, as for "Pay {X}".
+
+## Addendum: a click still only selects here (ADR 0066's addendum)
+
+A click on an answer of a question without a stepper now gives it at once. Here nothing changes: a click on the stepper or on "No" selects, and the Pass Button or Space pays the X shown or declines.

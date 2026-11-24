@@ -81,12 +81,12 @@ func test_pointing_at_a_type_marks_the_heros_creatures_of_it_and_the_info_panel_
 
 	window.catcher_of("Cat").mouse_entered.emit()
 
-	assert_not_null(lion.get_node_or_null(BorderEffects.MARK), "Marked in the target color.")
-	assert_null(elf.get_node_or_null(BorderEffects.MARK))
+	assert_not_null(BorderEffects.mark_color(lion), "Marked in the target color.")
+	assert_null(BorderEffects.mark_color(elf))
 	assert_eq(_screen.info_panel().option_text(), "", "It never says what the type would do.")
 	window.catcher_of("Cat").mouse_exited.emit()
 	await wait_process_frames(2)
-	assert_null(lion.get_node_or_null(BorderEffects.MARK))
+	assert_null(BorderEffects.mark_color(lion))
 
 
 func test_up_and_down_light_the_next_type_and_the_board_follows() -> void:
@@ -99,7 +99,7 @@ func test_up_and_down_light_the_next_type_and_the_board_follows() -> void:
 	assert_eq(window.lit(), window.shown_types()[1])
 	window.step_light(-1)
 	assert_eq(window.lit(), "Elf")
-	assert_not_null(_screen.face_of(_permanent("Elf")).get_node_or_null(BorderEffects.MARK))
+	assert_not_null(BorderEffects.mark_color(_screen.face_of(_permanent("Elf"))))
 	assert_eq(_screen.info_panel().option_text(), "")
 
 

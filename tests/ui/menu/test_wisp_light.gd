@@ -2,11 +2,11 @@ extends GutTest
 ## The Wisp Light: when the Wisp comes near the main menu's window's top or either side, the
 ## Soldier Shadow turned to light lies just inside that edge, in the Wisp's color at half
 ## strength, on the window's own dither grid, longer the nearer the Wisp is. Never on the
-## rounded corners or the bottom edge.
+## stepped corners or the bottom edge.
 
 const WINDOW: Rect2 = Rect2(500, 300, 408, 460)
-## The window's rounded corner and its edge: where its dither grid starts across.
-const CORNER: int = 26
+## The window's stepped corner and its rim: where its dither grid starts across.
+const CORNER: int = WindowLook.CORNER
 const SIZE: float = WispFlight.SIZE
 
 
@@ -96,7 +96,7 @@ func test_it_is_the_wisps_color_at_half_strength() -> void:
 	assert_eq(WispLight.color_of(red, 0.5), Color(red, 0.25), "fading in with the Wisp")
 
 
-func test_near_a_corner_both_edges_light_but_never_the_rounded_corner() -> void:
+func test_near_a_corner_both_edges_light_but_never_the_corner_itself() -> void:
 	var wisp: Rect2 = Rect2(WINDOW.position - Vector2.ONE * (SIZE + 6.0), Vector2.ONE * SIZE)
 	var blocks: Array[Rect2] = _blocks(wisp)
 	var on_top: int = 0
@@ -105,10 +105,10 @@ func test_near_a_corner_both_edges_light_but_never_the_rounded_corner() -> void:
 	for block: Rect2 in blocks:
 		if block.position.y < WINDOW.position.y + DitherShading.BLOCK * 4:
 			on_top += 1
-			assert_gte(block.position.x, WINDOW.position.x + CORNER, "past the rounded corner")
+			assert_gte(block.position.x, WINDOW.position.x + CORNER, "past the corner")
 		else:
 			on_left += 1
-			assert_gte(block.position.y, WINDOW.position.y + CORNER, "below the rounded corner")
+			assert_gte(block.position.y, WINDOW.position.y + CORNER, "below the corner")
 	assert_gt(on_top, 0)
 	assert_gt(on_left, 0)
 

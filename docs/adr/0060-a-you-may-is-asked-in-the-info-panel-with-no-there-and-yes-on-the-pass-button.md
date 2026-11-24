@@ -29,3 +29,7 @@ Once the Hero has paid and the ward trigger has resolved, the Hero's own spell i
 ## Addendum: an answer is now selected, then given (ADR 0066)
 
 ADR 0066 changes how these questions are answered, and nothing else here. "No" is no longer pressed to answer: Yes and No are both in the Info Panel, a click or Left and Right selects one, and the Pass Button or Space gives it. A "you may" starts on Yes, so Space still says yes. A ward cost starts with neither selected and Space does nothing until one is; after that Space pays, so "No key pays" above no longer holds. The words, the marks and "nothing glows" stand.
+
+## Addendum: a click on Yes, Pay or No answers at once (ADR 0066's addendum)
+
+A click on an answer of a "you may" or a ward cost gives it, with no press of the Pass Button after it, as "No" was first pressed here. Left and Right still only select, and the Pass Button or Space gives the Selected Answer, so Space still says yes to a "you may" and still does nothing to a ward cost until a key has selected an answer.

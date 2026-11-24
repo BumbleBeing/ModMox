@@ -189,11 +189,12 @@ static func face_height(height: float) -> float:
 
 
 ## Whether the pixel at [param x], [param y] is inside a [param width] by [param height] box
-## shrunk by [param depth], whose corners step in blocks RING pixels square.
-static func is_inside(x: int, y: int, width: int, height: int, depth: int) -> bool:
+## shrunk by [param depth], whose corners step in blocks RING pixels square, [param steps]
+## of them: a button's CORNER_STEPS, or more for a window's Steel Rim (WindowLook).
+static func is_inside(x: int, y: int, width: int, height: int, depth: int, steps: int = CORNER_STEPS) -> bool:
 	var from_side: int = mini(x, width - 1 - x) - depth
 	var from_end: int = mini(y, height - 1 - y) - depth
 	if from_side < 0 or from_end < 0:
 		return false
 	@warning_ignore("integer_division")
-	return from_side / RING + from_end / RING >= CORNER_STEPS
+	return from_side / RING + from_end / RING >= steps

@@ -88,6 +88,17 @@ func test_the_gold_alone_is_centered() -> void:
 	assert_almost_eq(gold.get_center().x, window.get_center().x, 1.0)
 
 
+## The window is edged in the Steel Rim, as every window standing over a screen is.
+func test_the_window_is_edged_in_the_steel_rim() -> void:
+	_win_an_encounter()
+	await _open()
+
+	var window: Control = _screen.window()
+	var face: StyleBoxTexture = window.get_theme_stylebox("panel") as StyleBoxTexture
+	assert_eq(window.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_eq(face.texture.get_image().get_data(), WindowLook.plate(int(window.size.y)).texture.get_image().get_data())
+
+
 ## S3: each card glows its Rarity's color, the Inspector's.
 func test_each_card_glows_its_raritys_color() -> void:
 	_beat_the_boss()

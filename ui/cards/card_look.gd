@@ -44,6 +44,9 @@ var counters: Dictionary[MmCounter.Kind, int] = {}
 ## Every ability it has right now, including granted ones.
 var abilities: Array[MmAbility] = []
 var is_tapped: bool = false
+## For a permanent: a creature that cannot attack or pay {T} yet (CR 302.6), drawn darkened
+## a little under its Sickness Spiral.
+var is_summoning_sick: bool = false
 ## For a permanent: the creature type chosen as it entered, drawn as its Chosen Type Chip
 ## (game ADR 0053), or "".
 var chosen_creature_type: String = ""
@@ -125,6 +128,7 @@ static func _of_view_alone(view: MmObjectView, card_art_key: String) -> CardLook
 	look.is_toughness_variable = view.is_toughness_variable
 	look.abilities = view.abilities.duplicate()
 	look.is_tapped = view.is_tapped
+	look.is_summoning_sick = view.is_summoning_sick
 	look.damage_marked = view.damage_marked
 	look.counters = view.counters.duplicate()
 	look.is_token = view.is_token

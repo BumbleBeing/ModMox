@@ -3,7 +3,8 @@ extends GutTest
 ## to any target) is aimed at the Villain's Warden (a 2/2 with ward {2}); as the ward
 ## trigger resolves, the Info Panel reads "Pay ward for Warden:" with the cost after it, and
 ## "Pay {2}" and "No" in its Answer Row with neither selected, so the Pass Button reads
-## "Choose an answer" and cannot be pressed (game ADR 0066). The Zap's Stack Window entry
+## "Choose an answer" and cannot be pressed (game ADR 0066). A click on either answers at
+## once (its addendum); Left and Right only select. The Zap's Stack Window entry
 ## carries the ward's dashed Stack Mark. Paying reads the same line, with what is left,
 ## and has no Cancel. The Hero's Mana Bird taps for {W}{W}{W}.
 
@@ -51,10 +52,10 @@ func test_the_pass_key_does_nothing_until_an_answer_is_selected() -> void:
 	assert_eq(_presenter.snapshot().decision, asked, "Still asked: nothing is selected.")
 
 
-func test_selecting_pay_makes_the_pass_button_read_it_and_the_pass_key_pays() -> void:
+func test_selecting_pay_with_a_key_makes_the_pass_button_read_it_and_the_pass_key_pays() -> void:
 	_open_asked()
 
-	_screen.info_panel().affirmative_button().pressed.emit()
+	_screen.press_key(KEY_LEFT)
 
 	assert_eq(_screen.info_panel().selected(), InfoPanel.AFFIRMATIVE)
 	assert_eq(_screen.pass_button().shown_text(), "Pay {2}")
@@ -119,11 +120,22 @@ func test_undo_after_pay_asks_again() -> void:
 	assert_not_null(asked.cost)
 
 
-func test_no_counters_the_spell() -> void:
+func test_a_click_on_no_counters_the_spell_at_once() -> void:
 	_open_asked()
 	var zap: int = _zap_id()
 
 	_screen.info_panel().no_button().pressed.emit()
+	_presenter.wait_until_idle()
+
+	assert_false(_stack_ids().has(zap))
+	assert_not_null(_warden(), "The Zap was countered.")
+
+
+func test_no_selected_with_a_key_is_given_by_the_pass_button() -> void:
+	_open_asked()
+	var zap: int = _zap_id()
+
+	_screen.press_key(KEY_RIGHT)
 	assert_eq(_screen.pass_button().shown_text(), "No")
 	_screen.pass_button().pressed.emit()
 	_presenter.wait_until_idle()
@@ -132,10 +144,9 @@ func test_no_counters_the_spell() -> void:
 	assert_not_null(_warden(), "The Zap was countered.")
 
 
-## Selects Pay and presses the Pass Button.
+## Clicks Pay, which answers at once.
 func _pay() -> void:
 	_screen.info_panel().affirmative_button().pressed.emit()
-	_screen.pass_button().pressed.emit()
 	_presenter.wait_until_idle()
 
 

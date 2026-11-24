@@ -15,3 +15,7 @@ Temple Garden, a land of the Villain deck `zar_ojanen_scion_of_efrava` that the 
 **The Villain's answer shows only in its result**: its land enters tapped or untapped, and paying lowers its life with the usual wince of its Pain Portrait.
 
 Left out until a card needs them: the question when such a land enters other than by being played, and an entry cost other than life.
+
+## Addendum: a click on "Pay 2 life" or "No" answers at once (ADR 0066's addendum)
+
+This question was the user's example when they asked for it. A click on "Pay 2 life" pays and the land enters untapped; a click on "No" has it enter tapped. Neither waits for the Pass Button. It still starts on nothing: Left and Right select an answer, and only then does the Pass Button read it over "SPACE" and it or Space give it.

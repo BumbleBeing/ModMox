@@ -117,16 +117,16 @@ func test_a_redraw_leaves_a_glow_of_two_colors_as_it_was_and_a_new_one_eases_in(
 	_open([_staff()], SECONDS)
 	_do(CastSpellAction, "Staff")
 	var face: Control = _screen.face_of(_permanent("Staff"))
-	assert_lt(face.get_node(BorderEffects.GLOW).modulate.a, 1.0, "It began to glow just now.")
+	assert_lt(_glow(face).modulate.a, 1.0, "It began to glow just now.")
 	await wait_seconds(SECONDS * 1.5)
-	assert_eq(face.get_node(BorderEffects.GLOW).modulate.a, 1.0)
+	assert_eq(_glow(face).modulate.a, 1.0)
 
 	_presenter.toggle_stop(HERO, MmTurn.Step.UPKEEP)
 
 	var redrawn: Control = _screen.face_of(_permanent("Staff"))
 	assert_ne(redrawn, face, "The board was drawn again.")
 	assert_eq(BorderEffects.glow_colors(redrawn).size(), 2)
-	assert_eq(redrawn.get_node(BorderEffects.GLOW).modulate.a, 1.0, "Glowing as it was, not lit again.")
+	assert_eq(_glow(redrawn).modulate.a, 1.0, "Glowing as it was, not lit again.")
 
 
 func test_a_held_card_with_two_kinds_glows_in_both_made_lighter_and_plainly_again_put_down() -> void:
@@ -287,3 +287,8 @@ func _host() -> Control:
 	host.size = SIZE
 	add_child_autofree(host)
 	return host
+
+
+## A permanent's Glow is on the part of its face that turns.
+func _glow(face: Control) -> Control:
+	return BorderEffects.bearer_of(face).get_node(BorderEffects.GLOW) as Control

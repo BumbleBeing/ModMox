@@ -107,7 +107,7 @@ A Node that sells nine goods for gold, most of them cards from its Tier's Store 
 _Avoid_: Shop, merchant, vendor
 
 **Workshop**:
-A Node that sells Mods for gold and buys them at a third of the price it sells at, and offers Removal and one Duplication each visit. What it stocks is set when the Hero arrives and is never restocked. Every Stage has one right after its Start Node and one right before its Boss Encounter.
+A Node that sells Mods for gold, buys every Item that is not a card (Mods, Potions and Armor) at a third of the price a shop sells it at, and offers Removal and one Duplication each visit. What it stocks is set when the Hero arrives and is never restocked. Every Stage has one right after its Start Node and one right before its Boss Encounter.
 _Avoid_: Forge, smith, mod shop
 
 **Duplication**:
@@ -194,6 +194,10 @@ _Avoid_: Prefix, title, nickname
 One of the three places a card has for Mods, Hexes included. A basic land has them too.
 _Avoid_: Mod pip, socket, upgrade slot
 
+**Mod Icon**:
+A Mod's picture: a 32 × 32 pixel cog, the same for every Mod, in its Rarity's color: gray, silver, gold, orange and light purple. Rare's and Mythic's have a sheen, a bright band across the cog that deepens on either side, gold to bronze and orange to red; the others are flat. It has no ground of its own: it is drawn straight on the parchment, as an Armor Icon is, since the cog is its Rarity's color itself. It is shown wherever a Mod is held or offered as an Item: on its entry in the Satchel, at a Trove and at a Workshop. A Mod on a card shows in its Mod Slot instead, never as the cog, and a Hex, which is never held, has no Mod Icon.
+_Avoid_: Mod art, mod sprite, cog (the shape, not the term), Mod Slot (the place on a card, not the picture)
+
 **Armor**:
 An Item the Hero wears. Each Armor is a Helm, Cuirass or Greaves, and fills the Armor Slot of that name. It holds one or more Starting Conditions, as a Status does, and they count only while it is Worn: the two share one system and differ only in how they are come by. A Status is picked on Choose your Hero and lasts the run; an Armor is won, bought and sold, and put on or taken off between encounters, in the Satchel, as often as the Hero likes. Held but not Worn, it does nothing. It has an Armor Icon and no Rarity, though Armor is the scarcest and most valuable kind of Item.
 _Avoid_: Gear, equipment (an Equipment is a card), armor type (a Helm, Cuirass or Greaves is told by its Armor Slot)
@@ -275,7 +279,7 @@ The strip along the Stage Map that shows the Stage, its Tier, the Hearts left an
 _Avoid_: HUD, status bar, top bar
 
 **Satchel**:
-Where the Hero keeps the Items they hold between encounters, and the window that shows them. The window stands over whatever opened it, which it dims, and cannot be resized. It has three pages, Armor, Mods and Potions, and always opens on Armor. Each page is a scrolling list with one entry for each kind of Item held, saying how many: its picture (a Mod has none), its name, what it does and its Rarity (an Armor has none). Beside the pages, whichever is open, stand the Hero's Portrait and their three Armor Slots. A click on an Armor's entry puts it on, in place of any Worn in that Armor Slot, and a click on a filled Armor Slot takes that Armor off; Mods and Potions are only read there. A Worn Armor keeps its entry in the list, marked with a star, and a right-click on it in its Armor Slot opens the Armor page scrolled to that entry, where what it does is read. It has no limit on what it holds. It is opened from a button on the Run Bar, beside the Hearts, the gold and the Deckbox button, from the Encounter Reveal, and from a button at a Store or a Workshop, where Items are sold from it.
+Where the Hero keeps the Items they hold between encounters, and the window that shows them. The window stands over whatever opened it, which it dims, and cannot be resized. It has three pages, Armor, Mods and Potions, and always opens on Armor. Each page is a scrolling list with one entry for each kind of Item held, saying how many: its picture, its name, what it does and its Rarity (an Armor has none). Beside the pages, whichever is open, stand the Hero's Portrait and their three Armor Slots. A click on an Armor's entry puts it on, in place of any Worn in that Armor Slot, and a click on a filled Armor Slot takes that Armor off; Mods and Potions are only read there. A Worn Armor keeps its entry in the list, marked with a star, and a right-click on it in its Armor Slot opens the Armor page scrolled to that entry, where what it does is read. It has no limit on what it holds. It is opened from a button on the Run Bar, beside the Hearts, the gold and the Deckbox button, from the Encounter Reveal, and from a button at a Store or a Workshop, where Items are sold from it.
 _Avoid_: Inventory, bag, Satchel screen (it is a window), Potions window (the encounter's list of Potions)
 
 **Run Seed**:
@@ -487,6 +491,10 @@ _Avoid_: Ghost (the fading face of a permanent that has left), placeholder, shad
 A bead in the top left corner of a permanent's art that says how many counters of one kind are on it, with their sign: green and "+2" for +1/+1 counters, violet and "-2" for -1/-1 counters. It is the Damage Chip's bead in another color and place. The power and toughness box shows what the counters add up to.
 _Avoid_: Counter bead, counter badge, gem, buff marker
 
+**Sickness Spiral**:
+The white, half see-through spiral turning over the middle of the art of a summoning sick creature's Battlefield Face, over everything else drawn on the face, for as long as the creature cannot attack or pay {T}. It is pixel art drawn at a whole multiple of its size, turns once every three seconds at every Game Speed, and every one on the board turns together. A creature with haste never has one.
+_Avoid_: Swirl, dizzy mark, sleep icon, Zzz
+
 **Trigger Order**:
 The Hero's half-made answer when several of their triggers happen at once: the triggers in a list above the stack, the top one resolving first, each dragged to its place before the order is confirmed. Triggers that all read the same and have the same cause are ordered without asking.
 _Avoid_: Trigger queue, stacking order
@@ -511,12 +519,16 @@ _Avoid_: Confirm button, OK button, next button
 How a button is drawn: a ring of light steel three pixels thick with a dark line inside it, its corners stepped and never rounded, over a lip the button sits down on while held, round a face Dither Shaded in the button's own color (game ADR 0066). The ring of a Selected Answer is white. A button that cannot be pressed lies flat, with no lip, its ring faded. Whatever is drawn round a button, a Glow or a ring, follows the frame's shape.
 _Avoid_: Border, outline, bevel, button skin
 
+**Steel Rim**:
+How a window with no border of its own is edged: three bands three pixels wide, near-black outside and in with dark steel between, its corners stepped four deep as a Steel Frame's are and never rounded, round a face Dither Shaded in the window's warm dark gray. The main menu's window and its dialogs, the Spoils window, the Pause Menu and the encounter's ending banner have it. A Zone Window keeps its border in its zone's tint, and the deckbuilder's windows their thin gray edge.
+_Avoid_: Window border, window frame (a Steel Frame is a button's), outline
+
 **Answer Row**:
-The bottom row of the Info Panel (ADR 0066). It holds the answers of a question as two halves, the affirmative on the left and "No" on the right, or one action across its whole width: Cancel for a cast in progress, which names the key that cancels, or "Declare All", which reads "Undeclare All" and puts every attacker back for as long as any is declared (A496). An answer is only selected there; an action acts at once. While an X is asked its left half is the stepper: a plate whose ends are − and + and whose number sits in a dark well between them.
+The bottom row of the Info Panel (ADR 0066). It holds the answers of a question as two halves, the affirmative on the left and "No" on the right, or one action across its whole width: Cancel for a cast in progress, which names the key that cancels, or "Declare All", which reads "Undeclare All" and puts every attacker back for as long as any is declared (A496). A click on an answer gives it at once, and so does an action; while an X is asked a click on an answer only selects it (ADR 0066's addendum). While an X is asked its left half is the stepper: a plate whose ends are − and + and whose number sits in a dark well between them.
 _Avoid_: Button row, button bar, footer
 
 **Selected Answer**:
-The answer of a "you may", a ward cost or an X that is lit in the Answer Row, with a white border, and that the Pass Button reads and gives (ADR 0066). A click on an answer or Left and Right selects it; for an X, clicking or stepping the stepper selects paying, and Up and Down step X. A "you may" starts on Yes. A question that spends mana starts with none, and cannot be answered until the Hero selects one.
+The answer of a "you may", a ward cost or an X that is lit in the Answer Row, with a white border, and that the Pass Button reads and gives (ADR 0066). Left and Right select it; for an X, a click on "No" selects it too, clicking or stepping the stepper selects paying, and Up and Down step X. A click on an answer of any other question gives it at once and needs no Selected Answer (ADR 0066's addendum). A "you may" starts on Yes. A question that spends mana or life starts with none, and the Pass Button cannot give an answer until the Hero selects one.
 _Avoid_: Default answer, highlighted answer, focus
 
 **Portrait**:
@@ -600,7 +612,7 @@ An Emblem drawn in full, in the Inspector: its art in a border of its own, its n
 _Avoid_: Emblem card, Boon card, Status card
 
 **Battlefield Face**:
-How a permanent is drawn on the battlefield: the top of its Frame (name box or crown) and a border around its art, a large power/toughness box, and a chip for each keyword it has. It shows no other text, and turns sideways and darkens when tapped.
+How a permanent is drawn on the battlefield: the top of its Frame (name box or crown) and a border around its art, a large power/toughness box, and a chip for each keyword it has. It shows no other text, and turns sideways and darkens when tapped. A summoning sick creature's is darkened a little, less than a tapped one's, under its Sickness Spiral.
 _Avoid_: Mini card, tile, token (a token is a rules term)
 
 **Keyword Chip**:
@@ -640,7 +652,7 @@ What one keyword means, in a sentence, shown in the Inspector beside its Keyword
 _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 
 **Rarity**:
-How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a rare Twist, never in Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. A Potion Icon's plate is the same color, but for a Mythic's, which is sienna so that it is not taken for Rare's gold; a Unique Item's plate is light purple. An Emblem has none, and neither has an Armor.
+How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a rare Twist, never in Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. A Potion Icon's plate is the same color, but for a Mythic's, which is sienna so that it is not taken for Rare's gold. A Mod Icon is in its Rarity's color itself: orange for a Mythic, light purple for a Unique. An Emblem has none, and neither has an Armor.
 _Avoid_: Tier (a part of a run), quality, grade
 
 **Divider**:
@@ -650,6 +662,10 @@ _Avoid_: Slider (the zoom sliders), splitter, sash, handle
 **Menu Soldier**:
 The pixel-art soldier who stands on top of the main menu's window, the two centered on the screen together, and plays one Soldier Animation after another, each starting as the last one ends. The first, from the moment the menu opens, is a Transition Animation chosen at random; then an Effect Animation and a Transition Animation take turns, and he never plays the same Transition Animation, or the same Effect Animation, twice in a row. The next Effect Animation is chosen two animations ahead, so the Wisp, which brings it to him, knows its color and the moment he will flash it.
 _Avoid_: Mascot, idle soldier
+
+**Logo**:
+The game's name in blocky pixel letters at the head of the main menu's window, under the Menu Soldier: six characters, each drawn on 32 × 32, set evenly and close, and shown at twice their size. Its two o's are the Mod Icon's cog, Rare's then Mythic's, the first turning clockwise and the second against it, a quarter turn every three seconds; "Mod" is white tinged with Rare's gold and "Mox" white tinged with Mythic's bronze.
+_Avoid_: Title, wordmark, banner
 
 **Soldier Shadow**:
 The shadow the Menu Soldier casts on the window he stands on: half black, in the window's own Dither Shading blocks, two rows solid and two dithered away, under every column where the bottom of his sprite is black. It follows his frames, fading out rapidly under a lifted foot or a raised spear and back in as it comes down, and on the frame he flashes it takes the flash's color, fading back to black as rapidly after.

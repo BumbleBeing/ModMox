@@ -65,8 +65,6 @@ const AUTO_TAP: String = "Auto-tapping"
 ## The border of the speed in use.
 const CHOSEN: Color = Color("#f2d36b")
 const SPEED_GAP: float = 6.0
-## How rounded the window is.
-const RADIUS: int = WindowLook.RADIUS
 ## What rings the Game Speed in use.
 const RING: String = "Chosen"
 const RING_WIDTH: int = 2
@@ -317,7 +315,7 @@ func _show_page(shown: Page) -> void:
 	_window.position = rect.position
 	_window.size = rect.size
 	add_child(_window)
-	InspectorParts.shade_background(_window, null, WindowLook.FILL, WindowLook.EDGE, WindowLook.EDGE_WIDTH, RADIUS)
+	WindowLook.shade(_window)
 	_heading = Label.new()
 	_heading.text = title
 	_heading.position = Vector2(20, 14)

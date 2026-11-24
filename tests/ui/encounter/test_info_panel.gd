@@ -1,6 +1,6 @@
 extends GutTest
 ## The Info Panel shows the prompt, what is owed and a refused answer's reason, all centered,
-## over its Answer Row: a question's two answers, which a press only selects, or one action
+## over its Answer Row: a question's two answers, whose presses it reports, or one action
 ## across its width. It gives way to an Option Menu row while one is pointed at (game ADR
 ## 0066).
 
@@ -314,11 +314,11 @@ func test_all_attack_reads_undeclare_all_once_told_an_attacker_is_declared_and_t
 	_panel(_snapshot(ChooseCardsToDiscardDecision.new(HERO, 1, [1] as Array[int])), "").show_undeclare(true)
 
 
-func test_a_you_may_has_yes_and_no_as_the_halves_of_the_answer_row_and_a_press_only_selects() -> void:
-	# Game ADR 0066: the Pass Button gives the Selected Answer.
+func test_a_you_may_has_yes_and_no_as_the_halves_of_the_answer_row_and_a_press_says_which() -> void:
+	# Game ADR 0066: the panel only says which was pressed; the screen answers or selects.
 	var said: Array[int] = []
 	var panel: InfoPanel = _panel(_snapshot(ChooseYesOrNoDecision.new(HERO, 21, Scenario.draw_cards(1, Scenario.you()))), "")
-	panel.answer_selected.connect(func(index: int) -> void: said.append(index))
+	panel.answer_pressed.connect(func(index: int) -> void: said.append(index))
 
 	assert_eq(panel.affirmative_button().text, "Yes")
 	assert_eq(panel.affirmative_text(), "Yes")
