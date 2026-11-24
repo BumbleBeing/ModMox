@@ -659,8 +659,12 @@ _Avoid_: Tier (a part of a run), quality, grade
 The bar in the deckbuilder between the Collection and the Deck's columns. Dragging it up or down gives one more height and the other less; it changes no card's size, which the two zoom sliders set. Neither side can be made smaller than one whole card, and a double-click puts it back where it started. It stays where it was left until the deckbuilder closes.
 _Avoid_: Slider (the zoom sliders), splitter, sash, handle
 
+**Menu Backdrop**:
+The one picture behind the main menu: the top of a castle tower at nightfall, the menu's window set into its parapet as its middle merlon with the Menu Soldier standing on it, braziers burning on the corner merlons and open sky on either side for the Wisp. It is 320 × 180 pixels, drawn six screen pixels to each of its own, never tiled and never dimmed, and it plays a ten-second loop of small flickers: the braziers' flames and the light they throw, some of the stars, and the light in an arrow slit.
+_Avoid_: Background, wallpaper, Backdrop (the picture behind an encounter)
+
 **Menu Soldier**:
-The pixel-art soldier who stands on top of the main menu's window, the two centered on the screen together, and plays one Soldier Animation after another, each starting as the last one ends. The first, from the moment the menu opens, is a Transition Animation chosen at random; then an Effect Animation and a Transition Animation take turns, and he never plays the same Transition Animation, or the same Effect Animation, twice in a row. The next Effect Animation is chosen two animations ahead, so the Wisp, which brings it to him, knows its color and the moment he will flash it.
+The pixel-art soldier who stands on top of the main menu's window, whose top lies on the parapet of the Menu Backdrop's tower, centered across the screen, and plays one Soldier Animation after another, each starting as the last one ends. The first, from the moment the menu opens, is a Transition Animation chosen at random; then an Effect Animation and a Transition Animation take turns, and he never plays the same Transition Animation, or the same Effect Animation, twice in a row. The next Effect Animation is chosen two animations ahead, so the Wisp, which brings it to him, knows its color and the moment he will flash it.
 _Avoid_: Mascot, idle soldier
 
 **Logo**:
@@ -668,7 +672,7 @@ The game's name in blocky pixel letters at the head of the main menu's window, u
 _Avoid_: Title, wordmark, banner
 
 **Soldier Shadow**:
-The shadow the Menu Soldier casts on the window he stands on: half black, in the window's own Dither Shading blocks, two rows solid and two dithered away, under every column where the bottom of his sprite is black. It follows his frames, fading out rapidly under a lifted foot or a raised spear and back in as it comes down, and on the frame he flashes it takes the flash's color, fading back to black as rapidly after.
+The shadow the Menu Soldier casts on the window he stands on: half black, in the window's own Dither Shading blocks, two rows solid and two dithered away, under every column where the bottom of his sprite is black. It follows his frames, fading out rapidly under a lifted foot or a raised spear and back in as it comes down, and from under all of him while a flap of his wings lifts him off the window, and on the frame he flashes it takes the flash's color, fading back to black as rapidly after.
 _Avoid_: Drop shadow, contact shadow
 
 **Soldier Animation**:
@@ -690,6 +694,10 @@ _Avoid_: Magic ball, orb, dot
 **Wisp Light**:
 The light the Wisp casts on the main menu's window when it comes near the window's top or either side: the Soldier Shadow turned to light, in the Wisp's color at half strength, longer the nearer the Wisp is. It lies over the Soldier Shadow where the two meet.
 _Avoid_: Anti-shadow, glow (a Pending Decision's), highlight
+
+**Wisp Sparks**:
+The trail of sparks the Wisp leaves wherever it goes on the main menu: square sparks, one of its pixels each, in the Wisp's color as each is emitted. Each flies out of the Wisp's middle at a random angle, all the way round, drifting a little off straight and with none of the Wisp's own motion, and falls ever faster as it fades out; one that falls onto the window comes to rest on its top, or on the step of a stepped corner, and fades out there, and one that misses falls on past it.
+_Avoid_: Particles, embers, trail (alone)
 
 **Effect Callout**:
 The name of the effect the Menu Soldier takes on, floating off from him as he first flashes its color: its keyword as cards print it, such as Flying or First strike, or +1/+1 for his boost, ghostly faint in the flash's color. It appears just outside his picture, beside or above his upper half, and floats straight away from him for two seconds, wiggling and rocking a little as it fades out. His other flashes bring none.

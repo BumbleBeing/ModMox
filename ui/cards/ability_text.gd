@@ -633,6 +633,15 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 			whose = "each opponent's"
 		return "at the beginning of %s %s" % [whose, STEP_NAMES.get(step.step, "step")]
 	var cast: SpellCastTrigger = trigger as SpellCastTrigger
+	if cast != null and cast.nth_each_turn > 0:
+		# Clarion Spirit's "Whenever you cast your second spell each turn".
+		# Later: an Nth spell that must also match a Filter, once a card has one.
+		var whose_spell: String = "a player casts their"
+		if cast.whose == MmTrigger.Whose.YOU:
+			whose_spell = "you cast your"
+		elif cast.whose == MmTrigger.Whose.OPPONENT:
+			whose_spell = "an opponent casts their"
+		return "whenever %s %s spell each turn" % [whose_spell, _ordinal(cast.nth_each_turn)]
 	if cast != null:
 		var caster: String = "a player casts"
 		if cast.whose == MmTrigger.Whose.YOU:
@@ -684,6 +693,18 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 		var is_this: bool = tapped.filter is IsSourceFilter
 		var subject: String = _noun if is_this else _with_article(_noun_phrase(tapped.filter, false, tapped.whose))
 		return "whenever %s becomes tapped" % subject
+	var gained: LifeGainedTrigger = trigger as LifeGainedTrigger
+	if gained != null:
+		# CR 119.9, ADR 0082: "Whenever you gain life".
+		if gained.whose == MmTrigger.Whose.YOU:
+			return "whenever you gain life"
+		return "whenever %s gains life" % ("an opponent" if gained.whose == MmTrigger.Whose.OPPONENT else "a player")
+	var countered_on: CountersPutTrigger = trigger as CountersPutTrigger
+	if countered_on != null:
+		# CR 122.6: "Whenever one or more +1/+1 counters are put on this creature".
+		var is_this: bool = countered_on.filter is IsSourceFilter
+		var subject: String = _noun if is_this else _with_article(_noun_phrase(countered_on.filter, false, countered_on.whose))
+		return "whenever one or more %s counters are put on %s" % [MmCounter.label(countered_on.kind), subject]
 	var moved: ZoneChangeTrigger = trigger as ZoneChangeTrigger
 	if moved != null:
 		var is_self: bool = moved.filter is IsSourceFilter
@@ -905,6 +926,12 @@ func _effect(effect: MmEffect) -> String:
 			# Oracle wording: you are told to "draw two cards", not that "you draw" them.
 			return "draw " + _cards(draw.amount)
 		return "%s %s %s" % [_selection(draw.players), _verb(draw.players, "draw"), _cards(draw.amount)]
+	if effect is DiscardEffect:
+		# CR 701.9a: as drawing is, "discard a card" for you, "each opponent discards a card".
+		var discarding: DiscardEffect = effect as DiscardEffect
+		if discarding.players is YouSelection:
+			return "discard " + _cards(discarding.amount)
+		return "%s %s %s" % [_selection(discarding.players), _verb(discarding.players, "discard"), _cards(discarding.amount)]
 	if effect is GainLifeEffect:
 		var gain: GainLifeEffect = effect as GainLifeEffect
 		return "%s %s %s life" % [_selection(gain.players), _verb(gain.players, "gain"), _amount(gain.amount)]
@@ -953,6 +980,10 @@ func _effect(effect: MmEffect) -> String:
 		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]
 	if effect is TapEffect:
 		return "tap " + _selection((effect as TapEffect).selection)
+	if effect is IfEffect and (effect as IfEffect).is_unless:
+		# CR 608.2c, Splitskin Doll's "discard a card unless you control another creature ...".
+		var unless: IfEffect = effect as IfEffect
+		return "%s unless %s" % [_effect(unless.effect), _condition(unless.condition)]
 	if effect is IfEffect:
 		var conditional: IfEffect = effect as IfEffect
 		# CR 608.2c, a sentence of its own: "If it is a permanent card, put ...".
@@ -985,6 +1016,9 @@ func _effect(effect: MmEffect) -> String:
 	if effect is MayPayEffect:
 		# ADR 0076: "you may remove a +1/+1 counter from this creature. If you do, ..."
 		var paying: MayPayEffect = effect as MayPayEffect
+		if paying.mana_cost != null:
+			# Myrsmith's "you may pay {1}. If you do, create ...".
+			return "you may pay %s. If you do, %s" % [paying.mana_cost.describe(), _effect(paying.effect)]
 		var cost: String = ", ".join(_cost_parts(null, [paying.cost] as Array[MmCost]))
 		return "you may %s. If you do, %s" % [cost.left(1).to_lower() + cost.substr(1), _effect(paying.effect)]
 	if effect is MayPayXEffect:

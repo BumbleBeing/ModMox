@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://d2hiil5ly8bcx"
+path="res://.godot/imported/last_light.png-219c1f8ce8782797b52da4a433819093.image"
+
+[deps]
+
+source_file="res://ui/sprites/backgrounds/menu/last_light.png"
+dest_files=["res://.godot/imported/last_light.png-219c1f8ce8782797b52da4a433819093.image"]
+
+[params]
+

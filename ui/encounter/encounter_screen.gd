@@ -3297,14 +3297,15 @@ func _on_stack_entry_hovered(is_over: bool, object_id: int) -> void:
 ## While a "you may" is asked, what the asking spell or ability targets carries its
 ## dashed Stack Mark, so the Hero sees what "target creature" is (game ADR 0060). While a
 ## ward cost is asked, the Stack Window entry of what it would counter carries it
-## (ADR 0062).
+## (ADR 0062); a "you may pay {1}" counters nothing, so it marks its targets as a "you may"
+## does (ADR 0076's addendum).
 func _mark_asked_targets() -> void:
 	var asked: ChooseYesOrNoDecision = _snapshot.decision as ChooseYesOrNoDecision if _snapshot != null else null
 	if asked == null or not _stack_items.has(asked.stack_object_id):
 		return
 	var item: StackItem = _stack_items[asked.stack_object_id]
 	var color: Color = _stack_colors.color_of(asked.stack_object_id)
-	if asked.cost != null:
+	if asked.cost != null and _is_ward(asked.stack_object_id):
 		var countered: StackEntry = stack_entry_of(_triggering_object_of(asked.stack_object_id))
 		if countered != null and is_instance_valid(countered):
 			BorderEffects.add_mark(countered, countered.size, color, true, _ease_seconds)
@@ -3329,6 +3330,14 @@ func _on_trigger_hovered(is_over: bool, number: int) -> void:
 
 
 ## The object the stack object [param stack_object_id] triggered on, or 0.
+## Whether the stack object [param stack_object_id] is a ward trigger (ADR 0062).
+func _is_ward(stack_object_id: int) -> bool:
+	for seen: MmObjectView in _snapshot.view.stack:
+		if seen.id == stack_object_id:
+			return seen.ability is WardAbility
+	return false
+
+
 func _triggering_object_of(stack_object_id: int) -> int:
 	for seen: MmObjectView in _snapshot.view.stack:
 		if seen.id == stack_object_id:

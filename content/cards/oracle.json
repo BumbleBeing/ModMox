@@ -175,6 +175,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Cat"
 	},
+	"clarion_spirit": {
+		"mana_cost": "{1}{W}",
+		"name": "Clarion Spirit",
+		"oracle_id": "dec20b18-afe6-405e-b47d-a757a5645c63",
+		"oracle_text": "Whenever you cast your second spell each turn, create a 1/1 white Spirit creature token with flying.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Kaldheim",
+		"toughness": "2",
+		"type_line": "Creature — Spirit"
+	},
 	"claws_out": {
 		"mana_cost": "{3}{W}{W}",
 		"name": "Claws Out",
@@ -271,6 +282,17 @@
 		"set_name": "Scars of Mirrodin",
 		"type_line": "Artifact — Equipment"
 	},
+	"daybreak_charger": {
+		"mana_cost": "{1}{W}",
+		"name": "Daybreak Charger",
+		"oracle_id": "d3de6b36-c631-4b52-b16b-0749a347d73d",
+		"oracle_text": "When this creature enters, target creature gets +2/+0 until end of turn.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Core Set 2021",
+		"toughness": "1",
+		"type_line": "Creature — Unicorn"
+	},
 	"daydream": {
 		"mana_cost": "{W}",
 		"name": "Daydream",
@@ -317,6 +339,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "1",
 		"type_line": "Creature — Skeleton"
+	},
+	"dusk_legion_duelist": {
+		"mana_cost": "{1}{W}",
+		"name": "Dusk Legion Duelist",
+		"oracle_id": "30367a59-a812-41d4-a451-80d9071dd4a4",
+		"oracle_text": "Vigilance\nWhenever one or more +1/+1 counters are put on this creature, draw a card. This ability triggers only once each turn.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "March of the Machine",
+		"toughness": "2",
+		"type_line": "Creature — Vampire Soldier"
 	},
 	"eidolon_of_philosophy": {
 		"mana_cost": "{U}",
@@ -383,6 +416,17 @@
 		"set_name": "Throne of Eldraine",
 		"toughness": "1",
 		"type_line": "Creature — Faerie // Sorcery — Adventure"
+	},
+	"fearless_fledgling": {
+		"mana_cost": "{1}{W}",
+		"name": "Fearless Fledgling",
+		"oracle_id": "75ae9b87-7137-47a0-b3e1-8915ccd0edf1",
+		"oracle_text": "Landfall — Whenever a land you control enters, put a +1/+1 counter on this creature. It gains flying until end of turn.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Zendikar Rising",
+		"toughness": "1",
+		"type_line": "Creature — Griffin"
 	},
 	"felidar_retreat": {
 		"mana_cost": "{3}{W}",
@@ -483,6 +527,17 @@
 		"set_name": "Core Set 2019",
 		"toughness": "2",
 		"type_line": "Creature — Human Artificer"
+	},
+	"generous_pup": {
+		"mana_cost": "{1}{W}",
+		"name": "Generous Pup",
+		"oracle_id": "9ee0d4a0-fd8d-43c4-a2aa-c4e6af5beecc",
+		"oracle_text": "Vigilance\nWhenever one or more +1/+1 counters are put on this creature, put a +1/+1 counter on each other creature you control. This ability triggers only once each turn.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Foundations Jumpstart",
+		"toughness": "2",
+		"type_line": "Creature — Dog"
 	},
 	"geothermal_bog": {
 		"mana_cost": "",
@@ -795,6 +850,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Cat"
 	},
+	"kor_skyfisher": {
+		"mana_cost": "{1}{W}",
+		"name": "Kor Skyfisher",
+		"oracle_id": "054a0193-861e-4644-ab0a-8aa33407abc8",
+		"oracle_text": "Flying\nWhen this creature enters, return a permanent you control to its owner's hand.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Zendikar",
+		"toughness": "3",
+		"type_line": "Creature — Kor Soldier"
+	},
 	"kraken_hatchling": {
 		"mana_cost": "{U}",
 		"name": "Kraken Hatchling",
@@ -941,6 +1007,17 @@
 		"toughness": "4",
 		"type_line": "Creature — Cat"
 	},
+	"martyr_of_dusk": {
+		"mana_cost": "{1}{W}",
+		"name": "Martyr of Dusk",
+		"oracle_id": "794aaf8a-6d8e-41fb-acbe-a2b73d65d9d9",
+		"oracle_text": "When this creature dies, create a 1/1 white Vampire creature token with lifelink.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Rivals of Ixalan",
+		"toughness": "1",
+		"type_line": "Creature — Vampire Soldier"
+	},
 	"merfolk_of_the_pearl_trident": {
 		"mana_cost": "{U}",
 		"name": "Merfolk of the Pearl Trident",
@@ -1034,6 +1111,17 @@
 		"set_name": "Modern Horizons 2",
 		"toughness": "1",
 		"type_line": "Artifact Creature — Myr"
+	},
+	"myrsmith": {
+		"mana_cost": "{1}{W}",
+		"name": "Myrsmith",
+		"oracle_id": "7fc3798a-3907-4f50-98a1-25b8e1977197",
+		"oracle_text": "Whenever you cast an artifact spell, you may pay {1}. If you do, create a 1/1 colorless Myr artifact creature token.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Scars of Mirrodin",
+		"toughness": "1",
+		"type_line": "Creature — Human Artificer"
 	},
 	"mystic_monastery": {
 		"mana_cost": "",
@@ -1282,6 +1370,17 @@
 		"set_name": "Phyrexia: All Will Be One",
 		"type_line": "Instant"
 	},
+	"resolute_reinforcements": {
+		"mana_cost": "{1}{W}",
+		"name": "Resolute Reinforcements",
+		"oracle_id": "eaaed253-9b11-47e2-8624-0340ab2207f6",
+		"oracle_text": "Flash (You may cast this spell any time you could cast an instant.)\nWhen this creature enters, create a 1/1 white Soldier creature token.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Dominaria United",
+		"toughness": "1",
+		"type_line": "Creature — Human Soldier"
+	},
 	"sacred_peaks": {
 		"mana_cost": "",
 		"name": "Sacred Peaks",
@@ -1475,6 +1574,28 @@
 		"toughness": "1",
 		"type_line": "Artifact Creature — Construct"
 	},
+	"spirited_companion": {
+		"mana_cost": "{1}{W}",
+		"name": "Spirited Companion",
+		"oracle_id": "9c5f0d91-9d86-4e66-94fd-4af93ad01838",
+		"oracle_text": "When this creature enters, draw a card.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "1",
+		"type_line": "Enchantment Creature — Dog"
+	},
+	"splitskin_doll": {
+		"mana_cost": "{1}{W}",
+		"name": "Splitskin Doll",
+		"oracle_id": "934e2634-4b1c-4d92-b4d6-9241620f3770",
+		"oracle_text": "When this creature enters, draw a card. Then discard a card unless you control another creature with power 2 or less.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Duskmourn: House of Horror",
+		"toughness": "1",
+		"type_line": "Artifact Creature — Toy"
+	},
 	"steppe_lynx": {
 		"mana_cost": "{W}",
 		"name": "Steppe Lynx",
@@ -1645,6 +1766,17 @@
 		"set_name": "Tarkir: Dragonstorm",
 		"toughness": "2",
 		"type_line": "Creature — Cat"
+	},
+	"unflinching_hortimancer": {
+		"mana_cost": "{1}{W}",
+		"name": "Unflinching Hortimancer",
+		"oracle_id": "7cd0bd74-2463-4e9d-9802-69ac4ef6d543",
+		"oracle_text": "Ward {1} (Whenever this creature becomes the target of a spell or ability an opponent controls, counter it unless that player pays {1}.)\nWhenever you gain life, put a +1/+1 counter on this creature.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Reality Fracture",
+		"toughness": "1",
+		"type_line": "Creature — Human Cleric"
 	},
 	"universal_automaton": {
 		"mana_cost": "{1}",

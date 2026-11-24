@@ -17,3 +17,7 @@ The glossary has said since Stages were designed that a Stage "sets the backdrop
 The Backdrop covers the whole screen. The sidebar keeps its opaque color over it and the middle band stays as it was (A500). It is still (A501): motion would need rules for Game Speed and the Pause Menu, and a shader or picture can gain it later. Only the Encounter Screen shows one (A502): the opening-hand overlay's scrim lets it show through dimly, and the main menu and start form keep the slate.
 
 **Zone Plates set the zones off from the Backdrop.** After 13i landed the user asked for a rounded, mostly see-through gray rectangle behind every zone but the hands. A Zone Plate lies behind each of the four rows of the battlefield, at its Region, and behind each of the six piles, round its card and label; `EncounterLayout.zone_plates()` works out where, and one node (`ZonePlates`) draws them all, built once, over the dimmed Backdrop and under the board. They are drawn over the plain Backdrop too, so the plain screen no longer looks exactly as it did before 13i: it shows where each zone is.
+
+## Addendum: the main menu has a picture of its own (ADR 0081)
+
+The main menu no longer keeps the slate: it stands on the Menu Backdrop, a picture of its own the same size as a Backdrop and drawn the same way, never dimmed, with a few of its pixels flickering in a ten-second loop. The start form keeps the slate, and only the Encounter Screen shows a Backdrop.

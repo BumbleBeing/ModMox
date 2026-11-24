@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://beafgbd8anhk8"
+path="res://.godot/imported/last_light_flicker.png-8379aa419a79d7110d4af903213d1a0e.image"
+
+[deps]
+
+source_file="res://ui/sprites/backgrounds/menu/last_light_flicker.png"
+dest_files=["res://.godot/imported/last_light_flicker.png-8379aa419a79d7110d4af903213d1a0e.image"]
+
+[params]
+

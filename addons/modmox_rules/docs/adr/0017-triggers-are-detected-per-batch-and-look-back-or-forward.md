@@ -15,3 +15,7 @@ Brimaz, King of Oreskos, in the Villain deck `brimaz_king_of_oreskos`, says "Whe
 Performing one event for each block instead was rejected. It would need nothing new here, but "Whenever this creature blocks" (CR 509.3a) triggers once however many creatures it blocks, and would then trigger for each, and the declaration every reader of the event log knows (the GUI, the AI, the tests) would become several events. Triggering at most once for each event was rejected too: it is enough while nothing lets a creature block twice, and wrong as soon as something does.
 
 Left out until a card needs them (ADR 0001): "Whenever [a creature] blocks" (CR 509.3a), which would be a field on `BlockersDeclaredTrigger`, and "becomes blocked (by a creature)" (CR 509.3c-d).
+
+## Addendum: several events of a batch may be one occasion (ADR 0082)
+
+A trigger may say that some events of one batch are one occasion (`MmTrigger.occasion_of()`), and those trigger an ability once, for the first of them, as once each turn does. One lifelink source's damage to several recipients at once is one life gain (CR 119.9), so "Whenever you gain life" triggers once for it.

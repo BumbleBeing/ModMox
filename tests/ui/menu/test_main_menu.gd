@@ -263,27 +263,56 @@ func test_the_window_is_never_smaller_than_four_times_a_backdrop() -> void:
 	assert_eq(get_window().min_size, MainMenu.MIN_WINDOW)
 
 
-func test_the_menu_soldier_stands_on_the_window_and_the_two_are_centered_together() -> void:
+## (2) The window's top lies on the Menu Backdrop's parapet, however many entries it holds.
+func test_the_menu_soldier_stands_on_the_window_whose_top_lies_on_the_parapet() -> void:
+	for is_playtest: bool in [false, true]:
+		var menu: MainMenu = _menu(PackedStringArray(), is_playtest)
+		menu.size = Vector2(1920, 1080)
+		await wait_process_frames(2)
+		var build: String = "playtest" if is_playtest else "developer"
+
+		var soldier: MenuSoldier = menu.soldier()
+		var his: Rect2 = soldier.get_global_rect()
+		var window: Rect2 = menu.window().get_global_rect()
+
+		assert_not_null(soldier)
+		assert_true(soldier.is_visible_in_tree())
+		assert_eq(his.size, Vector2.ONE * MenuSoldier.SPRITE_SIZE * MenuSoldier.SCALE)
+		assert_eq(his.position, his.position.round(), "on whole pixels (%s)" % build)
+		assert_eq(window.position.y, MenuBackdrop.parapet_y(menu.size.y), "the window's top on the parapet (%s)" % build)
+		assert_almost_eq(window.get_center().x, menu.get_global_rect().get_center().x, 1.0,
+				"the window centered across the screen (%s)" % build)
+		assert_almost_eq(his.get_center().x, window.get_center().x, 1.0, "centered on the window (%s)" % build)
+		assert_eq(his.end.y - MenuSoldier.SCALE, window.position.y,
+				"his soles, a sprite pixel above his picture's foot, on the window's top (%s)" % build)
+		assert_eq(soldier.texture.resource_path, SoldierAnimations.SPRITES % SoldierAnimations.NEUTRAL,
+				"every animation opens standing still")
+		assert_not_null(soldier.sequence(), "what brings him his effects asks his sequence")
+
+
+## (1) The Menu Backdrop lies behind everything else, covering the screen six screen pixels to
+## each of its own, undimmed, and plays its loop.
+func test_the_menu_backdrop_lies_behind_everything_covering_the_screen_undimmed() -> void:
 	var menu: MainMenu = _menu(PackedStringArray())
 	menu.size = Vector2(1920, 1080)
 	await wait_process_frames(2)
 
-	var soldier: MenuSoldier = menu.soldier()
-	var his: Rect2 = soldier.get_global_rect()
-	var window: Rect2 = menu.window().get_global_rect()
+	var backdrop: MenuBackdrop = menu.backdrop()
 
-	assert_not_null(soldier)
-	assert_true(soldier.is_visible_in_tree())
-	assert_eq(his.size, Vector2.ONE * MenuSoldier.SPRITE_SIZE * MenuSoldier.SCALE)
-	assert_eq(his.position, his.position.round(), "on whole pixels")
-	assert_almost_eq(his.get_center().x, window.get_center().x, 1.0, "centered on the window")
-	assert_eq(his.end.y - MenuSoldier.SCALE, window.position.y,
-			"his soles, a sprite pixel above his picture's foot, on the window's top")
-	assert_almost_eq((his.position.y + window.end.y) / 2, menu.get_global_rect().get_center().y, 1.0,
-			"he and the window centered on the screen together")
-	assert_eq(soldier.texture.resource_path, SoldierAnimations.SPRITES % SoldierAnimations.NEUTRAL,
-			"every animation opens standing still")
-	assert_not_null(soldier.sequence(), "what brings him his effects asks his sequence")
+	assert_not_null(backdrop)
+	assert_eq(backdrop.get_index(), 0, "behind everything else")
+	assert_eq(backdrop.get_global_rect(), menu.get_global_rect(), "covering the screen")
+	assert_eq(backdrop.get_global_rect().size, Vector2(MenuBackdrop.SIZE * 6), "six screen pixels to each of its own")
+	assert_eq(backdrop.modulate, Color.WHITE, "undimmed")
+	assert_eq(backdrop.self_modulate, Color.WHITE, "undimmed")
+	assert_true(backdrop.is_processing(), "playing its loop")
+
+
+## (5) Only the main menu shows it.
+func test_there_is_no_menu_backdrop_when_the_menu_is_skipped() -> void:
+	var menu: MainMenu = _menu(PackedStringArray(["--seed=7"]))
+
+	assert_null(menu.backdrop())
 
 
 func test_the_logo_heads_the_window_under_him_at_twice_its_size_on_whole_pixels() -> void:
@@ -411,10 +440,31 @@ func test_there_are_no_effect_callouts_when_the_menu_is_skipped() -> void:
 	assert_null(menu.callouts())
 
 
+func test_the_wisp_trails_sparks_in_its_color_just_behind_it_taking_no_clicks() -> void:
+	var menu: MainMenu = _menu(PackedStringArray())
+	menu.size = Vector2(1920, 1080)
+	await wait_process_frames(2)
+	var layer: MenuSparks = menu.sparks()
+	layer.set_process(false)
+
+	layer.advance(0.5)
+
+	var sparks: Array[WispSparks.Spark] = layer.sparks().sparks().filter(
+			func(spark: WispSparks.Spark) -> bool: return spark.age == 0.0)
+	assert_gt(sparks.size(), 0, "left about the Wisp")
+	for spark: WispSparks.Spark in sparks:
+		assert_eq(spark.color, menu.wisp().flight().color(), "in its color")
+		assert_eq(spark.position, menu.wisp().drawn_rect().get_center(), "in its middle")
+	assert_gt(layer.get_index(), menu.callouts().get_index(), "in front of his callouts")
+	assert_eq(layer.get_index(), menu.wisp().get_index() - 1, "just behind the Wisp")
+	assert_eq(layer.mouse_filter, Control.MOUSE_FILTER_IGNORE, "it takes no clicks")
+
+
 func test_there_is_no_wisp_when_the_menu_is_skipped() -> void:
 	var menu: MainMenu = _menu(PackedStringArray(["--seed=7"]))
 
 	assert_null(menu.wisp())
+	assert_null(menu.sparks())
 
 
 func test_the_window_keeps_its_smallest_size_when_the_menu_is_skipped() -> void:

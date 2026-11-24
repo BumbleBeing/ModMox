@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_o128a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_1aj85"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_u6rxt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_56gt0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_68pqn"]
+[ext_resource type="Resource" path="res://content/tokens/vampire_1_1_white_lifelink.tres" id="4_4q2u8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_20p1c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_0u4aa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_seley"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_7ql28"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_gbybv"]
+
+[sub_resource type="Resource" id="Resource_7l5f7"]
+script = ExtResource("3_68pqn")
+token = ExtResource("4_4q2u8")
+
+[sub_resource type="Resource" id="Resource_1doeg"]
+script = ExtResource("8_7ql28")
+
+[sub_resource type="Resource" id="Resource_j4w36"]
+script = ExtResource("9_gbybv")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_1doeg")
+
+[sub_resource type="Resource" id="Resource_2f3y5"]
+script = ExtResource("6_0u4aa")
+trigger = SubResource("Resource_j4w36")
+effects = Array[ExtResource("2_u6rxt")]([SubResource("Resource_7l5f7")])
+
+[sub_resource type="Resource" id="Resource_cip81"]
+script = ExtResource("2_1aj85")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_56gt0")
+name = "Martyr of Dusk"
+card_types = Array[int]([1])
+subtypes = Array[String](["Vampire", "Soldier"])
+mana_cost = SubResource("Resource_cip81")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_o128a")]([SubResource("Resource_2f3y5")])

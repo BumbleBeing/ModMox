@@ -29,6 +29,18 @@ func test_a_card_makes_the_tokens_its_modes_create() -> void:
 	assert_eq(TokenArt.key_of(cat_beast), "tokens/cat_beast_2_2_white")
 
 
+func test_a_card_makes_the_tokens_an_effect_it_may_pay_for_creates() -> void:
+	# Myrsmith's: "you may pay {1}. If you do, create ...", and an "if" around a "you may".
+	var cat: MmCardDefinition = load(CAT) as MmCardDefinition
+	var cat_beast: MmCardDefinition = load(CAT_BEAST) as MmCardDefinition
+	var paying: MayPayEffect = Scenario.may_pay_mana(Scenario.mana_cost(1), Scenario.create_tokens(cat))
+	var maybe: IfEffect = Scenario.if_then(LifeAtLeastStartingCondition.new(), Scenario.may(Scenario.create_tokens(cat_beast)))
+	var smith: MmCardDefinition = Scenario.creature("Smith", 2, 1, [
+		Scenario.triggered(Scenario.casts(Scenario.of_type(MmCardTypes.CardType.ARTIFACT), MmTrigger.Whose.YOU), [paying, maybe])])
+
+	assert_eq(TokenArt.tokens_made_by(smith), [cat, cat_beast] as Array[MmCardDefinition])
+
+
 func test_a_token_made_in_code_has_no_file_and_no_art() -> void:
 	var spell: MmCardDefinition = Scenario.free_tokens("Kitten", Scenario.cat())
 

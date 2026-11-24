@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_jui3n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_k4f6m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_2iusf"]
+
+[sub_resource type="Resource" id="Resource_k3ciw"]
+script = ExtResource("2_k4f6m")
+
+[resource]
+script = ExtResource("3_2iusf")
+name = "Spirit Token"
+card_types = Array[int]([1])
+subtypes = Array[String](["Spirit"])
+color_indicator = Array[int]([0])
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_jui3n")]([SubResource("Resource_k3ciw")])

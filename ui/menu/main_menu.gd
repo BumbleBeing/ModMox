@@ -11,10 +11,13 @@ extends Control
 ## run at the Deckbox, in Kitty Keep, the Stage being built first (milestones 16 and 17).
 ## A playtest build (the playtest feature its export sets, milestone 20) hides those
 ## developer entries, though every flag above still works in it; every build shows its
-## version at the screen's bottom right. The Menu Soldier stands on top of the window, playing his animations, casting the Soldier
-## Shadow on it; the two are centered on the screen together. The Logo heads the window,
+## version at the screen's bottom right. Behind it all is the Menu Backdrop, a castle tower at
+## nightfall, flickering, the window set into its parapet: the window's top lies on the
+## parapet's line, centered across the screen (game ADR 0081). The Menu Soldier stands on top
+## of the window, playing his animations, casting the Soldier Shadow on it. The Logo heads the window,
 ## under him, its cogs turning. The Wisp floats about them,
-## bringing him his effects, and casts the Wisp Light on the window when it comes near. As
+## bringing him his effects, trailing the Wisp Sparks, which fall and come to rest on the
+## window's top, and casts the Wisp Light on the window when it comes near. As
 ## he takes each effect on, its Effect Callout floats off from him.
 ##
 ## Continue heads the menu while a run of this build's format is saved (milestone 21), and
@@ -80,6 +83,9 @@ var is_playtest: bool = OS.has_feature(PLAYTEST_FEATURE)
 
 var _buttons: Dictionary[String, Button] = {}
 var _version: Label
+var _backdrop: MenuBackdrop
+## The Menu Soldier over the window, placed so that the window's top lies on the parapet.
+var _stack: VBoxContainer
 var _logo: MenuLogo
 var _window: PanelContainer
 var _soldier: MenuSoldier
@@ -89,6 +95,7 @@ var _shadow_layer: Control
 var _light_layer: Control
 var _callouts: MenuCallouts
 var _wisp: MenuWisp
+var _sparks: MenuSparks
 var _refusal: String = ""
 ## Whether the menu is going straight to a scene the command line asked for.
 var _is_skipping: bool = false
@@ -143,19 +150,20 @@ func _ready() -> void:
 		push_error(_refusal)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_read_saved_run()
-	var background: ColorRect = ColorRect.new()
-	background.color = StageIntro.GROUND
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
+	_backdrop = MenuBackdrop.new()
+	_backdrop.name = "MenuBackdrop"
+	_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_backdrop)
 	_add_version()
-	var center: CenterContainer = CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
-	# The soldier over the window, centered as one. His picture's bottom row is empty, so it
-	# overlaps the window's top and his soles rest on it.
+	# The soldier over the window, centered across the screen, the window's top on the
+	# parapet. His picture's bottom row is empty, so it overlaps the window's top and his soles
+	# rest on it.
 	var stack: VBoxContainer = VBoxContainer.new()
 	stack.add_theme_constant_override("separation", -MenuSoldier.SCALE)
-	center.add_child(stack)
+	stack.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	stack.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	add_child(stack)
+	_stack = stack
 	_soldier = MenuSoldier.new()
 	_soldier.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	stack.add_child(_soldier)
@@ -170,7 +178,9 @@ func _ready() -> void:
 	_shadow_layer.draw.connect(_draw_shadow)
 	add_child(_shadow_layer)
 	_soldier.shadow_changed.connect(_shadow_layer.queue_redraw)
-	center.sort_children.connect(_shadow_layer.queue_redraw)
+	stack.item_rect_changed.connect(_shadow_layer.queue_redraw)
+	resized.connect(_place_stack)
+	_place_stack()
 	_light_layer = Control.new()
 	_light_layer.name = "WispLight"
 	_light_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -180,9 +190,12 @@ func _ready() -> void:
 	_callouts = MenuCallouts.new(_soldier)
 	_callouts.name = "EffectCallouts"
 	add_child(_callouts)
-	# Last, so that it floats in front of him and his callouts.
+	# Last, so that it floats in front of him and his callouts, its sparks just behind it.
 	_wisp = MenuWisp.new(_soldier, window)
 	_wisp.name = "Wisp"
+	_sparks = MenuSparks.new(_wisp, window)
+	_sparks.name = "WispSparks"
+	add_child(_sparks)
 	add_child(_wisp)
 	_wisp.moved.connect(_light_layer.queue_redraw)
 	var column: VBoxContainer = VBoxContainer.new()
@@ -229,6 +242,11 @@ func window() -> PanelContainer:
 	return _window
 
 
+## The Menu Backdrop behind everything, or null when the menu went straight to another scene.
+func backdrop() -> MenuBackdrop:
+	return _backdrop
+
+
 ## The Logo heading the window, or null when the menu went straight to another scene.
 func logo() -> MenuLogo:
 	return _logo
@@ -237,6 +255,11 @@ func logo() -> MenuLogo:
 ## The Wisp, or null when the menu went straight to another scene.
 func wisp() -> MenuWisp:
 	return _wisp
+
+
+## The Wisp Sparks, or null when the menu went straight to another scene.
+func sparks() -> MenuSparks:
+	return _sparks
 
 
 ## The Menu Soldier's Effect Callouts, or null when the menu went straight to another scene.
@@ -266,6 +289,14 @@ func button(text: String) -> Button:
 ## another scene.
 func version_label() -> Label:
 	return _version
+
+
+## Puts the soldier and the window where the window's top lies on the Menu Backdrop's parapet,
+## on a whole pixel.
+func _place_stack() -> void:
+	var top: float = roundf(MenuBackdrop.parapet_y(size.y)) - (_soldier.custom_minimum_size.y - MenuSoldier.SCALE)
+	_stack.offset_top = top
+	_stack.offset_bottom = top
 
 
 func _add_version() -> void:

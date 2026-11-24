@@ -19,7 +19,8 @@ static func tokens_made_by(definition: MmCardDefinition) -> Array[MmCardDefiniti
 			effects.append_array((ability as ActivatedAbility).effects)
 		for mode: AbilityMode in ability.modes_or_none():
 			effects.append_array(mode.effects)  # A modal spell's or triggered ability's (ADR 0046).
-		for effect: MmEffect in effects:
+		for wrapped: MmEffect in effects:
+			var effect: MmEffect = _offered(wrapped)
 			var create: CreateTokenEffect = effect as CreateTokenEffect
 			if create != null and create.token != null and create.token.resource_path != "" and not found.has(create.token):
 				found.append(create.token)
@@ -43,3 +44,21 @@ static func part_for(printing: Dictionary, token: MmCardDefinition) -> Dictionar
 		if related.get("component", "") == "token" and related.get("name", "") == wanted:
 			return related
 	return {}
+
+
+## What [param effect] does once every "you may", "you may pay" and "if" around it is
+## taken away, as Myrsmith's "you may pay {1}. If you do, create ...".
+static func _offered(effect: MmEffect) -> MmEffect:
+	var offered: MmEffect = effect
+	while true:
+		if offered is MayEffect:
+			offered = (offered as MayEffect).effect
+		elif offered is MayPayEffect:
+			offered = (offered as MayPayEffect).effect
+		elif offered is MayPayXEffect:
+			offered = (offered as MayPayXEffect).effect
+		elif offered is IfEffect:
+			offered = (offered as IfEffect).effect
+		else:
+			return offered
+	return offered

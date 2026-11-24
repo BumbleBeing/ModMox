@@ -1,0 +1,82 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_xshhq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="2_0qlf0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_qckw2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_eftwh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_odkqc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_7ja5f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="5_1qj5t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="6_yhyot"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="7_123wd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_ea3u1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="9_eno2p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="10_lhgkm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="11_g4oue"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="12_kl6y6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="13_7dvyp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="14_c8er7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="15_kar58"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/counters_put_trigger.gd" id="16_6vkic"]
+
+[sub_resource type="Resource" id="Resource_pl1do"]
+script = ExtResource("2_0qlf0")
+
+[sub_resource type="Resource" id="Resource_r6ac0"]
+script = ExtResource("4_7ja5f")
+value = 1
+
+[sub_resource type="Resource" id="Resource_gnp53"]
+script = ExtResource("6_yhyot")
+
+[sub_resource type="Resource" id="Resource_t7pr6"]
+script = ExtResource("7_123wd")
+
+[sub_resource type="Resource" id="Resource_dfx5g"]
+script = ExtResource("8_ea3u1")
+
+[sub_resource type="Resource" id="Resource_skcme"]
+script = ExtResource("9_eno2p")
+filter = SubResource("Resource_dfx5g")
+
+[sub_resource type="Resource" id="Resource_q77ja"]
+script = ExtResource("10_lhgkm")
+filters = Array[ExtResource("5_1qj5t")]([SubResource("Resource_gnp53"), SubResource("Resource_t7pr6"), SubResource("Resource_skcme")])
+
+[sub_resource type="Resource" id="Resource_4fk1p"]
+script = ExtResource("11_g4oue")
+filter = SubResource("Resource_q77ja")
+
+[sub_resource type="Resource" id="Resource_p44pq"]
+script = ExtResource("12_kl6y6")
+amount = SubResource("Resource_r6ac0")
+recipients = SubResource("Resource_4fk1p")
+
+[sub_resource type="Resource" id="Resource_rpbdg"]
+script = ExtResource("8_ea3u1")
+
+[sub_resource type="Resource" id="Resource_vmnis"]
+script = ExtResource("16_6vkic")
+filter = SubResource("Resource_rpbdg")
+
+[sub_resource type="Resource" id="Resource_sbdrq"]
+script = ExtResource("14_c8er7")
+trigger = SubResource("Resource_vmnis")
+effects = Array[ExtResource("3_odkqc")]([SubResource("Resource_p44pq")])
+is_once_each_turn = true
+
+[sub_resource type="Resource" id="Resource_i6ngf"]
+script = ExtResource("2_qckw2")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_eftwh")
+name = "Generous Pup"
+card_types = Array[int]([1])
+subtypes = Array[String](["Dog"])
+mana_cost = SubResource("Resource_i6ngf")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_xshhq")]([SubResource("Resource_pl1do"), SubResource("Resource_sbdrq")])
+rarity = 2

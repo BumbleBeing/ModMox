@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_oppas"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_t40oq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_yj1xg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/counter_effect.gd" id="3_4ufj8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_e0r3a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/triggering_object_selection.gd" id="4_i8lxs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_pk640"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ward_ability.gd" id="7_upgjy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_sxhbd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_amk8t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/becomes_target_trigger.gd" id="10_wuqca"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="11_l1hcy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="12_um2nm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="13_4kj60"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="14_bcrsr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/life_gained_trigger.gd" id="15_vlnw0"]
+
+[sub_resource type="Resource" id="Resource_s7i2n"]
+script = ExtResource("4_i8lxs")
+
+[sub_resource type="Resource" id="Resource_0exxr"]
+script = ExtResource("2_yj1xg")
+generic = 1
+
+[sub_resource type="Resource" id="Resource_pdyf3"]
+script = ExtResource("3_4ufj8")
+selection = SubResource("Resource_s7i2n")
+unless_paid = SubResource("Resource_0exxr")
+
+[sub_resource type="Resource" id="Resource_8gmlc"]
+script = ExtResource("9_amk8t")
+
+[sub_resource type="Resource" id="Resource_hs6qf"]
+script = ExtResource("10_wuqca")
+filter = SubResource("Resource_8gmlc")
+whose = 2
+
+[sub_resource type="Resource" id="Resource_ohoh6"]
+script = ExtResource("7_upgjy")
+mana_cost = SubResource("Resource_0exxr")
+trigger = SubResource("Resource_hs6qf")
+effects = Array[ExtResource("2_t40oq")]([SubResource("Resource_pdyf3")])
+
+[sub_resource type="Resource" id="Resource_ww0r8"]
+script = ExtResource("11_l1hcy")
+value = 1
+
+[sub_resource type="Resource" id="Resource_2qkfe"]
+script = ExtResource("12_um2nm")
+
+[sub_resource type="Resource" id="Resource_dadl2"]
+script = ExtResource("13_4kj60")
+amount = SubResource("Resource_ww0r8")
+recipients = SubResource("Resource_2qkfe")
+
+[sub_resource type="Resource" id="Resource_p5ub2"]
+script = ExtResource("15_vlnw0")
+
+[sub_resource type="Resource" id="Resource_of7ci"]
+script = ExtResource("14_bcrsr")
+trigger = SubResource("Resource_p5ub2")
+effects = Array[ExtResource("2_t40oq")]([SubResource("Resource_dadl2")])
+
+[sub_resource type="Resource" id="Resource_03ub3"]
+script = ExtResource("2_yj1xg")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_e0r3a")
+name = "Unflinching Hortimancer"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Cleric"])
+mana_cost = SubResource("Resource_03ub3")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_oppas")]([SubResource("Resource_ohoh6"), SubResource("Resource_of7ci")])

@@ -30,6 +30,13 @@ func triggering_object_id(_event: MmEvent) -> int:
 	return 0
 
 
+## What [param event] is one occasion of, when several events of one batch trigger the
+## ability only once together, as one lifelink source's damage to several recipients is one
+## life gain (CR 119.9, ADR 0082); "" when each event is an occasion of its own, as for most.
+func occasion_of(_state: MmGameState, _event: MmEvent) -> String:
+	return ""
+
+
 ## One entry for each time [param event] triggers the ability, each the object that time is
 ## about ("that creature"), or 0 for none; empty when it does not trigger it. One event
 ## triggers most abilities once at most, so this is matches() with triggering_object_id(),

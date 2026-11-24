@@ -9,6 +9,8 @@ const KEYWORDS: Array[String] = [
 	"boost", "lifelink", "deathtouch", "flying", "reach", "vigilance", "haste", "defender",
 	"first_strike", "double_strike", "trample", "indestructible", "protection", "menace",
 ]
+## The palette's bright blue (tools/sprites/modmox.gpl), protection's outermost ring.
+const OUTER_RING: Color = Color8(74, 166, 224)
 
 
 func test_the_idles_are_transitions_and_the_keywords_looks_are_effects() -> void:
@@ -63,6 +65,23 @@ func test_every_effect_flashes_its_color_first_on_the_way_in() -> void:
 		assert_between(at, 0.5, 1.0, "%s stands still a moment first" % effect)
 
 
+func test_flying_lifts_him_a_pixel_off_the_ground_after_each_flap() -> void:
+	assert_eq(SoldierAnimations.raise_of("flying_1"), 1, "wings down, just flapped: risen")
+	assert_eq(SoldierAnimations.raise_of("flying_0"), 0, "wings up: back on the ground")
+
+
+func test_protections_outline_has_room_above_his_crest() -> void:
+	for frame: String in ["protection_0", "protection_1"]:
+		assert_eq(SoldierAnimations.raise_of(frame), 1, frame)
+		assert_eq(_image(frame).get_pixel(15, 0), OUTER_RING, "%s: its outer ring whole over his crest" % frame)
+
+
+func test_every_other_frame_is_drawn_in_his_box() -> void:
+	for frame: String in SoldierAnimations.frames():
+		if not frame in ["flying_1", "protection_0", "protection_1"]:
+			assert_eq(SoldierAnimations.raise_of(frame), 0, frame)
+
+
 func test_no_transition_flashes() -> void:
 	for transition: String in SoldierAnimations.TRANSITIONS:
 		for step: Array in SoldierAnimations.steps_of(SoldierAnimations.TRANSITIONS[transition]):
@@ -71,3 +90,7 @@ func test_no_transition_flashes() -> void:
 
 func _every_animation() -> Array:
 	return SoldierAnimations.TRANSITIONS.keys() + SoldierAnimations.EFFECTS.keys()
+
+
+func _image(frame: String) -> Image:
+	return (load(SoldierAnimations.SPRITES % frame) as Texture2D).get_image()

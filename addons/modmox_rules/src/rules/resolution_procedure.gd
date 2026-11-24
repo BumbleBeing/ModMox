@@ -180,7 +180,7 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	if creature_type != null:
 		_chosen_creature_type = creature_type.creature_types[answer as int]
 		return
-	if decision is ChooseCardsInLibraryDecision:
+	if decision is ChooseCardsInLibraryDecision or decision is ChooseCardsToDiscardDecision:
 		_begin_answer = (answer as Array).duplicate()
 		_has_begin_answer = true
 		return

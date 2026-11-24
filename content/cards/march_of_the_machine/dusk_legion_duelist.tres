@@ -1,0 +1,59 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_20gam"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="2_1ly1g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_gd8sj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_2ineg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ey4c1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_07o4x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="5_xie0q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="6_kumic"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_8hmi7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_qr6lg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_c51fc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="10_t8clf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/counters_put_trigger.gd" id="11_1pag0"]
+
+[sub_resource type="Resource" id="Resource_uegd2"]
+script = ExtResource("2_1ly1g")
+
+[sub_resource type="Resource" id="Resource_oo2f2"]
+script = ExtResource("4_07o4x")
+value = 1
+
+[sub_resource type="Resource" id="Resource_qdrw8"]
+script = ExtResource("5_xie0q")
+
+[sub_resource type="Resource" id="Resource_bfm5y"]
+script = ExtResource("6_kumic")
+amount = SubResource("Resource_oo2f2")
+players = SubResource("Resource_qdrw8")
+
+[sub_resource type="Resource" id="Resource_jxksq"]
+script = ExtResource("10_t8clf")
+
+[sub_resource type="Resource" id="Resource_afjin"]
+script = ExtResource("11_1pag0")
+filter = SubResource("Resource_jxksq")
+
+[sub_resource type="Resource" id="Resource_jpoj3"]
+script = ExtResource("8_qr6lg")
+trigger = SubResource("Resource_afjin")
+effects = Array[ExtResource("3_2ineg")]([SubResource("Resource_bfm5y")])
+is_once_each_turn = true
+
+[sub_resource type="Resource" id="Resource_432tx"]
+script = ExtResource("2_gd8sj")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_ey4c1")
+name = "Dusk Legion Duelist"
+card_types = Array[int]([1])
+subtypes = Array[String](["Vampire", "Soldier"])
+mana_cost = SubResource("Resource_432tx")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_20gam")]([SubResource("Resource_uegd2"), SubResource("Resource_jpoj3")])
+rarity = 2

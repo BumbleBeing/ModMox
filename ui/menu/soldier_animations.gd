@@ -137,6 +137,17 @@ const EFFECTS: Dictionary[String, Array] = {
 	],
 }
 
+## The frames drawn above his box, each with by how many of his sprite's pixels; every other
+## frame is drawn in it. His crest reaches the sprite's top row, so a frame needs drawing
+## higher for anything to show above it. Where its art is drawn lower in its sprite by as
+## much, he still stands on the ground: protection's, for its outline's room above his crest.
+## Where it is not, he rises off the ground: flying's with the wings down, just after a flap.
+const RAISES: Dictionary[String, int] = {
+	"flying_1": 1,
+	"protection_0": 1,
+	"protection_1": 1,
+}
+
 ## What each Effect Animation's Effect Callout says: the keyword as cards print it, or, for
 ## boost, what it does to him.
 const WORDS: Dictionary[String, String] = {
@@ -216,6 +227,11 @@ static func seconds_to_flash(effect: String) -> float:
 ## The color [param effect] flashes.
 static func color_of(effect: String) -> Color:
 	return FLASH_COLORS[flash_of(effect)]
+
+
+## How many of his sprite's pixels [param frame] is drawn above his box: 0 for one drawn in it.
+static func raise_of(frame: String) -> int:
+	return RAISES.get(frame, 0)
 
 
 ## The words [param effect]'s Effect Callout says.

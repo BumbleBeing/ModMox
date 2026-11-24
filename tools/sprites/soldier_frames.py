@@ -181,6 +181,12 @@ WISP = [".*.", "**.", "*W*", ".W."]
 WISP_SMALL = [".*", "*W", "W."]
 
 
+# The spider's legs: light violet, the lightest along the top of each thigh, to stand out
+# against the night sky behind him.
+SPIDER_LEG = "X"
+SPIDER_THIGH = "Y"
+
+
 def spider(is_up):
     """Three jointed legs either side, behind the body: knees up, or knees down."""
     lift = 0 if is_up else 2
@@ -192,9 +198,9 @@ def spider(is_up):
     layer = blank()
     for points in legs:
         for side in (points, [(31 - x, y) for x, y in points]):
-            put(layer, drawn([(x, y + 1) for x, y in side[:2]]))
-            put(layer, drawn(side[:2], "3"))
-            put(layer, drawn(side[1:]))
+            put(layer, drawn([(x, y + 1) for x, y in side[:2]], SPIDER_LEG))
+            put(layer, drawn(side[:2], SPIDER_THIGH))
+            put(layer, drawn(side[1:], SPIDER_LEG))
     return (["".join(row) for row in layer], 0, 0)
 
 def wings(is_up):
@@ -205,7 +211,8 @@ def wings(is_up):
 
 def frame(face="neutral", head_dx=0, head_dy=0, bob=0, spear_dy=0, shield_dy=0,
           marks=(), behind=(), torso=None, cloth=None, skin=None, spear_tones=None, hand=None,
-          legs=None, shield_rows=None, shield_tones=None, twin=None, whole=None, aura=(), shake=0):
+          legs=None, shield_rows=None, shield_tones=None, twin=None, whole=None, aura=(), shake=0,
+          drop=0):
     skin = skin or {}
     shape = [row[:] for row in body]
     for y, row in (torso or {}).items():
@@ -244,6 +251,12 @@ def frame(face="neutral", head_dx=0, head_dy=0, bob=0, spear_dy=0, shield_dy=0,
         stamp(out, recolor(["sss0", "sss0"], skin), 25, 18 + bob + twin)
     if whole:
         out = [list(recolor(["".join(row)], whole)[0]) for row in out]
+    if drop:
+        # Lower in the sprite, so that an aura has room above his crest. The game draws the
+        # frame as much higher (SoldierAnimations.RAISES), so he still stands on the ground.
+        lowered = blank()
+        put(lowered, out, 0, drop)
+        out = lowered
     for tone in aura:
         out = ringed(out, tone)
     for rows, x, y in marks:
@@ -340,8 +353,9 @@ frames = [
     ("soldier_indestructible_0", frame(whole=GOLD, marks=[(SPARKLE, 10, 3)])),
     ("soldier_indestructible_1", frame(whole=GOLD, marks=[(TWINKLE, 25, 21), (TWINKLE, 1, 2)])),
     ("soldier_indestructible_2", frame(whole=GOLD)),
-    ("soldier_protection_0", frame("serene", shield_tones=GHOST, aura=("&",))),
-    ("soldier_protection_1", frame("serene", shield_tones=GHOST, aura=("T", "&"))),
+    ("soldier_protection_0", frame("serene", shield_tones=GHOST, aura=("&",), drop=1)),
+    # Crouched, so that both rings have room above his crest.
+    ("soldier_protection_1", frame("serene", shield_tones=GHOST, aura=("T", "&"), drop=1, bob=1)),
     ("soldier_flash_violet", flash("*")),
     ("soldier_menace_0", frame("goblin", bob=1, skin=GOBLIN, cloth=RAGS, spear_tones=RUST,
                                behind=[(EAR, 22, 6), ([r[::-1] for r in EAR], 4, 6)],

@@ -1,0 +1,11 @@
+# "Whenever you gain life" triggers once for each source, and one lifelink source's damage in a batch is one life gain
+
+Unflinching Hortimancer says "Whenever you gain life, put a +1/+1 counter on this creature." Such an ability reads "whenever a source causes you to gain life" (CR 119.9): gaining life from two sources at once triggers it twice, and gaining 0 life triggers nothing.
+
+**Life is gained in two places, and `LifeGainedTrigger` hears both.** A `GainLifeEffect` performs a `LifeGainedEvent`, one for each player it reaches, so an overloaded "its controller gains 3 life" that finds a player twice is still one life gain. Lifelink is not a trigger: its gain is part of the damage (CR 120.3f), so `DamageEvent` changes the life itself and marks `is_lifelink`. The trigger matches a `LifeGainedEvent` of more than 0, and a `DamageEvent` with `is_lifelink` and an amount, for the source's controller. Splitting lifelink's gain into an event of its own would have made two events of one rule and changed what every damage test reads, for nothing a card needs.
+
+**One source's damage in one batch is one occasion.** Two lifelink creatures dealing combat damage at once are two life gains (CR 119.9), and they are two `DamageEvent`s, so that falls out. But one lifelink creature dealing damage to two creatures at once, as an attacker blocked by two or an ability that deals damage to each creature, is one life gain, and it is two `DamageEvent`s in the same batch (A144). So a trigger may say what an event is an occasion of (`MmTrigger.occasion_of()`, "" for most, each event its own), and `TriggerDetection` lets the events of one batch that one ability calls the same occasion trigger it once, for the first of them, as once each turn does (ADR 0054's addendum). `LifeGainedTrigger` calls a lifelink `DamageEvent` an occasion of its source.
+
+"That player" is the player who gains the life; there is no "that creature". `AbilityText` says "Whenever you gain life", "Whenever an opponent gains life" and "Whenever a player gains life".
+
+Left out until a card needs them (ADR 0001): the amount gained ("you gain that much life", "whenever you gain 3 or more life"), "whenever you gain life for the first time each turn", and replacing or preventing a life gain.

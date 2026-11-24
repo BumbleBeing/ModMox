@@ -27,3 +27,7 @@ Left out until a card needs them (ADR 0001):
 - a ward cost that is not mana ("Ward—Pay 3 life");
 - "unless [a player] pays" for several spells at once, or by a player other than the controller of what is countered;
 - one permanent made the target of one spell twice. Through two "target" words it becomes the target once, but triggers twice here.
+
+## Addendum: the same question asks "you may pay {1}"
+
+A `ChooseYesOrNoDecision` with a `cost` is also asked by a `MayPayEffect` with a mana cost, as Myrsmith's "you may pay {1}" (ADR 0076's addendum): yes is paid the same way, and then what the effect offers happens instead of nothing being countered. The Encounter Screen marks what ward would counter only for a ward trigger.

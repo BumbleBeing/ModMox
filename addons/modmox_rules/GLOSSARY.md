@@ -134,6 +134,10 @@ _Avoid_: Back face, second face, split card
 To put the top cards of a library into its owner's graveyard (CR 701.17a). The spell or ability that mills remembers the cards milled, so a later effect of it can choose "from among them" (ADR 0080).
 _Avoid_: Discard from the library, self-mill (as a term)
 
+**Discard**:
+To put a card from one's own hand into one's graveyard (CR 701.9a): discarding down to maximum hand size in cleanup (CR 514.1), or an effect's "discard a card". The player chooses which cards, and is asked only when there is a choice: holding that many cards or fewer, they discard them all.
+_Avoid_: Mill (which takes from the library), sacrifice (which takes from the battlefield)
+
 **On an Adventure**:
 A card exiled as its Adventure resolved (CR 715.3d). Its owner may cast it from exile as the creature, never as the Adventure again, for as long as it stays there.
 _Avoid_: Adventuring, exiled with an Adventure
@@ -188,6 +192,14 @@ _Avoid_: Transaction, group
 An untapped permanent changing to tapped, for any reason: attacking, paying a {T} cost, or an effect, as in "Whenever this creature becomes tapped" (CR 603.2). A permanent that enters the battlefield tapped never becomes tapped, and one already tapped can't become tapped again.
 _Avoid_: Is tapped (that is a state, not a change), taps (a player taps a permanent; the permanent becomes tapped)
 
+**Counters Put**:
+Counters being put on a permanent, by an effect or as it enters with them (CR 122.6), as in "Whenever one or more +1/+1 counters are put on this creature". An effect puts its counters on each permanent at once, so it triggers such an ability once for each permanent it reaches, however many counters go there.
+_Avoid_: Gets counters, counters added
+
+**Life Gain**:
+One source causing a player to gain life (CR 119.9): a gain life effect, or the damage of one source with lifelink in one Batch, however many recipients it has. "Whenever you gain life" triggers once for each, so two lifelink creatures dealing combat damage together trigger it twice (ADR 0082). Gaining 0 life is no life gain.
+_Avoid_: Life gain event (lifelink's gain is part of its damage, not an Event of its own), lifegain trigger
+
 **Legend Rule**:
 A state-based action: a player who controls two or more legendary permanents with the same name chooses one to keep, and the rest are put into their owners' graveyards with the other state-based actions of that moment (CR 704.5j).
 _Avoid_: Legendary uniqueness, legend check
@@ -221,7 +233,7 @@ An exile that lasts until the object that did it leaves the battlefield, as Leyl
 _Avoid_: Temporary exile, O-Ring effect, banish
 
 **Condition**:
-Something true or false about the game right now, such as "this permanent is untapped", used for an intervening "if" clause, for "as long as", and for an effect that happens instead of another while it holds ("If this is the second time this ability has resolved this turn, ... instead", CR 608.2c).
+Something true or false about the game right now, such as "this permanent is untapped", used for an intervening "if" clause, for "as long as", for an effect that happens instead of another while it holds ("If this is the second time this ability has resolved this turn, ... instead", CR 608.2c), and for one that happens only while it does not ("discard a card unless you control another creature with power 2 or less").
 _Avoid_: Predicate, check (Filter is the word when a player or object either matches or not)
 
 **May Effect**:

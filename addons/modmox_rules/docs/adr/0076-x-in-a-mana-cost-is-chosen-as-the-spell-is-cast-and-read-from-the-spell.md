@@ -16,4 +16,10 @@ Guiding Hydra brings three things at once: "{X}{W}", "This creature enters with 
 
 `AbilityText` also words a beginning of combat trigger as Oracle does: "At the beginning of combat on your turn", "on each opponent's turn", or "At the beginning of each combat".
 
-Left out until a card needs them (ADR 0001): {X} in an activated ability's cost, X with a limit or paid with colored mana, a spell copied with its X, "enters with" an amount worded with "where X is", a mana cost to pay on resolution other than {X} ("you may pay {1}{W}"), "if you don't", and asking only when the order matters between an entering permanent's own replacement effects, such as "enters tapped" and "enters with counters", which today asks which applies first.
+Left out until a card needs them (ADR 0001): {X} in an activated ability's cost, X with a limit or paid with colored mana, a spell copied with its X, "enters with" an amount worded with "where X is", "if you don't", and asking only when the order matters between an entering permanent's own replacement effects, such as "enters tapped" and "enters with counters", which today asks which applies first.
+
+## Addendum: "you may pay {1}"
+
+Myrsmith says "Whenever you cast an artifact spell, you may pay {1}. If you do, create a 1/1 colorless Myr artifact creature token." **`MayPayEffect.mana_cost` is a cost of mana in place of its `cost`.** It asks the `ChooseYesOrNoDecision` ward's cost asks, with the mana as the question's `cost` (ADR 0062), and only if its controller could pay it now (`ManaPayment.can_afford()`); `ResolutionProcedure` already pays a yes to such a cost one `PayManaDecision` at a time and then gives the effect its yes, so nothing there changes. `AbilityText` says "you may pay {1}. If you do, create ...". The Info Panel asks "Pay for Myrsmith's ability:" with {1} after it, the words every cost but ward's already had; only ward's question marks the Stack Window entry of what it would counter, since this one counters nothing. A CHEAP Agent says yes to mana it is asked to pay, as for ward; a FULL one simulates both answers.
+
+Still left out: a cost of mana and something else at once, and "if you don't".

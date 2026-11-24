@@ -73,6 +73,21 @@ func test_continue_heads_the_menu_and_takes_the_run_up() -> void:
 	assert_eq(RunFlow.run.run_seed, 12)
 
 
+## Game ADR 0081: with Continue heading it, the window is taller, and its top still lies on the
+## Menu Backdrop's parapet, the Menu Soldier standing on it.
+func test_with_continue_the_windows_top_still_lies_on_the_parapet() -> void:
+	_save_a_run()
+
+	var menu: MainMenu = _menu()
+	menu.size = Vector2(1920, 1080)
+	await wait_process_frames(2)
+	var window: Rect2 = menu.window().get_global_rect()
+
+	assert_not_null(menu.button(MainMenu.CONTINUE))
+	assert_eq(window.position.y, MenuBackdrop.parapet_y(menu.size.y))
+	assert_eq(menu.soldier().get_global_rect().end.y - MenuSoldier.SCALE, window.position.y)
+
+
 ## S6: Start Run (debug) asks before replacing a saved run, and Back keeps it.
 func test_starting_a_run_asks_before_replacing_the_saved_one() -> void:
 	_save_a_run()

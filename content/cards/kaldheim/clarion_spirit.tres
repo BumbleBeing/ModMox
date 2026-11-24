@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_4f3v6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_rpspr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_stw0s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_5byy0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ff8sw"]
+[ext_resource type="Resource" path="res://content/tokens/spirit_1_1_white_flying.tres" id="4_uldcn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_04gja"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_jkf40"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_2ldbg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="8_ipxh0"]
+
+[sub_resource type="Resource" id="Resource_slq7q"]
+script = ExtResource("3_5byy0")
+token = ExtResource("4_uldcn")
+
+[sub_resource type="Resource" id="Resource_yrrir"]
+script = ExtResource("8_ipxh0")
+whose = 1
+nth_each_turn = 2
+
+[sub_resource type="Resource" id="Resource_07hk0"]
+script = ExtResource("6_jkf40")
+trigger = SubResource("Resource_yrrir")
+effects = Array[ExtResource("2_stw0s")]([SubResource("Resource_slq7q")])
+
+[sub_resource type="Resource" id="Resource_qqtg4"]
+script = ExtResource("2_rpspr")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_ff8sw")
+name = "Clarion Spirit"
+card_types = Array[int]([1])
+subtypes = Array[String](["Spirit"])
+mana_cost = SubResource("Resource_qqtg4")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_4f3v6")]([SubResource("Resource_07hk0")])
+rarity = 1

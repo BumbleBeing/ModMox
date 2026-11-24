@@ -3,7 +3,8 @@ extends MmPendingDecision
 ## A player says yes or no as an effect of a resolving spell or ability begins (CR 608.2d):
 ## its controller, whether to do what a "you may" offers (CR 603.5), or, with a [member cost],
 ## the player who may pay it, whether to pay it to keep a spell or ability from being
-## countered, as for ward (CR 118.12, 702.21a, ADR 0062). Its targets were chosen already, as
+## countered, as for ward (CR 118.12, 702.21a, ADR 0062), or to have what a "you may pay {1}"
+## offers, as for Myrsmith (MayPayEffect, ADR 0076's addendum). Its targets were chosen already, as
 ## it was put on the stack (CR 603.3d). Or, with an [member entry_cost], the player playing a
 ## land with an AsEntersPayOrEntersTappedAbility, whether to pay it so that the land enters
 ## untapped, asked before it moves (CR 614.12, ADR 0052). Answer: a Choice value; yes to a
@@ -15,8 +16,8 @@ enum Choice { YES, NO }
 ## The spell or ability asking, or 0 for a question asked as a permanent enters.
 var stack_object_id: int
 ## What the question is about, so that it can be put in words: what happens on yes for a
-## "you may", and the effect that counters unless the cost is paid for one with a
-## [member cost]. Card data, never changed.
+## "you may" or a "you may pay", and the effect that counters unless the cost is paid for
+## ward's. Card data, never changed.
 var effect: MmEffect
 ## What saying yes pays, or null for a "you may", where yes pays nothing. Card data, never
 ## changed.

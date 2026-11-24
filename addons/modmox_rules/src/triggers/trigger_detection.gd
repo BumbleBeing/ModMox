@@ -9,6 +9,8 @@ extends RefCounted
 ## event may trigger an ability several times, once for each object it is about (ADR 0017's
 ## addendum). One that triggers only once each turn triggers for the first match of a
 ## batch, and for none once its source has marked it Spent this turn (ADR 0054's addendum).
+## Events of a batch its trigger calls one occasion trigger it once, for the first of them
+## (MmTrigger.occasion_of(), ADR 0082).
 ##
 ## Later: abilities that trigger from other zones, such as a graveyard.
 
@@ -35,6 +37,8 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 			everyone.append(observer)
 	everyone.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
 	var found: Array[PendingTrigger] = []
+	# ADR 0082: the occasions each ability has triggered for in this batch, by source and index.
+	var occasions: Dictionary[String, bool] = {}
 	for event: MmEvent in events:
 		if event is AbilityTriggeredEvent:
 			continue
@@ -48,6 +52,10 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 				if not watching:
 					continue
 				var context: MmEffectContext = MmEffectContext.new(observer.controller_id, observer.id)
+				var occasion: String = triggered.trigger.occasion_of(state, event)
+				var occasion_key: String = "%d %d %s" % [observer.id, ability_index, occasion]
+				if occasion != "" and occasions.has(occasion_key):
+					continue
 				# ADR 0017's addendum: one event may trigger it several times, once for each
 				# object it is about, as "blocks a creature" does (CR 509.3b).
 				for object_id: int in triggered.trigger.triggering_object_ids(state, event, context):
@@ -63,6 +71,8 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 							or _has_triggered_among(found, observer.id, ability_index)):
 						continue
 					found.append(pending)
+					if occasion != "":
+						occasions[occasion_key] = true
 	for pending: PendingTrigger in found:
 		state.perform(AbilityTriggeredEvent.new(pending))
 

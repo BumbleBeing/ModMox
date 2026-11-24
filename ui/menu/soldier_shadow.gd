@@ -32,11 +32,17 @@ func _init(contacts: Array[int]) -> void:
 		_strengths[column] = 1.0
 
 
-## The columns of [param image], a frame of his, where the soles row is black.
-static func contacts_of(image: Image) -> Array[int]:
+## The columns of [param image], a frame of his, where the row that lands on the ground is
+## black: the soles row, or, for a frame drawn [param raised] pixels above his box, the row
+## that many below it. The sprite's bottom row is empty, so a frame raised without its art
+## lowered touches the ground nowhere.
+static func contacts_of(image: Image, raised: int = 0) -> Array[int]:
 	var contacts: Array[int] = []
+	var row: int = SOLES_ROW + raised
+	if row >= image.get_height():
+		return contacts
 	for x: int in image.get_width():
-		var pixel: Color = image.get_pixel(x, SOLES_ROW)
+		var pixel: Color = image.get_pixel(x, row)
 		if pixel.a > 0.5 and maxf(pixel.r, maxf(pixel.g, pixel.b)) < BLACK:
 			contacts.append(x)
 	return contacts

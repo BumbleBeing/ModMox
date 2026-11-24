@@ -149,6 +149,8 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_resolution.apply_answer(decision, answer)
 	elif decision is PayManaDecision and _cast == null and _resolution != null:
 		_resolution.apply_answer(decision, answer)  # ADR 0061: paying X as it resolves.
+	elif decision is ChooseCardsToDiscardDecision and _resolution != null:
+		_resolution.apply_answer(decision, answer)  # A DiscardEffect's; cleanup's is below.
 	elif _cast != null:
 		_cast.apply_answer(decision, answer)
 	elif _stacking != null:

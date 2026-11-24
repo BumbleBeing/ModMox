@@ -500,9 +500,10 @@ func fingerprint() -> String:
 		var mana: PackedStringArray = PackedStringArray()
 		for unit: MmMana in each_player.mana_pool():
 			mana.append(unit.describe())
-		lines.append("player %d life %d mulligans %d turn %d since %d lands %d+%d empty draw %s lost %s %d mana [%s]" % [
+		lines.append("player %d life %d mulligans %d turn %d since %d lands %d+%d spells %d empty draw %s lost %s %d mana [%s]" % [
 			each_player.id, each_player.life, each_player.mulligans_taken, each_player.turn_number,
 			each_player.latest_turn_game_turn, each_player.lands_played_this_turn, each_player.additional_land_plays_this_turn,
+			each_player.spells_cast_this_turn,
 			each_player.has_drawn_from_empty_library, each_player.has_lost, each_player.loss_reason, ", ".join(mana)])
 	for each_zone: MmZone in _all_zones():
 		var entries: PackedStringArray = PackedStringArray()

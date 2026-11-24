@@ -2835,6 +2835,15 @@ static func may_pay(cost: MmCost, effect: MmEffect) -> MayPayEffect:
 	return paying
 
 
+## "You may pay [param mana]. If you do, [param effect]." (ADR 0076's addendum), as
+## Myrsmith's "you may pay {1}".
+static func may_pay_mana(mana: MmManaCost, effect: MmEffect) -> MayPayEffect:
+	var paying: MayPayEffect = MayPayEffect.new()
+	paying.mana_cost = mana
+	paying.effect = effect
+	return paying
+
+
 ## "Remove [param amount] [param kind] counters from this permanent" (CR 118.3).
 static func remove_counters(amount: int = 1, kind: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE) -> RemoveCountersCost:
 	var cost: RemoveCountersCost = RemoveCountersCost.new()
@@ -2942,3 +2951,85 @@ static func at_least(value: MmValue, amount: int) -> ValueAtLeastCondition:
 static func threshold_bird(card_name: String = "Old Bird") -> MmCardDefinition:
 	var pump: ModifyPowerToughnessContinuousEffect = modify_pt(1, 1, SourceSelection.new())
 	return creature(card_name, 1, 1, [continuous_static([pump], at_least(cards_in_graveyard(), 7))])
+
+
+# --- Card track: counters being put on a permanent ----------------------------------------
+
+
+## "Whenever one or more [param kind] counters are put on [param filter] [param whose]"
+## (CR 122.6): "this creature" unless another Filter is given.
+static func counters_put(filter: MmFilter = null, whose: MmTrigger.Whose = MmTrigger.Whose.ANY,
+		kind: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE) -> CountersPutTrigger:
+	var trigger: CountersPutTrigger = CountersPutTrigger.new()
+	trigger.filter = filter if filter != null else IsSourceFilter.new()
+	trigger.whose = whose
+	trigger.kind = kind
+	return trigger
+
+
+## A 2/2 costing {0}: "Whenever one or more +1/+1 counters are put on this creature, you gain
+## 1 life", then [param abilities].
+static func counter_watcher(card_name: String = "Counter Watcher", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [triggered(counters_put(), [gain_life(1, you())])]
+	all.append_array(abilities)
+	return creature(card_name, 2, 2, all)
+
+
+# --- Card track: gaining life (ADR 0082) --------------------------------------------------
+
+
+## "Whenever [param whose] gain(s) life" (CR 119.9).
+static func life_gained(whose: MmTrigger.Whose = MmTrigger.Whose.YOU) -> LifeGainedTrigger:
+	var trigger: LifeGainedTrigger = LifeGainedTrigger.new()
+	trigger.whose = whose
+	return trigger
+
+
+## A 2/1 costing {0} with Unflinching Hortimancer's second ability: "Whenever you gain life,
+## put a +1/+1 counter on this creature", then [param abilities].
+static func life_watcher(card_name: String = "Life Watcher", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [triggered(life_gained(), [put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, SourceSelection.new())])]
+	all.append_array(abilities)
+	return creature(card_name, 2, 1, all)
+
+
+# --- Card track: a player's Nth spell each turn ----------------------------------------------
+
+
+## "Whenever [param whose] cast(s) [their] [param nth] spell each turn" (CR 601.2i).
+static func nth_spell(nth: int, whose: MmTrigger.Whose = MmTrigger.Whose.YOU) -> SpellCastTrigger:
+	var trigger: SpellCastTrigger = casts(null, whose)
+	trigger.nth_each_turn = nth
+	return trigger
+
+
+## A 2/2 creature costing {0} with Clarion Spirit's ability, gaining 1 life: "Whenever you
+## cast your second spell each turn, you gain 1 life."
+static func clarion(card_name: String = "Clarion") -> MmCardDefinition:
+	return creature(card_name, 2, 2, [triggered(nth_spell(2), [gain_life(1, you())])])
+
+
+# --- Card track: discarding, and "unless" ---------------------------------------------------
+
+
+## "[param players] discard(s) [param amount] cards" (CR 701.9a): "discard a card" for you.
+static func discard(amount: int = 1, players: MmSelection = null) -> DiscardEffect:
+	var effect: DiscardEffect = DiscardEffect.new()
+	effect.amount = constant(amount)
+	effect.players = players if players != null else you()
+	return effect
+
+
+## "[param effect] unless [param condition]" (CR 608.2c).
+static func unless(condition: MmCondition, effect: MmEffect) -> IfEffect:
+	var conditional: IfEffect = if_then(condition, effect)
+	conditional.is_unless = true
+	return conditional
+
+
+## A 2/1 creature costing {0} with Splitskin Doll's ability: "When this creature enters, draw
+## a card. Then discard a card unless you control another creature with power 2 or less."
+static func doll(card_name: String = "Doll") -> MmCardDefinition:
+	var small_other: MmFilter = all_of([of_type(MmCardTypes.CardType.CREATURE), is_not(IsSourceFilter.new()), power(2)])
+	var effects: Array[MmEffect] = [draw_cards(1, you()), unless(at_least(count_yours(small_other), 1), discard())]
+	return creature(card_name, 2, 1, [triggered(enters(IsSourceFilter.new()), effects)])

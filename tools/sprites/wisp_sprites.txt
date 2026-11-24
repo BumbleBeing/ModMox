@@ -5,6 +5,8 @@
 ; character is which color.
 ;   ASEPRITE=... tools/sprites/build.sh tools/sprites/wisp_sprites.txt ui/sprites/menu
 ; Once a sprite's .aseprite file is touched up by hand, that file is the truth, not this.
+; Every one has been: its far edge is at 60% alpha and the ring in from it at 80%, which a
+; grid cannot say, so rebuilding them from here with --force would make them opaque again.
 
 @ size 6
 

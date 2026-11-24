@@ -1,6 +1,7 @@
 extends GutTest
 ## The Menu Soldier's node: it draws the frame his sequence is on, in whole pixels, from the
-## first moment, lets time go by on its own, and chooses at random unless given a seed.
+## first moment, a raised frame higher, lets time go by on its own, and chooses at random
+## unless given a seed.
 
 
 func test_he_stands_still_from_the_first_moment_in_whole_pixels() -> void:
@@ -53,11 +54,24 @@ func test_where_he_touches_the_ground_follows_his_feet_and_his_spear() -> void:
 
 	for step: int in 1200:
 		soldier.advance(0.05)
-		assert_eq_deep(soldier.contacts(), SoldierShadow.contacts_of(soldier.texture.get_image()))
+		var raised: int = SoldierAnimations.raise_of(soldier.sequence().frame())
+		assert_eq_deep(soldier.contacts(), SoldierShadow.contacts_of(soldier.texture.get_image(), raised))
 		if soldier.contacts() != standing:
 			lifted[soldier.sequence().frame()] = true
 
 	assert_gt(lifted.size(), 0, "a foot or the spear lifts within a minute")
+
+
+func test_he_is_drawn_as_many_pixels_up_as_his_frame_is_raised() -> void:
+	var soldier: MenuSoldier = _soldier(7)
+	assert_eq(soldier.drawn(), Rect2(Vector2.ZERO, soldier.size), "standing, in his own box")
+
+	while SoldierAnimations.raise_of(soldier.sequence().frame()) == 0 and soldier.sequence().seconds() < 2000.0:
+		soldier.advance(0.05)
+
+	var raised: int = SoldierAnimations.raise_of(soldier.sequence().frame())
+	assert_gt(raised, 0, "a raised frame comes within a while")
+	assert_eq(soldier.drawn(), Rect2(Vector2(0, -raised * MenuSoldier.SCALE), soldier.size))
 
 
 func test_his_shadow_flashes_on_the_frame_he_does() -> void:

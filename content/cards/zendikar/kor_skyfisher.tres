@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_dwfl3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_b1ouk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_ceolw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_nk652"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_yc77i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_hand_effect.gd" id="4_gh6tu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="5_pm0i4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/chosen_selection.gd" id="6_403xs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_6sfh1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_0452j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_wqfhw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="10_fdy6v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="11_38237"]
+
+[sub_resource type="Resource" id="Resource_2spmt"]
+script = ExtResource("2_ceolw")
+
+[sub_resource type="Resource" id="Resource_ut7bi"]
+script = ExtResource("5_pm0i4")
+
+[sub_resource type="Resource" id="Resource_bvlw8"]
+script = ExtResource("6_403xs")
+filter = SubResource("Resource_ut7bi")
+
+[sub_resource type="Resource" id="Resource_8cbam"]
+script = ExtResource("4_gh6tu")
+selection = SubResource("Resource_bvlw8")
+
+[sub_resource type="Resource" id="Resource_bwsue"]
+script = ExtResource("10_fdy6v")
+
+[sub_resource type="Resource" id="Resource_faufd"]
+script = ExtResource("11_38237")
+filter = SubResource("Resource_bwsue")
+
+[sub_resource type="Resource" id="Resource_1r5ip"]
+script = ExtResource("8_0452j")
+trigger = SubResource("Resource_faufd")
+effects = Array[ExtResource("3_nk652")]([SubResource("Resource_8cbam")])
+
+[sub_resource type="Resource" id="Resource_48pcn"]
+script = ExtResource("2_b1ouk")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_yc77i")
+name = "Kor Skyfisher"
+card_types = Array[int]([1])
+subtypes = Array[String](["Kor", "Soldier"])
+mana_cost = SubResource("Resource_48pcn")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_dwfl3")]([SubResource("Resource_2spmt"), SubResource("Resource_1r5ip")])

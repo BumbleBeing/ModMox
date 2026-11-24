@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_8cjms"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flash_ability.gd" id="2_b8r1l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_hdwf5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_8x0k8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ycxcm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="4_hqhvi"]
+[ext_resource type="Resource" path="res://content/tokens/soldier_1_1_white.tres" id="5_xvu4x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_nk42p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_ms5f5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_fi846"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_cn3yd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_ofpyc"]
+
+[sub_resource type="Resource" id="Resource_nmpgd"]
+script = ExtResource("2_b8r1l")
+
+[sub_resource type="Resource" id="Resource_yiy24"]
+script = ExtResource("4_hqhvi")
+token = ExtResource("5_xvu4x")
+
+[sub_resource type="Resource" id="Resource_bbxhx"]
+script = ExtResource("9_cn3yd")
+
+[sub_resource type="Resource" id="Resource_rqiav"]
+script = ExtResource("10_ofpyc")
+filter = SubResource("Resource_bbxhx")
+
+[sub_resource type="Resource" id="Resource_0jyqu"]
+script = ExtResource("7_ms5f5")
+trigger = SubResource("Resource_rqiav")
+effects = Array[ExtResource("3_8x0k8")]([SubResource("Resource_yiy24")])
+
+[sub_resource type="Resource" id="Resource_b5h4x"]
+script = ExtResource("2_hdwf5")
+generic = 1
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_ycxcm")
+name = "Resolute Reinforcements"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Soldier"])
+mana_cost = SubResource("Resource_b5h4x")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_8cjms")]([SubResource("Resource_nmpgd"), SubResource("Resource_0jyqu")])
+rarity = 1

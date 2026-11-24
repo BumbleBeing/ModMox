@@ -6,15 +6,27 @@ extends MmEffect
 ## the cost as its [member ChooseYesOrNoDecision.resolution_cost], only if they could pay it
 ## now for the ability's source; ResolutionProcedure pays it at once on yes, and then
 ## [member effect] happens. No, or a cost that cannot be paid, does nothing (CR 118.3).
-# Later: a mana cost ("you may pay {1}{W}"), paid one PayManaDecision at a time as ward's is,
-# and "if you don't". Each once a card needs it.
+## With [member mana_cost] instead it is "You may pay {1}. If you do, [effect].", as on
+## Myrsmith: asked only if they could pay that mana now, with it as the question's
+## [member ChooseYesOrNoDecision.cost], so ResolutionProcedure has yes paid one
+## PayManaDecision at a time, as ward's cost is (ADR 0062), and [member effect] happens once
+## it is paid.
+# Later: a cost of mana and something else at once, and "if you don't". Each once a card
+# needs it.
 
+## What yes pays, other than mana; null when [member mana_cost] is the cost.
 @export var cost: MmCost
+## The mana yes pays, for "you may pay {1}"; null when [member cost] is the cost.
+@export var mana_cost: MmManaCost = null
 ## What happens once the cost is paid.
 @export var effect: MmEffect
 
 
 func decision_as_it_begins(state: MmGameState, context: MmEffectContext, stack_object_id: int) -> MmPendingDecision:
+	if mana_cost != null:
+		if not ManaPayment.can_afford(state, context.controller_id, mana_cost):
+			return null  # CR 118.3: mana that cannot be paid is not paid.
+		return ChooseYesOrNoDecision.new(context.controller_id, stack_object_id, effect, mana_cost)
 	if not cost.can_pay(state, state.object(context.source_object_id), context.controller_id):
 		return null
 	var asked: ChooseYesOrNoDecision = ChooseYesOrNoDecision.new(context.controller_id, stack_object_id, effect)
