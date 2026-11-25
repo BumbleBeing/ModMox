@@ -107,6 +107,16 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 	elif decision is SurveilDecision:
 		# Game ADR 0069: the user's words, the Surveil window holding the cards.
 		prompt.text = SURVEIL_ONE if (decision as SurveilDecision).card_ids.size() == 1 else SURVEIL_SEVERAL
+	elif decision is ChooseLookedAtCardsDecision:
+		# Game ADR 0085, the user's words: "Militia Bugler: you may put a creature card with
+		# power 2 or less into your hand. The rest go to the bottom."
+		var look: ChooseLookedAtCardsDecision = decision as ChooseLookedAtCardsDecision
+		var looking: String = "this"
+		for item: MmObjectView in view.stack:
+			if item.id == look.stack_object_id:
+				looking = source_name(view, item)
+		prompt.text = "%s: you may put %s into your hand. The rest go to the bottom." % [
+			looking, AbilityText.searched_words(look.most, look.most != 1, look.filter)]
 	elif decision is ChooseYesOrNoDecision:
 		# Game ADR 0060: "Leonin Snarecaster's ability: tap target creature?"
 		var asked: ChooseYesOrNoDecision = decision as ChooseYesOrNoDecision

@@ -211,15 +211,19 @@ func _least_blockers(attackers: Array[int]) -> Dictionary[int, int]:
 
 ## CR 702.9b and 702.17b: a creature with flying can be blocked only by creatures with
 ## flying or reach. CR 702.16c: nor can a creature it has protection from block it.
+## CR 702.118b: nor can a creature with greater power block one with skulk.
 ## CR 509.1b: nothing can block a creature that can't be blocked.
 func _can_block(blocker: MmGameObject, attacker: MmGameObject) -> bool:
-	if _state.characteristics_of(attacker).has_ability(CantBeBlockedAbility):
+	var attacking: MmCharacteristics = _state.characteristics_of(attacker)
+	if attacking.has_ability(CantBeBlockedAbility):
 		return false
 	if ProtectionRules.protects(_state, attacker, blocker.id):
 		return false
-	if not _state.characteristics_of(attacker).has_ability(FlyingAbility):
-		return true
 	var blocking: MmCharacteristics = _state.characteristics_of(blocker)
+	if attacking.has_ability(SkulkAbility) and blocking.power > attacking.power:
+		return false
+	if not attacking.has_ability(FlyingAbility):
+		return true
 	return blocking.has_ability(FlyingAbility) or blocking.has_ability(ReachAbility)
 
 

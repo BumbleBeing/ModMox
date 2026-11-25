@@ -133,7 +133,7 @@ func _is_in_place(state: MmGameState, object_id: int) -> bool:
 		return false
 	if among == Among.GRAVEYARD_CARDS:
 		return game_object.zone().kind == MmZone.Kind.GRAVEYARD
-	return game_object.zone() == state.stack and game_object.is_card() == (among == Among.SPELLS)
+	return game_object.zone() == state.stack and game_object.is_card_or_copy() == (among == Among.SPELLS)
 
 
 func _matches(state: MmGameState, candidate: MmReference, context: MmEffectContext) -> bool:

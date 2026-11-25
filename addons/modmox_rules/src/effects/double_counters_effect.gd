@@ -20,14 +20,14 @@ func numbers(state: MmGameState, context: MmEffectContext) -> Array[int]:
 	return worked_out
 
 
-func next_batch(state: MmGameState, _context: MmEffectContext, step: int, worked_out: Array[int]) -> Array[MmEvent]:
+func next_batch(state: MmGameState, context: MmEffectContext, step: int, worked_out: Array[int]) -> Array[MmEvent]:
 	var events: Array[MmEvent] = []
 	if step > 0:
 		return events
 	for index: int in range(0, worked_out.size(), 2):
 		var permanent: MmGameObject = state.object(worked_out[index])
 		if permanent != null and permanent.zone() == state.battlefield and worked_out[index + 1] > 0:
-			events.append(CountersPutEvent.new(permanent.id, kind, worked_out[index + 1]))
+			events.append(CountersPutEvent.new(permanent.id, kind, worked_out[index + 1], context.controller_id))
 	return events
 
 

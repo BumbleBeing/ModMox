@@ -62,6 +62,28 @@ func test_it_is_placed_left_of_the_piles_over_the_heros_side_three_cards_wide() 
 	assert_lt(button.end.y, window.get_global_rect().end.y, "The window ends just under it.")
 
 
+func test_graveyard_is_baked_into_the_bottom_edge_and_stays_centered_however_the_window_is_resized() -> void:
+	# Game ADR 0085: the Surveil window takes the Look window's structure.
+	_open_surveilling(2)
+	var window: SurveilWindow = _screen.surveil_window()
+
+	var strip: Control = window.edge_strip()
+	assert_not_null(strip)
+	assert_eq(window.graveyard_button().get_parent(), strip, "In the strip along the bottom edge.")
+	assert_eq(strip.size.y, SurveilWindow.GRAVEYARD_BUTTON.y, "As tall as the button.")
+	var button: Rect2 = window.graveyard_button().get_global_rect()
+	assert_almost_eq(button.get_center().x, window.get_global_rect().get_center().x, 0.5)
+	assert_almost_eq(button.end.y, window.get_global_rect().end.y - 2.0, 0.5)
+	window.resize_by(Vector2(-60, 40))
+	button = window.graveyard_button().get_global_rect()
+	assert_almost_eq(button.get_center().x, window.get_global_rect().get_center().x, 0.5, "Still centered.")
+	assert_almost_eq(button.end.y, window.get_global_rect().end.y - 2.0, 0.5, "Still on the bottom edge.")
+	window.card_clicked.emit(_surveil().card_ids[0])
+	window.graveyard_button().pressed.emit()
+	button = window.graveyard_button().get_global_rect()
+	assert_almost_eq(button.get_center().x, window.get_global_rect().get_center().x, 0.5, "However many cards are left.")
+
+
 func test_a_click_selects_a_card_and_a_second_lets_it_go() -> void:
 	_open_surveilling(2)
 	var first: int = _surveil().card_ids[0]

@@ -17,3 +17,7 @@ Surveil (engine ADR 0068) came with Wary Thespian, "When this creature enters or
 **The Villain's surveil shows only in its result.** Each card it puts into its graveyard flies from its Library pile to its Graveyard pile, face up as it lands. The cards it keeps show nothing, and the Info Panel says nothing.
 
 Left out until a card needs them: surveilling more than three cards (the window is three wide), any text under the cursor on a surveilled card, a Keyword Chip for surveil (the user chose none), and a "whenever you surveil" trigger.
+
+## Addendum: Graveyard is baked into the window's bottom edge
+
+When the Look window was signed off (game ADR 0085), the user asked that the Surveil window take its structure. "Graveyard" is no longer under the cards, centered under those left in the row: it is baked into the window's bottom edge, in a strip along the bottom as the title bar runs along the top, exactly as tall as the button, and anchored to the strip's middle, so it stays at the middle of the bottom however the window is resized or however many cards are left. The window opens with room for the row and the strip (`ZoneWindow.size_around()`), and the row scrolls above the strip. Everything else here stands.

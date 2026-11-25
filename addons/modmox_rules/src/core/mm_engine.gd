@@ -226,11 +226,15 @@ func _is_searching(player_id: int) -> bool:
 
 
 ## The cards of [param player_id]'s own library they are looking at now: those a pending
-## surveil of theirs names (ADR 0068). Nothing on the game state says so; the decision does.
+## surveil of theirs names (ADR 0068), or a pending look at the top cards (CR 701.20e).
+## Nothing on the game state says so; the decision does.
 func _looked_at_by(player_id: int) -> Array[int]:
 	var surveil: SurveilDecision = _pending as SurveilDecision
 	if surveil != null and surveil.player_id == player_id:
 		return surveil.card_ids
+	var look: ChooseLookedAtCardsDecision = _pending as ChooseLookedAtCardsDecision
+	if look != null and look.player_id == player_id:
+		return look.card_ids
 	var none: Array[int] = []
 	return none
 
@@ -349,6 +353,8 @@ func _is_undo_barrier(answered: MmPendingDecision, events_before: int) -> bool:
 		return true  # ADR 0057: the searcher now sees their whole library.
 	if _pending is SurveilDecision:
 		return true  # ADR 0068: the player now sees the cards surveilled.
+	if _pending is ChooseLookedAtCardsDecision:
+		return true  # CR 701.20e: the player now sees the cards looked at.
 	for index: int in range(events_before, _state.event_log.size()):
 		var event: MmEvent = _state.event_log[index]
 		if event is ShuffleEvent or event is AbilityLeftStackEvent:

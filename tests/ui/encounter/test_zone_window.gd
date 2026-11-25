@@ -153,6 +153,34 @@ func test_clearing_empties_its_contents_which_are_clipped_to_it() -> void:
 	assert_true(window.clip_contents)
 
 
+func test_a_button_baked_into_the_bottom_edge_stays_centered_in_its_strip_however_it_is_resized() -> void:
+	# Game ADR 0085: as the title bar runs along the top, a strip as tall as the button.
+	var window: ZoneWindow = _window("Look", false)
+	var button: Button = Button.new()
+
+	window.bake_button(button, Vector2(200, 40))
+
+	var strip: Control = window.edge_strip()
+	assert_eq(strip.size.y, 40.0, "As tall as the button.")
+	assert_almost_eq(strip.get_rect().end.y, window.size.y - 2.0, 0.01, "Along the bottom edge, inside the border.")
+	assert_almost_eq(strip.size.x, window.size.x - 4.0, 0.01)
+	assert_almost_eq(button.size, Vector2(200, 40), Vector2(0.01, 0.01))
+	assert_almost_eq(button.get_global_rect().get_center().x, window.get_global_rect().get_center().x, 0.5)
+	assert_lt(window.scroll().get_rect().end.y, strip.get_rect().position.y, "The contents end above it.")
+	window.resize_by(Vector2(120, 60))
+	assert_almost_eq(button.get_global_rect().get_center().x, window.get_global_rect().get_center().x, 0.5, "Still centered.")
+	assert_almost_eq(button.get_global_rect().end.y, window.get_global_rect().end.y - 2.0, 0.5, "Still on the bottom edge.")
+	assert_eq(window.get_child(window.get_child_count() - 1).mouse_default_cursor_shape, Control.CURSOR_FDIAGSIZE,
+		"The resize grip stays on top of the strip.")
+
+
+func test_the_size_around_contents_leaves_room_for_a_baked_strip() -> void:
+	var inner: Vector2 = Vector2(400, 200)
+
+	assert_eq(ZoneWindow.size_around(inner), Vector2(420, 200 + ZoneWindow.BAR_HEIGHT + 22.0))
+	assert_eq(ZoneWindow.size_around(inner, 40.0), Vector2(420, 200 + ZoneWindow.BAR_HEIGHT + 8.0 + ZoneWindow.EDGE_GAP + 40.0 + 2.0))
+
+
 func _window(zone_name: String, can_close: bool, parent: Node = null) -> ZoneWindow:
 	var window: ZoneWindow = ZoneWindow.new(zone_name, can_close, Color.WHITE)
 	window.size = Vector2(300, 220)

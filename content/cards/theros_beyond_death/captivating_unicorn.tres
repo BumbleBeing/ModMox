@@ -1,0 +1,68 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_ljssj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_hdcjg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_puwtw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_3qrfx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/tap_effect.gd" id="3_fpj3w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_eg212"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_pejqm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_bydrs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_3ncwl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="8_t0w8t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_dalg5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="10_y5mjf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="11_fk8h8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="12_aqcc0"]
+
+[sub_resource type="Resource" id="Resource_7q6av"]
+script = ExtResource("4_eg212")
+
+[sub_resource type="Resource" id="Resource_3y5a6"]
+script = ExtResource("3_fpj3w")
+selection = SubResource("Resource_7q6av")
+
+[sub_resource type="Resource" id="Resource_babui"]
+script = ExtResource("9_dalg5")
+
+[sub_resource type="Resource" id="Resource_c5b8y"]
+script = ExtResource("10_y5mjf")
+whose = 2
+
+[sub_resource type="Resource" id="Resource_rcqra"]
+script = ExtResource("11_fk8h8")
+filters = Array[ExtResource("8_t0w8t")]([SubResource("Resource_babui"), SubResource("Resource_c5b8y")])
+
+[sub_resource type="Resource" id="Resource_al834"]
+script = ExtResource("7_3ncwl")
+filter = SubResource("Resource_rcqra")
+
+[sub_resource type="Resource" id="Resource_twwyj"]
+script = ExtResource("9_dalg5")
+card_type = 2
+
+[sub_resource type="Resource" id="Resource_1coht"]
+script = ExtResource("12_aqcc0")
+filter = SubResource("Resource_twwyj")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_84aj4"]
+script = ExtResource("6_bydrs")
+trigger = SubResource("Resource_1coht")
+targets = Array[ExtResource("7_3ncwl")]([SubResource("Resource_al834")])
+effects = Array[ExtResource("2_puwtw")]([SubResource("Resource_3y5a6")])
+
+[sub_resource type="Resource" id="Resource_s1rtg"]
+script = ExtResource("2_hdcjg")
+generic = 4
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_3qrfx")
+name = "Captivating Unicorn"
+card_types = Array[int]([1])
+subtypes = Array[String](["Unicorn"])
+mana_cost = SubResource("Resource_s1rtg")
+power = 4
+toughness = 4
+abilities = Array[ExtResource("1_ljssj")]([SubResource("Resource_84aj4")])

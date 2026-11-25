@@ -7,7 +7,11 @@ extends MmTrigger
 ## permanent each effect reaches. A permanent that enters with counters had them put on it
 ## too (CR 122.6), so its arrival matches as well, and its own ability sees it, as an
 ## "enters" ability does (CR 603.6a). "That creature" is the permanent, and "that player" its
-## controller.
+## controller. With [member by_whose] it is "Whenever [by_whose] put(s) one or more [kind]
+## counters on [filter]", as Exemplar of Light's "Whenever you put one or more +1/+1 counters
+## on this creature": only counters that player puts count. The controller of the effect
+## puts them (CR 122.6), and a permanent's controller puts those it enters with, since no
+## effect here names another player (CR 122.6a).
 
 ## Which counters count.
 @export var kind: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE
@@ -15,12 +19,19 @@ extends MmTrigger
 @export var filter: MmFilter = null
 ## Compared with the controller of the permanent the counters are put on.
 @export var whose: MmTrigger.Whose = MmTrigger.Whose.ANY
+## Compared with the player who puts the counters. ANY is "are put on", whoever puts them.
+@export var by_whose: MmTrigger.Whose = MmTrigger.Whose.ANY
 
 
 func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bool:
 	var permanent_id: int = triggering_object_id(event)
 	var permanent: MmGameObject = state.object(permanent_id) if permanent_id != 0 else null
 	if permanent == null or not is_whose(whose, permanent.controller_id, context):
+		return false
+	var put: CountersPutEvent = event as CountersPutEvent
+	# CR 122.6a: a permanent entering with counters has them put on it by its controller.
+	var putting_player_id: int = put.putting_player_id if put != null else permanent.controller_id
+	if not is_whose(by_whose, putting_player_id, context):
 		return false
 	return filter == null or filter.matches(state, MmReference.to_object(permanent_id), context)
 

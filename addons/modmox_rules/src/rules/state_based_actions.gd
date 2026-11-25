@@ -61,6 +61,8 @@ static func _actions(state: MmGameState, kept_ids: Array[int]) -> Array[MmEvent]
 		actions.append(_to_graveyard(state, aura, ZoneChangeEvent.Reason.UNATTACHED_AURA))
 	for token: MmGameObject in _tokens_off_the_battlefield(state):
 		actions.append(TokenCeasedEvent.new(token))
+	for copy: MmGameObject in _copies_off_the_stack(state):
+		actions.append(CopyCeasedEvent.new(copy))
 	for group: Array[int] in _legend_groups(state):
 		var kept: int = _kept_in(group, kept_ids)
 		if kept == -1:
@@ -214,6 +216,21 @@ static func _tokens_off_the_battlefield(state: MmGameState) -> Array[MmGameObjec
 					found.append(game_object)
 	for game_object: MmGameObject in state.exile.objects() + state.stack.objects():
 		if game_object.is_token:
+			found.append(game_object)
+	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return found
+
+
+## CR 704.5e: a copy of a spell in a zone other than the stack ceases to exist. In ID order.
+static func _copies_off_the_stack(state: MmGameState) -> Array[MmGameObject]:
+	var found: Array[MmGameObject] = []
+	for player: MmPlayer in state.players:
+		for each_zone: MmZone in [player.hand, player.library, player.graveyard]:
+			for game_object: MmGameObject in each_zone.objects():
+				if game_object.is_copy:
+					found.append(game_object)
+	for game_object: MmGameObject in state.exile.objects() + state.battlefield.objects():
+		if game_object.is_copy:
 			found.append(game_object)
 	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
 	return found

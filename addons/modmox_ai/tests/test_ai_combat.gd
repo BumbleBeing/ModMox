@@ -192,6 +192,29 @@ func test_a_cheap_agent_guesses_that_nothing_blocks_a_creature_that_cant_be_bloc
 	assert_eq((AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP)) as Array).size(), 1)
 
 
+func test_a_creature_with_skulk_attacks_past_a_blocker_with_greater_power() -> void:
+	# CR 702.118b: the Hill Giant's 3 power is greater than the Sneak's 1, so it can't block.
+	var engine: MmEngine = Scenario.combat_ready([Scenario.skulker()], [AiScenario.free_alpha("hill_giant")])
+	assert_not_null(engine)
+
+	assert_eq((AiScenario.ask(engine, AiAgent.new()) as Array).size(), 1)
+
+
+func test_a_cheap_agent_guesses_that_a_blocker_with_greater_power_cant_block_skulk() -> void:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.skulker()], [AiScenario.free_alpha("hill_giant")])
+	assert_not_null(engine)
+
+	assert_eq((AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP)) as Array).size(), 1)
+
+
+func test_a_creature_with_skulk_does_not_attack_into_a_blocker_with_no_more_power_that_kills_it() -> void:
+	var engine: MmEngine = Scenario.combat_ready([Scenario.skulker()], [Scenario.creature("Wall", 1, 3)])
+	assert_not_null(engine)
+
+	assert_eq(AiScenario.ask(engine, AiAgent.new()), [], "The Wall's 1 power is not greater, so it may block and kill.")
+	assert_eq(AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP)), [])
+
+
 func test_does_not_attack_into_an_even_trade_when_the_race_is_even() -> void:
 	# Even clocks set the SAFE aggression level: only attacks it survives.
 	var engine: MmEngine = Scenario.combat_ready([AiScenario.free_alpha("grizzly_bears")], [AiScenario.free_alpha("grizzly_bears")])

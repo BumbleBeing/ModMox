@@ -33,6 +33,15 @@ func test_menaces_chip_comes_after_trample() -> void:
 	assert_eq(_letters(KeywordChips.chips_for(abilities)), ["T", "M", "I"])
 
 
+func test_skulks_chip_comes_after_menace() -> void:
+	var abilities: Array[MmAbility] = [IndestructibleAbility.new(), SkulkAbility.new(), MenaceAbility.new()]
+
+	var chips: Array[KeywordChip] = KeywordChips.chips_for(abilities)
+
+	assert_eq(_letters(chips), ["M", "SK", "I"])
+	assert_eq(chips[1].icon, "skulk")
+
+
 func test_hexproofs_chip_comes_after_ward() -> void:
 	var abilities: Array[MmAbility] = [HexproofAbility.new(), Scenario.ward(), FlyingAbility.new()]
 

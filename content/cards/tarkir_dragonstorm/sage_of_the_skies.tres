@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_s8jvf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/cast_another_spell_this_turn_condition.gd" id="2_07k48"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_or5p4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_gv8b5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_xm4ah"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/copy_spell_effect.gd" id="4_ttllo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_ha6yf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_n6gnd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_11uu7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_0uhne"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_jdxn7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="10_vk251"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="11_wvrlu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/lifelink_ability.gd" id="12_hroqh"]
+
+[sub_resource type="Resource" id="Resource_skusa"]
+script = ExtResource("2_07k48")
+
+[sub_resource type="Resource" id="Resource_gyoy1"]
+script = ExtResource("5_ha6yf")
+
+[sub_resource type="Resource" id="Resource_ohmxj"]
+script = ExtResource("4_ttllo")
+selection = SubResource("Resource_gyoy1")
+
+[sub_resource type="Resource" id="Resource_3i3im"]
+script = ExtResource("9_jdxn7")
+
+[sub_resource type="Resource" id="Resource_kfoks"]
+script = ExtResource("10_vk251")
+filter = SubResource("Resource_3i3im")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_c7cln"]
+script = ExtResource("7_11uu7")
+trigger = SubResource("Resource_kfoks")
+condition = SubResource("Resource_skusa")
+effects = Array[ExtResource("3_gv8b5")]([SubResource("Resource_ohmxj")])
+
+[sub_resource type="Resource" id="Resource_ktjri"]
+script = ExtResource("11_wvrlu")
+
+[sub_resource type="Resource" id="Resource_yl33s"]
+script = ExtResource("12_hroqh")
+
+[sub_resource type="Resource" id="Resource_4j7c0"]
+script = ExtResource("2_or5p4")
+generic = 2
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_xm4ah")
+name = "Sage of the Skies"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Monk"])
+mana_cost = SubResource("Resource_4j7c0")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_s8jvf")]([SubResource("Resource_c7cln"), SubResource("Resource_ktjri"), SubResource("Resource_yl33s")])
+rarity = 2

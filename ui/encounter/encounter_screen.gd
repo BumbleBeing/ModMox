@@ -189,6 +189,15 @@ var _surveil_window: SurveilWindow
 var _surveil_placed_for: MmPendingDecision = null
 var _surveil_landed: Array[int] = []
 var _sent_at_done: Array[int] = []
+## The Hero's half-made answer to a look at the top of their library, and the window it is
+## made in (game ADR 0085), kept through redraws; the decision the window was placed for; the
+## cards taken that have landed in the hand, which shows them; and the cards taken when Done
+## answered, which never fly a second time.
+var _look: LookChoice = LookChoice.new()
+var _look_window: LookWindow
+var _look_placed_for: MmPendingDecision = null
+var _look_landed: Array[int] = []
+var _taken_at_done: Array[int] = []
 ## What the entry under the cursor has marked on the board.
 var _marked: Array[Control] = []
 ## How long a Glow or mark takes to ease in or out: none until the game's pace is set.
@@ -353,6 +362,11 @@ func _ready() -> void:
 	_surveil_window.moved.connect(_move_surveilled)
 	_surveil_window.graveyard_pressed.connect(_send_surveilled)
 	add_child(_surveil_window)
+	_look_window = LookWindow.new()
+	_look_window.hide()
+	_look_window.card_clicked.connect(_pick_looked_at)
+	_look_window.hand_pressed.connect(_take_looked_at)
+	add_child(_look_window)
 	for player_id: int in [HERO, VILLAIN]:
 		var emblems: ZoneWindow = ZoneWindow.new("Emblems", true, PlayerPanel.GOLD)
 		emblems.size = Vector2(300, 220)
@@ -614,7 +628,7 @@ func _apply_speed() -> void:
 ## in a real encounter). Tests and screenshots leave it at none.
 func set_ease_seconds(seconds: float) -> void:
 	_ease_seconds = seconds
-	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _surveil_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
+	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _surveil_window, _look_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
 		window.ease_seconds = seconds
 	for key: String in _pile_windows:
 		_pile_windows[key].ease_seconds = seconds
@@ -842,6 +856,13 @@ func pass_priority() -> void:
 		if not _is_paused:
 			_sent_at_done = _surveil.sent()
 			_answer(_surveil.answer())
+	elif _look.is_active():
+		# Game ADR 0085: Done gives the cards taken, and can always be; the rest fly face down
+		# onto the Library pile.
+		if not _is_paused:
+			_taken_at_done = _look.taken()
+			_fly_rest_to_library()
+			_answer(_look.answer())
 	elif _answer_asked != null:
 		# Game ADR 0066: it gives the Selected Answer, and nothing while there is none.
 		if not _is_paused and _selected_answer != InfoPanel.NOTHING:
@@ -936,6 +957,8 @@ func undo() -> void:
 		_show_trigger_order()
 	elif not _is_paused and _surveil.is_active() and _surveil.can_undo():
 		_undo_surveilled()
+	elif not _is_paused and _look.is_active() and _look.can_undo():
+		_undo_looked_at()
 	elif not _is_paused and _selection.undo():
 		_error = ""
 		_redraw()
@@ -955,7 +978,7 @@ func leave(scene: String) -> void:
 func _is_covered(cursor: Vector2) -> bool:
 	if _option_menu.is_open():
 		return true
-	var windows: Array[Control] = [_stack_window, _choice_window, _creature_type_window, _surveil_window]
+	var windows: Array[Control] = [_stack_window, _choice_window, _creature_type_window, _surveil_window, _look_window]
 	if _overlay.is_open():
 		windows.append(_overlay)
 	windows.append_array(_emblem_windows.values())
@@ -1093,6 +1116,10 @@ func _inspectable_entries() -> Dictionary[int, Control]:
 		for object_id: int in _surveil_window.entries():
 			if _surveil_window.face_of(object_id) != null:
 				entries[object_id] = _surveil_window.face_of(object_id)
+	if Easing.is_shown(_look_window):
+		for object_id: int in _look_window.entries():
+			if _look_window.face_of(object_id) != null:
+				entries[object_id] = _look_window.face_of(object_id)
 	var top: MmObjectView = _seen_library_top(HERO) if _snapshot != null else null
 	if top != null and is_instance_valid(_library_top_face) and not entries.has(top.id):
 		entries[top.id] = _library_top_face
@@ -1313,6 +1340,11 @@ func surveil_window() -> SurveilWindow:
 	return _surveil_window
 
 
+## Where the Hero looks at the top of their library (game ADR 0085), kept through redraws.
+func look_window() -> LookWindow:
+	return _look_window
+
+
 ## What takes a click on the choice window's entry number [param index].
 func choice_catcher(index: int) -> ClickCatcher:
 	return ClickCatcher.of(_choice_entries[index])
@@ -1496,6 +1528,9 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	if not _surveil.is_for(snapshot.decision if SurveilChoice.covers(snapshot.decision) else null):
 		_surveil = SurveilChoice.new(snapshot.decision if SurveilChoice.covers(snapshot.decision) else null)
 		_surveil_landed.clear()
+	if not _look.is_for(snapshot.decision if LookChoice.covers(snapshot.decision) else null):
+		_look = LookChoice.new(snapshot.decision if LookChoice.covers(snapshot.decision) else null)
+		_look_landed.clear()
 	var asked_x: MmPendingDecision = snapshot.decision \
 		if snapshot.decision is ChooseXToPayDecision or snapshot.decision is ChooseXDecision else null
 	if asked_x != _x_asked:
@@ -1531,6 +1566,7 @@ func _show(snapshot: EncounterSnapshot) -> void:
 	_has_taken_off = false
 	_flight_layer.show_snapshot(previous, snapshot, redraw)
 	_sent_at_done.clear()
+	_taken_at_done.clear()
 	if _has_taken_off:
 		_pose_faces()
 		_hide_landing_places()
@@ -2069,6 +2105,9 @@ func _redraw() -> void:
 	elif _surveil.is_active():
 		_panels[HERO].show_undo(_surveil.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
 		_show_confirm(DONE, true, _surveil.can_undo())
+	elif _look.is_active():
+		_panels[HERO].show_undo(_look.can_undo() or (_snapshot.can_undo and not _snapshot.is_villain_thinking))
+		_show_confirm(DONE, true, _look.can_undo())
 	_add_player_stepper()
 	# Like the Hero's, the Villain's hand eases aside for a drawn card that has landed.
 	_villain_hand.show_hand(view.hand_sizes.get(VILLAIN, 0) - _flight_layer.drawn_in_air(VILLAIN).size(),
@@ -2082,7 +2121,7 @@ func _redraw() -> void:
 	_draw_row(_permanents(view, HERO, true), regions["hero_lands"], glow, on_lands)
 	for player_id: int in [VILLAIN, HERO]:
 		var who: String = "hero" if player_id == HERO else "villain"
-		var landed: int = _surveil_landed.size() if player_id == HERO else 0
+		var landed: int = _surveil_landed.size() + _look_landed.size() if player_id == HERO else 0
 		_draw_library(view.library_sizes.get(player_id, 0) - landed, who + "_library", regions[who + "_library"])
 		var graveyard: Array = _graveyard_shown(player_id)
 		var exile: Array = view.exiles.get(player_id, [])
@@ -2101,6 +2140,7 @@ func _redraw() -> void:
 	_fill_choice_window(view)
 	_fill_creature_type_window(view, regions)
 	_fill_surveil_window(regions)
+	_fill_look_window(regions)
 	_info.show_snapshot(_snapshot, _error, regions["info"], _selection.hint())
 	_info.show_x(_x_to_pay)
 	_info.show_selected(_selected_answer)
@@ -2157,7 +2197,7 @@ func _place_windows(battlefield: Rect2) -> void:
 		_emblem_windows[HERO].position = Vector2(battlefield.position.x + 400, battlefield.end.y - 240)
 		_emblem_windows[VILLAIN].position = Vector2(battlefield.position.x + 400, battlefield.position.y + 10)
 		_potions_window.position = Vector2(battlefield.position.x + 720, battlefield.end.y - 180)
-	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _surveil_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
+	for window: ZoneWindow in [_stack_window, _choice_window, _creature_type_window, _surveil_window, _look_window, _emblem_windows[HERO], _emblem_windows[VILLAIN], _potions_window]:
 		window.bounds = battlefield
 		window.fit()
 	for key: String in _pile_windows:
@@ -2756,6 +2796,13 @@ func _on_landed(route: CardFlights.Route) -> void:
 		if not _is_redrawing:
 			_redraw()
 		return
+	if route.first_object_id == route.object_id and _look.taken().has(route.object_id) \
+			and not _look_landed.has(route.object_id):
+		# Game ADR 0085: a card taken from the Look window shows in the hand once it lands.
+		_look_landed.append(route.object_id)
+		if not _is_redrawing:
+			_redraw()
+		return
 	var is_drawn: bool = route.from_zone_kind == MmZone.Kind.LIBRARY and route.to_zone_kind == MmZone.Kind.HAND
 	if is_drawn:
 		_has_draw_landed = not _is_redrawing
@@ -2791,6 +2838,8 @@ func _flight_place(route: CardFlights.Route, is_landing: bool) -> FacePose:
 	var is_drawn: bool = is_landing and route.from_zone_kind == MmZone.Kind.LIBRARY and route.to_zone_kind == MmZone.Kind.HAND
 	if not is_landing and _sent_at_done.has(object_id):
 		return null  # Game ADR 0069: it flew from the Surveil window already.
+	if not is_landing and _taken_at_done.has(object_id):
+		return null  # Game ADR 0085: it flew from the Look window already.
 	if zone_kind == MmZone.Kind.EXILE:
 		# The one exile is drawn as a pile for each player, the card's owner's.
 		owner_id = _exile_owners.get(object_id, owner_id)
@@ -2989,6 +3038,15 @@ func _show_hand() -> void:
 			hand.hidden.append(in_hand.card_id)
 		if is_discarding and _picks.is_picked(in_hand.id):
 			hand.raised.append(in_hand.card_id)
+	# Game ADR 0085: a card taken from the Look window is in the hand already, waiting for
+	# Done to put it there, hidden while it flies in.
+	for object_id: int in _look.taken() if _look.is_active() else []:
+		var taken: MmObjectView = _seen(object_id)
+		if taken == null:
+			continue
+		hand.add(taken.card_id, _snapshot.look_of(object_id))
+		if not _look_landed.has(object_id) or flying_in.has(taken.card_id):
+			hand.hidden.append(taken.card_id)
 	_hand_strip.show_hand(hand)
 
 
@@ -3495,6 +3553,99 @@ func _undo_surveilled() -> void:
 		if not _surveil.sent().has(object_id):
 			_flight_layer.cancel(object_id)
 			_surveil_landed.erase(object_id)
+	_redraw()
+
+
+## The Look window is open exactly while the Hero looks at the top of their library (game
+## ADR 0085). It opens left of the piles over the Hero's side, as the Surveil window does,
+## for each new look, and keeps its place and size while that is asked.
+func _fill_look_window(regions: Dictionary) -> void:
+	if not _look.is_active() or _snapshot.is_over():
+		_look_window.forget()
+		_look_window.set_open(false)
+		_look_placed_for = null
+		return
+	var battlefield: Rect2 = regions["battlefield"]
+	_look_window.bounds = battlefield
+	if _look_placed_for != _snapshot.decision:
+		_look_placed_for = _snapshot.decision
+		_look_window.forget()
+		_look_window.size = LookWindow.opening_size()
+		_look_window.position = Vector2((regions["piles"] as Rect2).position.x - _look_window.size.x - 5.0 * LookWindow.UNIT,
+			battlefield.end.y - _look_window.size.y - 2.0 * LookWindow.UNIT)
+		_look_window.fit()
+		_look_window.open()
+	var looks: Dictionary[int, CardLook] = {}
+	for object_id: int in _look.row():
+		looks[object_id] = _snapshot.look_of(object_id)
+	_look_window.show_choice(_look, looks)
+	_look_window.move_to_front()
+
+
+## A card of the Look window was clicked: it is selected, or let go.
+func _pick_looked_at(object_id: int) -> void:
+	if _is_paused or not _look.is_active():
+		return
+	_look.pick(object_id)
+	_redraw()
+
+
+## "Hand" was pressed: the selected card flies out of the Look window into the Hero's hand,
+## which shows it once it lands. Nothing is answered (game ADR 0085).
+func _take_looked_at() -> void:
+	if _is_paused or not _look.is_active():
+		return
+	var start: FacePose = _face_pose_in(_look_window.face_of(_look.picked()))
+	var taken: int = _look.take_picked()
+	if taken == LookChoice.NONE:
+		return
+	if not _put_in_air_from_library(taken, start, MmZone.Kind.HAND):
+		_look_landed.append(taken)
+	_redraw()
+
+
+## Done: the cards left in the Look window fly from where they are, turning face down, onto
+## the Hero's Library pile (game ADR 0085). They never leave the library, so nothing the
+## engine does flies them.
+func _fly_rest_to_library() -> void:
+	for object_id: int in _look.row():
+		_put_in_air_from_library(object_id, _face_pose_in(_look_window.face_of(object_id)), MmZone.Kind.LIBRARY)
+
+
+## Puts the Hero's library card [param object_id] in the air from [param start] to their
+## [param to_zone_kind]. Returns whether it flies: not with flights off or no place to start.
+func _put_in_air_from_library(object_id: int, start: FacePose, to_zone_kind: MmZone.Kind) -> bool:
+	if _flight_layer.seconds <= 0.0 or start == null:
+		return false
+	var route: CardFlights.Route = CardFlights.Route.new()
+	route.first_object_id = object_id
+	route.object_id = object_id
+	route.card_id = _seen(object_id).card_id if _seen(object_id) != null else 0
+	route.from_zone_kind = MmZone.Kind.LIBRARY
+	route.from_owner_id = HERO
+	route.to_zone_kind = to_zone_kind
+	route.to_owner_id = HERO
+	_flight_layer.put_in_air(route, start, FlightCard.Kind.CARD, _snapshot.look_of(object_id))
+	return true
+
+
+## Where [param face], a card drawn in a window, is on this screen, or null for none.
+func _face_pose_in(face: CardFace) -> FacePose:
+	if face == null:
+		return null
+	var rect: Rect2 = face.get_global_rect()
+	return FacePose.of(rect.get_center() - global_position, rect.size.y, 0.0)
+
+
+## Takes back the card taken in the Look window; one taken back while it flies comes down at
+## once, and leaves the hand.
+func _undo_looked_at() -> void:
+	var taken_before: Array[int] = _look.taken()
+	_look.undo()
+	for object_id: int in taken_before:
+		if not _look.taken().has(object_id):
+			_flight_layer.cancel(object_id)
+			_look_landed.erase(object_id)
 	_redraw()
 
 

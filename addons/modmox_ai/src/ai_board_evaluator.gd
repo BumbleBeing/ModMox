@@ -81,7 +81,7 @@ static func creature_value(state: MmGameState, creature: MmGameObject) -> int:
 			value += 5 * (damage + toughness)
 		elif ability is TrampleAbility:
 			value += 5 * (damage - 1)
-		elif ability is MenaceAbility:
+		elif ability is MenaceAbility or ability is SkulkAbility:
 			value += 5 * damage
 		elif ability is CantBeBlockedAbility:
 			value += 15 * damage

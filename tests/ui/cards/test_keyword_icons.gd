@@ -5,8 +5,8 @@ extends GutTest
 const ALPHA: String = "res://content/cards/alpha/%s.tres"
 const KEYWORDS: Array[String] = [
 	"flying", "reach", "vigilance", "haste", "deathtouch", "lifelink", "defender",
-	"first_strike", "double_strike", "trample", "menace", "indestructible", "protection", "equip", "flashback", "ward",
-	"hexproof",
+	"first_strike", "double_strike", "trample", "menace", "skulk", "indestructible", "protection", "equip", "flashback",
+	"ward", "hexproof",
 ]
 const WHITE: Color = Color(1, 1, 1, 1)
 const GRAY: Color = Color("#9aa3b5")
@@ -17,7 +17,7 @@ func test_every_keyword_has_an_icon() -> void:
 		FlyingAbility.new(), ReachAbility.new(), VigilanceAbility.new(), HasteAbility.new(),
 		DeathtouchAbility.new(), LifelinkAbility.new(), DefenderAbility.new(),
 		FirstStrikeAbility.new(), DoubleStrikeAbility.new(), TrampleAbility.new(), MenaceAbility.new(),
-		IndestructibleAbility.new(),
+		SkulkAbility.new(), IndestructibleAbility.new(),
 		ProtectionAbility.new(), EquipAbility.new(), FlashbackAbility.new(), WardAbility.new(),
 		HexproofAbility.new(),
 	]

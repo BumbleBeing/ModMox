@@ -103,8 +103,12 @@ var spent_ability_indexes: Array[int] = []
 ## MmGameObject.NOT_A_POTION for anything else.
 var potion_index: int = MmGameObject.NOT_A_POTION
 ## Whether it is a token (CR 111.1), and the Token Definition it was made from, so the
-## GUI can find its art; null for anything that is not a token.
+## GUI can find its art; null for anything that is not a token or a copy of a spell. For a
+## copy of a spell (CR 707.10), and the token a copy of a permanent spell becomes, it is the
+## copied card's definition, whose Original names the card.
 var is_token: bool = false
+## Whether it is a copy of a spell on the stack (CR 707.10). Both players see it.
+var is_copy: bool = false
 ## For a permanent with "As this enters, choose a creature type": the type chosen as it
 ## entered, or "". Both players see it (ADR 0052).
 var chosen_creature_type: String = ""
@@ -180,7 +184,8 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.potion_index = game_object.potion_index
 	view.is_token = game_object.is_token
 	view.chosen_creature_type = game_object.chosen_creature_type
-	view.token_definition = game_object.definition if game_object.is_token else null
+	view.is_copy = game_object.is_copy
+	view.token_definition = game_object.definition if game_object.is_token or game_object.is_copy else null
 	view.is_summoning_sick = state.is_summoning_sick(game_object)
 	if game_object.zone() == state.battlefield:
 		# CR 604.3: a permanent's numbers are worked out, so it no longer reads "*".

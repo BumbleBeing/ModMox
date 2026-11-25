@@ -201,6 +201,9 @@ static func default_answer(decision: MmPendingDecision, play_lands: bool = false
 		return 0  # As an X to pay on resolution is declined: autoplay pays nothing more.
 	if decision is SurveilDecision:
 		return [[], (decision as SurveilDecision).card_ids.duplicate()]  # Every card kept, in order.
+	if decision is ChooseLookedAtCardsDecision:
+		var look: ChooseLookedAtCardsDecision = decision as ChooseLookedAtCardsDecision
+		return look.candidate_ids.slice(0, look.most)
 	if decision is DeclareAttackersDecision or decision is DeclareBlockersDecision:
 		return []
 	if decision is DivideCombatDamageDecision:
@@ -1879,6 +1882,15 @@ static func power(amount: int, comparison: PowerFilter.Comparison = PowerFilter.
 	return filter
 
 
+## "With power X or less", or "or greater", X being [param value] as the Filter is asked.
+## "Greater than X" is "X plus 1 or greater".
+static func power_from(value: MmValue, comparison: PowerFilter.Comparison = PowerFilter.Comparison.OR_LESS) -> PowerFilter:
+	var filter: PowerFilter = PowerFilter.new()
+	filter.amount_value = value
+	filter.comparison = comparison
+	return filter
+
+
 ## "With toughness [param amount] or less" (or greater).
 static func toughness(amount: int, comparison: ToughnessFilter.Comparison = ToughnessFilter.Comparison.OR_LESS) -> ToughnessFilter:
 	var filter: ToughnessFilter = ToughnessFilter.new()
@@ -2957,13 +2969,16 @@ static func threshold_bird(card_name: String = "Old Bird") -> MmCardDefinition:
 
 
 ## "Whenever one or more [param kind] counters are put on [param filter] [param whose]"
-## (CR 122.6): "this creature" unless another Filter is given.
+## (CR 122.6): "this creature" unless another Filter is given. With [param by_whose],
+## "Whenever [by_whose] put(s) one or more ...": only counters that player puts count.
 static func counters_put(filter: MmFilter = null, whose: MmTrigger.Whose = MmTrigger.Whose.ANY,
-		kind: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE) -> CountersPutTrigger:
+		kind: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE,
+		by_whose: MmTrigger.Whose = MmTrigger.Whose.ANY) -> CountersPutTrigger:
 	var trigger: CountersPutTrigger = CountersPutTrigger.new()
 	trigger.filter = filter if filter != null else IsSourceFilter.new()
 	trigger.whose = whose
 	trigger.kind = kind
+	trigger.by_whose = by_whose
 	return trigger
 
 
@@ -3009,6 +3024,55 @@ static func clarion(card_name: String = "Clarion") -> MmCardDefinition:
 	return creature(card_name, 2, 2, [triggered(nth_spell(2), [gain_life(1, you())])])
 
 
+# --- Card track: casting this spell, and copying spells -----------------------------------
+
+
+## "When you cast this spell" (CR 601.2i), which works while its card is on the stack
+## (CR 113.6k).
+static func cast_this_spell() -> SpellCastTrigger:
+	return casts(IsSourceFilter.new(), MmTrigger.Whose.YOU)
+
+
+## "Copy [param selection]" (CR 707.10): "copy this spell" unless another Selection is given.
+static func copy_spell(selection: MmSelection = null) -> CopySpellEffect:
+	var effect: CopySpellEffect = CopySpellEffect.new()
+	effect.selection = selection if selection != null else SourceSelection.new()
+	return effect
+
+
+## A 2/3 costing {0} after Sage of the Skies: "When you cast this spell, if you've cast
+## another spell this turn, copy this spell." and flying.
+static func sage(card_name: String = "Sage") -> MmCardDefinition:
+	return creature(card_name, 2, 3, [triggered(cast_this_spell(), [copy_spell()], [], CastAnotherSpellThisTurnCondition.new()),
+		FlyingAbility.new()])
+
+
+## An instant costing {0}: "Copy target spell." (CR 707.10).
+static func free_twin(card_name: String = "Twin") -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target_spell()], [copy_spell(targeted(0))])
+
+
+# --- Card track: looking at the top cards ------------------------------------------------
+
+
+## "Look at the top [param amount] cards of your library. You may reveal a [param filter]
+## card from among them and put it into your hand. Put the rest on the bottom of your library
+## in a random order." (CR 701.20e).
+static func look_at_top(amount: int, filter: MmFilter) -> LookAtTopCardsEffect:
+	var effect: LookAtTopCardsEffect = LookAtTopCardsEffect.new()
+	effect.amount = constant(amount)
+	effect.filter = filter
+	return effect
+
+
+## A 2/3 costing {0} after Militia Bugler: "When this creature enters, look at the top four
+## cards of your library. You may reveal a creature card with power 2 or less from among them
+## and put it into your hand. Put the rest on the bottom of your library in a random order."
+static func bugler(card_name: String = "Bugler") -> MmCardDefinition:
+	var small: AllOfFilter = all_of([of_type(MmCardTypes.CardType.CREATURE), power(2)])
+	return creature(card_name, 2, 3, [triggered(enters(IsSourceFilter.new()), [look_at_top(4, small)])])
+
+
 # --- Card track: discarding, and "unless" ---------------------------------------------------
 
 
@@ -3033,3 +3097,39 @@ static func doll(card_name: String = "Doll") -> MmCardDefinition:
 	var small_other: MmFilter = all_of([of_type(MmCardTypes.CardType.CREATURE), is_not(IsSourceFilter.new()), power(2)])
 	var effects: Array[MmEffect] = [draw_cards(1, you()), unless(at_least(count_yours(small_other), 1), discard())]
 	return creature(card_name, 2, 1, [triggered(enters(IsSourceFilter.new()), effects)])
+
+
+# --- Card track: putting cards on the bottom of libraries -----------------------------------
+
+
+## "Put [param selection] on the bottom of its owner's library".
+static func put_on_bottom(selection: MmSelection) -> PutOnBottomOfLibraryEffect:
+	var effect: PutOnBottomOfLibraryEffect = PutOnBottomOfLibraryEffect.new()
+	effect.selection = selection
+	return effect
+
+
+## A 4/6 creature costing {0} with Landscaper Colos's first ability: "When this creature
+## enters, put target card from an opponent's graveyard on the bottom of their library."
+static func colos(card_name: String = "Colos") -> MmCardDefinition:
+	return creature(card_name, 4, 6, [triggered(enters(IsSourceFilter.new()), [put_on_bottom(targeted(0))],
+		[target_graveyard_card(owned_by(MmTrigger.Whose.OPPONENT))])])
+
+
+# --- Card track: evolve and skulk -----------------------------------------------------
+
+
+## A creature costing {0} with evolve (CR 702.100a), a 0/1 unless other numbers are given,
+## then [param abilities].
+static func evolver(card_name: String = "Raptor", power: int = 0, toughness: int = 1,
+		abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [EvolveAbility.new()]
+	all.append_array(abilities)
+	return creature(card_name, power, toughness, all)
+
+
+## A 1/1 creature costing {0} with skulk (CR 702.118b), then [param abilities].
+static func skulker(card_name: String = "Sneak", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [SkulkAbility.new()]
+	all.append_array(abilities)
+	return creature(card_name, 1, 1, all)

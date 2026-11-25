@@ -683,6 +683,42 @@ func test_an_exert_ability_waits_in_its_own_main_phase_and_is_activated_in_the_o
 ## The Hero with Scenario.codex() ("{5}, {T}: Draw a card", {1} less for each basic land
 ## type among lands they control) and a Plains and two Forests, so it costs {3}, holding
 ## Ogre (a 5/5 costing {5}), at the first decision of [param step] in [param game_turn].
+# --- Tapping permanents for a cost ---------------------------------------------------------
+
+func test_creatures_cast_this_turn_are_tapped_for_a_counter_when_nothing_could_attack_them() -> void:
+	# Adaptive Gemguard's "Tap two untapped artifacts and/or creatures you control: Put a +1/+1
+	# counter on this creature. Activate only as a sorcery." A counter has the Timing Tag NONE,
+	# so it is weighed in the main phase. Creatures cast this turn could not attack anyway, and
+	# with no creature on the other side none is wanted to block, so tapping them costs nothing.
+	for difficulty: AiDifficulty in [AiDifficulty.easy(), AiDifficulty.normal()]:
+		var engine: MmEngine = AiScenario.ready_with([], [], [_gemguard(), Scenario.creature("Bear", 2, 2)])
+		assert_not_null(engine)
+		var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, difficulty)
+
+		_let_play_the_main_phase(engine, agent)
+
+		var counters: int = 0
+		for gemguard: int in Scenario.permanents_named(engine, engine.hero().id, "Gemguard"):
+			counters += Scenario.counters_on(engine, gemguard, MmCounter.Kind.PLUS_ONE_PLUS_ONE)
+		assert_gt(counters, 0, "It taps them for a counter rather than leaving them idle.")
+
+
+## A 3/3 artifact creature costing {0} with Adaptive Gemguard's ability.
+func _gemguard() -> MmCardDefinition:
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var either: AnyOfFilter = Scenario.any_of([Scenario.of_type(MmCardTypes.CardType.ARTIFACT),
+		Scenario.of_type(MmCardTypes.CardType.CREATURE)])
+	var cost: TapCreaturesCost = Scenario.tap_creatures(2)
+	cost.filter = Scenario.all_of([either, Scenario.untapped(), mine])
+	var grow: Array[MmEffect] = [Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, SourceSelection.new())]
+	var ability: ActivatedAbility = Scenario.activated(null, [cost], grow)
+	ability.is_sorcery_speed = true
+	var gemguard: MmCardDefinition = Scenario.creature("Gemguard", 3, 3, [ability])
+	gemguard.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	return gemguard
+
+
 func _codex_ready(game_turn: int, step: Step) -> MmEngine:
 	var codex: Array[MmCardDefinition] = [Scenario.codex()]
 	var ogre: MmCardDefinition = Scenario.creature("Ogre", 5, 5)

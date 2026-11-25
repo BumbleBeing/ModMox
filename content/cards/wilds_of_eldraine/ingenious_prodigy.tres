@@ -1,0 +1,86 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_1o4uo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_fre63"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/skulk_ability.gd" id="2_jax7h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/chosen_x_value.gd" id="3_egykj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_f0o84"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_with_counters_ability.gd" id="4_87nl2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_counters_filter.gd" id="5_rnklq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/selection_matches_condition.gd" id="6_nyktx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="7_0uh7s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="8_6h1bw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/remove_counters_cost.gd" id="9_ofdup"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="10_2ghvv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="11_tw8t2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="12_dw1vt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_pay_effect.gd" id="13_fqvqh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="14_yb68c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="15_i5imd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="16_bfkb0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/step_began_trigger.gd" id="17_kyxn8"]
+
+[sub_resource type="Resource" id="Resource_ajnnn"]
+script = ExtResource("2_jax7h")
+
+[sub_resource type="Resource" id="Resource_3i5px"]
+script = ExtResource("3_egykj")
+
+[sub_resource type="Resource" id="Resource_1dfhu"]
+script = ExtResource("4_87nl2")
+amount = SubResource("Resource_3i5px")
+
+[sub_resource type="Resource" id="Resource_ugoie"]
+script = ExtResource("5_rnklq")
+
+[sub_resource type="Resource" id="Resource_q40du"]
+script = ExtResource("7_0uh7s")
+
+[sub_resource type="Resource" id="Resource_4co6h"]
+script = ExtResource("6_nyktx")
+selection = SubResource("Resource_q40du")
+filter = SubResource("Resource_ugoie")
+
+[sub_resource type="Resource" id="Resource_7deu1"]
+script = ExtResource("9_ofdup")
+
+[sub_resource type="Resource" id="Resource_qq25k"]
+script = ExtResource("10_2ghvv")
+value = 1
+
+[sub_resource type="Resource" id="Resource_hitv6"]
+script = ExtResource("11_tw8t2")
+
+[sub_resource type="Resource" id="Resource_eqhev"]
+script = ExtResource("12_dw1vt")
+amount = SubResource("Resource_qq25k")
+players = SubResource("Resource_hitv6")
+
+[sub_resource type="Resource" id="Resource_lm7if"]
+script = ExtResource("13_fqvqh")
+cost = SubResource("Resource_7deu1")
+effect = SubResource("Resource_eqhev")
+
+[sub_resource type="Resource" id="Resource_pm438"]
+script = ExtResource("17_kyxn8")
+
+[sub_resource type="Resource" id="Resource_sop00"]
+script = ExtResource("15_i5imd")
+trigger = SubResource("Resource_pm438")
+condition = SubResource("Resource_4co6h")
+effects = Array[ExtResource("8_6h1bw")]([SubResource("Resource_lm7if")])
+
+[sub_resource type="Resource" id="Resource_r0q46"]
+script = ExtResource("2_fre63")
+symbols = Array[int]([1])
+x_count = 1
+
+[resource]
+script = ExtResource("3_f0o84")
+name = "Ingenious Prodigy"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Wizard"])
+mana_cost = SubResource("Resource_r0q46")
+toughness = 1
+abilities = Array[ExtResource("1_1o4uo")]([SubResource("Resource_ajnnn"), SubResource("Resource_1dfhu"), SubResource("Resource_sop00")])
+rarity = 2

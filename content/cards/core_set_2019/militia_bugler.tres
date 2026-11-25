@@ -1,0 +1,69 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_wxt08"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="2_46l7d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ka5q6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_iicik"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_kwpwd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_5f75f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="5_gkccd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="6_ngnes"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/power_filter.gd" id="7_n6ewn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="8_kdrms"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/look_at_top_cards_effect.gd" id="9_dpows"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="10_b7gv0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="11_yuk78"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="12_jkcf2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="13_76m4c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="14_vv7jx"]
+
+[sub_resource type="Resource" id="Resource_kimmq"]
+script = ExtResource("2_46l7d")
+
+[sub_resource type="Resource" id="Resource_kg2pw"]
+script = ExtResource("4_5f75f")
+value = 4
+
+[sub_resource type="Resource" id="Resource_4mrcm"]
+script = ExtResource("6_ngnes")
+
+[sub_resource type="Resource" id="Resource_hu8le"]
+script = ExtResource("7_n6ewn")
+amount = 2
+
+[sub_resource type="Resource" id="Resource_5phu1"]
+script = ExtResource("8_kdrms")
+filters = Array[ExtResource("5_gkccd")]([SubResource("Resource_4mrcm"), SubResource("Resource_hu8le")])
+
+[sub_resource type="Resource" id="Resource_sk7ai"]
+script = ExtResource("9_dpows")
+amount = SubResource("Resource_kg2pw")
+filter = SubResource("Resource_5phu1")
+
+[sub_resource type="Resource" id="Resource_rljpy"]
+script = ExtResource("13_76m4c")
+
+[sub_resource type="Resource" id="Resource_0c3gt"]
+script = ExtResource("14_vv7jx")
+filter = SubResource("Resource_rljpy")
+
+[sub_resource type="Resource" id="Resource_sjx5q"]
+script = ExtResource("11_yuk78")
+trigger = SubResource("Resource_0c3gt")
+effects = Array[ExtResource("3_iicik")]([SubResource("Resource_sk7ai")])
+
+[sub_resource type="Resource" id="Resource_ds470"]
+script = ExtResource("2_ka5q6")
+generic = 2
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_kwpwd")
+name = "Militia Bugler"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Soldier"])
+mana_cost = SubResource("Resource_ds470")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_wxt08")]([SubResource("Resource_kimmq"), SubResource("Resource_sjx5q")])
+rarity = 1

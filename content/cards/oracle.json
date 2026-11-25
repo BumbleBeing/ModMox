@@ -1,4 +1,15 @@
 {
+	"adaptive_gemguard": {
+		"mana_cost": "{3}{W}",
+		"name": "Adaptive Gemguard",
+		"oracle_id": "2fdc0d15-ecb4-4a6d-be77-7a3fca188c9c",
+		"oracle_text": "Tap two untapped artifacts and/or creatures you control: Put a +1/+1 counter on this creature. Activate only as a sorcery.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "The Lost Caverns of Ixalan",
+		"toughness": "3",
+		"type_line": "Artifact Creature — Gnome"
+	},
 	"adventuring_gear": {
 		"mana_cost": "{1}",
 		"name": "Adventuring Gear",
@@ -36,6 +47,17 @@
 		"rarity": "rare",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Instant"
+	},
+	"angelic_quartermaster": {
+		"mana_cost": "{3}{W}{W}",
+		"name": "Angelic Quartermaster",
+		"oracle_id": "14a555eb-9720-45b4-9eb5-77b739e1045c",
+		"oracle_text": "Flying\nWhen this creature enters, put a +1/+1 counter on each of up to two other target creatures.",
+		"power": "3",
+		"rarity": "uncommon",
+		"set_name": "Innistrad: Crimson Vow",
+		"toughness": "3",
+		"type_line": "Creature — Angel Soldier"
 	},
 	"ankh_of_mishra": {
 		"mana_cost": "{2}",
@@ -139,6 +161,17 @@
 		"set_name": "Murders at Karlov Manor",
 		"type_line": "Enchantment"
 	},
+	"attended_knight": {
+		"mana_cost": "{2}{W}",
+		"name": "Attended Knight",
+		"oracle_id": "b3eb8f65-5eba-42a9-a1b4-4f37b14d03d9",
+		"oracle_text": "First strike\nWhen this creature enters, create a 1/1 white Soldier creature token.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Magic 2013",
+		"toughness": "2",
+		"type_line": "Creature — Human Knight"
+	},
 	"auriok_glaivemaster": {
 		"mana_cost": "{W}",
 		"name": "Auriok Glaivemaster",
@@ -178,6 +211,17 @@
 		"set_name": "Dominaria",
 		"toughness": "3",
 		"type_line": "Creature — Human Knight"
+	},
+	"bishop_of_rebirth": {
+		"mana_cost": "{3}{W}{W}",
+		"name": "Bishop of Rebirth",
+		"oracle_id": "05058594-608f-4046-bf44-b736a7072f0a",
+		"oracle_text": "Vigilance\nWhenever this creature attacks, you may return target creature card with mana value 3 or less from your graveyard to the battlefield.",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Ixalan",
+		"toughness": "4",
+		"type_line": "Creature — Vampire Cleric"
 	},
 	"black_knight": {
 		"mana_cost": "{B}{B}",
@@ -221,6 +265,39 @@
 		"toughness": "3",
 		"type_line": "Creature — Spirit Cleric"
 	},
+	"captivating_unicorn": {
+		"mana_cost": "{4}{W}",
+		"name": "Captivating Unicorn",
+		"oracle_id": "22005b01-84b1-4d4b-9193-3c561bd422ce",
+		"oracle_text": "Constellation — Whenever an enchantment you control enters, tap target creature an opponent controls.",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Theros Beyond Death",
+		"toughness": "4",
+		"type_line": "Creature — Unicorn"
+	},
+	"celebrity_fencer": {
+		"mana_cost": "{3}{W}",
+		"name": "Celebrity Fencer",
+		"oracle_id": "39f7e59e-28dd-477e-be38-3fa515838ca4",
+		"oracle_text": "Alliance — Whenever another creature you control enters, put a +1/+1 counter on this creature.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Streets of New Capenna",
+		"toughness": "2",
+		"type_line": "Creature — Elf Druid"
+	},
+	"celestial_ancient": {
+		"mana_cost": "{3}{W}{W}",
+		"name": "Celestial Ancient",
+		"oracle_id": "41797e0c-94bb-42a1-81ed-ed8c6af79e80",
+		"oracle_text": "Flying\nWhenever you cast an enchantment spell, put a +1/+1 counter on each creature you control.",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Dissension",
+		"toughness": "3",
+		"type_line": "Creature — Elemental"
+	},
 	"celestial_unicorn": {
 		"mana_cost": "{2}{W}",
 		"name": "Celestial Unicorn",
@@ -262,6 +339,17 @@
 		"rarity": "uncommon",
 		"set_name": "Foundations",
 		"type_line": "Instant"
+	},
+	"cloudfin_raptor": {
+		"mana_cost": "{U}",
+		"name": "Cloudfin Raptor",
+		"oracle_id": "cb0e1afa-fd9e-4bf9-bcb1-6e8110d6e2ff",
+		"oracle_text": "Flying\nEvolve (Whenever a creature you control enters, if that creature has greater power or toughness than this creature, put a +1/+1 counter on this creature.)",
+		"power": "0",
+		"rarity": "common",
+		"set_name": "Gatecrash",
+		"toughness": "1",
+		"type_line": "Creature — Bird Mutant"
 	},
 	"cogwork_wrestler": {
 		"mana_cost": "{U}",
@@ -462,6 +550,28 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "1",
 		"type_line": "Creature — Elf Archer"
+	},
+	"emeria_angel": {
+		"mana_cost": "{2}{W}{W}",
+		"name": "Emeria Angel",
+		"oracle_id": "ea6616e4-db8d-4905-80f8-cb0162906850",
+		"oracle_text": "Flying\nLandfall — Whenever a land you control enters, you may create a 1/1 white Bird creature token with flying.",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Zendikar",
+		"toughness": "3",
+		"type_line": "Creature — Angel"
+	},
+	"exemplar_of_light": {
+		"mana_cost": "{2}{W}{W}",
+		"name": "Exemplar of Light",
+		"oracle_id": "9ad730b5-8950-4215-9319-387e2970dd22",
+		"oracle_text": "Flying\nWhenever you gain life, put a +1/+1 counter on this creature.\nWhenever you put one or more +1/+1 counters on this creature, draw a card. This ability triggers only once each turn.",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Foundations",
+		"toughness": "3",
+		"type_line": "Creature — Angel"
 	},
 	"explore": {
 		"mana_cost": "{1}{G}",
@@ -718,6 +828,17 @@
 		"set_name": "Secrets of Strixhaven",
 		"type_line": "Sorcery"
 	},
+	"guarded_heir": {
+		"mana_cost": "{5}{W}",
+		"name": "Guarded Heir",
+		"oracle_id": "63e79a6f-ed98-480a-a740-d44e111046f7",
+		"oracle_text": "Lifelink (Damage dealt by this creature also causes you to gain that much life.)\nWhen this creature enters, create two 3/3 white Knight creature tokens.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Foundations",
+		"toughness": "1",
+		"type_line": "Creature — Human Noble"
+	},
 	"guiding_hydra": {
 		"mana_cost": "{X}{W}",
 		"name": "Guiding Hydra",
@@ -728,6 +849,17 @@
 		"set_name": "Reality Fracture",
 		"toughness": "0",
 		"type_line": "Creature — Hydra Horror"
+	},
+	"haazda_vigilante": {
+		"mana_cost": "{4}{W}",
+		"name": "Haazda Vigilante",
+		"oracle_id": "4b707ef4-2c17-41e7-8dac-583791a98055",
+		"oracle_text": "Whenever this creature enters or attacks, put a +1/+1 counter on target creature you control with power 2 or less.",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Murders at Karlov Manor",
+		"toughness": "4",
+		"type_line": "Creature — Giant Soldier"
 	},
 	"haunted_mire": {
 		"mana_cost": "",
@@ -818,6 +950,17 @@
 		"set_name": "Dominaria United",
 		"type_line": "Land — Plains Island"
 	},
+	"ingenious_prodigy": {
+		"mana_cost": "{X}{U}",
+		"name": "Ingenious Prodigy",
+		"oracle_id": "6f498ff7-38c9-44ea-9cb5-994a003825ee",
+		"oracle_text": "Skulk (This creature can't be blocked by creatures with greater power.)\nThis creature enters with X +1/+1 counters on it.\nAt the beginning of your upkeep, if this creature has one or more +1/+1 counters on it, you may remove a +1/+1 counter from it. If you do, draw a card.",
+		"power": "0",
+		"rarity": "rare",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "1",
+		"type_line": "Creature — Human Wizard"
+	},
 	"instill_infection": {
 		"mana_cost": "{3}{B}",
 		"name": "Instill Infection",
@@ -848,6 +991,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "5",
 		"type_line": "Creature — Treefolk"
+	},
+	"irregular_cohort": {
+		"mana_cost": "{2}{W}{W}",
+		"name": "Irregular Cohort",
+		"oracle_id": "c0636d16-671c-4e80-af8c-67d80d2cd979",
+		"oracle_text": "Changeling (This card is every creature type.)\nWhen this creature enters, create a 2/2 colorless Shapeshifter creature token with changeling.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Modern Horizons",
+		"toughness": "2",
+		"type_line": "Creature — Shapeshifter"
 	},
 	"isamaru_hound_of_konda": {
 		"mana_cost": "{W}",
@@ -961,6 +1115,17 @@
 		"set_name": "Zendikar",
 		"toughness": "4",
 		"type_line": "Creature — Kraken"
+	},
+	"landscaper_colos": {
+		"mana_cost": "{5}{W}",
+		"name": "Landscaper Colos",
+		"oracle_id": "144bef8b-3583-4e98-9285-a1965e7e17f8",
+		"oracle_text": "When this creature enters, put target card from an opponent's graveyard on the bottom of their library.\nBasic landcycling {1}{W} ({1}{W}, Discard this card: Search your library for a basic land card, reveal it, put it into your hand, then shuffle.)",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Modern Horizons 2",
+		"toughness": "6",
+		"type_line": "Creature — Goat Beast"
 	},
 	"law_rune_enforcer": {
 		"mana_cost": "{W}",
@@ -1118,6 +1283,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "1",
 		"type_line": "Creature — Merfolk"
+	},
+	"militia_bugler": {
+		"mana_cost": "{2}{W}",
+		"name": "Militia Bugler",
+		"oracle_id": "edb6ae9e-a41c-4d82-97bf-4be00e98364c",
+		"oracle_text": "Vigilance (Attacking doesn't cause this creature to tap.)\nWhen this creature enters, look at the top four cards of your library. You may reveal a creature card with power 2 or less from among them and put it into your hand. Put the rest on the bottom of your library in a random order.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Core Set 2019",
+		"toughness": "3",
+		"type_line": "Creature — Human Soldier"
 	},
 	"mind_stone": {
 		"mana_cost": "{2}",
@@ -1281,6 +1457,17 @@
 		"rarity": "common",
 		"set_name": "Lorwyn",
 		"type_line": "Enchantment"
+	},
+	"odrics_outrider": {
+		"mana_cost": "{3}{W}",
+		"name": "Odric's Outrider",
+		"oracle_id": "a5a9a314-81a0-4b11-9cf9-daeaea98b33c",
+		"oracle_text": "Whenever this creature or another creature you control dies, put a +1/+1 counter on target creature you control.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Innistrad: Midnight Hunt",
+		"toughness": "4",
+		"type_line": "Creature — Human Knight"
 	},
 	"oltec_matterweaver": {
 		"mana_cost": "{2}{W}",
@@ -1462,6 +1649,17 @@
 		"set_name": "Kaldheim",
 		"type_line": "Enchantment"
 	},
+	"relief_captain": {
+		"mana_cost": "{2}{W}{W}",
+		"name": "Relief Captain",
+		"oracle_id": "97e088a3-65eb-42f5-85b8-6aeb770a3f56",
+		"oracle_text": "When this creature enters, support 3. (Put a +1/+1 counter on each of up to three other target creatures.)",
+		"power": "3",
+		"rarity": "uncommon",
+		"set_name": "Oath of the Gatewatch",
+		"toughness": "2",
+		"type_line": "Creature — Kor Knight Ally"
+	},
 	"resistance_reunited": {
 		"mana_cost": "{1}{W}",
 		"name": "Resistance Reunited",
@@ -1501,6 +1699,28 @@
 		"rarity": "common",
 		"set_name": "Dominaria United",
 		"type_line": "Land — Mountain Plains"
+	},
+	"sage_of_the_skies": {
+		"mana_cost": "{2}{W}",
+		"name": "Sage of the Skies",
+		"oracle_id": "cfc7cef7-0a95-49f8-970f-abff2cacd82d",
+		"oracle_text": "When you cast this spell, if you've cast another spell this turn, copy this spell. (The copy becomes a token.)\nFlying, lifelink",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Tarkir: Dragonstorm",
+		"toughness": "3",
+		"type_line": "Creature — Human Monk"
+	},
+	"salt_road_packbeast": {
+		"mana_cost": "{5}{W}",
+		"name": "Salt Road Packbeast",
+		"oracle_id": "50261b9d-48f2-4bad-a35b-14f13b3cdd32",
+		"oracle_text": "Affinity for creatures (This spell costs {1} less to cast for each creature you control.)\nWhen this creature enters, draw a card.",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Tarkir: Dragonstorm",
+		"toughness": "3",
+		"type_line": "Creature — Beast"
 	},
 	"samite_healer": {
 		"mana_cost": "{1}{W}",
@@ -1625,6 +1845,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "4",
 		"type_line": "Creature — Angel"
+	},
+	"serra_redeemer": {
+		"mana_cost": "{3}{W}{W}",
+		"name": "Serra Redeemer",
+		"oracle_id": "39bb051f-1ca7-4d9b-b33b-7f559f816e3e",
+		"oracle_text": "Flying\nWhenever another creature you control with power 2 or less enters, put two +1/+1 counters on that creature.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Dominaria United",
+		"toughness": "4",
+		"type_line": "Creature — Angel Soldier"
 	},
 	"shatter": {
 		"mana_cost": "{1}{R}",
@@ -1975,6 +2206,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "4",
 		"type_line": "Creature — Elemental"
+	},
+	"wayspeaker_bodyguard": {
+		"mana_cost": "{3}{W}",
+		"name": "Wayspeaker Bodyguard",
+		"oracle_id": "b93eaf66-91b3-44da-851c-79810901be0c",
+		"oracle_text": "When this creature enters, return target nonland permanent card with mana value 2 or less from your graveyard to your hand.\nFlurry — Whenever you cast your second spell each turn, tap target creature an opponent controls.",
+		"power": "3",
+		"rarity": "uncommon",
+		"set_name": "Tarkir: Dragonstorm",
+		"toughness": "4",
+		"type_line": "Creature — Orc Monk"
 	},
 	"white_knight": {
 		"mana_cost": "{W}{W}",

@@ -51,7 +51,7 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, worked_
 	if step > 0 or (not worked_out.is_empty() and worked_out[0] == PAID):
 		return events
 	for countered: MmGameObject in _on_the_stack(state, context):
-		if countered.is_card():
+		if countered.is_card_or_copy():
 			events.append(ZoneChangeEvent.new(countered, state.graveyard_from_stack(countered), MmZone.BOTTOM,
 				ZoneChangeEvent.Reason.COUNTER))
 		else:
@@ -71,7 +71,7 @@ func _on_the_stack(state: MmGameState, context: MmEffectContext) -> Array[MmGame
 		if countered == null or countered.zone() != state.stack:
 			continue
 		# CR 101.2: "can't be countered" beats the counter.
-		if countered.is_card() and state.characteristics_of(countered).has_ability(CantBeCounteredAbility):
+		if countered.is_card_or_copy() and state.characteristics_of(countered).has_ability(CantBeCounteredAbility):
 			continue
 		found_on_stack.append(countered)
 	return found_on_stack

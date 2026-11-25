@@ -44,7 +44,7 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 	procedure._object_id = resolving.id
 	var specs: Array[TargetRequirement] = []
 	var overloaded_specs: Array[TargetRequirement] = []
-	if resolving.is_card():
+	if resolving.is_card_or_copy():
 		var spell: SpellAbility = CastProcedure.spell_ability_of(state.characteristics_of(resolving))
 		if spell != null:
 			# ADR 0046: a modal spell does only what its chosen mode does.
@@ -180,7 +180,8 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	if creature_type != null:
 		_chosen_creature_type = creature_type.creature_types[answer as int]
 		return
-	if decision is ChooseCardsInLibraryDecision or decision is ChooseCardsToDiscardDecision:
+	if decision is ChooseCardsInLibraryDecision or decision is ChooseCardsToDiscardDecision \
+			or decision is ChooseLookedAtCardsDecision:
 		_begin_answer = (answer as Array).duplicate()
 		_has_begin_answer = true
 		return
@@ -266,7 +267,7 @@ func _creature_type_choice() -> ChooseCreatureTypeDecision:
 	if not _resolves or _chosen_creature_type != "":
 		return null
 	var resolving: MmGameObject = _state.object(_object_id)
-	if not resolving.is_card():
+	if not resolving.is_card_or_copy():
 		return null
 	var characteristics: MmCharacteristics = _state.characteristics_of(resolving)
 	if not characteristics.is_permanent() or not characteristics.has_ability(AsEntersChooseCreatureTypeAbility):
@@ -276,8 +277,9 @@ func _creature_type_choice() -> ChooseCreatureTypeDecision:
 
 func _leave_stack() -> void:
 	var resolving: MmGameObject = _state.object(_object_id)
-	if resolving.is_card() and _resolves and _state.characteristics_of(resolving).is_permanent():
-		# CR 608.3: a permanent spell enters the battlefield. Its controller is its owner
+	if resolving.is_card_or_copy() and _resolves and _state.characteristics_of(resolving).is_permanent():
+		# CR 608.3: a permanent spell enters the battlefield; a copy of one, as a token
+		# (CR 608.3f). Its controller is its owner
 		# until control-changing effects exist (milestone 9), as CR 608.3a needs.
 		var entering: ZoneChangeEvent = ZoneChangeEvent.new(resolving, _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED)
 		# ADR 0052: the type chosen as it enters is on it as it arrives.
@@ -293,8 +295,9 @@ func _leave_stack() -> void:
 		var away: ZoneChangeEvent = ZoneChangeEvent.new(resolving, _state.exile, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED)
 		away.exiled_on_adventure = true
 		_state.perform(away)
-	elif resolving.is_card():
-		# CR 608.2n: an instant or sorcery goes to its owner's graveyard.
+	elif resolving.is_card_or_copy():
+		# CR 608.2n: an instant or sorcery goes to its owner's graveyard; a copy of one
+		# then ceases to exist (CR 704.5e).
 		var reason: ZoneChangeEvent.Reason = ZoneChangeEvent.Reason.RESOLVED if _resolves else ZoneChangeEvent.Reason.DID_NOT_RESOLVE
 		_state.perform(ZoneChangeEvent.new(resolving, _state.graveyard_from_stack(resolving), MmZone.BOTTOM, reason))
 	else:

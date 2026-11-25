@@ -20,7 +20,7 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, worked_
 	for found: MmReference in recipients.select(state, context):
 		var permanent: MmGameObject = state.object(found.id) if found.is_object() else null
 		if permanent != null and permanent.zone() == state.battlefield:
-			events.append(CountersPutEvent.new(permanent.id, kind, worked_out[0]))
+			events.append(CountersPutEvent.new(permanent.id, kind, worked_out[0], context.controller_id))
 	return events
 
 

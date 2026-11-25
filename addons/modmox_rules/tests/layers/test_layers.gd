@@ -344,6 +344,23 @@ func test_last_known_information_keeps_the_pumped_power() -> void:
 	assert_eq(engine.hero().life, 25, "It died as a 5/2.")
 
 
+func test_last_known_information_keeps_the_pumped_toughness() -> void:
+	var toughness: ToughnessValue = ToughnessValue.new()
+	toughness.selection = TriggeringObjectSelection.new()
+	var gain: GainLifeEffect = GainLifeEffect.new()
+	gain.amount = toughness
+	gain.players = Scenario.you()
+	var mourner: MmCardDefinition = Scenario.artifact("Mourner", [Scenario.triggered(Scenario.dies(Scenario.of_type(CardType.CREATURE)), [gain])])
+	var engine: MmEngine = _hero_main([mourner, _bear()], [], [Scenario.pump_spell("Pump", 0, 3), Scenario.free_destroy("Doom")])
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+	Scenario.cast_and_resolve(engine, "Pump", [_object(bear)])
+
+	Scenario.cast_and_resolve(engine, "Doom", [_object(bear)])
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.hero().life, 25, "It died as a 2/5.")
+
+
 func test_a_copy_of_the_state_agrees_and_replays_are_exact() -> void:
 	var hero_cards: Array[MmCardDefinition] = [_captain(), _bear()]
 	var villain_cards: Array[MmCardDefinition] = [_knight()]

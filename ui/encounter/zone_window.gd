@@ -13,6 +13,11 @@ const CLOSE_WIDTH: float = 46.0
 const CLOSE_COLOR: Color = Color("#bb0a21")
 ## The darker red of the close button's border.
 const CLOSE_BORDER_COLOR: Color = Color("#5e0510")
+## The space between the contents and a strip baked into the bottom edge (game ADR 0085).
+const EDGE_GAP: float = 8.0
+## The margins round the scrolled contents: each side, and below with no strip.
+const SIDE_MARGIN: float = 8.0
+const BOTTOM_MARGIN: float = 14.0
 
 ## Where the window may be: it is moved and shrunk to stay inside. Empty for anywhere.
 var bounds: Rect2 = Rect2()
@@ -20,10 +25,14 @@ var bounds: Rect2 = Rect2()
 var ease_seconds: float = 0.0
 
 var _zone_name: String
+var _tint: Color
 var _title: Label
 var _body: VBoxContainer
 var _scroll: ScrollContainer
 var _close: Button = null
+var _grip: ColorRect
+## The strip baked into the bottom edge, or null for none (game ADR 0085).
+var _edge_strip: Panel = null
 var _is_dragging: bool = false
 var _is_resizing: bool = false
 ## Where the cursor was pressed on the title bar or the corner, and where the window was
@@ -35,6 +44,7 @@ var _grab_rect: Rect2 = Rect2()
 
 func _init(zone_name: String, can_close: bool, tint: Color) -> void:
 	_zone_name = zone_name
+	_tint = tint
 	clip_contents = true
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = Color(0.09, 0.1, 0.13, 0.96)
@@ -82,10 +92,10 @@ func _init(zone_name: String, can_close: bool, tint: Color) -> void:
 		bar.add_child(_close)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.offset_left = 8
-	scroll.offset_top = BAR_HEIGHT + 8
-	scroll.offset_right = -8
-	scroll.offset_bottom = -14
+	scroll.offset_left = SIDE_MARGIN
+	scroll.offset_top = BAR_HEIGHT + SIDE_MARGIN
+	scroll.offset_right = -SIDE_MARGIN
+	scroll.offset_bottom = -BOTTOM_MARGIN
 	add_child(scroll)
 	_body = VBoxContainer.new()
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -100,7 +110,53 @@ func _init(zone_name: String, can_close: bool, tint: Color) -> void:
 	grip.mouse_default_cursor_shape = Control.CURSOR_FDIAGSIZE
 	grip.gui_input.connect(_on_grip_input)
 	add_child(grip)
+	_grip = grip
 	show_count(0)
+
+
+## The window's size around contents of [param inner], as its margins and title bar leave
+## room for them, with a strip [param edge_height] tall baked into its bottom edge
+## (bake_button()), or none for 0.
+static func size_around(inner: Vector2, edge_height: float = 0.0) -> Vector2:
+	var below: float = BOTTOM_MARGIN if edge_height <= 0.0 else EDGE_GAP + edge_height + 2.0
+	return Vector2(inner.x + SIDE_MARGIN * 2.0 + 4.0, inner.y + BAR_HEIGHT + SIDE_MARGIN + below)
+
+
+## Bakes [param button], [param button_size] big, into the window's bottom edge (game ADR
+## 0085): a strip along the bottom, inside the border, as the title bar runs along the top,
+## exactly as tall as the button and in the bar's color, its bottom corners rounded to the
+## window's. The button is anchored to the strip's middle, so it stays centered however the
+## window is resized. The contents scroll above the strip, and the resize grip stays on top.
+func bake_button(button: Button, button_size: Vector2) -> void:
+	_edge_strip = Panel.new()
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = Color(_tint, 0.35)
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	_edge_strip.add_theme_stylebox_override("panel", style)
+	_edge_strip.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_edge_strip.offset_left = 2
+	_edge_strip.offset_right = -2
+	_edge_strip.offset_bottom = -2
+	_edge_strip.offset_top = -2 - button_size.y
+	_edge_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_edge_strip)
+	move_child(_grip, -1)
+	_scroll.offset_bottom = -(EDGE_GAP + button_size.y + 2.0)
+	button.anchor_left = 0.5
+	button.anchor_right = 0.5
+	button.anchor_top = 0.0
+	button.anchor_bottom = 1.0
+	button.offset_left = -button_size.x / 2.0
+	button.offset_right = button_size.x / 2.0
+	button.offset_top = 0
+	button.offset_bottom = 0
+	_edge_strip.add_child(button)
+
+
+## The strip baked into the bottom edge, or null for none.
+func edge_strip() -> Control:
+	return _edge_strip
 
 
 ## Where the window's contents go.

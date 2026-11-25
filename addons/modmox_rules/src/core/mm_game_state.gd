@@ -545,6 +545,8 @@ func fingerprint() -> String:
 				entries.append("%d attached to %d" % [game_object.id, game_object.attached_to_object_id])
 			if game_object.is_token:
 				entries.append("%d token" % game_object.id)
+			if game_object.is_copy:
+				entries.append("%d copy" % game_object.id)
 			if game_object.exerted_by_player_id != NO_PLAYER:
 				entries.append("%d exerted by %d" % [game_object.id, game_object.exerted_by_player_id])
 			if game_object.cast_with_flashback:

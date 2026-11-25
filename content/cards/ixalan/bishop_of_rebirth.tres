@@ -1,0 +1,82 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_22o4c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/vigilance_ability.gd" id="2_m4hv3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_vyphe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_at80q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_r0yml"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_battlefield_effect.gd" id="4_c51bw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="5_7o6vg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_effect.gd" id="6_vniel"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_qjen8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_5fen3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_ok0vo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_l0hrh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_7tbf4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/owned_by_filter.gd" id="12_21rbo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mana_value_filter.gd" id="13_26pgg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="14_ilkw6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="15_jy3cf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/attackers_declared_trigger.gd" id="16_k456t"]
+
+[sub_resource type="Resource" id="Resource_3avl0"]
+script = ExtResource("2_m4hv3")
+
+[sub_resource type="Resource" id="Resource_7wvgc"]
+script = ExtResource("5_7o6vg")
+
+[sub_resource type="Resource" id="Resource_0rdp0"]
+script = ExtResource("4_c51bw")
+selection = SubResource("Resource_7wvgc")
+
+[sub_resource type="Resource" id="Resource_htfmy"]
+script = ExtResource("6_vniel")
+effect = SubResource("Resource_0rdp0")
+
+[sub_resource type="Resource" id="Resource_dk0ca"]
+script = ExtResource("11_7tbf4")
+
+[sub_resource type="Resource" id="Resource_1cqio"]
+script = ExtResource("12_21rbo")
+
+[sub_resource type="Resource" id="Resource_ihw54"]
+script = ExtResource("13_26pgg")
+amount = 3
+
+[sub_resource type="Resource" id="Resource_r16jo"]
+script = ExtResource("14_ilkw6")
+filters = Array[ExtResource("10_l0hrh")]([SubResource("Resource_dk0ca"), SubResource("Resource_1cqio"), SubResource("Resource_ihw54")])
+
+[sub_resource type="Resource" id="Resource_0k72c"]
+script = ExtResource("9_ok0vo")
+filter = SubResource("Resource_r16jo")
+among = 2
+
+[sub_resource type="Resource" id="Resource_k301q"]
+script = ExtResource("15_jy3cf")
+
+[sub_resource type="Resource" id="Resource_fagct"]
+script = ExtResource("16_k456t")
+filter = SubResource("Resource_k301q")
+
+[sub_resource type="Resource" id="Resource_o7msy"]
+script = ExtResource("8_5fen3")
+trigger = SubResource("Resource_fagct")
+targets = Array[ExtResource("9_ok0vo")]([SubResource("Resource_0k72c")])
+effects = Array[ExtResource("3_r0yml")]([SubResource("Resource_htfmy")])
+
+[sub_resource type="Resource" id="Resource_8s45u"]
+script = ExtResource("2_vyphe")
+generic = 3
+symbols = Array[int]([0, 0])
+
+[resource]
+script = ExtResource("3_at80q")
+name = "Bishop of Rebirth"
+card_types = Array[int]([1])
+subtypes = Array[String](["Vampire", "Cleric"])
+mana_cost = SubResource("Resource_8s45u")
+power = 3
+toughness = 4
+abilities = Array[ExtResource("1_22o4c")]([SubResource("Resource_3avl0"), SubResource("Resource_o7msy")])
+rarity = 2

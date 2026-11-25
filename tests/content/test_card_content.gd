@@ -1523,6 +1523,28 @@ func test_pride_sovereign_exerted_with_one_other_cat_makes_two_lifelink_cats_and
 	assert_eq(exerted.exerted_by_player_id, engine.hero().id)
 
 
+func test_exemplar_of_light_grows_as_life_is_gained_and_draws_from_its_own_counter_once_each_turn() -> void:
+	# Its controller puts its counter on it, so its own "Whenever you put" triggers (CR 122.6).
+	var yours: Array[MmCardDefinition] = [Scenario.free_copy(_card("foundations", "exemplar_of_light"))]
+	var hand: Array[MmCardDefinition] = [Scenario.instant("Salve", Scenario.mana_cost(0), [], [Scenario.gain_life(1, Scenario.you())]),
+		Scenario.instant("Balm", Scenario.mana_cost(0), [], [Scenario.gain_life(1, Scenario.you())])]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(yours, no_cards, hand),
+		yours, no_cards, hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var exemplar: int = Scenario.permanent_named(engine, engine.hero().id, "Exemplar of Light")
+	var hand_before: int = engine.hero().hand.size()
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Salve"), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(engine.hero().hand.size(), hand_before, "Salve left the hand, and a card was drawn.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Balm"), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.counters_on(engine, exemplar, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 2, "One for each life gain.")
+	assert_eq(engine.hero().hand.size(), hand_before - 1, "Balm left the hand; it draws only once each turn.")
+
+
 func test_guiding_hydra_enters_with_x_counters_and_spreads_one_at_the_beginning_of_combat() -> void:
 	# Engine ADR 0076: {X}{W}, a 1/0 that enters with X +1/+1 counters.
 	var hydra: MmCardDefinition = load("res://content/cards/reality_fracture/guiding_hydra.tres") as MmCardDefinition
@@ -1545,6 +1567,39 @@ func test_guiding_hydra_enters_with_x_counters_and_spreads_one_at_the_beginning_
 
 	assert_eq(Scenario.pt(engine, id), [3, 2])
 	assert_eq(Scenario.counters_on(engine, bird, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 1)
+
+
+func test_ingenious_prodigy_trades_a_counter_for_a_card_at_upkeep_only_while_it_has_one() -> void:
+	# {X}{U}: a 0/1 with skulk that enters with X +1/+1 counters. Its upkeep trigger has an
+	# intervening "if" (CR 603.4), so with no counter left it does not trigger at all.
+	var prodigy: MmCardDefinition = _card("wilds_of_eldraine", "ingenious_prodigy")
+	var bird: Array[MmCardDefinition] = [Scenario.creature("Blue Bird", 0, 1, [Scenario.tap_for_mana(MmMana.Type.BLUE, 3)])]
+	var hand: Array[MmCardDefinition] = [prodigy]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(bird, no_cards, hand), bird, no_cards, hand,
+		no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_with_x(engine, Scenario.card_in_hand(engine, engine.hero(), "Ingenious Prodigy"), 1), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	var id: int = Scenario.permanent_named(engine, engine.hero().id, "Ingenious Prodigy")
+	assert_eq(Scenario.pt(engine, id), [1, 2], "0/1 with one +1/+1 counter.")
+	assert_true(Scenario.now(engine, id).has_ability(SkulkAbility))
+
+	assert_eq(Scenario.pass_to_yes_or_no(engine), "")
+	assert_eq(engine.game_state().game_turn, 5)
+	assert_eq(engine.game_state().step, MmTurn.Step.UPKEEP)
+	var cards_in_hand: int = engine.hero().hand.size()
+	assert_eq(engine.submit(ChooseYesOrNoDecision.Choice.YES), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.hero().hand.size(), cards_in_hand + 1, "It drew a card.")
+	assert_eq(Scenario.counters_on(engine, id, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 0)
+	assert_eq(Scenario.play_until_step(engine, 7, MmTurn.Step.DRAW), "")
+	var triggers: int = 0
+	for event: MmEvent in Scenario.events_of(engine, AbilityTriggeredEvent):
+		if (event as AbilityTriggeredEvent).pending.source_name == "Ingenious Prodigy":
+			triggers += 1
+	assert_eq(triggers, 1, "No counter on it at the next upkeep, so no trigger.")
 
 
 func test_the_clue_token_is_a_colorless_clue_artifact_that_sacrifices_itself_for_a_card() -> void:
@@ -1661,6 +1716,75 @@ func test_oltec_matterweaver_makes_a_gnome_then_copies_a_treasure() -> void:
 	assert_eq(made.size(), 3)
 	assert_eq(Scenario.now(engine, made[2]).subtypes, ["Treasure"] as Array[String])
 	assert_eq(engine.game_state().object(made[2]).controller_id, hero.id)
+
+
+func test_sage_of_the_skies_cast_as_the_second_spell_is_copied_into_a_token_with_flying_and_lifelink() -> void:
+	# Engine ADR 0083 (CR 113.6k, 603.4, 707.10, 608.3f).
+	var sage: MmCardDefinition = Scenario.free_copy(_card("tarkir_dragonstorm", "sage_of_the_skies"))
+	var gift: MmCardDefinition = Scenario.instant("Gift", Scenario.mana_cost(0), [], [Scenario.gain_life(1, Scenario.you())])
+	var held: Array[MmCardDefinition] = [sage, gift]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(no_cards, no_cards, held),
+		no_cards, no_cards, held, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Gift"), "")
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), sage.name)), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var sages: Array[int] = Scenario.permanents_named(engine, engine.hero().id, "Sage of the Skies")
+	assert_eq(sages.size(), 2)
+	assert_true(engine.game_state().object(sages[0]).is_token, "The copy resolved first.")
+	for sage_id: int in sages:
+		var now: MmCharacteristics = Scenario.now(engine, sage_id)
+		assert_true(now.has_ability(FlyingAbility) and now.has_ability(LifelinkAbility))
+		assert_eq([now.power, now.toughness], [2, 3])
+
+
+func test_militia_bugler_takes_a_small_creature_from_the_top_four_and_puts_the_rest_on_the_bottom() -> void:
+	# Engine ADR 0084 (CR 701.20e).
+	var bugler: MmCardDefinition = Scenario.free_copy(_card("core_set_2019", "militia_bugler"))
+	var deck: Array[MmCardDefinition] = Scenario.cycled([bugler, _alpha("savannah_lions"), _alpha("serra_angel")])
+	var setup: MmEncounterSetup = Scenario.setup_with(deck, Scenario.cycled([] as Array[MmCardDefinition]))
+	var engine: MmEngine = Scenario.find_engine(setup, func(running: MmEngine) -> bool:
+		if Scenario.play_until_step(running, 3, MmTurn.Step.PRECOMBAT_MAIN) != "":
+			return false
+		if Scenario.card_in_hand(running, running.hero(), bugler.name) == -1:
+			return false
+		for card: MmGameObject in running.hero().library.objects().slice(0, 4):
+			if running.game_state().characteristics_of(card).name == "Savannah Lions":
+				return true
+		return false)
+	assert_not_null(engine, "No seed gave the needed hand and library.")
+	var top: Array[int] = engine.hero().library.object_ids().slice(0, 4)
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), bugler.name)), "")
+	Scenario.autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is ChooseLookedAtCardsDecision)
+	var look: ChooseLookedAtCardsDecision = engine.pending_decision() as ChooseLookedAtCardsDecision
+	assert_not_null(look)
+	assert_eq(look.card_ids, top)
+	for id: int in top:
+		var card_name: String = engine.game_state().characteristics_of(engine.game_state().object(id)).name
+		assert_eq(look.candidate_ids.has(id), card_name != "Serra Angel",
+			"Savannah Lions (power 2) and Militia Bugler (power 2) may be taken; Serra Angel (power 4) may not.")
+	var lions: int = -1
+	for id: int in look.candidate_ids:
+		if engine.game_state().characteristics_of(engine.game_state().object(id)).name == "Savannah Lions":
+			lions = id
+	var hand: int = engine.hero().hand.size()
+
+	assert_eq(engine.submit([lions]), "")
+
+	assert_eq(engine.hero().hand.size(), hand + 1)
+	assert_true(Scenario.names(engine, engine.hero().hand).has("Savannah Lions"))
+	var library: Array[int] = engine.hero().library.object_ids()
+	var bottom: Array[int] = library.slice(library.size() - 3)
+	var rest: Array[int] = top.duplicate()
+	rest.erase(lions)
+	bottom.sort()
+	rest.sort()
+	assert_eq(bottom, rest)
+	var bugler_now: int = Scenario.permanent_named(engine, engine.hero().id, bugler.name)
+	assert_true(Scenario.now(engine, bugler_now).has_ability(VigilanceAbility))
 
 
 func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:

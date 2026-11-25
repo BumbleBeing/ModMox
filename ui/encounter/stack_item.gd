@@ -49,6 +49,13 @@ static func of(seen: MmObjectView, view: MmPlayerView, names: PlayerNames = null
 		if seen.cast_from_library:
 			# Game ADR 0055: both players see where it came from.
 			item.first_line += " (top of library)"
+		if seen.is_copy:
+			# Engine ADR 0083: both players see it is a copy (CR 707.10), and that a copy of a
+			# permanent spell becomes a token (CR 608.3f).
+			item.first_line += " (copy)"
+			item.full_text += " · A copy: it was not cast"
+			item.full_text += ", and becomes a token as it resolves." if _is_permanent(seen) else "."
+
 		if seen.is_adventure_spell and seen.adventurer != null:
 			# Engine ADR 0078, game ADR 0079: both players see it, and what it leaves behind.
 			item.first_line += " (Adventure)"
@@ -87,6 +94,14 @@ static func _find(object_id: int, among: Array) -> MmObjectView:
 		if seen.id == object_id:
 			return seen
 	return null
+
+
+## Whether [param seen], a spell, is a permanent spell (CR 110.4a).
+static func _is_permanent(seen: MmObjectView) -> bool:
+	for card_type: MmCardTypes.CardType in MmCharacteristics.PERMANENT_TYPES:
+		if seen.card_types.has(card_type):
+			return true
+	return false
 
 
 static func _possessive(owner: String) -> String:

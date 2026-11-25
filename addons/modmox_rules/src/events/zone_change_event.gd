@@ -15,7 +15,7 @@ extends MmEvent
 ## CR 701.21a: its controller moving a permanent to its owner's graveyard, which is not
 ## destruction.
 enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND,
-	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA, SURVEIL, SACRIFICE, MILL }
+	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA, SURVEIL, SACRIFICE, MILL, LOOK }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -124,6 +124,14 @@ func apply(state: MmGameState) -> void:
 		# CR 111.7: a token that leaves the battlefield moves like a card, and is still a
 		# token where it lands until state-based actions see it there (CR 704.5d).
 		arriving.become_token()
+	if leaving.is_copy and to_zone_kind == MmZone.Kind.BATTLEFIELD:
+		# CR 608.3f, 111.13: a copy of a permanent spell becomes a token as it resolves, and
+		# is no longer a copy of a spell.
+		arriving.become_token()
+	elif leaving.is_copy:
+		# CR 707.10a: still a copy where it lands, until state-based actions see it there
+		# (CR 704.5e).
+		arriving.become_copy()
 	if to_zone_kind == MmZone.Kind.EXILE and exiled_with_object_id != 0:
 		arriving.record_exiled_with(exiled_with_object_id, exiled_until_source_leaves)
 	if to_zone_kind == MmZone.Kind.LIBRARY and from_zone_kind == MmZone.Kind.HAND:

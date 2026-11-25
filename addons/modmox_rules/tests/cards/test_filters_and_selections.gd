@@ -218,6 +218,28 @@ func test_a_toughness_filter_may_compare_with_a_value_instead_of_its_amount() ->
 	assert_false(less_than_four.matches(state, by_name["Wall"], context))
 
 
+func test_a_power_filter_may_compare_with_a_value_instead_of_its_amount() -> void:
+	var brute: MmCardDefinition = Scenario.creature("Brute", 4, 2)
+	var cub: MmCardDefinition = Scenario.creature("Cub", 1, 2)
+	var engine: MmEngine = MmEngine.start(Scenario.setup_with(
+		Scenario.cycled([brute, cub, Scenario.basic_land("Plains")]), Scenario.cycled([])))
+	var state: MmGameState = engine.game_state()
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var by_name: Dictionary[String, MmReference] = {}
+	for card: MmGameObject in engine.hero().library.objects():
+		by_name[state.characteristics_of(card).name] = MmReference.to_object(card.id)
+	var two_or_less: PowerFilter = Scenario.power_from(Scenario.constant(2))
+	two_or_less.amount = 9
+	var three_or_greater: PowerFilter = Scenario.power_from(Scenario.constant(3), PowerFilter.Comparison.OR_GREATER)
+
+	assert_true(two_or_less.matches(state, by_name["Cub"], context))
+	assert_false(two_or_less.matches(state, by_name["Brute"], context), "2, not 9.")
+	assert_true(three_or_greater.matches(state, by_name["Brute"], context))
+	assert_false(three_or_greater.matches(state, by_name["Cub"], context))
+	assert_false(two_or_less.matches(state, by_name["Plains"], context), "A land has no power.")
+	assert_false(two_or_less.matches(state, MmReference.to_player(engine.hero().id), context))
+
+
 ## A Hero whose library holds a creature with mana value 3, one with 4, and a Plains.
 func _engine_with_mana_values() -> MmEngine:
 	var three: MmCardDefinition = Scenario.creature("Three", 2, 2, [], Scenario.mana_cost(2, [MmMana.Type.WHITE]))

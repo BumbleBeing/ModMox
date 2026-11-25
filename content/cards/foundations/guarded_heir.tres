@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_8xp36"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_3gkvy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/lifelink_ability.gd" id="2_jesol"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_6axfw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_7doey"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="4_1h7nr"]
+[ext_resource type="Resource" path="res://content/tokens/knight_3_3_white.tres" id="5_1xmpg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_57j14"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_4t7x8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_rrgci"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_iaxhp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_bjfcm"]
+
+[sub_resource type="Resource" id="Resource_vc3lm"]
+script = ExtResource("2_jesol")
+
+[sub_resource type="Resource" id="Resource_pg1y8"]
+script = ExtResource("4_1h7nr")
+token = ExtResource("5_1xmpg")
+amount = 2
+
+[sub_resource type="Resource" id="Resource_2o1re"]
+script = ExtResource("9_iaxhp")
+
+[sub_resource type="Resource" id="Resource_p5cpd"]
+script = ExtResource("10_bjfcm")
+filter = SubResource("Resource_2o1re")
+
+[sub_resource type="Resource" id="Resource_dgruy"]
+script = ExtResource("7_4t7x8")
+trigger = SubResource("Resource_p5cpd")
+effects = Array[ExtResource("3_6axfw")]([SubResource("Resource_pg1y8")])
+
+[sub_resource type="Resource" id="Resource_abuhw"]
+script = ExtResource("2_3gkvy")
+generic = 5
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_7doey")
+name = "Guarded Heir"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Noble"])
+mana_cost = SubResource("Resource_abuhw")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_8xp36")]([SubResource("Resource_vc3lm"), SubResource("Resource_dgruy")])
+rarity = 1

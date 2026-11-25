@@ -5,7 +5,9 @@ extends RefCounted
 ## battlefield triggers look back in time: they check what was on the battlefield just
 ## before the batch, using last-known information for what left (CR 603.10a). Every other
 ## trigger looks at the game after the batch, so things entering together see each other
-## (CR 603.6a). Abilities work from the battlefield and, for Emblems, the command zone. One
+## (CR 603.6a). Abilities work from the battlefield and, for Emblems, the command zone; a
+## spell's ability whose trigger can't trigger from the battlefield works on the stack
+## instead, as "When you cast this spell" does (CR 113.6k). One
 ## event may trigger an ability several times, once for each object it is about (ADR 0017's
 ## addendum). One that triggers only once each turn triggers for the first match of a
 ## batch, and for none once its source has marked it Spent this turn (ADR 0054's addendum).
@@ -26,6 +28,12 @@ static func observers(state: MmGameState) -> Array[MmGameObject]:
 ## [param before] is what observers() returned just before they were.
 static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmGameObject]) -> void:
 	var after: Array[MmGameObject] = observers(state)
+	# CR 113.6k: spells on the stack watch only with the triggers that work there.
+	var spells: Array[MmGameObject] = _spells_on_the_stack(state)
+	var spell_ids: Dictionary[int, bool] = {}
+	for spell: MmGameObject in spells:
+		spell_ids[spell.id] = true
+	after.append_array(spells)
 	var after_ids: Dictionary[int, bool] = {}
 	for observer: MmGameObject in after:
 		after_ids[observer.id] = true
@@ -47,6 +55,8 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 			for ability_index: int in characteristics.abilities.size():
 				var triggered: TriggeredAbility = characteristics.abilities[ability_index] as TriggeredAbility
 				if triggered == null or triggered.trigger == null:
+					continue
+				if spell_ids.has(observer.id) != triggered.trigger.functions_on_the_stack():
 					continue
 				var watching: bool = before_ids.has(observer.id) if triggered.trigger.looks_back() else after_ids.has(observer.id)
 				if not watching:
@@ -75,6 +85,16 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 						occasions[occasion_key] = true
 	for pending: PendingTrigger in found:
 		state.perform(AbilityTriggeredEvent.new(pending))
+
+
+## The spells on the stack, in ID order: cards and copies, not abilities.
+static func _spells_on_the_stack(state: MmGameState) -> Array[MmGameObject]:
+	var found: Array[MmGameObject] = []
+	for item: MmGameObject in state.stack.objects():
+		if item.is_card_or_copy():
+			found.append(item)
+	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return found
 
 
 ## Whether ability [param ability_index] of the object [param source_id] is among

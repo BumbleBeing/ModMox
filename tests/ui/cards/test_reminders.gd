@@ -87,6 +87,13 @@ func test_menace_is_reminded_that_it_needs_two_blockers() -> void:
 	assert_eq(reminders[0].text, "It can't be blocked except by two or more creatures.")
 
 
+func test_skulk_is_reminded_which_creatures_cant_block_it() -> void:
+	var reminders: Array[Reminder] = Reminders.of([SkulkAbility.new()] as Array[MmAbility])
+
+	assert_eq(_keywords(reminders), ["Skulk"])
+	assert_eq(reminders[0].text, "It can't be blocked by creatures with greater power.")
+
+
 func test_a_keyword_it_has_twice_is_reminded_once() -> void:
 	var abilities: Array[MmAbility] = [FlyingAbility.new(), FlyingAbility.new()]
 

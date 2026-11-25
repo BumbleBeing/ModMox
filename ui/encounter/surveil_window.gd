@@ -1,7 +1,8 @@
 class_name SurveilWindow
 extends ZoneWindow
 ## The Surveil window (game ADR 0069): the cards a surveil of the Hero's looks at, face up in
-## one row, leftmost on top of the library, with "Graveyard" under them. A press moved more
+## one row, leftmost on top of the library, with "Graveyard" baked into the window's bottom
+## edge, centered however it is resized (game ADR 0085). A press moved more
 ## than DRAG_START drags a card, and the row makes room where it is held; letting go where
 ## it was pressed clicks it. Every card glows green, and the one selected white. "Graveyard"
 ## is grayed out while nothing is selected. It has no close button. It shows a SurveilChoice
@@ -45,27 +46,21 @@ var _is_dragging_card: bool = false
 var _shown: String = ""
 
 
-## How big it opens: three cards wide, ending just under its Graveyard button.
+## How big it opens: three cards wide, with Graveyard in its bottom edge.
 static func opening_size() -> Vector2:
-	var inner: Vector2 = _inner_size()
-	# The margins ZoneWindow leaves round its scrolled body, and its bar.
-	return Vector2(inner.x + 16.0 + 4.0, inner.y + ZoneWindow.BAR_HEIGHT + 22.0)
+	return ZoneWindow.size_around(_inner_size(), GRAVEYARD_BUTTON.y)
 
 
-## The size of the row and its button.
+## The size of the row.
 static func _inner_size() -> Vector2:
 	var card: Vector2 = _card_size()
 	var room: float = PileWindow.GLOW_ROOM
 	var width: float = CARDS_WIDE * card.x + (CARDS_WIDE - 1) * PileWindow.GAP + room * 2.0
-	return Vector2(width, _button_top() + GRAVEYARD_BUTTON.y)
+	return Vector2(width, card.y + room * 2.0)
 
 
 static func _card_size() -> Vector2:
 	return Vector2(PileWindow.CARD_HEIGHT * CardGeometry.ASPECT, PileWindow.CARD_HEIGHT)
-
-
-static func _button_top() -> float:
-	return PileWindow.GLOW_ROOM + _card_size().y + 4.0 * UNIT
 
 
 func _init() -> void:
@@ -79,12 +74,10 @@ func _init() -> void:
 	_button = Button.new()
 	_button.text = GRAVEYARD
 	_button.focus_mode = Control.FOCUS_NONE
-	_button.size = GRAVEYARD_BUTTON
-	_button.position = Vector2(PileWindow.GLOW_ROOM, _button_top())
 	_button.add_theme_font_size_override("font_size", InfoPanel.BUTTON_FONT + UiText.RAISE)
 	_button.disabled = true
 	_button.pressed.connect(func() -> void: graveyard_pressed.emit())
-	_row_area.add_child(_button)
+	bake_button(_button, GRAVEYARD_BUTTON)
 	SteelFrame.apply(_button, InfoPanel.BUTTON)
 
 
@@ -118,14 +111,7 @@ func show_choice(choice: SurveilChoice, looks: Dictionary[int, CardLook]) -> voi
 		_row_area.add_child(face)
 		BorderEffects.add_glow(face, face.size, PICKED_GLOW if object_id == _picked else DecisionClicks.color_of(DecisionClicks.Kind.OTHER))
 		_faces[object_id] = face
-	_row_area.move_child(_button, -1)
 	_button.disabled = _picked == SurveilChoice.NONE
-	# Centered under the cards left in the row, but never past its left edge: one card is
-	# narrower than the button.
-	var middle: float = _inner_size().x / 2.0
-	if not _order.is_empty():
-		middle = PileWindow.GLOW_ROOM + (_order.size() * card.x + (_order.size() - 1) * PileWindow.GAP) / 2.0
-	_button.position = Vector2(maxf(PileWindow.GLOW_ROOM, middle - GRAVEYARD_BUTTON.x / 2.0), _button_top())
 
 
 ## Forgets what it showed, so the next choice is drawn afresh.
@@ -180,7 +166,6 @@ func _on_row_input(event: InputEvent) -> void:
 				_held_from = _order.find(_held)
 				_is_dragging_card = false
 				_row_area.move_child(_faces[_held], -1)
-				_row_area.move_child(_button, -1)
 		elif _held != SurveilChoice.NONE:
 			var released: int = _held
 			var was_drag: bool = _is_dragging_card

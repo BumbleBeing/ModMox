@@ -111,6 +111,19 @@ func test_a_token_has_its_token_definitions_art_a_token_type_line_and_no_origina
 	assert_eq(titles, ["Token", "Summoning Sick"])
 
 
+func test_a_copy_of_a_card_and_the_token_it_becomes_have_the_cards_own_art() -> void:
+	# Engine ADR 0083: made from the card's definition, whose Original names the card.
+	var sage: MmCardDefinition = load("res://content/cards/tarkir_dragonstorm/sage_of_the_skies.tres") as MmCardDefinition
+	var run_card: MmRunCard = MmRunCard.new()
+	run_card.base = sage
+	var flattened: MmCardDefinition = run_card.flatten()
+	var cat: MmCardDefinition = load("res://content/tokens/cat_1_1_white.tres") as MmCardDefinition
+
+	assert_eq(EncounterPresenter.made_art_key(flattened), "sage_of_the_skies")
+	assert_eq(EncounterPresenter.made_art_key(cat), "tokens/cat_1_1_white", "A Token Definition's own, as before.")
+	assert_eq(EncounterPresenter.made_art_key(null), "")
+
+
 func _started(setup: MmEncounterSetup, is_auto_passing: bool = true) -> EncounterPresenter:
 	var presenter: EncounterPresenter = EncounterPresenter.new(setup, DefaultAnswerAgent.new())
 	presenter.set_auto_passing(is_auto_passing)

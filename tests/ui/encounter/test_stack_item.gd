@@ -229,6 +229,36 @@ func test_a_spell_cast_from_the_top_of_a_library_says_so_in_its_first_line() -> 
 	assert_false(item.full_text.contains("library"), "Nothing more in its full text.")
 
 
+func test_a_copy_of_a_permanent_spell_says_so_and_that_it_becomes_a_token() -> void:
+	# Engine ADR 0083: both players see it is a copy (CR 707.10), and what it becomes (CR 608.3f).
+	var view: MmPlayerView = _view()
+	var sage: MmObjectView = _spell(22, "Sage", HERO, [])
+	sage.card_id = MmGameObject.NO_CARD
+	sage.is_copy = true
+	sage.card_types = [MmCardTypes.CardType.CREATURE]
+	sage.abilities = [FlyingAbility.new()]
+	view.stack = [sage]
+
+	var item: StackItem = StackItem.of(sage, view)
+
+	assert_eq(item.first_line, "Sage (copy)")
+	assert_eq(item.full_text, "Sage — Flying · A copy: it was not cast, and becomes a token as it resolves.")
+
+
+func test_a_copy_of_an_instant_says_only_that_it_was_not_cast() -> void:
+	# CR 704.5e: it ceases to exist as it leaves the stack, and becomes nothing.
+	var view: MmPlayerView = _view()
+	var zap: MmObjectView = _spell(23, "Zap", HERO, [MmReference.to_object(BEARS)])
+	zap.card_id = MmGameObject.NO_CARD
+	zap.is_copy = true
+	view.stack = [zap]
+
+	var item: StackItem = StackItem.of(zap, view)
+
+	assert_eq(item.first_line, "Zap (copy)")
+	assert_eq(item.full_text, "Zap — Zap deals 3 damage to any target. · A copy: it was not cast.")
+
+
 func _spell(id: int, spell_name: String, controller: int, targets: Array[MmReference]) -> MmObjectView:
 	var seen: MmObjectView = MmObjectView.new()
 	seen.id = id

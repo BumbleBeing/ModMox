@@ -20,6 +20,12 @@ func looks_back() -> bool:
 	return false
 
 
+## CR 113.6k: whether this trigger can't trigger from the battlefield and so works while
+## its object is a spell on the stack instead, as "When you cast this spell" does.
+func functions_on_the_stack() -> bool:
+	return false
+
+
 ## The player the event was about ("that player"), or MmGameState.NO_PLAYER.
 func triggering_player_id(_state: MmGameState, _event: MmEvent) -> int:
 	return MmGameState.NO_PLAYER

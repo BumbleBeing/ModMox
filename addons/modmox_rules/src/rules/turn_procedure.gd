@@ -145,7 +145,8 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	elif decision is ChooseYesOrNoDecision and (decision as ChooseYesOrNoDecision).entering_object_id != 0:
 		_finish_playing_land(answer as int == ChooseYesOrNoDecision.Choice.YES)
 	elif decision is ChooseObjectDecision or decision is ChooseCreatureTypeDecision or decision is ChooseCardsInLibraryDecision \
-			or decision is ChooseYesOrNoDecision or decision is ChooseXToPayDecision or decision is SurveilDecision:
+			or decision is ChooseYesOrNoDecision or decision is ChooseXToPayDecision or decision is SurveilDecision \
+			or decision is ChooseLookedAtCardsDecision:
 		_resolution.apply_answer(decision, answer)
 	elif decision is PayManaDecision and _cast == null and _resolution != null:
 		_resolution.apply_answer(decision, answer)  # ADR 0061: paying X as it resolves.

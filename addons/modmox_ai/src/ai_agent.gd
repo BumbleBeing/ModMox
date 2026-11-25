@@ -18,6 +18,9 @@ const MOST_PICKS_SIMULATED: int = 10
 const MOST_TYPES_SIMULATED: int = 3
 ## What a CHEAP Agent adds to an untapped permanent's worth as the target of its own Aura.
 const UNTAPPED_AURA_TARGET_BONUS: int = 1000
+## How much each step of use counts, against mana value, in ranking a card in another
+## player's graveyard to take from them (_card_they_could_use()): more than any mana value.
+const GRAVEYARD_USE_WEIGHT: int = 1000
 ## The least life the AI keeps when it pays life for a land to enter untapped, as Temple
 ## Garden's "you may pay 2 life" (engine ADR 0052).
 const MIN_LIFE_AFTER_PAYING: int = 6
@@ -67,6 +70,8 @@ enum Reason {
 	## A land was kept back because playing it cost more than it was worth, such as damage
 	## from its player's own Ankh of Mishra (AiDifficulty.weighs_land_plays).
 	LAND_COSTS_TOO_MUCH,
+	## A card was taken from another player's graveyard for what they could still do with it.
+	MOST_USEFUL_TO_THEM,
 }
 
 var profile: AiProfile
@@ -177,6 +182,9 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _choose_creature_type(decision as ChooseCreatureTypeDecision, world, source, rng)
 	if decision is ChooseCardsInLibraryDecision:
 		return _search(decision as ChooseCardsInLibraryDecision, world, source, rng)
+	if decision is ChooseLookedAtCardsDecision:
+		var look: ChooseLookedAtCardsDecision = decision as ChooseLookedAtCardsDecision
+		return _found_among(look.candidate_ids, look.most, look.player_id, world, source, rng)
 	if decision is ChooseYesOrNoDecision:
 		return _yes_or_no(decision as ChooseYesOrNoDecision, world, source, rng)
 	if decision is ChooseXToPayDecision:
@@ -274,6 +282,7 @@ func _choose_play(decision: PriorityDecision, world: MmGameState, source: MmSimu
 	var through_turn: bool = offers_trick and difficulty.judges_tricks_after_the_turn
 	var scores: Array[int] = _simulate_each(source, rng, options, me, through_turn)
 	var repeats: Dictionary[int, int] = _plan_repeats(decision, world, source, rng, options, scores, through_turn)
+	_plan_follow_ups(decision, world, source, options, scores, through_turn)
 	var best: int = _best_option(options, scores, rng, 1)
 	if best == passing:
 		_reason = Reason.SCORES_WORSE_THAN_PASS
@@ -326,6 +335,71 @@ func _plan_repeats(decision: PriorityDecision, world: MmGameState, source: MmSim
 				repeats[option] = length
 				_detail += ", %d x%d: %d" % [option, length, score]
 	return repeats
+
+
+## Weighs each spell among [param options] that waits for another spell this turn, as Sage
+## of the Skies's own cast trigger does (_waits_for_another_spell(), engine ADR 0083), as the
+## second of a pair: each other play among [param options] first, then that spell, on the same
+## re-dealt worlds as the plays alone. One-step scoring stops once the first play has
+## resolved, so it never sees the second spell's reward. Where a pair beats both its plays
+## alone, [param scores] gives the first play the pair's score, so it is made first; the
+## waiting spell is weighed again at the next priority, its trigger's condition true by then.
+func _plan_follow_ups(decision: PriorityDecision, world: MmGameState, source: MmSimulationSource,
+		options: Array[int], scores: Array[int], through_turn: bool) -> void:
+	var me: int = decision.player_id
+	var waiting: Array[int] = []
+	for index: int in range(1, options.size()):
+		if _waits_for_another_spell(world, decision.actions[options[index]], me):
+			waiting.append(index)
+	if waiting.is_empty():
+		return
+	var world_seeds: Array[int] = _world_seeds.duplicate()
+	var alone: Array[int] = scores.duplicate()
+	for waiting_index: int in waiting:
+		var then_key: String = _play_key(decision.actions[options[waiting_index]])
+		for first_index: int in range(1, options.size()):
+			if first_index == waiting_index:
+				continue
+			var score: int = 0
+			for world_seed: int in world_seeds:
+				var copy: MmEngine = source.simulation_copy(MmRng.new(world_seed))
+				score += _score_then(copy, options[first_index], then_key, me, through_turn)
+			if score > alone[first_index] and score > alone[waiting_index] and score > scores[first_index]:
+				scores[first_index] = score
+				_detail += ", %d then %d: %d" % [options[first_index], options[waiting_index], score]
+
+
+## Whether [param action] casts a spell with a cast trigger of its own (CR 113.6k) that waits
+## for another spell this turn, while [param player_id] has cast none yet: cast now, the
+## trigger's intervening "if" would not hold (CR 603.4).
+func _waits_for_another_spell(world: MmGameState, action: MmAction, player_id: int) -> bool:
+	var cast: CastSpellAction = action as CastSpellAction
+	if cast == null or cast.as_adventure or world.player(player_id).spells_cast_this_turn > 0:
+		return false
+	for ability: MmAbility in world.characteristics_of(world.object(cast.object_id)).abilities:
+		var triggered: TriggeredAbility = ability as TriggeredAbility
+		if triggered != null and triggered.trigger != null and triggered.trigger.functions_on_the_stack() \
+				and triggered.condition is CastAnotherSpellThisTurnCondition:
+			return true
+	return false
+
+
+## Submits [param first] on [param copy] and plays it out; then, with [param player_id] to act
+## again in the same step, makes the play [param then_key] names (_play_key()) and scores the
+## result as score_answer() does. AiSimulation.FAILED when the second play can't be made.
+func _score_then(copy: MmEngine, first: int, then_key: String, player_id: int, through_turn: bool) -> int:
+	if copy.submit(first) != "":
+		return AiSimulation.FAILED
+	var step: MmTurn.Step = copy.game_state().step
+	AiSimulation.play_out(copy, player_id, profile)
+	var after: PriorityDecision = copy.pending_decision() as PriorityDecision
+	if copy.has_failed() or copy.is_over() or after == null or after.player_id != player_id \
+			or copy.game_state().step != step:
+		return AiSimulation.FAILED
+	for index: int in after.actions.size():
+		if _play_key(after.actions[index]) == then_key:
+			return AiSimulation.score_answer(copy, index, player_id, profile, 1, through_turn)
+	return AiSimulation.FAILED
 
 
 ## The plan lengths worth scoring when [param longest] activations are possible: 2, 4, 8
@@ -491,7 +565,7 @@ func _cheap_counter(decision: PriorityDecision, world: MmGameState) -> int:
 	if world.stack.is_empty():
 		return -1
 	var top: MmGameObject = world.stack.objects().back()
-	if not top.is_card() or top.controller_id == decision.player_id \
+	if not top.is_card_or_copy() or top.controller_id == decision.player_id \
 			or world.characteristics_of(top).has_ability(CantBeCounteredAbility):
 		return -1
 	var top_cost: int = world.characteristics_of(top).mana_value()
@@ -611,11 +685,18 @@ static func _less_one(cost: MmManaCost, type: MmMana.Type) -> MmManaCost:
 ## most valuable on that side all the same, never one on the other side while that side has
 ## a candidate. A fight (CR 701.14) sends
 ## in its own most powerful creature, then aims at what that creature's power would kill. An Aura spell is aimed
-## only at its own permanents (_is_helpful_aura()), an untapped one first in CHEAP.
+## only at its own permanents (_is_helpful_aura()), an untapped one first in CHEAP. A card
+## put on the bottom of its owner's library is the other player's they could most use,
+## in both modes (_card_they_could_use()), since no simulation sees a graveyard.
 func _target(decision: ChooseTargetDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	if decision.candidates.size() == 1:
 		_reason = Reason.ONLY_CHOICE
 		return 0
+	if _puts_target_on_bottom(_effects_of_stack_object(world, decision.stack_object_id), decision.target_index):
+		var taken: int = _card_they_could_use(decision, world)
+		if taken != -1:
+			_reason = Reason.MOST_USEFUL_TO_THEM
+			return taken
 	if mode == Mode.FULL:
 		var effects: Array[MmEffect] = _effects_of_stack_object(world, decision.stack_object_id)
 		var taps: bool = AiTiming.taps(effects)
@@ -693,6 +774,42 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 		return player_index
 	# Wasted on the right side is still better than landing on the wrong one.
 	return wasted if wasted != -1 else 0
+
+
+## Whether one of [param effects] puts the target of requirement [param target_index] on
+## the bottom of its owner's library.
+static func _puts_target_on_bottom(effects: Array[MmEffect], target_index: int) -> bool:
+	for effect: MmEffect in effects:
+		var bottomed: PutOnBottomOfLibraryEffect = effect as PutOnBottomOfLibraryEffect
+		if bottomed != null and _is_target(bottomed.selection, target_index):
+			return true
+	return false
+
+
+## Among the candidates, the card in another player's graveyard they could most use, or -1
+## when none is theirs: one they could cast again with flashback (CR 702.34a), then the
+## creature card that costs the most, which a card returning it would bring back, then the
+## card that costs the most. The first of equals.
+static func _card_they_could_use(decision: ChooseTargetDecision, world: MmGameState) -> int:
+	var best: int = -1
+	var best_rank: int = -1
+	for index: int in decision.candidates.size():
+		var candidate: MmReference = decision.candidates[index]
+		var card: MmGameObject = world.object(candidate.id) if candidate.is_object() else null
+		if card == null or card.owner_id == decision.player_id or card.zone() == null \
+				or card.zone().kind != MmZone.Kind.GRAVEYARD:
+			continue
+		var characteristics: MmCharacteristics = world.characteristics_of(card)
+		var use: int = 0
+		if CastProcedure.flashback_of(characteristics) != null:
+			use = 2
+		elif characteristics.has_card_type(MmCardTypes.CardType.CREATURE):
+			use = 1
+		var rank: int = use * GRAVEYARD_USE_WEIGHT + characteristics.mana_value()
+		if rank > best_rank:
+			best = index
+			best_rank = rank
+	return best
 
 
 ## The fight among [param effects] (CR 701.14), or null.
@@ -1125,15 +1242,23 @@ func _cheap_yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState) -> in
 	return ChooseYesOrNoDecision.Choice.YES if says_yes else ChooseYesOrNoDecision.Choice.NO
 
 
-## The cards found by a search (ADR 0057), always as many as may be found. FULL: simulates
-## finding one card of each name it could find, and keeps the best; any more are found as
-## CHEAP finds them. CHEAP: ranks the cards with _search_rank().
+## The cards found by a search (ADR 0057), always as many as may be found (_found_among()).
 func _search(decision: ChooseCardsInLibraryDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> Array[int]:
+	return _found_among(decision.candidate_ids, decision.most, decision.player_id, world, source, rng)
+
+
+## Up to [param most] of [param candidate_ids], cards in [param player_id]'s library found by
+## a search (ADR 0057) or taken from among the cards a look shows them (CR 701.20e), always as
+## many as may be: a card in hand is worth more than one left in the library. FULL: simulates
+## taking one card of each name, and keeps the best; any more are taken as CHEAP takes them.
+## CHEAP: ranks the cards with _search_rank().
+func _found_among(candidate_ids: Array[int], most: int, player_id: int, world: MmGameState, source: MmSimulationSource,
+		rng: MmRng) -> Array[int]:
 	var found: Array[int] = []
-	if decision.candidate_ids.is_empty() or decision.most <= 0:
+	if candidate_ids.is_empty() or most <= 0:
 		_reason = Reason.ONLY_CHOICE
 		return found
-	var ranked: Array[int] = _search_rank(decision.candidate_ids, world, decision.player_id)
+	var ranked: Array[int] = _search_rank(candidate_ids, world, player_id)
 	_reason = Reason.BEST_SCORE
 	if mode == Mode.FULL:
 		var one_of_each: Array[int] = []
@@ -1149,10 +1274,10 @@ func _search(decision: ChooseCardsInLibraryDecision, world: MmGameState, source:
 			for index: int in one_of_each.size():
 				answers.append([one_of_each[index]])
 				options.append(index)
-			var best: int = one_of_each[_best_option(options, _simulate_each(source, rng, answers, decision.player_id), rng, 0)]
+			var best: int = one_of_each[_best_option(options, _simulate_each(source, rng, answers, player_id), rng, 0)]
 			ranked.erase(best)
 			ranked.push_front(best)
-	return ranked.slice(0, decision.most)
+	return ranked.slice(0, most)
 
 
 ## What to graveyard and what to keep with a surveil (engine ADR 0068), FULL and CHEAP alike:
@@ -1321,19 +1446,22 @@ func _divide_damage(decision: DivideCombatDamageDecision, world: MmGameState) ->
 	return amounts
 
 
-## Blocks a CHEAP Agent assumes possible: flying attackers only by flying or reach, and
-## none of an attacker that can't be blocked.
+## Blocks a CHEAP Agent assumes possible: flying attackers only by flying or reach, skulking
+## ones only by creatures with no greater power (CR 702.118b), and none of an attacker that
+## can't be blocked.
 func _guess_blockable(world: MmGameState, me: int, candidate_ids: Array[int]) -> Dictionary[int, Array]:
 	var blockable: Dictionary[int, Array] = {}
 	for blocker: MmGameObject in _creatures_of(world, 1 - me):
 		if blocker.is_tapped:
 			continue
-		var reaches: bool = world.characteristics_of(blocker).has_ability(FlyingAbility) \
-			or world.characteristics_of(blocker).has_ability(ReachAbility)
+		var blocking: MmCharacteristics = world.characteristics_of(blocker)
+		var reaches: bool = blocking.has_ability(FlyingAbility) or blocking.has_ability(ReachAbility)
 		var attackers: Array = []
 		for attacker_id: int in candidate_ids:
 			var attacker: MmCharacteristics = world.characteristics_of(world.object(attacker_id))
 			if attacker.has_ability(CantBeBlockedAbility):
+				continue
+			if attacker.has_ability(SkulkAbility) and blocking.power > attacker.power:
 				continue
 			if reaches or not attacker.has_ability(FlyingAbility):
 				attackers.append(attacker_id)

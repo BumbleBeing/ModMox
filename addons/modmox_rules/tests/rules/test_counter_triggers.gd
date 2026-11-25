@@ -3,7 +3,9 @@ extends GutTest
 ## Duelist's "Whenever one or more +1/+1 counters are put on this creature, draw a card. This
 ## ability triggers only once each turn." An effect puts its counters on each permanent at once,
 ## so it triggers once for each permanent an effect reaches, however many counters go there. A
-## permanent that enters with counters had them put on it too (CR 122.6).
+## permanent that enters with counters had them put on it too (CR 122.6). "Whenever you put
+## one or more +1/+1 counters on this creature", as Exemplar of Light says, counts only the
+## counters its controller puts (CR 122.6, 122.6a).
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const Step := MmTurn.Step
@@ -131,9 +133,82 @@ func test_whose_compares_with_the_controller_of_the_permanent() -> void:
 	assert_eq(_triggers_of(engine, "Keeper"), 1)
 
 
+func test_you_put_triggers_on_counters_its_controller_puts_on_it() -> void:
+	var engine: MmEngine = _hero_main([_exemplar()], [Scenario.free_counters("Grow", PLUS, 1)])
+	var exemplar: int = Scenario.permanent_named(engine, engine.hero().id, "Exemplar")
+	var life: int = engine.hero().life
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Grow", [MmReference.to_object(exemplar)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(_triggers_of(engine, "Exemplar"), 1)
+	assert_eq(engine.hero().life, life + 1)
+
+
+func test_you_put_does_not_trigger_on_counters_an_opponent_puts_on_it() -> void:
+	# CR 122.6: the player who puts them is the controller of the effect that puts them.
+	var hand: Array[MmCardDefinition] = [Scenario.free_counters("Grow", PLUS, 1), Scenario.free_counters("Swell", PLUS, 1)]
+	var engine: MmEngine = _hero_main([], hand, [_exemplar(), Scenario.counter_watcher()])
+	var exemplar: int = Scenario.permanent_named(engine, engine.villain().id, "Exemplar")
+	var watcher: int = Scenario.permanent_named(engine, engine.villain().id, "Counter Watcher")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Grow", [MmReference.to_object(exemplar)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Swell", [MmReference.to_object(watcher)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.counters_on(engine, exemplar, PLUS), 1)
+	assert_eq(_triggers_of(engine, "Exemplar"), 0, "The Hero put it there, not its controller.")
+	assert_eq(_triggers_of(engine, "Counter Watcher"), 1, "\"Are put on\" says nothing of who puts them.")
+
+
+func test_an_opponent_puts_triggers_only_on_counters_its_controller_did_not_put() -> void:
+	var hand: Array[MmCardDefinition] = [Scenario.free_counters("Grow", PLUS, 1), Scenario.free_counters("Swell", PLUS, 1)]
+	var engine: MmEngine = _hero_main([_envious("Hero Envious")], hand, [_envious("Villain Envious")])
+	var mine: int = Scenario.permanent_named(engine, engine.hero().id, "Hero Envious")
+	var theirs: int = Scenario.permanent_named(engine, engine.villain().id, "Villain Envious")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Grow", [MmReference.to_object(theirs)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Swell", [MmReference.to_object(mine)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(_triggers_of(engine, "Villain Envious"), 1, "The Hero is its controller's opponent.")
+	assert_eq(_triggers_of(engine, "Hero Envious"), 0, "Its own controller put the counter on it.")
+
+
+func test_entering_with_counters_its_controller_puts_them_on_it() -> void:
+	# CR 122.6a: no player is named, so the entering object's controller puts them.
+	var hydra: MmCardDefinition = Scenario.hydra("Hydra", [Scenario.triggered(_you_put(), [Scenario.gain_life(1, Scenario.you())])])
+	var engine: MmEngine = _hero_main([Scenario.mana_bird()], [hydra])
+	var life: int = engine.hero().life
+
+	assert_eq(Scenario.cast_with_x(engine, Scenario.card_in_hand(engine, engine.hero(), "Hydra"), 2), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(_triggers_of(engine, "Hydra"), 1)
+	assert_eq(engine.hero().life, life + 1)
+
+
+func test_doubling_the_counters_on_it_puts_counters_on_it() -> void:
+	# CR 701.10e, 122.6: the player doubling them puts the new ones on it.
+	var double: MmCardDefinition = Scenario.instant("Double", Scenario.mana_cost(0), [Scenario.target(Scenario.of_type(CardType.CREATURE))],
+		[Scenario.double_counters(PLUS, Scenario.targeted(0))])
+	var engine: MmEngine = _hero_main([_exemplar()], [Scenario.free_counters("Grow", PLUS, 1), double])
+	var exemplar: int = Scenario.permanent_named(engine, engine.hero().id, "Exemplar")
+	assert_eq(Scenario.cast_and_resolve(engine, "Grow", [MmReference.to_object(exemplar)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Double", [MmReference.to_object(exemplar)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.counters_on(engine, exemplar, PLUS), 2)
+	assert_eq(_triggers_of(engine, "Exemplar"), 2, "Grow's, then Double's.")
+
+
 func test_it_is_saved_with_its_card() -> void:
 	var path: String = "user://test_counter_triggers.tres"
-	var minus: CountersPutTrigger = Scenario.counters_put(null, Whose.OPPONENT, MINUS)
+	var minus: CountersPutTrigger = Scenario.counters_put(null, Whose.OPPONENT, MINUS, Whose.YOU)
 	var card: MmCardDefinition = Scenario.creature("Watcher", 2, 2, [Scenario.triggered(minus, [Scenario.gain_life(1, Scenario.you())])])
 	assert_eq(ResourceSaver.save(card, path), OK)
 
@@ -143,6 +218,7 @@ func test_it_is_saved_with_its_card() -> void:
 	assert_not_null(trigger)
 	assert_eq(trigger.kind, MINUS)
 	assert_eq(trigger.whose, Whose.OPPONENT)
+	assert_eq(trigger.by_whose, Whose.YOU)
 	assert_true(trigger.filter is IsSourceFilter)
 	DirAccess.remove_absolute(path)
 
@@ -160,6 +236,24 @@ func _pup(card_name: String) -> MmCardDefinition:
 	var others: EachSelection = Scenario.each_creature(Scenario.all_of([Scenario.creature_you_control(), Scenario.is_not(IsSourceFilter.new())]))
 	var ability: TriggeredAbility = Scenario.triggered(Scenario.counters_put(), [Scenario.put_counters(PLUS, 1, others)])
 	return Scenario.creature(card_name, 2, 2, [Scenario.once_each_turn(ability)])
+
+
+## "Whenever you put one or more +1/+1 counters on this creature" (CR 122.6).
+func _you_put() -> CountersPutTrigger:
+	return Scenario.counters_put(null, Whose.ANY, PLUS, Whose.YOU)
+
+
+## A 2/2 costing {0}: "Whenever you put one or more +1/+1 counters on this creature, you gain
+## 1 life."
+func _exemplar() -> MmCardDefinition:
+	return Scenario.creature("Exemplar", 2, 2, [Scenario.triggered(_you_put(), [Scenario.gain_life(1, Scenario.you())])])
+
+
+## A 2/2 costing {0}: "Whenever an opponent puts one or more +1/+1 counters on this
+## creature, you gain 1 life."
+func _envious(card_name: String) -> MmCardDefinition:
+	var trigger: CountersPutTrigger = Scenario.counters_put(null, Whose.ANY, PLUS, Whose.OPPONENT)
+	return Scenario.creature(card_name, 2, 2, [Scenario.triggered(trigger, [Scenario.gain_life(1, Scenario.you())])])
 
 
 func _watcher(engine: MmEngine) -> int:

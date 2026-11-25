@@ -37,6 +37,10 @@ const OPPONENT_OWNS: String = "an opponent owns"
 const OTHER: String = "other"
 ## What an IsTokenFilter names: the noun after any card type, "artifact token" (CR 111.1).
 const TOKEN_NOUN: String = "token"
+## Between the kinds of a noun of either kind, "artifact or creature"; counted several, it is
+## "artifacts and/or creatures" (EITHER_PLURAL), since a mix of the two may be chosen.
+const EITHER: String = " or "
+const EITHER_PLURAL: String = " and/or "
 ## What a ControlsMoreFilter says after "players", made singular for "a player".
 const WHO_CONTROL: String = "who control"
 const WHO_DONT_CONTROL: String = "who don't control"
@@ -474,6 +478,8 @@ static func _keyword(ability: MmAbility) -> String:
 		return "Deathtouch"
 	if ability is MenaceAbility:
 		return "Menace"
+	if ability is SkulkAbility:
+		return "Skulk"
 	if ability is LifelinkAbility:
 		return "Lifelink"
 	if ability is IndestructibleAbility:
@@ -486,6 +492,8 @@ static func _keyword(ability: MmAbility) -> String:
 		return "Exalted"
 	if ability is BattleCryAbility:
 		return "Battle cry"
+	if ability is EvolveAbility:
+		return "Evolve"
 	if ability is ChangelingAbility:
 		return "Changeling"
 	return ""
@@ -637,6 +645,9 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 			whose = "each opponent's"
 		return "at the beginning of %s %s" % [whose, STEP_NAMES.get(step.step, "step")]
 	var cast: SpellCastTrigger = trigger as SpellCastTrigger
+	if cast != null and cast.filter is IsSourceFilter:
+		# CR 113.6k, as Sage of the Skies words it: the spell itself, so "spell", whatever it is.
+		return "when you cast this spell"
 	if cast != null and cast.nth_each_turn > 0:
 		# Clarion Spirit's "Whenever you cast your second spell each turn".
 		# Later: an Nth spell that must also match a Filter, once a card has one.
@@ -708,7 +719,13 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 		# CR 122.6: "Whenever one or more +1/+1 counters are put on this creature".
 		var is_this: bool = countered_on.filter is IsSourceFilter
 		var subject: String = _noun if is_this else _with_article(_noun_phrase(countered_on.filter, false, countered_on.whose))
-		return "whenever one or more %s counters are put on %s" % [MmCounter.label(countered_on.kind), subject]
+		var counters: String = "one or more %s counters" % MmCounter.label(countered_on.kind)
+		# Exemplar of Light: "Whenever you put one or more +1/+1 counters on this creature".
+		if countered_on.by_whose == MmTrigger.Whose.YOU:
+			return "whenever you put %s on %s" % [counters, subject]
+		if countered_on.by_whose == MmTrigger.Whose.OPPONENT:
+			return "whenever an opponent puts %s on %s" % [counters, subject]
+		return "whenever %s are put on %s" % [counters, subject]
 	var moved: ZoneChangeTrigger = trigger as ZoneChangeTrigger
 	if moved != null:
 		var is_self: bool = moved.filter is IsSourceFilter
@@ -745,12 +762,17 @@ func _condition(condition: MmCondition) -> String:
 		return controlled
 	if condition is LifeAtLeastStartingCondition:
 		return "your life total is greater than or equal to your starting life total"
+	if condition is CastAnotherSpellThisTurnCondition:
+		return "you've cast another spell this turn"
 	if condition is TimesResolvedThisTurnCondition:
 		return "this is the %s time this ability has resolved this turn" % _ordinal((condition as TimesResolvedThisTurnCondition).times)
 	var matches: SelectionMatchesCondition = condition as SelectionMatchesCondition
 	if matches == null:
 		return _fallback(condition, "_condition")
 	var subject: String = _selection(matches.selection)
+	var greater: String = _greater_condition(subject, matches.filter)
+	if greater != "":
+		return greater
 	var toughness: String = _toughness_condition(subject, matches.filter)
 	if toughness != "":
 		return toughness
@@ -792,6 +814,50 @@ func _you_control_condition(at_least: ValueAtLeastCondition) -> String:
 	if at_least.amount == 1:
 		return "you control " + _with_article(_noun_phrase(what, false))
 	return "you control %s or more %s" % [_number_word(at_least.amount), _noun_phrase(what, true)]
+
+
+## "[subject] has greater power or toughness than this creature", as evolve's reminder says
+## (CR 702.100a): a PowerFilter, a ToughnessFilter, or an AnyOfFilter of one of each, each
+## "[the other's power, or toughness] plus 1 or greater", of the same other. Otherwise "".
+func _greater_condition(subject: String, filter: MmFilter) -> String:
+	var parts: Array[MmFilter] = [filter]
+	var any: AnyOfFilter = filter as AnyOfFilter
+	if any != null:
+		parts = any.filters
+	var kinds: PackedStringArray = []
+	var than: String = ""
+	for part: MmFilter in parts:
+		var kind: String = "power" if part is PowerFilter else ("toughness" if part is ToughnessFilter else "")
+		var other: MmSelection = _greater_than_whom(part)
+		if kind == "" or other == null or kinds.has(kind) or (than != "" and _selection(other) != than):
+			return ""
+		kinds.append(kind)
+		than = _selection(other)
+	if kinds.is_empty():
+		return ""
+	return "%s has greater %s than %s" % [subject, " or ".join(kinds), than]
+
+
+## Whose power a PowerFilter of "[its power] plus 1 or greater" is greater than, or whose
+## toughness a ToughnessFilter of the same is; null for any other Filter.
+static func _greater_than_whom(filter: MmFilter) -> MmSelection:
+	var bound: SumValue = null
+	var compared: MmValue = null
+	if filter is PowerFilter and (filter as PowerFilter).comparison == PowerFilter.Comparison.OR_GREATER:
+		bound = (filter as PowerFilter).amount_value as SumValue
+	elif filter is ToughnessFilter and (filter as ToughnessFilter).comparison == ToughnessFilter.Comparison.OR_GREATER:
+		bound = (filter as ToughnessFilter).amount_value as SumValue
+	if bound == null or bound.addends.size() != 2:
+		return null
+	var one: ConstantValue = bound.addends[1] as ConstantValue
+	if one == null or one.value != 1:
+		return null
+	compared = bound.addends[0]
+	if filter is PowerFilter and compared is PowerValue:
+		return (compared as PowerValue).selection
+	if filter is ToughnessFilter and compared is ToughnessValue:
+		return (compared as ToughnessValue).selection
+	return null
 
 
 ## "[subject]'s toughness is 4 or greater": a condition on toughness alone, a ToughnessFilter
@@ -982,6 +1048,11 @@ func _effect(effect: MmEffect) -> String:
 	if effect is ReturnToHandEffect:
 		var returned: MmSelection = (effect as ReturnToHandEffect).selection
 		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]
+	if effect is PutOnBottomOfLibraryEffect:
+		# Landscaper Colos's "put target card from an opponent's graveyard on the bottom of
+		# their library", where "their" is its owner.
+		var bottomed: MmSelection = (effect as PutOnBottomOfLibraryEffect).selection
+		return "put %s on the bottom of %s library" % [_selection(bottomed), "your" if _is_yours(bottomed) else "its owner's"]
 	if effect is TapEffect:
 		return "tap " + _selection((effect as TapEffect).selection)
 	if effect is IfEffect and (effect as IfEffect).is_unless:
@@ -1032,6 +1103,10 @@ func _effect(effect: MmEffect) -> String:
 		return _continuous((effect as CreateContinuousEffect).continuous, false) + " until end of turn"
 	if effect is CreateTokenEffect:
 		return "create " + _tokens(effect as CreateTokenEffect)
+	if effect is CopySpellEffect:
+		# CR 707.10: "copy this spell", the spell itself whatever it is, or "copy target spell".
+		var copied: MmSelection = (effect as CopySpellEffect).selection
+		return "copy this spell" if copied is SourceSelection else "copy " + _selection(copied)
 	if effect is CreateTokenCopyEffect:
 		# CR 707.2, as Oltec Matterweaver words it.
 		var copy: CreateTokenCopyEffect = effect as CreateTokenCopyEffect
@@ -1040,6 +1115,8 @@ func _effect(effect: MmEffect) -> String:
 		return "create %s tokens that are copies of %s" % [_number_word(copy.amount), _selection(copy.selection)]
 	if effect is SearchLibraryEffect:
 		return _search(effect as SearchLibraryEffect)
+	if effect is LookAtTopCardsEffect:
+		return _look(effect as LookAtTopCardsEffect)
 	if effect is SurveilEffect:
 		# CR 701.25a, with its number as digits, as Oracle words it ("surveil 1").
 		return "surveil " + _amount((effect as SurveilEffect).amount)
@@ -1070,6 +1147,21 @@ func _search(effect: SearchLibraryEffect) -> String:
 			put = "exile " + them
 	var reveal: String = ("reveal %s, " % them) if effect.reveal else ""
 	return "search your library for %s, %s%s, then shuffle" % [found, reveal, put]
+
+
+## CR 701.20e, as Militia Bugler words it: "look at the top four cards of your library. You
+## may reveal a creature card with power 2 or less from among them and put it into your hand.
+## Put the rest on the bottom of your library in a random order". Three sentences in one
+## effect, the caller ending the last.
+# Later: more than one taken ("up to two"), once a card says so.
+func _look(effect: LookAtTopCardsEffect) -> String:
+	var constant: ConstantValue = effect.amount as ConstantValue
+	var how_many: String = _number_word(constant.value) if constant != null else _amount(effect.amount)
+	var looked: String = "look at the top %s cards of your library" % how_many
+	var taken: String = _with_article(_card_phrase(effect.filter, false))
+	var take: String = ("You may reveal %s from among them and put it into your hand" % taken) if effect.reveal \
+		else ("You may put %s from among them into your hand" % taken)
+	return "%s. %s. Put the rest on the bottom of your library in a random order" % [looked, take]
 
 
 ## "Basic land card" or "Plains cards": a Filter's words as cards in a hidden zone.
@@ -1444,9 +1536,9 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 		subtypes.remove_at(subtypes.size() - 1)
 	if noun == "":
 		noun = "permanent"
-	if is_plural and not PLURAL_AS_SINGULAR.has(noun):
-		noun += "s"
-	elif not is_plural:
+	if is_plural:
+		noun = _plural(noun)
+	else:
 		# "A player who controls", against "players who control".
 		for index: int in after.size():
 			after[index] = after[index].replace(WHO_CONTROL, "who controls").replace(WHO_DONT_CONTROL, "who doesn't control")
@@ -1568,6 +1660,8 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		adjectives.append("unequipped" if is_negated else "equipped")
 	elif filter is AnyOfFilter and not is_negated and _either_adjective(filter as AnyOfFilter) != "":
 		adjectives.append(_either_adjective(filter as AnyOfFilter))
+	elif filter is AnyOfFilter and not is_negated and _either_noun(filter as AnyOfFilter) != "":
+		nouns.append(_either_noun(filter as AnyOfFilter))
 	elif filter is IsSourceFilter:
 		# "Each other creature": anything but the source.
 		if is_negated:
@@ -1638,6 +1732,28 @@ func _either_adjective(either: AnyOfFilter) -> String:
 	return " or ".join(choices)
 
 
+## "Artifact or creature": [param either] as one noun, when each of its filters is worded by
+## a noun alone, as Adaptive Gemguard's "untapped artifacts and/or creatures you control" is.
+## Otherwise "".
+func _either_noun(either: AnyOfFilter) -> String:
+	var choices: PackedStringArray = []
+	for part: MmFilter in either.filters:
+		var words: FilterWords = _filter_words(part)
+		if words.noun == "" or not words.after.is_empty() or not words.adjectives.is_empty():
+			return ""
+		choices.append(words.noun)
+	return EITHER.join(choices)
+
+
+## The plural of [param noun]: "creatures", "Equipment", or for a noun of either kind
+## "artifacts and/or creatures".
+func _plural(noun: String) -> String:
+	var kinds: PackedStringArray = []
+	for kind: String in noun.split(EITHER):
+		kinds.append(kind if PLURAL_AS_SINGULAR.has(kind) else kind + "s")
+	return EITHER_PLURAL.join(kinds)
+
+
 # --- Numbers -------------------------------------------------------------------------
 
 ## A number as digits, or "X" with what X is kept for the end of the sentence.
@@ -1680,12 +1796,8 @@ func _mana_value_bound(filter: ManaValueFilter, is_negated: bool) -> String:
 	return _bound(filter.amount, filter.amount_value, filter.comparison == ManaValueFilter.Comparison.OR_LESS, is_negated)
 
 
-## "2 or less" or "3 or greater"; negated, the other side, as _mana_value_bound() does.
-static func _power_bound(filter: PowerFilter, is_negated: bool) -> String:
-	var or_less: bool = (filter.comparison == PowerFilter.Comparison.OR_LESS) != is_negated
-	if not is_negated:
-		return "%d %s" % [filter.amount, "or less" if or_less else "or greater"]
-	return "%d or less" % (filter.amount - 1) if or_less else "%d or greater" % (filter.amount + 1)
+func _power_bound(filter: PowerFilter, is_negated: bool) -> String:
+	return _bound(filter.amount, filter.amount_value, filter.comparison == PowerFilter.Comparison.OR_LESS, is_negated)
 
 
 func _toughness_bound(filter: ToughnessFilter, is_negated: bool) -> String:
@@ -1703,6 +1815,10 @@ func _bound(amount: int, value: MmValue, is_or_less: bool, is_negated: bool) -> 
 		if not is_negated:
 			return "X %s" % ("or less" if or_less else "or greater")
 		return "less than X" if or_less else "greater than X"
+	var sum: SumValue = value as SumValue
+	if sum != null and not or_less and not is_negated and sum.addends.size() == 2 and sum.addends[1] is ConstantValue \
+			and (sum.addends[1] as ConstantValue).value == 1:
+		return "greater than " + _value_phrase(sum.addends[0])  # "[X] plus 1 or greater".
 	if value != null and constant == null:
 		var number: String = _value_phrase(value)
 		if is_negated:
@@ -1744,6 +1860,8 @@ func _value_phrase(value: MmValue) -> String:
 		return " plus ".join(addends)
 	if value is PowerValue:
 		return _possessive(_selection((value as PowerValue).selection)) + " power"
+	if value is ToughnessValue:
+		return _possessive(_selection((value as ToughnessValue).selection)) + " toughness"
 	if value is CounterCountValue:
 		var counted: CounterCountValue = value as CounterCountValue
 		return "the number of %s counters on %s" % [MmCounter.label(counted.kind), _selection(counted.selection)]

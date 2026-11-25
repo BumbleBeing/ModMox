@@ -120,6 +120,11 @@ var attached_to_object_id: int = 0
 ## its [member definition]. It is never a card, so its card_id is NO_CARD, and it ceases to
 ## exist once it is anywhere but the battlefield (CR 704.5d).
 var is_token: bool = false
+## Whether this is a copy of a spell (CR 707.10): a spell on the stack with no card, made by
+## an effect from the copied spell's copiable values, which are its [member definition]. It
+## was never cast. A copy of a permanent spell becomes a token as it resolves (CR 608.3f),
+## and is a copy no longer; one anywhere else but the stack ceases to exist (CR 704.5e).
+var is_copy: bool = false
 ## For a permanent with "As this enters, choose a creature type": the type chosen as it
 ## entered (CR 614.12, ADR 0052), or "". Public, like the permanent.
 var chosen_creature_type: String = ""
@@ -176,6 +181,7 @@ func duplicate_object() -> MmGameObject:
 	copy.returns_when_exiler_leaves = returns_when_exiler_leaves
 	copy.attached_to_object_id = attached_to_object_id
 	copy.is_token = is_token
+	copy.is_copy = is_copy
 	copy.chosen_creature_type = chosen_creature_type
 	copy.exerted_by_player_id = exerted_by_player_id
 	return copy
@@ -185,6 +191,12 @@ func duplicate_object() -> MmGameObject:
 ## Potion.
 func is_card() -> bool:
 	return card_id != NO_CARD
+
+
+## Whether this object is a card or a copy of a spell: on the stack, a spell rather than an
+## ability (CR 112.1, 707.10).
+func is_card_or_copy() -> bool:
+	return is_card() or is_copy
 
 
 ## Whether this object is a Potion (ADR 0036).
@@ -231,6 +243,20 @@ func attach_to_zone(holder: MmZone) -> void:
 ## Event-only: makes this object a token (CR 111.1).
 func become_token() -> void:
 	is_token = true
+
+
+## Event-only: makes this object a copy of a spell (CR 707.10).
+func become_copy() -> void:
+	is_copy = true
+
+
+## Event-only: gives this copy of a spell the choices [param original] was cast with: its
+## mode, its X and its targets (CR 707.10).
+## Later: whether it is an Adventure (CR 715.3), once a card can copy one (engine ADR 0078).
+func record_copied_choices(original: MmGameObject) -> void:
+	chosen_mode = original.chosen_mode
+	chosen_x = original.chosen_x
+	targets = original.targets.duplicate()  # MmReferences never change, so sharing them is safe.
 
 
 ## Event-only: attaches this permanent to [param object_id], or to nothing for 0.

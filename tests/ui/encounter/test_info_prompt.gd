@@ -264,6 +264,28 @@ func test_creatures_to_tap_for_a_cost_are_asked_for_by_the_cost_and_can_be_cance
 	assert_true(prompt.can_cancel, "A step of the cast.")
 
 
+func test_artifacts_and_or_creatures_to_tap_are_asked_for_in_the_costs_words() -> void:
+	# Adaptive Gemguard's "Tap two untapped artifacts and/or creatures you control".
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Adaptive Gemguard", 5)]
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var untapped: NotFilter = NotFilter.new()
+	untapped.filter = IsTappedFilter.new()
+	var artifact: HasCardTypeFilter = HasCardTypeFilter.new()
+	artifact.card_type = MmCardTypes.CardType.ARTIFACT
+	var creature: HasCardTypeFilter = HasCardTypeFilter.new()
+	creature.card_type = MmCardTypes.CardType.CREATURE
+	var either: AnyOfFilter = AnyOfFilter.new()
+	either.filters = [artifact, creature]
+	var all: AllOfFilter = AllOfFilter.new()
+	all.filters = [either, untapped, mine]
+
+	var prompt: InfoPrompt = InfoPrompt.of(ChoosePermanentsDecision.new(HERO, 20, 2, [3, 4, 6] as Array[int], all), view)
+
+	assert_eq(prompt.text, "Tap two untapped artifacts and/or creatures you control for Adaptive Gemguard")
+
+
 func test_a_you_may_asks_with_its_words_and_offers_no() -> void:
 	# Game ADR 0060: "[stack name]: [what yes does]?", with no "you may".
 	var view: MmPlayerView = _view()

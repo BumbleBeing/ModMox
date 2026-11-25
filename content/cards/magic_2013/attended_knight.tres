@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_h0nvm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_m4fny"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/first_strike_ability.gd" id="2_oahrg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_bj1k5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_e5ufv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="4_wd1be"]
+[ext_resource type="Resource" path="res://content/tokens/soldier_1_1_white.tres" id="5_fyn64"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_butll"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_2fvcd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_dlgct"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_30i4a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_fygob"]
+
+[sub_resource type="Resource" id="Resource_7b17u"]
+script = ExtResource("2_oahrg")
+
+[sub_resource type="Resource" id="Resource_o56gh"]
+script = ExtResource("4_wd1be")
+token = ExtResource("5_fyn64")
+
+[sub_resource type="Resource" id="Resource_c3dtr"]
+script = ExtResource("9_30i4a")
+
+[sub_resource type="Resource" id="Resource_r4o70"]
+script = ExtResource("10_fygob")
+filter = SubResource("Resource_c3dtr")
+
+[sub_resource type="Resource" id="Resource_1ex1v"]
+script = ExtResource("7_2fvcd")
+trigger = SubResource("Resource_r4o70")
+effects = Array[ExtResource("3_bj1k5")]([SubResource("Resource_o56gh")])
+
+[sub_resource type="Resource" id="Resource_858mf"]
+script = ExtResource("2_m4fny")
+generic = 2
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_e5ufv")
+name = "Attended Knight"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Knight"])
+mana_cost = SubResource("Resource_858mf")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_h0nvm")]([SubResource("Resource_7b17u"), SubResource("Resource_1ex1v")])

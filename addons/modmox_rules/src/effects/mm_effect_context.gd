@@ -58,7 +58,7 @@ func _init(controlling_player_id: int, source_id: int, chosen_targets: Array[MmR
 ## [param counts] is how many places each requirement takes, as in [member target_counts].
 static func of_stack_object(stack_object: MmGameObject, chosen_targets: Array[MmReference] = [],
 		counts: Array[int] = []) -> MmEffectContext:
-	var source_id: int = stack_object.id if stack_object.is_card() else stack_object.source_object_id
+	var source_id: int = stack_object.id if stack_object.is_card_or_copy() else stack_object.source_object_id
 	var context: MmEffectContext = MmEffectContext.new(stack_object.controller_id, source_id, chosen_targets,
 		stack_object.triggering_player_id, stack_object.triggering_object_id)
 	context.own_object_id = stack_object.id

@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_6wgb3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_70x6s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="2_vlulr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_bh618"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/affinity_ability.gd" id="3_i1a5s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_diegp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_nj7ch"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="6_4yydg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="7_xoo0p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_aujbo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="9_lfc81"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_6lfjb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="11_bti5e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="12_fuuom"]
+
+[sub_resource type="Resource" id="Resource_w7agy"]
+script = ExtResource("2_vlulr")
+
+[sub_resource type="Resource" id="Resource_fsick"]
+script = ExtResource("3_i1a5s")
+filter = SubResource("Resource_w7agy")
+
+[sub_resource type="Resource" id="Resource_tjy2u"]
+script = ExtResource("5_nj7ch")
+value = 1
+
+[sub_resource type="Resource" id="Resource_qkgqu"]
+script = ExtResource("6_4yydg")
+
+[sub_resource type="Resource" id="Resource_ubysc"]
+script = ExtResource("7_xoo0p")
+amount = SubResource("Resource_tjy2u")
+players = SubResource("Resource_qkgqu")
+
+[sub_resource type="Resource" id="Resource_qt1il"]
+script = ExtResource("11_bti5e")
+
+[sub_resource type="Resource" id="Resource_x0gj4"]
+script = ExtResource("12_fuuom")
+filter = SubResource("Resource_qt1il")
+
+[sub_resource type="Resource" id="Resource_eq8hv"]
+script = ExtResource("9_lfc81")
+trigger = SubResource("Resource_x0gj4")
+effects = Array[ExtResource("4_diegp")]([SubResource("Resource_ubysc")])
+
+[sub_resource type="Resource" id="Resource_1rtjw"]
+script = ExtResource("2_70x6s")
+generic = 5
+symbols = Array[int]([0])
+
+[resource]
+script = ExtResource("3_bh618")
+name = "Salt Road Packbeast"
+card_types = Array[int]([1])
+subtypes = Array[String](["Beast"])
+mana_cost = SubResource("Resource_1rtjw")
+power = 4
+toughness = 3
+abilities = Array[ExtResource("1_6wgb3")]([SubResource("Resource_fsick"), SubResource("Resource_eq8hv")])

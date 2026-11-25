@@ -870,6 +870,17 @@ static func emblem_art_key(emblem: MmCardDefinition) -> String:
 	return ArtLibrary.emblem_key(file_name) if file_name != "" else ""
 
 
+## The art of a token or a copy of a spell made from [param definition]: its Token
+## Definition's, or for a copy of a card and the token it becomes (engine ADR 0083), the
+## card's own, which its Original names. "" for none.
+static func made_art_key(definition: MmCardDefinition) -> String:
+	if definition == null:
+		return ""
+	if definition.original != null and definition.original.resource_path != "":
+		return _file_name(definition.original)
+	return ArtLibrary.token_key(_file_name(definition))
+
+
 static func _file_name(definition: MmCardDefinition) -> String:
 	return definition.resource_path.get_file().get_basename()
 
@@ -889,10 +900,10 @@ func _add_original(made: EncounterSnapshot, seen: MmObjectView) -> void:
 
 
 ## The art of the card [param seen] is, or for an ability, of the card it came from, or for
-## a token, of its Token Definition.
+## a token or a copy of a spell, of what it was made from (made_art_key()).
 func _art_key(seen: MmObjectView) -> String:
-	if seen.is_token:
-		return ArtLibrary.token_key(_file_name(seen.token_definition)) if seen.token_definition != null else ""
+	if seen.is_token or seen.is_copy:
+		return made_art_key(seen.token_definition)
 	var card_id: int = seen.card_id if seen.card_id != MmGameObject.NO_CARD else seen.source_card_id
 	var run_card: MmRunCard = _engine.run_card(card_id)
 	if run_card == null or run_card.base == null:
