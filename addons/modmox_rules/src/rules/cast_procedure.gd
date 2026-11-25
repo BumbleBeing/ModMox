@@ -3,13 +3,14 @@ extends RefCounted
 ## Casting a spell (CR 601.2) or activating an ability that uses the stack (CR 602.2):
 ## announce it onto the stack, choose its mode if it is modal, choose its targets, make
 ## any choice a part of its cost asks (paying that part then), then pay its mana one step
-## at a time and the rest of its cost. A card cast from its graveyard is cast for its
-## flashback cost (CR 702.34a), and one cast from the top of its library uses up a
-## permission to (ADR 0054). An Adventurer card may be cast as its Adventure (CR 715.3).
+## at a time, then make any choice an additional cost asks (engine ADR 0086) and pay the
+## rest of its cost. A card cast from its graveyard is cast for its flashback cost
+## (CR 702.34a), and one cast from the top of its library uses up a permission to
+## (ADR 0054). An Adventurer card may be cast as its Adventure (CR 715.3).
 ## When the payment can no longer be finished it reports itself stuck, and the engine
 ## rewinds the whole attempt (CR 728, ADR 0015).
 
-enum Stage { CHOOSE_MODE, CHOOSE_TARGETS, PAY_MANA, DONE, STUCK, PAY_COSTS, CHOOSE_X }
+enum Stage { CHOOSE_MODE, CHOOSE_TARGETS, PAY_MANA, DONE, STUCK, PAY_COSTS, CHOOSE_X, PAY_COSTS_AFTER_MANA }
 
 var _state: MmGameState
 var _player_id: int
@@ -28,8 +29,12 @@ var _stage: Stage = Stage.CHOOSE_TARGETS
 ## or null. Card data, never changed.
 var _x_cost: MmManaCost = null
 ## The parts of the cost that are not mana (CR 601.2h): an ability's costs, or a flashback
-## cost's. Those that ask a choice are paid as it is answered, the rest once the mana is.
+## cost's, then a spell's additional costs. Those that ask a choice are paid as it is
+## answered, the rest once the mana is.
 var _costs: Array[MmCost] = []
+## How many of [member _costs] are asked before the mana (ADR 0048). The rest, a spell's
+## additional costs, are asked once it is paid (CR 601.2g-h, engine ADR 0086).
+var _costs_before_mana: int = 0
 var _next_cost: int = 0
 var _paid_cost_indexes: Array[int] = []
 
@@ -37,11 +42,15 @@ var _paid_cost_indexes: Array[int] = []
 ## Begins casting [param card] from [param player_id]'s hand, from their graveyard for its
 ## flashback cost, or from the top of their library with a permission, which is used now
 ## (CR 601.3, ADR 0054): CR 601.2a moves it to the stack. [param as_adventure] casts it as its
-## Adventure, with only the Adventure's characteristics (CR 715.3a-b, engine ADR 0078).
-static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false) -> CastProcedure:
+## Adventure, with only the Adventure's characteristics (CR 715.3a-b, engine ADR 0078), and
+## [param bestowed] as an Aura spell for its bestow cost (CR 702.103a-b, engine ADR 0089).
+static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false,
+		bestowed: bool = false) -> CastProcedure:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	if as_adventure:
 		characteristics = characteristics.adventure
+	elif bestowed:
+		characteristics = BestowRules.as_bestowed(state, card)
 	var procedure: CastProcedure = CastProcedure.new(state, player_id)
 	var spell: SpellAbility = spell_ability_of(characteristics)
 	procedure._ability = spell
@@ -50,15 +59,19 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, a
 	elif spell != null:
 		procedure._target_requirements = spell.targets
 	# CR 601.2f: the total cost is fixed now. Choosing modes and targets first, as the rules
-	# order it, can change nothing it counts. Later: cost increases and additional costs.
-	var mana: MmManaCost = mana_to_pay(state, player_id, card, as_adventure)
+	# order it, can change nothing it counts. Later: cost increases.
+	var mana: MmManaCost = mana_to_pay(state, player_id, card, as_adventure, bestowed)
 	if mana != null and mana.x_count > 0:
 		procedure._x_cost = mana
 		if procedure._stage != Stage.CHOOSE_MODE:
 			procedure._stage = Stage.CHOOSE_X  # CR 601.2b: X after any mode, before targets.
 	var is_flashback: bool = card.zone().kind == MmZone.Kind.GRAVEYARD
+	var costs: Array[MmCost] = []
 	if is_flashback:
-		procedure._costs = flashback_of(characteristics).costs
+		costs.append_array(flashback_of(characteristics).costs)
+	procedure._costs_before_mana = costs.size()
+	costs.append_array(additional_costs_of(characteristics))
+	procedure._costs = costs
 	procedure._payment = ManaPaymentProgress.of_cost(player_id, mana)
 	if card.zone().kind == MmZone.Kind.LIBRARY:
 		var permission: Array[int] = top_of_library_permission(state, player_id, card)
@@ -67,6 +80,7 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, a
 	var move: ZoneChangeEvent = ZoneChangeEvent.new(card, state.stack, MmZone.BOTTOM, ZoneChangeEvent.Reason.CAST)
 	move.cast_with_flashback = is_flashback
 	move.cast_as_adventure = as_adventure
+	move.is_bestowed = bestowed
 	state.perform(move)
 	procedure._stack_object_id = move.new_object_id
 	return procedure
@@ -80,6 +94,7 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 	procedure._ability = ability
 	procedure._target_requirements = ability.targets
 	procedure._costs = ability.costs
+	procedure._costs_before_mana = ability.costs.size()
 	procedure._source_object_id = source.id
 	procedure._ability_index = ability_index
 	# CR 602.2b: an activation's mana is paid like a spell's (CR 601.2f-h), less any
@@ -94,14 +109,20 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 
 ## The mana [param player_id] pays to cast [param card] (CR 601.2f): its mana cost from the
 ## hand or the top of the library, or its flashback cost from its graveyard (an alternative cost, CR 118.9), less
-## every cost reduction it has (CR 118.7, ADR 0050). Null when that cost has no mana in it.
+## every cost reduction it has (CR 118.7, ADR 0050) and every SpellsCostLessAbility of a
+## permanent or Emblem [param player_id] controls. Null when that cost has no mana in it.
 ## [param as_adventure]: its Adventure's mana cost and reductions (CR 715.3a).
-static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false) -> MmManaCost:
+## [param bestowed]: its bestow cost instead, an alternative cost (CR 118.9, 702.103a).
+static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false,
+		bestowed: bool = false) -> MmManaCost:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	if as_adventure:
 		characteristics = characteristics.adventure
 	var mana: MmManaCost = characteristics.mana_cost
-	if card.zone().kind == MmZone.Kind.GRAVEYARD:
+	if bestowed:
+		var bestow: BestowAbility = BestowRules.bestow_of(characteristics)
+		mana = null if bestow == null else bestow.mana_cost
+	elif card.zone().kind == MmZone.Kind.GRAVEYARD:
 		var flashback: FlashbackAbility = flashback_of(characteristics)
 		mana = null if flashback == null else flashback.mana_cost
 	if mana == null:
@@ -110,6 +131,14 @@ static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject, 
 		var reducing: CostReductionAbility = ability as CostReductionAbility
 		if reducing != null:
 			mana = mana.reduced_by(reducing.reduction(state, card, player_id))
+	# Engine ADR 0050's addendum: the caster's permanents and Emblems may make it cost less too.
+	for source: MmGameObject in TriggerDetection.observers(state):
+		if source.controller_id != player_id:
+			continue
+		for ability: MmAbility in state.characteristics_of(source).abilities:
+			var cheaper: SpellsCostLessAbility = ability as SpellsCostLessAbility
+			if cheaper != null:
+				mana = mana.reduced_by(cheaper.reduction(state, player_id))
 	return mana
 
 
@@ -144,6 +173,17 @@ static func most_x(state: MmGameState, player_id: int, cost: MmManaCost) -> int:
 	while ManaPayment.can_afford(state, player_id, cost.with_x(x + 1)):
 		x += 1
 	return x
+
+
+## Every additional cost of a spell with [param characteristics] (CR 601.2f, 118.8), in the
+## order of its AdditionalCostAbility abilities.
+static func additional_costs_of(characteristics: MmCharacteristics) -> Array[MmCost]:
+	var costs: Array[MmCost] = []
+	for ability: MmAbility in characteristics.abilities:
+		var additional: AdditionalCostAbility = ability as AdditionalCostAbility
+		if additional != null:
+			costs.append_array(additional.costs)
+	return costs
 
 
 ## The card's flashback ability (CR 702.34a), or null for a card without flashback.
@@ -183,6 +223,7 @@ func copy_for(state: MmGameState) -> CastProcedure:
 	copy._next_target = _next_target
 	copy._payment = _payment.copy()
 	copy._costs = _costs
+	copy._costs_before_mana = _costs_before_mana
 	copy._next_cost = _next_cost
 	copy._paid_cost_indexes = _paid_cost_indexes.duplicate()
 	copy._stage = _stage
@@ -221,25 +262,27 @@ func next_decision() -> MmPendingDecision:
 					return TargetChoice.decision_for(_state, _player_id, _stack_object_id,
 						_target_requirements, _next_target, _context(), true)
 			Stage.PAY_COSTS:
-				while _next_cost < _costs.size():
-					var cost: MmCost = _costs[_next_cost]
-					if not cost.can_pay(_state, _cost_source(), _player_id):
-						_stage = Stage.STUCK  # Something since has made it unpayable.
-						return null
-					var choice: MmPendingDecision = cost.choice(_state, _cost_source(), _player_id)
-					if choice != null:
-						return choice
-					_next_cost += 1
+				var asked: MmPendingDecision = _next_cost_choice(_costs_before_mana)
+				if asked != null or _stage == Stage.STUCK:
+					return asked
 				_stage = Stage.PAY_MANA
 			Stage.PAY_MANA:
 				if _payment.is_paid():
-					_finish()
-					_stage = Stage.DONE
-					return null
+					_stage = Stage.PAY_COSTS_AFTER_MANA
+					continue
 				var paying: PayManaDecision = _payment.decision(_state)
 				if paying == null:
 					_stage = Stage.STUCK
 				return paying
+			Stage.PAY_COSTS_AFTER_MANA:
+				# CR 601.2g-h, engine ADR 0086: once the mana is paid, so a permanent just
+				# tapped for mana may be returned.
+				var asked: MmPendingDecision = _next_cost_choice(_costs.size())
+				if asked != null or _stage == Stage.STUCK:
+					return asked
+				_finish()
+				_stage = Stage.DONE
+				return null
 			_:
 				return null
 	return null
@@ -288,6 +331,21 @@ func _choose_mode(mode_index: int) -> void:
 	_state.perform(ModeChosenEvent.new(_stack_object_id, mode_index))
 	_target_requirements = (_ability as SpellAbility).modes[mode_index].targets
 	_stage = Stage.CHOOSE_X if _x_cost != null else Stage.CHOOSE_TARGETS
+
+
+## The choice the next of [member _costs] before [param end] asks, or null once each has been
+## asked or asks none. One that can no longer be paid makes the procedure stuck.
+func _next_cost_choice(end: int) -> MmPendingDecision:
+	while _next_cost < end:
+		var cost: MmCost = _costs[_next_cost]
+		if not cost.can_pay(_state, _cost_source(), _player_id):
+			_stage = Stage.STUCK  # Something since has made it unpayable.
+			return null
+		var choice: MmPendingDecision = cost.choice(_state, _cost_source(), _player_id)
+		if choice != null:
+			return choice
+		_next_cost += 1
+	return null
 
 
 ## What a part of the cost is paid for: the ability's source, or the spell itself.

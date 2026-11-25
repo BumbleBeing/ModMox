@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_uc8xy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_2lgvl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_lax81"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_24lpx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_fsbq4"]
+[ext_resource type="Resource" path="res://content/tokens/glimmer_1_1_white.tres" id="4_6neow"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_apyr1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_dnqyh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_awe1o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_cs2m0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_sktk6"]
+
+[sub_resource type="Resource" id="Resource_381jy"]
+script = ExtResource("3_24lpx")
+token = ExtResource("4_6neow")
+
+[sub_resource type="Resource" id="Resource_mmcbf"]
+script = ExtResource("8_cs2m0")
+
+[sub_resource type="Resource" id="Resource_53rco"]
+script = ExtResource("9_sktk6")
+filter = SubResource("Resource_mmcbf")
+
+[sub_resource type="Resource" id="Resource_1ybql"]
+script = ExtResource("6_dnqyh")
+trigger = SubResource("Resource_53rco")
+effects = Array[ExtResource("2_2lgvl")]([SubResource("Resource_381jy")])
+
+[sub_resource type="Resource" id="Resource_ku2ij"]
+script = ExtResource("2_lax81")
+generic = 2
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_fsbq4")
+name = "Tunnel Surveyor"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Detective"])
+mana_cost = SubResource("Resource_ku2ij")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_uc8xy")]([SubResource("Resource_1ybql")])

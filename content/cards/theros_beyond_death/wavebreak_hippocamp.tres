@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_tmjsv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_c8l4c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_hc31c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_3jqv2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_afrye"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_6gsqf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_ksfvk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_2sqqd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_x68hf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_q54jt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="9_hra8p"]
+
+[sub_resource type="Resource" id="Resource_07d6w"]
+script = ExtResource("3_3jqv2")
+value = 1
+
+[sub_resource type="Resource" id="Resource_sey58"]
+script = ExtResource("4_6gsqf")
+
+[sub_resource type="Resource" id="Resource_uy6mk"]
+script = ExtResource("5_ksfvk")
+amount = SubResource("Resource_07d6w")
+players = SubResource("Resource_sey58")
+
+[sub_resource type="Resource" id="Resource_ixfnf"]
+script = ExtResource("9_hra8p")
+whose = 1
+nth_each_turn = 1
+during_whose_turn = 2
+
+[sub_resource type="Resource" id="Resource_s5wya"]
+script = ExtResource("7_x68hf")
+trigger = SubResource("Resource_ixfnf")
+effects = Array[ExtResource("2_c8l4c")]([SubResource("Resource_uy6mk")])
+
+[sub_resource type="Resource" id="Resource_1c4tw"]
+script = ExtResource("2_hc31c")
+generic = 2
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_afrye")
+name = "Wavebreak Hippocamp"
+card_types = Array[int]([2, 1])
+subtypes = Array[String](["Horse", "Fish"])
+mana_cost = SubResource("Resource_1c4tw")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_tmjsv")]([SubResource("Resource_s5wya")])
+rarity = 2

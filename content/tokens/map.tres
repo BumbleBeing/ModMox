@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_8lbsw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_8dt8t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="3_p3xyp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/sacrifice_this_cost.gd" id="4_hybpq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_cow5h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/explore_effect.gd" id="6_ak2hk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="7_at2gk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="8_ng6a4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="9_xnjow"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_02igm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_poa04"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_3xmch"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="13_c2h8u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="14_0ecim"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="15_3coo7"]
+
+[sub_resource type="Resource" id="Resource_xmw4o"]
+script = ExtResource("3_p3xyp")
+
+[sub_resource type="Resource" id="Resource_dquem"]
+script = ExtResource("4_hybpq")
+
+[sub_resource type="Resource" id="Resource_jevio"]
+script = ExtResource("7_at2gk")
+
+[sub_resource type="Resource" id="Resource_cnv8h"]
+script = ExtResource("6_ak2hk")
+selection = SubResource("Resource_jevio")
+
+[sub_resource type="Resource" id="Resource_3srqa"]
+script = ExtResource("8_ng6a4")
+generic = 1
+
+[sub_resource type="Resource" id="Resource_82bin"]
+script = ExtResource("12_3xmch")
+
+[sub_resource type="Resource" id="Resource_qwa8h"]
+script = ExtResource("13_c2h8u")
+
+[sub_resource type="Resource" id="Resource_7c2ce"]
+script = ExtResource("14_0ecim")
+filters = Array[ExtResource("11_poa04")]([SubResource("Resource_82bin"), SubResource("Resource_qwa8h")])
+
+[sub_resource type="Resource" id="Resource_2qd4u"]
+script = ExtResource("10_02igm")
+filter = SubResource("Resource_7c2ce")
+
+[sub_resource type="Resource" id="Resource_j5ehf"]
+script = ExtResource("9_xnjow")
+mana_cost = SubResource("Resource_3srqa")
+costs = Array[ExtResource("2_8dt8t")]([SubResource("Resource_xmw4o"), SubResource("Resource_dquem")])
+targets = Array[ExtResource("10_02igm")]([SubResource("Resource_2qd4u")])
+effects = Array[ExtResource("5_cow5h")]([SubResource("Resource_cnv8h")])
+is_sorcery_speed = true
+
+[resource]
+script = ExtResource("15_3coo7")
+name = "Map Token"
+card_types = Array[int]([0])
+subtypes = Array[String](["Map"])
+abilities = Array[ExtResource("1_8lbsw")]([SubResource("Resource_j5ehf")])

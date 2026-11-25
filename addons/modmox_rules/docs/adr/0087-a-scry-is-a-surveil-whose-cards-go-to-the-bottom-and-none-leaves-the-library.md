@@ -1,0 +1,13 @@
+# A scry is a surveil whose cards go to the bottom, and none leaves the library
+
+Scry came with Artificer's Assistant, "Whenever you cast a historic spell, scry 1." (CR 701.22a: look at the top N cards of your library, then put any number of them on the bottom of your library in any order and the rest on top in any order). The user asked for it to be answered as a surveil is (game ADR 0069's addendum): the same window, its button reading "Bottom".
+
+**A scry is asked as a surveil is, so `ScryDecision` is a `SurveilDecision`.** The two ask the same question of the same cards and take the same answer, two lists (ADR 0068): the cards sent away, in the order they go, then the cards kept, top first. A surveil sends them to the graveyard and a scry to the bottom of the library, and nothing else differs. So the subclass changes only its words (`describe()`, so the fingerprint tells the two apart, and the message of a refused answer), and everything that shows, reveals or answers a surveil does the same for a scry: the Player View shows the cards looked at while it is pending, a Simulation Copy leaves them in place, asking it is an undo barrier, `ResolutionProcedure` keeps its answer, and the Agent answers it by the same land rule, a card it would graveyard going to the bottom. `SurveilDecision.sent_in()` reads the first list for either; `graveyarded_in()` stays for the surveil.
+
+**"Scry [amount]" is a `ScryEffect`**, with an `amount` Value as `SurveilEffect` has. Its player is the effect's controller. With an empty library, or an amount of 0 (CR 701.22b), nothing is asked and nothing happens.
+
+**No card leaves the library.** The cards kept go on top with a `LibraryTopOrderedEvent`, as a surveil's do, and the cards sent go on the bottom with a `LibraryBottomOrderedEvent`, both in one batch, as CR 701.22a is one action. Each card sent goes under everything, so the last sent is the deepest: the user's choice, as "Bottom" puts the selected card on the bottom when it is pressed. None changes zones, so each stays the same object (ADR 0008 is about zone changes), and every card looked at becomes a Known Card to its owner (ADR 0057), the ones on the bottom too, until the library is shuffled or the card leaves it. The owner's Library window therefore draws them face up where they are; the other player learns nothing.
+
+`AbilityText` says "scry 1", with its number as digits, as Oracle does and as it says "surveil 1", and calls an artifact, legendary or Saga "historic" (CR 700.6), so Artificer's Assistant reads as printed.
+
+Left out until a card needs them (ADR 0001): "target player scries", "whenever you scry" (CR 701.22c), and a scry of more than three cards on the Hero's screen, whose window is three cards wide.

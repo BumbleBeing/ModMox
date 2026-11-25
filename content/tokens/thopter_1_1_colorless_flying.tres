@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_skm7o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_7agnw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_sr1gq"]
+
+[sub_resource type="Resource" id="Resource_wejg3"]
+script = ExtResource("2_7agnw")
+
+[resource]
+script = ExtResource("3_sr1gq")
+name = "Thopter Token"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Thopter"])
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_skm7o")]([SubResource("Resource_wejg3")])

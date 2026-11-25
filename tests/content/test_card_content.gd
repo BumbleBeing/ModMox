@@ -1194,6 +1194,59 @@ func test_viridian_claw_gives_the_equipped_creature_plus_one_plus_zero_and_first
 	assert_false(Scenario.now(engine, bear).has_ability(FirstStrikeAbility))
 
 
+func test_armguard_familiar_reconfigured_gives_its_creature_ward_that_counters_an_opponents_unpaid_spell() -> void:
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var familiar: MmCardDefinition = Scenario.free_copy(_card("kamigawa_neon_dynasty", "armguard_familiar"))
+	var bird: MmCardDefinition = Scenario.mana_bird("Mana Bird", 4)
+	var zap: MmCardDefinition = Scenario.free_shock("Zap", 1)
+	var hero_permanents: Array[MmCardDefinition] = [bears, familiar, bird]
+	var no_cards: Array[MmCardDefinition] = []
+	var villain_hand: Array[MmCardDefinition] = [zap]
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero_permanents, no_cards, no_cards, villain_hand),
+		hero_permanents, no_cards, no_cards, villain_hand, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hands.")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	var armguard: int = Scenario.permanent_named(engine, engine.hero().id, "Armguard Familiar")
+	assert_false(Scenario.now(engine, bear).has_ability(WardAbility), "Unattached, it gives nothing.")
+
+	assert_eq(Scenario.equip_and_resolve(engine, armguard, bear), "", "Reconfigure {4}, paid by the Mana Bird.")
+	assert_eq(Scenario.attached_to(engine, armguard), bear)
+	assert_eq(Scenario.pt(engine, bear), [4, 3])
+	assert_true(Scenario.now(engine, bear).has_ability(WardAbility))
+
+	assert_eq(Scenario.play_until_step(engine, 4, MmTurn.Step.PRECOMBAT_MAIN), "")
+	var spell: int = Scenario.card_in_hand(engine, engine.villain(), "Zap")
+	assert_eq(Scenario.cast(engine, spell, [MmReference.to_object(bear)]), "")
+	var stack: Array[int] = Scenario.stack_ids(engine)
+	assert_eq(stack.size(), 2, "The ward it gave triggers above the Zap.")
+	var trigger: MmGameObject = engine.game_state().object(stack[0])
+	assert_true(trigger.ability is WardAbility)
+	assert_eq(trigger.controller_id, engine.hero().id)
+
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(engine.game_state().object(bear).damage_marked, 0, "The Villain cannot pay {2}, so the Zap is countered.")
+
+
+func test_dour_port_mage_returning_another_creature_draws_a_card_for_it() -> void:
+	var port_mage: MmCardDefinition = Scenario.free_copy(_card("bloomburrow", "dour_port_mage"))
+	var bird: MmCardDefinition = Scenario.creature("Blue Bird", 0, 1, [Scenario.tap_for_mana(MmMana.Type.BLUE, 2)])
+	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
+	var permanents: Array[MmCardDefinition] = [port_mage, bird, bears]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(permanents, no_cards),
+		permanents, no_cards, no_cards, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var mage: int = Scenario.permanent_named(engine, engine.hero().id, "Dour Port-Mage")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Grizzly Bears")
+	var hand_before: int = engine.hero().hand.size()
+
+	assert_eq(Scenario.activate(engine, mage, [MmReference.to_object(bear)]), "", "{1}{U}, {T}, paid by the Blue Bird.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.permanents_named(engine, engine.hero().id, "Grizzly Bears"), [] as Array[int])
+	assert_eq(engine.hero().hand.size(), hand_before + 2, "The Bears, and the card its leaving drew.")
+
+
 func test_hero_of_the_pride_pumps_its_controllers_creatures_when_their_spell_targets_it() -> void:
 	var hero: MmCardDefinition = Scenario.free_copy(_card("theros_beyond_death", "hero_of_the_pride"))
 	var bears: MmCardDefinition = Scenario.free_copy(_alpha("grizzly_bears"))
@@ -1628,6 +1681,33 @@ func test_the_clue_token_is_a_colorless_clue_artifact_that_sacrifices_itself_for
 	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int], "Sacrificed, then gone (CR 111.7).")
 
 
+func test_the_map_token_is_a_colorless_map_artifact_that_sacrifices_itself_to_have_a_creature_explore() -> void:
+	# CR 111.10, 701.44a, engine ADR 0090. Autoplay keeps a nonland card an explore reveals.
+	var map: MmCardDefinition = load("res://content/tokens/map.tres") as MmCardDefinition
+	var printed: MmCharacteristics = MmCharacteristics.printed(map)
+	assert_eq(printed.name, "Map Token", "CR 111.4.")
+	assert_eq(printed.card_types, [MmCardTypes.CardType.ARTIFACT] as Array[MmCardTypes.CardType])
+	assert_eq(printed.subtypes, ["Map"] as Array[String])
+	assert_eq(printed.colors, [] as Array[MmCardTypes.CardColor])
+	var bird: Array[MmCardDefinition] = [Scenario.mana_bird()]
+	var charter: Array[MmCardDefinition] = [Scenario.free_tokens("Charter", map)]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(bird, no_cards, charter),
+		bird, no_cards, charter, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Charter"), "")
+	var made: int = Scenario.tokens_on_battlefield(engine)[0]
+	var bird_id: int = Scenario.permanent_named(engine, engine.hero().id, "Mana Bird")
+	var top_is_land: bool = engine.game_state().characteristics_of(engine.hero().library.top()).has_card_type(
+		MmCardTypes.CardType.LAND)
+
+	assert_eq(Scenario.activate(engine, made, [MmReference.to_object(bird_id)]), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(Scenario.counters_on(engine, bird_id, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 0 if top_is_land else 1)
+	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int], "Sacrificed, then gone (CR 111.7).")
+
+
 func test_the_treasure_token_is_a_colorless_treasure_artifact_that_sacrifices_itself_for_one_mana_of_any_color() -> void:
 	# CR 111.10a, engine ADR 0072.
 	var treasure: MmCardDefinition = load("res://content/tokens/treasure.tres") as MmCardDefinition
@@ -1739,6 +1819,41 @@ func test_sage_of_the_skies_cast_as_the_second_spell_is_copied_into_a_token_with
 		var now: MmCharacteristics = Scenario.now(engine, sage_id)
 		assert_true(now.has_ability(FlyingAbility) and now.has_ability(LifelinkAbility))
 		assert_eq([now.power, now.toughness], [2, 3])
+
+
+func test_wavebreak_hippocamp_draws_for_the_first_spell_of_the_opponents_turn_only() -> void:
+	# Its trigger counts the spells its controller cast this turn and asks whose turn it is.
+	var hippocamp: MmCardDefinition = Scenario.free_copy(_card("theros_beyond_death", "wavebreak_hippocamp"))
+	var hand: Array[MmCardDefinition] = []
+	for gift_name: String in ["Gift", "Second Gift", "Third Gift"]:
+		hand.append(Scenario.instant(gift_name, Scenario.mana_cost(0), [], [Scenario.gain_life(1, Scenario.you())]))
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup([hippocamp], no_cards, hand),
+		[hippocamp], no_cards, hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Gift"), "")
+	assert_eq(_hippocamp_draws(engine), 0, "Game Turn 3 is the Hero's own.")
+
+	Scenario.play_until_step(engine, 4, MmTurn.Step.UPKEEP)
+	Scenario.pass_priority(engine)  # CR 117.3b: the Villain, as the active player, has it first.
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Second Gift")), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(_hippocamp_draws(engine), 1, "The Hero's first spell of the Villain's turn.")
+	Scenario.pass_priority(engine)  # CR 117.3b: after a resolution the active player has it.
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Third Gift")), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(_hippocamp_draws(engine), 1, "The second spell of that turn draws nothing.")
+
+
+## How many times Wavebreak Hippocamp's ability has triggered.
+func _hippocamp_draws(engine: MmEngine) -> int:
+	var count: int = 0
+	for event: MmEvent in Scenario.events_of(engine, AbilityTriggeredEvent):
+		if (event as AbilityTriggeredEvent).pending.source_name == "Wavebreak Hippocamp":
+			count += 1
+	return count
 
 
 func test_militia_bugler_takes_a_small_creature_from_the_top_four_and_puts_the_rest_on_the_bottom() -> void:

@@ -2,11 +2,15 @@ class_name CreateContinuousEffect
 extends MmEffect
 ## "[continuous] until end of turn": creates a continuous effect that lasts for
 ## [member duration] (CR 611.2). What it affects, and its numbers, are fixed now
-## (CR 611.2c, 608.2h), so a creature arriving later is not affected.
+## (CR 611.2c, 608.2h), so a creature arriving later is not affected. With INDEFINITELY it
+## has no duration, as Bring to Life's "becomes a 0/0 artifact creature", and lasts for the
+## rest of the encounter (CR 611.2a, engine ADR 0091), applying only to the objects it
+## found, so an object that leaves and comes back is a new one it does not reach (ADR 0008).
 
 ## How long it lasts. Saved card files store these as numbers: never change or reuse a
-## value, only add new ones. Later: other durations, such as "until your next turn".
-enum Duration { UNTIL_END_OF_TURN = 0 }
+## value, only add new ones. INDEFINITELY is no duration at all (CR 611.2a). Later: other
+## durations, such as "until your next turn".
+enum Duration { UNTIL_END_OF_TURN = 0, INDEFINITELY = 1 }
 
 @export var continuous: MmContinuousEffect
 @export var duration: Duration = Duration.UNTIL_END_OF_TURN

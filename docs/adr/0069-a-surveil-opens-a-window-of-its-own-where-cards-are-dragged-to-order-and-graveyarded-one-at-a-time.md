@@ -21,3 +21,15 @@ Left out until a card needs them: surveilling more than three cards (the window 
 ## Addendum: Graveyard is baked into the window's bottom edge
 
 When the Look window was signed off (game ADR 0085), the user asked that the Surveil window take its structure. "Graveyard" is no longer under the cards, centered under those left in the row: it is baked into the window's bottom edge, in a strip along the bottom as the title bar runs along the top, exactly as tall as the button, and anchored to the strip's middle, so it stays at the middle of the bottom however the window is resized or however many cards are left. The window opens with room for the row and the strip (`ZoneWindow.size_around()`), and the row scrolls above the strip. Everything else here stands.
+
+## Addendum: a scry opens the Surveil window, its button reading "Bottom"
+
+Scry came with Artificer's Assistant (engine ADR 0087). The user asked for it to be built "like surveil, with rearrangeable draggable cards, except the button says 'bottom' and puts the selected card on the bottom of the library when clicked." So a scry of the Hero's opens the Surveil window in the same place and of the same size, with the same row, drags, clicks, Glows, Undo and Done; only its words and where a card goes differ. The words are the user's, checked before they were built:
+- the window's title is "Scry 2": the number is how many cards are scried;
+- the Info Panel reads "Scry: put any of these on the bottom, and order the rest. The leftmost will be on top.", or with one card "Scry: put any of these on the bottom.";
+- the button baked into the bottom edge reads "Bottom";
+- the Pass Button reads "Done", as for a surveil.
+
+Pressed, "Bottom" flies the selected card out of the window onto the Hero's Library pile, whose count stays as it was, since the card never leaves the library; the Graveyard pile does not change. Each card sent goes under everything, so with several the last sent is the deepest, the user's choice. Done gives the cards sent, in the order sent, and the row's order, leftmost on top. Afterwards every card scried is a Known Card to the Hero, so the Library window draws the ones kept on top and the ones put on the bottom face up where they are.
+
+The Villain's scry shows nothing: no card leaves its library, and the Info Panel says nothing.

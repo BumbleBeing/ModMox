@@ -635,6 +635,45 @@ func _snarecaster_target_asked(giant_tapped: bool = false) -> MmEngine:
 	return engine
 
 
+func test_untapping_is_helpful_and_keeps_no_timing_tag() -> void:
+	var untap: Array[MmEffect] = [Scenario.untap(Scenario.targeted(0))]
+
+	assert_false(AiTiming.is_harmful(untap))
+	assert_eq(AiTiming.tag_of_effects(untap), AiTiming.Tag.NONE)
+	assert_true(AiTiming.untaps(untap))
+	assert_false(AiTiming.taps(untap))
+
+
+func test_an_enters_trigger_that_untaps_goes_at_its_own_tapped_creature_not_an_untapped_one() -> void:
+	# An untap is wasted on a creature already untapped, as a tap is on one already tapped:
+	# the Colossus is worth more, but only the Hill Giant can be untapped.
+	for agent: AiAgent in [AiAgent.new(null, AiAgent.Mode.CHEAP), AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy()),
+			AiAgent.new()]:
+		var engine: MmEngine = _waker_target_asked()
+		var giant: int = Scenario.permanent_named(engine, engine.hero().id, "Hill Giant")
+
+		assert_eq(AiScenario.chosen_target(engine, AiScenario.ask(engine, agent)).id, giant)
+
+
+## The Hero, with a tapped Hill Giant and an untapped 5/5 Colossus against a 0/4 Wall,
+## holding Waker (a 1/1 with "When this creature enters, untap target creature") just cast
+## and its target asked.
+func _waker_target_asked() -> MmEngine:
+	var waker: MmCardDefinition = Scenario.creature("Waker", 1, 1, [Scenario.triggered(
+		Scenario.enters(IsSourceFilter.new()), [Scenario.untap(Scenario.targeted(0))],
+		[Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))])])
+	var engine: MmEngine = AiScenario.ready_with([AiScenario.free_alpha("hill_giant"), Scenario.creature("Colossus", 5, 5)],
+		[Scenario.creature("Wall", 0, 4)], [waker, Scenario.free_tap("Snare")])
+	assert_not_null(engine)
+	var giant: int = Scenario.permanent_named(engine, engine.hero().id, "Hill Giant")
+	assert_eq(Scenario.cast_and_resolve(engine, "Snare", [MmReference.to_object(giant)]), "")
+	assert_true(engine.game_state().object(giant).is_tapped)
+	var card: int = Scenario.card_in_hand(engine, engine.hero(), "Waker")
+	assert_eq(engine.submit(Scenario.cast_index(engine.pending_decision() as PriorityDecision, card)), "")
+	assert_eq(AiScenario.pass_to(engine, engine.hero().id, ChooseTargetDecision), "")
+	return engine
+
+
 func test_of_two_free_two_twos_the_one_that_also_makes_a_token_is_cast_first() -> void:
 	# Prideful Parent: its enters trigger has no choice to make, and the token it makes is a
 	# creature the Board Evaluator counts like any other, so nothing new is needed.

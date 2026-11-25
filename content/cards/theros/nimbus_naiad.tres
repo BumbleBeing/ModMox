@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_wq6qu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_c3y6j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/bestow_ability.gd" id="3_afud3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_eit74"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="4_edjfy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="5_luxhs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/attached_to_selection.gd" id="6_vn4iw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="7_qin7i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="8_tqrgw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="9_75lcq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="10_3vv3a"]
+
+[sub_resource type="Resource" id="Resource_hklgg"]
+script = ExtResource("2_c3y6j")
+generic = 4
+symbols = Array[int]([1])
+
+[sub_resource type="Resource" id="Resource_n618e"]
+script = ExtResource("3_afud3")
+mana_cost = SubResource("Resource_hklgg")
+
+[sub_resource type="Resource" id="Resource_hupgx"]
+script = ExtResource("4_edjfy")
+
+[sub_resource type="Resource" id="Resource_p8l5f"]
+script = ExtResource("6_vn4iw")
+
+[sub_resource type="Resource" id="Resource_3k75m"]
+script = ExtResource("7_qin7i")
+value = 2
+
+[sub_resource type="Resource" id="Resource_exvhb"]
+script = ExtResource("7_qin7i")
+value = 2
+
+[sub_resource type="Resource" id="Resource_fddd7"]
+script = ExtResource("8_tqrgw")
+power = SubResource("Resource_3k75m")
+toughness = SubResource("Resource_exvhb")
+affected = SubResource("Resource_p8l5f")
+
+[sub_resource type="Resource" id="Resource_hejom"]
+script = ExtResource("4_edjfy")
+
+[sub_resource type="Resource" id="Resource_1bati"]
+script = ExtResource("6_vn4iw")
+
+[sub_resource type="Resource" id="Resource_m5qva"]
+script = ExtResource("9_75lcq")
+abilities = Array[ExtResource("1_wq6qu")]([SubResource("Resource_hejom")])
+affected = SubResource("Resource_1bati")
+
+[sub_resource type="Resource" id="Resource_6dr8b"]
+script = ExtResource("10_3vv3a")
+effects = Array[ExtResource("5_luxhs")]([SubResource("Resource_fddd7"), SubResource("Resource_m5qva")])
+
+[sub_resource type="Resource" id="Resource_mf8k8"]
+script = ExtResource("2_c3y6j")
+generic = 2
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_eit74")
+name = "Nimbus Naiad"
+card_types = Array[int]([2, 1])
+subtypes = Array[String](["Nymph"])
+mana_cost = SubResource("Resource_mf8k8")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_wq6qu")]([SubResource("Resource_n618e"), SubResource("Resource_hupgx"), SubResource("Resource_6dr8b")])

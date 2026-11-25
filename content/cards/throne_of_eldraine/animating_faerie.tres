@@ -1,0 +1,126 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_f3jft"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_3m0e5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_5e5b7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_akjmu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_gn0jv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_rqn8s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/add_card_types_continuous_effect.gd" id="5_60kpb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_kyypp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="7_lk33r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/set_power_toughness_continuous_effect.gd" id="8_bnpyl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="9_0s7gw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="10_fbapd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_yfspn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="12_chaac"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="13_ivrn6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="14_rm3w6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="15_tlptm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="16_b08lj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="17_r7qxj"]
+
+[sub_resource type="Resource" id="Resource_jwjjc"]
+script = ExtResource("2_3m0e5")
+
+[sub_resource type="Resource" id="Resource_yt4wx"]
+script = ExtResource("4_rqn8s")
+
+[sub_resource type="Resource" id="Resource_o5vqh"]
+script = ExtResource("5_60kpb")
+card_types = Array[int]([0, 1])
+affected = SubResource("Resource_yt4wx")
+
+[sub_resource type="Resource" id="Resource_u5fw2"]
+script = ExtResource("6_kyypp")
+continuous = SubResource("Resource_o5vqh")
+duration = 1
+
+[sub_resource type="Resource" id="Resource_iihqh"]
+script = ExtResource("4_rqn8s")
+
+[sub_resource type="Resource" id="Resource_vdlxd"]
+script = ExtResource("7_lk33r")
+
+[sub_resource type="Resource" id="Resource_qsd4u"]
+script = ExtResource("7_lk33r")
+
+[sub_resource type="Resource" id="Resource_npf2r"]
+script = ExtResource("8_bnpyl")
+power = SubResource("Resource_vdlxd")
+toughness = SubResource("Resource_qsd4u")
+affected = SubResource("Resource_iihqh")
+
+[sub_resource type="Resource" id="Resource_t6stj"]
+script = ExtResource("6_kyypp")
+continuous = SubResource("Resource_npf2r")
+duration = 1
+
+[sub_resource type="Resource" id="Resource_boe3k"]
+script = ExtResource("7_lk33r")
+value = 4
+
+[sub_resource type="Resource" id="Resource_1wvdn"]
+script = ExtResource("4_rqn8s")
+
+[sub_resource type="Resource" id="Resource_wype3"]
+script = ExtResource("9_0s7gw")
+amount = SubResource("Resource_boe3k")
+recipients = SubResource("Resource_1wvdn")
+
+[sub_resource type="Resource" id="Resource_1sltj"]
+script = ExtResource("14_rm3w6")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_4d4bb"]
+script = ExtResource("14_rm3w6")
+
+[sub_resource type="Resource" id="Resource_cmj5s"]
+script = ExtResource("15_tlptm")
+filter = SubResource("Resource_4d4bb")
+
+[sub_resource type="Resource" id="Resource_o3lrv"]
+script = ExtResource("16_b08lj")
+
+[sub_resource type="Resource" id="Resource_2v6ck"]
+script = ExtResource("17_r7qxj")
+filters = Array[ExtResource("13_ivrn6")]([SubResource("Resource_1sltj"), SubResource("Resource_cmj5s"), SubResource("Resource_o3lrv")])
+
+[sub_resource type="Resource" id="Resource_ffbdr"]
+script = ExtResource("11_yfspn")
+filter = SubResource("Resource_2v6ck")
+
+[sub_resource type="Resource" id="Resource_7olsa"]
+script = ExtResource("12_chaac")
+targets = Array[ExtResource("11_yfspn")]([SubResource("Resource_ffbdr")])
+effects = Array[ExtResource("3_gn0jv")]([SubResource("Resource_u5fw2"), SubResource("Resource_t6stj"), SubResource("Resource_wype3")])
+
+[sub_resource type="Resource" id="Resource_vpasa"]
+script = ExtResource("2_5e5b7")
+generic = 2
+symbols = Array[int]([1])
+
+[sub_resource type="Resource" id="Resource_3w6q4"]
+script = ExtResource("3_akjmu")
+name = "Bring to Life"
+card_types = Array[int]([5])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_vpasa")
+abilities = Array[ExtResource("1_f3jft")]([SubResource("Resource_7olsa")])
+
+[sub_resource type="Resource" id="Resource_16xng"]
+script = ExtResource("2_5e5b7")
+generic = 2
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_akjmu")
+name = "Animating Faerie"
+card_types = Array[int]([1])
+subtypes = Array[String](["Faerie"])
+mana_cost = SubResource("Resource_16xng")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_f3jft")]([SubResource("Resource_jwjjc")])
+rarity = 1
+adventure = SubResource("Resource_3w6q4")

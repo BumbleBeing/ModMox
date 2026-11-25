@@ -542,6 +542,22 @@ func _ping() -> ActivatedAbility:
 	return ability
 
 
+func test_a_card_with_bestow_offers_a_second_row_that_casts_it_with_bestow() -> void:
+	# Engine ADR 0089, the user's words.
+	var view: MmPlayerView = _view()
+	view.hand = [_card(30, "Nimbus Naiad")]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new(), CastSpellAction.new(30),
+		CastSpellAction.new(30, false, true)] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	var rows: Array[String] = []
+	for option: ClickOption in clicks.hand_options_of(30):
+		rows.append(option.text)
+	assert_eq(rows, ["Cast Nimbus Naiad", "Cast Nimbus Naiad with bestow"] as Array[String])
+	assert_eq(clicks.hand_options_of(30)[1].answer, 2)
+
+
 func test_a_card_cast_from_the_graveyard_is_clicked_in_its_window_and_its_pile_glows_green() -> void:
 	var view: MmPlayerView = _view()
 	view.graveyards[HERO] = [_card(30, "Daydream")]

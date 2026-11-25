@@ -49,6 +49,22 @@ func test_an_untapped_land_is_played_when_its_mana_casts_a_spell_at_its_reduced_
 	assert_eq(engine.game_state().characteristics_of(engine.game_state().object(play.object_id)).name, "Swamp")
 
 
+func test_a_second_spell_made_cheaper_by_a_permanent_is_cast_with_the_mana_left() -> void:
+	# Engine ADR 0050's addendum: the Ringer makes the second spell each turn cost {1} less,
+	# so the one Elf left after the first Footman pays another's {1}{W} as {W}.
+	var footman: MmCardDefinition = Scenario.creature("Footman", 2, 2, [], Scenario.mana_cost(1, [W]))
+	var engine: MmEngine = AiScenario.ready_with([Scenario.ringer(), Scenario.elf(), Scenario.elf(), Scenario.elf()],
+		[], [footman])
+	assert_not_null(engine)
+	assert_eq(Scenario.cast_and_resolve(engine, "Footman"), "")
+	assert_ne(Scenario.card_in_hand(engine, engine.hero(), "Footman"), -1, "The cycled deck dealt more than one.")
+	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
+
+	var play: int = AiScenario.ask(engine, agent)
+
+	assert_eq(AiScenario.cast_name(engine, play), "Footman")
+
+
 ## A 2/2 Cat costing {0}.
 func _lion() -> MmCardDefinition:
 	var lion: MmCardDefinition = Scenario.creature("Lion", 2, 2)

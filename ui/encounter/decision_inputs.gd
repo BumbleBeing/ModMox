@@ -28,6 +28,8 @@ static func kinds() -> Dictionary[Script, String]:
 		ChooseCardsInLibraryDecision: "the Hero's Library window, opened by itself, and the pass button (CardPicks)",
 		ChooseYesOrNoDecision: "the Info Panel's two answers, which a click gives at once, or Left and Right selects for the pass button to give (game ADR 0066 and its addendum), also for a land that may pay to enter untapped (game ADR 0067)",
 		SurveilDecision: "the Surveil window, whose cards are dragged to order, clicked to select and sent with its Graveyard button, and the pass button, which reads Done (game ADR 0069)",
+		ScryDecision: "the Surveil window, as for a surveil, its button reading Bottom, and the pass button, which reads Done (game ADR 0069's addendum)",
+		ExploreDecision: "the Surveil window, as for a surveil of one card, titled Explore, and the pass button, which reads Done (engine ADR 0090)",
 		ChooseLookedAtCardsDecision: "the Look window, whose cards that may be taken are clicked to select and taken with its Hand button, and the pass button, which reads Done (game ADR 0085)",
 		ChooseXDecision: "the Info Panel's X stepper and Cancel, and the pass button, which casts with the X shown (engine ADR 0076)",
 		ChooseXToPayDecision: "the Info Panel's X stepper and No, which a click or Left and Right only selects, and the pass button, which pays the X shown or declines (game ADRs 0063 and 0066)",

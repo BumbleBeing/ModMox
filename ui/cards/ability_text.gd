@@ -53,8 +53,8 @@ const ONCE_EACH_TURN: String = "This ability triggers only once each turn."
 ## The predefined tokens the game has (CR 111.10), by subtype, which is a token's name less
 ## "Token" (CR 111.4). One is created by that word alone, "create a Treasure token", since
 ## the rules give its characteristics, and calls itself "this token", as CR 111.10a words a
-## Treasure's ability. Treasure and Clue so far (ADR 0001).
-const PREDEFINED_TOKENS: Array[String] = ["Treasure", "Clue"]
+## Treasure's ability. Treasure, Clue and Map so far (ADR 0001).
+const PREDEFINED_TOKENS: Array[String] = ["Treasure", "Clue", "Map"]
 
 ## What the ability's source calls itself.
 var _noun: String
@@ -163,6 +163,8 @@ static func enchanted_words(abilities: Array[MmAbility]) -> String:
 		if ability is EnchantAbility:
 			var writer: AbilityText = AbilityText.new("")
 			return "enchanted " + writer._noun_phrase((ability as EnchantAbility).filter, false)
+		if ability is BestowAbility:
+			return "enchanted creature"  # CR 702.103b: bestowed, it has enchant creature.
 	return ""
 
 
@@ -377,15 +379,31 @@ func _ability(ability: MmAbility) -> String:
 			+ (", ".join(cycling) if not cycling.is_empty() else "{0}")
 	if ability is FlashbackAbility:
 		return _flashback(ability as FlashbackAbility)
+	if ability is AdditionalCostAbility:
+		# CR 601.2f: "As an additional cost to cast this spell, return a permanent you control
+		# to its owner's hand."
+		var parts: PackedStringArray = _cost_parts(null, (ability as AdditionalCostAbility).costs)
+		return "As an additional cost to cast this spell, %s." % _uncapitalized(" and ".join(parts))
 	if ability is WardAbility:
 		# CR 702.21a: as equip does, it prints its cost alone.
 		var ward: MmManaCost = (ability as WardAbility).mana_cost
 		return "Ward " + (ward.describe() if ward != null else "{0}")
+	if ability is BestowAbility:
+		# CR 702.103a: as ward does, it prints its cost alone, without its reminder text.
+		var bestow: MmManaCost = (ability as BestowAbility).mana_cost
+		return "Bestow " + (bestow.describe() if bestow != null else "{0}")
 	if ability is AffinityAbility:
 		# CR 702.41a: what it counts, in the plural, with "you control" left to the keyword.
 		return "Affinity for " + _noun_phrase((ability as AffinityAbility).filter, true)
 	if ability is CostReductionAbility:
 		return _costs_less("This spell", "cast", (ability as CostReductionAbility).amount)
+	if ability is SpellsCostLessAbility:
+		# Engine ADR 0050's addendum: "The second spell you cast each turn costs {1} less to cast."
+		var cheaper: SpellsCostLessAbility = ability as SpellsCostLessAbility
+		if cheaper.nth_each_turn > 0:
+			return "The %s spell you cast each turn costs {%d} less to cast." % [
+				_ordinal(cheaper.nth_each_turn), cheaper.amount]
+		return "Spells you cast cost {%d} less to cast." % cheaper.amount
 	if ability is ActivatedAbility:
 		var activated: ActivatedAbility = ability as ActivatedAbility
 		_targets = activated.targets
@@ -453,7 +471,7 @@ func _cycling_word(search: MmFilter) -> String:
 static func is_keyword(ability: MmAbility) -> bool:
 	return _keyword(ability) != "" or ability is ProtectionAbility or ability is EquipAbility or ability is FlashbackAbility \
 		or ability is AffinityAbility or ability is CyclingAbility or ability is ReconfigureAbility or ability is WardAbility \
-		or ability is EnchantAbility
+		or ability is EnchantAbility or ability is BestowAbility
 
 
 ## The name of a keyword ability that needs no other words, or "".
@@ -494,6 +512,8 @@ static func _keyword(ability: MmAbility) -> String:
 		return "Battle cry"
 	if ability is EvolveAbility:
 		return "Evolve"
+	if ability is ProwessAbility:
+		return "Prowess"
 	if ability is ChangelingAbility:
 		return "Changeling"
 	return ""
@@ -585,9 +605,28 @@ func _cost_parts(mana: MmManaCost, costs: Array[MmCost]) -> PackedStringArray:
 			parts.append("Remove %s from %s" % [_counters(how_many, removing.kind), _noun])  # CR 118.3.
 		elif cost is TapCreaturesCost:
 			parts.append("Tap " + _how_many((cost as TapCreaturesCost).count, (cost as TapCreaturesCost).filter))
+		elif cost is ReturnPermanentsCost:
+			var returning: ReturnPermanentsCost = cost as ReturnPermanentsCost
+			parts.append("Return %s to %s owner's hand" % [_how_many(returning.count, returning.filter),
+				"its" if returning.count == 1 else "their"])
+		elif cost is ExileFromGraveyardCost:
+			# Kishla Trawlers's "exile a creature card from your graveyard".
+			var exiled: MmFilter = (cost as ExileFromGraveyardCost).filter
+			parts.append("Exile %s from your graveyard" % chosen_card_words(exiled))
 		else:
 			parts.append(_fallback(cost, "_cost"))
 	return parts
+
+
+## What a reflexive ability does, with its own targets, as one clause without its full
+## stop (engine ADR 0088): "return target instant or sorcery card from your graveyard to
+## your hand".
+func _reflexive_words(reflexive: ReflexiveTriggerEffect) -> String:
+	var outer: Array[TargetRequirement] = _targets
+	_targets = reflexive.ability.targets
+	var does: String = _sentences(reflexive.ability.effects, false).trim_suffix(".")
+	_targets = outer
+	return does
 
 
 ## "an untapped creature you control" or "three untapped creatures you control".
@@ -631,6 +670,8 @@ func _bullets(ability: MmAbility) -> String:
 ## source reads "whenever one or more creatures enter": once each turn, triggering for each
 ## object plays as triggering once for all of them does (engine ADR 0054's addendum).
 func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
+	if trigger == null:
+		return "when you do"  # CR 603.12: a reflexive ability, shown alone as on the stack.
 	var step: StepBeganTrigger = trigger as StepBeganTrigger
 	if step != null and step.step == MmTurn.Step.BEGINNING_OF_COMBAT:
 		# As Oracle words it: "At the beginning of combat on your turn".
@@ -656,14 +697,27 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 			whose_spell = "you cast your"
 		elif cast.whose == MmTrigger.Whose.OPPONENT:
 			whose_spell = "an opponent casts their"
-		return "whenever %s %s spell each turn" % [whose_spell, _ordinal(cast.nth_each_turn)]
+		return "whenever %s %s spell each turn%s" % [whose_spell, _ordinal(cast.nth_each_turn), _during_turn(cast)]
+	var drawn: CardDrawnTrigger = trigger as CardDrawnTrigger
+	if drawn != null:
+		# Faerie Vandal's "Whenever you draw your second card each turn".
+		var whose_card: String = "a player draws"
+		var their: String = "their"
+		if drawn.whose == MmTrigger.Whose.YOU:
+			whose_card = "you draw"
+			their = "your"
+		elif drawn.whose == MmTrigger.Whose.OPPONENT:
+			whose_card = "an opponent draws"
+		if drawn.nth_each_turn > 0:
+			return "whenever %s %s %s card each turn" % [whose_card, their, _ordinal(drawn.nth_each_turn)]
+		return "whenever %s a card" % whose_card
 	if cast != null:
 		var caster: String = "a player casts"
 		if cast.whose == MmTrigger.Whose.YOU:
 			caster = "you cast"
 		elif cast.whose == MmTrigger.Whose.OPPONENT:
 			caster = "an opponent casts"
-		return "whenever %s %s" % [caster, _with_article(_spell_phrase(cast.filter))]
+		return "whenever %s %s%s" % [caster, _with_article(_spell_phrase(cast.filter)), _during_turn(cast)]
 	var attack: AttackersDeclaredTrigger = trigger as AttackersDeclaredTrigger
 	if attack != null:
 		if attack.alone:
@@ -729,15 +783,31 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 	var moved: ZoneChangeTrigger = trigger as ZoneChangeTrigger
 	if moved != null:
 		var is_self: bool = moved.filter is IsSourceFilter
-		if is_one_or_more and not is_self:
+		if (is_one_or_more or moved.is_one_or_more) and not is_self:
 			return "whenever one or more %s %s" % [_noun_phrase(moved.filter, true, moved.whose), _move_verb(moved, true)]
 		var subject: String = _noun if is_self else _with_article(_noun_phrase(moved.filter, false, moved.whose))
 		return "%s %s %s" % ["when" if is_self else "whenever", subject, _move_verb(moved)]
 	return _fallback(trigger, "_trigger")
 
 
+## " during an opponent's turn", as Brineborn Cutthroat words it, or "" for any turn.
+static func _during_turn(cast: SpellCastTrigger) -> String:
+	if cast.during_whose_turn == MmTrigger.Whose.YOU:
+		return " during your turn"
+	if cast.during_whose_turn == MmTrigger.Whose.OPPONENT:
+		return " during an opponent's turn"
+	return ""
+
+
 ## The verb of [param moved]: "enters", or with [param is_plural] "enter".
 func _move_verb(moved: ZoneChangeTrigger, is_plural: bool = false) -> String:
+	var from_battlefield: bool = not moved.any_from_zone and moved.from_zone == MmZone.Kind.BATTLEFIELD
+	if moved.is_except_to_zone and not moved.any_to_zone:
+		if from_battlefield and moved.to_zone == MmZone.Kind.GRAVEYARD:
+			# CR 700.4, as Dour Port-Mage words it.
+			return ("leave " if is_plural else "leaves ") + (ZONE_NAMES[moved.from_zone] as String) + " without dying"
+		var from_zone: String = "anywhere" if moved.any_from_zone else (ZONE_NAMES[moved.from_zone] as String)
+		return "%s put into anywhere but %s from %s" % ["are" if is_plural else "is", ZONE_NAMES[moved.to_zone], from_zone]
 	if moved.any_to_zone:
 		if moved.any_from_zone:
 			return "change zones" if is_plural else "changes zones"
@@ -764,6 +834,8 @@ func _condition(condition: MmCondition) -> String:
 		return "your life total is greater than or equal to your starting life total"
 	if condition is CastAnotherSpellThisTurnCondition:
 		return "you've cast another spell this turn"
+	if condition is YouDidCondition:
+		return "you do"
 	if condition is TimesResolvedThisTurnCondition:
 		return "this is the %s time this ability has resolved this turn" % _ordinal((condition as TimesResolvedThisTurnCondition).times)
 	var matches: SelectionMatchesCondition = condition as SelectionMatchesCondition
@@ -962,10 +1034,19 @@ func _additional(count: int, thing: String) -> String:
 ## lower case, to follow a trigger.
 func _sentences(effects: Array[MmEffect], starts_sentence: bool) -> String:
 	var sentences: PackedStringArray = []
-	for effect: MmEffect in effects:
+	var index: int = 0
+	while index < effects.size():
+		var effect: MmEffect = effects[index]
+		index += 1
 		_where = ""
 		_for_each_of = ""
-		var clause: String = _effect(effect)
+		var clause: String = ""
+		if index < effects.size():
+			clause = _becomes_with_base(effect, effects[index])
+			if clause != "":
+				index += 1  # The base power and toughness are said in the same clause.
+		if clause == "":
+			clause = _effect(effect)
 		if _where != "":
 			clause += ", where X is " + _where
 		if _for_each_of != "":
@@ -1055,6 +1136,11 @@ func _effect(effect: MmEffect) -> String:
 		return "put %s on the bottom of %s library" % [_selection(bottomed), "your" if _is_yours(bottomed) else "its owner's"]
 	if effect is TapEffect:
 		return "tap " + _selection((effect as TapEffect).selection)
+	if effect is ExploreEffect:
+		# CR 701.44a, engine ADR 0090: "target creature you control explores".
+		return _selection((effect as ExploreEffect).selection) + " explores"
+	if effect is UntapEffect:
+		return "untap " + _selection((effect as UntapEffect).selection)
 	if effect is IfEffect and (effect as IfEffect).is_unless:
 		# CR 608.2c, Splitskin Doll's "discard a card unless you control another creature ...".
 		var unless: IfEffect = effect as IfEffect
@@ -1095,12 +1181,21 @@ func _effect(effect: MmEffect) -> String:
 			# Myrsmith's "you may pay {1}. If you do, create ...".
 			return "you may pay %s. If you do, %s" % [paying.mana_cost.describe(), _effect(paying.effect)]
 		var cost: String = ", ".join(_cost_parts(null, [paying.cost] as Array[MmCost]))
-		return "you may %s. If you do, %s" % [cost.left(1).to_lower() + cost.substr(1), _effect(paying.effect)]
+		var uncapitalized: String = cost.left(1).to_lower() + cost.substr(1)
+		if paying.effect is ReflexiveTriggerEffect:
+			# CR 603.12, engine ADR 0088: "you may exile ... When you do, return ...".
+			return "you may %s. When you do, %s" % [uncapitalized,
+				_reflexive_words(paying.effect as ReflexiveTriggerEffect)]
+		return "you may %s. If you do, %s" % [uncapitalized, _effect(paying.effect)]
+	if effect is ReflexiveTriggerEffect:
+		return "when you do, " + _reflexive_words(effect as ReflexiveTriggerEffect)
 	if effect is MayPayXEffect:
 		# ADR 0061: "you may pay {X}. If you do, search your library for ...".
 		return "you may pay {X}. If you do, " + _effect((effect as MayPayXEffect).effect)
 	if effect is CreateContinuousEffect:
-		return _continuous((effect as CreateContinuousEffect).continuous, false) + " until end of turn"
+		# CR 611.2a: one with no duration says none (engine ADR 0091).
+		var created: CreateContinuousEffect = effect as CreateContinuousEffect
+		return _continuous(created.continuous, false) + _duration_words(created.duration)
 	if effect is CreateTokenEffect:
 		return "create " + _tokens(effect as CreateTokenEffect)
 	if effect is CopySpellEffect:
@@ -1120,6 +1215,9 @@ func _effect(effect: MmEffect) -> String:
 	if effect is SurveilEffect:
 		# CR 701.25a, with its number as digits, as Oracle words it ("surveil 1").
 		return "surveil " + _amount((effect as SurveilEffect).amount)
+	if effect is ScryEffect:
+		# CR 701.22a, with its number as digits, as Oracle words it ("scry 1").
+		return "scry " + _amount((effect as ScryEffect).amount)
 	return _fallback(effect, "_effect")
 
 
@@ -1281,7 +1379,7 @@ func _continuous(continuous: MmContinuousEffect, is_static: bool) -> String:
 		var gained: PackedStringArray = []
 		for ability: MmAbility in (continuous as GainAbilitiesContinuousEffect).abilities:
 			var text: String = _ability(ability)
-			gained.append(text.to_lower() if _keyword(ability) != "" or ability is ProtectionAbility else "\"%s\"" % text)
+			gained.append(text.to_lower() if is_keyword(ability) else "\"%s\"" % text)
 		var gains: String = _verb(continuous.affected, "gain")
 		if is_static:
 			gains = "have" if continuous.affected is YouSelection else "has"
@@ -1295,7 +1393,51 @@ func _continuous(continuous: MmContinuousEffect, is_static: bool) -> String:
 			"is" if is_static else _verb(continuous.affected, "become"), added]
 	if continuous is LoseAllAbilitiesContinuousEffect:
 		return "%s %s all abilities" % [affected, _verb(continuous.affected, "lose")]
+	if continuous is AddCardTypesContinuousEffect:
+		# CR 205.1b, engine ADR 0091: "becomes an artifact creature", keeping its other types.
+		return "%s %s %s" % [affected, "is" if is_static else _verb(continuous.affected, "become"),
+			_with_article(_card_type_words((continuous as AddCardTypesContinuousEffect).card_types))]
 	return _fallback(continuous, "_continuous_effect")
+
+
+## " until end of turn", or nothing for an effect with no duration (CR 611.2a).
+static func _duration_words(duration: CreateContinuousEffect.Duration) -> String:
+	return " until end of turn" if duration == CreateContinuousEffect.Duration.UNTIL_END_OF_TURN else ""
+
+
+## "artifact creature": [param card_types] in lower case, in their order.
+static func _card_type_words(card_types: Array[MmCardTypes.CardType]) -> String:
+	var words: PackedStringArray = []
+	for card_type: MmCardTypes.CardType in card_types:
+		words.append(String(MmCardTypes.CardType.find_key(card_type)).to_lower())
+	return " ".join(words)
+
+
+## Bring to Life's "target noncreature artifact you control becomes a 0/0 artifact
+## creature" (engine ADR 0091): [param first] adding card types and [param second] setting
+## base power and toughness, of the same object for as long, as one clause; "" for any
+## other pair.
+func _becomes_with_base(first: MmEffect, second: MmEffect) -> String:
+	var types: CreateContinuousEffect = first as CreateContinuousEffect
+	var base: CreateContinuousEffect = second as CreateContinuousEffect
+	if types == null or base == null or types.duration != base.duration:
+		return ""
+	var adding: AddCardTypesContinuousEffect = types.continuous as AddCardTypesContinuousEffect
+	var setting: SetPowerToughnessContinuousEffect = base.continuous as SetPowerToughnessContinuousEffect
+	if adding == null or setting == null or not _same_selection(adding.affected, setting.affected):
+		return ""
+	var made: String = "%s/%s %s" % [_value_phrase(setting.power), _value_phrase(setting.toughness),
+		_card_type_words(adding.card_types)]
+	return "%s %s %s" % [_selection(adding.affected), _verb(adding.affected, "become"), _with_article(made)] \
+		+ _duration_words(types.duration)
+
+
+## Whether [param first] and [param second] find the same object: the same target, or both
+## "this".
+static func _same_selection(first: MmSelection, second: MmSelection) -> bool:
+	if first is TargetSelection and second is TargetSelection:
+		return (first as TargetSelection).target_index == (second as TargetSelection).target_index
+	return first is SourceSelection and second is SourceSelection
 
 
 ## Whether [param subtypes] are the five basic land types, each once, in any order: what
@@ -1658,6 +1800,9 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		adjectives.append("nonblocking" if is_negated else "blocking")
 	elif filter is IsEquippedFilter:
 		adjectives.append("unequipped" if is_negated else "equipped")
+	elif filter is AnyOfFilter and _is_historic(filter as AnyOfFilter):
+		# CR 700.6, as Artificer's Assistant words it: "a historic spell".
+		adjectives.append("nonhistoric" if is_negated else "historic")
 	elif filter is AnyOfFilter and not is_negated and _either_adjective(filter as AnyOfFilter) != "":
 		adjectives.append(_either_adjective(filter as AnyOfFilter))
 	elif filter is AnyOfFilter and not is_negated and _either_noun(filter as AnyOfFilter) != "":
@@ -1718,6 +1863,22 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 			nouns.append("player")
 	else:
 		adjectives.append(_fallback(filter, "_filter"))
+
+
+## Whether [param either] is "historic" (CR 700.6): artifact, legendary or Saga, each once,
+## in any order.
+static func _is_historic(either: AnyOfFilter) -> bool:
+	var found: Dictionary[String, bool] = {}
+	for part: MmFilter in either.filters:
+		if part is HasCardTypeFilter and (part as HasCardTypeFilter).card_type == MmCardTypes.CardType.ARTIFACT:
+			found["artifact"] = true
+		elif part is HasSupertypeFilter and (part as HasSupertypeFilter).supertype == MmCardTypes.Supertype.LEGENDARY:
+			found["legendary"] = true
+		elif part is HasSubtypeFilter and (part as HasSubtypeFilter).subtype == "Saga":
+			found["Saga"] = true
+		else:
+			return false
+	return either.filters.size() == 3 and found.size() == 3
 
 
 ## "Attacking or blocking": [param either] as one adjective, when each of its filters is
@@ -1906,6 +2067,11 @@ static func _with_article(words: String) -> String:
 
 static func _capitalized(words: String) -> String:
 	return words.left(1).to_upper() + words.substr(1)
+
+
+## [param words] with its first letter in lower case, as a cost reads inside a sentence.
+static func _uncapitalized(words: String) -> String:
+	return words.left(1).to_lower() + words.substr(1)
 
 
 ## What stands in for [param thing] when there are no words for it: its class, in brackets.

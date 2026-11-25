@@ -15,3 +15,7 @@ Flashback arrived on the card track with Daydream, Deep Analysis and Group Proje
 **Returning a card can put counters on it as it enters.** `ReturnToBattlefieldEffect` gained `counters` and `counter_kind`; the `ZoneChangeEvent` carries `counters_on_arrival`, so the card's "enters" abilities see them (CR 122.6). A token that left the battlefield never comes back (CR 111.8).
 
 Casting from the top of the library came with Assemble the Players (ADR 0054), marked `cast_from_library` beside `cast_with_flashback`. Left out until a card needs them (ADR 0001): casting from other zones (madness, escape), other alternative and additional costs, a mana ability whose cost asks a choice, and picks for costs other than tapping. Cost reductions came with affinity (ADR 0050), and reduce a flashback cost as they do a mana cost.
+
+## Addendum: an additional cost's choice is asked once the mana is paid (ADR 0086)
+
+Additional costs came with Fear of Isolation, "return a permanent you control to its owner's hand". Their choices are asked after the mana, not before it: a land tapped for mana may then be returned, which is the usual play (CR 601.2g-h). The costs of an activated ability and of a flashback cost are still asked before the mana, as above, so creatures tapped for a cost still cannot also be tapped for mana.

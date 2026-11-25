@@ -1,6 +1,7 @@
 class_name UnattachedEvent
 extends MmEvent
-## A permanent becomes unattached and stays on the battlefield (CR 701.3d, 704.5n).
+## A permanent becomes unattached and stays on the battlefield (CR 701.3d, 704.5n). A
+## bestowed Aura ceases to be bestowed as it does (CR 702.103f, engine ADR 0089).
 
 var object_id: int
 
@@ -11,6 +12,7 @@ func _init(attachment_id: int) -> void:
 
 func apply(state: MmGameState) -> void:
 	state.object(object_id).attach_to(0)
+	state.object(object_id).end_bestowed()
 
 
 func describe() -> String:

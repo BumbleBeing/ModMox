@@ -35,6 +35,10 @@ var _is_paying_for_yes: bool = false
 ## The effect begun in place of the current one once its X was paid, the one a
 ## MayPayXEffect wraps, or null.
 var _effect_in_place: MmEffect = null
+## The choice a cost said yes to asks before it is paid, such as which card to exile, and
+## that cost, or null while none is being chosen.
+var _cost_choice: ChooseObjectDecision = null
+var _cost_being_chosen: MmCost = null
 
 
 ## Begins resolving the top of the stack.
@@ -78,6 +82,14 @@ static func begin(state: MmGameState) -> ResolutionProcedure:
 	var triggered_ability: TriggeredAbility = resolving.ability as TriggeredAbility
 	if triggered_ability != null and not triggered_ability.condition_holds(state, checking):
 		any_legal = false  # CR 603.4: the intervening "if" no longer holds, so it does nothing.
+	if not any_legal and resolving.is_bestowed:
+		# CR 702.103e, engine ADR 0089: with its target gone it ceases to be bestowed and
+		# resolves as an enchantment creature spell, which targets nothing.
+		state.perform(BestowEndedEvent.new(resolving.id))
+		specs = []
+		targets = []
+		procedure._effects = []
+		any_legal = true
 	procedure._resolves = any_legal
 	procedure._context = MmEffectContext.of_stack_object(resolving, targets, TargetRequirement.place_counts(specs))
 	if not overloaded_specs.is_empty():
@@ -115,6 +127,8 @@ func copy_for(state: MmGameState) -> ResolutionProcedure:
 	copy._x_being_paid = _x_being_paid
 	copy._is_paying_for_yes = _is_paying_for_yes
 	copy._effect_in_place = _effect_in_place  # Card data, never changed.
+	copy._cost_choice = _cost_choice  # Never changed once made.
+	copy._cost_being_chosen = _cost_being_chosen  # Card data, never changed.
 	return copy
 
 
@@ -133,6 +147,8 @@ func next_decision() -> MmPendingDecision:
 			return null
 		var effect: MmEffect = _effects[_effect_index] if _effect_in_place == null else _effect_in_place
 		if _step == 0:
+			if _cost_choice != null:
+				return _cost_choice
 			if _payment != null:
 				var paying: PayManaDecision = _begin_paid_effect()
 				if paying != null:
@@ -147,6 +163,10 @@ func next_decision() -> MmPendingDecision:
 				if asked != null:
 					return asked
 			_numbers = effect.numbers_with_answer(_state, _context, _begin_answer) if _has_begin_answer else effect.numbers(_state, _context)
+			if effect is MayEffect or effect is MayPayEffect:
+				# What "If you do" reads (YouDidCondition). A cost that could not be paid
+				# was never asked, which is no yes.
+				_context = _context.with_answered_yes(_has_begin_answer and _begin_answer as int == ChooseYesOrNoDecision.Choice.YES)
 		var batch: Array[MmEvent] = effect.next_batch(_state, _context, _step, _numbers)
 		if batch.is_empty():
 			_effect_index += 1
@@ -198,9 +218,18 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 			return
 		if asked.resolution_cost != null and (answer as int) == ChooseYesOrNoDecision.Choice.YES:
 			# ADR 0076: yes pays at once, for the ability's source; what "if you do" offers
-			# then happens.
+			# then happens. A cost that asks a choice, such as which card to exile, asks it
+			# first, for this ability (engine ADR 0088), and is paid once it is answered.
+			var source: MmGameObject = _state.object(_context.source_object_id)
+			var choosing: ChooseObjectDecision = asked.resolution_cost.choice(_state, source,
+				asked.player_id) as ChooseObjectDecision
+			if choosing != null:
+				choosing.stack_object_id = _object_id
+				_cost_choice = choosing
+				_cost_being_chosen = asked.resolution_cost
+				return
 			var nothing_chosen: Array[int] = []
-			asked.resolution_cost.pay(_state, _state.object(_context.source_object_id), asked.player_id, nothing_chosen)
+			asked.resolution_cost.pay(_state, source, asked.player_id, nothing_chosen)
 		_begin_answer = answer as int
 		_has_begin_answer = true
 		return
@@ -218,6 +247,15 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		return
 	var choice: ChooseObjectDecision = decision as ChooseObjectDecision
 	assert(choice != null, "A resolution cannot answer %s." % decision.describe())
+	if choice.purpose == ChooseObjectDecision.Purpose.EXILE_FROM_GRAVEYARD:
+		# Engine ADR 0088: the card chosen pays the cost said yes to, and "if you do" holds.
+		var chosen: Array[int] = [choice.candidates[answer as int].id]
+		_cost_being_chosen.pay(_state, _state.object(_context.source_object_id), choice.player_id, chosen)
+		_cost_choice = null
+		_cost_being_chosen = null
+		_begin_answer = ChooseYesOrNoDecision.Choice.YES
+		_has_begin_answer = true
+		return
 	_context = _context.with_choice(choice.choice_index, choice.candidates[answer as int])
 
 
@@ -284,6 +322,8 @@ func _leave_stack() -> void:
 		var entering: ZoneChangeEvent = ZoneChangeEvent.new(resolving, _state.battlefield, MmZone.BOTTOM, ZoneChangeEvent.Reason.RESOLVED)
 		# ADR 0052: the type chosen as it enters is on it as it arrives.
 		entering.chosen_creature_type_on_arrival = _chosen_creature_type
+		# CR 702.103b: a bestowed Aura spell becomes a bestowed Aura.
+		entering.is_bestowed = resolving.is_bestowed
 		# CR 303.4a, ADR 0064: an Aura spell enters attached to its target, still legal,
 		# since it resolved.
 		if _state.characteristics_of(resolving).has_ability(EnchantAbility) and not _context.targets.is_empty() \

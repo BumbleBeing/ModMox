@@ -58,7 +58,12 @@ static func _actions(state: MmGameState, kept_ids: Array[int]) -> Array[MmEvent]
 	for permanent: MmGameObject in _permanents_attached_illegally(state):
 		actions.append(UnattachedEvent.new(permanent.id))
 	for aura: MmGameObject in _auras_attached_illegally(state):
-		actions.append(_to_graveyard(state, aura, ZoneChangeEvent.Reason.UNATTACHED_AURA))
+		if aura.is_bestowed:
+			# CR 702.103f, engine ADR 0089: it becomes unattached instead, an exception to
+			# CR 704.5m, and so ceases to be bestowed.
+			actions.append(UnattachedEvent.new(aura.id))
+		else:
+			actions.append(_to_graveyard(state, aura, ZoneChangeEvent.Reason.UNATTACHED_AURA))
 	for token: MmGameObject in _tokens_off_the_battlefield(state):
 		actions.append(TokenCeasedEvent.new(token))
 	for copy: MmGameObject in _copies_off_the_stack(state):

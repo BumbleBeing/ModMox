@@ -14,8 +14,9 @@ extends MmEvent
 ## an Aura attached illegally, or to nothing, put into its owner's graveyard. SACRIFICE is
 ## CR 701.21a: its controller moving a permanent to its owner's graveyard, which is not
 ## destruction.
+## EXPLORE is CR 701.44a: a card an explore revealed, put into its owner's hand or graveyard.
 enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND,
-	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA, SURVEIL, SACRIFICE, MILL, LOOK }
+	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA, SURVEIL, SACRIFICE, MILL, LOOK, EXPLORE }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -41,6 +42,9 @@ var cast_with_flashback: bool = false
 var cast_as_adventure: bool = false
 ## For a spell cast as an Adventure that resolved (CR 715.3d): marks the card in exile.
 var exiled_on_adventure: bool = false
+## For a card cast bestowed, or a bestowed Aura spell resolving (CR 702.103b, engine ADR
+## 0089): marks the spell on the stack, or the Aura on the battlefield.
+var is_bestowed: bool = false
 ## For a card entering the battlefield: the counters it enters with (CR 122.6), on it as it
 ## arrives so that its "enters" abilities see them.
 var counters_on_arrival: Dictionary[MmCounter.Kind, int] = {}
@@ -89,6 +93,7 @@ func copy(state: MmGameState) -> ZoneChangeEvent:
 	same.cast_with_flashback = cast_with_flashback
 	same.cast_as_adventure = cast_as_adventure
 	same.exiled_on_adventure = exiled_on_adventure
+	same.is_bestowed = is_bestowed
 	same.counters_on_arrival = counters_on_arrival.duplicate()
 	same.tapped_on_arrival = tapped_on_arrival
 	same.chosen_creature_type_on_arrival = chosen_creature_type_on_arrival
@@ -148,6 +153,8 @@ func apply(state: MmGameState) -> void:
 		arriving.record_cast_as_adventure()
 	if exiled_on_adventure and to_zone_kind == MmZone.Kind.EXILE:
 		arriving.record_on_adventure()
+	if is_bestowed and (to_zone_kind == MmZone.Kind.STACK or to_zone_kind == MmZone.Kind.BATTLEFIELD):
+		arriving.record_bestowed()
 	if reason == Reason.CAST and from_zone_kind == MmZone.Kind.LIBRARY:
 		arriving.record_cast_from_library()  # ADR 0054
 	for kind: MmCounter.Kind in counters_on_arrival:
@@ -163,6 +170,8 @@ func apply(state: MmGameState) -> void:
 		arriving.record_control_since(state.game_turn)
 	if reason == Reason.PLAY_LAND:
 		state.player(arriving.controller_id).record_land_play()
+	if reason == Reason.DRAW:
+		state.player(to_owner_id).record_card_drawn()
 
 
 func describe() -> String:

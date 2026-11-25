@@ -1,0 +1,84 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_yjmoi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_gaan5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_t5oqf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_eo831"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_qdjts"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_oww1j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_7d4m7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_effect.gd" id="6_s0341"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/you_did_condition.gd" id="7_gj7wm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/discard_effect.gd" id="8_20uty"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/if_effect.gd" id="9_lyqxg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="10_n3bqq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="11_kilca"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="12_trb34"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="13_fpj6t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="14_j3ffs"]
+
+[sub_resource type="Resource" id="Resource_7ybah"]
+script = ExtResource("3_eo831")
+value = 1
+
+[sub_resource type="Resource" id="Resource_qqn37"]
+script = ExtResource("4_oww1j")
+
+[sub_resource type="Resource" id="Resource_70k8i"]
+script = ExtResource("5_7d4m7")
+amount = SubResource("Resource_7ybah")
+players = SubResource("Resource_qqn37")
+
+[sub_resource type="Resource" id="Resource_423nm"]
+script = ExtResource("6_s0341")
+effect = SubResource("Resource_70k8i")
+
+[sub_resource type="Resource" id="Resource_nmtx0"]
+script = ExtResource("7_gj7wm")
+
+[sub_resource type="Resource" id="Resource_2xvkh"]
+script = ExtResource("3_eo831")
+value = 1
+
+[sub_resource type="Resource" id="Resource_pldr8"]
+script = ExtResource("4_oww1j")
+
+[sub_resource type="Resource" id="Resource_ofses"]
+script = ExtResource("8_20uty")
+amount = SubResource("Resource_2xvkh")
+players = SubResource("Resource_pldr8")
+
+[sub_resource type="Resource" id="Resource_vayc4"]
+script = ExtResource("9_lyqxg")
+condition = SubResource("Resource_nmtx0")
+effect = SubResource("Resource_ofses")
+
+[sub_resource type="Resource" id="Resource_psweh"]
+script = ExtResource("13_fpj6t")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_yjtyo"]
+script = ExtResource("14_j3ffs")
+filter = SubResource("Resource_psweh")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_35fsv"]
+script = ExtResource("11_kilca")
+trigger = SubResource("Resource_yjtyo")
+effects = Array[ExtResource("2_t5oqf")]([SubResource("Resource_423nm"), SubResource("Resource_vayc4")])
+
+[sub_resource type="Resource" id="Resource_uyfj3"]
+script = ExtResource("2_gaan5")
+generic = 1
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_qdjts")
+name = "Riddlesmith"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Artificer"])
+mana_cost = SubResource("Resource_uyfj3")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_yjmoi")]([SubResource("Resource_35fsv")])
+rarity = 1

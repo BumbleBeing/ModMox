@@ -7,12 +7,21 @@ extends MmTrigger
 ## creature" is the moving object, as it was before it moved. A token created on the
 ## battlefield enters it from no zone (CR 111.2, 603.6a), so it is seen only by a trigger
 ## that takes any zone it came from.
+## With [member is_except_to_zone] it is a move to any zone but [member to_zone]: from the
+## battlefield, all but the graveyard is "leaves the battlefield without dying" (CR 700.4), as
+## Dour Port-Mage says. With [member is_one_or_more] it is "Whenever one or more [filter]
+## ...": every matching move of one batch is one occasion, so it triggers once for all of
+## them (occasion_of(), engine ADR 0082's addendum), and "that creature" is the first.
 
 @export var any_from_zone: bool = true
 @export var from_zone: MmZone.Kind = MmZone.Kind.BATTLEFIELD
 ## True for a move to any zone, when [member to_zone] is not read.
 @export var any_to_zone: bool = false
 @export var to_zone: MmZone.Kind = MmZone.Kind.BATTLEFIELD
+## True for a move to any zone but [member to_zone].
+@export var is_except_to_zone: bool = false
+## True for "one or more": once for each batch, however many moves of it match.
+@export var is_one_or_more: bool = false
 ## Null matches any object.
 @export var filter: MmFilter = null
 ## Compared with the object's controller (its owner outside the battlefield and stack).
@@ -22,10 +31,9 @@ extends MmTrigger
 func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bool:
 	var created: TokenCreatedEvent = event as TokenCreatedEvent
 	if created != null:
-		return any_from_zone and (any_to_zone or to_zone == MmZone.Kind.BATTLEFIELD) \
-			and _matches_object(state, created.new_object_id, context)
+		return any_from_zone and _goes_to(MmZone.Kind.BATTLEFIELD) and _matches_object(state, created.new_object_id, context)
 	var moved: ZoneChangeEvent = event as ZoneChangeEvent
-	if moved == null or (not any_to_zone and moved.to_zone_kind != to_zone):
+	if moved == null or not _goes_to(moved.to_zone_kind):
 		return false
 	if not any_from_zone and moved.from_zone_kind != from_zone:
 		return false
@@ -34,6 +42,10 @@ func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bo
 
 func looks_back() -> bool:
 	return not any_from_zone and from_zone == MmZone.Kind.BATTLEFIELD
+
+
+func occasion_of(_state: MmGameState, _event: MmEvent) -> String:
+	return "one or more" if is_one_or_more else ""
 
 
 func triggering_object_id(event: MmEvent) -> int:
@@ -46,6 +58,11 @@ func triggering_object_id(event: MmEvent) -> int:
 func triggering_player_id(state: MmGameState, event: MmEvent) -> int:
 	var seen: MmGameObject = state.object_or_last_known(triggering_object_id(event))
 	return MmGameState.NO_PLAYER if seen == null else seen.controller_id
+
+
+## Whether a move to [param zone_kind] is one this trigger waits for.
+func _goes_to(zone_kind: MmZone.Kind) -> bool:
+	return any_to_zone or (zone_kind == to_zone) != is_except_to_zone
 
 
 ## CR 603.10a and 603.6a: the object as it was on the battlefield when it left it, and the

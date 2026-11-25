@@ -357,6 +357,11 @@ func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
 	var in_hand: MmObjectView = _find(view.hand, object_id)
 	if cast != null and cast.as_adventure and in_hand != null and in_hand.adventure != null:
 		card_name = in_hand.adventure.name  # "Cast Gift of the Fae", after "Cast Faerie Guidemother".
+	if cast != null and cast.is_bestowed:
+		# Engine ADR 0089, the user's words: "Cast Nimbus Naiad with bestow", after "Cast
+		# Nimbus Naiad", as "Cast Echo with flashback" reads.
+		_append(_hand_options, object_id, ClickOption.new(answer, "Cast %s with bestow" % card_name))
+		return
 	_append(_hand_options, object_id, ClickOption.new(answer, "%s %s" % [verb, card_name]))
 
 

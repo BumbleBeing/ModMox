@@ -6,6 +6,8 @@ extends MmPendingDecision
 ## Answer: an Array of two Arrays of object IDs, [graveyarded, kept]: the cards put into the
 ## graveyard in the order they go, so the last is the newest there, then the cards kept,
 ## top first. Every card of [member card_ids] is in exactly one of the two (ADR 0016).
+## A ScryDecision is one whose first list goes to the bottom of the library instead
+## (ADR 0087), so whatever shows, reveals or answers a surveil does the same for a scry.
 
 var stack_object_id: int
 ## The object IDs of the cards looked at, top of the library first.
@@ -20,7 +22,7 @@ func _init(deciding_player_id: int, object_id: int, looked_at_ids: Array[int]) -
 
 func validate(answer: Variant) -> String:
 	if typeof(answer) != TYPE_ARRAY or (answer as Array).size() != 2:
-		return "Expected two lists: the cards graveyarded and the cards kept."
+		return "Expected two lists: the cards %s and the cards kept." % _sent_words()
 	for part: Variant in answer as Array:
 		if typeof(part) != TYPE_ARRAY:
 			return "Expected two lists of object IDs, got %s." % type_string(typeof(part))
@@ -33,6 +35,12 @@ func validate(answer: Variant) -> String:
 
 ## The cards graveyarded by [param answer], in the order they go.
 static func graveyarded_in(answer: Variant) -> Array[int]:
+	return sent_in(answer)
+
+
+## The cards of [param answer]'s first list, in the order they go: those a surveil puts into
+## the graveyard, or those a scry puts on the bottom (ADR 0087).
+static func sent_in(answer: Variant) -> Array[int]:
 	var ids: Array[int] = []
 	for id: Variant in (answer as Array)[0] as Array:
 		ids.append(id as int)
@@ -49,3 +57,8 @@ static func kept_in(answer: Variant) -> Array[int]:
 
 func describe() -> String:
 	return "player %d: surveil %s for object %d" % [player_id, card_ids, stack_object_id]
+
+
+## Where the first list's cards go, in words.
+func _sent_words() -> String:
+	return "graveyarded"

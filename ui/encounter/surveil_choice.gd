@@ -2,9 +2,11 @@ class_name SurveilChoice
 extends RefCounted
 ## The Hero's half-made answer to a surveil (game ADR 0069): the cards still in the Surveil
 ## window's row, leftmost on top, ordered by dragging; the one card selected; and the cards
-## sent to the graveyard, in the order sent. Kept by the Encounter Screen outside the nodes
-## it redraws, as a TriggerOrder is, and given with the pass button. Undo takes back the last
-## move or sending, one at a time; selecting is not a change of the answer.
+## sent to the graveyard, in the order sent. A scry is answered the same way, its cards sent
+## to the bottom of the library instead, each under everything (game ADR 0069's addendum).
+## Kept by the Encounter Screen outside the nodes it redraws, as a TriggerOrder is, and given
+## with the pass button. Undo takes back the last move or sending, one at a time; selecting
+## is not a change of the answer.
 
 ## No card: nothing is selected, or nothing was sent.
 const NONE: int = 0
@@ -19,7 +21,8 @@ var _picked: int = NONE
 var _history: Array = []
 
 
-## Whether [param decision] is answered by a SurveilChoice.
+## Whether [param decision] is answered by a SurveilChoice: a surveil, or a scry, which is
+## one (engine ADR 0087).
 static func covers(decision: MmPendingDecision) -> bool:
 	return decision is SurveilDecision
 
@@ -39,7 +42,18 @@ func is_active() -> bool:
 	return _decision != null
 
 
-## How many cards are surveilled, the number in the window's title.
+## Whether it is a scry, whose cards are sent to the bottom of the library, not the graveyard.
+func is_scry() -> bool:
+	return _decision is ScryDecision
+
+
+## Whether it is an explore's one revealed card (engine ADR 0090), sent to the graveyard as
+## a surveil's are.
+func is_explore() -> bool:
+	return _decision is ExploreDecision
+
+
+## How many cards are surveilled or scried, the number in the window's title.
 func count() -> int:
 	return 0 if _decision == null else _decision.card_ids.size()
 
@@ -49,7 +63,7 @@ func row() -> Array[int]:
 	return _row.duplicate()
 
 
-## The cards sent to the graveyard, in the order sent.
+## The cards sent to the graveyard, or to the bottom for a scry, in the order sent.
 func sent() -> Array[int]:
 	return _sent.duplicate()
 
@@ -77,7 +91,8 @@ func move_to(from: int, to: int) -> bool:
 	return true
 
 
-## Sends the selected card to the graveyard. Returns it, or NONE with nothing selected.
+## Sends the selected card to the graveyard, or to the bottom for a scry. Returns it, or NONE
+## with nothing selected.
 func send_picked() -> int:
 	if _picked == NONE:
 		return NONE

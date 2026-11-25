@@ -41,6 +41,9 @@ var chosen_mana_type: int = MmMana.NO_TYPE
 ## The new objects of the cards an earlier effect of this spell or ability moved and
 ## remembers, such as the cards milled: "them" (MovedCardsSelection, engine ADR 0080).
 var moved_ids: Array[int] = []
+## Whether the latest "you may" of this spell or ability, a MayEffect or MayPayEffect, was
+## answered yes, its cost paid: "If you do" (YouDidCondition). False before any is asked.
+var answered_yes: bool = false
 
 
 func _init(controlling_player_id: int, source_id: int, chosen_targets: Array[MmReference] = [],
@@ -120,6 +123,14 @@ func with_moved(ids: Array[int]) -> MmEffectContext:
 	return copy
 
 
+## This context with [param is_yes] as the answer to its latest "you may" (YouDidCondition),
+## a new context as with_choice() makes.
+func with_answered_yes(is_yes: bool) -> MmEffectContext:
+	var copy: MmEffectContext = _copy()
+	copy.answered_yes = is_yes
+	return copy
+
+
 ## This context with [param x] as the X paid (ADR 0061), a new context as with_choice()
 ## makes.
 func with_paid_x(x: int) -> MmEffectContext:
@@ -146,6 +157,7 @@ func _copy() -> MmEffectContext:
 	copy.paid_x = paid_x
 	copy.chosen_mana_type = chosen_mana_type
 	copy.moved_ids = moved_ids.duplicate()
+	copy.answered_yes = answered_yes
 	copy.overloaded = overloaded.duplicate()
 	copy.overloaded_counts = overloaded_counts.duplicate()
 	return copy

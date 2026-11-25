@@ -9,3 +9,7 @@ Unflinching Hortimancer says "Whenever you gain life, put a +1/+1 counter on thi
 "That player" is the player who gains the life; there is no "that creature". `AbilityText` says "Whenever you gain life", "Whenever an opponent gains life" and "Whenever a player gains life".
 
 Left out until a card needs them (ADR 0001): the amount gained ("you gain that much life", "whenever you gain 3 or more life"), "whenever you gain life for the first time each turn", and replacing or preventing a life gain.
+
+## Addendum: "one or more" zone changes are one occasion for each batch
+
+Dour Port-Mage says "Whenever one or more other creatures you control leave the battlefield without dying, draw a card." `ZoneChangeTrigger.is_one_or_more` calls every move of a batch one occasion, so two creatures returned together trigger it once and two returned apart trigger it twice; "that creature" is the first. `is_except_to_zone` turns `to_zone` into the one zone it does not wait for: from the battlefield to anywhere but the graveyard is "leaves the battlefield without dying" (CR 700.4), so a creature returned to its owner's hand or exiled, a token too, triggers it and one that dies does not. It still looks back (ADR 0017), so the creatures are seen as they were on the battlefield, and an ability leaving with them still sees them go.

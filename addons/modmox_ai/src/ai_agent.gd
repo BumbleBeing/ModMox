@@ -461,7 +461,8 @@ func _mana_unlocks_a_play(decision: PriorityDecision, index: int, source: MmSimu
 func _play_key(action: MmAction) -> String:
 	if action is CastSpellAction:
 		var cast: CastSpellAction = action as CastSpellAction
-		return "cast %d%s" % [cast.object_id, " adventure" if cast.as_adventure else ""]
+		return "cast %d%s%s" % [cast.object_id, " adventure" if cast.as_adventure else "",
+			" bestowed" if cast.is_bestowed else ""]
 	if action is ActivateAbilityAction:
 		var activate: ActivateAbilityAction = action as ActivateAbilityAction
 		return "activate %d %d %d" % [activate.object_id, activate.ability_index, activate.mana_type]
@@ -699,10 +700,10 @@ func _target(decision: ChooseTargetDecision, world: MmGameState, source: MmSimul
 			return taken
 	if mode == Mode.FULL:
 		var effects: Array[MmEffect] = _effects_of_stack_object(world, decision.stack_object_id)
-		var taps: bool = AiTiming.taps(effects)
+		var taps: bool = AiTiming.taps(effects) or AiTiming.untaps(effects)
 		var options: Array[int] = []
-		# A tap often changes nothing the turn can show, as after combat, so the Cheap pick
-		# is the default and another target must score better.
+		# A tap or an untap often changes nothing the turn can show, as after combat, so the
+		# Cheap pick is the default and another target must score better.
 		if taps:
 			options.append(_cheap_target(decision, world))
 		# A helpful Aura scores the same on either side, since the Board Evaluator values
@@ -728,6 +729,7 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 	var tag: AiTiming.Tag = AiTiming.tag_of_effects(effects)
 	var harmful: bool = AiTiming.is_harmful(effects)
 	var taps: bool = AiTiming.taps(effects)
+	var untaps: bool = AiTiming.untaps(effects)
 	var damage: int = _damage_of(effects, world, decision.stack_object_id)
 	var fight: FightEffect = _fight_of(effects)
 	if fight != null:
@@ -756,6 +758,7 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 		var is_wasted: bool = not _can_pay_ward_of(world, me, target, decision.stack_object_id) \
 			or (harmful and damage > 0 and world.characteristics_of(target).toughness - target.damage_marked > damage) \
 			or (taps and target.is_tapped) \
+			or (untaps and not target.is_tapped) \
 			or (tag == AiTiming.Tag.COUNTER and world.characteristics_of(target).has_ability(CantBeCounteredAbility))
 		if is_wasted:
 			if value > wasted_value:
@@ -887,7 +890,8 @@ func _up_to_targets(decision: ChooseTargetsDecision, world: MmGameState, source:
 	if mode == Mode.CHEAP:
 		return _cheap_up_to_targets(decision, world).slice(0, most)
 	var effects: Array[MmEffect] = _effects_of_stack_object(world, decision.stack_object_id)
-	var lasts_the_turn: bool = AiTiming.is_trick(AiTiming.tag_of_effects(effects)) or AiTiming.taps(effects)
+	var lasts_the_turn: bool = AiTiming.is_trick(AiTiming.tag_of_effects(effects)) or AiTiming.taps(effects) \
+		or AiTiming.untaps(effects)
 	var chosen: Array = []
 	while chosen.size() < most:
 		var answers: Array = [chosen.duplicate()]
@@ -916,11 +920,13 @@ func _cheap_up_to_targets(decision: ChooseTargetsDecision, world: MmGameState) -
 	var effects: Array[MmEffect] = _effects_of_stack_object(world, decision.stack_object_id)
 	var harmful: bool = AiTiming.is_harmful(effects)
 	var taps: bool = AiTiming.taps(effects)
+	var untaps: bool = AiTiming.untaps(effects)
 	var ranked: Array[int] = []
 	var values: Dictionary[int, int] = {}
 	for index: int in decision.candidates.size():
 		var target: MmGameObject = world.object(decision.candidates[index].id)
-		if (target.controller_id != me) != harmful or (taps and target.is_tapped):
+		if (target.controller_id != me) != harmful or (taps and target.is_tapped) \
+				or (untaps and not target.is_tapped):
 			continue
 		if not _can_pay_ward_of(world, me, target, decision.stack_object_id):
 			continue
@@ -950,12 +956,16 @@ func _order_triggers(decision: OrderTriggersDecision, source: MmSimulationSource
 ## candidate. CHEAP: its own least valuable permanent, which costs it least to lose or have
 ## returned to its hand; with none of its own, the first. A card chosen from among cards
 ## that are not permanents, such as the cards just milled (engine ADR 0080), is going to
-## its hand, so CHEAP takes the one with the greatest mana value.
+## its hand, so CHEAP takes the one with the greatest mana value. A card of its graveyard
+## exiled to pay a cost (engine ADR 0088) is the one with the least mana value, in both
+## modes, since no simulation sees a graveyard.
 func _choose_object(decision: ChooseObjectDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> int:
 	if decision.candidates.size() == 1:
 		_reason = Reason.ONLY_CHOICE
 		return 0
 	_reason = Reason.BEST_SCORE
+	if decision.purpose == ChooseObjectDecision.Purpose.EXILE_FROM_GRAVEYARD:
+		return _least_mana_value(decision.candidates, world)
 	if mode == Mode.FULL:
 		var options: Array[int] = []
 		for index: int in decision.candidates.size():
@@ -971,6 +981,20 @@ func _choose_object(decision: ChooseObjectDecision, world: MmGameState, source: 
 		if candidate == null or candidate.controller_id != decision.player_id:
 			continue
 		var value: int = AiBoardEvaluator.permanent_value(world, candidate, profile)
+		if least_value == -1 or value < least_value:
+			least = index
+			least_value = value
+	return least
+
+
+## The index of the card in [param candidates] with the least mana value, the first of
+## those tied.
+static func _least_mana_value(candidates: Array[MmReference], world: MmGameState) -> int:
+	var least: int = 0
+	var least_value: int = -1
+	for index: int in candidates.size():
+		var card: MmGameObject = world.object(candidates[index].id)
+		var value: int = world.characteristics_of(card).mana_value() if card != null else 0
 		if least_value == -1 or value < least_value:
 			least = index
 			least_value = value
@@ -1155,7 +1179,7 @@ func _yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState, source: MmS
 		else ChooseYesOrNoDecision.Choice.YES
 	var options: Array[int] = [cheap, other]
 	var scores: Array[int] = _simulate_each(source, rng, options, decision.player_id,
-		AiTiming.taps(offered) and difficulty.judges_tricks_after_the_turn)
+		(AiTiming.taps(offered) or AiTiming.untaps(offered)) and difficulty.judges_tricks_after_the_turn)
 	return _best_option(options, scores, rng, 1)
 
 
@@ -1280,12 +1304,13 @@ func _found_among(candidate_ids: Array[int], most: int, player_id: int, world: M
 	return ranked.slice(0, most)
 
 
-## What to graveyard and what to keep with a surveil (engine ADR 0068), FULL and CHEAP alike:
-## one-step simulation sees neither the library's top nor the graveyard, so it would score
-## every answer the same. From the top down, a land is kept while the lands its player
-## controls and holds, and those kept above it, number fewer than SURVEIL_LANDS, and a spell
-## is kept when that many lands and one more would cast it. Kept lands go on top while the
-## player is short of lands, then the kept spells, cheapest first.
+## What to graveyard and what to keep with a surveil (engine ADR 0068), and with a scry what
+## to put on the bottom instead (engine ADR 0087), FULL and CHEAP alike: one-step simulation
+## sees neither the library's top nor the graveyard, so it would score every answer the
+## same. From the top down, a land is kept while the lands its player controls and holds, and
+## those kept above it, number fewer than SURVEIL_LANDS, and a spell is kept when that many
+## lands and one more would cast it. Kept lands go on top while the player is short of
+## lands, then the kept spells, cheapest first.
 func _surveil(decision: SurveilDecision, world: MmGameState) -> Array:
 	var me: int = decision.player_id
 	var lands: int = _lands_controlled(world, me)

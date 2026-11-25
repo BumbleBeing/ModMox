@@ -297,7 +297,9 @@ static func reminder_row(reminder: Reminder, palette: Palette, font_size: int) -
 	row.add_theme_constant_override("separation", 10)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var icon: TextureRect = TextureRect.new()
-	icon.texture = load("%s%s.png" % [KeywordChips.ICON_FOLDER, reminder.icon]) as Texture2D
+	# A keyword with no Keyword Chip has no icon: its space is kept, so its words line up.
+	if reminder.icon != "":
+		icon.texture = load("%s%s.png" % [KeywordChips.ICON_FOLDER, reminder.icon]) as Texture2D
 	# Pixel art: nearest, at twice its size.
 	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

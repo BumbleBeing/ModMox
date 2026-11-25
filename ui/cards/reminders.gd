@@ -28,8 +28,15 @@ const TEXTS: Dictionary[String, String] = {
 }
 
 
+## What each keyword with a Reminder and no Keyword Chip means, by the user's choice
+## (engine ADR 0089): listed after those with chips, with no icon.
+const WITHOUT_CHIPS: Dictionary[String, String] = {
+	"Bestow": "You may cast this card as an Aura for its bestow cost. It becomes a creature again if it's not attached.",
+}
+
+
 ## One Reminder for each keyword among [param abilities], in the order of their Keyword
-## Chips (A222), a keyword it has twice once.
+## Chips (A222), a keyword it has twice once, then one for each keyword it has with no chip.
 static func of(abilities: Array[MmAbility]) -> Array[Reminder]:
 	var reminders: Array[Reminder] = []
 	for chip: KeywordChip in KeywordChips.chips_for(abilities, KeywordChips.Place.ANYWHERE):
@@ -40,7 +47,21 @@ static func of(abilities: Array[MmAbility]) -> Array[Reminder]:
 		reminder.keyword = _keyword(chip, abilities)
 		reminder.text = TEXTS[chip.icon]
 		reminders.append(reminder)
+	for keyword: String in _keywords_without_chips(abilities):
+		var chipless: Reminder = Reminder.new()
+		chipless.keyword = keyword
+		chipless.text = WITHOUT_CHIPS[keyword]
+		reminders.append(chipless)
 	return reminders
+
+
+## The keywords of WITHOUT_CHIPS among [param abilities], each once, in their order.
+static func _keywords_without_chips(abilities: Array[MmAbility]) -> Array[String]:
+	var found: Array[String] = []
+	for ability: MmAbility in abilities:
+		if ability is BestowAbility and not found.has("Bestow"):
+			found.append("Bestow")
+	return found
 
 
 ## The keyword [param chip] stands for, in the card's own words.

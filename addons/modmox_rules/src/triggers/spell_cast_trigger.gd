@@ -8,12 +8,17 @@ extends MmTrigger
 ## With IsSourceFilter it is "When you cast this spell", which triggers from the stack, as its
 ## own spell becomes cast (CR 113.6k): a permanent is never cast, so it can't trigger from the
 ## battlefield. A copy of the spell is never cast either (CR 707.10), so it never triggers it.
+## With [member during_whose_turn] it is "Whenever you cast a spell during an opponent's
+## turn", as Brineborn Cutthroat says: only while it is that player's turn as the spell
+## becomes cast, relative to the ability's controller.
 
 ## Null matches any spell.
 @export var filter: MmFilter = null
 @export var whose: MmTrigger.Whose = MmTrigger.Whose.ANY
 ## "Your second spell each turn": with N above 0, only the caster's Nth spell this turn.
 @export var nth_each_turn: int = 0
+## "During an opponent's turn": whose turn it must be, or ANY for every turn.
+@export var during_whose_turn: MmTrigger.Whose = MmTrigger.Whose.ANY
 
 
 func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bool:
@@ -22,6 +27,8 @@ func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bo
 		return false
 	# The count already holds this spell: it is counted as it becomes cast.
 	if nth_each_turn > 0 and state.player(cast.player_id).spells_cast_this_turn != nth_each_turn:
+		return false
+	if not is_whose(during_whose_turn, state.active_player_id, context):
 		return false
 	return filter == null or filter.matches(state, MmReference.to_object(cast.spell_id), context)
 

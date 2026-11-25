@@ -58,6 +58,10 @@ var is_adventure_spell: bool = false
 ## For a card in exile: exiled on an adventure as its Adventure resolved (CR 715.3d), so its
 ## owner may cast it as the creature while it stays there (engine ADR 0078).
 var is_on_adventure: bool = false
+## For a spell cast bestowed, or the Aura it resolves into (CR 702.103b, engine ADR 0089):
+## an Aura enchantment with enchant creature that is no creature, until it ceases to be
+## bestowed, which it does once it becomes unattached (CR 702.103f).
+var is_bestowed: bool = false
 ## For a spell on the stack: cast from the top of its owner's library with a
 ## CastFromTopOfLibraryAbility's permission (ADR 0054). Both players see it.
 var cast_from_library: bool = false
@@ -160,6 +164,7 @@ func duplicate_object() -> MmGameObject:
 	copy.cast_with_flashback = cast_with_flashback
 	copy.is_adventure_spell = is_adventure_spell
 	copy.is_on_adventure = is_on_adventure
+	copy.is_bestowed = is_bestowed
 	copy.cast_from_library = cast_from_library
 	copy.is_being_cast_from_library = is_being_cast_from_library
 	copy.ability = ability
@@ -328,6 +333,16 @@ func freeze_last_known(characteristics: MmCharacteristics) -> void:
 ## Event-only: marks a spell as cast as its Adventure (CR 715.3), as it is put on the stack.
 func record_cast_as_adventure() -> void:
 	is_adventure_spell = true
+
+
+## Event-only: marks a spell cast bestowed, or the Aura it resolves into (CR 702.103b).
+func record_bestowed() -> void:
+	is_bestowed = true
+
+
+## Event-only: it ceases to be bestowed (CR 702.103e-f).
+func end_bestowed() -> void:
+	is_bestowed = false
 
 
 ## Event-only: marks a card exiled on an adventure (CR 715.3d), as it arrives in exile.

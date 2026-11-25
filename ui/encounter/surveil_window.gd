@@ -7,18 +7,22 @@ extends ZoneWindow
 ## it was pressed clicks it. Every card glows green, and the one selected white. "Graveyard"
 ## is grayed out while nothing is selected. It has no close button. It shows a SurveilChoice
 ## and changes nothing itself: what a drag, a click or the button means is the screen's.
+## A scry opens it too, titled "Scry N", its button reading "Bottom" (game ADR 0069's
+## addendum), and an explore, titled "Explore", with its one revealed card (engine ADR 0090).
 
 ## A card was clicked: it is selected, or let go if it was.
 signal card_clicked(object_id: int)
 ## A card was dragged from place [param from] in the row to place [param to].
 signal moved(from: int, to: int)
-## "Graveyard" was pressed.
+## "Graveyard" was pressed, or "Bottom" for a scry.
 signal graveyard_pressed
 
 const TINT: Color = StackColors.PLAIN
 ## The Glow of the card selected, white as a card chosen to discard is (A401).
 const PICKED_GLOW: Color = Color.WHITE
 const GRAVEYARD: String = "Graveyard"
+## The button's words while the Hero scries: the user's.
+const BOTTOM: String = "Bottom"
 ## How far a press moves before it is a drag, and how much of the way to its place a card
 ## eases each frame.
 const DRAG_START: float = 3.0
@@ -82,9 +86,13 @@ func _init() -> void:
 
 
 ## Shows [param choice], each card drawn from [param looks] by object ID: its title, its
-## row in order, the card selected and whether Graveyard can be pressed.
+## row in order, the card selected and whether Graveyard, or Bottom, can be pressed.
 func show_choice(choice: SurveilChoice, looks: Dictionary[int, CardLook]) -> void:
-	show_title("Surveil %d" % choice.count())
+	if choice.is_explore():
+		show_title("Explore")  # Engine ADR 0090: one card, so no number.
+	else:
+		show_title("%s %d" % ["Scry" if choice.is_scry() else "Surveil", choice.count()])
+	_button.text = BOTTOM if choice.is_scry() else GRAVEYARD
 	var row: Array[int] = choice.row()
 	var signature: String = "%s %d" % [row, choice.picked()]
 	if signature == _shown and not _is_dragging_card:
@@ -129,6 +137,7 @@ func face_of(object_id: int) -> CardFace:
 	return _faces.get(object_id, null) as CardFace
 
 
+## The button that sends the selected card: "Graveyard", or "Bottom" for a scry.
 func graveyard_button() -> Button:
 	return _button
 

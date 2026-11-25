@@ -167,7 +167,8 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 			_play_land(action as PlayLandAction)
 		elif action is CastSpellAction:
 			var cast: CastSpellAction = action as CastSpellAction
-			_cast = CastProcedure.cast_spell(_state, decision.player_id, _state.object(cast.object_id), cast.as_adventure)
+			_cast = CastProcedure.cast_spell(_state, decision.player_id, _state.object(cast.object_id), cast.as_adventure,
+				cast.is_bestowed)
 		elif action is ActivateAbilityAction:
 			_activate(action as ActivateAbilityAction, decision.player_id)
 		else:
@@ -320,6 +321,9 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 		# CR 715.3: an Adventurer card may be cast as its Adventure too, offered after it.
 		if _state.characteristics_of(card).adventure != null and _may_cast(player, card, true):
 			actions.append(CastSpellAction.new(card.id, true))
+		# CR 702.103a, engine ADR 0089: a card with bestow may be cast bestowed too.
+		if BestowRules.bestow_of(_state.characteristics_of(card)) != null and _may_cast(player, card, false, true):
+			actions.append(CastSpellAction.new(card.id, false, true))
 	for card: MmGameObject in _sorted_by_id(player.graveyard.objects()):
 		if _may_cast(player, card):
 			actions.append(CastSpellAction.new(card.id))
@@ -392,13 +396,18 @@ func _sorcery_timing(player: MmPlayer) -> bool:
 ## (CR 601.2f). Any card but a land may be cast, so permanent spells need no special case
 ## (CR 608.3). [param as_adventure]: cast from the hand as its Adventure, with only the
 ## Adventure's characteristics (CR 715.3a); from exile only a card on an adventure, and only
-## as the creature (CR 715.3d).
-func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false) -> bool:
+## as the creature (CR 715.3d). [param bestowed]: cast from the hand for its bestow cost, as
+## an Aura spell (CR 702.103a-b, engine ADR 0089).
+func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false, bestowed: bool = false) -> bool:
 	var characteristics: MmCharacteristics = _state.characteristics_of(card)
 	if as_adventure:
 		if card.zone() != player.hand or characteristics.adventure == null:
 			return false
 		characteristics = characteristics.adventure
+	elif bestowed:
+		if card.zone() != player.hand or BestowRules.bestow_of(characteristics) == null:
+			return false
+		characteristics = BestowRules.as_bestowed(_state, card)
 	if card.zone() == _state.exile and not card.is_on_adventure:
 		return false
 	var costs: Array[MmCost] = []
@@ -406,12 +415,13 @@ func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false)
 		var flashback: FlashbackAbility = CastProcedure.flashback_of(characteristics)
 		if flashback == null:
 			return false
-		costs = flashback.costs
+		costs.append_array(flashback.costs)
 	else:
 		if card.zone() == player.library and CastProcedure.top_of_library_permission(_state, player.id, card).is_empty():
 			return false
 		if characteristics.mana_cost == null:
 			return false  # CR 118.6: a card with no mana cost cannot be cast this way.
+	costs.append_array(CastProcedure.additional_costs_of(characteristics))
 	if characteristics.has_card_type(MmCardTypes.CardType.LAND):
 		return false  # CR 305.9: a land is played, never cast.
 	# CR 307.1 and 702.8a: only an instant, or a card with flash, ignores sorcery timing.
@@ -429,7 +439,7 @@ func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false)
 			return false
 	# A flashback cost with no mana in it needs none. What is paid is less any cost
 	# reduction (CR 601.2f).
-	var to_pay: MmManaCost = CastProcedure.mana_to_pay(_state, player.id, card, as_adventure)
+	var to_pay: MmManaCost = CastProcedure.mana_to_pay(_state, player.id, card, as_adventure, bestowed)
 	return to_pay == null or ManaPayment.can_afford(_state, player.id, to_pay)
 
 

@@ -120,6 +120,22 @@ func test_a_choice_made_on_resolution_says_what_to_choose_and_for_what_and_canno
 	assert_null(prompt.owed)
 
 
+func test_a_card_to_exile_for_a_cost_said_yes_to_is_asked_for_in_the_costs_words() -> void:
+	# Kishla Trawlers's "you may exile a creature card from your graveyard" (engine ADR 0088).
+	var view: MmPlayerView = _view()
+	var ability: MmObjectView = _object(21, "ability", MmGameObject.NO_CARD)
+	ability.source_object_id = 1
+	view.stack = [ability]
+	var exiling: ChooseObjectDecision = ChooseObjectDecision.new(HERO, 21, ChooseObjectDecision.NO_CHOICE_INDEX,
+		HasCardTypeFilter.new(), [MmReference.to_object(5)] as Array[MmReference])
+	exiling.purpose = ChooseObjectDecision.Purpose.EXILE_FROM_GRAVEYARD
+
+	var prompt: InfoPrompt = InfoPrompt.of(exiling, view)
+
+	assert_eq(prompt.text, "Exile a creature card from your graveyard for Wand")
+	assert_false(prompt.can_cancel, "It is paid as the ability resolves: there is no cast to take back.")
+
+
 func test_the_legend_rule_asks_which_legend_to_keep_and_cannot_be_canceled() -> void:
 	var prompt: InfoPrompt = InfoPrompt.of(ChooseLegendToKeepDecision.new(HERO, "Arahbo, the First Fang", [1, 2] as Array[int]), _view())
 
@@ -286,6 +302,21 @@ func test_artifacts_and_or_creatures_to_tap_are_asked_for_in_the_costs_words() -
 	assert_eq(prompt.text, "Tap two untapped artifacts and/or creatures you control for Adaptive Gemguard")
 
 
+func test_a_permanent_to_return_for_a_cost_is_asked_for_in_the_costs_words_and_can_be_canceled() -> void:
+	# Fear of Isolation's "return a permanent you control to its owner's hand".
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Fear of Isolation", 5)]
+	var mine: ControlledByFilter = ControlledByFilter.new()
+	mine.whose = MmTrigger.Whose.YOU
+	var pick: ChoosePermanentsDecision = ChoosePermanentsDecision.new(HERO, 20, 1, [3, 4, 6] as Array[int], mine)
+	pick.purpose = ChoosePermanentsDecision.Purpose.RETURN_TO_HAND
+
+	var prompt: InfoPrompt = InfoPrompt.of(pick, view)
+
+	assert_eq(prompt.text, "Return a permanent you control to its owner's hand for Fear of Isolation")
+	assert_true(prompt.can_cancel, "A step of the cast.")
+
+
 func test_a_you_may_asks_with_its_words_and_offers_no() -> void:
 	# Game ADR 0060: "[stack name]: [what yes does]?", with no "you may".
 	var view: MmPlayerView = _view()
@@ -427,4 +458,14 @@ func test_a_surveil_asks_in_the_words_the_user_approved() -> void:
 
 	assert_eq(InfoPrompt.of(one, view).text, "Surveil: graveyard any of these.", "Game ADR 0069.")
 	assert_eq(InfoPrompt.of(two, view).text, "Surveil: graveyard any of these, and order the rest. The leftmost will be on top.")
+	assert_false(InfoPrompt.of(two, view).can_cancel, "A resolving trigger cannot be canceled.")
+
+
+func test_a_scry_asks_in_the_words_the_user_approved() -> void:
+	var view: MmPlayerView = _view()
+	var one: ScryDecision = ScryDecision.new(HERO, 21, [31] as Array[int])
+	var two: ScryDecision = ScryDecision.new(HERO, 21, [31, 32] as Array[int])
+
+	assert_eq(InfoPrompt.of(one, view).text, "Scry: put any of these on the bottom.", "Game ADR 0069's addendum.")
+	assert_eq(InfoPrompt.of(two, view).text, "Scry: put any of these on the bottom, and order the rest. The leftmost will be on top.")
 	assert_false(InfoPrompt.of(two, view).can_cancel, "A resolving trigger cannot be canceled.")

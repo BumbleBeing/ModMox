@@ -17,3 +17,7 @@ One answer at the end, given with Done, was chosen over a step for each card sen
 **The Agent answers it by its lands** (ADR 0020). From the top down, it keeps a land while the lands it controls and holds, and those it keeps above, number fewer than six (`AiAgent.SURVEIL_LANDS`, as many as it keeps when it discards), and a spell it could cast with one land more than that; it graveyards the rest. Lands it keeps go on top while it is short of lands, then spells, cheapest first. A FULL Agent answers the same way: one-step simulation sees neither the library's top nor the graveyard, so it would score every answer alike.
 
 Left out until a card needs them (ADR 0001): surveilling another player's library, "whenever you surveil", scry, and a graveyard-minded Agent that keeps a card for the graveyard.
+
+## Addendum: scry is answered as a surveil is (ADR 0087)
+
+Scry came with Artificer's Assistant. `ScryDecision` is a `SurveilDecision` whose first list goes to the bottom of the library, so everything above holds for it: one decision as the effect begins, the cards shown to their player while it is pending, an undo barrier, the same answer, and the same Agent rule, a card it would graveyard going to the bottom instead. None of its cards leaves the library, and each becomes a Known Card to its owner.

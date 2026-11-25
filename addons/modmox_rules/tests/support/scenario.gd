@@ -1259,6 +1259,18 @@ static func free_tap(card_name: String) -> MmCardDefinition:
 	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))], [tap(targeted(0))])
 
 
+## "Untap [param selection]" (CR 701.26b).
+static func untap(selection: MmSelection) -> UntapEffect:
+	var effect: UntapEffect = UntapEffect.new()
+	effect.selection = selection
+	return effect
+
+
+## An instant costing {0}: "Untap target creature."
+static func free_untap(card_name: String) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))], [untap(targeted(0))])
+
+
 ## "A [param filter]", chosen as the effect resolves (CR 608.2d), as choice [param index].
 static func chosen(filter: MmFilter, index: int = 0) -> ChosenSelection:
 	var selection: ChosenSelection = ChosenSelection.new()
@@ -2458,6 +2470,26 @@ static func pass_to_surveil(engine: MmEngine) -> String:
 	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is SurveilDecision)
 
 
+# --- Card track: scry -----------------------------------------------------------------
+
+
+## "Scry [param amount]" (CR 701.22a).
+static func scry(amount: int = 1) -> ScryEffect:
+	var effect: ScryEffect = ScryEffect.new()
+	effect.amount = constant(amount)
+	return effect
+
+
+## A 1/1 creature costing {0}: "When this creature enters, scry [param amount]."
+static func seer(card_name: String = "Seer", amount: int = 1) -> MmCardDefinition:
+	return creature(card_name, 1, 1, [triggered(enters(IsSourceFilter.new()), [scry(amount)])])
+
+
+## Passes priority and answers everything else as autoplay() does, until a scry is asked.
+static func pass_to_scry(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is ScryDecision)
+
+
 # --- Card track: fight, sacrifice, players who control more ---------------------------
 
 
@@ -3018,6 +3050,21 @@ static func nth_spell(nth: int, whose: MmTrigger.Whose = MmTrigger.Whose.YOU) ->
 	return trigger
 
 
+## "The [param nth] spell you cast each turn costs {[param amount]} less to cast", or "Spells
+## you cast cost ..." with no [param nth].
+static func spells_cost_less(amount: int = 1, nth: int = 2) -> SpellsCostLessAbility:
+	var ability: SpellsCostLessAbility = SpellsCostLessAbility.new()
+	ability.amount = amount
+	ability.nth_each_turn = nth
+	return ability
+
+
+## A 1/4 creature costing {0} with Highspire Bell-Ringer's ability: "The second spell you
+## cast each turn costs {1} less to cast."
+static func ringer(card_name: String = "Ringer") -> MmCardDefinition:
+	return creature(card_name, 1, 4, [spells_cost_less()])
+
+
 ## A 2/2 creature costing {0} with Clarion Spirit's ability, gaining 1 life: "Whenever you
 ## cast your second spell each turn, you gain 1 life."
 static func clarion(card_name: String = "Clarion") -> MmCardDefinition:
@@ -3133,3 +3180,250 @@ static func skulker(card_name: String = "Sneak", abilities: Array[MmAbility] = [
 	var all: Array[MmAbility] = [SkulkAbility.new()]
 	all.append_array(abilities)
 	return creature(card_name, 1, 1, all)
+
+
+# --- Card track: drawing your second card each turn ------------------------------------
+
+
+## "Whenever [whose] draw(s) [their] [Nth] card each turn" (CR 121.1, 603.2), or "a card"
+## when [param nth] is 0.
+static func draws(nth: int = 0, whose: MmTrigger.Whose = MmTrigger.Whose.YOU) -> CardDrawnTrigger:
+	var trigger: CardDrawnTrigger = CardDrawnTrigger.new()
+	trigger.nth_each_turn = nth
+	trigger.whose = whose
+	return trigger
+
+
+## A 1/2 creature costing {0} with Faerie Vandal's ability, gaining 1 life: "Whenever you
+## draw your second card each turn, you gain 1 life."
+static func vandal(card_name: String = "Vandal") -> MmCardDefinition:
+	return creature(card_name, 1, 2, [triggered(draws(2), [gain_life(1, you())])])
+
+
+# --- Card track: prowess ---------------------------------------------------------------
+
+
+## [param trigger] only during [param whose] turn: "during an opponent's turn".
+static func during_turn(trigger: SpellCastTrigger, whose: MmTrigger.Whose) -> SpellCastTrigger:
+	trigger.during_whose_turn = whose
+	return trigger
+
+
+## A 2/1 creature costing {0} after Brineborn Cutthroat's ability, gaining 1 life:
+## "Whenever you cast a spell during an opponent's turn, you gain 1 life."
+static func cutthroat(card_name: String = "Cutthroat") -> MmCardDefinition:
+	var trigger: SpellCastTrigger = during_turn(casts(null, MmTrigger.Whose.YOU), MmTrigger.Whose.OPPONENT)
+	return creature(card_name, 2, 1, [triggered(trigger, [gain_life(1, you())])])
+
+
+## "If you do, [param effect]." (CR 608.2c): after a "you may", [param effect] happens only
+## if it was answered yes.
+static func if_you_do(effect: MmEffect) -> IfEffect:
+	return if_then(YouDidCondition.new(), effect)
+
+
+## A 1/1 creature costing {0} after Riddlesmith's ability: "When this creature enters, you
+## may draw a card. If you do, discard a card."
+static func looter(card_name: String = "Looter") -> MmCardDefinition:
+	return creature(card_name, 1, 1, [triggered(enters(IsSourceFilter.new()), [may(draw_cards(1, you())), if_you_do(discard())])])
+
+
+## "Return [param count] [param filter] to its owner's hand" as a cost: "return a permanent
+## you control to its owner's hand" unless another Filter is given.
+static func return_permanents(count: int = 1, filter: MmFilter = null) -> ReturnPermanentsCost:
+	var cost: ReturnPermanentsCost = ReturnPermanentsCost.new()
+	cost.count = count
+	if filter == null:
+		var yours: ControlledByFilter = ControlledByFilter.new()
+		yours.whose = MmTrigger.Whose.YOU
+		filter = yours
+	cost.filter = filter
+	return cost
+
+
+## "As an additional cost to cast this spell, [param costs]" (CR 601.2f, 118.8).
+static func additional_cost(costs: Array[MmCost]) -> AdditionalCostAbility:
+	var ability: AdditionalCostAbility = AdditionalCostAbility.new()
+	ability.costs = costs
+	return ability
+
+
+## A 2/3 creature with flying costing {0} unless another cost is given, after Fear of
+## Isolation: "As an additional cost to cast this spell, return a permanent you control to
+## its owner's hand."
+static func isolation(card_name: String = "Isolation", cost: MmManaCost = null) -> MmCardDefinition:
+	var costs: Array[MmCost] = [return_permanents()]
+	var definition: MmCardDefinition = creature(card_name, 2, 3, [additional_cost(costs), FlyingAbility.new()])
+	if cost != null:
+		definition.mana_cost = cost
+	return definition
+
+
+## "Whenever one or more [param filter] leave the battlefield without dying" (CR 700.4):
+## from the battlefield to any zone but the graveyard, once for each batch.
+static func leave_without_dying(filter: MmFilter) -> ZoneChangeTrigger:
+	var trigger: ZoneChangeTrigger = ZoneChangeTrigger.new()
+	trigger.any_from_zone = false
+	trigger.from_zone = MmZone.Kind.BATTLEFIELD
+	trigger.to_zone = MmZone.Kind.GRAVEYARD
+	trigger.is_except_to_zone = true
+	trigger.is_one_or_more = true
+	trigger.filter = filter
+	return trigger
+
+
+## A 1/3 creature costing {0} after Dour Port-Mage's first ability, gaining 1 life:
+## "Whenever one or more other creatures you control leave the battlefield without dying, you
+## gain 1 life."
+static func port_mage(card_name: String = "Port-Mage") -> MmCardDefinition:
+	return creature(card_name, 1, 3, [triggered(leave_without_dying(other_creature_you_control()), [gain_life(1, you())])])
+
+
+## A 1/1 creature costing {0} with prowess (CR 702.108a), then [param abilities].
+static func monk(card_name: String = "Monk", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [ProwessAbility.new()]
+	all.append_array(abilities)
+	return creature(card_name, 1, 1, all)
+
+
+# --- Card track: reflexive triggers --------------------------------------------------
+
+
+## "Exile a [param filter] card from your graveyard", a creature card unless another
+## Filter is given.
+static func exile_from_graveyard(filter: MmFilter = null) -> ExileFromGraveyardCost:
+	var cost: ExileFromGraveyardCost = ExileFromGraveyardCost.new()
+	cost.filter = of_type(MmCardTypes.CardType.CREATURE) if filter == null else filter
+	return cost
+
+
+## "When you do, [param effects]" (CR 603.12), with its own [param targets].
+static func reflexive(effects: Array[MmEffect], targets: Array[TargetRequirement] = []) -> ReflexiveTriggerEffect:
+	var effect: ReflexiveTriggerEffect = ReflexiveTriggerEffect.new()
+	effect.ability = triggered(null, effects, targets)
+	return effect
+
+
+## "Target instant or sorcery card from your graveyard."
+static func your_dead_spell() -> TargetRequirement:
+	return target_graveyard_card(all_of([instant_or_sorcery(), owned_by(MmTrigger.Whose.YOU)]))
+
+
+## A 3/2 creature costing {0} with Kishla Trawlers's ability: "When this creature enters, you
+## may exile a creature card from your graveyard. When you do, return target instant or
+## sorcery card from your graveyard to your hand."
+static func trawler(card_name: String = "Trawler") -> MmCardDefinition:
+	var returns: ReflexiveTriggerEffect = reflexive([return_to_hand(targeted(0))], [your_dead_spell()])
+	return creature(card_name, 3, 2, [triggered(enters(IsSourceFilter.new()), [may_pay(exile_from_graveyard(), returns)])])
+
+
+# --- Card track: bestow ---------------------------------------------------------------
+
+
+## "Bestow [param cost]" (CR 702.103a), {0} unless another cost is given.
+static func bestow(cost: MmManaCost = null) -> BestowAbility:
+	var ability: BestowAbility = BestowAbility.new()
+	ability.mana_cost = mana_cost(0) if cost == null else cost
+	return ability
+
+
+## A 2/2 Enchantment Creature — Nymph costing {0}, or [param cost], after Nimbus Naiad: "Bestow
+## {0}", or [param bestow_cost], "Flying" and "Enchanted creature gets +2/+2 and has flying."
+static func naiad(card_name: String = "Naiad", cost: MmManaCost = null, bestow_cost: MmManaCost = null) -> MmCardDefinition:
+	var definition: MmCardDefinition = creature(card_name, 2, 2, [bestow(bestow_cost), FlyingAbility.new(),
+		continuous_static([modify_pt(2, 2, attached()), gain_abilities([FlyingAbility.new()], attached())])], cost)
+	definition.card_types = [MmCardTypes.CardType.ENCHANTMENT, MmCardTypes.CardType.CREATURE]
+	definition.subtypes = ["Nymph"]
+	return definition
+
+
+## The index of the priority action that casts [param object_id] bestowed, or plainly when
+## [param bestowed] is false, or -1.
+static func cast_index_bestowed(decision: PriorityDecision, object_id: int, bestowed: bool = true) -> int:
+	return action_index(decision, func(action: MmAction) -> bool:
+		var cast: CastSpellAction = action as CastSpellAction
+		return cast != null and cast.object_id == object_id and not cast.as_adventure and cast.is_bestowed == bestowed)
+
+
+## Casts [param object_id] bestowed, aimed at [param chosen], and pays automatically.
+static func cast_bestowed(engine: MmEngine, object_id: int, chosen: MmReference) -> String:
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	if decision == null:
+		return "Not a priority decision."
+	var index: int = cast_index_bestowed(decision, object_id)
+	if index == -1:
+		return "Object %d cannot be cast bestowed." % object_id
+	var error: String = engine.submit(index)
+	if error == "" and engine.pending_decision() is ChooseTargetDecision:
+		error = choose_target(engine, chosen)
+	return error if error != "" else auto_pay(engine)
+
+
+# --- Card track: explore --------------------------------------------------------------
+
+
+## "[param selection] explores" (CR 701.44a), "this creature" unless another is given.
+static func explore(selection: MmSelection = null) -> ExploreEffect:
+	var effect: ExploreEffect = ExploreEffect.new()
+	effect.selection = SourceSelection.new() if selection == null else selection
+	return effect
+
+
+## A 1/1 creature costing {0}: "When this creature enters, it explores."
+static func explorer(card_name: String = "Explorer") -> MmCardDefinition:
+	return creature(card_name, 1, 1, [triggered(enters(IsSourceFilter.new()), [explore()])])
+
+
+## A Map made in code (CR 111.10): "{1}, {T}, Sacrifice this token: Target creature you
+## control explores. Activate only as a sorcery."
+static func map() -> MmCardDefinition:
+	var definition: MmCardDefinition = MmCardDefinition.new()
+	definition.name = "Map Token"
+	definition.card_types = [MmCardTypes.CardType.ARTIFACT]
+	definition.subtypes = ["Map"]
+	var ability: ActivatedAbility = activated(mana_cost(1), [TapCost.new(), SacrificeThisCost.new()],
+		[explore(targeted(0))], [target(all_of([of_type(MmCardTypes.CardType.CREATURE), ControlledByFilter.new()]))])
+	ability.is_sorcery_speed = true
+	definition.abilities = [ability]
+	return definition
+
+
+## Passes priority and answers everything else as autoplay() does, until an explore asks
+## what to do with the card it revealed.
+static func pass_to_explore(engine: MmEngine) -> String:
+	return autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is ExploreDecision)
+
+
+# --- Card track: becoming an artifact creature ------------------------------------------
+
+
+## Layer 4: "[affected] becomes a [card types]", keeping its other types (CR 205.1b).
+static func add_card_types(card_types: Array[MmCardTypes.CardType], affected: MmSelection) -> AddCardTypesContinuousEffect:
+	var effect: AddCardTypesContinuousEffect = AddCardTypesContinuousEffect.new()
+	effect.card_types = card_types
+	effect.affected = affected
+	return effect
+
+
+## [param continuous] from a resolved spell or ability with no duration, which lasts for
+## the rest of the encounter (CR 611.2a).
+static func indefinitely(continuous: MmContinuousEffect) -> CreateContinuousEffect:
+	var effect: CreateContinuousEffect = CreateContinuousEffect.new()
+	effect.continuous = continuous
+	effect.duration = CreateContinuousEffect.Duration.INDEFINITELY
+	return effect
+
+
+## "Noncreature artifact you control".
+static func noncreature_artifact_you_control() -> AllOfFilter:
+	return all_of([of_type(MmCardTypes.CardType.ARTIFACT), is_not(of_type(MmCardTypes.CardType.CREATURE)),
+		ControlledByFilter.new()])
+
+
+## A sorcery costing {0} after Bring to Life: "Target noncreature artifact you control
+## becomes a 0/0 artifact creature. Put four +1/+1 counters on it."
+static func free_animate(card_name: String = "Animate") -> MmCardDefinition:
+	var both: Array[MmCardTypes.CardType] = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	return sorcery(card_name, mana_cost(0), [target(noncreature_artifact_you_control())], [
+		indefinitely(add_card_types(both, targeted(0))), indefinitely(set_pt(0, 0, targeted(0))),
+		put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 4, targeted(0))])

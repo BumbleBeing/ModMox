@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_xy7wy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_q30kr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_vi0gq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_2iccm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_bjd50"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="4_wxgsr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="5_4mulr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_fpyy4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_mdiru"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_7kkyl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/card_drawn_trigger.gd" id="9_4k1p6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="10_wudad"]
+[ext_resource type="Resource" path="res://content/tokens/thopter_1_1_colorless_flying.tres" id="11_w5pdf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_c0btk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="13_icxwp"]
+
+[sub_resource type="Resource" id="Resource_kwk74"]
+script = ExtResource("3_2iccm")
+value = 1
+
+[sub_resource type="Resource" id="Resource_6ctm5"]
+script = ExtResource("4_wxgsr")
+
+[sub_resource type="Resource" id="Resource_pgi8b"]
+script = ExtResource("5_4mulr")
+amount = SubResource("Resource_kwk74")
+recipients = SubResource("Resource_6ctm5")
+
+[sub_resource type="Resource" id="Resource_dmw34"]
+script = ExtResource("9_4k1p6")
+nth_each_turn = 2
+
+[sub_resource type="Resource" id="Resource_cll5k"]
+script = ExtResource("7_mdiru")
+trigger = SubResource("Resource_dmw34")
+effects = Array[ExtResource("2_vi0gq")]([SubResource("Resource_pgi8b")])
+
+[sub_resource type="Resource" id="Resource_gyqrc"]
+script = ExtResource("10_wudad")
+token = ExtResource("11_w5pdf")
+
+[sub_resource type="Resource" id="Resource_3c12n"]
+script = ExtResource("12_c0btk")
+
+[sub_resource type="Resource" id="Resource_ymgdu"]
+script = ExtResource("13_icxwp")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_3c12n")
+
+[sub_resource type="Resource" id="Resource_6eiqk"]
+script = ExtResource("7_mdiru")
+trigger = SubResource("Resource_ymgdu")
+effects = Array[ExtResource("2_vi0gq")]([SubResource("Resource_gyqrc")])
+
+[sub_resource type="Resource" id="Resource_kqy7x"]
+script = ExtResource("2_q30kr")
+generic = 1
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_bjd50")
+name = "Thopter Mechanic"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Artificer"])
+mana_cost = SubResource("Resource_kqy7x")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_xy7wy")]([SubResource("Resource_cll5k"), SubResource("Resource_6eiqk")])
+rarity = 1

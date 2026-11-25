@@ -22,6 +22,9 @@ static func compute(state: MmGameState) -> Dictionary[int, MmCharacteristics]:
 	var started: Dictionary[int, Array] = {}
 	# Later: layers 1-3 and 5.
 	for game_object: MmGameObject in objects:
+		# CR 702.103b, engine ADR 0089: a bestowed Aura as its own text makes it, first.
+		if game_object.is_bestowed:
+			BestowRules.make_bestowed(current[game_object.id])
 		_apply_reconfigure(game_object, current[game_object.id])
 	_apply_layer(state, objects, current, started, MmContinuousEffect.Layer.TYPE)
 	# CR 305.7: a land that gained a basic land type in layer 4 has its mana ability, which
@@ -45,6 +48,8 @@ static func outside_the_battlefield(state: MmGameState, game_object: MmGameObjec
 	var characteristics: MmCharacteristics = MmCharacteristics.printed(game_object.definition)
 	if game_object.is_adventure_spell and characteristics.adventure != null:
 		characteristics = characteristics.adventure  # CR 715.3b: the Adventure alone.
+	if game_object.is_bestowed:
+		BestowRules.make_bestowed(characteristics)  # CR 702.103b: a bestowed Aura spell.
 	_apply_defining_abilities(state, game_object, characteristics)
 	if game_object.zone() == state.stack:
 		characteristics.chosen_x = game_object.chosen_x  # CR 202.3e.

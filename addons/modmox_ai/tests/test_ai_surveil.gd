@@ -4,6 +4,8 @@ extends GutTest
 ## spell it could cast with one more land than that; it graveyards the rest. Lands it keeps
 ## go on top while it is short of lands, then spells, cheapest first. A FULL Agent answers as
 ## a CHEAP one does: one-step simulation sees neither the library's top nor the graveyard.
+## A scry is answered by the same rule (engine ADR 0087), what it would graveyard going to
+## the bottom of its library instead.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const AiScenario := preload("res://addons/modmox_ai/tests/support/ai_scenario.gd")
@@ -57,6 +59,22 @@ func test_a_full_agent_answers_as_a_cheap_one_does() -> void:
 	assert_eq(AiScenario.ask(engine, full), AiScenario.ask(engine, cheap))
 
 
+func test_a_scry_puts_on_the_bottom_what_a_surveil_would_graveyard() -> void:
+	var lands_enough: MmEngine = _surveilling(1, ["Forest"], Scenario.copies(Scenario.basic_land("Forest"), 6), 6, 40, true)
+	var short: MmEngine = _surveilling(1, ["Forest"], [_wurm(), _bear(), Scenario.basic_land("Forest")], 1, 3, true)
+	var cheap: AiAgent = AiAgent.new(null, AiAgent.Mode.CHEAP)
+	var full: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
+	assert_true(lands_enough.pending_decision() is ScryDecision)
+
+	var answer: Array = AiScenario.ask(lands_enough, cheap)
+
+	assert_eq(answer, [_top_ids(lands_enough, 1), []], "A land it does not need goes to the bottom.")
+	assert_eq(AiScenario.ask(short, cheap), [[], _top_ids(short, 1)], "One it needs stays on top.")
+	assert_eq(AiScenario.ask(short, full), AiScenario.ask(short, cheap))
+	assert_eq(lands_enough.submit(answer), "")
+	assert_eq(lands_enough.hero().library.objects().back().id, answer[0][0])
+
+
 func test_wary_thespian_is_cast_when_its_mana_is_there() -> void:
 	var thespian: MmCardDefinition = Scenario.thespian("Thespian")
 	thespian.mana_cost = Scenario.mana_cost(1, [MmMana.Type.GREEN])
@@ -83,10 +101,11 @@ func _wurm() -> MmCardDefinition:
 ## surveil [param amount].") for {0} with its surveil asked, the top of their library
 ## named [param tops], and between the battlefield and their hand at least
 ## [param least_lands] and at most [param most_lands] lands. Their deck cycles through a
-## Thespian and [param others].
+## Thespian and [param others]. With [param is_scry], the Thespian scries instead: a Seer,
+## "When this creature enters, scry [param amount].", named Thespian.
 func _surveilling(amount: int, tops: Array[String], others: Array[MmCardDefinition], least_lands: int,
-		most_lands: int = 40) -> MmEngine:
-	var cards: Array[MmCardDefinition] = [Scenario.thespian("Thespian", amount)]
+		most_lands: int = 40, is_scry: bool = false) -> MmEngine:
+	var cards: Array[MmCardDefinition] = [Scenario.seer("Thespian", amount) if is_scry else Scenario.thespian("Thespian", amount)]
 	cards.append_array(others)
 	var engine: MmEngine = Scenario.find_engine(Scenario.setup_with(Scenario.cycled(cards), Scenario.cycled([])),
 		func(running: MmEngine) -> bool:

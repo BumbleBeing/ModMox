@@ -12,6 +12,11 @@ extends RefCounted
 ## What a surveil asks (game ADR 0069), of one card and of more.
 const SURVEIL_ONE: String = "Surveil: graveyard any of these."
 const SURVEIL_SEVERAL: String = "Surveil: graveyard any of these, and order the rest. The leftmost will be on top."
+## What a scry asks (game ADR 0069's addendum), of one card and of more: the user's words.
+const SCRY_ONE: String = "Scry: put any of these on the bottom."
+const SCRY_SEVERAL: String = "Scry: put any of these on the bottom, and order the rest. The leftmost will be on top."
+## What an explore asks of the nonland card it revealed (engine ADR 0090), the words shown to the user.
+const EXPLORE: String = "Explore: graveyard this card, or keep it on top."
 
 var text: String = ""
 ## While paying: what is still owed. Null otherwise.
@@ -88,6 +93,14 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		var several: ChooseTargetsDecision = decision as ChooseTargetsDecision
 		prompt.text = "Choose %s for %s" % [AbilityText.up_to_targets_words(several.most), stack_name(view, several.stack_object_id)]
 		prompt.can_cancel = not _is_trigger(view, several.stack_object_id)
+	elif decision is ChooseObjectDecision and (decision as ChooseObjectDecision).purpose \
+			== ChooseObjectDecision.Purpose.EXILE_FROM_GRAVEYARD:
+		# Engine ADR 0088, the user's words: "Exile a creature card from your graveyard for
+		# Kishla Trawlers", as a cost's choice reads, though it can't be canceled.
+		var exiling: ChooseObjectDecision = decision as ChooseObjectDecision
+		var paying_for: MmObjectView = _stack_item(view, exiling.stack_object_id)
+		prompt.text = "Exile %s from your graveyard for %s" % [AbilityText.chosen_card_words(exiling.filter),
+			source_name(view, paying_for) if paying_for != null else "this"]
 	elif decision is ChooseObjectDecision:
 		var choice: ChooseObjectDecision = decision as ChooseObjectDecision
 		# Engine ADR 0080: a card among the cards just milled is "an instant or sorcery card".
@@ -95,15 +108,26 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 			else AbilityText.chosen_card_words(choice.filter)
 		prompt.text = "Choose %s for %s" % [words, stack_name(view, choice.stack_object_id)]
 	elif decision is ChoosePermanentsDecision:
-		# Later: a pick for a cost other than tapping, when a card has one.
 		var pick: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
-		prompt.text = "Tap %s for %s" % [AbilityText.how_many_words(pick.count, pick.filter), stack_name(view, pick.stack_object_id)]
+		var picked: String = AbilityText.how_many_words(pick.count, pick.filter)
+		if pick.purpose == ChoosePermanentsDecision.Purpose.RETURN_TO_HAND:
+			# The user's words: "Return a permanent you control to its owner's hand for Fear of
+			# Isolation".
+			prompt.text = "Return %s to %s owner's hand for %s" % [picked, "its" if pick.count == 1 else "their",
+				stack_name(view, pick.stack_object_id)]
+		else:
+			prompt.text = "Tap %s for %s" % [picked, stack_name(view, pick.stack_object_id)]
 		prompt.can_cancel = true
 	elif decision is ChooseCardsInLibraryDecision:
 		# Game ADR 0058: "Bushwhack: search your library for a basic land card".
 		var search: ChooseCardsInLibraryDecision = decision as ChooseCardsInLibraryDecision
 		prompt.text = "%s: search your library for %s" % [stack_name(view, search.stack_object_id),
 			AbilityText.searched_words(search.most, search.is_up_to, search.filter)]
+	elif decision is ExploreDecision:
+		prompt.text = EXPLORE  # Engine ADR 0090, the Surveil window holding the card.
+	elif decision is ScryDecision:
+		# Game ADR 0069's addendum: the user's words, the Surveil window holding the cards.
+		prompt.text = SCRY_ONE if (decision as ScryDecision).card_ids.size() == 1 else SCRY_SEVERAL
 	elif decision is SurveilDecision:
 		# Game ADR 0069: the user's words, the Surveil window holding the cards.
 		prompt.text = SURVEIL_ONE if (decision as SurveilDecision).card_ids.size() == 1 else SURVEIL_SEVERAL

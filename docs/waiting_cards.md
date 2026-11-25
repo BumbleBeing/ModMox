@@ -7,8 +7,4 @@ The real cards `/add-card` triaged and has not added yet (ADR 0040), grouped by 
 - **Set Aside**: something new on screen, which starts with a GUI prototype.
 - **Unsuited**: can never mean anything here, and is never proposed.
 
-## Set Aside
-
-### Scry
-
-- **Artificer's Assistant** ({U}, Creature — Bird, 1/1, Common): "Flying" and "Whenever you cast a historic spell, scry 1." Historic composes from existing Filters (an artifact, legendary or Saga spell). Waits on scry, a new decision on screen (cards to the top or the bottom), which starts with a prototype.
+No card is waiting.

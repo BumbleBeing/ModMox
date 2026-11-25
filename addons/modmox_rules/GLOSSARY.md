@@ -184,8 +184,12 @@ _Avoid_: Snapshot, visible state
 A triggered ability that has triggered but has not been put on the stack yet, together with what triggered it ("that player", "that creature") and the card it came from. One event may make several for one ability, one for each object it is about, as "blocks a creature" does for each attacker blocked.
 _Avoid_: Queued trigger, trigger instance
 
+**Reflexive Triggered Ability**:
+A triggered ability that a resolving ability creates as its controller takes the action it offers, "When you do, [ability]", as Kishla Trawlers's "you may exile a creature card from your graveyard. When you do, return target instant or sorcery card from your graveyard to your hand." (CR 603.12). It has no trigger of its own: it triggers as the action is taken, waits as a Pending Trigger, and goes on the stack the next time a player would receive priority, its targets chosen then, so the opponent may respond to it. Its source is the ability's source, as it last existed if it has gone (ADR 0088).
+_Avoid_: Follow-up ability, "if you do" (an effect of the same ability, which uses no stack), delayed trigger
+
 **Batch**:
-Events that happen at the same moment, such as everything state-based actions do at once or all combat damage in a step. Triggers are looked for once, after the whole batch.
+Events that happen at the same moment, such as everything state-based actions do at once or all combat damage in a step. Triggers are looked for once, after the whole batch. A trigger that says "one or more", as "Whenever one or more other creatures you control leave the battlefield without dying", triggers once for a batch however many of its events it matches.
 _Avoid_: Transaction, group
 
 **Becomes Tapped**:
@@ -220,8 +224,12 @@ _Avoid_: Recast, graveyard cast, rebuy
 A keyword, "Cycling [cost]": "[Cost], Discard this card: Draw a card", an activated ability that works only while its card is in its owner's hand, whenever they have priority (CR 702.29). Discarding the card is part of the cost, paid once the mana is, so the card is gone even if the ability is countered (ADR 0059). Every other activated ability works anywhere but the hand. Typecycling, such as "Basic landcycling [cost]", is cycling that searches your library for a card of that quality, reveals it and puts it into your hand instead of drawing (CR 702.29e).
 _Avoid_: Cycle away, recycle, loot (a different action: draw, then discard)
 
+**Additional Cost**:
+A cost a spell asks for besides its mana cost or alternative cost, "As an additional cost to cast this spell, [cost]" (CR 601.2f, 118.8), as Fear of Isolation's "return a permanent you control to its owner's hand". The spell may be cast only while it can be paid. Its choice is asked once the mana is paid, so a land just tapped for mana may be returned for it (ADR 0086), and it stays paid whatever becomes of the spell.
+_Avoid_: Extra cost, kicker (an optional one), cost increase
+
 **Cost Reduction**:
-A static ability of a spell that makes it cost less to cast: "This spell costs {1} less to cast for each basic land type among lands you control" takes off as much generic mana as a Value comes to, and affinity ("This spell costs {1} less to cast for each Cat you control", CR 702.41a) one for each matching permanent. What it takes off may be generic or colored mana, and comes off the mana cost or an alternative cost such as a flashback cost, by CR 118.7, as the cast begins (CR 601.2f). The spell's mana value never changes (ADR 0050). An activated ability may carry its own, as part of its text: "This ability costs {1} less to activate for each basic land type among lands you control" (CR 602.2b) takes generic mana off its mana cost as the activation begins.
+A static ability of a spell that makes it cost less to cast: "This spell costs {1} less to cast for each basic land type among lands you control" takes off as much generic mana as a Value comes to, and affinity ("This spell costs {1} less to cast for each Cat you control", CR 702.41a) one for each matching permanent. What it takes off may be generic or colored mana, and comes off the mana cost or an alternative cost such as a flashback cost, by CR 118.7, as the cast begins (CR 601.2f). The spell's mana value never changes (ADR 0050). An activated ability may carry its own, as part of its text: "This ability costs {1} less to activate for each basic land type among lands you control" (CR 602.2b) takes generic mana off its mana cost as the activation begins. A permanent may make its controller's spells cost less too: "The second spell you cast each turn costs {1} less to cast" takes generic mana off the caster's second spell this turn, counting the spells cast before the permanent arrived (ADR 0050's addendum).
 _Avoid_: Discount, cheaper cost, cost modifier
 
 **Linked Abilities**:
@@ -237,7 +245,7 @@ Something true or false about the game right now, such as "this permanent is unt
 _Avoid_: Predicate, check (Filter is the word when a player or object either matches or not)
 
 **May Effect**:
-An effect its controller may choose not to do, "You may [effect]." (CR 603.5, 608.2d). The spell or ability is put on the stack and its targets chosen whatever its controller means to do (CR 603.3d); as the effect begins they are asked yes or no, and the effect happens only on yes. Saying no is not failing to resolve, so the effects after it still happen.
+An effect its controller may choose not to do, "You may [effect]." (CR 603.5, 608.2d). The spell or ability is put on the stack and its targets chosen whatever its controller means to do (CR 603.3d); as the effect begins they are asked yes or no, and the effect happens only on yes. Saying no is not failing to resolve, so the effects after it still happen. "If you do, [effect]" after it happens only on yes, as in "you may draw a card. If you do, discard a card."; the answer is remembered as the spell or ability resolves, and the effect's own decision, which card to discard, is asked only then.
 _Avoid_: Optional trigger (the ability is not optional, only the effect is), may ability
 
 **Pay X Effect**:
@@ -258,7 +266,7 @@ _Avoid_: Chosen X, X value
 ## Continuous effects
 
 **Continuous Effect**:
-A change to characteristics that lasts, such as "white creatures get +1/+1" or "+3/+3 until end of turn". It comes from a static ability, applying to whatever matches right now, or from a resolved spell or ability, applying to what it found when it resolved.
+A change to characteristics that lasts, such as "white creatures get +1/+1" or "+3/+3 until end of turn". It comes from a static ability, applying to whatever matches right now, or from a resolved spell or ability, applying to what it found when it resolved. One from a resolved spell that states no duration, as Bring to Life's "becomes a 0/0 artifact creature", lasts for the rest of the encounter, on the object it found (ADR 0091).
 _Avoid_: Buff, modifier, aura (unless an actual Aura is meant)
 
 **Layer**:
@@ -282,6 +290,14 @@ _Avoid_: Override, interceptor, hook
 **Prevention Effect**:
 A replacement effect that stops damage from being dealt: all of it, or up to an amount. Prevented damage is never dealt, so nothing that reacts to damage sees it.
 _Avoid_: Damage reduction, absorb, block (blocking is combat)
+
+**Scry**:
+A keyword action: its player looks at the top N cards of their library, puts any number of them on the bottom of it in any order and the rest back on top in any order (CR 701.22a). It is asked and answered as a surveil is, with the cards sent to the bottom, the last sent the deepest, and the order of the rest; no card leaves the library, and every card looked at becomes a Known Card to its owner (ADR 0087).
+_Avoid_: Surveil (which puts cards into the graveyard), look at the top cards (which takes one into the hand)
+
+**Explore**:
+A keyword action of a permanent: its controller reveals the top card of their library. A land card goes into their hand; otherwise the permanent gets a +1/+1 counter and they may put the revealed card into their graveyard, a choice asked as a surveil of that one card is (CR 701.44a). The card is known to both players. A permanent that has left the battlefield still explores, and gets no counter. A Map, a predefined token, makes a creature explore (ADR 0090).
+_Avoid_: Surveil (which looks without revealing), scout, venture
 
 **Surveil**:
 A keyword action: its player looks at the top N cards of their library, puts any number of them into their graveyard and the rest back on top in any order (CR 701.25a). One decision, asked as the effect begins and answered once with the cards graveyarded and the order of the rest; the cards kept become Known Cards to their owner (ADR 0068).
@@ -355,6 +371,10 @@ _Avoid_: Gear, item (an Item is a Potion or a Boon), child, parent, host; "the e
 **Aura**:
 An enchantment that is an Attachment from the moment it enters, made so by its enchant ability, such as "Enchant land", which says what it may be attached to. An Aura spell targets what it will enchant, and if that target is gone as it resolves it goes to its owner's graveyard instead of entering; otherwise it enters attached to it. An Aura attached to something it may not enchant, or to nothing, is put into its owner's graveyard (CR 704.5m). "Enchanted land" is what an Aura is attached to, and "this Aura" what an Aura calls itself.
 _Avoid_: Enchantment (an Aura is one kind, and most enchantments are not Auras), buff, modifier; "falls off" (an Aura is put into the graveyard, an Equipment becomes unattached)
+
+**Bestow**:
+A keyword, "Bestow [cost]" (CR 702.103): its card, an enchantment creature, may be cast from the hand for that cost instead of its mana cost, as an Aura spell with enchant creature that is no creature. That spell and the Aura it resolves into are bestowed. If its target is gone as it resolves it ceases to be bestowed and enters as an enchantment creature, and once a bestowed Aura becomes unattached it ceases to be bestowed and stays on the battlefield as an enchantment creature, rather than going to its owner's graveyard as an Aura would (ADR 0089).
+_Avoid_: Aura mode, bestowed creature (bestowed, it is no creature), "falls off"
 
 **Damage Division**:
 An attacker's controller choosing how its combat damage is split among the creatures blocking it, and with trample the player it attacks. There is no damage assignment order. The GUI shows it as a damage-split popup.

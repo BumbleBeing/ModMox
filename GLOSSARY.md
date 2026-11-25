@@ -387,8 +387,8 @@ The window over the battlefield that asks which Mode of a Modal Spell is cast, o
 _Avoid_: Mode menu, charm picker, choose-one dialog
 
 **Surveil Window**:
-The window where the Hero surveils (game ADR 0069), titled "Surveil N" for the number of cards surveilled. It opens by itself left of the piles, three cards wide, with the cards face up in one row, leftmost on top of the library, and "Graveyard" baked into its bottom edge (game ADR 0085); it has no close button. A drag orders the row, a click selects a card (white, the others green), and Graveyard flies the selected card to the Hero's Graveyard pile. Only Done on the Pass Button answers.
-_Avoid_: Surveil dialog, scry window, Library window (that shows the whole library)
+The window where the Hero surveils (game ADR 0069), titled "Surveil N" for the number of cards surveilled. It opens by itself left of the piles, three cards wide, with the cards face up in one row, leftmost on top of the library, and "Graveyard" baked into its bottom edge (game ADR 0085); it has no close button. A drag orders the row, a click selects a card (white, the others green), and Graveyard flies the selected card to the Hero's Graveyard pile. Only Done on the Pass Button answers. A scry opens it too, titled "Scry N", its button reading "Bottom", which flies the selected card onto the Library pile instead, each card sent going under everything (game ADR 0069's addendum).
+_Avoid_: Surveil dialog, scry window (it is the same window), Library window (that shows the whole library)
 
 **Look Window**:
 The window where the Hero looks at the top cards of their library and may take one (game ADR 0085), as Militia Bugler has them do, titled "Look at N" for the number of cards looked at. It opens by itself left of the piles, four cards wide, with the cards face up in one row, leftmost on top of the library, and "Hand" baked into its bottom edge; it has no close button. The cards that may be taken glow green; a click selects one (white), and Hand flies it into the hand. There is no dragging. Only Done on the Pass Button answers, and the rest fly face down onto the Library pile.

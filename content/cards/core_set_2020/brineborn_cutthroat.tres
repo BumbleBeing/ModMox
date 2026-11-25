@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_v16vo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flash_ability.gd" id="2_7antw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_t0ntx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_55wm1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_j6bao"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_geemo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_wf3sa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="6_6bpfs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_7dc6e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_xrs1d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_iqa7i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="10_scxdh"]
+
+[sub_resource type="Resource" id="Resource_ll0q6"]
+script = ExtResource("2_7antw")
+
+[sub_resource type="Resource" id="Resource_4aqqh"]
+script = ExtResource("4_geemo")
+value = 1
+
+[sub_resource type="Resource" id="Resource_d1mfo"]
+script = ExtResource("5_wf3sa")
+
+[sub_resource type="Resource" id="Resource_3jwnj"]
+script = ExtResource("6_6bpfs")
+amount = SubResource("Resource_4aqqh")
+recipients = SubResource("Resource_d1mfo")
+
+[sub_resource type="Resource" id="Resource_lp6td"]
+script = ExtResource("10_scxdh")
+whose = 1
+during_whose_turn = 2
+
+[sub_resource type="Resource" id="Resource_m1cg3"]
+script = ExtResource("8_xrs1d")
+trigger = SubResource("Resource_lp6td")
+effects = Array[ExtResource("3_55wm1")]([SubResource("Resource_3jwnj")])
+
+[sub_resource type="Resource" id="Resource_au2mh"]
+script = ExtResource("2_t0ntx")
+generic = 1
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_j6bao")
+name = "Brineborn Cutthroat"
+card_types = Array[int]([1])
+subtypes = Array[String](["Merfolk", "Pirate"])
+mana_cost = SubResource("Resource_au2mh")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_v16vo")]([SubResource("Resource_ll0q6"), SubResource("Resource_m1cg3")])
+rarity = 1

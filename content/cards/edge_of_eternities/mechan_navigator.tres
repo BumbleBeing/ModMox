@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_ean4l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ayggb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_knsjf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_itcr7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_tbwa0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_5wls2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_c7d4u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/discard_effect.gd" id="6_kf2w8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_sx1fx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_l6k30"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_qf1rt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="10_e2ofv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/becomes_tapped_trigger.gd" id="11_jmb3o"]
+
+[sub_resource type="Resource" id="Resource_nfo86"]
+script = ExtResource("3_tbwa0")
+value = 1
+
+[sub_resource type="Resource" id="Resource_m6dbr"]
+script = ExtResource("4_5wls2")
+
+[sub_resource type="Resource" id="Resource_frbdo"]
+script = ExtResource("5_c7d4u")
+amount = SubResource("Resource_nfo86")
+players = SubResource("Resource_m6dbr")
+
+[sub_resource type="Resource" id="Resource_g745p"]
+script = ExtResource("3_tbwa0")
+value = 1
+
+[sub_resource type="Resource" id="Resource_y74c0"]
+script = ExtResource("4_5wls2")
+
+[sub_resource type="Resource" id="Resource_nhm8j"]
+script = ExtResource("6_kf2w8")
+amount = SubResource("Resource_g745p")
+players = SubResource("Resource_y74c0")
+
+[sub_resource type="Resource" id="Resource_fwgfc"]
+script = ExtResource("10_e2ofv")
+
+[sub_resource type="Resource" id="Resource_pjvml"]
+script = ExtResource("11_jmb3o")
+filter = SubResource("Resource_fwgfc")
+
+[sub_resource type="Resource" id="Resource_76imp"]
+script = ExtResource("8_l6k30")
+trigger = SubResource("Resource_pjvml")
+effects = Array[ExtResource("2_knsjf")]([SubResource("Resource_frbdo"), SubResource("Resource_nhm8j")])
+
+[sub_resource type="Resource" id="Resource_1g3ko"]
+script = ExtResource("2_ayggb")
+generic = 1
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_itcr7")
+name = "Mechan Navigator"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Robot", "Pilot"])
+mana_cost = SubResource("Resource_1g3ko")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_ean4l")]([SubResource("Resource_76imp")])
+rarity = 1

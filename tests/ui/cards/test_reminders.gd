@@ -55,6 +55,33 @@ func test_ward_is_reminded_of_what_it_does_and_named_without_its_cost() -> void:
 		"Whenever it becomes the target of a spell or ability an opponent controls, counter that unless its controller pays the ward cost.")
 
 
+func test_bestow_is_reminded_of_what_it_does_with_no_icon_after_the_keywords_with_chips() -> void:
+	# Engine ADR 0089: by the user's choice it has a Reminder but no Keyword Chip.
+	var bestow: BestowAbility = BestowAbility.new()
+	bestow.mana_cost = MmManaCost.new()
+	bestow.mana_cost.generic = 4
+
+	var reminders: Array[Reminder] = Reminders.of([bestow, FlyingAbility.new()] as Array[MmAbility])
+
+	assert_eq(_keywords(reminders), ["Flying", "Bestow"])
+	assert_eq(reminders[1].icon, "")
+	assert_eq(reminders[1].text, "You may cast this card as an Aura for its bestow cost. It becomes a creature again if it's not attached.")
+	assert_eq(KeywordChips.chips_for([bestow] as Array[MmAbility], KeywordChips.Place.ANYWHERE).size(), 0)
+
+
+func test_a_reminder_with_no_icon_is_drawn_with_an_empty_icon_space() -> void:
+	var chipless: Reminder = Reminder.new()
+	chipless.keyword = "Bestow"
+	chipless.text = "It becomes a creature again if it's not attached."
+
+	var row: HBoxContainer = InspectorParts.reminder_row(chipless, InspectorParts.Palette.new(Color.BLACK, Color.GRAY, Color.WHITE, Color.GRAY), 16)
+
+	var icon: TextureRect = row.get_child(0) as TextureRect
+	assert_null(icon.texture)
+	assert_eq(icon.custom_minimum_size, Vector2(32, 32), "Its words line up with the others'.")
+	row.free()
+
+
 func test_hexproof_is_reminded_of_what_it_does() -> void:
 	var reminders: Array[Reminder] = Reminders.of([HexproofAbility.new()] as Array[MmAbility])
 

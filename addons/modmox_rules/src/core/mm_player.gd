@@ -24,6 +24,9 @@ var lands_played_this_turn: int = 0
 ## The spells this player has cast this turn (CR 601.2i), wherever they were cast from, for
 ## "your second spell each turn".
 var spells_cast_this_turn: int = 0
+## The cards this player has drawn this turn (CR 121.1), one at a time (CR 121.2), the draw
+## step's card among them, for "your second card each turn".
+var cards_drawn_this_turn: int = 0
 ## Land plays this player may make this turn beyond their one, from resolved spells and
 ## abilities (CR 305.2). Ones from static abilities are counted where land plays are offered.
 var additional_land_plays_this_turn: int = 0
@@ -64,6 +67,7 @@ func duplicate_without_objects() -> MmPlayer:
 	copy.latest_turn_game_turn = latest_turn_game_turn
 	copy.lands_played_this_turn = lands_played_this_turn
 	copy.spells_cast_this_turn = spells_cast_this_turn
+	copy.cards_drawn_this_turn = cards_drawn_this_turn
 	copy.additional_land_plays_this_turn = additional_land_plays_this_turn
 	copy.has_drawn_from_empty_library = has_drawn_from_empty_library
 	copy.has_lost = has_lost
@@ -100,6 +104,7 @@ func begin_turn(game_turn: int) -> void:
 func reset_turn_counters() -> void:
 	lands_played_this_turn = 0
 	spells_cast_this_turn = 0
+	cards_drawn_this_turn = 0
 	# CR 514.2 ends "this turn" effects in the cleanup step. Ending them as the next turn
 	# begins is the same, since no land can be played in between.
 	additional_land_plays_this_turn = 0
@@ -113,6 +118,11 @@ func record_land_play() -> void:
 ## Event-only: counts a spell this player cast this turn (CR 601.2i).
 func record_spell_cast() -> void:
 	spells_cast_this_turn += 1
+
+
+## Event-only: counts a card this player drew this turn (CR 121.1).
+func record_card_drawn() -> void:
+	cards_drawn_this_turn += 1
 
 
 ## Event-only: allows [param count] more land plays this turn (CR 305.2).

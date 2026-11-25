@@ -1,0 +1,13 @@
+# A resolved effect with no duration lasts for the encounter, and a permanent may become an artifact creature
+
+Animating Faerie's Adventure, Bring to Life, brought the first type change and the first effect that never ends: "Target noncreature artifact you control becomes a 0/0 artifact creature. Put four +1/+1 counters on it." CR 205.1b: an effect that makes an object an artifact creature lets it keep every type and subtype it had. CR 611.2a: a continuous effect from a resolving spell or ability that states no duration lasts until the end of the game.
+
+**"[affected] becomes a [card types]" is an `AddCardTypesContinuousEffect`**, a layer 4 effect (CR 613.1d) that adds each of its `card_types` the object lacks, keeping the rest, as `AddSubtypesContinuousEffect` adds subtypes. "Becomes a 0/0" is the `SetPowerToughnessContinuousEffect` that already sets base power and toughness in layer 7b. Bring to Life is the two, then four +1/+1 counters.
+
+**`CreateContinuousEffect.Duration.INDEFINITELY` is no duration at all.** Cleanup ends only effects that last until end of turn (CR 514.2), so this one lasts for the rest of the encounter, which is the end of the game here. It applies to the objects it found as it resolved (CR 611.2c), so a permanent that leaves and comes back is a new object it does not reach (ADR 0008), and it applies to nothing once its object has gone. Rejected: a static ability given to the permanent ("this is an artifact creature"), which a Modification or an effect that takes abilities away could remove, where CR 611.2a's effect stays.
+
+What follows came with nothing new. A permanent controlled since its controller's turn began may attack the turn it becomes a creature (CR 302.6), since sickness is about control, not about being a creature. An Equipment that becomes a creature is unattached by the state-based action for Equipment attached illegally (CR 301.5c, 704.5n). An Adventure is cast as any Adventure is (ADR 0078). The Agent tags an effect with no duration as no trick (`AiTiming`), so it casts Bring to Life as any sorcery, when the simulation says the 4/4 is worth more than the artifact was; it aims it at its own artifact, which is all it may target. The GUI draws the new creature's power and toughness, as it does for any permanent that is a creature (`CardLook`).
+
+`AbilityText` says no duration for one with none, and says the two effects of one object as one clause, "becomes a 0/0 artifact creature", as Oracle does; one that adds card types alone says "becomes an artifact creature".
+
+Left out until a card needs them (ADR 0001): durations such as "until your next turn" or "for as long as you control this", removing card types, and setting the types an object has instead of adding to them.

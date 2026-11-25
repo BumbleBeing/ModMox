@@ -2121,7 +2121,9 @@ func _redraw() -> void:
 	_draw_row(_permanents(view, HERO, true), regions["hero_lands"], glow, on_lands)
 	for player_id: int in [VILLAIN, HERO]:
 		var who: String = "hero" if player_id == HERO else "villain"
-		var landed: int = _surveil_landed.size() + _look_landed.size() if player_id == HERO else 0
+		# Game ADR 0069's addendum: a card a scry sends to the bottom is still in the library.
+		var graveyarded: int = 0 if _surveil.is_scry() else _surveil_landed.size()
+		var landed: int = graveyarded + _look_landed.size() if player_id == HERO else 0
 		_draw_library(view.library_sizes.get(player_id, 0) - landed, who + "_library", regions[who + "_library"])
 		var graveyard: Array = _graveyard_shown(player_id)
 		var exile: Array = view.exiles.get(player_id, [])
@@ -3516,30 +3518,18 @@ func _move_surveilled(from: int, to: int) -> void:
 
 
 ## "Graveyard" was pressed: the selected card flies out of the Surveil window straight onto
-## the Hero's Graveyard pile, which counts it once it lands. Nothing is answered (game ADR
-## 0069).
+## the Hero's Graveyard pile, which counts it once it lands. For a scry, "Bottom" flies it
+## onto the Library pile, whose count stays as it was, since the card never leaves the
+## library (game ADR 0069's addendum). Nothing is answered (game ADR 0069).
 func _send_surveilled() -> void:
 	if _is_paused or not _surveil.is_active():
 		return
-	var face: CardFace = _surveil_window.face_of(_surveil.picked())
-	var start: FacePose = null
-	if face != null:
-		var rect: Rect2 = face.get_global_rect()
-		start = FacePose.of(rect.get_center() - global_position, rect.size.y, 0.0)
+	var start: FacePose = _face_pose_in(_surveil_window.face_of(_surveil.picked()))
 	var sent: int = _surveil.send_picked()
 	if sent == SurveilChoice.NONE:
 		return
-	if _flight_layer.seconds > 0.0 and start != null:
-		var route: CardFlights.Route = CardFlights.Route.new()
-		route.first_object_id = sent
-		route.object_id = sent
-		route.card_id = _seen(sent).card_id if _seen(sent) != null else 0
-		route.from_zone_kind = MmZone.Kind.LIBRARY
-		route.from_owner_id = HERO
-		route.to_zone_kind = MmZone.Kind.GRAVEYARD
-		route.to_owner_id = HERO
-		_flight_layer.put_in_air(route, start, FlightCard.Kind.CARD, _snapshot.look_of(sent))
-	else:
+	var to_zone_kind: MmZone.Kind = MmZone.Kind.LIBRARY if _surveil.is_scry() else MmZone.Kind.GRAVEYARD
+	if not _put_in_air_from_library(sent, start, to_zone_kind):
 		_surveil_landed.append(sent)
 	_redraw()
 
@@ -3653,7 +3643,7 @@ func _undo_looked_at() -> void:
 ## surveils, the cards they sent there that have landed, the last on top (game ADR 0069).
 func _graveyard_shown(player_id: int) -> Array:
 	var cards: Array = _snapshot.view.graveyards.get(player_id, []).duplicate()
-	if player_id == HERO:
+	if player_id == HERO and not _surveil.is_scry():
 		for object_id: int in _surveil_landed:
 			var seen: MmObjectView = _seen(object_id)
 			if seen != null:

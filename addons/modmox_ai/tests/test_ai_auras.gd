@@ -23,6 +23,33 @@ func test_a_land_aura_is_aimed_at_its_own_land_at_every_level() -> void:
 		assert_eq(engine.game_state().object(target.id).controller_id, engine.hero().id)
 
 
+func test_a_bestowed_naiad_goes_on_its_own_creature_at_every_level() -> void:
+	# Engine ADR 0089: bestowed it is an Aura spell, which the Agent aims at its own permanents.
+	for agent: AiAgent in [AiAgent.new(null, AiAgent.Mode.CHEAP), AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy()),
+			AiAgent.new()]:
+		var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2)], [Scenario.creature("Ogre", 3, 3)],
+			[Scenario.naiad()])
+		assert_not_null(engine)
+		var naiad: int = Scenario.card_in_hand(engine, engine.hero(), "Naiad")
+		assert_eq(engine.submit(Scenario.cast_index_bestowed(engine.pending_decision() as PriorityDecision, naiad)), "")
+
+		var target: MmReference = AiScenario.chosen_target(engine, AiScenario.ask(engine, agent))
+
+		assert_eq(target.id, Scenario.permanent_named(engine, engine.hero().id, "Bear"))
+
+
+func test_a_bestowed_cast_is_read_as_an_aura() -> void:
+	var engine: MmEngine = AiScenario.ready_with([Scenario.creature("Bear", 2, 2)], [], [Scenario.naiad()])
+	assert_not_null(engine)
+	var naiad: int = Scenario.card_in_hand(engine, engine.hero(), "Naiad")
+
+	var bestowed: MmCharacteristics = AiTiming.characteristics_of_cast(engine.game_state(), CastSpellAction.new(naiad, false, true))
+	var plain: MmCharacteristics = AiTiming.characteristics_of_cast(engine.game_state(), CastSpellAction.new(naiad))
+
+	assert_true(bestowed.has_subtype("Aura") and not bestowed.has_card_type(CardType.CREATURE))
+	assert_true(plain.has_card_type(CardType.CREATURE), "Its card's own are unchanged.")
+
+
 func test_a_cheap_agent_aims_its_aura_at_an_untapped_land() -> void:
 	var tapper: MmCardDefinition = Scenario.instant("Tapper", Scenario.mana_cost(0),
 		[Scenario.target(Scenario.of_type(CardType.LAND))], [Scenario.tap(Scenario.targeted(0))])

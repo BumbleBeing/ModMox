@@ -5,9 +5,19 @@ extends MmPendingDecision
 ## (CR 608.2d). It is not a target. Answer: the index of the chosen entry in
 ## [member candidates], which lists permanents in ID order, or cards among those an earlier
 ## effect moved, such as the cards milled, in their order (engine ADR 0080).
+## With the purpose EXILE_FROM_GRAVEYARD it is the card a cost said yes to exiles instead,
+## "a creature card from your graveyard" (ExileFromGraveyardCost), among the cards of the
+## payer's graveyard in their order, and it has no choice index.
+
+## What the card is chosen for: a choice of a ChosenSelection, or a cost being paid.
+enum Purpose { CHOOSE = 0, EXILE_FROM_GRAVEYARD = 1 }
+
+## The choice index of a decision that is not for a ChosenSelection.
+const NO_CHOICE_INDEX: int = -1
 
 var stack_object_id: int
 var choice_index: int
+var purpose: Purpose = Purpose.CHOOSE
 ## What may be chosen, so that what is asked can be put in words. Card data, never changed.
 var filter: MmFilter
 var candidates: Array[MmReference]

@@ -97,6 +97,16 @@ static func taps(effects: Array[MmEffect]) -> bool:
 	return false
 
 
+## Whether any of [param effects] untaps: worth something, as a tap is, only in a fight
+## this turn or the next, so its targets are scored once the turn is over too. It helps what
+## it reaches, so it is aimed at the Agent's own permanents.
+static func untaps(effects: Array[MmEffect]) -> bool:
+	for effect: MmEffect in unwrapped(effects):
+		if effect is UntapEffect:
+			return true
+	return false
+
+
 ## Whether [param effect] puts -1/-1 counters: harm that lasts, aimed like removal.
 static func _shrinks_for_good(effect: MmEffect) -> bool:
 	var put: PutCountersEffect = effect as PutCountersEffect
@@ -195,9 +205,12 @@ static func tag_of_spell(spell: SpellAbility) -> Tag:
 	return shared
 
 
-## The characteristics of what [param cast] casts: its card's, or its Adventure's when it
-## casts the card as one (CR 715.3b, engine ADR 0078).
+## The characteristics of what [param cast] casts: its card's, its Adventure's when it
+## casts the card as one (CR 715.3b, engine ADR 0078), or an Aura's when it casts the card
+## bestowed (CR 702.103b, engine ADR 0089).
 static func characteristics_of_cast(state: MmGameState, cast: CastSpellAction) -> MmCharacteristics:
+	if cast.is_bestowed:
+		return BestowRules.as_bestowed(state, state.object(cast.object_id))
 	var characteristics: MmCharacteristics = state.characteristics_of(state.object(cast.object_id))
 	return characteristics.adventure if cast.as_adventure and characteristics.adventure != null else characteristics
 
