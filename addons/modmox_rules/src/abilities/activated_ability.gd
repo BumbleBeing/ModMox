@@ -133,6 +133,10 @@ func can_pay_costs(state: MmGameState, source: MmGameObject) -> bool:
 	for cost: MmCost in costs:
 		if not cost.can_pay(state, source, source.controller_id):
 			return false
+		var tapping: TapCreaturesCost = cost as TapCreaturesCost
+		if tapping != null and has_tap_cost() and _besides_source(tapping.candidates(state, source, source.controller_id),
+				source).size() < tapping.count:
+			return false  # CR 107.5: its {T} taps its source, which can't be tapped again.
 	return true
 
 
@@ -147,13 +151,35 @@ func mana_to_pay(state: MmGameState, source: MmGameObject) -> MmManaCost:
 	return mana_cost.reduced_by(reduction)
 
 
-## Pays every cost, in order (CR 602.2b), for an ability that never stops to ask: a mana
-## ability (CR 605.3a). One that uses the stack is paid by CastProcedure, which asks.
-func pay_costs(state: MmGameState, source: MmGameObject) -> void:
-	var nothing_chosen: Array[int] = []
+## What a mana ability's cost asks its controller to choose as it is activated, such as
+## Jaspera Sentinel's "Tap an untapped creature you control" (CR 605.3a, 601.2h, engine ADR
+## 0105), or null when no cost asks anything. A permanent its own {T} taps is never among
+## what may be tapped (CR 107.5). One that uses the stack asks through CastProcedure instead.
+func cost_choice(state: MmGameState, source: MmGameObject) -> MmPendingDecision:
 	for cost: MmCost in costs:
-		assert(cost.choice(state, source, source.controller_id) == null, "A mana ability's cost cannot ask a choice yet.")
-		cost.pay(state, source, source.controller_id, nothing_chosen)
+		var asked: MmPendingDecision = cost.choice(state, source, source.controller_id)
+		if asked == null:
+			continue
+		var picking: ChoosePermanentsDecision = asked as ChoosePermanentsDecision
+		assert(picking != null, "A mana ability's cost can ask only which permanents to tap.")
+		if has_tap_cost():
+			picking.candidate_ids = _besides_source(picking.candidate_ids, source)
+		picking.is_for_mana_ability = true
+		return picking
+	return null
+
+
+## Pays every cost, in order (CR 602.2b), for a mana ability (CR 605.3a), with
+## [param chosen] the answer to [method cost_choice] (empty when it asked none). One that
+## uses the stack is paid by CastProcedure, which asks.
+# Later: a mana ability with two costs that each ask a choice, once a card has one.
+func pay_costs(state: MmGameState, source: MmGameObject, chosen: Array[int] = []) -> void:
+	var asking: Array[bool] = []
+	for cost: MmCost in costs:
+		asking.append(cost.choice(state, source, source.controller_id) != null)  # Before any is paid.
+	var nothing_chosen: Array[int] = []
+	for index: int in costs.size():
+		costs[index].pay(state, source, source.controller_id, chosen if asking[index] else nothing_chosen)
 
 
 ## Carries out every effect at once, in order, for a mana ability, which resolves
@@ -165,3 +191,9 @@ func resolve_effects(state: MmGameState, context: MmEffectContext) -> void:
 
 func describe() -> String:
 	return "activated ability (%d costs, %d targets, %d effects)" % [costs.size(), targets.size(), effects.size()]
+
+
+static func _besides_source(ids: Array[int], source: MmGameObject) -> Array[int]:
+	var besides: Array[int] = ids.duplicate()
+	besides.erase(source.id)
+	return besides

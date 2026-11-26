@@ -15,3 +15,8 @@ Sage of the Skies says "When you cast this spell, if you've cast another spell t
 **The Agent casts another spell first.** One-step scoring stops once a play has resolved, so it scored Sage alone above any cheaper spell and never saw the copy that casting it second would make. When a candidate cast's own cast trigger waits for another spell this turn and none has been cast yet, `AiAgent._plan_follow_ups()` also scores each other candidate followed by it, on the same re-dealt worlds; a pair that beats both its plays alone gives the first play its score. That play is made first, and the waiting spell is weighed again at the next priority, its condition true by then. CHEAP Agents and Flat Monte Carlo are unchanged: a rollout plays the rest of the turn already.
 
 Left out until a card needs them (ADR 0001): copying an Adventure spell (engine ADR 0078), "you may choose new targets for the copy" (CR 707.10c), copies of abilities (CR 707.10b), copying a spell for each of something (CR 707.10d), a copy of a permanent spell with "as this enters, choose" answered differently from its original, and a permanent cast this turn with this condition counting itself.
+
+## Addendum: other spells that wait for a play, and never first of a pair
+
+The follow-up plan now also takes a permanent spell that enters with counters for the life its controller gained this turn, as Voracious Wurm does (engine ADR 0082's fourth addendum): a play that gains life first makes it larger. **A spell that waits is never the first of a pair**: with two Wurms in hand, "a Wurm, then a Wurm" credited the first Wurm with the second's worth and outscored "a life gain, then a Wurm".
+

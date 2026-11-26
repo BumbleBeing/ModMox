@@ -59,3 +59,13 @@ Irreverent Gremlin's "you may discard a card. If you do, draw a card." could not
 
 Left out until a card needs them (ADR 0001): a discard as the cost of a cast or an activation ("{T}, Discard a card: ..."), which `CastProcedure` would ask with its other choices, and discarding a card of a kind ("discard a creature card").
 
+## Addendum: a reflexive trigger after "you may pay {X}"
+
+Wildborn Preserver says "Whenever another non-Human creature you control enters, you may pay {X}. When you do, put X +1/+1 counters on this creature." A `MayPayXEffect` (ADR 0061) holds the `ReflexiveTriggerEffect`, and the reflexive ability's "X" is the X paid for the ability that held it.
+
+**A reflexive trigger carries the X paid.** `ReflexiveTriggerEffect` puts the context's X on its `PendingTrigger` (`paid_x`), which puts it on the ability's object on the stack (`MmGameObject.paid_x`, copied with it), and the context the ability is worked out in starts with it, so `PaidXValue` reads it, as a delayed trigger's "it" is carried (engine ADR 0103). Paying 0 is paying, so the reflexive ability triggers and puts no counters; declining triggers nothing. The counters wait on the stack, so a Preserver removed in response gets none.
+
+`AbilityText` words it "you may pay {X}. When you do, put X +1/+1 counters on this creature."
+
+The Agent needs nothing of its own: what the "you may pay {X}" offers asks nothing as it begins, so only the most X is worth paying, which a CHEAP Agent pays and a FULL one weighs against declining.
+

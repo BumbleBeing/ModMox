@@ -893,6 +893,22 @@ static func add_subtypes(subtypes: Array[String], affected: MmSelection) -> AddS
 	return effect
 
 
+## Layer 4: "[affected] becomes a [creature types]" (CR 205.1a), as Mild-Mannered
+## Librarian's "This creature becomes a Werewolf": the creature types replace its own.
+static func set_creature_types(creature_types: Array[String], affected: MmSelection) -> SetCreatureTypesContinuousEffect:
+	var effect: SetCreatureTypesContinuousEffect = SetCreatureTypesContinuousEffect.new()
+	effect.creature_types = creature_types
+	effect.affected = affected
+	return effect
+
+
+## An instant costing {0}: "Target creature becomes a Werewolf.", an effect with no
+## duration (CR 611.2a).
+static func free_moonrise(card_name: String = "Moonrise") -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))],
+		[indefinitely(set_creature_types(["Werewolf"], targeted(0)))])
+
+
 ## Layer 7c: "[affected] get(s) +[power]/+[toughness]".
 static func modify_pt(power: int, toughness: int, affected: MmSelection) -> ModifyPowerToughnessContinuousEffect:
 	var effect: ModifyPowerToughnessContinuousEffect = ModifyPowerToughnessContinuousEffect.new()
@@ -2829,6 +2845,15 @@ static func any_color() -> AddManaEffect:
 	return effect
 
 
+## A 1/2 creature costing {0} with Jaspera Sentinel's mana ability: "{T}, Tap an untapped
+## creature you control: Add one mana of any color." Its cost asks which creature to tap
+## (engine ADR 0105).
+static func sentinel(card_name: String = "Sentinel") -> MmCardDefinition:
+	var costs: Array[MmCost] = [TapCost.new(), tap_creatures(1)]
+	var effects: Array[MmEffect] = [any_color()]
+	return creature(card_name, 1, 2, [activated(null, costs, effects)])
+
+
 ## "Add {U}, {B}, or {R}": one mana of one of [param colors], its color chosen as its ability
 ## is activated (ADR 0072).
 static func one_of_colors(colors: Array[MmMana.Type]) -> AddManaEffect:
@@ -3026,6 +3051,18 @@ static func adventurer(creature_cost: MmManaCost = null, adventure_cost: MmManaC
 	gift.subtypes = ["Adventure"]
 	guide.adventure = gift
 	return guide
+
+
+## "A creature spell that has an Adventure" (CR 715.2): a creature that is an Adventurer card.
+static func creature_with_adventure() -> AllOfFilter:
+	return all_of([of_type(MmCardTypes.CardType.CREATURE), HasAdventureFilter.new()])
+
+
+## A 1/1 creature costing {0} with Edgewall Innkeeper's ability: "Whenever you cast a
+## creature spell that has an Adventure, draw a card."
+static func innkeeper(card_name: String = "Innkeeper") -> MmCardDefinition:
+	return creature(card_name, 1, 1, [triggered(casts(creature_with_adventure(), MmTrigger.Whose.YOU),
+		[draw_cards(1, you())])])
 
 
 ## The index of the priority action that casts [param object_id], as its Adventure when
@@ -3727,6 +3764,81 @@ static func gained_life_this_turn() -> GainedLifeThisTurnCondition:
 static func apprentice(card_name: String = "Apprentice") -> MmCardDefinition:
 	var shrink: IfEffect = if_then(gained_life_this_turn(), until_end_of_turn(modify_pt(-4, -4, targeted(0))))
 	return creature(card_name, 2, 2, [triggered(enters(IsSourceFilter.new()), [shrink], [target(creature_you_dont_control())])])
+
+
+# --- Card track: "the amount of life you've gained this turn" -------------------------------
+
+## "The amount of life [param players] have gained this turn" ("you" unless others are given),
+## engine ADR 0082's fourth addendum.
+static func life_gained_this_turn(players: MmSelection = null) -> LifeGainedThisTurnValue:
+	var value: LifeGainedThisTurnValue = LifeGainedThisTurnValue.new()
+	value.players = players if players != null else you()
+	return value
+
+
+## A 2/2 costing {0} with Voracious Wurm's ability: "This creature enters with X +1/+1
+## counters on it, where X is the amount of life you've gained this turn."
+static func wurm(card_name: String = "Wurm") -> MmCardDefinition:
+	return creature(card_name, 2, 2, [enters_with_counters(life_gained_this_turn())])
+
+
+# --- Card track: "[filter] spells you control can't be countered" -----------------------------
+
+## "[param filter] spells you control can't be countered", engine ADR 0062's second addendum.
+static func spells_cant_be_countered(filter: MmFilter) -> SpellsCantBeCounteredAbility:
+	var ability: SpellsCantBeCounteredAbility = SpellsCantBeCounteredAbility.new()
+	ability.filter = filter
+	return ability
+
+
+## A 2/3 Enchantment Creature costing {0} with Destiny Spinner's first ability: "Creature and
+## enchantment spells you control can't be countered."
+static func spinner(card_name: String = "Spinner") -> MmCardDefinition:
+	var definition: MmCardDefinition = creature(card_name, 2, 3, [spells_cant_be_countered(
+		any_of([of_type(MmCardTypes.CardType.CREATURE), of_type(MmCardTypes.CardType.ENCHANTMENT)]))])
+	definition.card_types = [MmCardTypes.CardType.ENCHANTMENT, MmCardTypes.CardType.CREATURE]
+	return definition
+
+
+# --- Card track: "you may pay {X}. When you do, ..." -----------------------------------------
+
+## A 2/2 costing {0} with Wildborn Preserver's abilities (engine ADR 0088's fifth addendum):
+## flash, reach, and "Whenever another non-Human creature you control enters, you may pay
+## {X}. When you do, put X +1/+1 counters on this creature."
+static func preserver(card_name: String = "Preserver") -> MmCardDefinition:
+	var counters: PutCountersEffect = put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 0, SourceSelection.new())
+	counters.amount = paid_x()
+	var other_non_human: AllOfFilter = all_of([of_type(MmCardTypes.CardType.CREATURE), is_not(has_subtype("Human")),
+		is_not(IsSourceFilter.new())])
+	var grows: TriggeredAbility = triggered(enters(other_non_human, MmTrigger.Whose.YOU), [pay_x(reflexive([counters]))])
+	return creature(card_name, 2, 2, [FlashAbility.new(), ReachAbility.new(), grows])
+
+
+# --- Card track: "As an additional cost to cast this spell, [costs] or [costs]" ---------------
+
+## "As an additional cost to cast this spell, [param costs] or [param or_mana] and
+## [param or_costs]" (CR 601.2b, 601.2f, engine ADR 0086's second addendum).
+static func additional_cost_or(costs: Array[MmCost], or_mana: MmManaCost, or_costs: Array[MmCost] = []) -> AdditionalCostAbility:
+	var ability: AdditionalCostAbility = additional_cost(costs)
+	ability.or_mana_cost = or_mana
+	ability.or_costs = or_costs
+	return ability
+
+
+## A 5/4 creature costing {0}, unless another cost is given, with Bayou Groff's ability: "As
+## an additional cost to cast this spell, sacrifice a creature or pay {3}."
+static func groff(card_name: String = "Groff", cost: MmManaCost = null) -> MmCardDefinition:
+	var costs: Array[MmCost] = [sacrifice_permanents(1, of_type(MmCardTypes.CardType.CREATURE))]
+	return creature(card_name, 5, 4, [additional_cost_or(costs, mana_cost(3))], cost)
+
+
+## The index of [param object_id]'s cast from the hand for its other additional cost
+## ([param other]) or its first, neither bestowed, as an Adventure nor for an alternative cost.
+static func cast_index_other_additional(decision: PriorityDecision, object_id: int, other: bool = true) -> int:
+	return action_index(decision, func(action: MmAction) -> bool:
+		var cast: CastSpellAction = action as CastSpellAction
+		return cast != null and cast.object_id == object_id and not cast.as_adventure and not cast.is_bestowed \
+			and not cast.is_for_alternative_cost and cast.is_for_other_additional_cost == other)
 
 
 # --- Card track: "if an opponent lost life this turn" -----------------------------------------

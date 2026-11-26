@@ -83,6 +83,28 @@
 		"toughness": "1",
 		"type_line": "Creature — Human Soldier"
 	},
+	"alloy_animist": {
+		"mana_cost": "{G}",
+		"name": "Alloy Animist",
+		"oracle_id": "4acacdd2-a736-43a2-ad67-891b9bd124f8",
+		"oracle_text": "{2}{G}: Until end of turn, target noncreature artifact you control becomes a 4/4 artifact creature.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "The Brothers' War",
+		"toughness": "1",
+		"type_line": "Creature — Human Druid"
+	},
+	"almighty_brushwagg": {
+		"mana_cost": "{G}",
+		"name": "Almighty Brushwagg",
+		"oracle_id": "d8a3a89d-9d27-40ae-a1aa-d55cc6a79b0b",
+		"oracle_text": "Trample\n{3}{G}: This creature gets +3/+3 until end of turn.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Ikoria: Lair of Behemoths",
+		"toughness": "1",
+		"type_line": "Creature — Brushwagg"
+	},
 	"ancestral_recall": {
 		"mana_cost": "{U}",
 		"name": "Ancestral Recall",
@@ -357,6 +379,17 @@
 		"set_name": "Mirrodin",
 		"type_line": "Instant"
 	},
+	"bayou_groff": {
+		"mana_cost": "{1}{G}",
+		"name": "Bayou Groff",
+		"oracle_id": "e83b2790-3cec-429c-a65d-6f4c7d025d37",
+		"oracle_text": "As an additional cost to cast this spell, sacrifice a creature or pay {3}.",
+		"power": "5",
+		"rarity": "common",
+		"set_name": "Strixhaven: School of Mages",
+		"toughness": "4",
+		"type_line": "Creature — Plant Dog"
+	},
 	"belunas_gatekeeper": {
 		"card_faces": [
 			{
@@ -589,6 +622,17 @@
 		"set_name": "Theros Beyond Death",
 		"toughness": "4",
 		"type_line": "Creature — Unicorn"
+	},
+	"carapace_forger": {
+		"mana_cost": "{1}{G}",
+		"name": "Carapace Forger",
+		"oracle_id": "9e623e0a-3c2d-4536-b12f-9437ef820499",
+		"oracle_text": "Metalcraft — This creature gets +2/+2 as long as you control three or more artifacts.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Scars of Mirrodin",
+		"toughness": "2",
+		"type_line": "Creature — Elf Artificer"
 	},
 	"celebrity_fencer": {
 		"mana_cost": "{3}{W}",
@@ -937,6 +981,17 @@
 		"set_name": "Torment",
 		"type_line": "Sorcery"
 	},
+	"deeproot_champion": {
+		"mana_cost": "{1}{G}",
+		"name": "Deeproot Champion",
+		"oracle_id": "507c2921-7070-482d-8754-dc667e3315bd",
+		"oracle_text": "Whenever you cast a noncreature spell, put a +1/+1 counter on this creature.",
+		"power": "1",
+		"rarity": "rare",
+		"set_name": "Ixalan",
+		"toughness": "1",
+		"type_line": "Creature — Merfolk Shaman"
+	},
 	"defiant_strike": {
 		"mana_cost": "{W}",
 		"name": "Defiant Strike",
@@ -945,6 +1000,17 @@
 		"rarity": "common",
 		"set_name": "Khans of Tarkir",
 		"type_line": "Instant"
+	},
+	"destiny_spinner": {
+		"mana_cost": "{1}{G}",
+		"name": "Destiny Spinner",
+		"oracle_id": "7dd189f8-a23f-4b43-b0ef-fb174a9664ba",
+		"oracle_text": "Creature and enchantment spells you control can't be countered.\n{3}{G}: Target land you control becomes an X/X Elemental creature with trample and haste until end of turn, where X is the number of enchantments you control. It's still a land.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Theros Beyond Death",
+		"toughness": "3",
+		"type_line": "Enchantment Creature — Human"
 	},
 	"destroy_evil": {
 		"mana_cost": "{1}{W}",
@@ -1098,6 +1164,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Vampire Soldier"
 	},
+	"edgewall_innkeeper": {
+		"mana_cost": "{G}",
+		"name": "Edgewall Innkeeper",
+		"oracle_id": "e3d7cea4-0d4c-4320-966d-17ef69b5e433",
+		"oracle_text": "Whenever you cast a creature spell that has an Adventure, draw a card. (It doesn't need to have gone on the adventure first.)",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Throne of Eldraine",
+		"toughness": "1",
+		"type_line": "Creature — Human Peasant"
+	},
 	"eidolon_of_philosophy": {
 		"mana_cost": "{U}",
 		"name": "Eidolon of Philosophy",
@@ -1141,6 +1218,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "1",
 		"type_line": "Creature — Elf Archer"
+	},
+	"elvish_visionary": {
+		"mana_cost": "{1}{G}",
+		"name": "Elvish Visionary",
+		"oracle_id": "c6a3a882-a127-4590-93d7-679ef4313efe",
+		"oracle_text": "When this creature enters, draw a card.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Shards of Alara",
+		"toughness": "1",
+		"type_line": "Creature — Elf Shaman"
 	},
 	"emeria_angel": {
 		"mana_cost": "{2}{W}{W}",
@@ -1273,6 +1361,17 @@
 		"set_name": "Rivals of Ixalan",
 		"toughness": "1",
 		"type_line": "Creature — Goblin Pirate"
+	},
+	"fang_of_shigeki": {
+		"mana_cost": "{G}",
+		"name": "Fang of Shigeki",
+		"oracle_id": "9e187d43-ae75-4589-81fc-476ae95ba5b9",
+		"oracle_text": "Deathtouch",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "1",
+		"type_line": "Enchantment Creature — Snake Ninja"
 	},
 	"fear_of_isolation": {
 		"mana_cost": "{1}{U}",
@@ -1519,6 +1618,17 @@
 		"toughness": "2",
 		"type_line": "Creature — Dog"
 	},
+	"generous_visitor": {
+		"mana_cost": "{G}",
+		"name": "Generous Visitor",
+		"oracle_id": "0629747e-8dd8-4150-95ee-9d860264ccb0",
+		"oracle_text": "Whenever you cast an enchantment spell, put a +1/+1 counter on target creature.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "1",
+		"type_line": "Creature — Spirit"
+	},
 	"geothermal_bog": {
 		"mana_cost": "",
 		"name": "Geothermal Bog",
@@ -1740,6 +1850,17 @@
 		"set_name": "Foundations",
 		"toughness": "1",
 		"type_line": "Creature — Human Noble"
+	},
+	"guardian_gladewalker": {
+		"mana_cost": "{1}{G}",
+		"name": "Guardian Gladewalker",
+		"oracle_id": "03a3f54e-9289-4d99-beab-bfa0988a050e",
+		"oracle_text": "Changeling (This card is every creature type.)\nWhen this creature enters, put a +1/+1 counter on target creature.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Kaldheim",
+		"toughness": "1",
+		"type_line": "Creature — Shapeshifter"
 	},
 	"guiding_hydra": {
 		"mana_cost": "{X}{W}",
@@ -2089,6 +2210,17 @@
 		"set_name": "Antiquities",
 		"type_line": "Artifact"
 	},
+	"jaspera_sentinel": {
+		"mana_cost": "{G}",
+		"name": "Jaspera Sentinel",
+		"oracle_id": "e2f98813-4f39-4135-b05b-407e9eb797f6",
+		"oracle_text": "Reach\n{T}, Tap an untapped creature you control: Add one mana of any color.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Kaldheim",
+		"toughness": "2",
+		"type_line": "Creature — Elf Rogue"
+	},
 	"jewel_thief": {
 		"mana_cost": "{2}{G}",
 		"name": "Jewel Thief",
@@ -2237,6 +2369,17 @@
 		"set_name": "The Brothers' War",
 		"type_line": "Sorcery"
 	},
+	"leafcrown_dryad": {
+		"mana_cost": "{1}{G}",
+		"name": "Leafcrown Dryad",
+		"oracle_id": "01914751-af8e-4aea-a254-6fa4f9fd3457",
+		"oracle_text": "Bestow {3}{G} (If you cast this card for its bestow cost, it's an Aura spell with enchant creature. It becomes a creature again if it's not attached.)\nReach\nEnchanted creature gets +2/+2 and has reach.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Theros",
+		"toughness": "2",
+		"type_line": "Enchantment Creature — Nymph Dryad"
+	},
 	"leech_gauntlet": {
 		"mana_cost": "{1}{B}",
 		"name": "Leech Gauntlet",
@@ -2352,6 +2495,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Elf Druid"
 	},
+	"llanowar_stalker": {
+		"mana_cost": "{G}",
+		"name": "Llanowar Stalker",
+		"oracle_id": "90d375fa-0487-4990-9a98-260f9ee28d2a",
+		"oracle_text": "Whenever another creature you control enters, this creature gets +1/+0 until end of turn.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Dominaria United",
+		"toughness": "1",
+		"type_line": "Creature — Elf Warrior"
+	},
 	"makeshift_mauler": {
 		"mana_cost": "{3}{U}",
 		"name": "Makeshift Mauler",
@@ -2450,6 +2604,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "1",
 		"type_line": "Creature — Merfolk"
+	},
+	"mild_mannered_librarian": {
+		"mana_cost": "{G}",
+		"name": "Mild-Mannered Librarian",
+		"oracle_id": "fb7070ab-c234-4d54-8cdc-caf106bf24a6",
+		"oracle_text": "{3}{G}: This creature becomes a Werewolf. Put two +1/+1 counters on it and you draw a card. Activate only once.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Jumpstart 2022",
+		"toughness": "1",
+		"type_line": "Creature — Human"
 	},
 	"militia_bugler": {
 		"mana_cost": "{2}{W}",
@@ -3632,6 +3797,17 @@
 		"set_name": "Dominaria United",
 		"type_line": "Land — Forest Island"
 	},
+	"teething_wurmlet": {
+		"mana_cost": "{G}",
+		"name": "Teething Wurmlet",
+		"oracle_id": "a44ceede-9934-4d4e-8b8c-e087b3ef74d4",
+		"oracle_text": "This creature has deathtouch as long as you control three or more artifacts.\nWhenever an artifact you control enters, you gain 1 life. If this is the first time this ability has resolved this turn, put a +1/+1 counter on this creature.",
+		"power": "1",
+		"rarity": "rare",
+		"set_name": "The Brothers' War",
+		"toughness": "1",
+		"type_line": "Creature — Wurm"
+	},
 	"temple_garden": {
 		"mana_cost": "",
 		"name": "Temple Garden",
@@ -3735,6 +3911,17 @@
 		"set_name": "Murders at Karlov Manor",
 		"toughness": "5",
 		"type_line": "Creature — Plant Cat"
+	},
+	"tough_cookie": {
+		"mana_cost": "{1}{G}",
+		"name": "Tough Cookie",
+		"oracle_id": "8a1a5862-c027-4c15-99a7-1795d0da96da",
+		"oracle_text": "When this creature enters, create a Food token. (It's an artifact with \"{2}, {T}, Sacrifice this token: You gain 3 life.\")\n{2}{G}: Until end of turn, target noncreature artifact you control becomes a 4/4 artifact creature.\n{2}, {T}, Sacrifice this creature: You gain 3 life.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "2",
+		"type_line": "Artifact Creature — Food Golem"
 	},
 	"towashi_songshaper": {
 		"mana_cost": "{1}{R}",
@@ -3921,6 +4108,28 @@
 		"toughness": "1",
 		"type_line": "Artifact Creature — Insect"
 	},
+	"voracious_wurm": {
+		"mana_cost": "{1}{G}",
+		"name": "Voracious Wurm",
+		"oracle_id": "2a249c4b-beaa-4e7f-b4f7-496d282327bd",
+		"oracle_text": "This creature enters with X +1/+1 counters on it, where X is the amount of life you've gained this turn.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Magic 2014",
+		"toughness": "2",
+		"type_line": "Creature — Wurm"
+	},
+	"voyaging_satyr": {
+		"mana_cost": "{1}{G}",
+		"name": "Voyaging Satyr",
+		"oracle_id": "bce18f34-848e-4dd2-9a38-6084c0695f78",
+		"oracle_text": "{T}: Untap target land.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Theros",
+		"toughness": "2",
+		"type_line": "Creature — Satyr Druid"
+	},
 	"wall_of_stone": {
 		"mana_cost": "{1}{R}{R}",
 		"name": "Wall of Stone",
@@ -3998,6 +4207,17 @@
 		"toughness": "4",
 		"type_line": "Creature — Orc Monk"
 	},
+	"werebear": {
+		"mana_cost": "{1}{G}",
+		"name": "Werebear",
+		"oracle_id": "96cf3320-c730-4618-8768-28a179f4d9c0",
+		"oracle_text": "{T}: Add {G}.\nThreshold — This creature gets +3/+3 as long as there are seven or more cards in your graveyard.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Odyssey",
+		"toughness": "1",
+		"type_line": "Creature — Human Bear Druid"
+	},
 	"whisper_squad": {
 		"mana_cost": "{B}",
 		"name": "Whisper Squad",
@@ -4041,6 +4261,17 @@
 		"set_name": "Salvat 2005",
 		"toughness": "2",
 		"type_line": "Creature — Cat"
+	},
+	"wildborn_preserver": {
+		"mana_cost": "{1}{G}",
+		"name": "Wildborn Preserver",
+		"oracle_id": "55cec4bc-3de6-4c0d-a4cc-c5a30849fbda",
+		"oracle_text": "Flash (You may cast this spell any time you could cast an instant.)\nReach (This creature can block creatures with flying.)\nWhenever another non-Human creature you control enters, you may pay {X}. When you do, put X +1/+1 counters on this creature.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Throne of Eldraine",
+		"toughness": "2",
+		"type_line": "Creature — Elf Archer"
 	},
 	"wingblade_disciple": {
 		"mana_cost": "{2}{U}",

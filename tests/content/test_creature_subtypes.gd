@@ -5,8 +5,8 @@ extends GutTest
 
 const FOLDERS: Array[String] = ["res://content/cards/", "res://content/tokens/"]
 ## The artifact types in Content. An artifact creature's subtypes may be of either kind
-## (CR 205.3g), as Lion Sash is an Equipment Cat.
-const ARTIFACT_TYPES: Array[String] = [AttachmentRules.EQUIPMENT]
+## (CR 205.3g), as Lion Sash is an Equipment Cat and Tough Cookie a Food Golem.
+const ARTIFACT_TYPES: Array[String] = [AttachmentRules.EQUIPMENT, "Food"]
 
 
 func test_every_printed_creature_subtype_is_a_creature_type() -> void:

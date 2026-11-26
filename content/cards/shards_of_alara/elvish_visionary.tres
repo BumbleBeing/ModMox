@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_qf5t3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_20y6x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_atakq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_epetk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_o83r5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_cdl58"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_6ocj0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_1pc0x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_40kni"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_uvmh1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_1ob27"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_nwpjx"]
+
+[sub_resource type="Resource" id="Resource_syywk"]
+script = ExtResource("3_o83r5")
+value = 1
+
+[sub_resource type="Resource" id="Resource_p1k8g"]
+script = ExtResource("4_cdl58")
+
+[sub_resource type="Resource" id="Resource_ooyk6"]
+script = ExtResource("5_6ocj0")
+amount = SubResource("Resource_syywk")
+players = SubResource("Resource_p1k8g")
+
+[sub_resource type="Resource" id="Resource_1f47s"]
+script = ExtResource("9_1ob27")
+
+[sub_resource type="Resource" id="Resource_wnwto"]
+script = ExtResource("10_nwpjx")
+filter = SubResource("Resource_1f47s")
+
+[sub_resource type="Resource" id="Resource_lhuo3"]
+script = ExtResource("7_40kni")
+trigger = SubResource("Resource_wnwto")
+effects = Array[ExtResource("2_atakq")]([SubResource("Resource_ooyk6")])
+
+[sub_resource type="Resource" id="Resource_caapw"]
+script = ExtResource("2_20y6x")
+generic = 1
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_epetk")
+name = "Elvish Visionary"
+card_types = Array[int]([1])
+subtypes = Array[String](["Elf", "Shaman"])
+mana_cost = SubResource("Resource_caapw")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_qf5t3")]([SubResource("Resource_lhuo3")])

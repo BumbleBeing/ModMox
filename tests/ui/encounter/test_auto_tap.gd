@@ -337,6 +337,45 @@ func test_turning_auto_tap_on_and_off_at_priority_brings_and_takes_away_the_plan
 	assert_null(presenter.payment_plan(_cast(presenter)))
 
 
+func test_a_mana_ability_that_taps_another_creature_is_paid_with_without_asking_which() -> void:
+	# Engine ADR 0105: Auto-tap picks the creature the Sentinel taps, as the Agent would.
+	var presenter: EncounterPresenter = _with_sentinel_and_bear()
+	presenter.changed.connect(_remember)
+	var sentinel: int = _named(presenter, "Sentinel")
+	var bear: int = _named(presenter, "Bear")
+	var plan: PaymentPlan = presenter.payment_plan(_cast_named(presenter.snapshot(), "Drop"))
+	assert_eq(plan.source_ids, [sentinel, bear] as Array[int], "The Tap Preview shows both.")
+
+	assert_eq(presenter.answer(_cast_named(presenter.snapshot(), "Drop")), "")
+	presenter.wait_until_idle()
+
+	for snapshot: EncounterSnapshot in _snapshots:
+		assert_false(snapshot.decision is PayManaDecision or snapshot.decision is ChoosePermanentsDecision,
+			"The Hero is asked nothing.")
+	var tapped: Array[int] = _tapped(presenter)
+	tapped.sort()
+	var both: Array[int] = [sentinel, bear]
+	both.sort()
+	assert_eq(tapped, both)
+	assert_true(_names_on_battlefield(presenter).has("Drop"), "Drop was cast, and resolved.")
+
+
+func test_paying_by_hand_the_hero_picks_what_the_sentinel_taps() -> void:
+	var presenter: EncounterPresenter = _with_sentinel_and_bear(false)
+	presenter.answer(_cast_named(presenter.snapshot(), "Drop"))
+	var paying: PayManaDecision = presenter.snapshot().decision as PayManaDecision
+	assert_not_null(paying)
+
+	presenter.answer(Scenario.action_index(Scenario.decision_as_actions(paying), func(action: MmAction) -> bool:
+		var activate: ActivateAbilityAction = action as ActivateAbilityAction
+		return activate != null and activate.mana_type == MmMana.Type.BLUE))
+	presenter.wait_until_idle()
+
+	var tapping: ChoosePermanentsDecision = presenter.snapshot().decision as ChoosePermanentsDecision
+	assert_not_null(tapping, "Asked of the Hero, who pays by hand.")
+	assert_eq(tapping.candidate_ids, [_named(presenter, "Bear")] as Array[int])
+
+
 func _clock() -> int:
 	return _now
 
@@ -387,6 +426,39 @@ func _paying(generic: int) -> EncounterPresenter:
 	assert_true(presenter.is_paying_for_hero())
 	assert_eq(_tapped(presenter).size(), 1)
 	return presenter
+
+
+## A presenter whose Hero has a Sentinel (Jaspera Sentinel's mana ability on a 1/2 costing
+## {0}) and a 2/2 Bear in play, neither with summoning sickness, no lands, and Drop, a 1/1
+## costing {U}, to cast.
+func _with_sentinel_and_bear(is_auto_tapping: bool = true) -> EncounterPresenter:
+	var drop: MmCardDefinition = Scenario.creature("Drop", 1, 1, [], Scenario.mana_cost(0, [MmMana.Type.BLUE]))
+	var cards: Array[MmCardDefinition] = Scenario.cycled([Scenario.sentinel(), Scenario.creature("Bear", 2, 2), drop])
+	var presenter: EncounterPresenter = _started(Scenario.setup_with(cards, Scenario.copies(Scenario.vanilla("Card"), 40)),
+		is_auto_tapping)
+	for step: int in 600:
+		var snapshot: EncounterSnapshot = presenter.snapshot()
+		var names: Array[String] = _names_on_battlefield(presenter)
+		if snapshot.decision is PriorityDecision and snapshot.view.game_turn >= 3 and names.has("Sentinel") \
+				and names.has("Bear") and _cast_named(snapshot, "Drop") != -1:
+			return presenter
+		if snapshot.is_over():
+			break
+		var answer: Variant = Scenario.default_answer(snapshot.decision)
+		for card_name: String in ["Sentinel", "Bear"]:
+			if not names.has(card_name) and _cast_named(snapshot, card_name) != -1:
+				answer = _cast_named(snapshot, card_name)
+		presenter.answer(answer)
+		presenter.wait_until_idle()
+	fail_test("The game never got there.")
+	return presenter
+
+
+func _named(presenter: EncounterPresenter, card_name: String) -> int:
+	for permanent: MmObjectView in presenter.snapshot().view.battlefield:
+		if permanent.controller_id == HERO and permanent.name == card_name:
+			return permanent.id
+	return -1
 
 
 ## The Hero plays a land when they can and otherwise passes, until [param is_there].

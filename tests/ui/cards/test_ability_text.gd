@@ -25,6 +25,8 @@ const PRINTED: Dictionary[String, String] = {
 	"akki_ember_keeper": "Whenever a nontoken modified creature you control dies, create a 1/1 colorless Spirit creature token.",
 	"akrasan_squire": "Exalted",
 	"akroan_crusader": "Whenever you cast a spell that targets this creature, create a 1/1 red Soldier creature token with haste.",
+	"alloy_animist": "{2}{G}: Target noncreature artifact you control becomes a 4/4 artifact creature until end of turn.",
+	"almighty_brushwagg": "Trample\n{3}{G}: This creature gets +3/+3 until end of turn.",
 	"ancestral_recall": "Target player draws three cards.",
 	"angelic_quartermaster": "Flying\nWhen this creature enters, put a +1/+1 counter on each of up to two other target creatures.",
 	"animating_faerie": "Flying",
@@ -49,6 +51,7 @@ const PRINTED: Dictionary[String, String] = {
 		+ "Equip {1}",
 	"bat_whisperer": "When this creature enters, if an opponent lost life this turn, create a 1/1 black Bat creature token with flying.",
 	"battlegrowth": "Put a +1/+1 counter on target creature.",
+	"bayou_groff": "As an additional cost to cast this spell, sacrifice a creature or pay {3}.",
 	"benalish_marshal": "Each other creature you control gets +1/+1.",
 	"bishop_of_rebirth": "Vigilance\nWhenever this creature attacks, you may return target creature card with mana value 3 or less from your graveyard to the battlefield.",
 	"black_knight": "First strike\nProtection from white",
@@ -69,6 +72,7 @@ const PRINTED: Dictionary[String, String] = {
 	"butcher_of_malakir": "Flying\nWhenever this creature or another creature you control dies, each opponent sacrifices a creature.",
 	"bygone_bishop": "Flying\nWhenever you cast a creature spell with mana value 3 or less, create a Clue token.",
 	"captivating_unicorn": "Whenever an enchantment you control enters, tap target creature an opponent controls.",
+	"carapace_forger": "This creature gets +2/+2 as long as you control three or more artifacts.",
 	"celebrity_fencer": "Whenever another creature you control enters, put a +1/+1 counter on this creature.",
 	"celestial_ancient": "Flying\nWhenever you cast an enchantment spell, put a +1/+1 counter on each creature you control.",
 	"celestial_unicorn": "Whenever you gain life, put a +1/+1 counter on this creature.",
@@ -101,7 +105,10 @@ const PRINTED: Dictionary[String, String] = {
 	"daydream": "Exile target creature you control. Return the exiled card to the battlefield under its owner's control with a +1/+1 counter on it.\nFlashback {2}{W}",
 	"dazzling_angel": "Flying\nWhenever another creature you control enters, you gain 1 life.",
 	"deep_analysis": "Target player draws two cards.\nFlashback—{1}{U}, Pay 3 life",
+	"deeproot_champion": "Whenever you cast a noncreature spell, put a +1/+1 counter on this creature.",
 	"defiant_strike": "Target creature gets +1/+0 until end of turn. Draw a card.",
+	"destiny_spinner": "Creature and enchantment spells you control can't be countered.\n"
+		+ "{3}{G}: Target land you control becomes an X/X Elemental creature with trample and haste until end of turn, where X is the number of enchantments you control.",
 	"destroy_evil": "Choose one —\n"
 		+ "• Destroy target creature with toughness 4 or greater.\n"
 		+ "• Destroy target enchantment.",
@@ -121,10 +128,12 @@ const PRINTED: Dictionary[String, String] = {
 	"drudge_skeletons": "{B}: Regenerate this creature.",
 	"dusk_legion_duelist": "Vigilance\nWhenever one or more +1/+1 counters are put on this creature, draw a card. This ability triggers only once each turn.",
 	"dusk_legion_zealot": "When this creature enters, draw a card. You lose 1 life.",
+	"edgewall_innkeeper": "Whenever you cast a creature spell that has an Adventure, draw a card.",
 	"eidolon_of_philosophy": "{6}{U}, Sacrifice this creature: Draw three cards.",
 	"electrostatic_infantry": "Trample\nWhenever you cast an instant or sorcery spell, put a +1/+1 counter on this creature.",
 	"elementalist_adept": "Flash, prowess",
 	"elvish_archers": "First strike",
+	"elvish_visionary": "When this creature enters, draw a card.",
 	"emeria_angel": "Flying\nWhenever a land you control enters, you may create a 1/1 white Bird creature token with flying.",
 	"equilibrium_adept": "When this creature enters, exile the top card of your library. You may play it until the end of your next turn.\nWhenever you cast your second spell each turn, this creature gains double strike until end of turn.",
 	"etherium_spinner": "Whenever you cast a spell with mana value 4 or greater, create a 1/1 colorless Thopter artifact creature token with flying.",
@@ -136,6 +145,7 @@ const PRINTED: Dictionary[String, String] = {
 	"faerie_vandal": "Flash, flying\nWhenever you draw your second card each turn, put a +1/+1 counter on this creature.",
 	"falkenrath_celebrants": "Menace\nWhen this creature enters, create two Blood tokens.",
 	"fanatical_firebrand": "Haste\n{T}, Sacrifice this creature: This creature deals 1 damage to any target.",
+	"fang_of_shigeki": "Deathtouch",
 	"fear_of_isolation": "As an additional cost to cast this spell, return a permanent you control to its owner's hand.\nFlying",
 	"fear_of_lost_teeth": "When this creature dies, this creature deals 1 damage to any target. You gain 1 life.",
 	"fearless_fledgling": "Whenever a land you control enters, put a +1/+1 counter on this creature. This creature gains flying until end of turn.",
@@ -157,6 +167,7 @@ const PRINTED: Dictionary[String, String] = {
 	"garrison_cat": "When this creature dies, create a 1/1 white Human Soldier creature token.",
 	"gearsmith_prodigy": "This creature gets +1/+0 as long as you control an artifact.",
 	"generous_pup": "Vigilance\nWhenever one or more +1/+1 counters are put on this creature, put a +1/+1 counter on each other creature you control. This ability triggers only once each turn.",
+	"generous_visitor": "Whenever you cast an enchantment spell, put a +1/+1 counter on target creature.",
 	"geothermal_bog": "This land enters tapped.\n{T}: Add {B}.\n{T}: Add {R}.",
 	"giant_growth": "Target creature gets +3/+3 until end of turn.",
 	"giant_spider": "Reach",
@@ -174,6 +185,7 @@ const PRINTED: Dictionary[String, String] = {
 	"grim_guardian": "Whenever this creature or another enchantment you control enters, each opponent loses 1 life.",
 	"group_project": "Create a 2/2 white and red Spirit creature token.\nFlashback—Tap three untapped creatures you control",
 	"guarded_heir": "Lifelink\nWhen this creature enters, create two 3/3 white Knight creature tokens.",
+	"guardian_gladewalker": "Changeling\nWhen this creature enters, put a +1/+1 counter on target creature.",
 	"guiding_hydra": "This creature enters with X +1/+1 counters on it.\nAt the beginning of combat on your turn, you may remove a +1/+1 counter from this creature. If you do, put a +1/+1 counter on each other creature you control.",
 	"haazda_vigilante": "When this creature enters, put a +1/+1 counter on target creature you control with power 2 or less.\nWhenever this creature attacks, put a +1/+1 counter on target creature you control with power 2 or less.",
 	"harried_dronesmith": "At the beginning of combat on your turn, create a 1/1 colorless Thopter artifact creature token with flying. It gains haste until end of turn. Sacrifice it at the beginning of your next end step.",
@@ -203,6 +215,7 @@ const PRINTED: Dictionary[String, String] = {
 	"irreverent_gremlin": "Menace\nWhenever another creature you control with power 2 or less enters, you may discard a card. If you do, draw a card. Do this only once each turn.",
 	"island": "({T}: Add {U}.)",
 	"ivory_tower": "At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.",
+	"jaspera_sentinel": "Reach\n{T}, Tap an untapped creature you control: Add one mana of any color.",
 	"jewel_thief": "Vigilance, trample\nWhen this creature enters, create a Treasure token.",
 	"jodahs_codex": "{5}, {T}: Draw a card. This ability costs {1} less to activate for each basic land type among lands you control.",
 	"jungle_shrine": "This land enters tapped.\n{T}: Add {R}, {G}, or {W}.",
@@ -217,6 +230,7 @@ const PRINTED: Dictionary[String, String] = {
 	"landscaper_colos": "When this creature enters, put target card from an opponent's graveyard on the bottom of its owner's library.\nBasic landcycling {1}{W}",
 	"law_rune_enforcer": "{1}, {T}: Tap target creature with mana value 2 or greater.",
 	"lay_down_arms": "Exile target creature with mana value less than or equal to the number of Plains you control. Its controller gains 3 life.",
+	"leafcrown_dryad": "Bestow {3}{G}\nReach\nEnchanted creature gets +2/+2. Enchanted creature has reach.",
 	"leech_gauntlet": "Lifelink\nEquipped creature has lifelink.\nReconfigure {4}",
 	"leonin_lightbringer": "Ward {2}\nAs long as this creature is equipped, it gets +1/+1.",
 	"leonin_shikari": "You may activate equip abilities any time you could cast an instant.",
@@ -228,6 +242,7 @@ const PRINTED: Dictionary[String, String] = {
 	"lion_sash": "{W}: Exile target card from a graveyard. If it is a permanent card, put a +1/+1 counter on this permanent.\nEquipped creature gets +X/+X, where X is the number of +1/+1 counters on this permanent.\nReconfigure {2}",
 	"lightshield_parry": "Target creature gets +2/+2 until end of turn.\nCycling {2}",
 	"llanowar_elves": "{T}: Add {G}.",
+	"llanowar_stalker": "Whenever another creature you control enters, this creature gets +1/+0 until end of turn.",
 	"makeshift_mauler": "As an additional cost to cast this spell, exile a creature card from your graveyard.",
 	"malamet_war_scribe": "When this creature enters, each creature you control gets +2/+1 until end of turn.",
 	"maned_serval": "Vigilance",
@@ -236,6 +251,7 @@ const PRINTED: Dictionary[String, String] = {
 	"martyr_of_dusk": "When this creature dies, create a 1/1 white Vampire creature token with lifelink.",
 	"mechan_assembler": "Whenever one or more other artifacts you control enter, create a 2/2 colorless Robot artifact creature token. This ability triggers only once each turn.",
 	"mechan_navigator": "Whenever this creature becomes tapped, draw a card. Discard a card.",
+	"mild_mannered_librarian": "{3}{G}: This creature becomes a Werewolf. Put two +1/+1 counters on this creature. Draw a card. Activate only once each game.",
 	"militia_bugler": "Vigilance\nWhen this creature enters, look at the top four cards of your library. You may reveal a creature "
 		+ "card with power 2 or less from among them and put it into your hand. Put the rest on the bottom of your library in a "
 		+ "random order.",
@@ -347,6 +363,8 @@ const PRINTED: Dictionary[String, String] = {
 	"swamp": "({T}: Add {B}.)",
 	"taj_nar_swordsmith": "When this creature enters, you may pay {X}. If you do, search your library for an Equipment card with mana value X or less, put it onto the battlefield, then shuffle.",
 	"tangled_islet": "This land enters tapped.\n{T}: Add {G}.\n{T}: Add {U}.",
+	"teething_wurmlet": "This creature has deathtouch as long as you control three or more artifacts.\n"
+		+ "Whenever an artifact you control enters, you gain 1 life. If this is the first time this ability has resolved this turn, put a +1/+1 counter on this creature.",
 	"temple_garden": "As this land enters, you may pay 2 life. If you don't, it enters tapped.\n{T}: Add {G}.\n{T}: Add {W}.",
 	"territorial_scythecat":"Trample\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"terror_of_mount_velus": "Flying, double strike\nWhen this creature enters, each creature you control gains double strike until end of turn.",
@@ -358,6 +376,9 @@ const PRINTED: Dictionary[String, String] = {
 	"tocasias_welcome": "Whenever one or more creatures you control with mana value 3 or less enter, draw a card. "
 		+ "This ability triggers only once each turn.",
 	"topiary_panther": "Trample\nBasic landcycling {1}{G}",
+	"tough_cookie": "When this creature enters, create a Food token.\n"
+		+ "{2}{G}: Target noncreature artifact you control becomes a 4/4 artifact creature until end of turn.\n"
+		+ "{2}, {T}, Sacrifice this creature: You gain 3 life.",
 	"towashi_songshaper": "Whenever another artifact you control enters, this creature gets +1/+0 until end of turn.",
 	"tragic_banshee": "When this creature enters, target creature an opponent controls gets -1/-1 until end of turn. If a creature died this turn, that creature gets -13/-13 until end of turn instead.",
 	"traveling_minister": "{T}: Target creature gets +1/+0 until end of turn. You gain 1 life. Activate only as a sorcery.",
@@ -373,6 +394,8 @@ const PRINTED: Dictionary[String, String] = {
 	"vanguard_of_brimaz": "Vigilance\nWhenever you cast a spell that targets this creature, create a 1/1 white Cat Soldier creature token with vigilance.",
 	"viridian_claw": "Equipped creature gets +1/+0. Equipped creature has first strike.\nEquip {1}",
 	"virus_beetle": "When this creature enters, each opponent discards a card.",
+	"voracious_wurm": "This creature enters with X +1/+1 counters on it, where X is the amount of life you've gained this turn.",
+	"voyaging_satyr": "{T}: Untap target land.",
 	"wall_of_stone": "Defender",
 	"warkite_marauder": "Flying\nWhenever this creature attacks, target creature an opponent controls loses all abilities until end of turn. It has base power and toughness 0/1 until end of turn.",
 	"wary_thespian": "When this creature enters, surveil 1.\nWhen this creature dies, surveil 1.",
@@ -380,10 +403,12 @@ const PRINTED: Dictionary[String, String] = {
 	"waterwind_scout": "Flying\nWhen this creature enters, create a Map token.",
 	"wayspeaker_bodyguard": "When this creature enters, return target nonland permanent card with mana value 2 or less from your graveyard to your hand.\n"
 		+ "Whenever you cast your second spell each turn, tap target creature an opponent controls.",
+	"werebear": "{T}: Add {G}.\nThis creature gets +3/+3 as long as there are seven or more cards in your graveyard.",
 	"whisper_squad": "{1}{B}: Search your library for a card originally named Whisper Squad, put it onto the battlefield tapped, then shuffle.",
 	"whispering_wizard": "Whenever you cast a noncreature spell, create a 1/1 white Spirit creature token with flying. This ability triggers only once each turn.",
 	"white_knight": "First strike\nProtection from black",
 	"whitemane_lion": "Flash\nWhen this creature enters, return a creature you control to its owner's hand.",
+	"wildborn_preserver": "Flash, reach\nWhenever another non-Human creature you control enters, you may pay {X}. When you do, put X +1/+1 counters on this creature.",
 	"wingblade_disciple": "Flying\nWhenever you cast your second spell each turn, create a 1/1 white Bird creature token with flying.",
 	"witty_roastmaster": "Whenever another creature you control enters, this creature deals 1 damage to each opponent.",
 	"wooded_ridgeline": "This land enters tapped.\n{T}: Add {R}.\n{T}: Add {G}.",
@@ -1204,6 +1229,62 @@ func test_entering_with_x_counters_says_x_with_no_where() -> void:
 		"This creature enters with a +1/+1 counter on it.")
 
 
+func test_entering_with_counters_for_the_life_gained_says_what_x_is_as_voracious_wurm_words_it() -> void:
+	# Engine ADR 0082's fourth addendum.
+	var gain: GainLifeEffect = Scenario.gain_life(0, Scenario.you())
+	gain.amount = Scenario.life_gained_this_turn(EachOpponentSelection.new())
+	var gain_x: Array[MmEffect] = [gain]
+
+	assert_eq(_text(Scenario.wurm()),
+		"This creature enters with X +1/+1 counters on it, where X is the amount of life you've gained this turn.")
+	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.draws(2), gain_x), "this creature"),
+		"Whenever you draw your second card each turn, you gain X life, where X is the amount of life each opponent has gained this turn.")
+
+
+func test_spells_you_control_that_cant_be_countered_are_worded_as_destiny_spinner_words_them() -> void:
+	# Engine ADR 0062's second addendum.
+	assert_eq(_text(Scenario.spinner()), "Creature and enchantment spells you control can't be countered.")
+	assert_eq(AbilityText.of_ability(Scenario.spells_cant_be_countered(Scenario.of_type(MmCardTypes.CardType.CREATURE)),
+		"this creature"), "Creature spells you control can't be countered.")
+
+
+func test_becoming_an_x_x_creature_of_a_type_with_keywords_is_one_clause_as_destiny_spinner_words_it() -> void:
+	# CR 205.1b, engine ADR 0091: the land keeps its types, as "It's still a land." says.
+	var enchantments: CountValue = Scenario.count_yours(Scenario.of_type(MmCardTypes.CardType.ENCHANTMENT))
+	var types: Array[MmCardTypes.CardType] = [MmCardTypes.CardType.CREATURE]
+	var keywords: Array[MmAbility] = [TrampleAbility.new(), HasteAbility.new()]
+	var set_to: SetPowerToughnessContinuousEffect = SetPowerToughnessContinuousEffect.new()
+	set_to.power = enchantments
+	set_to.toughness = enchantments
+	set_to.affected = Scenario.targeted(0)
+	var elemental: AddSubtypesContinuousEffect = AddSubtypesContinuousEffect.new()
+	elemental.subtypes = ["Elemental"]
+	elemental.affected = Scenario.targeted(0)
+	var becomes: ActivatedAbility = Scenario.activated(Scenario.mana_cost(3, [MmMana.Type.GREEN]), [],
+		[Scenario.until_end_of_turn(Scenario.add_card_types(types, Scenario.targeted(0))), Scenario.until_end_of_turn(elemental),
+		Scenario.until_end_of_turn(set_to), Scenario.until_end_of_turn(Scenario.gain_abilities(keywords, Scenario.targeted(0)))],
+		[Scenario.target(Scenario.all_of([Scenario.of_type(MmCardTypes.CardType.LAND), ControlledByFilter.new()]))])
+
+	assert_eq(AbilityText.of_ability(becomes, "this creature"),
+		"{3}{G}: Target land you control becomes an X/X Elemental creature with trample and haste until end of turn, "
+		+ "where X is the number of enchantments you control.")
+
+
+func test_paying_x_then_a_reflexive_trigger_is_worded_as_wildborn_preserver_words_it() -> void:
+	# CR 603.12, engine ADR 0088's fifth addendum.
+	assert_eq(_text(Scenario.preserver()), "Flash, reach\nWhenever another non-Human creature you control enters, "
+		+ "you may pay {X}. When you do, put X +1/+1 counters on this creature.")
+
+
+func test_an_additional_cost_with_a_choice_is_worded_as_bayou_groff_words_it() -> void:
+	# CR 601.2b, engine ADR 0086's second addendum.
+	assert_eq(_text(Scenario.groff()), "As an additional cost to cast this spell, sacrifice a creature or pay {3}.")
+	assert_eq(AbilityText.additional_cost_choice_words(Scenario.groff().abilities[0] as AdditionalCostAbility, false),
+		"sacrificing a creature")
+	assert_eq(AbilityText.additional_cost_choice_words(Scenario.groff().abilities[0] as AdditionalCostAbility, true),
+		"paying {3}")
+
+
 func test_x_chosen_as_it_was_cast_reads_x_with_no_where() -> void:
 	var bounty: MmCardDefinition = Scenario.x_gain()
 
@@ -1370,6 +1451,28 @@ func test_a_token_copy_is_worded_as_oltec_matterweaver_words_it() -> void:
 		"Whenever you cast a creature spell, create a token that's a copy of target artifact token you control.")
 	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [two]), "this creature"),
 		"When this creature enters, create two tokens that are copies of this creature.")
+
+
+func test_becoming_a_creature_type_is_worded_as_mild_mannered_librarian_words_it() -> void:
+	# CR 205.1a.
+	var becomes: ActivatedAbility = Scenario.activated(Scenario.mana_cost(3, [MmMana.Type.GREEN]), [],
+		[Scenario.indefinitely(Scenario.set_creature_types(["Werewolf"], SourceSelection.new()))])
+	var moonrise: MmCardDefinition = Scenario.free_moonrise()
+
+	assert_eq(AbilityText.of_ability(becomes, "this creature"), "{3}{G}: This creature becomes a Werewolf.")
+	assert_eq(AbilityText.of_ability(moonrise.abilities[0], "Moonrise"), "Target creature becomes a Werewolf.")
+
+
+func test_has_an_adventure_follows_its_noun_as_edgewall_innkeeper_words_it() -> void:
+	# CR 715.2.
+	var innkeeper: MmCardDefinition = Scenario.innkeeper()
+
+	assert_eq(AbilityText.of_ability(innkeeper.abilities[0], "this creature"),
+		"Whenever you cast a creature spell that has an Adventure, draw a card.")
+	var without: TriggeredAbility = Scenario.triggered(Scenario.casts(Scenario.all_of([Scenario.of_type(CardType.CREATURE),
+		Scenario.is_not(HasAdventureFilter.new())]), Whose.YOU), [Scenario.draw_cards(1, Scenario.you())])
+	assert_eq(AbilityText.of_ability(without, "this creature"),
+		"Whenever you cast a creature spell that doesn't have an Adventure, draw a card.")
 
 
 func test_token_and_nontoken_are_adjectives_and_a_subtype_stands_next_to_its_noun_with_no_comma() -> void:
@@ -2139,6 +2242,16 @@ func test_explore_says_who_explores_and_a_map_is_created_by_its_name_alone() -> 
 	assert_eq(AbilityText.of_ability(scout, "this creature"), "When this creature enters, create a Map token.")
 	assert_eq(AbilityText.of_ability(Scenario.explorer().abilities[0], "this creature"),
 		"When this creature enters, this creature explores.")
+
+
+func test_a_food_is_created_by_its_name_alone_and_calls_itself_this_token() -> void:
+	# CR 111.10b, as Tough Cookie creates one.
+	var food: MmCardDefinition = load("res://content/tokens/food.tres")
+	var cookie: TriggeredAbility = Scenario.triggered(Scenario.enters(IsSourceFilter.new()), [Scenario.create_tokens(food)])
+
+	assert_eq(AbilityText.of_card(food.abilities, food.card_types, food.supertypes, food.name),
+		"{2}, {T}, Sacrifice this token: You gain 3 life.")
+	assert_eq(AbilityText.of_ability(cookie, "this creature"), "When this creature enters, create a Food token.")
 
 
 func test_bestow_prints_its_cost_alone_and_calls_what_it_enchants_enchanted_creature() -> void:

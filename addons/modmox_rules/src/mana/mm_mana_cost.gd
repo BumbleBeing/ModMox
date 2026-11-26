@@ -75,6 +75,21 @@ func reduced_by(reduction: MmManaCost) -> MmManaCost:
 	return result
 
 
+## This cost and [param other] together, as an additional cost's mana is added to a mana
+## cost (CR 601.2f, engine ADR 0086's second addendum). This cost alone when [param other] is
+## null.
+func plus(other: MmManaCost) -> MmManaCost:
+	var result: MmManaCost = reduced_by(null)
+	if other == null:
+		return result
+	result.generic += other.generic
+	result.symbols.append_array(other.symbols)
+	result.x_count += other.x_count
+	result.hybrid_symbols.append_array(other.hybrid_symbols)
+	result.put_in_printed_order()
+	return result
+
+
 ## This cost with [param x] paid for each {X} as generic mana, as a cast owes it once X is
 ## chosen (CR 601.2f).
 func with_x(x: int) -> MmManaCost:

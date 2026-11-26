@@ -189,7 +189,7 @@ A triggered ability that has triggered but has not been put on the stack yet, to
 _Avoid_: Queued trigger, trigger instance
 
 **Reflexive Triggered Ability**:
-A triggered ability that a resolving ability creates as its controller takes the action it offers, "When you do, [ability]", as Kishla Trawlers's "you may exile a creature card from your graveyard. When you do, return target instant or sorcery card from your graveyard to your hand." (CR 603.12). It has no trigger of its own: it triggers as the action is taken, waits as a Pending Trigger, and goes on the stack the next time a player would receive priority, its targets chosen then, so the opponent may respond to it. Its source is the ability's source, as it last existed if it has gone (ADR 0088).
+A triggered ability that a resolving ability creates as its controller takes the action it offers, "When you do, [ability]", as Kishla Trawlers's "you may exile a creature card from your graveyard. When you do, return target instant or sorcery card from your graveyard to your hand." (CR 603.12). It has no trigger of its own: it triggers as the action is taken, waits as a Pending Trigger, and goes on the stack the next time a player would receive priority, its targets chosen then, so the opponent may respond to it. Its source is the ability's source, as it last existed if it has gone (ADR 0088). After "you may pay {X}" it carries the X paid, so its own "X" reads it, as Wildborn Preserver's "When you do, put X +1/+1 counters on this creature" does (ADR 0088's fifth addendum).
 _Avoid_: Follow-up ability, "if you do" (an effect of the same ability, which uses no stack), delayed trigger
 
 **Delayed Triggered Ability**:
@@ -209,7 +209,7 @@ Counters being put on a permanent, by an effect or as it enters with them (CR 12
 _Avoid_: Gets counters, counters added
 
 **Life Gain**:
-One source causing a player to gain life (CR 119.9): a gain life effect, or the damage of one source with lifelink in one Batch, however many recipients it has. "Whenever you gain life" triggers once for each, so two lifelink creatures dealing combat damage together trigger it twice (ADR 0082). Gaining 0 life is no life gain. The life a player gained this turn is kept on the player, effects and lifelink alike, for "if you gained life this turn" (ADR 0082's addendum).
+One source causing a player to gain life (CR 119.9): a gain life effect, or the damage of one source with lifelink in one Batch, however many recipients it has. "Whenever you gain life" triggers once for each, so two lifelink creatures dealing combat damage together trigger it twice (ADR 0082). Gaining 0 life is no life gain. The life a player gained this turn is kept on the player, effects and lifelink alike, for "if you gained life this turn" (ADR 0082's addendum) and "the amount of life you've gained this turn" (its fourth addendum).
 _Avoid_: Life gain event (lifelink's gain is part of its damage, not an Event of its own), lifegain trigger
 
 **Life Loss**:
@@ -245,7 +245,7 @@ A keyword: "When this creature dies, if it had no +1/+1 counters on it, return i
 _Avoid_: Comes back, recursion, persist (the same with -1/-1 counters)
 
 **Additional Cost**:
-A cost a spell asks for besides its mana cost or alternative cost, "As an additional cost to cast this spell, [cost]" (CR 601.2f, 118.8), as Fear of Isolation's "return a permanent you control to its owner's hand". The spell may be cast only while it can be paid. Its choice is asked once the mana is paid, so a land just tapped for mana may be returned for it (ADR 0086), and it stays paid whatever becomes of the spell.
+A cost a spell asks for besides its mana cost or alternative cost, "As an additional cost to cast this spell, [cost]" (CR 601.2f, 118.8), as Fear of Isolation's "return a permanent you control to its owner's hand". The spell may be cast only while it can be paid. Its choice is asked once the mana is paid, so a land just tapped for mana may be returned for it (ADR 0086), and it stays paid whatever becomes of the spell. One with a choice, as Bayou Groff's "sacrifice a creature or pay {3}", is offered as two casts from the hand, one for each choice (ADR 0086's second addendum).
 _Avoid_: Extra cost, kicker (an optional one), cost increase
 
 **Alternative Cost**:

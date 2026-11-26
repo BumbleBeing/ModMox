@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_xuufa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_jubsd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="3_m2bmr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/sacrifice_this_cost.gd" id="4_2sc4c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_xvrrm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_dllnx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="7_r7fml"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/gain_life_effect.gd" id="8_4d428"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="9_dbltc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="10_o067u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_u3xfs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="12_p68b2"]
+
+[sub_resource type="Resource" id="Resource_vi88u"]
+script = ExtResource("3_m2bmr")
+
+[sub_resource type="Resource" id="Resource_73ame"]
+script = ExtResource("4_2sc4c")
+
+[sub_resource type="Resource" id="Resource_dybye"]
+script = ExtResource("6_dllnx")
+value = 3
+
+[sub_resource type="Resource" id="Resource_qogpf"]
+script = ExtResource("7_r7fml")
+
+[sub_resource type="Resource" id="Resource_sf3t2"]
+script = ExtResource("8_4d428")
+amount = SubResource("Resource_dybye")
+players = SubResource("Resource_qogpf")
+
+[sub_resource type="Resource" id="Resource_35m18"]
+script = ExtResource("9_dbltc")
+generic = 2
+
+[sub_resource type="Resource" id="Resource_ivj7c"]
+script = ExtResource("10_o067u")
+mana_cost = SubResource("Resource_35m18")
+costs = Array[ExtResource("2_jubsd")]([SubResource("Resource_vi88u"), SubResource("Resource_73ame")])
+effects = Array[ExtResource("5_xvrrm")]([SubResource("Resource_sf3t2")])
+
+[resource]
+script = ExtResource("12_p68b2")
+name = "Food Token"
+card_types = Array[int]([0])
+subtypes = Array[String](["Food"])
+abilities = Array[ExtResource("1_xuufa")]([SubResource("Resource_ivj7c")])

@@ -9,7 +9,9 @@ extends MmEffect
 ## none can be (CR 603.3c-d). Its source and controller are those of the ability it is part
 ## of, the source as it last existed if it has gone (CR 608.2h), and it is that ability's,
 ## at that ability's place among its source's abilities. Its targets are its own, so the
-## ability holding it targets nothing for them.
+## ability holding it targets nothing for them. Held by a MayPayXEffect, as Wildborn
+## Preserver's "you may pay {X}. When you do, put X +1/+1 counters on this creature." is, it
+## carries the X paid, which its own "X" reads (PaidXValue, engine ADR 0088's fifth addendum).
 
 ## What triggers: a triggered ability with no trigger of its own.
 @export var ability: TriggeredAbility
@@ -27,5 +29,7 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, _number
 	var pending: PendingTrigger = PendingTrigger.new(ability, index, source, state.characteristics_of(source),
 		context.controller_id, 0)
 	pending.controller_id = context.controller_id
+	# Engine ADR 0088's fifth addendum: after "you may pay {X}", its X is the X paid.
+	pending.paid_x = context.paid_x
 	events.append(AbilityTriggeredEvent.new(pending))
 	return events

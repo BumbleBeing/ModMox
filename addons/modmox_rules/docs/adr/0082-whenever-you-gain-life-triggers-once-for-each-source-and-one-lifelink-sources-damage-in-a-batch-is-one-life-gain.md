@@ -40,3 +40,14 @@ Bat Whisperer says "When this creature enters, if an opponent lost life this tur
 The Agent's Timing Tags give a permanent spell whose own "enters" ability waits for an opponent's life loss AFTER_ATTACKING, as raid's does (engine ADR 0095's addendum): it is cast in the postcombat main phase, once an attack has had its chance to deal damage. One that waits for its own controller's loss is not held.
 
 Left out until a card needs them (ADR 0001): an amount ("if an opponent lost 3 or more life this turn"), and "for each opponent who lost life this turn".
+
+## Addendum: how much life a player gained this turn
+
+Voracious Wurm says "This creature enters with X +1/+1 counters on it, where X is the amount of life you've gained this turn."
+
+**"The amount of life [players] have gained this turn" is a Value, `LifeGainedThisTurnValue`**, with `players` (a Selection), as the cards a player drew this turn are counted. It adds up `MmPlayer.life_gained_this_turn`, which this ADR's second addendum keeps as a number for this, over every player selected. An `EntersWithCountersAbility` reads it as its permanent enters (ADR 0076).
+
+`AbilityText` words it "the amount of life you've gained this turn", and an `EntersWithCountersAbility` whose amount is neither a number nor the X it was cast with now says what X is: "This creature enters with X +1/+1 counters on it, where X is the amount of life you've gained this turn."
+
+**The Agent makes a play that gains life before it casts such a creature.** One-step scoring of the Wurm alone sees a 2/2, and of a life gain alone sees only the life, so the Wurm was cast first. The follow-up plan that weighs Sage of the Skies after another spell (engine ADR 0083) now also takes a permanent spell that enters with counters for the life gained this turn: each other play first, then it. A spell that waits is never the first of such a pair, since two Wurms in a row credited the first with the second's worth and beat the life gain.
+

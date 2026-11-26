@@ -577,6 +577,25 @@ func test_a_card_with_bestow_offers_a_second_row_that_casts_it_with_bestow() -> 
 	assert_eq(clicks.hand_options_of(30)[1].answer, 2)
 
 
+func test_a_card_with_a_choice_of_additional_costs_offers_a_row_for_each_choice() -> void:
+	# Engine ADR 0086's second addendum, the user's words: "Cast Bayou Groff by sacrificing a
+	# creature" and "Cast Bayou Groff by paying {3}".
+	var view: MmPlayerView = _view()
+	var groff: MmObjectView = _card(30, "Bayou Groff")
+	groff.abilities = Scenario.groff().abilities
+	view.hand = [groff]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new(), CastSpellAction.new(30),
+		CastSpellAction.new(30, false, false, false, true)] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	var rows: Array[String] = []
+	for option: ClickOption in clicks.hand_options_of(30):
+		rows.append(option.text)
+	assert_eq(rows, ["Cast Bayou Groff by sacrificing a creature", "Cast Bayou Groff by paying {3}"] as Array[String])
+	assert_eq(clicks.hand_options_of(30)[1].answer, 2)
+
+
 func test_a_card_with_an_alternative_cost_offers_a_second_row_that_casts_it_for_that_cost() -> void:
 	# Engine ADR 0093, the user's words.
 	var view: MmPlayerView = _view()

@@ -71,6 +71,20 @@ func test_a_cheap_agent_keeps_its_counter_for_a_spell_that_can_be_countered() ->
 	assert_true(AiScenario.action_at(engine, AiScenario.ask(engine, cheap)) is PassAction)
 
 
+func test_a_creature_spell_a_spinner_keeps_from_being_countered_is_let_through() -> void:
+	# Engine ADR 0062's second addendum: Destiny Spinner's "Creature and enchantment spells you
+	# control can't be countered."
+	var engine: MmEngine = AiScenario.ready_with([Scenario.spinner()], [], [AiScenario.free_alpha("craw_wurm")],
+		[Scenario.free_counter("Counter")])
+	assert_not_null(engine)
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Craw Wurm")), "")
+	Scenario.pass_priority(engine)
+
+	assert_true(Scenario.offers_cast(engine, Scenario.card_in_hand(engine, engine.villain(), "Counter")), "It may still be targeted.")
+	assert_true(AiScenario.action_at(engine, AiScenario.ask(engine, AiAgent.new())) is PassAction)
+	assert_true(AiScenario.action_at(engine, AiScenario.ask(engine, AiAgent.new(null, AiAgent.Mode.CHEAP))) is PassAction)
+
+
 func test_a_cheap_agent_keeps_a_counter_that_costs_more_than_the_spell() -> void:
 	var dear: MmCardDefinition = Scenario.instant("Counter", Scenario.mana_cost(1), [Scenario.target_spell()], [Scenario.counter(Scenario.targeted(0))])
 	var engine: MmEngine = AiScenario.ready_with([], [], [Scenario.free_shock("Shock", 2), dear, Scenario.basic_land("Island")],

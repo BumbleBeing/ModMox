@@ -11,8 +11,10 @@ extends MmEffect
 ## cast's mana is, and nothing is countered; no counters it. One who could not pay is not
 ## asked, and it is countered.
 ##
-## A spell with CantBeCounteredAbility is passed over (CR 101.2): it may be targeted, but it
-## is never countered, and no one is asked to pay to keep it from being countered.
+## A spell that can't be countered (CounterRules.can_be_countered()), by its own
+## CantBeCounteredAbility or by a SpellsCantBeCounteredAbility of a permanent its controller
+## controls, is passed over (CR 101.2): it may be targeted, but it is never countered, and no
+## one is asked to pay to keep it from being countered.
 # Later: "unless [a player] pays" for a cost that is not mana ("Ward—Pay 3 life"), and for
 # several spells at once, each once a card needs it.
 
@@ -71,7 +73,7 @@ func _on_the_stack(state: MmGameState, context: MmEffectContext) -> Array[MmGame
 		if countered == null or countered.zone() != state.stack:
 			continue
 		# CR 101.2: "can't be countered" beats the counter.
-		if countered.is_card_or_copy() and state.characteristics_of(countered).has_ability(CantBeCounteredAbility):
+		if not CounterRules.can_be_countered(state, countered):
 			continue
 		found_on_stack.append(countered)
 	return found_on_stack

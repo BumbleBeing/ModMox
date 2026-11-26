@@ -31,7 +31,8 @@ static func symbol_paid_by(type: MmMana.Type, symbols: Array[MmMana.Type], gener
 ## Whether [param player_id] could pay [param cost] right now with their pool and the mana
 ## abilities they could activate. Exact: each source permanent is used for at most one of
 ## its mana abilities, since they share the {T} cost, and mana of any color is any one color
-## (ADR 0072). [param tapping_source_id] is the permanent whose own {T} the same cost will
+## (ADR 0072), and a creature tapped for a mana ability's cost, as Jaspera Sentinel's, makes
+## no mana of its own (engine ADR 0105). [param tapping_source_id] is the permanent whose own {T} the same cost will
 ## pay, or 0: it cannot tap for the mana too (pays_while_paying()). With [param improvises]
 ## it is the mana of a spell with improvise, which each untapped artifact the player controls
 ## may pay {1} of (CR 702.126a, engine ADR 0099).
@@ -46,7 +47,10 @@ static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost, tap
 	# sacrifices it. Later: a mana ability that could be activated twice, as one costing
 	# only life could, or two that do not share {T}, either of which could let one source
 	# pay twice.
+	# Each choice is [the mana made, the permanent its cost taps besides its source or 0].
 	var choices_per_source: Array = []
+	var source_ids: Array[int] = []
+	var taps_another: bool = false
 	for source: MmGameObject in sorted_sources_of(state, player_id):
 		var choices: Array = []
 		var abilities: Array[MmAbility] = state.characteristics_of(source).abilities
@@ -56,17 +60,39 @@ static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost, tap
 				continue
 			var context: MmEffectContext = MmEffectContext.new(player_id, source.id)
 			var colors: Array[MmMana.Type] = ability.mana_types_to_choose()
+			var made: Array = []
 			if colors.is_empty():
-				choices.append(mana_made_by(state, ability, context))
+				made.append(mana_made_by(state, ability, context))
 			for color: MmMana.Type in colors:
-				choices.append(mana_made_by(state, ability, context.with_chosen_mana_type(color)))
+				made.append(mana_made_by(state, ability, context.with_chosen_mana_type(color)))
+			var tapped_ids: Array[int] = _tapped_for_cost(state, ability, source, tapping_source_id)
+			for mana: Variant in made:
+				for tapped_id: int in tapped_ids:
+					choices.append([mana, tapped_id])
+			taps_another = taps_another or tapped_ids != [0]
 		# CR 702.126a: an untapped artifact may instead tap for improvise, which pays only
 		# generic mana (engine ADR 0099).
 		if improvises and is_improviser(state, source, player_id):
-			choices.append([MmMana.NO_TYPE])
+			choices.append([[MmMana.NO_TYPE], 0])
 		if not choices.is_empty():
 			choices_per_source.append(choices)
-	return _covers_with_choices(available, choices_per_source, 0, cost)
+			source_ids.append(source.id)
+	var used: Dictionary[int, bool] = {}
+	var tapped: Dictionary[int, bool] = {}
+	return _covers_with_choices(available, choices_per_source, source_ids, 0, cost, used, tapped, taps_another)
+
+
+## The permanents [param ability]'s cost may tap besides [param source] (engine ADR 0105),
+## never the permanent [param tapping_source_id] whose {T} the cost being paid taps, or [0]
+## when its cost taps nothing else.
+static func _tapped_for_cost(state: MmGameState, ability: ActivatedAbility, source: MmGameObject,
+		tapping_source_id: int) -> Array[int]:
+	var picking: ChoosePermanentsDecision = ability.cost_choice(state, source) as ChoosePermanentsDecision
+	if picking == null:
+		return [0]
+	var ids: Array[int] = picking.candidate_ids.duplicate()
+	ids.erase(tapping_source_id)
+	return ids
 
 
 ## The untapped artifacts [param player_id] controls, which may each be tapped for improvise
@@ -149,17 +175,36 @@ static func sorted_permanents_of(state: MmGameState, player_id: int) -> Array[Mm
 	return result
 
 
-## Tries one choice per source, in order, and checks the result covers the cost. More mana
-## never hurts, so every source is always used for one of its abilities.
-static func _covers_with_choices(available: Array[MmMana.Type], choices_per_source: Array, source_index: int, cost: MmManaCost) -> bool:
+## Tries one choice per source, in order, and checks the result covers the cost. A source
+## used for mana ([param used]) can't be tapped for another's cost, and one tapped for
+## another's cost ([param tapped]) makes none. More mana never hurts, so every source is used
+## for one of its abilities unless [param may_skip]: some source's cost taps another, and
+## then leaving one untapped, for another's cost, may be what pays.
+static func _covers_with_choices(available: Array[MmMana.Type], choices_per_source: Array, source_ids: Array[int],
+		source_index: int, cost: MmManaCost, used: Dictionary[int, bool], tapped: Dictionary[int, bool],
+		may_skip: bool) -> bool:
 	if source_index == choices_per_source.size():
 		return _covers(available, cost)
-	for choice: Variant in choices_per_source[source_index]:
-		var with_choice: Array[MmMana.Type] = available.duplicate()
-		with_choice.append_array(choice)
-		if _covers_with_choices(with_choice, choices_per_source, source_index + 1, cost):
-			return true
-	return false
+	var source_id: int = source_ids[source_index]
+	if not tapped.has(source_id):
+		for choice: Variant in choices_per_source[source_index]:
+			var tapped_id: int = choice[1]
+			if tapped_id != 0 and (used.has(tapped_id) or tapped.has(tapped_id)):
+				continue
+			var with_choice: Array[MmMana.Type] = available.duplicate()
+			with_choice.append_array(choice[0])
+			used[source_id] = true
+			if tapped_id != 0:
+				tapped[tapped_id] = true
+			var covers: bool = _covers_with_choices(with_choice, choices_per_source, source_ids, source_index + 1, cost,
+				used, tapped, may_skip)
+			used.erase(source_id)
+			tapped.erase(tapped_id)
+			if covers:
+				return true
+		if not may_skip:
+			return false
+	return _covers_with_choices(available, choices_per_source, source_ids, source_index + 1, cost, used, tapped, may_skip)
 
 
 ## Whether the mana in [param available] can pay [param cost]: every symbol by its own type,

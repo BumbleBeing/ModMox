@@ -1,0 +1,129 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_nfgqt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_cv1eb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/value_at_least_condition.gd" id="2_digyi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_4f5ly"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/count_value.gd" id="3_5l7w3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="4_0bpec"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="5_on4aq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="6_0pny0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="7_6iy14"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="8_171ul"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="9_dwi5i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/deathtouch_ability.gd" id="10_2grl2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="11_gwgs6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="12_cc3as"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="13_c6boe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="14_6dsye"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="15_w2ovr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="16_ijs0r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/gain_life_effect.gd" id="17_ekh5i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/times_resolved_this_turn_condition.gd" id="18_m11rb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="19_plx32"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/if_effect.gd" id="20_ptfa6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="21_haehb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="22_4ykg6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="23_7y4hy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="24_ujvjj"]
+
+[sub_resource type="Resource" id="Resource_v04al"]
+script = ExtResource("5_on4aq")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_mr8e3"]
+script = ExtResource("6_0pny0")
+
+[sub_resource type="Resource" id="Resource_jgkuh"]
+script = ExtResource("7_6iy14")
+filters = Array[ExtResource("4_0bpec")]([SubResource("Resource_v04al"), SubResource("Resource_mr8e3")])
+
+[sub_resource type="Resource" id="Resource_7m5bk"]
+script = ExtResource("8_171ul")
+filter = SubResource("Resource_jgkuh")
+
+[sub_resource type="Resource" id="Resource_prl5m"]
+script = ExtResource("3_5l7w3")
+selection = SubResource("Resource_7m5bk")
+
+[sub_resource type="Resource" id="Resource_0hdev"]
+script = ExtResource("2_digyi")
+value = SubResource("Resource_prl5m")
+amount = 3
+
+[sub_resource type="Resource" id="Resource_j5dpd"]
+script = ExtResource("10_2grl2")
+
+[sub_resource type="Resource" id="Resource_jnlvq"]
+script = ExtResource("11_gwgs6")
+
+[sub_resource type="Resource" id="Resource_n8dq0"]
+script = ExtResource("12_cc3as")
+abilities = Array[ExtResource("1_nfgqt")]([SubResource("Resource_j5dpd")])
+affected = SubResource("Resource_jnlvq")
+
+[sub_resource type="Resource" id="Resource_cwra8"]
+script = ExtResource("13_c6boe")
+effects = Array[ExtResource("9_dwi5i")]([SubResource("Resource_n8dq0")])
+condition = SubResource("Resource_0hdev")
+
+[sub_resource type="Resource" id="Resource_2erhx"]
+script = ExtResource("15_w2ovr")
+value = 1
+
+[sub_resource type="Resource" id="Resource_nnjim"]
+script = ExtResource("16_ijs0r")
+
+[sub_resource type="Resource" id="Resource_jnj6a"]
+script = ExtResource("17_ekh5i")
+amount = SubResource("Resource_2erhx")
+players = SubResource("Resource_nnjim")
+
+[sub_resource type="Resource" id="Resource_8vpc0"]
+script = ExtResource("18_m11rb")
+
+[sub_resource type="Resource" id="Resource_lcfjl"]
+script = ExtResource("15_w2ovr")
+value = 1
+
+[sub_resource type="Resource" id="Resource_da4go"]
+script = ExtResource("11_gwgs6")
+
+[sub_resource type="Resource" id="Resource_4ljdj"]
+script = ExtResource("19_plx32")
+amount = SubResource("Resource_lcfjl")
+recipients = SubResource("Resource_da4go")
+
+[sub_resource type="Resource" id="Resource_dogid"]
+script = ExtResource("20_ptfa6")
+condition = SubResource("Resource_8vpc0")
+effect = SubResource("Resource_4ljdj")
+
+[sub_resource type="Resource" id="Resource_w71ig"]
+script = ExtResource("5_on4aq")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_rnssm"]
+script = ExtResource("24_ujvjj")
+filter = SubResource("Resource_w71ig")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_mnf0m"]
+script = ExtResource("22_4ykg6")
+trigger = SubResource("Resource_rnssm")
+effects = Array[ExtResource("14_6dsye")]([SubResource("Resource_jnj6a"), SubResource("Resource_dogid")])
+
+[sub_resource type="Resource" id="Resource_ylpnb"]
+script = ExtResource("2_cv1eb")
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_4f5ly")
+name = "Teething Wurmlet"
+card_types = Array[int]([1])
+subtypes = Array[String](["Wurm"])
+mana_cost = SubResource("Resource_ylpnb")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_nfgqt")]([SubResource("Resource_cwra8"), SubResource("Resource_mnf0m")])
+rarity = 2

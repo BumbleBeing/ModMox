@@ -131,6 +131,10 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 			# The user's words: "Sacrifice an artifact for Selfcraft Mechan".
 			var paying_for: MmObjectView = _stack_item(view, pick.stack_object_id)
 			prompt.text = "Sacrifice %s for %s" % [picked, source_name(view, paying_for) if paying_for != null else "this"]
+		elif pick.is_for_mana_ability:
+			# Engine ADR 0105: nothing is on the stack, so it names the ability's source, in
+			# the words of a cost's tap: "Tap an untapped creature you control for Jaspera Sentinel".
+			prompt.text = "Tap %s for %s" % [picked, EncounterSnapshot.name_in(view, pick.stack_object_id)]
 		else:
 			prompt.text = "Tap %s for %s" % [picked, stack_name(view, pick.stack_object_id)]
 		# A cost asked as a spell is cast or an ability activated can be taken back; one a

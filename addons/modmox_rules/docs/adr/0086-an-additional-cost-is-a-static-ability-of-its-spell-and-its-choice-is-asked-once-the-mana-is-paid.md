@@ -21,3 +21,18 @@ Makeshift Mauler says "As an additional cost to cast this spell, exile a creatur
 `SacrificePermanentsCost` (ADR 0088's addendum) can be an additional cost too, "As an additional cost to cast this spell, sacrifice a creature", asked as the others are; no card says so yet.
 
 The AI exiles the creature card with the least mana value, as it does for Kishla Trawlers, since no simulation sees a graveyard.
+
+## Addendum: an additional cost with a choice
+
+Bayou Groff says "As an additional cost to cast this spell, sacrifice a creature or pay {3}." The choice is made as the spell is cast (CR 601.2b), and each side is paid as any additional cost is (CR 601.2f-h).
+
+**`AdditionalCostAbility` has an other choice: `or_mana_cost` and `or_costs`**, both empty by default, so every card saved before reads as it did. `has_choice()` says whether there is one.
+
+**A card with the choice is offered two casts from the hand**, as one with an alternative cost is (ADR 0093): the first pays `costs`, and the second, offered after it, pays the other choice (`CastSpellAction.is_for_other_additional_cost`). Each is offered only while its own costs can be paid. The other choice's mana is added to the mana cost before any reduction is taken off (CR 601.2f, `MmManaCost.plus()`), and the spell's mana value is still its mana cost's (CR 202.3). Asking the choice as a decision of its own was turned down: two casts need nothing new on screen, and the Agent weighs them as any two plays.
+
+The Info Panel's Option Menu says what each cast pays, in the user's words: "Cast Bayou Groff by sacrificing a creature" and "Cast Bayou Groff by paying {3}" (`AbilityText.additional_cost_choice_words()`). `AbilityText` words the ability "As an additional cost to cast this spell, sacrifice a creature or pay {3}."
+
+The Agent needs nothing of its own: the simulation sees the creature sacrificed or the mana spent.
+
+Left out until a card needs them (ADR 0001): the choice for a card cast from anywhere but the hand, or cast for an alternative cost or bestowed.
+

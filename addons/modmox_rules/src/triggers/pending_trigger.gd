@@ -19,6 +19,10 @@ var triggering_object_id: int
 ## For a delayed triggered ability: what the ability that created it remembered, its "it"
 ## (MovedCardsSelection, engine ADR 0103). Empty for any other.
 var moved_ids: Array[int] = []
+## For a reflexive triggered ability: the X paid for the "you may pay {X}" that held it, so
+## its "X" reads what was paid (PaidXValue, engine ADR 0088's fifth addendum).
+## MmEffectContext.NONE_PAID for any other.
+var paid_x: int = MmEffectContext.NONE_PAID
 
 
 ## [param source] is null only for of_delayed(), which sets what it would have given.
@@ -51,6 +55,8 @@ static func of_delayed(triggered: TriggeredAbility, index: int, controlling_play
 func context() -> MmEffectContext:
 	var made: MmEffectContext = MmEffectContext.new(controller_id, source_object_id, [], triggering_player_id,
 		triggering_object_id)
+	if paid_x != MmEffectContext.NONE_PAID:
+		made = made.with_paid_x(paid_x)
 	return made.with_moved(moved_ids) if not moved_ids.is_empty() else made
 
 

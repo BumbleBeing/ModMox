@@ -190,6 +190,65 @@ func test_a_type_changing_effect_adds_a_subtype_and_keeps_the_others() -> void:
 	assert_eq(MmCharacteristics.printed(knighted).subtypes, ["Cat", "Scout"] as Array[String], "The definition is untouched.")
 
 
+func test_becoming_a_creature_type_replaces_its_creature_types_and_keeps_the_rest() -> void:
+	# CR 205.1a: the new creature types replace its creature types, and only those.
+	var druid: MmCardDefinition = Scenario.typed_creature("Druid", 1, 1, ["Human", "Druid"])
+	var engine: MmEngine = _hero_main([druid, Scenario.sash()], [], [Scenario.free_moonrise("Moon"), Scenario.free_moonrise("Rise")])
+	var human: int = Scenario.permanent_named(engine, engine.hero().id, "Druid")
+	var sash: int = Scenario.permanent_named(engine, engine.hero().id, "Sash")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Moon", [_object(human)]), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Rise", [_object(sash)]), "")
+
+	assert_eq(Scenario.now(engine, human).subtypes, ["Werewolf"] as Array[String])
+	assert_eq(Scenario.now(engine, human).card_types, [CardType.CREATURE] as Array[CardType])
+	assert_eq(Scenario.now(engine, sash).subtypes, ["Equipment", "Werewolf"] as Array[String],
+		"An artifact type is not a creature type, so it stays.")
+	assert_eq(Scenario.now(engine, sash).card_types, [CardType.ARTIFACT, CardType.CREATURE] as Array[CardType])
+
+
+func test_a_creature_type_added_later_is_added_on_top_and_one_added_earlier_is_replaced() -> void:
+	# CR 613.7: within layer 4, in timestamp order.
+	var knighted: MmCardDefinition = Scenario.typed_creature_with("Squire", 1, 1, ["Human"], [Scenario.continuous_static([
+		Scenario.add_subtypes(["Knight"], SourceSelection.new())])])
+	var dubbing: MmCardDefinition = Scenario.creature_spell_until_end_of_turn("Dub", Scenario.add_subtypes(["Knight"], Scenario.targeted(0)))
+	var bear: MmCardDefinition = Scenario.typed_creature("Bear", 2, 2, ["Bear"])
+	var engine: MmEngine = _hero_main([knighted, bear], [], [Scenario.free_moonrise("Moon"), Scenario.free_moonrise("Rise"), dubbing])
+	var squire: int = Scenario.permanent_named(engine, engine.hero().id, "Squire")
+	var bear_id: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Moon", [_object(squire)]), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Rise", [_object(bear_id)]), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Dub", [_object(bear_id)]), "")
+
+	assert_eq(Scenario.now(engine, squire).subtypes, ["Werewolf"] as Array[String], "The Squire's own Knight came first.")
+	assert_eq(Scenario.now(engine, bear_id).subtypes, ["Werewolf", "Knight"] as Array[String], "Dub came after.")
+
+
+func test_a_changeling_that_becomes_a_werewolf_is_a_werewolf_only() -> void:
+	# CR 613.3: changeling applies first in layer 4, and the later effect replaces every type it gave.
+	var engine: MmEngine = _hero_main([Scenario.changeling()], [], [Scenario.free_moonrise()])
+	var changeling: int = Scenario.permanent_named(engine, engine.hero().id, "Changeling")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Moonrise", [_object(changeling)]), "")
+
+	assert_true(Scenario.now(engine, changeling).has_subtype("Werewolf"))
+	assert_false(Scenario.now(engine, changeling).has_subtype("Elf"))
+	assert_false(Scenario.now(engine, changeling).has_subtype("Shapeshifter"))
+
+
+func test_it_lasts_after_the_turn_ends() -> void:
+	# CR 611.2a: an effect with no duration lasts.
+	var druid: MmCardDefinition = Scenario.typed_creature("Druid", 1, 1, ["Human", "Druid"])
+	var engine: MmEngine = _hero_main([druid], [], [Scenario.free_moonrise()])
+	var human: int = Scenario.permanent_named(engine, engine.hero().id, "Druid")
+	assert_eq(Scenario.cast_and_resolve(engine, "Moonrise", [_object(human)]), "")
+
+	assert_eq(Scenario.play_until_game_turn(engine, 5), "")
+
+	assert_eq(Scenario.now(engine, human).subtypes, ["Werewolf"] as Array[String])
+
+
 func test_a_filter_in_layer_six_sees_a_subtype_added_in_layer_four() -> void:
 	var knighted: MmCardDefinition = Scenario.creature("Squire", 1, 1, [Scenario.continuous_static([
 		Scenario.add_subtypes(["Knight"], SourceSelection.new())])])

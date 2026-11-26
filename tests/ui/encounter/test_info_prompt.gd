@@ -369,6 +369,20 @@ func test_creatures_to_tap_for_a_cost_are_asked_for_by_the_cost_and_can_be_cance
 	assert_true(prompt.can_cancel, "A step of the cast.")
 
 
+func test_a_creature_to_tap_for_a_mana_ability_names_its_source_and_can_be_canceled() -> void:
+	# Engine ADR 0105: Jaspera Sentinel's cost, with nothing on the stack.
+	var view: MmPlayerView = _view()
+	view.battlefield.append(_object(7, "Jaspera Sentinel", 8))
+	var tapping: ChoosePermanentsDecision = ChoosePermanentsDecision.new(HERO, 7, 1, [1] as Array[int],
+		Scenario.tap_creatures(1).filter)
+	tapping.is_for_mana_ability = true
+
+	var prompt: InfoPrompt = InfoPrompt.of(tapping, view)
+
+	assert_eq(prompt.text, "Tap an untapped creature you control for Jaspera Sentinel")
+	assert_true(prompt.can_cancel, "It is taken back as a cast is.")
+
+
 func test_artifacts_and_or_creatures_to_tap_are_asked_for_in_the_costs_words() -> void:
 	# Adaptive Gemguard's "Tap two untapped artifacts and/or creatures you control".
 	var view: MmPlayerView = _view()

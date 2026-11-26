@@ -57,6 +57,10 @@ var sacrificed_object_ids: Array[int] = []
 ## remembered, so "it" (MovedCardsSelection) finds that token (engine ADR 0103). Empty for
 ## anything else.
 var moved_object_ids: Array[int] = []
+## For a reflexive triggered ability on the stack: the X paid for the "you may pay {X}" that
+## held it, so its "X" (PaidXValue) reads what was paid (engine ADR 0088's fifth addendum).
+## MmEffectContext.NONE_PAID for anything else.
+var paid_x: int = MmEffectContext.NONE_PAID
 ## For a spell on the stack: cast from a graveyard for its flashback cost, so it is exiled
 ## instead of going anywhere else as it leaves the stack (CR 702.34a).
 var cast_with_flashback: bool = false
@@ -201,6 +205,7 @@ func duplicate_object() -> MmGameObject:
 	copy.chosen_x = chosen_x
 	copy.sacrificed_object_ids = sacrificed_object_ids.duplicate()
 	copy.moved_object_ids = moved_object_ids.duplicate()
+	copy.paid_x = paid_x
 	copy.cast_with_flashback = cast_with_flashback
 	copy.exiled_instead_of_graveyard = exiled_instead_of_graveyard
 	copy.is_adventure_spell = is_adventure_spell

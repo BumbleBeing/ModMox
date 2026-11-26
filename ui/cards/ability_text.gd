@@ -56,8 +56,8 @@ const UNMODIFIED: String = "unmodified"
 ## The predefined tokens the game has (CR 111.10), by subtype, which is a token's name less
 ## "Token" (CR 111.4). One is created by that word alone, "create a Treasure token", since
 ## the rules give its characteristics, and calls itself "this token", as CR 111.10a words a
-## Treasure's ability. Treasure, Clue, Map and Blood so far (ADR 0001).
-const PREDEFINED_TOKENS: Array[String] = ["Treasure", "Clue", "Map", "Blood"]
+## Treasure's ability. Treasure, Clue, Map, Blood and Food so far (ADR 0001).
+const PREDEFINED_TOKENS: Array[String] = ["Treasure", "Clue", "Map", "Blood", "Food"]
 
 ## What the ability's source calls itself.
 var _noun: String
@@ -204,6 +204,32 @@ static func option_of(ability: MmAbility, noun: String, mana_type: int = MmMana.
 	if ability is ReconfigureAbility:
 		return text + (": unattach" if (ability as ReconfigureAbility).unattaches else ": attach")
 	return text
+
+
+## How a cast pays one choice of [param ability]'s "[costs] or [the other costs]", the other
+## with [param other] (engine ADR 0086's second addendum), as the user worded Bayou Groff's
+## casts: "sacrificing a creature", "paying {3}".
+static func additional_cost_choice_words(ability: AdditionalCostAbility, other: bool) -> String:
+	var writer: AbilityText = AbilityText.new("this spell")
+	var words: PackedStringArray = []
+	for part: String in writer._cost_parts(ability.mana_for(other), ability.costs_for(other)):
+		words.append(_paying_part(part))
+	return " and ".join(words)
+
+
+## [param part] of a cost said as it is paid: "{3}" is "paying {3}", "Sacrifice a creature"
+## "sacrificing a creature".
+static func _paying_part(part: String) -> String:
+	if part.begins_with("{"):
+		return "paying " + part
+	var space: int = part.find(" ")
+	var verb: String = (part if space == -1 else part.left(space)).to_lower()
+	var rest: String = "" if space == -1 else part.substr(space)
+	if verb == "tap":
+		return "tapping" + rest
+	if verb.ends_with("e") and not verb.ends_with("ee"):
+		return verb.left(verb.length() - 1) + "ing" + rest
+	return verb + "ing" + rest
 
 
 ## Only what [param ability] does, for a spell or ability on the stack: without the cost
@@ -421,8 +447,17 @@ func _ability(ability: MmAbility) -> String:
 	if ability is AdditionalCostAbility:
 		# CR 601.2f: "As an additional cost to cast this spell, return a permanent you control
 		# to its owner's hand."
-		var parts: PackedStringArray = _cost_parts(null, (ability as AdditionalCostAbility).costs)
-		return "As an additional cost to cast this spell, %s." % _uncapitalized(" and ".join(parts))
+		var additional: AdditionalCostAbility = ability as AdditionalCostAbility
+		var parts: PackedStringArray = _cost_parts(null, additional.costs)
+		var words: String = _uncapitalized(" and ".join(parts))
+		if additional.has_choice():
+			# Engine ADR 0086's second addendum, as Bayou Groff words it: "sacrifice a creature
+			# or pay {3}".
+			var other: PackedStringArray = []
+			for part: String in _cost_parts(additional.or_mana_cost, additional.or_costs):
+				other.append("pay " + part if part.begins_with("{") else _uncapitalized(part))
+			words += " or " + " and ".join(other)
+		return "As an additional cost to cast this spell, %s." % words
 	if ability is AlternativeCostAbility:
 		# CR 118.9, engine ADR 0093, as Zahid words it: "You may pay {3}{U} and tap an untapped
 		# artifact you control rather than pay this spell's mana cost."
@@ -491,10 +526,17 @@ func _ability(ability: MmAbility) -> String:
 		return "%s can't block." % _capitalized(_noun)  # Phoenix Chick's (CR 509.1a).
 	if ability is CantBeCounteredAbility:
 		return "This spell can't be countered."  # Only ever said of the card as a spell.
+	if ability is SpellsCantBeCounteredAbility:
+		return _spells_cant_be_countered(ability as SpellsCantBeCounteredAbility)
 	if ability is EntersWithCountersAbility:
 		var entering: EntersWithCountersAbility = ability as EntersWithCountersAbility
-		# Later: "where X is ..." for an amount other than a number or the X chosen as it was cast.
-		return "%s enters with %s on it." % [_capitalized(_noun), _counters(entering.amount, entering.kind)]
+		_where = ""
+		var enters: String = "%s enters with %s on it" % [_capitalized(_noun), _counters(entering.amount, entering.kind)]
+		if _where != "":
+			# Voracious Wurm's "where X is the amount of life you've gained this turn".
+			enters += ", where X is " + _where
+			_where = ""
+		return enters + "."
 	if ability is AsEntersPayOrEntersTappedAbility:
 		var unless_paid: AsEntersPayOrEntersTappedAbility = ability as AsEntersPayOrEntersTappedAbility
 		return "As %s enters, you may %s. If you don't, it enters tapped." % [_noun,
@@ -1282,10 +1324,12 @@ func _sentences(effects: Array[MmEffect], starts_sentence: bool) -> String:
 		_for_each = ""
 		_for_each_of = ""
 		var clause: String = ""
-		if index < effects.size():
-			clause = _becomes_with_base(effect, effects[index])
-			if clause == "":
-				clause = _gets_and_gains(effect, effects[index])
+		var becoming: int = _becomes_run(effects, index - 1)
+		if becoming > 0:
+			clause = _becomes(effects.slice(index - 1, index - 1 + becoming))
+			index += becoming - 1  # The rest of the run is said in the same clause.
+		elif index < effects.size():
+			clause = _gets_and_gains(effect, effects[index])
 			if clause != "":
 				index += 1  # The second effect is said in the same clause.
 		if clause == "":
@@ -1488,8 +1532,13 @@ func _effect(effect: MmEffect) -> String:
 	if effect is SacrificeSelectedEffect:
 		return "sacrifice " + _selection((effect as SacrificeSelectedEffect).selection)
 	if effect is MayPayXEffect:
+		var paying_x: MayPayXEffect = effect as MayPayXEffect
+		if paying_x.effect is ReflexiveTriggerEffect:
+			# Engine ADR 0088's fifth addendum, as Wildborn Preserver words it: "you may pay
+			# {X}. When you do, put X +1/+1 counters on this creature."
+			return "you may pay {X}. When you do, " + _reflexive_words(paying_x.effect as ReflexiveTriggerEffect)
 		# ADR 0061: "you may pay {X}. If you do, search your library for ...".
-		return "you may pay {X}. If you do, " + _effect((effect as MayPayXEffect).effect)
+		return "you may pay {X}. If you do, " + _effect(paying_x.effect)
 	if effect is CreateContinuousEffect:
 		# CR 611.2a: one with no duration says none (engine ADR 0091).
 		var created: CreateContinuousEffect = effect as CreateContinuousEffect
@@ -1704,6 +1753,11 @@ func _continuous(continuous: MmContinuousEffect, is_static: bool, is_bare: bool 
 			added = "every basic land type"
 		return "%s %s %s in addition to its other types" % [affected,
 			"is" if is_static else _bare_or_verb(continuous.affected, is_bare, "become"), added]
+	if continuous is SetCreatureTypesContinuousEffect:
+		# CR 205.1a, as Mild-Mannered Librarian words it: "This creature becomes a Werewolf."
+		var creature_types: PackedStringArray = PackedStringArray((continuous as SetCreatureTypesContinuousEffect).creature_types)
+		return "%s %s %s" % [affected, "is" if is_static else _bare_or_verb(continuous.affected, is_bare, "become"),
+			_with_article(" ".join(creature_types))]
 	if continuous is LoseAllAbilitiesContinuousEffect:
 		return "%s %s all abilities" % [affected, _bare_or_verb(continuous.affected, is_bare, "lose")]
 	if continuous is AddCardTypesContinuousEffect:
@@ -1711,6 +1765,21 @@ func _continuous(continuous: MmContinuousEffect, is_static: bool, is_bare: bool 
 		return "%s %s %s" % [affected, "is" if is_static else _bare_or_verb(continuous.affected, is_bare, "become"),
 			_with_article(_card_type_words((continuous as AddCardTypesContinuousEffect).card_types))]
 	return _fallback(continuous, "_continuous_effect")
+
+
+## Destiny Spinner's "Creature and enchantment spells you control can't be countered."
+## (engine ADR 0062's second addendum): each kind of spell its filter allows, joined by "and".
+func _spells_cant_be_countered(ability: SpellsCantBeCounteredAbility) -> String:
+	if ability.filter == null:
+		return "Spells you control can't be countered."
+	var kinds: PackedStringArray = []
+	var either: AnyOfFilter = ability.filter as AnyOfFilter
+	if either != null:
+		for part: MmFilter in either.filters:
+			kinds.append(_noun_phrase(part, false))
+	else:
+		kinds.append(_noun_phrase(ability.filter, false))
+	return _capitalized(" and ".join(kinds)) + " spells you control can't be countered."
 
 
 ## " until end of turn", or nothing for an effect with no duration (CR 611.2a).
@@ -1726,23 +1795,73 @@ static func _card_type_words(card_types: Array[MmCardTypes.CardType]) -> String:
 	return " ".join(words)
 
 
-## Bring to Life's "target noncreature artifact you control becomes a 0/0 artifact
-## creature" (engine ADR 0091): [param first] adding card types and [param second] setting
-## base power and toughness, of the same object for as long, as one clause; "" for any
-## other pair.
-func _becomes_with_base(first: MmEffect, second: MmEffect) -> String:
-	var types: CreateContinuousEffect = first as CreateContinuousEffect
-	var base: CreateContinuousEffect = second as CreateContinuousEffect
-	if types == null or base == null or types.duration != base.duration:
-		return ""
+## How many of [param effects] from [param start] say one "becomes" clause, as Bring to
+## Life's "target noncreature artifact you control becomes a 0/0 artifact creature" (engine
+## ADR 0091) and Destiny Spinner's "target land you control becomes an X/X Elemental creature
+## with trample and haste until end of turn": card types added, then any subtypes added, then
+## base power and toughness set, then any abilities gained, each of the same object for as
+## long. 0 when they say no such clause.
+func _becomes_run(effects: Array[MmEffect], start: int) -> int:
+	var first: CreateContinuousEffect = effects[start] as CreateContinuousEffect
+	if first == null or not first.continuous is AddCardTypesContinuousEffect:
+		return 0
+	var at: int = start + 1
+	if _continues(effects, at, first, AddSubtypesContinuousEffect):
+		at += 1
+	if not _continues(effects, at, first, SetPowerToughnessContinuousEffect):
+		return 0
+	at += 1
+	if _continues(effects, at, first, GainAbilitiesContinuousEffect):
+		at += 1
+	return at - start
+
+
+## Whether [param effects] at [param at] creates a continuous effect of [param kind] for the
+## same object as [param first], and for as long.
+func _continues(effects: Array[MmEffect], at: int, first: CreateContinuousEffect, kind: Script) -> bool:
+	if at >= effects.size():
+		return false
+	var next: CreateContinuousEffect = effects[at] as CreateContinuousEffect
+	return next != null and next.duration == first.duration and next.continuous.get_script() == kind \
+		and _same_selection(first.continuous.affected, next.continuous.affected)
+
+
+## The "becomes" clause [param run] says (_becomes_run()): "becomes a 4/4 artifact creature",
+## or with an X for power and toughness alike "becomes an X/X Elemental creature with trample
+## and haste", what X is kept for the end of the sentence. The object keeps its other types
+## (CR 205.1b), as "It's still a land." says, so that is not said.
+func _becomes(run: Array[MmEffect]) -> String:
+	var types: CreateContinuousEffect = run[0] as CreateContinuousEffect
 	var adding: AddCardTypesContinuousEffect = types.continuous as AddCardTypesContinuousEffect
-	var setting: SetPowerToughnessContinuousEffect = base.continuous as SetPowerToughnessContinuousEffect
-	if adding == null or setting == null or not _same_selection(adding.affected, setting.affected):
-		return ""
-	var made: String = "%s/%s %s" % [_value_phrase(setting.power), _value_phrase(setting.toughness),
-		_card_type_words(adding.card_types)]
-	return "%s %s %s" % [_selection(adding.affected), _verb(adding.affected, "become"), _with_article(made)] \
-		+ _duration_words(types.duration)
+	var made: PackedStringArray = []
+	var with: PackedStringArray = []
+	for effect: MmEffect in run.slice(1):
+		var continuous: MmContinuousEffect = (effect as CreateContinuousEffect).continuous
+		if continuous is SetPowerToughnessContinuousEffect:
+			made.insert(0, _base_words(continuous as SetPowerToughnessContinuousEffect))
+		elif continuous is AddSubtypesContinuousEffect:
+			made.append(" ".join(PackedStringArray((continuous as AddSubtypesContinuousEffect).subtypes)))
+		elif continuous is GainAbilitiesContinuousEffect:
+			for ability: MmAbility in (continuous as GainAbilitiesContinuousEffect).abilities:
+				var text: String = _ability(ability)
+				with.append(text.to_lower() if is_keyword(ability) else "\"%s\"" % text)
+	made.append(_card_type_words(adding.card_types))
+	var becomes: String = "%s %s %s" % [_selection(adding.affected), _verb(adding.affected, "become"),
+		_with_article(" ".join(made))]
+	if not with.is_empty():
+		becomes += " with " + " and ".join(with)
+	return becomes + _duration_words(types.duration)
+
+
+## "4/4", or "X/X" with what X is kept for the end of the sentence when power and toughness
+## are one number that is not a constant.
+func _base_words(set_to: SetPowerToughnessContinuousEffect) -> String:
+	var power: String = _value_phrase(set_to.power)
+	var toughness: String = _value_phrase(set_to.toughness)
+	if set_to.power is ConstantValue or power != toughness:
+		return "%s/%s" % [power, toughness]
+	_where = power
+	return "X/X"
 
 
 ## Faerie Guidemother's "target creature gets +2/+1 and gains flying until end of turn":
@@ -2235,6 +2354,9 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		var targeted: MmFilter = (filter as TargetsFilter).filter
 		var words: String = _noun if targeted is IsSourceFilter else _with_article(_noun_phrase(targeted, false))
 		after.append(("that doesn't target " if is_negated else "that targets ") + words)
+	elif filter is HasAdventureFilter:
+		# CR 715.2, as Edgewall Innkeeper words it: "a creature spell that has an Adventure".
+		after.append("that doesn't have an Adventure" if is_negated else "that has an Adventure")
 	elif filter is IsOfChosenTypeFilter:
 		after.append("not of the chosen type" if is_negated else "of the chosen type")
 	elif filter is HasOriginalNameFilter:
@@ -2437,6 +2559,9 @@ func _value_phrase(value: MmValue) -> String:
 		return "the number of cards in %s hand" % _possessive(_selection((value as HandSizeValue).players))
 	if value is CardsDrawnThisTurnValue:
 		return "the number of cards %s drawn this turn" % _drawers((value as CardsDrawnThisTurnValue).players)
+	if value is LifeGainedThisTurnValue:
+		# Engine ADR 0082's fourth addendum.
+		return "the amount of life %s gained this turn" % _drawers((value as LifeGainedThisTurnValue).players)
 	if value is CardsInZoneValue:
 		return "the number of " + _cards_in_zone(value as CardsInZoneValue, true)
 	if value is DifferenceValue:
@@ -2502,6 +2627,10 @@ static func _with_article(words: String) -> String:
 	# "Another creature", never "an other creature".
 	if words.begins_with(OTHER + " "):
 		return "an" + words
+	# Said aloud: "an X/X", "an 8/8", "an 11/11", "an 18/18".
+	for sounded: String in ["X/", "8", "11/", "18/"]:
+		if words.begins_with(sounded):
+			return "an " + words
 	return ("an " if "aeiou".contains(words.left(1).to_lower()) else "a ") + words
 
 

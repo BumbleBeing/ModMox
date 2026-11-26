@@ -164,7 +164,7 @@ func next_decision() -> MmPendingDecision:
 			if _cost_choice != null:
 				return _cost_choice
 			if _payment != null:
-				var paying: PayManaDecision = _begin_paid_effect()
+				var paying: MmPendingDecision = _begin_paid_effect()
 				if paying != null:
 					return paying
 				effect = _effects[_effect_index] if _effect_in_place == null else _effect_in_place
@@ -238,6 +238,13 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	var creature_type: ChooseCreatureTypeDecision = decision as ChooseCreatureTypeDecision
 	if creature_type != null:
 		_chosen_creature_type = creature_type.creature_types[answer as int]
+		return
+	if _payment != null and _payment.is_choosing():
+		var chosen: Array[int] = []
+		for id: Variant in answer as Array:
+			chosen.append(id as int)
+		chosen.sort()
+		_payment.answer_choice(_state, chosen)  # Engine ADR 0105.
 		return
 	if _cost_choice != null and decision is ChooseCardsToDiscardDecision:
 		_pay_chosen_cost(decision, answer)  # Irreverent Gremlin's "you may discard a card".
@@ -319,7 +326,10 @@ func _pay_chosen_cost(decision: MmPendingDecision, answer: Variant) -> void:
 ## it is paid, null with the effect it wraps begun in its place, its context holding the X
 ## paid (ADR 0061). For a cost said yes to, once it is paid the current effect is given its
 ## yes (ADR 0062).
-func _begin_paid_effect() -> PayManaDecision:
+func _begin_paid_effect() -> MmPendingDecision:
+	var choosing: MmPendingDecision = _payment.choice(_state)
+	if choosing != null:
+		return choosing  # Engine ADR 0105: a mana ability's cost asks first.
 	if not _payment.is_paid():
 		var paying: PayManaDecision = _payment.decision(_state)
 		assert(paying != null, "What was offered could be paid (ManaPayment.can_afford() is exact).")

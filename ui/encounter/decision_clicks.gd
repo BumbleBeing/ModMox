@@ -395,7 +395,24 @@ func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
 		# alternative cost", after "Cast Zahid, Djinn of the Lamp".
 		_append(_hand_options, object_id, ClickOption.new(answer, "Cast %s for its alternative cost" % card_name))
 		return
+	var choice: AdditionalCostAbility = null if cast == null or in_hand == null else _additional_cost_choice(in_hand)
+	if choice != null:
+		# Engine ADR 0086's second addendum, the user's words: "Cast Bayou Groff by sacrificing a
+		# creature" and "Cast Bayou Groff by paying {3}".
+		_append(_hand_options, object_id, ClickOption.new(answer, "Cast %s by %s" % [card_name,
+			AbilityText.additional_cost_choice_words(choice, cast.is_for_other_additional_cost)]))
+		return
 	_append(_hand_options, object_id, ClickOption.new(answer, "%s %s" % [verb, card_name]))
+
+
+## The additional cost of [param card] that offers a choice, "[costs] or [the other costs]",
+## or null for a card with none.
+static func _additional_cost_choice(card: MmObjectView) -> AdditionalCostAbility:
+	for ability: MmAbility in card.abilities:
+		var additional: AdditionalCostAbility = ability as AdditionalCostAbility
+		if additional != null and additional.has_choice():
+			return additional
+	return null
 
 
 ## A card cast from the Hero's pile of [param zone_kind]: it is clicked in that pile's

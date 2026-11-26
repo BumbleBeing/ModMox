@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_kh78g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_c7fqp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_o4eo3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_6j5fo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_pygyd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_uo6do"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="5_am3nt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_f3fjo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_d8xdn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_cnlka"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_0gbf7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="10_cdtlo"]
+
+[sub_resource type="Resource" id="Resource_ub7pn"]
+script = ExtResource("3_6j5fo")
+value = 1
+
+[sub_resource type="Resource" id="Resource_fqich"]
+script = ExtResource("4_uo6do")
+
+[sub_resource type="Resource" id="Resource_wpjrw"]
+script = ExtResource("5_am3nt")
+amount = SubResource("Resource_ub7pn")
+recipients = SubResource("Resource_fqich")
+
+[sub_resource type="Resource" id="Resource_7r5l6"]
+script = ExtResource("9_0gbf7")
+
+[sub_resource type="Resource" id="Resource_1yypu"]
+script = ExtResource("8_cnlka")
+filter = SubResource("Resource_7r5l6")
+
+[sub_resource type="Resource" id="Resource_vitom"]
+script = ExtResource("9_0gbf7")
+card_type = 2
+
+[sub_resource type="Resource" id="Resource_ay4qx"]
+script = ExtResource("10_cdtlo")
+filter = SubResource("Resource_vitom")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_u2x03"]
+script = ExtResource("7_d8xdn")
+trigger = SubResource("Resource_ay4qx")
+targets = Array[ExtResource("8_cnlka")]([SubResource("Resource_1yypu")])
+effects = Array[ExtResource("2_c7fqp")]([SubResource("Resource_wpjrw")])
+
+[sub_resource type="Resource" id="Resource_1x14p"]
+script = ExtResource("2_o4eo3")
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_pygyd")
+name = "Generous Visitor"
+card_types = Array[int]([1])
+subtypes = Array[String](["Spirit"])
+mana_cost = SubResource("Resource_1x14p")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_kh78g")]([SubResource("Resource_u2x03")])
+rarity = 1

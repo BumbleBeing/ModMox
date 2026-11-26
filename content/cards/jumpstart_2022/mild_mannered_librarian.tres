@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_uw52o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_5md8n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_6wu0w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_a6yw7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_vku62"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="4_2nrvm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/set_creature_types_continuous_effect.gd" id="5_pwvok"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_1vr6o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="7_1m1lg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="8_7lhm6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="9_jn4am"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="10_kt3e0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="12_hb7fh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="13_j2ey5"]
+
+[sub_resource type="Resource" id="Resource_rotoj"]
+script = ExtResource("4_2nrvm")
+
+[sub_resource type="Resource" id="Resource_wppu6"]
+script = ExtResource("5_pwvok")
+creature_types = Array[String](["Werewolf"])
+affected = SubResource("Resource_rotoj")
+
+[sub_resource type="Resource" id="Resource_rdaao"]
+script = ExtResource("6_1vr6o")
+continuous = SubResource("Resource_wppu6")
+duration = 1
+
+[sub_resource type="Resource" id="Resource_35rrn"]
+script = ExtResource("7_1m1lg")
+value = 2
+
+[sub_resource type="Resource" id="Resource_s1eh8"]
+script = ExtResource("4_2nrvm")
+
+[sub_resource type="Resource" id="Resource_mm8ha"]
+script = ExtResource("8_7lhm6")
+amount = SubResource("Resource_35rrn")
+recipients = SubResource("Resource_s1eh8")
+
+[sub_resource type="Resource" id="Resource_5vrul"]
+script = ExtResource("7_1m1lg")
+value = 1
+
+[sub_resource type="Resource" id="Resource_p2722"]
+script = ExtResource("9_jn4am")
+
+[sub_resource type="Resource" id="Resource_5cuxe"]
+script = ExtResource("10_kt3e0")
+amount = SubResource("Resource_5vrul")
+players = SubResource("Resource_p2722")
+
+[sub_resource type="Resource" id="Resource_4bi46"]
+script = ExtResource("2_5md8n")
+generic = 3
+symbols = Array[int]([4])
+
+[sub_resource type="Resource" id="Resource_ykvc1"]
+script = ExtResource("12_hb7fh")
+mana_cost = SubResource("Resource_4bi46")
+effects = Array[ExtResource("3_a6yw7")]([SubResource("Resource_rdaao"), SubResource("Resource_mm8ha"), SubResource("Resource_5cuxe")])
+is_once_each_game = true
+
+[sub_resource type="Resource" id="Resource_wrcss"]
+script = ExtResource("2_5md8n")
+symbols = Array[int]([4])
+
+[resource]
+script = ExtResource("3_vku62")
+name = "Mild-Mannered Librarian"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human"])
+mana_cost = SubResource("Resource_wrcss")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_uw52o")]([SubResource("Resource_ykvc1")])
+rarity = 1

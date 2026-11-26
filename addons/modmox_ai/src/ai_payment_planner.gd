@@ -2,7 +2,9 @@ class_name AiPaymentPlanner
 extends RefCounted
 ## Chooses how to pay one step of a mana cost (A157, A169): mana already in the pool first,
 ## then the source that is cheapest to lose: a land, then another source, then a creature,
-## then a source its mana ability sacrifices, such as a Treasure, which is lost for good.
+## then a source whose mana ability taps another creature too, as Jaspera Sentinel's does
+## (engine ADR 0105), then a source its mana ability sacrifices, such as a Treasure, which is
+## lost for good. The creature such an ability taps is the one least missed (choose_tapped()).
 ## Colored symbols, hybrid ones too (ADR 0077), are paid before generic mana, with sources
 ## making that color, so a payment the engine offered is always finished; mana of any color
 ## is made only in a color that pays something (ADR 0072). An artifact tapped for improvise
@@ -18,8 +20,9 @@ const _IMPROVISE: int = 3
 const _LAND: int = 4
 const _OTHER_SOURCE: int = 5
 const _CREATURE: int = 6
-const _SACRIFICED: int = 7
-const _UNUSABLE: int = 8
+const _TAPS_ANOTHER: int = 7
+const _SACRIFICED: int = 8
+const _UNUSABLE: int = 9
 
 
 ## The index of the action in [param decision] to take next, reading [param state].
@@ -34,6 +37,24 @@ static func choose(state: MmGameState, decision: PayManaDecision) -> int:
 			best_rank = rank
 			best_index = index
 	return best_index
+
+
+## The permanents to tap for a mana ability's cost that asks which (engine ADR 0105), as
+## Jaspera Sentinel's "Tap an untapped creature you control": first one with no {T} ability
+## of its own, which could make mana or do something else, then the least valuable, so a
+## creature with summoning sickness, which could not attack anyway, before one that could
+## (AiBoardEvaluator.permanent_value()), then the oldest.
+static func choose_tapped(state: MmGameState, decision: ChoosePermanentsDecision, profile: AiProfile) -> Array[int]:
+	var ranks: Dictionary[int, Array] = {}
+	for id: int in decision.candidate_ids:
+		var permanent: MmGameObject = state.object(id)
+		ranks[id] = [1 if _has_tap_ability(state.characteristics_of(permanent)) else 0,
+			AiBoardEvaluator.permanent_value(state, permanent, profile), id]
+	var ranked: Array[int] = decision.candidate_ids.duplicate()
+	ranked.sort_custom(func(a: int, b: int) -> bool: return ranks[a] < ranks[b])
+	var chosen: Array[int] = ranked.slice(0, decision.count)
+	chosen.sort()
+	return chosen
 
 
 ## How many of each color's symbols the mana costs of [param player_id]'s hand hold.
@@ -94,12 +115,16 @@ static func _rank(state: MmGameState, decision: PayManaDecision, action: MmActio
 	return [kind, 0, demand, _object_id(action)]
 
 
-## The tier of the source [param action] taps: one its mana ability sacrifices, a land, a
-## creature, or anything else.
+## The tier of the source [param action] taps: one its mana ability sacrifices, one whose
+## mana ability taps another creature too, a land, a creature, or anything else.
 static func _kind_of(state: MmGameState, action: ActivateAbilityAction) -> int:
+	var taps_another: bool = false
 	for cost: MmCost in AiTiming.activated_ability_of(state, action).costs:
 		if cost is SacrificeThisCost:
 			return _SACRIFICED
+		taps_another = taps_another or cost is TapCreaturesCost
+	if taps_another:
+		return _TAPS_ANOTHER
 	var characteristics: MmCharacteristics = state.characteristics_of(state.object(action.object_id))
 	if characteristics.has_card_type(MmCardTypes.CardType.CREATURE):
 		return _CREATURE
@@ -114,14 +139,19 @@ static func _improvise_kind(state: MmGameState, object_id: int) -> int:
 	var characteristics: MmCharacteristics = state.characteristics_of(state.object(object_id))
 	if characteristics.has_card_type(MmCardTypes.CardType.CREATURE):
 		return _CREATURE
+	return _OTHER_SOURCE if _has_tap_ability(characteristics) else _IMPROVISE
+
+
+## Whether some activated ability of [param characteristics] has {T} in its cost.
+static func _has_tap_ability(characteristics: MmCharacteristics) -> bool:
 	for ability: MmAbility in characteristics.abilities:
 		var activated: ActivatedAbility = ability as ActivatedAbility
 		if activated == null:
 			continue
 		for cost: MmCost in activated.costs:
 			if cost is TapCost:
-				return _OTHER_SOURCE
-	return _IMPROVISE
+				return true
+	return false
 
 
 static func _object_id(action: MmAction) -> int:

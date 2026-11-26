@@ -72,6 +72,7 @@ static func of_stack_object(stack_object: MmGameObject, chosen_targets: Array[Mm
 	context.target_counts = counts.duplicate()
 	context.sacrificed_ids = stack_object.sacrificed_object_ids.duplicate()
 	context.moved_ids = stack_object.moved_object_ids.duplicate()  # Engine ADR 0103.
+	context.paid_x = stack_object.paid_x  # Engine ADR 0088's fifth addendum.
 	return context
 
 

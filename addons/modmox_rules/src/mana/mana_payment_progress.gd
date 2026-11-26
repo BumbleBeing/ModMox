@@ -16,6 +16,10 @@ var tapping_source_id: int = 0
 ## Whether this is the mana of a spell with improvise (CR 702.126a, engine ADR 0099), so
 ## each untapped artifact the payer controls may pay {1} of the generic mana owed.
 var improvises: bool = false
+## A mana ability activated to pay whose cost waits for a choice (engine ADR 0105), or null,
+## and how much mana the pool held before it.
+var _activation: ManaAbilityActivation = null
+var _pool_size_before: int = 0
 
 
 func _init(paying_player_id: int, generic: int = 0, symbols: Array[MmMana.Type] = [],
@@ -38,11 +42,33 @@ func copy() -> ManaPaymentProgress:
 		remaining_hybrid_symbols)
 	progress.tapping_source_id = tapping_source_id
 	progress.improvises = improvises
+	progress._activation = null if _activation == null else _activation.copy()
+	progress._pool_size_before = _pool_size_before
 	return progress
 
 
 func is_paid() -> bool:
 	return remaining_generic == 0 and remaining_symbols.is_empty() and remaining_hybrid_symbols.is_empty()
+
+
+## Whether a mana ability activated to pay waits for its cost's choice (engine ADR 0105),
+## which [method choice] asks before any other step.
+func is_choosing() -> bool:
+	return _activation != null
+
+
+## What the mana ability activated to pay asks before it is paid, or null when none waits.
+func choice(state: MmGameState) -> MmPendingDecision:
+	return null if _activation == null else _activation.choice(state)
+
+
+## Pays the waiting mana ability with the permanents in [param chosen], and its mana pays
+## what it can of the cost.
+func answer_choice(state: MmGameState, chosen: Array[int]) -> void:
+	var activation: ManaAbilityActivation = _activation
+	_activation = null
+	activation.finish(state, chosen)
+	_spend_new_mana(state, _pool_size_before)
 
 
 ## The next step of the payment, or null when nothing on offer can pay what is still owed.
@@ -129,14 +155,20 @@ func _spend(state: MmGameState, unit_index: int) -> void:
 ## the cost; whatever the cost no longer needs stays in the pool, as mana of any color does
 ## in a color owed nothing.
 func _pay_with_mana_ability(state: MmGameState, action: ActivateAbilityAction) -> void:
-	var source: MmGameObject = state.object(action.object_id)
-	var ability: ActivatedAbility = state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
+	var activation: ManaAbilityActivation = ManaAbilityActivation.new(action)
 	var pool_size_before: int = state.player(player_id).mana_pool().size()
-	if ability.is_activated_only_once():
-		state.perform(AbilitySpentEvent.of(ability, source.id, action.ability_index))  # CR 602.5b
-	ability.pay_costs(state, source)
-	var context: MmEffectContext = MmEffectContext.new(source.controller_id, source.id)
-	ability.resolve_effects(state, context.with_chosen_mana_type(action.mana_type))  # ADR 0072
+	if activation.choice(state) != null:
+		# Engine ADR 0105: its cost asks first, through choice(); answer_choice() pays it.
+		_activation = activation
+		_pool_size_before = pool_size_before
+		return
+	activation.finish(state)
+	_spend_new_mana(state, pool_size_before)
+
+
+## Spends each unit added to the pool from [param pool_size_before] on that would pay
+## something still owed, leaving the rest in the pool.
+func _spend_new_mana(state: MmGameState, pool_size_before: int) -> void:
 	var unit_index: int = pool_size_before
 	while unit_index < state.player(player_id).mana_pool().size():
 		var type: MmMana.Type = state.player(player_id).mana_pool()[unit_index].type

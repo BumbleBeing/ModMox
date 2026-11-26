@@ -26,6 +26,9 @@ var _legends_kept: Array[int] = []
 ## The land being played while its controller is asked whether to pay for it to enter
 ## untapped (ADR 0052), or 0.
 var _land_entering_id: int = 0
+## A mana ability activated at priority whose cost waits for a choice (engine ADR 0105), or
+## null.
+var _mana_activation: ManaAbilityActivation = null
 
 
 func _init(state: MmGameState) -> void:
@@ -47,12 +50,14 @@ func copy_for(state: MmGameState) -> TurnProcedure:
 	copy._needs_rewind = _needs_rewind
 	copy._legends_kept = _legends_kept.duplicate()
 	copy._land_entering_id = _land_entering_id
+	copy._mana_activation = null if _mana_activation == null else _mana_activation.copy()
 	return copy
 
 
-## Whether a spell is being cast, or an ability activated, right now.
+## Whether a spell is being cast, or an ability activated, right now: a mana ability too,
+## while its cost's choice is asked (engine ADR 0105), so it can be taken back.
 func is_casting() -> bool:
-	return _cast != null
+	return _cast != null or _mana_activation != null
 
 
 ## Whether the spell or ability being cast can no longer be paid for, so the engine must
@@ -69,6 +74,8 @@ func next_decision() -> MmPendingDecision:
 			return _state.replacement_decision()  # A143: whatever proposed it carries on after.
 		if _land_entering_id != 0:
 			return _entry_choice()
+		if _mana_activation != null:
+			return _mana_activation.choice(_state)
 		if _cast != null:
 			var casting: MmPendingDecision = _cast.next_decision()
 			if casting != null:
@@ -145,7 +152,9 @@ func next_decision() -> MmPendingDecision:
 
 ## Applies an already-validated [param answer] to [param decision].
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
-	if decision is ChooseLegendToKeepDecision:
+	if _mana_activation != null:
+		_finish_mana_activation(answer as Array)
+	elif decision is ChooseLegendToKeepDecision:
 		_legends_kept.append((decision as ChooseLegendToKeepDecision).candidate_ids[answer as int])  # next_decision() carries on.
 	elif decision is ChooseReplacementEffectDecision:
 		_state.choose_replacement_effect(answer as int)  # next_decision() carries on from here.
@@ -179,7 +188,7 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		elif action is CastSpellAction:
 			var cast: CastSpellAction = action as CastSpellAction
 			_cast = CastProcedure.cast_spell(_state, decision.player_id, _state.object(cast.object_id), cast.as_adventure,
-				cast.is_bestowed, cast.is_for_alternative_cost)
+				cast.is_bestowed, cast.is_for_alternative_cost, false, false, cast.is_for_other_additional_cost)
 		elif action is ActivateAbilityAction:
 			_activate(action as ActivateAbilityAction, decision.player_id)
 		else:
@@ -343,6 +352,11 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 	for card: MmGameObject in hand:
 		if _may_cast(player, card):
 			actions.append(CastSpellAction.new(card.id))
+		# CR 601.2b, engine ADR 0086's second addendum: "[costs] or [the other costs]" is a cast
+		# for each, the other offered after the first.
+		if CastProcedure.has_additional_cost_choice(_state.characteristics_of(card)) \
+				and _may_cast(player, card, false, false, false, true):
+			actions.append(CastSpellAction.new(card.id, false, false, false, true))
 		# CR 715.3: an Adventurer card may be cast as its Adventure too, offered after it.
 		if _state.characteristics_of(card).adventure != null and _may_cast(player, card, true):
 			actions.append(CastSpellAction.new(card.id, true))
@@ -430,10 +444,14 @@ func _sorcery_timing(player: MmPlayer) -> bool:
 ## as the creature (CR 715.3d). [param bestowed]: cast from the hand for its bestow cost, as
 ## an Aura spell (CR 702.103a-b, engine ADR 0089). [param for_alternative_cost]: cast from
 ## the hand for its AlternativeCostAbility's cost (CR 118.9, engine ADR 0093).
+## [param for_other_additional_cost]: cast from the hand paying the other choice of its
+## additional cost (CR 601.2b, engine ADR 0086's second addendum).
 func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false, bestowed: bool = false,
-		for_alternative_cost: bool = false) -> bool:
+		for_alternative_cost: bool = false, for_other_additional_cost: bool = false) -> bool:
 	var characteristics: MmCharacteristics = _state.characteristics_of(card)
 	var alternative: AlternativeCostAbility = null
+	if for_other_additional_cost and (card.zone() != player.hand or not CastProcedure.has_additional_cost_choice(characteristics)):
+		return false
 	if for_alternative_cost:
 		alternative = CastProcedure.alternative_cost_of(characteristics)
 		if card.zone() != player.hand or alternative == null:
@@ -462,7 +480,7 @@ func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false,
 			return false
 		if characteristics.mana_cost == null:
 			return false  # CR 118.6: a card with no mana cost cannot be cast this way.
-	costs.append_array(CastProcedure.additional_costs_of(characteristics))
+	costs.append_array(CastProcedure.additional_costs_of(characteristics, for_other_additional_cost))
 	if characteristics.has_card_type(MmCardTypes.CardType.LAND):
 		return false  # CR 305.9: a land is played, never cast.
 	# CR 307.1 and 702.8a: only an instant, or a card with flash, ignores sorcery timing.
@@ -481,7 +499,7 @@ func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false,
 	# A flashback cost with no mana in it needs none. What is paid is less any cost
 	# reduction (CR 601.2f).
 	var to_pay: MmManaCost = CastProcedure.mana_to_pay(_state, player.id, card, as_adventure, bestowed,
-		for_alternative_cost)
+		for_alternative_cost, for_other_additional_cost)
 	# Later: a tap cost and the mana are each checked alone, so an artifact that would both be
 	# tapped and pay mana is offered, and its cast then rewinds as stuck (ADR 0015).
 	return to_pay == null or ManaPayment.can_afford(_state, player.id, to_pay, 0, CastProcedure.improvises(characteristics))
@@ -576,15 +594,27 @@ func _activate(action: ActivateAbilityAction, player_id: int) -> void:
 	var source: MmGameObject = _state.object(action.object_id)
 	var ability: ActivatedAbility = _state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
 	if ability.is_mana_ability():
-		if ability.is_activated_only_once():
-			_state.perform(AbilitySpentEvent.of(ability, source.id, action.ability_index))
-		ability.pay_costs(_state, source)
-		var context: MmEffectContext = MmEffectContext.new(source.controller_id, source.id)
-		# ADR 0072: the color of mana of any color was chosen with the action.
-		ability.resolve_effects(_state, context.with_chosen_mana_type(action.mana_type))
+		var activation: ManaAbilityActivation = ManaAbilityActivation.new(action)
+		if activation.choice(_state) != null:
+			_mana_activation = activation  # Engine ADR 0105: next_decision() asks it.
+			return
+		activation.finish(_state)
 		_passes_in_succession = 0
 	else:
 		_cast = CastProcedure.activate_ability(_state, player_id, source, action.ability_index)
+
+
+## Engine ADR 0105: pays the waiting mana ability with the permanents chosen in [param answer]
+## and adds its mana; the player keeps priority (CR 605.3a).
+func _finish_mana_activation(answer: Array) -> void:
+	var chosen: Array[int] = []
+	for id: Variant in answer:
+		chosen.append(id as int)
+	chosen.sort()
+	var activation: ManaAbilityActivation = _mana_activation
+	_mana_activation = null
+	activation.finish(_state, chosen)
+	_passes_in_succession = 0
 
 
 func _sorted_by_id(objects: Array[MmGameObject]) -> Array[MmGameObject]:

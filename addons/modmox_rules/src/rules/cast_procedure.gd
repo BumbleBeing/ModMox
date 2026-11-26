@@ -53,10 +53,11 @@ var _exiled_for_next_cost: int = 0
 ## (CR 118.9, engine ADR 0104): no mana, so X is 0 (CR 107.3b), and from a graveyard no
 ## flashback cost either (CR 118.9a), its additional costs still paid; and
 ## [param exiled_instead_of_graveyard] marks it to be exiled if it would be put into its
-## owner's graveyard.
+## owner's graveyard. [param for_other_additional_cost] pays the other choice of its
+## AdditionalCostAbility, "or pay {3}" (CR 601.2b, engine ADR 0086's second addendum).
 static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false,
 		bestowed: bool = false, for_alternative_cost: bool = false, without_paying: bool = false,
-		exiled_instead_of_graveyard: bool = false) -> CastProcedure:
+		exiled_instead_of_graveyard: bool = false, for_other_additional_cost: bool = false) -> CastProcedure:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	if as_adventure:
 		characteristics = characteristics.adventure
@@ -72,7 +73,7 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, a
 	# CR 601.2f: the total cost is fixed now. Choosing modes and targets first, as the rules
 	# order it, can change nothing it counts. Later: cost increases.
 	var mana: MmManaCost = null if without_paying else mana_to_pay(state, player_id, card, as_adventure, bestowed,
-		for_alternative_cost)
+		for_alternative_cost, for_other_additional_cost)
 	if mana != null and mana.x_count > 0:
 		procedure._x_cost = mana
 		if procedure._stage != Stage.CHOOSE_MODE:
@@ -84,7 +85,7 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, a
 	elif for_alternative_cost:
 		costs.append_array(alternative_cost_of(characteristics).costs)
 	procedure._costs_before_mana = costs.size()
-	costs.append_array(additional_costs_of(characteristics))
+	costs.append_array(additional_costs_of(characteristics, for_other_additional_cost))
 	procedure._costs = costs
 	procedure._payment = ManaPaymentProgress.of_cost(player_id, mana)
 	procedure._payment.improvises = improvises(characteristics)
@@ -130,9 +131,11 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 ## [param as_adventure]: its Adventure's mana cost and reductions (CR 715.3a).
 ## [param bestowed]: its bestow cost instead, an alternative cost (CR 118.9, 702.103a).
 ## [param for_alternative_cost]: its AlternativeCostAbility's mana instead (CR 118.9, engine
-## ADR 0093).
+## ADR 0093). [param for_other_additional_cost]: with the mana of its additional cost's other
+## choice added, "or pay {3}" (CR 601.2f, engine ADR 0086's second addendum), before any
+## reduction is taken off.
 static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false,
-		bestowed: bool = false, for_alternative_cost: bool = false) -> MmManaCost:
+		bestowed: bool = false, for_alternative_cost: bool = false, for_other_additional_cost: bool = false) -> MmManaCost:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	if as_adventure:
 		characteristics = characteristics.adventure
@@ -148,6 +151,10 @@ static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject, 
 		mana = null if flashback == null else flashback.mana_cost
 	if mana == null:
 		return null
+	for ability: MmAbility in characteristics.abilities:
+		var additional: AdditionalCostAbility = ability as AdditionalCostAbility
+		if additional != null:
+			mana = mana.plus(additional.mana_for(for_other_additional_cost))
 	for ability: MmAbility in characteristics.abilities:
 		var reducing: CostReductionAbility = ability as CostReductionAbility
 		if reducing != null:
@@ -236,15 +243,27 @@ static func improvises(characteristics: MmCharacteristics) -> bool:
 	return characteristics.has_ability(ImproviseAbility)
 
 
-## Every additional cost of a spell with [param characteristics] (CR 601.2f, 118.8), in the
-## order of its AdditionalCostAbility abilities.
-static func additional_costs_of(characteristics: MmCharacteristics) -> Array[MmCost]:
+## Every additional cost of a spell with [param characteristics] (CR 601.2f, 118.8) but its
+## mana, in the order of its AdditionalCostAbility abilities: each one's first choice, or with
+## [param other] the other choice of one that has two (engine ADR 0086's second addendum).
+static func additional_costs_of(characteristics: MmCharacteristics, other: bool = false) -> Array[MmCost]:
 	var costs: Array[MmCost] = []
 	for ability: MmAbility in characteristics.abilities:
 		var additional: AdditionalCostAbility = ability as AdditionalCostAbility
 		if additional != null:
-			costs.append_array(additional.costs)
+			costs.append_array(additional.costs_for(other))
 	return costs
+
+
+## Whether a spell with [param characteristics] has an additional cost with a choice, "[costs]
+## or [the other costs]", so its card is offered a cast for each (engine ADR 0086's third
+## addendum).
+static func has_additional_cost_choice(characteristics: MmCharacteristics) -> bool:
+	for ability: MmAbility in characteristics.abilities:
+		var additional: AdditionalCostAbility = ability as AdditionalCostAbility
+		if additional != null and additional.has_choice():
+			return true
+	return false
 
 
 ## The card's alternative cost (CR 118.9, engine ADR 0093), or null for a card without one.
@@ -337,6 +356,9 @@ func next_decision() -> MmPendingDecision:
 					return asked
 				_stage = Stage.PAY_MANA
 			Stage.PAY_MANA:
+				var choosing: MmPendingDecision = _payment.choice(_state)
+				if choosing != null:
+					return choosing  # Engine ADR 0105: a mana ability's cost asks first.
 				if _payment.is_paid():
 					_stage = Stage.PAY_COSTS_AFTER_MANA
 					continue
@@ -360,6 +382,9 @@ func next_decision() -> MmPendingDecision:
 
 ## Applies an already-validated [param answer] to [param decision].
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
+	if _payment != null and _payment.is_choosing():
+		_payment.answer_choice(_state, _sorted_ids(answer as Array))  # Engine ADR 0105.
+		return
 	if decision is ChoosePermanentsDecision or decision is ChooseObjectDecision or decision is ChooseCardsToDiscardDecision:
 		var chosen: Array[int] = []
 		if decision is ChooseObjectDecision:
@@ -401,6 +426,15 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_payment.apply_answer(_state, decision as PayManaDecision, index)
 	else:
 		assert(false, "Casting cannot answer %s." % decision.describe())
+
+
+## The object IDs in [param answer], in ascending order.
+static func _sorted_ids(answer: Array) -> Array[int]:
+	var ids: Array[int] = []
+	for id: Variant in answer:
+		ids.append(id as int)
+	ids.sort()
+	return ids
 
 
 ## The modes that may be chosen, each with what its targets could be, or null when none

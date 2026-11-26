@@ -35,6 +35,29 @@ func test_with_nothing_it_could_find_it_declines() -> void:
 		assert_eq(agent.rollout_count(), 0, "Nothing worth paying for, so nothing is simulated.")
 
 
+func test_it_pays_all_it_can_for_counters_a_reflexive_trigger_puts_on_its_preserver() -> void:
+	# Engine ADR 0088's fifth addendum, as Wildborn Preserver's "you may pay {X}. When you do,
+	# put X +1/+1 counters on this creature."
+	for agent: AiAgent in [AiAgent.new(null, AiAgent.Mode.CHEAP), AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())]:
+		var bird: MmCardDefinition = Scenario.mana_bird()
+		var preserver: MmCardDefinition = Scenario.preserver()
+		var bear: MmCardDefinition = Scenario.creature("Bear", 2, 2)
+		var ogre: MmCardDefinition = Scenario.creature("Ogre", 3, 3)
+		var setup: MmEncounterSetup = Scenario.setup_with(Scenario.cycled([bird, preserver, bear]), Scenario.cycled([ogre]))
+		var no_cards: Array[MmCardDefinition] = []
+		var engine: MmEngine = Scenario.permanents_ready_with(setup, [bird, preserver], [ogre], [bear], no_cards, 3,
+			MmTurn.Step.PRECOMBAT_MAIN)
+		assert_not_null(engine, "No seed gave the needed hand.")
+		assert_eq(Scenario.cast_and_resolve(engine, "Bear"), "")
+		assert_eq(AiScenario.pass_to(engine, engine.hero().id, ChooseXToPayDecision), "")
+		var asked: ChooseXToPayDecision = engine.pending_decision() as ChooseXToPayDecision
+		assert_eq(asked.most, 3, "The Mana Bird makes three.")
+
+		var answer: int = AiScenario.ask(engine, agent)
+
+		assert_eq(answer, ChooseXToPayDecision.answer_for(3), "Each mana paid is a counter that lasts.")
+
+
 ## The Hero, with a Mana Bird ("{T}: Add {W}{W}{W}") on the battlefield and [param knights]
 ## in their deck, has cast Seeker: "When this creature enters, you may pay {X}. If you do,
 ## search your library for a Knight card with mana value X or less, put that card onto the

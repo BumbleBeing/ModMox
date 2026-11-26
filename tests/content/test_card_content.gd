@@ -1560,6 +1560,45 @@ func test_nephalia_smuggler_exiles_another_creature_you_control_and_returns_it_a
 	assert_true(engine.game_state().object(smuggler_id).is_tapped, "{T} was paid.")
 
 
+func test_destiny_spinner_makes_a_land_an_x_x_elemental_with_x_fixed_as_it_resolves() -> void:
+	# CR 611.2c, 205.1b: X is the number of enchantments the Hero controls as it resolves, and
+	# the land keeps being a land.
+	var spinner: MmCardDefinition = Scenario.free_copy(_card("theros_beyond_death", "destiny_spinner"))
+	var charm: MmCardDefinition = Scenario.enchantment("Charm", [])
+	var creatures: Array[MmCardDefinition] = [spinner, charm]
+	var extras: Array[MmCardDefinition] = [Scenario.free_land_fetch(), Scenario.enchantment("Late Charm", [])]
+	var no_cards: Array[MmCardDefinition] = []
+	var in_deck: Array[MmCardDefinition] = extras.duplicate()
+	in_deck.append(_alpha("forest"))
+	var setup: MmEncounterSetup = Scenario.combat_setup(creatures, no_cards, in_deck)
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, creatures, no_cards, extras, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed board.")
+	if engine == null:
+		return
+	assert_eq(Scenario.fetch_lands(engine, ["Forest", "Forest", "Forest", "Forest", "Forest"]), "")
+	var hero: int = engine.hero().id
+	var forest: int = Scenario.permanents_named(engine, hero, "Forest")[0]
+
+	assert_eq(engine.submit(Scenario.activate_index(engine.pending_decision() as PriorityDecision,
+		Scenario.permanent_named(engine, hero, "Destiny Spinner"))), "")
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(forest)), "")
+	assert_eq(Scenario.auto_pay(engine), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.cast_and_resolve(engine, "Late Charm"), "")
+
+	var now: MmCharacteristics = engine.game_state().characteristics_of(engine.game_state().object(forest))
+	assert_true(now.has_card_type(MmCardTypes.CardType.CREATURE))
+	assert_true(now.has_card_type(MmCardTypes.CardType.LAND), "It's still a land.")
+	assert_true(now.has_subtype("Elemental"))
+	assert_true(now.has_subtype("Forest"))
+	assert_eq([now.power, now.toughness], [2, 2], "The Spinner and the Charm, not the Late Charm.")
+	assert_true(now.has_ability(TrampleAbility))
+	assert_true(now.has_ability(HasteAbility))
+	assert_eq(Scenario.play_until_step(engine, 4, MmTurn.Step.UPKEEP), "")
+	assert_false(engine.game_state().characteristics_of(engine.game_state().object(forest)).has_card_type(
+		MmCardTypes.CardType.CREATURE), "Until end of turn.")
+
+
 func test_topiary_panther_landcycles_for_a_forest_paid_by_two_forests() -> void:
 	var panther: MmCardDefinition = _card("murders_at_karlov_manor", "topiary_panther")
 	var cards: Array[MmCardDefinition] = Scenario.deck_of(_alpha("forest"), 20, panther, 20)
@@ -2414,3 +2453,57 @@ func _find_cards(dir_path: String) -> PackedStringArray:
 	for sub_dir: String in dir.get_directories():
 		found.append_array(_find_cards(dir_path.path_join(sub_dir)))
 	return found
+
+
+func test_teething_wurmlet_takes_a_counter_only_for_the_first_artifact_each_turn() -> void:
+	var wurmlet: MmCardDefinition = Scenario.free_copy(_card("the_brothers_war", "teething_wurmlet"))
+	var tower: MmCardDefinition = Scenario.free_copy(_alpha("ivory_tower"))
+	var setup: MmEncounterSetup = Scenario.setup_with(Scenario.cycled([wurmlet, tower]), Scenario.cycled([]))
+	var engine: MmEngine = Scenario.find_engine(setup, func(running: MmEngine) -> bool:
+		if Scenario.play_until_step(running, 1, MmTurn.Step.PRECOMBAT_MAIN) != "":
+			return false
+		var towers: int = 0
+		for card: MmGameObject in running.hero().hand.objects():
+			if running.game_state().characteristics_of(card).name == "Ivory Tower":
+				towers += 1
+		return towers >= 2 and Scenario.card_in_hand(running, running.hero(), "Teething Wurmlet") != -1)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Teething Wurmlet"), "")
+	var id: int = Scenario.permanent_named(engine, engine.hero().id, "Teething Wurmlet")
+	var life: int = engine.hero().life
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Ivory Tower"), "")
+	_resolve(engine)
+	assert_eq(engine.hero().life, life + 1)
+	assert_eq(Scenario.counters_on(engine, id, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 1, "The first time it resolved this turn.")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Ivory Tower"), "")
+	_resolve(engine)
+	assert_eq(engine.hero().life, life + 2, "It gains life every time.")
+	assert_eq(Scenario.counters_on(engine, id, MmCounter.Kind.PLUS_ONE_PLUS_ONE), 1, "Only the first time puts a counter.")
+
+
+func test_mild_mannered_librarian_becomes_a_werewolf_with_two_counters_and_draws_only_once() -> void:
+	# CR 205.1a: a Werewolf instead of a Human. CR 602.5b: only once.
+	var librarian: MmCardDefinition = Scenario.free_copy(_card("jumpstart_2022", "mild_mannered_librarian"))
+	var free_ability: ActivatedAbility = librarian.abilities[0].duplicate() as ActivatedAbility
+	free_ability.mana_cost = Scenario.mana_cost(0)  # A copy: the loaded card is never changed.
+	librarian.abilities = [free_ability]
+	var hero_creatures: Array[MmCardDefinition] = [librarian]
+	var no_cards: Array[MmCardDefinition] = []
+	var setup: MmEncounterSetup = Scenario.combat_setup(hero_creatures, no_cards)
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, hero_creatures, no_cards, no_cards, no_cards, 3,
+		MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hands.")
+	var id: int = Scenario.permanent_named(engine, engine.hero().id, "Mild-Mannered Librarian")
+	assert_eq(engine.game_state().characteristics_of(engine.game_state().object(id)).subtypes, ["Human"] as Array[String])
+	var hand_before: int = engine.hero().hand.size()
+
+	assert_eq(Scenario.activate(engine, id), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var now: MmCharacteristics = engine.game_state().characteristics_of(engine.game_state().object(id))
+	assert_eq(now.subtypes, ["Werewolf"] as Array[String])
+	assert_eq([now.power, now.toughness], [3, 3])
+	assert_eq(engine.hero().hand.size(), hand_before + 1)
+	assert_eq(Scenario.activate_index(engine.pending_decision() as PriorityDecision, id), -1, "Activate only once.")

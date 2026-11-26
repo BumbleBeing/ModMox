@@ -539,7 +539,7 @@ func _advance(is_passing_now: bool = false) -> void:
 	_pass_due_at = 0
 	while not _engine.is_over():
 		var decision: MmPendingDecision = _engine.pending_decision()
-		if not (decision is PayManaDecision and decision.player_id == HERO):
+		if not ((decision is PayManaDecision or _is_mana_ability_choice(decision)) and decision.player_id == HERO):
 			_is_payment_settled = false
 			_payment_left = null
 		if decision.player_id != HERO:
@@ -554,6 +554,9 @@ func _advance(is_passing_now: bool = false) -> void:
 		if order != null and TriggerOrder.are_alike(order):
 			# A344: their order changes nothing, so the Hero is not asked.
 			_engine.submit(range(order.abilities.size()))
+			continue
+		if _is_mana_ability_choice(decision) and _is_payment_settled and not _is_paid_by_hand:
+			_tap_for_mana_ability(decision as ChoosePermanentsDecision)  # Engine ADR 0105.
 			continue
 		var payment: PayManaDecision = decision as PayManaDecision
 		if payment != null:
@@ -607,6 +610,21 @@ func _pay_one(payment: PayManaDecision) -> void:
 	_engine.submit(choice)
 
 
+## Whether [param decision] asks which permanents a mana ability's cost taps (engine ADR
+## 0105), part of paying when Auto-tap activated the ability.
+static func _is_mana_ability_choice(decision: MmPendingDecision) -> bool:
+	return decision is ChoosePermanentsDecision and (decision as ChoosePermanentsDecision).is_for_mana_ability
+
+
+## Picks what a mana ability Auto-tap activated taps, as the Villain's Agent would.
+func _tap_for_mana_ability(tapping: ChoosePermanentsDecision) -> void:
+	var chosen: Array[int] = AiPaymentPlanner.choose_tapped(_engine.game_state(), tapping, AiProfile.new())
+	if _payment_left != null:
+		for id: int in chosen:
+			_payment_left.take_source(id)
+	_engine.submit(chosen)
+
+
 ## A copy of the game to pay on, with every card where it is.
 func _copy() -> MmEngine:
 	return _engine.simulation_copy(HERO, MmRng.new(1), true)
@@ -626,6 +644,13 @@ func _plan_on(copy: MmEngine) -> PaymentPlan:
 			continue
 		if decision is ChooseTargetsDecision:
 			copy.submit([])
+			continue
+		if _is_mana_ability_choice(decision):
+			var chosen: Array[int] = AiPaymentPlanner.choose_tapped(copy.game_state(), decision as ChoosePermanentsDecision,
+				AiProfile.new())
+			for id: int in chosen:
+				plan.add_source(id)  # Engine ADR 0105: tapped too, so the Tap Preview shows it.
+			copy.submit(chosen)
 			continue
 		var payment: PayManaDecision = decision as PayManaDecision
 		if payment == null:

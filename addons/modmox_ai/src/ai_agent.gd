@@ -174,6 +174,9 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _choose_object(decision as ChooseObjectDecision, world, source, rng)
 	if decision is ChooseModeDecision:
 		return _choose_mode(decision as ChooseModeDecision, world, source, rng)
+	if decision is ChoosePermanentsDecision and (decision as ChoosePermanentsDecision).is_for_mana_ability:
+		_reason = Reason.PAYMENT_PLAN  # Engine ADR 0105: part of paying, as the payment's steps are.
+		return AiPaymentPlanner.choose_tapped(world, decision as ChoosePermanentsDecision, profile)
 	if decision is ChoosePermanentsDecision:
 		return _choose_permanents(decision as ChoosePermanentsDecision, world, source, rng)
 	if decision is ChooseLegendToKeepDecision:
@@ -339,19 +342,22 @@ func _plan_repeats(decision: PriorityDecision, world: MmGameState, source: MmSim
 	return repeats
 
 
-## Weighs each spell among [param options] that waits for another spell this turn, as Sage
-## of the Skies's own cast trigger does (_waits_for_another_spell(), engine ADR 0083), as the
-## second of a pair: each other play among [param options] first, then that spell, on the same
-## re-dealt worlds as the plays alone. One-step scoring stops once the first play has
-## resolved, so it never sees the second spell's reward. Where a pair beats both its plays
-## alone, [param scores] gives the first play the pair's score, so it is made first; the
-## waiting spell is weighed again at the next priority, its trigger's condition true by then.
+## Weighs each spell among [param options] that waits for another play this turn, as Sage
+## of the Skies's own cast trigger waits for another spell (_waits_for_another_spell(), engine
+## ADR 0083) and Voracious Wurm's counters for life gained (_waits_for_life_gain(), engine ADR
+## 0082's third addendum), as the second of a pair: each other play among [param options]
+## first, then that spell, on the same re-dealt worlds as the plays alone. One-step scoring
+## stops once the first play has resolved, so it never sees the second spell's reward. Where
+## a pair beats both its plays alone, [param scores] gives the first play the pair's score, so
+## it is made first; the waiting spell is weighed again at the next priority, with what the
+## first play did by then. A waiting spell is never the first of a pair.
 func _plan_follow_ups(decision: PriorityDecision, world: MmGameState, source: MmSimulationSource,
 		options: Array[int], scores: Array[int], through_turn: bool) -> void:
 	var me: int = decision.player_id
 	var waiting: Array[int] = []
 	for index: int in range(1, options.size()):
-		if _waits_for_another_spell(world, decision.actions[options[index]], me):
+		var action: MmAction = decision.actions[options[index]]
+		if _waits_for_another_spell(world, action, me) or _waits_for_life_gain(world, action):
 			waiting.append(index)
 	if waiting.is_empty():
 		return
@@ -360,7 +366,9 @@ func _plan_follow_ups(decision: PriorityDecision, world: MmGameState, source: Mm
 	for waiting_index: int in waiting:
 		var then_key: String = _play_key(decision.actions[options[waiting_index]])
 		for first_index: int in range(1, options.size()):
-			if first_index == waiting_index:
+			# A spell that waits is never the first of a pair: two Wurms would credit the
+			# first with the second's worth, and outscore the play it waits for.
+			if waiting.has(first_index):
 				continue
 			var score: int = 0
 			for world_seed: int in world_seeds:
@@ -382,6 +390,20 @@ func _waits_for_another_spell(world: MmGameState, action: MmAction, player_id: i
 		var triggered: TriggeredAbility = ability as TriggeredAbility
 		if triggered != null and triggered.trigger != null and triggered.trigger.functions_on_the_stack() \
 				and triggered.condition is CastAnotherSpellThisTurnCondition:
+			return true
+	return false
+
+
+## Whether [param action] casts a permanent spell that enters with counters for the life
+## its controller gained this turn, as Voracious Wurm does (engine ADR 0082's third
+## addendum): a play that gains life first makes it larger.
+func _waits_for_life_gain(world: MmGameState, action: MmAction) -> bool:
+	var cast: CastSpellAction = action as CastSpellAction
+	if cast == null or cast.as_adventure:
+		return false
+	for ability: MmAbility in world.characteristics_of(world.object(cast.object_id)).abilities:
+		var entering: EntersWithCountersAbility = ability as EntersWithCountersAbility
+		if entering != null and entering.amount is LifeGainedThisTurnValue:
 			return true
 	return false
 
@@ -463,8 +485,9 @@ func _mana_unlocks_a_play(decision: PriorityDecision, index: int, source: MmSimu
 func _play_key(action: MmAction) -> String:
 	if action is CastSpellAction:
 		var cast: CastSpellAction = action as CastSpellAction
-		return "cast %d%s%s%s" % [cast.object_id, " adventure" if cast.as_adventure else "",
-			" bestowed" if cast.is_bestowed else "", " alternative" if cast.is_for_alternative_cost else ""]
+		return "cast %d%s%s%s%s" % [cast.object_id, " adventure" if cast.as_adventure else "",
+			" bestowed" if cast.is_bestowed else "", " alternative" if cast.is_for_alternative_cost else "",
+			" other additional" if cast.is_for_other_additional_cost else ""]
 	if action is ActivateAbilityAction:
 		var activate: ActivateAbilityAction = action as ActivateAbilityAction
 		return "activate %d %d %d" % [activate.object_id, activate.ability_index, activate.mana_type]
@@ -569,7 +592,7 @@ func _cheap_counter(decision: PriorityDecision, world: MmGameState) -> int:
 		return -1
 	var top: MmGameObject = world.stack.objects().back()
 	if not top.is_card_or_copy() or top.controller_id == decision.player_id \
-			or world.characteristics_of(top).has_ability(CantBeCounteredAbility):
+			or not CounterRules.can_be_countered(world, top):
 		return -1
 	var top_cost: int = world.characteristics_of(top).mana_value()
 	var best: int = -1
@@ -762,7 +785,7 @@ func _cheap_target(decision: ChooseTargetDecision, world: MmGameState) -> int:
 			or (harmful and damage > 0 and world.characteristics_of(target).toughness - target.damage_marked > damage) \
 			or (taps and target.is_tapped) \
 			or (untaps and not target.is_tapped) \
-			or (tag == AiTiming.Tag.COUNTER and world.characteristics_of(target).has_ability(CantBeCounteredAbility))
+			or (tag == AiTiming.Tag.COUNTER and not CounterRules.can_be_countered(world, target))
 		if is_wasted:
 			if value > wasted_value:
 				wasted = index
