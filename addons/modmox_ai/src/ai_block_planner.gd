@@ -57,8 +57,9 @@ func plan() -> Array:
 	return pairs
 
 
-## Each attacker, most dangerous first, gets a blocker that survives, preferring one that
-## kills it, then the least valuable.
+## Each attacker, most dangerous first, gets a blocker that survives, or one that would
+## come back as it dies, as one with undying does, preferring one that kills it, then the
+## least valuable.
 func _good_blocks(blocks: Dictionary[int, int]) -> void:
 	for attacker_id: int in _attackers_by_threat():
 		if blocks.values().has(attacker_id) or _decision.least_blockers_of(attacker_id) > 1:
@@ -67,7 +68,7 @@ func _good_blocks(blocks: Dictionary[int, int]) -> void:
 		var best_kills: bool = false
 		for blocker_id: int in _free_blockers(blocks, attacker_id):
 			var outcome: Array[bool] = _duel.call(attacker_id, blocker_id)
-			if outcome[1]:
+			if outcome[1] and not AiBoardEvaluator.comes_back_when_it_dies(_state, _state.object(blocker_id)):
 				continue
 			if best == -1 or (outcome[0] and not best_kills) \
 					or (outcome[0] == best_kills and _value(blocker_id) < _value(best)):

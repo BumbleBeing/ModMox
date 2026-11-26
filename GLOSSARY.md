@@ -218,8 +218,16 @@ _Avoid_: Armor art, armor sprite, Armor Slot (the place, not the picture)
 One of the losses a run can survive. Losing an encounter costs one, and a Twist may cost one or give one back. The run is lost when none are left.
 _Avoid_: Life (a rules term), health, HP
 
+**Pool**:
+A Starting Pool or a Store Pool: a set of cards something in a run is drawn from, each card in it at most once, never a basic land or a Power-9 card. It is its Base, the cards it holds from the start, and every Pool Addition that augments it and has been unlocked. Which cards are in each is authored and can be changed at any time.
+_Avoid_: Card pool, card list
+
+**Pool Addition**:
+An authored set of cards that joins one or more Pools once it is unlocked, named with the Bases it augments: an Achievement's cards joining the Starting Pool, or a Bazaar unlock's joining the Store Pools of its Tiers. Until it is unlocked, a run draws nothing from it.
+_Avoid_: Expansion, unlock pool, bonus pool
+
 **Starting Pool**:
-The cards a run's first Collection is dealt from, authored and divided into the five colors, colorless cards, multicolored cards and lands, never a basic land; a multicolored card is in the multicolored group, whatever its colors. The deal is semi-random: about a third of it is of the Hero Color, and the rest is spread over the other groups. Achievements can add cards to it, some of them new and powerful.
+The cards a run's first Collection is dealt from, authored as one Pool. Each card falls in one of its groups by what the card is: lands, then the five colors, colorless cards and multicolored cards; a multicolored card is in the multicolored group, whatever its colors. The deal is semi-random: about a third of it is of the Hero Color, and the rest is spread over the other groups. Achievements can add cards to it, some of them new and powerful.
 _Avoid_: Starter deck, card pool, starting collection
 
 **Store Pool**:
@@ -391,7 +399,7 @@ The window where the Hero surveils (game ADR 0069), titled "Surveil N" for the n
 _Avoid_: Surveil dialog, scry window (it is the same window), Library window (that shows the whole library)
 
 **Look Window**:
-The window where the Hero looks at the top cards of their library and may take one (game ADR 0085), as Militia Bugler has them do, titled "Look at N" for the number of cards looked at. It opens by itself left of the piles, four cards wide, with the cards face up in one row, leftmost on top of the library, and "Hand" baked into its bottom edge; it has no close button. The cards that may be taken glow green; a click selects one (white), and Hand flies it into the hand. There is no dragging. Only Done on the Pass Button answers, and the rest fly face down onto the Library pile.
+The window where the Hero looks at the top cards of their library and may take one (game ADR 0085), as Militia Bugler has them do, titled "Look at N" for the number of cards looked at. It opens by itself left of the piles, four cards wide, with the cards face up in one row, leftmost on top of the library, and "Hand" baked into its bottom edge; it has no close button. The cards that may be taken glow green; a click selects one (white), and Hand flies it into the hand. When the rest go to the bottom in a random order, as Militia Bugler's, there is no dragging; when they go in any order, as Faerie Mechanist's, the row is dragged into the order they go, rightmost deepest (game ADR 0085's addendum). Only Done on the Pass Button answers, and the rest fly face down onto the Library pile.
 _Avoid_: Look dialog, dig window, Library window (that shows the whole library)
 
 **Baked Button**:

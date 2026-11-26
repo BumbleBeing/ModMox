@@ -5,18 +5,21 @@ extends RefCounted
 ## then a source its mana ability sacrifices, such as a Treasure, which is lost for good.
 ## Colored symbols, hybrid ones too (ADR 0077), are paid before generic mana, with sources
 ## making that color, so a payment the engine offered is always finished; mana of any color
-## is made only in a color that pays something (ADR 0072). Auto-tap (game glossary) pays for the Hero with it too,
-## so both players pay the same way.
+## is made only in a color that pays something (ADR 0072). An artifact tapped for improvise
+## (engine ADR 0099) pays generic mana only: one that loses nothing by it, with no {T}
+## ability and no body to block with, before any land; another as a source of its kind.
+## Auto-tap (game glossary) pays for the Hero with it too, so both players pay the same way.
 
 ## Tiers, cheapest to use first.
 const _POOL_FOR_COLOR: int = 0
 const _SOURCE_FOR_COLOR: int = 1
 const _POOL: int = 2
-const _LAND: int = 3
-const _OTHER_SOURCE: int = 4
-const _CREATURE: int = 5
-const _SACRIFICED: int = 6
-const _UNUSABLE: int = 7
+const _IMPROVISE: int = 3
+const _LAND: int = 4
+const _OTHER_SOURCE: int = 5
+const _CREATURE: int = 6
+const _SACRIFICED: int = 7
+const _UNUSABLE: int = 8
 
 
 ## The index of the action in [param decision] to take next, reading [param state].
@@ -57,6 +60,8 @@ static func types_wanted_by(cost: MmManaCost) -> Array[MmMana.Type]:
 
 ## The type of mana [param action] gives, or -1 if unknown.
 static func mana_type_of(state: MmGameState, action: MmAction, pool: Array[MmMana]) -> int:
+	if action is ImproviseAction:
+		return -1  # It pays generic mana, of no type.
 	if action is PayWithManaAction:
 		return pool[(action as PayWithManaAction).unit_index].type
 	if action is ActivateAbilityAction and (action as ActivateAbilityAction).mana_type != MmMana.NO_TYPE:
@@ -77,6 +82,8 @@ static func _rank(state: MmGameState, decision: PayManaDecision, action: MmActio
 	var produced: int = mana_type_of(state, action, pool)
 	var demand: int = needed.get(produced, 0)
 	var is_pool: bool = action is PayWithManaAction
+	if action is ImproviseAction:
+		return [_improvise_kind(state, (action as ImproviseAction).object_id), 0, 0, (action as ImproviseAction).object_id]
 	var kind: int = _POOL if is_pool else _kind_of(state, action as ActivateAbilityAction)
 	if decision.remaining_symbols.has(produced as MmMana.Type) \
 			or MmManaCost.hybrid_index_in(decision.remaining_hybrid_symbols, produced as MmMana.Type) != -1:
@@ -99,6 +106,22 @@ static func _kind_of(state: MmGameState, action: ActivateAbilityAction) -> int:
 	if characteristics.has_card_type(MmCardTypes.CardType.LAND):
 		return _LAND
 	return _OTHER_SOURCE
+
+
+## The tier of tapping [param object_id] for improvise: a creature last but a sacrifice, an
+## artifact with a {T} ability as another source, and any other before a land.
+static func _improvise_kind(state: MmGameState, object_id: int) -> int:
+	var characteristics: MmCharacteristics = state.characteristics_of(state.object(object_id))
+	if characteristics.has_card_type(MmCardTypes.CardType.CREATURE):
+		return _CREATURE
+	for ability: MmAbility in characteristics.abilities:
+		var activated: ActivatedAbility = ability as ActivatedAbility
+		if activated == null:
+			continue
+		for cost: MmCost in activated.costs:
+			if cost is TapCost:
+				return _OTHER_SOURCE
+	return _IMPROVISE
 
 
 static func _object_id(action: MmAction) -> int:

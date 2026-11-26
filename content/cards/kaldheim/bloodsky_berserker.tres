@@ -1,0 +1,69 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_1hoaa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_i1vwu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_oxi6u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_dnha4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_iik2t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="4_4av5b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="5_a8o80"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/menace_ability.gd" id="6_18xbt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="7_m76w8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="8_bhm0y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="9_fckej"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="10_o60xh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_sgr0p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="12_5qd83"]
+
+[sub_resource type="Resource" id="Resource_ra5hw"]
+script = ExtResource("3_dnha4")
+value = 2
+
+[sub_resource type="Resource" id="Resource_okhh0"]
+script = ExtResource("4_4av5b")
+
+[sub_resource type="Resource" id="Resource_g63ah"]
+script = ExtResource("5_a8o80")
+amount = SubResource("Resource_ra5hw")
+recipients = SubResource("Resource_okhh0")
+
+[sub_resource type="Resource" id="Resource_6due0"]
+script = ExtResource("6_18xbt")
+
+[sub_resource type="Resource" id="Resource_hoshf"]
+script = ExtResource("4_4av5b")
+
+[sub_resource type="Resource" id="Resource_y6ol5"]
+script = ExtResource("7_m76w8")
+abilities = Array[ExtResource("1_1hoaa")]([SubResource("Resource_6due0")])
+affected = SubResource("Resource_hoshf")
+
+[sub_resource type="Resource" id="Resource_c4ttw"]
+script = ExtResource("8_bhm0y")
+continuous = SubResource("Resource_y6ol5")
+
+[sub_resource type="Resource" id="Resource_jc1j3"]
+script = ExtResource("12_5qd83")
+whose = 1
+nth_each_turn = 2
+
+[sub_resource type="Resource" id="Resource_6yq0l"]
+script = ExtResource("10_o60xh")
+trigger = SubResource("Resource_jc1j3")
+effects = Array[ExtResource("2_oxi6u")]([SubResource("Resource_g63ah"), SubResource("Resource_c4ttw")])
+
+[sub_resource type="Resource" id="Resource_jkqgf"]
+script = ExtResource("2_i1vwu")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_iik2t")
+name = "Bloodsky Berserker"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Berserker"])
+mana_cost = SubResource("Resource_jkqgf")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_1hoaa")]([SubResource("Resource_6yq0l")])
+rarity = 1

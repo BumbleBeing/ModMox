@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_kp7ms"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_3ah35"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ahueo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_1ke5j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_fba4m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_7evuc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_tlbsu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="6_lygww"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_gip28"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_mu20m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_kytwh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/life_gained_trigger.gd" id="10_n63kc"]
+
+[sub_resource type="Resource" id="Resource_ngc8y"]
+script = ExtResource("2_3ah35")
+
+[sub_resource type="Resource" id="Resource_q4v8m"]
+script = ExtResource("4_7evuc")
+value = 1
+
+[sub_resource type="Resource" id="Resource_tnboh"]
+script = ExtResource("5_tlbsu")
+
+[sub_resource type="Resource" id="Resource_dsqf3"]
+script = ExtResource("6_lygww")
+amount = SubResource("Resource_q4v8m")
+recipients = SubResource("Resource_tnboh")
+
+[sub_resource type="Resource" id="Resource_glr2q"]
+script = ExtResource("10_n63kc")
+
+[sub_resource type="Resource" id="Resource_x5ih5"]
+script = ExtResource("8_mu20m")
+trigger = SubResource("Resource_glr2q")
+effects = Array[ExtResource("3_1ke5j")]([SubResource("Resource_dsqf3")])
+
+[sub_resource type="Resource" id="Resource_cicnm"]
+script = ExtResource("2_ahueo")
+generic = 3
+symbols = Array[int]([2, 2])
+
+[resource]
+script = ExtResource("3_fba4m")
+name = "Scion of the Swarm"
+card_types = Array[int]([1])
+subtypes = Array[String](["Vampire", "Cleric"])
+mana_cost = SubResource("Resource_cicnm")
+power = 3
+toughness = 3
+abilities = Array[ExtResource("1_kp7ms")]([SubResource("Resource_ngc8y"), SubResource("Resource_x5ih5")])
+rarity = 1

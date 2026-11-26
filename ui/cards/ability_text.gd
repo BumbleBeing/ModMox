@@ -79,12 +79,22 @@ var _named: Dictionary[int, bool] = {}
 var _names_again_with_that: bool = false
 ## What "X" stands for in the sentence being written, or "".
 var _where: String = ""
+## What an amount is given "for each" of, kept for the end of the sentence as [member _where]
+## is: "Equipment attached to it" (ProductValue).
+var _for_each: String = ""
 ## The color an Option Menu row's activation makes of mana of any color (ADR 0072), an
 ## MmMana.Type, or MmMana.NO_TYPE to say "one mana of any color".
 var _chosen_mana_type: int = MmMana.NO_TYPE
 ## Whether the words written so far say "that creature", the object a trigger's event was
 ## about.
 var _says_triggering_object: bool = false
+## Whether the ability being written works from its card's graveyard (engine ADR 0094), so
+## it calls its source "this card" and returns it "from your graveyard", as Sanitarium
+## Skeleton's does.
+var _is_from_graveyard: bool = false
+## What "the sacrificed [noun]" calls what the ability being written sacrifices, as a cost
+## or by an effect (engine ADR 0098): "creature" for "another creature".
+var _sacrificed_noun: String = "permanent"
 
 
 ## The words of a Filter: what goes before its noun, the noun, and what follows it.
@@ -117,16 +127,23 @@ static func self_noun(card_types: Array[MmCardTypes.CardType], card_name: String
 
 
 ## A card's whole rules text, one ability to a line. Keywords that stand next to each other
-## share a line, and a basic land's text is all reminder text, so it is in parentheses.
+## share a line, and a basic land's text is all reminder text, so it is in parentheses. A
+## keyword whose instances are redundant, as a Mod's flying is on a card that flies, is
+## printed only where it first appears.
 static func of_card(abilities: Array[MmAbility], card_types: Array[MmCardTypes.CardType],
 		supertypes: Array[MmCardTypes.Supertype], card_name: String) -> String:
 	var noun: String = self_noun(card_types, card_name, abilities)
 	var lines: PackedStringArray = []
 	var was_keyword: bool = false
+	var printed: Dictionary[String, bool] = {}
 	for ability: MmAbility in abilities:
 		if ability is ReconfigureAbility and (ability as ReconfigureAbility).unattaches:
 			continue  # CR 702.151a: the keyword's second ability, printed with its first.
 		var keyword: String = _keyword(ability)
+		if keyword != "" and _is_redundant(ability):
+			if printed.has(keyword):
+				continue
+			printed[keyword] = true
 		if keyword != "" and was_keyword:
 			lines[lines.size() - 1] += ", " + keyword.to_lower()
 		else:
@@ -196,11 +213,13 @@ static func effect_of(ability: MmAbility, noun: String, mode_index: int = SpellA
 		return writer._sentences((ability as SpellAbility).effects, true)
 	if ability is ActivatedAbility:
 		writer._targets = (ability as ActivatedAbility).targets
+		writer._read_where_it_works(ability as ActivatedAbility)
 		return writer._sentences((ability as ActivatedAbility).effects, true)
 	if ability is TriggeredAbility:
 		var triggered: TriggeredAbility = ability as TriggeredAbility
 		writer._targets = triggered.targets
 		writer._trigger = triggered.trigger
+		writer._read_where_triggered_works(triggered)
 		return writer._sentences(triggered.effects, true)
 	return writer._ability(ability)
 
@@ -313,6 +332,19 @@ static func chosen_card_words(filter: MmFilter) -> String:
 	return chosen_words(filter) + " card"
 
 
+## The cards a cost exiles from a graveyard (ExileFromGraveyardCost): "a creature card",
+## "three cards"; with [param exiled_before] of them exiled already, those still to exile,
+## "two more cards", "one more card", as its prompt says once a pick is made.
+static func exiled_card_words(count: int, filter: MmFilter, exiled_before: int = 0) -> String:
+	if count == 1:
+		return chosen_card_words(filter)
+	var left: int = count - exiled_before
+	var phrase: String = AbilityText.new("this")._card_phrase(filter, left != 1)
+	if exiled_before == 0:
+		return "%s %s" % [_number_word(left), phrase]
+	return "%s more %s" % [_number_word(left), phrase]
+
+
 ## [param count] of what [param filter] matches, as a cost says it: "an untapped creature
 ## you control", "three untapped creatures you control".
 static func how_many_words(count: int, filter: MmFilter) -> String:
@@ -384,6 +416,16 @@ func _ability(ability: MmAbility) -> String:
 		# to its owner's hand."
 		var parts: PackedStringArray = _cost_parts(null, (ability as AdditionalCostAbility).costs)
 		return "As an additional cost to cast this spell, %s." % _uncapitalized(" and ".join(parts))
+	if ability is AlternativeCostAbility:
+		# CR 118.9, engine ADR 0093, as Zahid words it: "You may pay {3}{U} and tap an untapped
+		# artifact you control rather than pay this spell's mana cost."
+		var alternative: AlternativeCostAbility = ability as AlternativeCostAbility
+		var paid: PackedStringArray = []
+		for part: String in _cost_parts(alternative.mana_cost, alternative.costs):
+			paid.append(_uncapitalized(part))
+		var what: String = " and ".join(paid) if not paid.is_empty() else "{0}"
+		var verb: String = "pay " if alternative.mana_cost != null else ""
+		return "You may %s%s rather than pay this spell's mana cost." % [verb, what]
 	if ability is WardAbility:
 		# CR 702.21a: as equip does, it prints its cost alone.
 		var ward: MmManaCost = (ability as WardAbility).mana_cost
@@ -396,7 +438,12 @@ func _ability(ability: MmAbility) -> String:
 		# CR 702.41a: what it counts, in the plural, with "you control" left to the keyword.
 		return "Affinity for " + _noun_phrase((ability as AffinityAbility).filter, true)
 	if ability is CostReductionAbility:
-		return _costs_less("This spell", "cast", (ability as CostReductionAbility).amount)
+		var reducing: CostReductionAbility = ability as CostReductionAbility
+		if reducing.condition != null and reducing.amount is ConstantValue:
+			# Engine ADR 0050's addendum, as Gigastorm Titan words it.
+			return "This spell costs {%d} less to cast if %s." % [(reducing.amount as ConstantValue).value,
+				_condition(reducing.condition)]
+		return _costs_less("This spell", "cast", reducing.amount)
 	if ability is SpellsCostLessAbility:
 		# Engine ADR 0050's addendum: "The second spell you cast each turn costs {1} less to cast."
 		var cheaper: SpellsCostLessAbility = ability as SpellsCostLessAbility
@@ -407,6 +454,8 @@ func _ability(ability: MmAbility) -> String:
 	if ability is ActivatedAbility:
 		var activated: ActivatedAbility = ability as ActivatedAbility
 		_targets = activated.targets
+		_read_where_it_works(activated)
+		_sacrificed_noun = _sacrificed_noun_of(activated.costs, activated.effects)
 		var does: String = _sentences(activated.effects, true) + _reduction(activated) + _restrictions(activated)
 		# A Potion prints only what it does: using it up is what a Potion is (ADR 0036).
 		return does if _uses_up_its_source(activated) else "%s: %s" % [_costs(activated), does]
@@ -430,6 +479,8 @@ func _ability(ability: MmAbility) -> String:
 		return "%s enters tapped." % _capitalized(_noun)
 	if ability is CantBeBlockedAbility:
 		return "%s can't be blocked." % _capitalized(_noun)
+	if ability is CantBlockAbility:
+		return "%s can't block." % _capitalized(_noun)  # Phoenix Chick's (CR 509.1a).
 	if ability is CantBeCounteredAbility:
 		return "This spell can't be countered."  # Only ever said of the card as a spell.
 	if ability is EntersWithCountersAbility:
@@ -440,6 +491,8 @@ func _ability(ability: MmAbility) -> String:
 		var unless_paid: AsEntersPayOrEntersTappedAbility = ability as AsEntersPayOrEntersTappedAbility
 		return "As %s enters, you may %s. If you don't, it enters tapped." % [_noun,
 			", ".join(_cost_parts(null, [unless_paid.cost] as Array[MmCost])).to_lower()]
+	if ability is DrawReplacementAbility:
+		return _draw_replacement(ability as DrawReplacementAbility)
 	if ability is LookAtTopOfLibraryAbility:
 		return "You may look at the top card of your library any time."
 	if ability is InstantSpeedEquipAbility:
@@ -448,6 +501,21 @@ func _ability(ability: MmAbility) -> String:
 		return "Once each turn, you may cast %s from the top of your library." \
 			% _with_article(_spell_phrase((ability as CastFromTopOfLibraryAbility).filter))
 	return _fallback(ability, "_ability")
+
+
+## Blood Scrivener's "If you would draw a card while you have no cards in hand, instead you
+## draw two cards and you lose 1 life." (engine ADR 0097): what happens instead is joined by
+## "and", each with its subject, as Oracle words it.
+func _draw_replacement(replacing: DrawReplacementAbility) -> String:
+	var clauses: PackedStringArray = PackedStringArray()
+	for effect: MmEffect in replacing.instead:
+		var clause: String = _effect(effect)
+		var draw: DrawCardsEffect = effect as DrawCardsEffect
+		if draw != null and draw.players is YouSelection:
+			clause = "you " + clause
+		clauses.append(clause)
+	var while_text: String = "" if replacing.condition == null else " while " + _condition(replacing.condition)
+	return "If you would draw a card%s, instead %s." % [while_text, " and ".join(clauses)]
 
 
 ## "cycling", or for typecycling the card it searches for with "card" left out and
@@ -474,6 +542,15 @@ static func is_keyword(ability: MmAbility) -> bool:
 		or ability is EnchantAbility or ability is BestowAbility
 
 
+## Whether a second instance of [param ability] on an object does nothing more, as a
+## second flying does (CR 702.9c). A keyword that triggers does more each time (CR 702.83b,
+## 702.91b, 702.100d, 702.108b, 702.134b), and so is not; nor is undying, each instance of which
+## triggers (CR 603.2).
+static func _is_redundant(ability: MmAbility) -> bool:
+	return not (ability is ExaltedAbility or ability is BattleCryAbility or ability is EvolveAbility or ability is ProwessAbility
+		or ability is UndyingAbility or ability is MentorAbility)
+
+
 ## The name of a keyword ability that needs no other words, or "".
 static func _keyword(ability: MmAbility) -> String:
 	if ability is FlyingAbility:
@@ -498,6 +575,8 @@ static func _keyword(ability: MmAbility) -> String:
 		return "Menace"
 	if ability is SkulkAbility:
 		return "Skulk"
+	if ability is ImproviseAbility:
+		return "Improvise"  # CR 702.126a, without its reminder text (engine ADR 0099).
 	if ability is LifelinkAbility:
 		return "Lifelink"
 	if ability is IndestructibleAbility:
@@ -510,10 +589,14 @@ static func _keyword(ability: MmAbility) -> String:
 		return "Exalted"
 	if ability is BattleCryAbility:
 		return "Battle cry"
+	if ability is MentorAbility:
+		return "Mentor"  # CR 702.134a.
 	if ability is EvolveAbility:
 		return "Evolve"
 	if ability is ProwessAbility:
 		return "Prowess"
+	if ability is UndyingAbility:
+		return "Undying"
 	if ability is ChangelingAbility:
 		return "Changeling"
 	return ""
@@ -551,17 +634,24 @@ func _costs_less(subject: String, verb: String, value: MmValue) -> String:
 		if value is BasicLandTypeCountValue else null
 	if among != null:
 		return "%s costs {1} less to %s for each basic land type among %s." % [subject, verb, _noun_phrase(among.filter, true)]
+	if value is CardsInZoneValue:
+		# Chitin Gravestalker's "for each artifact and/or creature card in your graveyard".
+		return "%s costs {1} less to %s for each %s." % [subject, verb, _cards_in_zone(value as CardsInZoneValue, false)]
 	return "%s costs {X} less to %s, where X is %s." % [subject, verb, _value_phrase(value)]
 
 
 ## The sentence after what [param ability] does that says when it may be activated
 ## (CR 602.5), or "".
-static func _restrictions(ability: ActivatedAbility) -> String:
+func _restrictions(ability: ActivatedAbility) -> String:
 	var limits: PackedStringArray = []
 	if ability.is_sorcery_speed:
 		limits.append("only as a sorcery")
 	if ability.is_once_each_game:
 		limits.append("only once each game")
+	if ability.is_once_each_turn:
+		limits.append("only once each turn")  # CR 602.5b, engine ADR 0036's addendum
+	if ability.condition != null:
+		limits.append("only if " + _condition(ability.condition))  # CR 602.5b, engine ADR 0095
 	return "" if limits.is_empty() else " Activate %s." % " and ".join(limits)
 
 
@@ -609,10 +699,15 @@ func _cost_parts(mana: MmManaCost, costs: Array[MmCost]) -> PackedStringArray:
 			var returning: ReturnPermanentsCost = cost as ReturnPermanentsCost
 			parts.append("Return %s to %s owner's hand" % [_how_many(returning.count, returning.filter),
 				"its" if returning.count == 1 else "their"])
+		elif cost is SacrificePermanentsCost:
+			# Selfcraft Mechan's "sacrifice an artifact" (CR 701.21a).
+			var sacrificing: SacrificePermanentsCost = cost as SacrificePermanentsCost
+			parts.append("Sacrifice " + _how_many(sacrificing.count, sacrificing.filter))
 		elif cost is ExileFromGraveyardCost:
-			# Kishla Trawlers's "exile a creature card from your graveyard".
-			var exiled: MmFilter = (cost as ExileFromGraveyardCost).filter
-			parts.append("Exile %s from your graveyard" % chosen_card_words(exiled))
+			# Kishla Trawlers's "exile a creature card from your graveyard", Kessig
+			# Wolfrider's "exile three cards from your graveyard".
+			var exiling: ExileFromGraveyardCost = cost as ExileFromGraveyardCost
+			parts.append("Exile %s from your graveyard" % exiled_card_words(exiling.count, exiling.filter))
 		else:
 			parts.append(_fallback(cost, "_cost"))
 	return parts
@@ -624,9 +719,29 @@ func _cost_parts(mana: MmManaCost, costs: Array[MmCost]) -> PackedStringArray:
 func _reflexive_words(reflexive: ReflexiveTriggerEffect) -> String:
 	var outer: Array[TargetRequirement] = _targets
 	_targets = reflexive.ability.targets
-	var does: String = _sentences(reflexive.ability.effects, false).trim_suffix(".")
+	# Selfcraft Mechan's "put a +1/+1 counter on target creature and draw a card": what it
+	# does is one clause after "When you do", so a later effect never reads as a sentence of
+	# its own, which would happen whether or not you did.
+	var clauses: PackedStringArray = []
+	for effect: MmEffect in reflexive.ability.effects:
+		var one: Array[MmEffect] = [effect]
+		clauses.append(_sentences(one, false).trim_suffix("."))
 	_targets = outer
-	return does
+	return _listed(clauses)
+
+
+## The noun of the first thing [param costs] or [param effects] sacrifice, "creature" for
+## "another creature", or "permanent" when nothing names one.
+func _sacrificed_noun_of(costs: Array[MmCost], effects: Array[MmEffect]) -> String:
+	var filter: MmFilter = null
+	for cost: MmCost in costs:
+		if filter == null and cost is SacrificePermanentsCost:
+			filter = (cost as SacrificePermanentsCost).filter
+	for effect: MmEffect in effects:
+		if filter == null and effect is SacrificeEffect:
+			filter = (effect as SacrificeEffect).filter
+	var noun: String = "" if filter == null else _filter_words(filter).noun
+	return noun if noun != "" else "permanent"
 
 
 ## "an untapped creature you control" or "three untapped creatures you control".
@@ -637,9 +752,11 @@ func _how_many(count: int, filter: MmFilter) -> String:
 
 
 func _triggered(ability: TriggeredAbility) -> String:
+	_read_where_triggered_works(ability)
 	_targets = ability.targets
 	_trigger = ability.trigger
 	_says_triggering_object = false
+	_sacrificed_noun = _sacrificed_noun_of([], ability.effects)
 	var condition: String = "" if ability.condition == null else "if %s, " % _condition(ability.condition)
 	if ability.is_modal():
 		# Later: "one or more" for a modal one, whose modes are worded apart.
@@ -647,7 +764,16 @@ func _triggered(ability: TriggeredAbility) -> String:
 		return modal + ("\n" + ONCE_EACH_TURN if ability.is_once_each_turn else "")
 	# Worded before the trigger, which says "one or more" only when they never say "that
 	# creature".
-	var does: String = _sentences(ability.effects, false)
+	var does: String = ""
+	var only: IfEffect = ability.effects[0] as IfEffect if ability.effects.size() == 1 else null
+	if only != null and not only.is_unless:
+		# CR 608.2c against 603.4: an "if" right after the trigger would read as an
+		# intervening "if", so one asked only as it resolves comes after what it does, as
+		# Poisoner's Apprentice words it.
+		var effects: Array[MmEffect] = [only.effect]
+		does = "%s if %s." % [_sentences(effects, false).trim_suffix("."), _condition(only.condition)]
+	else:
+		does = _sentences(ability.effects, false)
 	var is_one_or_more: bool = ability.is_once_each_turn and not _says_triggering_object
 	var text: String = _capitalized(_trigger_text(ability.trigger, is_one_or_more) + ", " + condition + does)
 	return text + (" " + ONCE_EACH_TURN if ability.is_once_each_turn else "")
@@ -731,6 +857,12 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 			return "whenever %s%s attacks alone" % [attacker, whose_alone]
 		if attack.filter is IsSourceFilter:
 			return "whenever %s attacks" % _noun
+		if attack.at_least > 1:
+			# Phoenix Chick's "Whenever you attack with three or more creatures".
+			var attackers: String = "creatures" if attack.filter == null else _noun_phrase(attack.filter, true)
+			var attacker_player: String = "you attack" if attack.whose == MmTrigger.Whose.YOU \
+				else ("an opponent attacks" if attack.whose == MmTrigger.Whose.OPPONENT else "a player attacks")
+			return "whenever %s with %s or more %s" % [attacker_player, _number_word(attack.at_least), attackers]
 		if attack.filter != null:
 			return "whenever one or more %s attack" % _noun_phrase(attack.filter, true, attack.whose)
 		var whose: String = "a player controls"
@@ -785,8 +917,18 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 		var is_self: bool = moved.filter is IsSourceFilter
 		if (is_one_or_more or moved.is_one_or_more) and not is_self:
 			return "whenever one or more %s %s" % [_noun_phrase(moved.filter, true, moved.whose), _move_verb(moved, true)]
+		var either: AnyOfFilter = moved.filter as AnyOfFilter
+		if either != null and either.filters.size() == 2 and either.filters[0] is IsSourceFilter:
+			# Constellation's "Whenever this creature or another enchantment you control enters".
+			return "whenever %s or another %s %s" % [_noun, _noun_phrase(either.filters[1], false, moved.whose),
+				_move_verb(moved)]
 		var subject: String = _noun if is_self else _with_article(_noun_phrase(moved.filter, false, moved.whose))
-		return "%s %s %s" % ["when" if is_self else "whenever", subject, _move_verb(moved)]
+		var verb: String = _move_verb(moved)
+		if verb == "dies" and (_noun != "this creature" if is_self else _names_only_noncreature_types(moved.filter)):
+			# CR 700.4: "dies" is said of creatures; anything else, as the Wicked Role or Ashiok's
+			# Reaper's "an enchantment you control", is put into a graveyard from the battlefield.
+			verb = "is put into a graveyard from the battlefield"
+		return "%s %s %s" % ["when" if is_self else "whenever", subject, verb]
 	return _fallback(trigger, "_trigger")
 
 
@@ -797,6 +939,20 @@ static func _during_turn(cast: SpellCastTrigger) -> String:
 	if cast.during_whose_turn == MmTrigger.Whose.OPPONENT:
 		return " during an opponent's turn"
 	return ""
+
+
+## Whether [param filter] names a card type, as "an enchantment" does, and none of the types
+## it names is creature, so what it matches is not said to die (CR 700.4). A subtype alone,
+## as "Zombie", names no card type.
+static func _names_only_noncreature_types(filter: MmFilter) -> bool:
+	var types: Array[MmCardTypes.CardType] = []
+	var parts: Array[MmFilter] = [filter]
+	if filter is AllOfFilter:
+		parts = (filter as AllOfFilter).filters
+	for part: MmFilter in parts:
+		if part is HasCardTypeFilter:
+			types.append((part as HasCardTypeFilter).card_type)
+	return not types.is_empty() and not types.has(MmCardTypes.CardType.CREATURE)
 
 
 ## The verb of [param moved]: "enters", or with [param is_plural] "enter".
@@ -824,16 +980,41 @@ func _condition(condition: MmCondition) -> String:
 	var at_least: ValueAtLeastCondition = condition as ValueAtLeastCondition
 	if at_least != null and at_least.value is CardsInZoneValue:
 		# Threshold's "there are seven or more cards in your graveyard" (engine ADR 0080).
-		var counted: CardsInZoneValue = at_least.value as CardsInZoneValue
-		return "there are %s or more cards in %s %s" % [_number_word(at_least.amount), _whose_words(counted.whose),
-			(ZONE_NAMES[counted.zone] as String).trim_prefix("a ")]
+		return "there are %s or more %s" % [_number_word(at_least.amount),
+			_cards_in_zone(at_least.value as CardsInZoneValue, true)]
+	var at_most: ValueAtMostCondition = condition as ValueAtMostCondition
+	if at_most != null and at_most.value is HandSizeValue and at_most.amount == 0:
+		# Blood Scrivener's "you have no cards in hand" (engine ADR 0097).
+		var holder: MmSelection = (at_most.value as HandSizeValue).players
+		return "%s %s no cards in hand" % [_selection(holder), "have" if holder is YouSelection else "has"]
+	if at_most != null:
+		return "%s is %s or less" % [_value_phrase(at_most.value), _number_word(at_most.amount)]
 	var controlled: String = "" if at_least == null else _you_control_condition(at_least)
 	if controlled != "":
 		return controlled
 	if condition is LifeAtLeastStartingCondition:
 		return "your life total is greater than or equal to your starting life total"
+	if condition is LostLifeThisTurnCondition:
+		# Bat Whisperer's "an opponent lost life this turn" (engine ADR 0082's second addendum).
+		var whose: MmTrigger.Whose = (condition as LostLifeThisTurnCondition).whose
+		var loser: String = "a player"
+		if whose != MmTrigger.Whose.ANY:
+			loser = "you" if whose == MmTrigger.Whose.YOU else "an opponent"
+		return loser + " lost life this turn"
 	if condition is CastAnotherSpellThisTurnCondition:
 		return "you've cast another spell this turn"
+	if condition is AttackedThisTurnCondition:
+		return "you attacked this turn"  # Raid's (engine ADR 0095's addendum).
+	if condition is GainedLifeThisTurnCondition:
+		return "you gained life this turn"  # Infusion's (engine ADR 0082's addendum).
+	if condition is DiedThisTurnCondition:
+		# Engine ADR 0095, as Cult Conscript words it: "a non-Skeleton creature died under your
+		# control this turn".
+		var died: DiedThisTurnCondition = condition as DiedThisTurnCondition
+		var what: String = _noun_phrase(died.filter, false) if died.filter != null else "permanent"
+		var under: String = {MmTrigger.Whose.ANY: "", MmTrigger.Whose.YOU: " under your control",
+			MmTrigger.Whose.OPPONENT: " under an opponent's control"}[died.whose]
+		return "%s died%s this turn" % [_with_article(what), under]
 	if condition is YouDidCondition:
 		return "you do"
 	if condition is TimesResolvedThisTurnCondition:
@@ -967,7 +1148,10 @@ func _static(ability: ContinuousStaticAbility) -> String:
 	if ability.condition == null:
 		for continuous: MmContinuousEffect in ability.effects:
 			_where = ""
+			_for_each = ""
 			var clause: String = _continuous(continuous, true)
+			if _for_each != "":
+				clause += " for each " + _for_each
 			if _where != "":
 				clause += ", where X is " + _where
 			clauses.append(_ended(_capitalized(clause)))
@@ -1039,14 +1223,19 @@ func _sentences(effects: Array[MmEffect], starts_sentence: bool) -> String:
 		var effect: MmEffect = effects[index]
 		index += 1
 		_where = ""
+		_for_each = ""
 		_for_each_of = ""
 		var clause: String = ""
 		if index < effects.size():
 			clause = _becomes_with_base(effect, effects[index])
+			if clause == "":
+				clause = _gets_and_gains(effect, effects[index])
 			if clause != "":
-				index += 1  # The base power and toughness are said in the same clause.
+				index += 1  # The second effect is said in the same clause.
 		if clause == "":
 			clause = _effect(effect)
+		if _for_each != "":
+			clause += " for each " + _for_each
 		if _where != "":
 			clause += ", where X is " + _where
 		if _for_each_of != "":
@@ -1083,6 +1272,13 @@ func _effect(effect: MmEffect) -> String:
 		if discarding.players is YouSelection:
 			return "discard " + _cards(discarding.amount)
 		return "%s %s %s" % [_selection(discarding.players), _verb(discarding.players, "discard"), _cards(discarding.amount)]
+	if effect is SacrificeEffect:
+		# CR 701.21a, as Agent of the Fates words it: "each opponent sacrifices a creature".
+		var sacrificing: SacrificeEffect = effect as SacrificeEffect
+		var what: String = _how_many(sacrificing.count, sacrificing.filter)
+		if sacrificing.players is YouSelection:
+			return "sacrifice " + what
+		return "%s %s %s" % [_selection(sacrificing.players), _verb(sacrificing.players, "sacrifice"), what]
 	if effect is GainLifeEffect:
 		var gain: GainLifeEffect = effect as GainLifeEffect
 		return "%s %s %s life" % [_selection(gain.players), _verb(gain.players, "gain"), _amount(gain.amount)]
@@ -1112,10 +1308,29 @@ func _effect(effect: MmEffect) -> String:
 		# A card that can only be your own returns under your control, so Oracle leaves out
 		# "under its owner's control", as Helping Hand does.
 		var is_several: bool = _is_several(back.selection)
-		var text: String = "return %s to the battlefield%s%s" % [_selection(back.selection), " tapped" if back.tapped else "",
+		var arriving: String = " tapped and attacking" if back.tapped and back.attacking \
+			else (" tapped" if back.tapped else (" attacking" if back.attacking else ""))
+		var text: String = "return %s to the battlefield%s%s" % [_returned(back.selection), arriving,
 			"" if _is_yours(back.selection) else (" under their owners' control" if is_several else " under its owner's control")]
 		return text if back.counters == null else text + " with %s on %s" % [_counters(back.counters, back.counter_kind),
 			"each of them" if is_several else "it"]
+	if effect is ExileTopOfLibraryEffect:
+		# Clockwork Percussionist's "exile the top card of your library" (engine ADR 0100).
+		var exiling: ExileTopOfLibraryEffect = effect as ExileTopOfLibraryEffect
+		var constant: ConstantValue = exiling.amount as ConstantValue
+		var top: String = "the top card" if constant != null and constant.value == 1 \
+			else "the top %s" % _cards(exiling.amount)
+		if exiling.players is YouSelection:
+			return "exile %s of your library" % top
+		return "%s %s %s of %s library" % [_selection(exiling.players), _verb(exiling.players, "exile"), top,
+			"their" if _is_several(exiling.players) else "its owner's"]
+	if effect is MayPlayExiledEffect:
+		# Engine ADR 0100: "You may play it until the end of your next turn", or "this turn".
+		var playing: MayPlayExiledEffect = effect as MayPlayExiledEffect
+		var it: String = "it" if playing.selection is MovedCardsSelection else _selection(playing.selection)
+		if playing.duration == MayPlayExiledEffect.Duration.THIS_TURN:
+			return "you may play %s this turn" % it
+		return "you may play %s until the end of your next turn" % it
 	if effect is MillEffect:
 		# CR 701.17a, as Oracle words it: "mill four cards", "each opponent mills four cards".
 		var milling: MillEffect = effect as MillEffect
@@ -1128,7 +1343,7 @@ func _effect(effect: MmEffect) -> String:
 		return "put %s card from among them into your hand" % _with_article(_noun_phrase(from_among.filter, false))
 	if effect is ReturnToHandEffect:
 		var returned: MmSelection = (effect as ReturnToHandEffect).selection
-		return "return %s to %s hand" % [_selection(returned), "your" if _is_yours(returned) else "its owner's"]
+		return "return %s to %s hand" % [_returned(returned), "your" if _is_yours(returned) else "its owner's"]
 	if effect is PutOnBottomOfLibraryEffect:
 		# Landscaper Colos's "put target card from an opponent's graveyard on the bottom of
 		# their library", where "their" is its owner.
@@ -1139,6 +1354,13 @@ func _effect(effect: MmEffect) -> String:
 	if effect is ExploreEffect:
 		# CR 701.44a, engine ADR 0090: "target creature you control explores".
 		return _selection((effect as ExploreEffect).selection) + " explores"
+	if effect is DoesntUntapEffect:
+		# CR 502.3, as Niblis of Frost says it: "That creature doesn't untap during its
+		# controller's next untap step", naming again what was just tapped.
+		_names_again_with_that = true
+		var frozen: String = _selection((effect as DoesntUntapEffect).selection)
+		_names_again_with_that = false
+		return frozen + " doesn't untap during its controller's next untap step"
 	if effect is UntapEffect:
 		return "untap " + _selection((effect as UntapEffect).selection)
 	if effect is IfEffect and (effect as IfEffect).is_unless:
@@ -1172,8 +1394,14 @@ func _effect(effect: MmEffect) -> String:
 	if effect is InsteadEffect:
 		return _instead(effect as InsteadEffect)
 	if effect is MayEffect:
+		var maybe: MmEffect = (effect as MayEffect).effect
+		var created_maybe: CreateContinuousEffect = maybe as CreateContinuousEffect
+		if created_maybe != null and not created_maybe.continuous.affected is YouSelection:
+			# Blightcaster: "you may have target creature get -2/-2 until end of turn".
+			return "you may have %s%s" % [_continuous(created_maybe.continuous, false, true),
+				_duration_words(created_maybe.duration)]
 		# CR 603.5: "you may tap target creature".
-		return "you may " + _effect((effect as MayEffect).effect)
+		return "you may " + _effect(maybe)
 	if effect is MayPayEffect:
 		# ADR 0076: "you may remove a +1/+1 counter from this creature. If you do, ..."
 		var paying: MayPayEffect = effect as MayPayEffect
@@ -1259,7 +1487,8 @@ func _look(effect: LookAtTopCardsEffect) -> String:
 	var taken: String = _with_article(_card_phrase(effect.filter, false))
 	var take: String = ("You may reveal %s from among them and put it into your hand" % taken) if effect.reveal \
 		else ("You may put %s from among them into your hand" % taken)
-	return "%s. %s. Put the rest on the bottom of your library in a random order" % [looked, take]
+	var order: String = "any order" if effect.is_rest_in_any_order else "a random order"  # Faerie Mechanist's, Militia Bugler's.
+	return "%s. %s. Put the rest on the bottom of your library in %s" % [looked, take, order]
 
 
 ## "Basic land card" or "Plains cards": a Filter's words as cards in a hidden zone.
@@ -1288,15 +1517,18 @@ func _instead(effect: InsteadEffect) -> String:
 ## Oracle's token wording (CR 111.4): "a 1/1 white Cat creature token", "two ... tokens",
 ## and a token's keywords after "with": "a 1/1 white Cat Soldier creature token with vigilance",
 ## then "that's attacking" (or "that are attacking") last, as Brimaz, King of Oreskos says,
-## or "that's blocking that creature" (or "that are blocking"). A predefined token is named
-## alone: "a Treasure token" (CR 111.10).
+## or "that's blocking that creature" (or "that are blocking"), or "attached to target
+## creature you control". A predefined token is named alone: "a Treasure token", "a Wicked
+## Role token" (CR 111.10).
 func _tokens(effect: CreateTokenEffect) -> String:
 	if effect.token == null:
 		return _fallback(effect, "_tokens")
 	var predefined: String = effect.token.name.trim_suffix(" Token")
 	var phrase: String = predefined
 	var with: String = ""
-	if not PREDEFINED_TOKENS.has(predefined):
+	# CR 111.10: a Role token is predefined too, and named by its name, as the Wicked Role is;
+	# it calls itself "this Aura" all the same, so it is not among PREDEFINED_TOKENS.
+	if not PREDEFINED_TOKENS.has(predefined) and not effect.token.subtypes.has(AttachmentRules.ROLE):
 		var keywords: PackedStringArray = PackedStringArray()
 		for ability: MmAbility in effect.token.abilities:
 			var keyword: String = _keyword(ability)
@@ -1311,6 +1543,8 @@ func _tokens(effect: CreateTokenEffect) -> String:
 		combat = " that's attacking" if effect.amount == 1 else " that are attacking"
 	elif effect.blocking != null:
 		combat = (" that's blocking " if effect.amount == 1 else " that are blocking ") + _selection(effect.blocking)
+	elif effect.attached_to != null:
+		combat = " attached to " + _selection(effect.attached_to)  # Price of Beauty's (CR 303.4).
 	if effect.amount == 1:
 		return _with_article(phrase + " token") + with + combat
 	return "%s %s tokens%s%s" % [_number_word(effect.amount), phrase, with, combat]
@@ -1365,22 +1599,23 @@ func _prevention(effect: PreventDamageEffect) -> String:
 
 
 ## What [param continuous] does. A static ability's says "has" and "is" where a resolved
-## effect's says "gains" and "becomes" ([param is_static]).
-func _continuous(continuous: MmContinuousEffect, is_static: bool) -> String:
+## effect's says "gains" and "becomes" ([param is_static]). With [param is_bare] its verb is
+## as it is after "have": "target creature get -2/-2".
+func _continuous(continuous: MmContinuousEffect, is_static: bool, is_bare: bool = false) -> String:
 	var affected: String = _selection(continuous.affected)
 	if continuous is ModifyPowerToughnessContinuousEffect:
 		var modify: ModifyPowerToughnessContinuousEffect = continuous as ModifyPowerToughnessContinuousEffect
-		return "%s %s %s" % [affected, _verb(continuous.affected, "get"), _change(modify.power, modify.toughness)]
+		return "%s %s %s" % [affected, _bare_or_verb(continuous.affected, is_bare, "get"), _change(modify.power, modify.toughness)]
 	if continuous is SetPowerToughnessContinuousEffect:
 		var set_to: SetPowerToughnessContinuousEffect = continuous as SetPowerToughnessContinuousEffect
-		return "%s %s base power and toughness %s/%s" % [affected, "have" if affected == "you" else "has",
+		return "%s %s base power and toughness %s/%s" % [affected, "have" if affected == "you" or is_bare else "has",
 			_value_phrase(set_to.power), _value_phrase(set_to.toughness)]
 	if continuous is GainAbilitiesContinuousEffect:
 		var gained: PackedStringArray = []
 		for ability: MmAbility in (continuous as GainAbilitiesContinuousEffect).abilities:
 			var text: String = _ability(ability)
 			gained.append(text.to_lower() if is_keyword(ability) else "\"%s\"" % text)
-		var gains: String = _verb(continuous.affected, "gain")
+		var gains: String = _bare_or_verb(continuous.affected, is_bare, "gain")
 		if is_static:
 			gains = "have" if continuous.affected is YouSelection else "has"
 		return "%s %s %s" % [affected, gains, " and ".join(gained)]
@@ -1390,12 +1625,12 @@ func _continuous(continuous: MmContinuousEffect, is_static: bool) -> String:
 		if _is_every_basic_land_type(subtypes):
 			added = "every basic land type"
 		return "%s %s %s in addition to its other types" % [affected,
-			"is" if is_static else _verb(continuous.affected, "become"), added]
+			"is" if is_static else _bare_or_verb(continuous.affected, is_bare, "become"), added]
 	if continuous is LoseAllAbilitiesContinuousEffect:
-		return "%s %s all abilities" % [affected, _verb(continuous.affected, "lose")]
+		return "%s %s all abilities" % [affected, _bare_or_verb(continuous.affected, is_bare, "lose")]
 	if continuous is AddCardTypesContinuousEffect:
 		# CR 205.1b, engine ADR 0091: "becomes an artifact creature", keeping its other types.
-		return "%s %s %s" % [affected, "is" if is_static else _verb(continuous.affected, "become"),
+		return "%s %s %s" % [affected, "is" if is_static else _bare_or_verb(continuous.affected, is_bare, "become"),
 			_with_article(_card_type_words((continuous as AddCardTypesContinuousEffect).card_types))]
 	return _fallback(continuous, "_continuous_effect")
 
@@ -1432,6 +1667,30 @@ func _becomes_with_base(first: MmEffect, second: MmEffect) -> String:
 		+ _duration_words(types.duration)
 
 
+## Faerie Guidemother's "target creature gets +2/+1 and gains flying until end of turn":
+## [param first] changing power and toughness and [param second] giving abilities, of the
+## same object for as long, as one clause; "" for any other pair. Several targets each get
+## and gain, as Karfell Kennel-Master's "up to two target creatures each get +1/+0 and gain
+## indestructible until end of turn".
+func _gets_and_gains(first: MmEffect, second: MmEffect) -> String:
+	var pump: CreateContinuousEffect = first as CreateContinuousEffect
+	var gain: CreateContinuousEffect = second as CreateContinuousEffect
+	if pump == null or gain == null or pump.duration != gain.duration:
+		return ""
+	var modify: ModifyPowerToughnessContinuousEffect = pump.continuous as ModifyPowerToughnessContinuousEffect
+	var gaining: GainAbilitiesContinuousEffect = gain.continuous as GainAbilitiesContinuousEffect
+	if modify == null or gaining == null or not _same_selection(modify.affected, gaining.affected):
+		return ""
+	var gets: String = _continuous(modify, false)
+	# The object is named once, in the first half; the second says only what it gains.
+	var gained: String = _continuous(gaining, false)
+	var gains: String = gained.substr(gained.find(" gain") + 1)
+	if _is_several_targets(modify.affected):
+		gets = gets.replace(" gets ", " each get ")
+		gains = "gain " + gains.trim_prefix("gains ")
+	return gets + " and " + gains + _duration_words(pump.duration)
+
+
 ## Whether [param first] and [param second] find the same object: the same target, or both
 ## "this".
 static func _same_selection(first: MmSelection, second: MmSelection) -> bool:
@@ -1451,14 +1710,33 @@ static func _is_every_basic_land_type(subtypes: PackedStringArray) -> bool:
 	return true
 
 
-## "+3/+3", "-2/-0": a zero takes the other number's sign, as cards print it.
+## "+3/+3", "-2/-0": a zero takes the other number's sign, as cards print it. "-0/-X" is a
+## change by 0 minus an amount, as Monoist Circuit-Feeder's "-0/-X, where X is the number of
+## artifacts you control".
 func _change(power: MmValue, toughness: MmValue) -> String:
 	var power_constant: ConstantValue = power as ConstantValue
 	var toughness_constant: ConstantValue = toughness as ConstantValue
+	var lowered_power: MmValue = _lowered_by(power)
+	var lowered_toughness: MmValue = _lowered_by(toughness)
+	if lowered_power != null or lowered_toughness != null:
+		var is_zero_power: bool = power_constant != null and power_constant.value == 0
+		var is_zero_toughness: bool = toughness_constant != null and toughness_constant.value == 0
+		if (lowered_power != null or is_zero_power) and (lowered_toughness != null or is_zero_toughness):
+			return "-%s/-%s" % [_amount(lowered_power) if lowered_power != null else "0",
+				_amount(lowered_toughness) if lowered_toughness != null else "0"]
 	if power_constant == null or toughness_constant == null:
 		return "+%s/+%s" % [_amount(power), _amount(toughness)]
 	var is_lowering: bool = power_constant.value < 0 or toughness_constant.value < 0
 	return "%s/%s" % [_signed(power_constant.value, is_lowering), _signed(toughness_constant.value, is_lowering)]
+
+
+## What [param value] takes away when it is 0 minus that amount, or null.
+static func _lowered_by(value: MmValue) -> MmValue:
+	var difference: DifferenceValue = value as DifferenceValue
+	if difference == null:
+		return null
+	var minuend: ConstantValue = difference.minuend as ConstantValue
+	return difference.subtrahend if minuend != null and minuend.value == 0 else null
 
 
 func _signed(number: int, zero_is_minus: bool) -> String:
@@ -1482,6 +1760,10 @@ func _selection(selection: MmSelection) -> String:
 	if selection is TriggeringObjectSelection:
 		_says_triggering_object = true
 		return "that " + _triggering_noun()
+	if selection is TriggeringCardSelection:
+		return "it"  # Undying's "return it to the battlefield" (engine ADR 0096).
+	if selection is SacrificedSelection:
+		return "the sacrificed " + _sacrificed_noun  # Bushmeat Poacher's (engine ADR 0098).
 	if selection is ControllerOfSelection:
 		var controller: ControllerOfSelection = selection as ControllerOfSelection
 		var overloaded: OverloadedSelection = controller.selection as OverloadedSelection
@@ -1524,7 +1806,11 @@ func _target(index: int) -> String:
 	if spec.among == TargetRequirement.Among.ABILITIES:
 		return "target activated or triggered ability"
 	if spec.among == TargetRequirement.Among.GRAVEYARD_CARDS:
-		return "target " + _graveyard_phrase(spec.filter)
+		var card_phrase: String = _graveyard_phrase(spec.filter)
+		# Gixian Puppeteer's "another target creature card", which can't be its own card.
+		if card_phrase.begins_with(OTHER + " "):
+			return "another target " + card_phrase.trim_prefix(OTHER + " ")
+		return "target " + card_phrase
 	if _is_any_target(spec.filter):
 		return "any target"
 	var phrase: String = _noun_phrase(spec.filter, false)
@@ -1587,6 +1873,8 @@ func _is_several_targets(selection: MmSelection) -> bool:
 ## Whether [param selection] is a targeted card that can only be one its controller owns,
 ## as in "target creature card from your graveyard", which goes back "to your hand".
 func _is_yours(selection: MmSelection) -> bool:
+	if selection is SourceSelection and _is_from_graveyard:
+		return true  # Only a card's owner activates its ability in their graveyard.
 	var overloaded: OverloadedSelection = selection as OverloadedSelection
 	if overloaded != null:
 		return overloaded.overloaded_index < _overloaded.size() \
@@ -1595,6 +1883,30 @@ func _is_yours(selection: MmSelection) -> bool:
 	if targeted == null or targeted.target_index >= _targets.size():
 		return false
 	return _filter_words(_targets[targeted.target_index].filter).after.has(YOU_OWN)
+
+
+## What a return effect names as it returns [param selection]: "this card from your
+## graveyard" for its own card, from an ability that works there (engine ADR 0094).
+func _returned(selection: MmSelection) -> String:
+	if selection is SourceSelection and _is_from_graveyard:
+		return _selection(selection) + " from your graveyard"
+	return _selection(selection)
+
+
+## Readies the writer for [param triggered]: one that works from the graveyard calls its
+## source "this card" (engine ADR 0094's addendum), as an activated one does.
+func _read_where_triggered_works(triggered: TriggeredAbility) -> void:
+	if triggered.is_triggered_from_graveyard:
+		_is_from_graveyard = true
+		_noun = "this card"
+
+
+## Readies the writer for [param activated]: one that works from the graveyard calls its
+## source "this card" (engine ADR 0094), whatever card it is.
+func _read_where_it_works(activated: ActivatedAbility) -> void:
+	_is_from_graveyard = activated.is_activated_from_graveyard
+	if _is_from_graveyard:
+		_noun = "this card"
 
 
 ## "Any target" is a creature or a player (there are no planeswalkers, ADR 0001).
@@ -1634,6 +1946,12 @@ func _triggering_noun() -> String:
 ## The verb for what [param selection] does: "you draw", but "target player draws".
 func _verb(selection: MmSelection, verb: String) -> String:
 	return verb if selection is YouSelection else verb + "s"
+
+
+## [param verb] as it is after "have", as in "you may have target creature get", with
+## [param is_bare]; otherwise as _verb() says it.
+func _bare_or_verb(selection: MmSelection, is_bare: bool, verb: String) -> String:
+	return verb if is_bare else _verb(selection, verb)
 
 
 func _possessive(words: String) -> String:
@@ -1800,6 +2118,11 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		adjectives.append("nonblocking" if is_negated else "blocking")
 	elif filter is IsEquippedFilter:
 		adjectives.append("unequipped" if is_negated else "equipped")
+	elif filter is IsAttachedToFilter:
+		# Goblin Gaveleer's "Equipment attached to it": the source, named already.
+		var attached_to: MmSelection = (filter as IsAttachedToFilter).selection
+		var to_what: String = "it" if attached_to is SourceSelection else _selection(attached_to)
+		after.append(("not attached to " if is_negated else "attached to ") + to_what)
 	elif filter is AnyOfFilter and _is_historic(filter as AnyOfFilter):
 		# CR 700.6, as Artificer's Assistant words it: "a historic spell".
 		adjectives.append("nonhistoric" if is_negated else "historic")
@@ -1860,7 +2183,7 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 	elif filter is IsPlayerFilter:
 		# Anything that is not a player is a permanent, the noun when none is named.
 		if not is_negated:
-			nouns.append("player")
+			nouns.append("opponent" if (filter as IsPlayerFilter).whose == MmTrigger.Whose.OPPONENT else "player")
 	else:
 		adjectives.append(_fallback(filter, "_filter"))
 
@@ -1922,6 +2245,11 @@ func _amount(value: MmValue) -> String:
 	var constant: ConstantValue = value as ConstantValue
 	if constant != null:
 		return str(constant.value)
+	var product: ProductValue = value as ProductValue
+	if product != null and product.value is CountValue and (product.value as CountValue).selection is EachSelection:
+		# Goblin Gaveleer's "+2/+0 for each Equipment attached to it".
+		_for_each = _noun_phrase(((product.value as CountValue).selection as EachSelection).filter, false)
+		return str(product.factor)
 	# ADR 0061: "pay {X}" says what X is already, as {X} in a mana cost does (ADR 0076).
 	if not value is PaidXValue and not value is ChosenXValue:
 		_where = _value_phrase(value)
@@ -2011,9 +2339,14 @@ func _value_phrase(value: MmValue) -> String:
 			return "the number of basic land types among " + _noun_phrase(among.filter, true)
 	if value is HandSizeValue:
 		return "the number of cards in %s hand" % _possessive(_selection((value as HandSizeValue).players))
+	if value is CardsInZoneValue:
+		return "the number of " + _cards_in_zone(value as CardsInZoneValue, true)
 	if value is DifferenceValue:
 		var difference: DifferenceValue = value as DifferenceValue
 		return "%s minus %s" % [_value_phrase(difference.minuend), _value_phrase(difference.subtrahend)]
+	if value is ProductValue:
+		var product: ProductValue = value as ProductValue
+		return "%d times %s" % [product.factor, _value_phrase(product.value)]
 	if value is SumValue:
 		var addends: PackedStringArray = []
 		for addend: MmValue in (value as SumValue).addends:
@@ -2027,6 +2360,15 @@ func _value_phrase(value: MmValue) -> String:
 		var counted: CounterCountValue = value as CounterCountValue
 		return "the number of %s counters on %s" % [MmCounter.label(counted.kind), _selection(counted.selection)]
 	return _fallback(value, "_value")
+
+
+## "cards in your graveyard", or with a filter "artifact or creature cards in your
+## graveyard" (engine ADR 0080): what [param counted] counts, plural with [param is_plural].
+func _cards_in_zone(counted: CardsInZoneValue, is_plural: bool) -> String:
+	var cards: String = "cards" if is_plural else "card"
+	if counted.filter != null:
+		cards = _noun_phrase(counted.filter, false) + " " + cards
+	return "%s in %s %s" % [cards, _whose_words(counted.whose), (ZONE_NAMES[counted.zone] as String).trim_prefix("a ")]
 
 
 ## "your" or "an opponent's", for [param whose] zone.

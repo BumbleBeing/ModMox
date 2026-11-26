@@ -76,6 +76,22 @@ func test_the_villain_plays_at_the_requested_difficulty() -> void:
 	assert_eq((request.villain_agent() as AiAgent).difficulty.rollout_samples, 12)
 
 
+func test_the_villain_given_a_log_folder_writes_an_ai_log_there_at_the_requested_difficulty() -> void:
+	var folder: String = "user://test_encounter_request_ai_log/"
+	var request: EncounterRequest = EncounterRequest.new()
+	request.difficulty = "hard"
+	request.encounter_seed = 31
+
+	var logged: AiLoggingAgent = request.villain_agent(folder) as AiLoggingAgent
+
+	assert_not_null(logged, "With a folder, the Villain's answers are logged.")
+	assert_eq(logged.agent.difficulty.rollout_samples, 12)
+	assert_true(logged.path.begins_with(folder) and logged.path.ends_with("-31.log"), logged.path)
+	for file: String in DirAccess.get_files_at(folder):
+		DirAccess.remove_absolute(folder + file)
+	DirAccess.remove_absolute(folder)
+
+
 func test_a_request_has_the_plain_backdrop_unless_one_is_named() -> void:
 	assert_eq(EncounterRequest.new().backdrop, "plain")
 	assert_eq(EncounterRequest.from_arguments(PackedStringArray(["--seed=7"])).backdrop, "plain")

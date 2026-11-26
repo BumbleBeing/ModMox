@@ -1,0 +1,17 @@
+# A draw is offered to replacement effects before its card is known
+
+Blood Scrivener brought the first replacement effect on drawing: "If you would draw a card while you have no cards in hand, instead you draw two cards and you lose 1 life." (CR 614.1a, 614.11).
+
+**Each draw is first a `DrawCardEvent`, naming the player and no card.** Replacement effects see it as they see any event about to be performed (ADR 0019). Once nothing replaces it, the batch puts the draw itself in its place (`SuspendedBatch.resolve_next_event()`): the move of the top card of the library to the hand, or an `EmptyLibraryDrawEvent` when there is none (`MmGameState.draw_event()`). The replacement effects that already applied to the `DrawCardEvent` count as applied to the draw (CR 616.2). Only the draw itself is applied and logged, so triggers, the GUI's flights and the Run Log see the same events as before. `MmGameState.draw_cards()` and `DrawCardsEffect` both make one `DrawCardEvent` for each card, one at a time (CR 121.2).
+
+A draw that names its card as it is made was the alternative, and it fails once a draw is replaced: Blood Scrivener's two draws would both name the card on top, and with two Scriveners the second would replace the first of those two draws with two more that name the same cards again. Naming the card only as the draw happens makes every draw take whatever is on top then, however the draws before it were replaced. It also lets a replacement apply where there is no card to draw (CR 614.11).
+
+**"If you would draw a card while [condition], instead [effects]" is `DrawReplacementAbility`**, a static ability of a permanent, with a `condition` and the effects that happen `instead`. While the permanent is on the battlefield it generates a `DrawReplacementEffect` (`ReplacementRules`, in object ID order, as protection's prevention is) that applies to its controller's draws while the condition holds. It is locked to no object, so two Blood Scriveners are interchangeable and no choice is asked (A146). The effects' events are worked out together as the draw is replaced, with the permanent as their source, so they are effects whose events do not depend on one another, as drawing and losing life are; the draws among them are `DrawCardEvent`s too. What replaced a draw is never replaced by the same effect again (CR 614.5), so the Scrivener's own two draws are ordinary draws, and a second Scrivener replaces the first of them while the hand is still empty: two Scriveners draw three cards and lose 2 life, and "draw two cards" draws three and loses 1, as the card's rulings say.
+
+**"You have no cards in hand" is `ValueAtMostCondition`**, the number of cards in your hand being 0 or less, the counterpart of `ValueAtLeastCondition` (engine ADR 0080).
+
+`AbilityText` prints Oracle's words: "If you would draw a card while you have no cards in hand, instead you draw two cards and you lose 1 life." It is no keyword, so it has no Keyword Chip.
+
+The Agent needed nothing. Its simulations run the engine, so a draw it is weighing is replaced there as it would be, and the extra card and the lost life are scored. Emptying its hand to use the replacement is not something it plans for.
+
+Left out until a card needs them (ADR 0001): a choice between two different draw replacements, which the draw step, performed with `perform_together()`, cannot stop for; a replacement of the other player's draws ("If an opponent would draw a card"); "skip your draw step"; and effects instead whose events depend on one another.

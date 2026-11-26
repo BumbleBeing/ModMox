@@ -1,0 +1,86 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_5shdl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_ee8xj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_l82km"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_exx1u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="3_xxyhw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="4_by066"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="5_ghg7m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="6_4srw1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="7_jwwk8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="8_js14w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="9_vn3uv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/sacrifice_permanents_cost.gd" id="10_aosyp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="11_f3ivo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="12_xnsgr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="13_v5wn0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="14_o5v30"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="16_jc35m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="17_t5v70"]
+
+[sub_resource type="Resource" id="Resource_ux2k0"]
+script = ExtResource("3_xxyhw")
+
+[sub_resource type="Resource" id="Resource_dxh5q"]
+script = ExtResource("5_ghg7m")
+
+[sub_resource type="Resource" id="Resource_hfdlt"]
+script = ExtResource("5_ghg7m")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_rw8fe"]
+script = ExtResource("6_4srw1")
+filters = Array[ExtResource("4_by066")]([SubResource("Resource_dxh5q"), SubResource("Resource_hfdlt")])
+
+[sub_resource type="Resource" id="Resource_h8uig"]
+script = ExtResource("7_jwwk8")
+
+[sub_resource type="Resource" id="Resource_c371w"]
+script = ExtResource("8_js14w")
+filter = SubResource("Resource_h8uig")
+
+[sub_resource type="Resource" id="Resource_dlswj"]
+script = ExtResource("9_vn3uv")
+filters = Array[ExtResource("4_by066")]([SubResource("Resource_rw8fe"), SubResource("Resource_c371w")])
+
+[sub_resource type="Resource" id="Resource_ph6lb"]
+script = ExtResource("10_aosyp")
+filter = SubResource("Resource_dlswj")
+
+[sub_resource type="Resource" id="Resource_s7bko"]
+script = ExtResource("12_xnsgr")
+value = 1
+
+[sub_resource type="Resource" id="Resource_3h3gu"]
+script = ExtResource("13_v5wn0")
+
+[sub_resource type="Resource" id="Resource_v0fqi"]
+script = ExtResource("14_o5v30")
+amount = SubResource("Resource_s7bko")
+players = SubResource("Resource_3h3gu")
+
+[sub_resource type="Resource" id="Resource_gfret"]
+script = ExtResource("2_l82km")
+generic = 3
+
+[sub_resource type="Resource" id="Resource_46fox"]
+script = ExtResource("16_jc35m")
+mana_cost = SubResource("Resource_gfret")
+costs = Array[ExtResource("2_ee8xj")]([SubResource("Resource_ux2k0"), SubResource("Resource_ph6lb")])
+effects = Array[ExtResource("11_f3ivo")]([SubResource("Resource_v0fqi")])
+
+[sub_resource type="Resource" id="Resource_tvl0t"]
+script = ExtResource("2_l82km")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_exx1u")
+name = "Thraxodemon"
+card_types = Array[int]([1])
+subtypes = Array[String](["Demon"])
+mana_cost = SubResource("Resource_tvl0t")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_5shdl")]([SubResource("Resource_46fox")])

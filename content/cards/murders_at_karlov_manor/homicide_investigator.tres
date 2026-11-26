@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_v02m4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_ggyqs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ug1th"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_hnwat"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_la3en"]
+[ext_resource type="Resource" path="res://content/tokens/clue.tres" id="4_rkk0t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_qjo08"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_2rljp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_bhwn0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="8_g7mlg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_p0avn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_token_filter.gd" id="10_bienx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="11_nlq31"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="12_tdexl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="13_ibfpo"]
+
+[sub_resource type="Resource" id="Resource_wafa5"]
+script = ExtResource("3_la3en")
+token = ExtResource("4_rkk0t")
+
+[sub_resource type="Resource" id="Resource_v4cgf"]
+script = ExtResource("9_p0avn")
+
+[sub_resource type="Resource" id="Resource_r1uvl"]
+script = ExtResource("10_bienx")
+
+[sub_resource type="Resource" id="Resource_ktg4q"]
+script = ExtResource("11_nlq31")
+filter = SubResource("Resource_r1uvl")
+
+[sub_resource type="Resource" id="Resource_qkol2"]
+script = ExtResource("12_tdexl")
+filters = Array[ExtResource("8_g7mlg")]([SubResource("Resource_v4cgf"), SubResource("Resource_ktg4q")])
+
+[sub_resource type="Resource" id="Resource_4yhdc"]
+script = ExtResource("13_ibfpo")
+any_from_zone = false
+to_zone = 2
+is_one_or_more = true
+filter = SubResource("Resource_qkol2")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_r6ytd"]
+script = ExtResource("6_2rljp")
+trigger = SubResource("Resource_4yhdc")
+effects = Array[ExtResource("2_ggyqs")]([SubResource("Resource_wafa5")])
+is_once_each_turn = true
+
+[sub_resource type="Resource" id="Resource_7b57m"]
+script = ExtResource("2_ug1th")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_hnwat")
+name = "Homicide Investigator"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Detective"])
+mana_cost = SubResource("Resource_7b57m")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_v02m4")]([SubResource("Resource_r6ytd")])
+rarity = 2

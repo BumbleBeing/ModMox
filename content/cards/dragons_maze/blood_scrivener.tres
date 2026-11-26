@@ -1,0 +1,69 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_d8tsq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_llp3x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/value_at_most_condition.gd" id="2_pb821"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="3_38e17"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_j0jtr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/hand_size_value.gd" id="4_i0ciy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_2mu0n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_ao2aw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="7_vy0lk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/lose_life_effect.gd" id="8_fdxdx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/draw_replacement_ability.gd" id="9_86fgu"]
+
+[sub_resource type="Resource" id="Resource_0inj7"]
+script = ExtResource("3_38e17")
+
+[sub_resource type="Resource" id="Resource_6ywmo"]
+script = ExtResource("4_i0ciy")
+players = SubResource("Resource_0inj7")
+
+[sub_resource type="Resource" id="Resource_byiwy"]
+script = ExtResource("2_pb821")
+value = SubResource("Resource_6ywmo")
+
+[sub_resource type="Resource" id="Resource_tkvf4"]
+script = ExtResource("6_ao2aw")
+value = 2
+
+[sub_resource type="Resource" id="Resource_b66v3"]
+script = ExtResource("3_38e17")
+
+[sub_resource type="Resource" id="Resource_2ba5g"]
+script = ExtResource("7_vy0lk")
+amount = SubResource("Resource_tkvf4")
+players = SubResource("Resource_b66v3")
+
+[sub_resource type="Resource" id="Resource_wcyml"]
+script = ExtResource("6_ao2aw")
+value = 1
+
+[sub_resource type="Resource" id="Resource_uw4cb"]
+script = ExtResource("3_38e17")
+
+[sub_resource type="Resource" id="Resource_giwn8"]
+script = ExtResource("8_fdxdx")
+amount = SubResource("Resource_wcyml")
+players = SubResource("Resource_uw4cb")
+
+[sub_resource type="Resource" id="Resource_q83ks"]
+script = ExtResource("9_86fgu")
+condition = SubResource("Resource_byiwy")
+instead = Array[ExtResource("5_2mu0n")]([SubResource("Resource_2ba5g"), SubResource("Resource_giwn8")])
+
+[sub_resource type="Resource" id="Resource_sh7a6"]
+script = ExtResource("2_llp3x")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_j0jtr")
+name = "Blood Scrivener"
+card_types = Array[int]([1])
+subtypes = Array[String](["Zombie", "Wizard"])
+mana_cost = SubResource("Resource_sh7a6")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_d8tsq")]([SubResource("Resource_q83ks")])
+rarity = 2

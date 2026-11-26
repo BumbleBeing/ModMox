@@ -35,12 +35,19 @@ var replacement_effects: Array[ActiveReplacementEffect] = []
 var suspended_batch: SuspendedBatch = null
 ## ADR 0056: each time an ability resolved this turn, in order. Cleared as each turn begins.
 var _ability_resolutions: Array[AbilityResolution] = []
+## ADR 0095: every permanent put into a graveyard from the battlefield this turn, by the ID
+## it had there, in the order they went. Each is found as it last existed with
+## object_or_last_known(). Cleared as each turn begins.
+var _died_this_turn: Array[int] = []
 ## Every event performed, in order. Read-only outside perform(). Events never change once
 ## applied, so copies of the state share them.
 var event_log: Array[MmEvent] = []
 
 var _objects: Dictionary[int, MmGameObject] = {}
 var _run_cards: Dictionary[int, MmRunCard] = {}
+## The Card Identity of each card by its flattened Card Definition, which a copy of the card
+## shares (copiable_values_of()), so the copy can be traced back to it.
+var _card_ids_by_definition: Dictionary[MmCardDefinition, int] = {}
 var _next_object_id: int = 1
 var _next_card_id: int = 1
 var _next_batch: int = 0
@@ -69,7 +76,9 @@ func _init(setup: MmEncounterSetup) -> void:
 			var card_id: int = _next_card_id
 			_next_card_id += 1
 			_run_cards[card_id] = run_card
-			player.library.insert(create_object(card_id, player.id, run_card.flatten()), MmZone.BOTTOM)
+			var flattened: MmCardDefinition = run_card.flatten()
+			_card_ids_by_definition[flattened] = card_id
+			player.library.insert(create_object(card_id, player.id, flattened), MmZone.BOTTOM)
 	# ADR 0011 and CR 114: each player's Emblems start in the command zone. An Emblem is not
 	# a card, so it has no Card Identity.
 	for player: MmPlayer in players:
@@ -110,12 +119,14 @@ func duplicate_state() -> MmGameState:
 	copy.pending_triggers = pending_triggers.duplicate()  # Pending triggers never change.
 	copy._departed = _departed.duplicate()  # Departed objects are frozen.
 	copy._ability_resolutions = _ability_resolutions.duplicate()  # Resolutions never change.
+	copy._died_this_turn = _died_this_turn.duplicate()
 	copy._next_batch = _next_batch
 	copy.continuous_effects = continuous_effects.duplicate()  # Active effects never change.
 	copy.replacement_effects = replacement_effects.duplicate()  # Nor do these.
 	copy.suspended_batch = null if suspended_batch == null else suspended_batch.copy_for(copy)
 	copy.event_log = event_log.duplicate()
 	copy._run_cards = _run_cards.duplicate()  # Run Cards are read-only during an encounter.
+	copy._card_ids_by_definition = _card_ids_by_definition.duplicate()  # So are their definitions.
 	copy._next_object_id = _next_object_id
 	copy._next_card_id = _next_card_id
 	return copy
@@ -241,6 +252,15 @@ func run_card_of(game_object: MmGameObject) -> MmRunCard:
 ## The Run Card with Card Identity [param card_id], or null if there is none.
 func run_card(card_id: int) -> MmRunCard:
 	return _run_cards.get(card_id, null) as MmRunCard
+
+
+## The Card Identity of the card whose definition [param definition] is: for a copy of a
+## spell, and the token a copy becomes or a token copy of a permanent, which share the
+## copied card's definition (copiable_values_of()), the card that was copied.
+## MmGameObject.NO_CARD for a Token Definition or anything else no card was made from.
+## For presentation, such as calling a copy by its card's Modded Name.
+func card_id_made_from(definition: MmCardDefinition) -> int:
+	return _card_ids_by_definition.get(definition, MmGameObject.NO_CARD)
 
 
 ## The current characteristics of [param game_object]. The only place, together with
@@ -446,15 +466,34 @@ func clear_ability_resolutions() -> void:
 	_ability_resolutions.clear()
 
 
+## The IDs of the permanents put into a graveyard from the battlefield this turn, the
+## creatures among them having died (CR 700.4, ADR 0095), in the order they went. Each has
+## left, so find it as it last existed with object_or_last_known().
+func died_this_turn() -> Array[int]:
+	return _died_this_turn.duplicate()
+
+
+## Event-only: the permanent [param object_id] has been put into a graveyard from the
+## battlefield.
+func record_death(object_id: int) -> void:
+	_died_this_turn.append(object_id)
+
+
+## Event-only: a new turn forgets what died in the last one.
+func clear_deaths() -> void:
+	_died_this_turn.clear()
+
+
 ## Event-only: keeps [param leaving], frozen, as it leaves the battlefield or a graveyard.
 func record_departure(leaving: MmGameObject) -> void:
 	_departed[leaving.id] = leaving
 
 
-## Draws [param count] cards for a player, one at a time from the top (CR 121.2).
+## Draws [param count] cards for a player, one at a time from the top (CR 121.2), each
+## offered to replacement effects first (engine ADR 0097).
 func draw_cards(player_id: int, count: int) -> void:
 	for _index: int in count:
-		perform(draw_event(player_id))
+		perform(DrawCardEvent.new(player_id))
 
 
 ## The event of [param player_id] drawing their top card now.
@@ -498,6 +537,8 @@ func fingerprint() -> String:
 		lines.append("pending " + pending.describe())
 	for resolution: AbilityResolution in _ability_resolutions:
 		lines.append("resolved " + resolution.describe())
+	for object_id: int in _died_this_turn:
+		lines.append("died %d" % object_id)
 	for active: ActiveContinuousEffect in continuous_effects:
 		lines.append("continuous " + active.describe())
 	for active: ActiveReplacementEffect in replacement_effects:
@@ -509,10 +550,11 @@ func fingerprint() -> String:
 		var mana: PackedStringArray = PackedStringArray()
 		for unit: MmMana in each_player.mana_pool():
 			mana.append(unit.describe())
-		lines.append("player %d life %d mulligans %d turn %d since %d lands %d+%d spells %d drawn %d empty draw %s lost %s %d mana [%s]" % [
+		lines.append("player %d life %d mulligans %d turn %d since %d lands %d+%d spells %d drawn %d attacked %s gained %d life lost %d empty draw %s lost %s %d mana [%s]" % [
 			each_player.id, each_player.life, each_player.mulligans_taken, each_player.turn_number,
 			each_player.latest_turn_game_turn, each_player.lands_played_this_turn, each_player.additional_land_plays_this_turn,
-			each_player.spells_cast_this_turn, each_player.cards_drawn_this_turn,
+			each_player.spells_cast_this_turn, each_player.cards_drawn_this_turn, each_player.has_attacked_this_turn,
+			each_player.life_gained_this_turn, each_player.life_lost_this_turn,
 			each_player.has_drawn_from_empty_library, each_player.has_lost, each_player.loss_reason, ", ".join(mana)])
 	for each_zone: MmZone in _all_zones():
 		var entries: PackedStringArray = PackedStringArray()
@@ -549,6 +591,11 @@ func fingerprint() -> String:
 				entries.append("%d copy" % game_object.id)
 			if game_object.exerted_by_player_id != NO_PLAYER:
 				entries.append("%d exerted by %d" % [game_object.id, game_object.exerted_by_player_id])
+			if game_object.skips_next_untap:
+				entries.append("%d skips next untap" % game_object.id)
+			if game_object.playable_by_player_id != NO_PLAYER:
+				entries.append("%d playable by %d through %d" % [game_object.id, game_object.playable_by_player_id,
+					game_object.playable_through_game_turn])
 			if game_object.cast_with_flashback:
 				entries.append("%d flashback" % game_object.id)
 			if game_object.is_adventure_spell:
@@ -564,10 +611,14 @@ func fingerprint() -> String:
 					game_object.permission_used_game_turn[index], game_object.permission_used_spell_name[index]])
 			for index: int in game_object.triggered_game_turn:
 				entries.append("%d ability %d triggered turn %d" % [game_object.id, index, game_object.triggered_game_turn[index]])
+			for index: int in game_object.activated_game_turn:
+				entries.append("%d ability %d activated turn %d" % [game_object.id, index, game_object.activated_game_turn[index]])
 			if game_object.chosen_creature_type != "":
 				entries.append("%d chose %s" % [game_object.id, game_object.chosen_creature_type])
 			if game_object.chosen_x != 0:
 				entries.append("%d X %d" % [game_object.id, game_object.chosen_x])
+			if not game_object.sacrificed_object_ids.is_empty():
+				entries.append("%d sacrificed %s" % [game_object.id, game_object.sacrificed_object_ids])
 		lines.append("%s [%s]" % [each_zone.describe(), ", ".join(entries)])
 	return "\n".join(lines).sha256_text()
 
@@ -605,6 +656,11 @@ func _continue_batch(batch: SuspendedBatch) -> void:
 	while batch.has_next_event():
 		var event: MmEvent = batch.next_event()
 		var choices: Array[ActiveReplacementEffect] = ReplacementRules.applicable(self, event, batch.next_applied_keys())
+		var drawing: DrawCardEvent = event as DrawCardEvent
+		if choices.is_empty() and drawing != null:
+			# Engine ADR 0097: nothing replaces the draw, so it is the draw of the top card now.
+			batch.resolve_next_event(drawing.drawn(self))
+			continue
 		if choices.is_empty():
 			batch.take_next_event()
 			event.batch = batch.number

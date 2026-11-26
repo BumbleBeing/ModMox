@@ -76,6 +76,38 @@ func test_an_ability_on_the_stack_goes_by_its_sources_modded_name() -> void:
 	assert_eq(presenter.snapshot().look_of(ability.id).name, "Shiny Life Land ability")
 
 
+func test_a_copy_of_a_modded_spell_and_the_token_it_becomes_go_by_its_modded_name() -> void:
+	var echo: MmCardDefinition = Scenario.creature("Echo", 1, 1, [Scenario.triggered(Scenario.cast_this_spell(), [Scenario.copy_spell()])])
+	var setup: MmEncounterSetup = Scenario.setup_with(Scenario.cycled([echo]), Scenario.cycled([]))
+	var names: Dictionary[MmRunCard, String] = {}
+	for run_card: MmRunCard in setup.hero.deck:
+		names[run_card] = ModdedName.of(run_card.base.name, [_named_mod("Shiny")] as Array[Mod])
+	var presenter: EncounterPresenter = _started(setup, names, false)
+	presenter.answer(KeepOrMulliganDecision.Choice.KEEP)
+	presenter.wait_until_idle()
+	_pass_until(presenter, func() -> bool: return _cast_index(presenter, presenter.snapshot().view.hand[0].card_id) != -1)
+	presenter.is_hold_key_down = true
+	assert_eq(presenter.answer(_cast_index(presenter, presenter.snapshot().view.hand[0].card_id)), "")
+	presenter.wait_until_idle()
+	presenter.pass_priority()
+	presenter.wait_until_idle()
+
+	var copy: MmObjectView = presenter.snapshot().view.stack.back()
+	assert_true(copy.is_copy, "The cast trigger has made the copy, on top: %s" % [_names(presenter.snapshot().view.stack)])
+	assert_eq(copy.name, "Shiny Echo")
+	assert_eq(presenter.snapshot().look_of(copy.id).name, "Shiny Echo")
+
+	presenter.is_hold_key_down = false
+	_pass_until(presenter, func() -> bool: return presenter.snapshot().view.stack.is_empty())
+	var token: MmObjectView = null
+	for permanent: MmObjectView in presenter.snapshot().view.battlefield:
+		if permanent.is_token:
+			token = permanent
+	assert_not_null(token, "The copy resolved into a token.")
+	assert_eq(token.name, "Shiny Echo")
+	assert_eq(presenter.snapshot().look_of(token.id).name, "Shiny Echo")
+
+
 ## The Hero's deck is Plains, an Overloaded Daydream and a Violent Grizzly Bears, over
 ## and over, each Mod applied as the deckbuilder applies it; the Villain's cards do nothing.
 ## The Overloaded Mod is the real one's Augmentation without its Mod Cost, so a Plains

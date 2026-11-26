@@ -7,9 +7,11 @@ extends MmEffect
 ## holds fewer, and those that match [member filter]; with none to look at, nothing is asked
 ## and nothing happens. The cards taken, up to [member most], go to the hand, revealed with
 ## [member reveal] (CR 701.20a), so the other player knows them there (engine ADR 0057).
-## Then the rest go to the bottom in an order from the Game RNG (LibraryBottomRandomizedEvent).
-## Later: the rest put on the bottom "in any order", or into the graveyard, and more than one
-## taken, once a card says so.
+## Then the rest go to the bottom in an order from the Game RNG (LibraryBottomRandomizedEvent),
+## or with [member is_rest_in_any_order], as Faerie Mechanist says, "Put the rest on the bottom
+## of your library in any order": in the order its controller answers, each under everything
+## (LibraryBottomOrderedEvent), so they know those cards lie there.
+## Later: the rest put into the graveyard, and more than one taken, once a card says so.
 
 ## How many cards are looked at.
 @export var amount: MmValue
@@ -19,6 +21,8 @@ extends MmEffect
 @export var most: int = 1
 ## "Reveal" (CR 701.20a): the other player sees each card taken.
 @export var reveal: bool = true
+## "Put the rest on the bottom of your library in any order" rather than "in a random order".
+@export var is_rest_in_any_order: bool = false
 
 
 func decision_as_it_begins(state: MmGameState, context: MmEffectContext, stack_object_id: int) -> MmPendingDecision:
@@ -29,16 +33,24 @@ func decision_as_it_begins(state: MmGameState, context: MmEffectContext, stack_o
 	for id: int in looked_at:
 		if filter == null or filter.matches(state, MmReference.to_object(id), context):
 			matching.append(id)
-	return ChooseLookedAtCardsDecision.new(context.controller_id, stack_object_id, looked_at, matching, most, filter)
+	var decision: ChooseLookedAtCardsDecision = ChooseLookedAtCardsDecision.new(context.controller_id, stack_object_id,
+		looked_at, matching, most, filter)
+	decision.orders_rest = is_rest_in_any_order
+	return decision
 
 
-## How many cards are taken, those cards, then the rest, top first.
+## How many cards are taken, those cards, then the rest: top first, or in any order as
+## answered, the last the deepest.
 func numbers_with_answer(state: MmGameState, context: MmEffectContext, answer: Variant) -> Array[int]:
 	var taken: Array[int] = []
-	for id: Variant in answer as Array:
+	for id: Variant in (answer as Array)[0] if is_rest_in_any_order else answer as Array:
 		taken.append(id as int)
 	var worked_out: Array[int] = [taken.size()]
 	worked_out.append_array(taken)
+	if is_rest_in_any_order:
+		for id: Variant in (answer as Array)[1]:
+			worked_out.append(id as int)
+		return worked_out
 	for id: int in _looked_at(state, context):
 		if not taken.has(id):
 			worked_out.append(id)
@@ -65,6 +77,8 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, worked_
 			batch.append(moved)
 		return batch
 	if step == (1 if takes_first else 0) and not rest.is_empty():
+		if is_rest_in_any_order:
+			return [LibraryBottomOrderedEvent.new(context.controller_id, rest)]
 		return [LibraryBottomRandomizedEvent.new(context.controller_id, rest)]
 	return []
 

@@ -144,12 +144,16 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_state.choose_replacement_effect(answer as int)  # next_decision() carries on from here.
 	elif decision is ChooseYesOrNoDecision and (decision as ChooseYesOrNoDecision).entering_object_id != 0:
 		_finish_playing_land(answer as int == ChooseYesOrNoDecision.Choice.YES)
+	elif decision is ChooseObjectDecision and _cast != null:
+		_cast.apply_answer(decision, answer)  # Engine ADR 0086: a cost's choice, such as which card to exile.
 	elif decision is ChooseObjectDecision or decision is ChooseCreatureTypeDecision or decision is ChooseCardsInLibraryDecision \
 			or decision is ChooseYesOrNoDecision or decision is ChooseXToPayDecision or decision is SurveilDecision \
 			or decision is ChooseLookedAtCardsDecision:
 		_resolution.apply_answer(decision, answer)
 	elif decision is PayManaDecision and _cast == null and _resolution != null:
 		_resolution.apply_answer(decision, answer)  # ADR 0061: paying X as it resolves.
+	elif decision is ChoosePermanentsDecision and _cast == null and _resolution != null:
+		_resolution.apply_answer(decision, answer)  # Engine ADR 0088: a cost said yes to, such as a sacrifice.
 	elif decision is ChooseCardsToDiscardDecision and _resolution != null:
 		_resolution.apply_answer(decision, answer)  # A DiscardEffect's; cleanup's is below.
 	elif _cast != null:
@@ -168,7 +172,7 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		elif action is CastSpellAction:
 			var cast: CastSpellAction = action as CastSpellAction
 			_cast = CastProcedure.cast_spell(_state, decision.player_id, _state.object(cast.object_id), cast.as_adventure,
-				cast.is_bestowed)
+				cast.is_bestowed, cast.is_for_alternative_cost)
 		elif action is ActivateAbilityAction:
 			_activate(action as ActivateAbilityAction, decision.player_id)
 		else:
@@ -205,10 +209,17 @@ func _perform_turn_based_actions() -> MmPendingDecision:
 			# CR 502.3: the active player untaps all their permanents, but not one they
 			# exerted (CR 701.43): this untap step ends its exertion instead, whether it is
 			# tapped or not, and whoever controls it now.
+			# Nor one that "doesn't untap during its controller's next untap step" (CR 502.3):
+			# this untap step ends that instead, whether it is tapped or not.
 			for permanent: MmGameObject in _state.battlefield.objects():
+				var stays_tapped: bool = false
 				if permanent.exerted_by_player_id == active.id:
 					_state.perform(ExertionEndsEvent.new(permanent.id))
-				elif permanent.controller_id == active.id and permanent.is_tapped:
+					stays_tapped = true
+				if permanent.skips_next_untap and permanent.controller_id == active.id:
+					_state.perform(UntapSkippedEvent.new(permanent.id))
+					stays_tapped = true
+				if not stays_tapped and permanent.controller_id == active.id and permanent.is_tapped:
 					_state.perform(UntapEvent.new(permanent.id))
 		MmTurn.Step.DRAW:
 			# Later: let this stop for a replacement choice once a card replaces draws, such
@@ -299,9 +310,10 @@ func _current_step() -> MmTurn.Step:
 
 
 ## The actions [param player_id] may take while holding priority, in a deterministic order
-## (ADR 0012): Pass, then land plays, then spells from the hand, then spells from the
-## graveyard with flashback (CR 702.34a), then cards on an adventure in exile (CR 715.3d),
-## then the top card of the library with a permission (ADR 0054), then abilities of
+## (ADR 0012): Pass, then land plays, from the hand and then from exile (engine ADR 0100),
+## then spells from the hand, then spells from the graveyard with flashback (CR 702.34a),
+## then cards on an adventure in exile (CR 715.3d) and cards in exile the player may play
+## (engine ADR 0100), then the top card of the library with a permission (ADR 0054), then abilities of
 ## permanents, then
 ## abilities of Emblems and Potions (ADR 0036), then abilities of cards in the hand, such
 ## as cycling (ADR 0059), each by object ID and abilities by their order on the object. A
@@ -311,9 +323,15 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 	var actions: Array[MmAction] = [PassAction.new()]
 	var player: MmPlayer = _state.player(player_id)
 	var hand: Array[MmGameObject] = _sorted_by_id(player.hand.objects())
+	var exiled: Array[MmGameObject] = _sorted_by_id(_state.exile.objects())
 	if _may_play_land(player):
 		for card: MmGameObject in hand:
 			if _state.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND):
+				actions.append(PlayLandAction.new(card.id))
+		# Engine ADR 0100: a land in exile its player may play, with a land play (CR 305.2).
+		for card: MmGameObject in exiled:
+			if card.may_be_played_by(player.id, _state.game_turn) \
+					and _state.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND):
 				actions.append(PlayLandAction.new(card.id))
 	for card: MmGameObject in hand:
 		if _may_cast(player, card):
@@ -324,11 +342,17 @@ func _legal_actions(player_id: int) -> Array[MmAction]:
 		# CR 702.103a, engine ADR 0089: a card with bestow may be cast bestowed too.
 		if BestowRules.bestow_of(_state.characteristics_of(card)) != null and _may_cast(player, card, false, true):
 			actions.append(CastSpellAction.new(card.id, false, true))
+		# CR 118.9, engine ADR 0093: a card with an alternative cost may be cast for it too.
+		if CastProcedure.alternative_cost_of(_state.characteristics_of(card)) != null \
+				and _may_cast(player, card, false, false, true):
+			actions.append(CastSpellAction.new(card.id, false, false, true))
 	for card: MmGameObject in _sorted_by_id(player.graveyard.objects()):
 		if _may_cast(player, card):
 			actions.append(CastSpellAction.new(card.id))
-	for card: MmGameObject in _sorted_by_id(_state.exile.objects()):
-		if card.is_on_adventure and card.owner_id == player.id and _may_cast(player, card):
+	for card: MmGameObject in exiled:
+		var may_play: bool = (card.is_on_adventure and card.owner_id == player.id) \
+			or card.may_be_played_by(player.id, _state.game_turn)
+		if may_play and _may_cast(player, card):
 			actions.append(CastSpellAction.new(card.id))
 	var top: MmGameObject = player.library.top()
 	if top != null and _may_cast(player, top):
@@ -397,9 +421,16 @@ func _sorcery_timing(player: MmPlayer) -> bool:
 ## (CR 608.3). [param as_adventure]: cast from the hand as its Adventure, with only the
 ## Adventure's characteristics (CR 715.3a); from exile only a card on an adventure, and only
 ## as the creature (CR 715.3d). [param bestowed]: cast from the hand for its bestow cost, as
-## an Aura spell (CR 702.103a-b, engine ADR 0089).
-func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false, bestowed: bool = false) -> bool:
+## an Aura spell (CR 702.103a-b, engine ADR 0089). [param for_alternative_cost]: cast from
+## the hand for its AlternativeCostAbility's cost (CR 118.9, engine ADR 0093).
+func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false, bestowed: bool = false,
+		for_alternative_cost: bool = false) -> bool:
 	var characteristics: MmCharacteristics = _state.characteristics_of(card)
+	var alternative: AlternativeCostAbility = null
+	if for_alternative_cost:
+		alternative = CastProcedure.alternative_cost_of(characteristics)
+		if card.zone() != player.hand or alternative == null:
+			return false
 	if as_adventure:
 		if card.zone() != player.hand or characteristics.adventure == null:
 			return false
@@ -408,14 +439,17 @@ func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false,
 		if card.zone() != player.hand or BestowRules.bestow_of(characteristics) == null:
 			return false
 		characteristics = BestowRules.as_bestowed(_state, card)
-	if card.zone() == _state.exile and not card.is_on_adventure:
-		return false
+	if card.zone() == _state.exile and not card.is_on_adventure \
+			and not card.may_be_played_by(player.id, _state.game_turn):
+		return false  # Engine ADR 0100: only with a permission to play it.
 	var costs: Array[MmCost] = []
 	if card.zone() == player.graveyard:
 		var flashback: FlashbackAbility = CastProcedure.flashback_of(characteristics)
 		if flashback == null:
 			return false
 		costs.append_array(flashback.costs)
+	elif alternative != null:
+		costs.append_array(alternative.costs)
 	else:
 		if card.zone() == player.library and CastProcedure.top_of_library_permission(_state, player.id, card).is_empty():
 			return false
@@ -439,8 +473,11 @@ func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false,
 			return false
 	# A flashback cost with no mana in it needs none. What is paid is less any cost
 	# reduction (CR 601.2f).
-	var to_pay: MmManaCost = CastProcedure.mana_to_pay(_state, player.id, card, as_adventure, bestowed)
-	return to_pay == null or ManaPayment.can_afford(_state, player.id, to_pay)
+	var to_pay: MmManaCost = CastProcedure.mana_to_pay(_state, player.id, card, as_adventure, bestowed,
+		for_alternative_cost)
+	# Later: a tap cost and the mana are each checked alone, so an artifact that would both be
+	# tapped and pay mana is offered, and its cast then rewinds as stuck (ADR 0015).
+	return to_pay == null or ManaPayment.can_afford(_state, player.id, to_pay, 0, CastProcedure.improvises(characteristics))
 
 
 ## Only where it works (CR 113.6). Mana abilities whenever their cost can be paid; other
@@ -449,12 +486,14 @@ func _may_cast(player: MmPlayer, card: MmGameObject, as_adventure: bool = false,
 func _may_activate(player: MmPlayer, source: MmGameObject, ability: ActivatedAbility, ability_index: int) -> bool:
 	if not ability.works_in(_state, source):
 		return false  # CR 113.6
-	if ability.is_once_each_game and source.is_ability_spent(ability_index):
+	if ability.is_spent_on(source, ability_index, _state.game_turn):
 		return false  # CR 602.5b
 	if ability.is_sorcery_speed and not _sorcery_timing(player) and not _lifts_sorcery_restriction(player, ability):
 		return false  # CR 602.5d
 	if not ability.is_attachment_allowed(_state, source):
 		return false  # CR 602.5, 702.151a
+	if not ability.is_condition_met(_state, source, player.id):
+		return false  # CR 602.5b
 	if not ability.can_pay_costs(_state, source):
 		return false
 	if ability.mana_cost != null:
@@ -530,8 +569,8 @@ func _activate(action: ActivateAbilityAction, player_id: int) -> void:
 	var source: MmGameObject = _state.object(action.object_id)
 	var ability: ActivatedAbility = _state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
 	if ability.is_mana_ability():
-		if ability.is_once_each_game:
-			_state.perform(AbilitySpentEvent.new(source.id, action.ability_index))
+		if ability.is_activated_only_once():
+			_state.perform(AbilitySpentEvent.of(ability, source.id, action.ability_index))
 		ability.pay_costs(_state, source)
 		var context: MmEffectContext = MmEffectContext.new(source.controller_id, source.id)
 		# ADR 0072: the color of mana of any color was chosen with the action.

@@ -1,7 +1,8 @@
 class_name DrawCardsEffect
 extends MmEffect
 ## "[players] draw [amount] cards" (CR 121). Each draw is its own step, one card at a time
-## from the top (CR 121.2), each player in turn drawing all of theirs.
+## from the top (CR 121.2), each player in turn drawing all of theirs. Each is offered to
+## replacement effects before its card is known (DrawCardEvent, engine ADR 0097).
 
 @export var amount: MmValue
 @export var players: MmSelection
@@ -20,7 +21,7 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, worked_
 			drawers.append(drawer.id)
 	if count <= 0 or step >= drawers.size() * count:
 		return []
-	return [state.draw_event(drawers[step / count])]
+	return [DrawCardEvent.new(drawers[step / count])]
 
 
 func selections() -> Array[MmSelection]:

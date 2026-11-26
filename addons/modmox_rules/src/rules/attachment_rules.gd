@@ -6,6 +6,8 @@ extends RefCounted
 
 const EQUIPMENT: String = "Equipment"
 const AURA: String = "Aura"
+## The Aura subtype of a Role token, of which a player keeps one on each permanent (CR 303.7).
+const ROLE: String = "Role"
 
 
 ## Whether [param attachment] may be, or stay, attached to [param to]. Null for

@@ -11,3 +11,42 @@ Kishla Trawlers brought the first reflexive triggered ability: "When this creatu
 The GUI clicks the card in the Graveyard window as it does any `ChooseObjectDecision`. The Info Panel says, in the user's words, "Exile a creature card from your graveyard for Kishla Trawlers", as Fear of Isolation's cost does, and it can't be canceled, since the ability is resolving. The yes or no reads "Kishla Trawlers's ability: exile a creature card from your graveyard?", made from the cost's words as Guiding Hydra's is. On the stack the reflexive ability reads as what it does, "Return target instant or sorcery card from your graveyard to your hand." `AbilityText` prints the whole ability as Oracle does, "you may exile a creature card from your graveyard. When you do, return ...", and a reflexive ability alone as "When you do, ...". The Agent says yes as it does to any "you may" that harms nothing of its own, then exiles the creature card with the least mana value, in both modes, since no simulation sees a graveyard; the spell it returns is chosen as any target is.
 
 Left out until a card needs them (ADR 0001): a reflexive ability after anything but a "you may" with a cost, "When you don't", exiling more than one card, and a cost said yes to whose choice is not a card of a graveyard.
+
+## Addendum: sacrificing a permanent as the cost said yes to
+
+Selfcraft Mechan says "When this creature enters, you may sacrifice an artifact. When you do, put a +1/+1 counter on target creature and draw a card." **`SacrificePermanentsCost` is "Sacrifice [count] [filter]"** (CR 701.21a): the payer chooses which of the permanents they control that match, and those move to their owners' graveyards together, as new objects (ADR 0008), with `ZoneChangeEvent.Reason.SACRIFICE`. A player can sacrifice only a permanent they control, so the filter is authored without "you control", which "sacrifice" says, and the source itself may be chosen when it matches: a Mechan may sacrifice itself, and its reflexive ability then works from it as it last existed (CR 608.2h). It is not destruction, so indestructible and regeneration never stop it. `SacrificeThisCost` stays as it is: it needs no choice.
+
+**Its choice is a `ChoosePermanentsDecision` whose purpose is `SACRIFICE`**, as returning and tapping ask theirs, so it works the same as an additional cost or an activated ability's cost. As the cost a "you may" said yes to, `ResolutionProcedure` asks it before paying, as it asks which card to exile: the cost's choice it holds may now be either kind of decision, and the next answer while it is held pays the cost. The turn procedure sends a `ChoosePermanentsDecision` to the resolution while one is under way and no cast is. The Info Prompt says "Sacrifice an artifact for Selfcraft Mechan", the user's words, with no Cancel while a triggered ability pays it as it resolves.
+
+**What a reflexive ability does is one clause after "When you do"**: "put a +1/+1 counter on target creature and draw a card". Worded as two sentences, the second would read as though it happened whether or not you did.
+
+The AI says yes or no as it does to any "you may" with a cost (FULL simulates both), sacrifices its least valuable artifact, and aims the counter at a creature of its own.
+
+**A one-shot token is worth `AiBoardEvaluator.ONE_SHOT_TOKEN_VALUE`, 15.** The Board Evaluator values a noncreature permanent at 50 and 30 more for each point of its mana value, a calibration for a card someone spent to put it there. A Treasure, a Clue or a Map was the same 50, more than a land (8) or a card of mana value 4 in hand (45), so a FULL Agent kept a Treasure rather than trade it for a +1/+1 counter and a card, and would not cash in a Map to explore. A noncreature token whose every ability sacrifices it gives one payoff and is gone, and no card was spent on it, so it is now worth what a card of mana value 1 is in hand (`hand_card_value` and `hand_mana_value_bonus` together), and Selfcraft Mechan's Agent says yes with a Treasure out. A card that is used up too, as Ominous Parcel is, keeps its card's worth, as does a token with a lasting ability. Only the Treasure Jewel Thief makes, in the Frondland Felidar Villain's deck, met it in play then. A spell that draws two cards paid for with a Treasure still scores about even, since cards in hand are worth what they cost: that is the evaluator's view of card draw, not of the Treasure.
+
+Left out until a card needs them (ADR 0001): sacrificing more than one of several kinds ("sacrifice two creatures and an artifact"), and a resolving spell's or activated ability's "you may sacrifice", whose Info Prompt would need a Cancel rule of its own.
+
+## Addendum: sacrificing as an effect
+
+Agent of the Fates says "Heroic — Whenever you cast a spell that targets this creature, each opponent sacrifices a creature of their choice." Sacrificing is the same act whether it pays a cost or is an effect (CR 701.21a): its controller moves the permanent to its owner's graveyard, and indestructible and regeneration never stop it.
+
+**"[players] sacrifice(s) [count] [filter]" is `SacrificeEffect`**, an effect beside `SacrificePermanentsCost`, with a Selection of who sacrifices, a count and a Filter authored without "you control". As it begins its player is asked the same `ChoosePermanentsDecision` with purpose `SACRIFICE`, marked `is_for_effect`, but only when there is a choice, as `DiscardEffect` asks (CR 701.9a): with that many matches or fewer they are all sacrificed, and with none nothing happens. The answer comes back to the effect as any decision an effect asks as it begins does (`ResolutionProcedure` takes it as the begin answer), never through the cost being paid. The permanents move together with the reason `SACRIFICE`, so a sacrificed creature dies.
+
+**Only one player sacrifices for now.** Each opponent is one player in a game of two; several players, each choosing in turn order (CR 101.4), wait for a card that says "each player", as several discarding players do.
+
+**The prompt says what the effect makes the player do** (the user's words): "Agent of the Fates: sacrifice a creature", the source's name for an ability and the spell's for a spell, as a search's prompt is worded, and it can never be canceled, since nothing is being cast. A cost's prompt stays "Sacrifice an artifact for Selfcraft Mechan".
+
+The Agent picks what to sacrifice as it picks a cost's (`_choose_permanents()`): FULL simulates each pick, CHEAP gives up its least valuable permanent. `AbilityText` says "each opponent sacrifices a creature", and "sacrifice a creature" for you; "of their choice" says nothing more, since a player always chooses what they sacrifice.
+
+
+## Addendum: exiling several cards from the graveyard
+
+Kessig Wolfrider says "{2}{R}, {T}, Exile three cards from your graveyard: Create a 3/2 red Wolf creature token." `ExileFromGraveyardCost` took one card; it now has a **`count`** (1 by default, so every card saved before reads as it did), and a null Filter is any card.
+
+**It can be paid only while its payer's graveyard holds `count` matching cards**, so the ability is not offered with fewer.
+
+**Its choice is asked once for each card.** `CastProcedure` asks the same `ChooseObjectDecision` with purpose `EXILE_FROM_GRAVEYARD` again until `count` cards are exiled, each card exiled as it is chosen (CR 601.2h: the costs are paid in any order, and these cards wait on nothing). Each pick is among the cards still there. Asking once for all the cards was turned down: it needed a new kind of decision and a new way to pick several cards in the Graveyard window, where one click a card is what the window already does. The decision carries `exile_count` and `exiled_before`, so the prompt can count down in the user's words: "Exile three cards from your graveyard for Kessig Wolfrider", then "Exile two more cards …", then "Exile one more card …". A cancel takes back every card exiled so far, as it takes back the cast.
+
+**The Agent picks each card as it picks one** (least mana value). `AbilityText` says "Exile three cards from your graveyard".
+
+Left out until a card needs it: several cards exiled for a cost said yes to as an effect resolves, as Kishla Trawlers's "you may exile a creature card" is.

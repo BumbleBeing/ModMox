@@ -9,3 +9,8 @@ Tokens came on the card track with Prideful Parent (engine ADR 0044), and a toke
 **A token that leaves the battlefield fades where it stood.** It ceases to exist (CR 704.5d), so it has nowhere to fly to: Card Flights makes no route for a zone change with no card (`MmGameObject.NO_CARD`), and Face Motion's ghost fades it in its place, as for any permanent that leaves with nowhere to fly (ADR 0027). The graveyard pile never counts it. Flying it to the graveyard and fading it there was the other choice, which shows a dying token as a card that went somewhere. A new token fades in at its place, as any new permanent does, with nothing added.
 
 Left for when a card needs it: a token with rules text of its own, which its Card Face already prints, and drawing the creating card's link to its tokens.
+
+## Addendum: a flip token's art is cut to its art panel
+
+Scryfall prints Role tokens two to a flip card, such as "Wicked // Cursed", and the art crop of a flip card is not its art: it is the whole upper face, its type line and rules text included. So when the art tool saves a token whose Scryfall layout is `flip`, it cuts the image to the art panel at the left of the upper face, below the type line (`TokenArt.art_of()`, `FLIP_ART_PANEL`, measured from the Wicked Role's as fractions of the crop), and saves that. Any other token's art crop is saved as it comes. The panel is taller than it is wide, so its focus point, set in the Card Gallery, chooses what a landscape frame shows.
+

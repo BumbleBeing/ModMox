@@ -2,13 +2,14 @@ class_name ChoosePermanentsDecision
 extends MmPendingDecision
 ## A player picks exactly [member count] of [member candidate_ids] to pay part of a cost,
 ## such as "Tap three untapped creatures you control" or "return a permanent you control to
-## its owner's hand" (CR 601.2h). Answer: an Array of [member count] distinct object IDs from
+## its owner's hand" (CR 601.2h), or for an effect as it resolves, as "each opponent
+## sacrifices a creature" asks (CR 701.21a). Answer: an Array of [member count] distinct object IDs from
 ## [member candidate_ids] (ADR 0016).
 
 ## What paying does to the permanents picked, so that what is asked can be put in words.
-enum Purpose { TAP = 0, RETURN_TO_HAND = 1 }
+enum Purpose { TAP = 0, RETURN_TO_HAND = 1, SACRIFICE = 2 }
 
-## The spell or ability, on the stack, whose cost this is.
+## The spell or ability, on the stack, whose cost or effect this is.
 var stack_object_id: int
 var count: int
 ## The permanents that may be picked, in ID order.
@@ -16,6 +17,9 @@ var candidate_ids: Array[int]
 ## What may be picked, so that what is asked can be put in words. Card data, never changed.
 var filter: MmFilter
 var purpose: Purpose = Purpose.TAP
+## Whether an effect asks it as it resolves (SacrificeEffect), rather than a cost being
+## paid, so it can never be taken back.
+var is_for_effect: bool = false
 
 
 func _init(deciding_player_id: int, object_id: int, pick_count: int, candidates: Array[int], picked_from: MmFilter) -> void:

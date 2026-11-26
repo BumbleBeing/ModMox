@@ -1,0 +1,68 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_ekdf3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/improvise_ability.gd" id="2_tjlny"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_vp21p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_aj8dl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_b7rdo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="4_5dk1t"]
+[ext_resource type="Resource" path="res://content/tokens/servo_1_1_colorless.tres" id="5_ybv5v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_2dt2r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_cqrc1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_dmucs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="9_m6cw3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_token_filter.gd" id="10_sdggg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="11_vcb8b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_i0ff6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="13_js21l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="14_6t51o"]
+
+[sub_resource type="Resource" id="Resource_o5tef"]
+script = ExtResource("2_tjlny")
+
+[sub_resource type="Resource" id="Resource_w8u4c"]
+script = ExtResource("4_5dk1t")
+token = ExtResource("5_ybv5v")
+
+[sub_resource type="Resource" id="Resource_0dc8k"]
+script = ExtResource("10_sdggg")
+
+[sub_resource type="Resource" id="Resource_t7irf"]
+script = ExtResource("11_vcb8b")
+filter = SubResource("Resource_0dc8k")
+
+[sub_resource type="Resource" id="Resource_7s8vi"]
+script = ExtResource("12_i0ff6")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_x7cou"]
+script = ExtResource("13_js21l")
+filters = Array[ExtResource("9_m6cw3")]([SubResource("Resource_t7irf"), SubResource("Resource_7s8vi")])
+
+[sub_resource type="Resource" id="Resource_yb41t"]
+script = ExtResource("14_6t51o")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_x7cou")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_wenih"]
+script = ExtResource("7_cqrc1")
+trigger = SubResource("Resource_yb41t")
+effects = Array[ExtResource("3_aj8dl")]([SubResource("Resource_w8u4c")])
+
+[sub_resource type="Resource" id="Resource_6vlfx"]
+script = ExtResource("2_vp21p")
+generic = 4
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_b7rdo")
+name = "Sly Requisitioner"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Artificer"])
+mana_cost = SubResource("Resource_6vlfx")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_ekdf3")]([SubResource("Resource_o5tef"), SubResource("Resource_wenih")])
+rarity = 1

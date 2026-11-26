@@ -184,7 +184,9 @@ func _answer(decision: MmPendingDecision, source: MmSimulationSource) -> Variant
 		return _search(decision as ChooseCardsInLibraryDecision, world, source, rng)
 	if decision is ChooseLookedAtCardsDecision:
 		var look: ChooseLookedAtCardsDecision = decision as ChooseLookedAtCardsDecision
-		return _found_among(look.candidate_ids, look.most, look.player_id, world, source, rng)
+		# Engine ADR 0084's addendum: the rest, in any order, go in the order looked at, since
+		# what lies at the bottom of a library hardly matters in an encounter.
+		return look.answer_taking(_found_among(look.candidate_ids, look.most, look, world, source, rng))
 	if decision is ChooseYesOrNoDecision:
 		return _yes_or_no(decision as ChooseYesOrNoDecision, world, source, rng)
 	if decision is ChooseXToPayDecision:
@@ -461,8 +463,8 @@ func _mana_unlocks_a_play(decision: PriorityDecision, index: int, source: MmSimu
 func _play_key(action: MmAction) -> String:
 	if action is CastSpellAction:
 		var cast: CastSpellAction = action as CastSpellAction
-		return "cast %d%s%s" % [cast.object_id, " adventure" if cast.as_adventure else "",
-			" bestowed" if cast.is_bestowed else ""]
+		return "cast %d%s%s%s" % [cast.object_id, " adventure" if cast.as_adventure else "",
+			" bestowed" if cast.is_bestowed else "", " alternative" if cast.is_for_alternative_cost else ""]
 	if action is ActivateAbilityAction:
 		var activate: ActivateAbilityAction = action as ActivateAbilityAction
 		return "activate %d %d %d" % [activate.object_id, activate.ability_index, activate.mana_type]
@@ -660,11 +662,12 @@ static func _mana_made_by_land(characteristics: MmCharacteristics) -> Array[MmMa
 static func _unlocks_a_spell(world: MmGameState, player_id: int, made: Array[MmMana.Type]) -> bool:
 	for card: MmGameObject in world.player(player_id).hand.objects():
 		var cost: MmManaCost = CastProcedure.mana_to_pay(world, player_id, card)
+		var improvises: bool = CastProcedure.improvises(world.characteristics_of(card))  # Engine ADR 0099.
 		if world.characteristics_of(card).has_card_type(MmCardTypes.CardType.LAND) or cost == null \
-				or ManaPayment.can_afford(world, player_id, cost):
+				or ManaPayment.can_afford(world, player_id, cost, 0, improvises):
 			continue
 		for type: MmMana.Type in made:
-			if ManaPayment.can_afford(world, player_id, _less_one(cost, type)):
+			if ManaPayment.can_afford(world, player_id, _less_one(cost, type), 0, improvises):
 				return true
 	return false
 
@@ -1268,7 +1271,7 @@ func _cheap_yes_or_no(decision: ChooseYesOrNoDecision, world: MmGameState) -> in
 
 ## The cards found by a search (ADR 0057), always as many as may be found (_found_among()).
 func _search(decision: ChooseCardsInLibraryDecision, world: MmGameState, source: MmSimulationSource, rng: MmRng) -> Array[int]:
-	return _found_among(decision.candidate_ids, decision.most, decision.player_id, world, source, rng)
+	return _found_among(decision.candidate_ids, decision.most, decision, world, source, rng)
 
 
 ## Up to [param most] of [param candidate_ids], cards in [param player_id]'s library found by
@@ -1276,8 +1279,10 @@ func _search(decision: ChooseCardsInLibraryDecision, world: MmGameState, source:
 ## many as may be: a card in hand is worth more than one left in the library. FULL: simulates
 ## taking one card of each name, and keeps the best; any more are taken as CHEAP takes them.
 ## CHEAP: ranks the cards with _search_rank().
-func _found_among(candidate_ids: Array[int], most: int, player_id: int, world: MmGameState, source: MmSimulationSource,
-		rng: MmRng) -> Array[int]:
+func _found_among(candidate_ids: Array[int], most: int, asked: MmPendingDecision, world: MmGameState,
+		source: MmSimulationSource, rng: MmRng) -> Array[int]:
+	var player_id: int = asked.player_id
+	var look: ChooseLookedAtCardsDecision = asked as ChooseLookedAtCardsDecision
 	var found: Array[int] = []
 	if candidate_ids.is_empty() or most <= 0:
 		_reason = Reason.ONLY_CHOICE
@@ -1296,7 +1301,8 @@ func _found_among(candidate_ids: Array[int], most: int, player_id: int, world: M
 			var answers: Array = []
 			var options: Array[int] = []
 			for index: int in one_of_each.size():
-				answers.append([one_of_each[index]])
+				var one: Array[int] = [one_of_each[index]]
+				answers.append(look.answer_taking(one) if look != null else one)
 				options.append(index)
 			var best: int = one_of_each[_best_option(options, _simulate_each(source, rng, answers, player_id), rng, 0)]
 			ranked.erase(best)

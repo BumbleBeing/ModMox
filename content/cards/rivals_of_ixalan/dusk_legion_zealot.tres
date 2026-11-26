@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_02e28"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_3c5qb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_rv4y3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_7u6hu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_owvus"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_4xojk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_bth3t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/lose_life_effect.gd" id="6_6fk8d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_40phq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_fxe6l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_3plpo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="10_eqeu8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="11_a3epk"]
+
+[sub_resource type="Resource" id="Resource_o244g"]
+script = ExtResource("3_7u6hu")
+value = 1
+
+[sub_resource type="Resource" id="Resource_v4y5e"]
+script = ExtResource("4_4xojk")
+
+[sub_resource type="Resource" id="Resource_h27eu"]
+script = ExtResource("5_bth3t")
+amount = SubResource("Resource_o244g")
+players = SubResource("Resource_v4y5e")
+
+[sub_resource type="Resource" id="Resource_8udaj"]
+script = ExtResource("3_7u6hu")
+value = 1
+
+[sub_resource type="Resource" id="Resource_sx1vx"]
+script = ExtResource("4_4xojk")
+
+[sub_resource type="Resource" id="Resource_xm1u5"]
+script = ExtResource("6_6fk8d")
+amount = SubResource("Resource_8udaj")
+players = SubResource("Resource_sx1vx")
+
+[sub_resource type="Resource" id="Resource_15vr8"]
+script = ExtResource("10_eqeu8")
+
+[sub_resource type="Resource" id="Resource_0n5kx"]
+script = ExtResource("11_a3epk")
+filter = SubResource("Resource_15vr8")
+
+[sub_resource type="Resource" id="Resource_bwfff"]
+script = ExtResource("8_fxe6l")
+trigger = SubResource("Resource_0n5kx")
+effects = Array[ExtResource("2_3c5qb")]([SubResource("Resource_h27eu"), SubResource("Resource_xm1u5")])
+
+[sub_resource type="Resource" id="Resource_awo7h"]
+script = ExtResource("2_rv4y3")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_owvus")
+name = "Dusk Legion Zealot"
+card_types = Array[int]([1])
+subtypes = Array[String](["Vampire", "Soldier"])
+mana_cost = SubResource("Resource_awo7h")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_02e28")]([SubResource("Resource_bwfff")])

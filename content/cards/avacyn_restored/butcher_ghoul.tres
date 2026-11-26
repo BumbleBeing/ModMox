@@ -1,0 +1,75 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_akvu2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_u28b1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_counters_filter.gd" id="2_uyexv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_i5fwq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="3_l72ku"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/selection_matches_condition.gd" id="4_fyev6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/triggering_object_selection.gd" id="5_a22ds"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="6_p6j7x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="7_ps6ia"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_battlefield_effect.gd" id="8_5jyap"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/triggering_card_selection.gd" id="9_2oiyo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="10_yyuxg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/undying_ability.gd" id="11_8p40q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="12_53b46"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="13_faxdo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="14_dh1m7"]
+
+[sub_resource type="Resource" id="Resource_685j6"]
+script = ExtResource("2_uyexv")
+
+[sub_resource type="Resource" id="Resource_uiyxo"]
+script = ExtResource("3_l72ku")
+filter = SubResource("Resource_685j6")
+
+[sub_resource type="Resource" id="Resource_iauv7"]
+script = ExtResource("5_a22ds")
+
+[sub_resource type="Resource" id="Resource_7lb1o"]
+script = ExtResource("4_fyev6")
+selection = SubResource("Resource_iauv7")
+filter = SubResource("Resource_uiyxo")
+
+[sub_resource type="Resource" id="Resource_05ksr"]
+script = ExtResource("7_ps6ia")
+value = 1
+
+[sub_resource type="Resource" id="Resource_8elc0"]
+script = ExtResource("9_2oiyo")
+
+[sub_resource type="Resource" id="Resource_obakl"]
+script = ExtResource("8_5jyap")
+selection = SubResource("Resource_8elc0")
+counters = SubResource("Resource_05ksr")
+
+[sub_resource type="Resource" id="Resource_mlpmi"]
+script = ExtResource("13_faxdo")
+
+[sub_resource type="Resource" id="Resource_x5427"]
+script = ExtResource("14_dh1m7")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_mlpmi")
+
+[sub_resource type="Resource" id="Resource_6yvdv"]
+script = ExtResource("11_8p40q")
+trigger = SubResource("Resource_x5427")
+condition = SubResource("Resource_7lb1o")
+effects = Array[ExtResource("6_p6j7x")]([SubResource("Resource_obakl")])
+
+[sub_resource type="Resource" id="Resource_poxri"]
+script = ExtResource("2_u28b1")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_i5fwq")
+name = "Butcher Ghoul"
+card_types = Array[int]([1])
+subtypes = Array[String](["Zombie"])
+mana_cost = SubResource("Resource_poxri")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_akvu2")]([SubResource("Resource_6yvdv")])

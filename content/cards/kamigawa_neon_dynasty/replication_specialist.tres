@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_suehi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_8njoh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_gvi4n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ba6dx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_jlspw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_copy_effect.gd" id="4_dns6q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/triggering_object_selection.gd" id="5_urvn4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_pay_effect.gd" id="7_5dc0m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_8m6qh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="9_qkesv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_pg3kn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_mo2lj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_karcf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_token_filter.gd" id="13_cdwxp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="14_7f6jt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="15_sbr73"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="16_vh0l4"]
+
+[sub_resource type="Resource" id="Resource_f053o"]
+script = ExtResource("2_gvi4n")
+
+[sub_resource type="Resource" id="Resource_v45or"]
+script = ExtResource("5_urvn4")
+
+[sub_resource type="Resource" id="Resource_gergt"]
+script = ExtResource("4_dns6q")
+selection = SubResource("Resource_v45or")
+
+[sub_resource type="Resource" id="Resource_qcroi"]
+script = ExtResource("2_8njoh")
+generic = 1
+symbols = Array[int]([1])
+
+[sub_resource type="Resource" id="Resource_nscw2"]
+script = ExtResource("7_5dc0m")
+mana_cost = SubResource("Resource_qcroi")
+effect = SubResource("Resource_gergt")
+
+[sub_resource type="Resource" id="Resource_35x3w"]
+script = ExtResource("12_karcf")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_jhlxa"]
+script = ExtResource("13_cdwxp")
+
+[sub_resource type="Resource" id="Resource_tsxr7"]
+script = ExtResource("14_7f6jt")
+filter = SubResource("Resource_jhlxa")
+
+[sub_resource type="Resource" id="Resource_j7xnw"]
+script = ExtResource("15_sbr73")
+filters = Array[ExtResource("11_mo2lj")]([SubResource("Resource_35x3w"), SubResource("Resource_tsxr7")])
+
+[sub_resource type="Resource" id="Resource_cjaxj"]
+script = ExtResource("16_vh0l4")
+filter = SubResource("Resource_j7xnw")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_cfuic"]
+script = ExtResource("9_qkesv")
+trigger = SubResource("Resource_cjaxj")
+effects = Array[ExtResource("3_jlspw")]([SubResource("Resource_nscw2")])
+
+[sub_resource type="Resource" id="Resource_tgw65"]
+script = ExtResource("2_8njoh")
+generic = 4
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_ba6dx")
+name = "Replication Specialist"
+card_types = Array[int]([1])
+subtypes = Array[String](["Moonfolk", "Artificer"])
+mana_cost = SubResource("Resource_tgw65")
+power = 3
+toughness = 4
+abilities = Array[ExtResource("1_suehi")]([SubResource("Resource_f053o"), SubResource("Resource_cfuic")])
+rarity = 1

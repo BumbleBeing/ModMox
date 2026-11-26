@@ -6,7 +6,9 @@ extends GutTest
 ## second lets it go; "Hand" flies the selected card into the hand, and then no other may be
 ## taken. Only the pass button, "Done", answers: the cards taken. The rest fly face down
 ## onto the Library pile. Undo takes back the card taken. Bugler is a 2/3 costing {0} with
-## Militia Bugler's ability (Scenario.bugler()).
+## Militia Bugler's ability (Scenario.bugler()). Mechanist, Faerie Mechanist as a 2/2 flier
+## costing {0} (Scenario.mechanist()), puts the rest on the bottom in any order: its row is
+## ordered by dragging, as the Surveil window's is, and Done answers that order too.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const DefaultAnswerAgent := preload("res://addons/modmox_rules/tests/support/default_answer_agent.gd")
@@ -228,6 +230,52 @@ func test_a_real_click_selects() -> void:
 	assert_eq(BorderEffects.glow_colors(window.face_of(taken)), [Color.WHITE] as Array[Color])
 
 
+func test_in_any_order_a_real_drag_orders_the_row_and_done_puts_the_rest_on_the_bottom_so() -> void:
+	var viewport: SubViewport = SubViewport.new()
+	viewport.size = Vector2i(SCREEN)
+	add_child_autofree(viewport)
+	_open_looking(0.0, viewport, true)
+	var cards: Array[int] = _look().card_ids
+	var window: LookWindow = _screen.look_window()
+	var first: Vector2 = window.face_of(cards[0]).get_global_rect().get_center()
+	var second: Vector2 = window.face_of(cards[1]).get_global_rect().get_center()
+
+	viewport.push_input(_button(true, first))
+	viewport.push_input(_motion(first + Vector2(20, 0)))
+	viewport.push_input(_motion(second + Vector2(20, 0)))
+	viewport.push_input(_button(false, second + Vector2(20, 0)))
+
+	var ordered: Array[int] = [cards[1], cards[0], cards[2]]
+	assert_eq(window.entries(), ordered, "Dragged past the second card.")
+	assert_true(_presenter.snapshot().decision is ChooseLookedAtCardsDecision, "A drag answers nothing.")
+	_screen.pass_priority()
+	_presenter.wait_until_idle()
+	assert_false(_presenter.snapshot().decision is ChooseLookedAtCardsDecision)
+	var library: Array = _presenter.snapshot().view.libraries[HERO]
+	var bottom: Array[int] = []
+	for seen: Variant in library.slice(library.size() - 3):
+		bottom.append((seen as MmObjectView).id if seen != null else -1)
+	assert_eq(bottom, ordered, "The Hero knows the bottom: leftmost first, rightmost deepest.")
+
+
+func test_in_a_random_order_a_drag_moves_nothing() -> void:
+	var viewport: SubViewport = SubViewport.new()
+	viewport.size = Vector2i(SCREEN)
+	add_child_autofree(viewport)
+	_open_looking(0.0, viewport)
+	var cards: Array[int] = _look().card_ids
+	var window: LookWindow = _screen.look_window()
+	var first: Vector2 = window.face_of(cards[0]).get_global_rect().get_center()
+	var second: Vector2 = window.face_of(cards[1]).get_global_rect().get_center()
+
+	viewport.push_input(_button(true, first))
+	viewport.push_input(_motion(first + Vector2(20, 0)))
+	viewport.push_input(_motion(second + Vector2(20, 0)))
+	viewport.push_input(_button(false, second + Vector2(20, 0)))
+
+	assert_eq(window.entries(), cards)
+
+
 # --- Helpers ---------------------------------------------------------------------------
 
 
@@ -264,6 +312,14 @@ func _advance(seconds: float) -> void:
 	_screen.advance_motion(0.000001)
 
 
+func _motion(at: Vector2) -> InputEventMouseMotion:
+	var moved: InputEventMouseMotion = InputEventMouseMotion.new()
+	moved.position = at
+	moved.global_position = at
+	moved.button_mask = MOUSE_BUTTON_MASK_LEFT
+	return moved
+
+
 func _button(is_pressed: bool, at: Vector2) -> InputEventMouseButton:
 	var click: InputEventMouseButton = InputEventMouseButton.new()
 	click.button_index = MOUSE_BUTTON_LEFT
@@ -275,21 +331,27 @@ func _button(is_pressed: bool, at: Vector2) -> InputEventMouseButton:
 
 ## Opens the screen in the Hero's first main phase holding a Bugler, with at least one card
 ## that may be taken among the top four of their library once it is cast, casts it, and
-## lets its trigger resolve to its look. Cards fly for [param flight_seconds].
-func _open_looking(flight_seconds: float = 0.0, parent: Node = null) -> void:
-	var deck: Array[MmCardDefinition] = Scenario.cycled([Scenario.bugler(), Scenario.basic_land("Plains"),
-		Scenario.creature("Pup", 1, 1), Scenario.creature("Ogre", 3, 3)])
+## lets its trigger resolve to its look. Cards fly for [param flight_seconds]. With
+## [param in_any_order] it holds a Mechanist instead, a Trinket (an artifact costing {0})
+## and a Pup among the top three.
+func _open_looking(flight_seconds: float = 0.0, parent: Node = null, in_any_order: bool = false) -> void:
+	var looker: String = "Mechanist" if in_any_order else "Bugler"
+	var deck: Array[MmCardDefinition] = Scenario.cycled([Scenario.mechanist() if in_any_order else Scenario.bugler(),
+		Scenario.basic_land("Plains"), Scenario.creature("Pup", 1, 1),
+		Scenario.artifact("Trinket", []) if in_any_order else Scenario.creature("Ogre", 3, 3)])
 	var chosen: MmEncounterSetup = null
 	for encounter_seed: int in range(1, 400):
 		var setup: MmEncounterSetup = Scenario.setup_with(deck, Scenario.cycled([]), MmEncounterSetup.StartingPlayerRule.HERO_STARTS, encounter_seed)
 		var engine: MmEngine = MmEngine.start(setup)
 		Scenario.keep_all(engine)
-		if not Scenario.names(engine, engine.hero().hand).has("Bugler"):
+		if not Scenario.names(engine, engine.hero().hand).has(looker):
 			continue
 		var top: Array[String] = []
-		for card: MmGameObject in engine.hero().library.objects().slice(0, 4):
+		for card: MmGameObject in engine.hero().library.objects().slice(0, 3 if in_any_order else 4):
 			top.append(engine.game_state().characteristics_of(card).name)
-		if top.has("Ogre") and (top.has("Pup") or top.has("Bugler")):
+		var has_both: bool = top.has("Trinket") and top.has("Pup") if in_any_order \
+			else top.has("Ogre") and (top.has("Pup") or top.has("Bugler"))
+		if has_both:
 			chosen = setup
 			break
 	assert_not_null(chosen, "No seed gave the needed cards.")
@@ -320,7 +382,7 @@ func _open_looking(flight_seconds: float = 0.0, parent: Node = null) -> void:
 	var priority: PriorityDecision = snapshot.decision as PriorityDecision
 	for index: int in priority.actions.size():
 		var cast: CastSpellAction = priority.actions[index] as CastSpellAction
-		if cast != null and EncounterSnapshot.name_in(snapshot.view, cast.object_id) == "Bugler":
+		if cast != null and EncounterSnapshot.name_in(snapshot.view, cast.object_id) == looker:
 			assert_eq(_presenter.answer(index), "")
 			_presenter.wait_until_idle()
 			break

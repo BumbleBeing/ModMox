@@ -9,6 +9,10 @@ extends MmEffect
 ## player the combat's attackers attack, never declared as an attacker (ADR 0044).
 ## "... that's blocking that creature" (CR 509.7) with [member blocking]: each token enters
 ## blocking the creature it names, never declared as a blocker (ADR 0044).
+## "... attached to [attached_to]" (CR 303.4) with [member attached_to], as Price of Beauty's
+## "Create a Wicked Role token attached to target creature you control": each Aura token
+## enters already attached, and one that could not legally be attached is never created
+## (CR 303.4g, engine ADR 0044's addendum).
 
 ## The steps in which blockers have been declared, if there are any attackers to block.
 const BLOCKS_DECLARED_STEPS: Array[MmTurn.Step] = [
@@ -26,6 +30,10 @@ const BLOCKS_DECLARED_STEPS: Array[MmTurn.Step] = [
 ## Brimaz, King of Oreskos. Null when they don't enter blocking. Never set with
 ## [member attacking]: one creature can't be on both sides.
 @export var blocking: MmSelection = null
+## "attached to [attached_to]": the tokens enter the battlefield attached to the one
+## permanent this finds (CR 303.4), such as a target. Null when they enter unattached. With
+## nothing found, or more than one, none is created.
+@export var attached_to: MmSelection = null
 
 
 func next_batch(state: MmGameState, context: MmEffectContext, step: int, _numbers: Array[int]) -> Array[MmEvent]:
@@ -34,10 +42,17 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, _number
 		return events
 	var enters_attacking: bool = attacking and _may_enter_attacking(state, context.controller_id)
 	var blocked_id: int = _attacker_to_block(state, context)
+	var attached_id: int = 0
+	if attached_to != null:
+		var found: Array[MmReference] = attached_to.select(state, context)
+		if found.size() != 1 or not found[0].is_object():
+			return events  # Nothing to enter attached to, so nothing is created (CR 303.4g).
+		attached_id = found[0].id
 	for index: int in amount:
 		var created: TokenCreatedEvent = TokenCreatedEvent.new(token, context.controller_id)
 		created.attacking_on_arrival = enters_attacking
 		created.blocking_on_arrival = blocked_id
+		created.attached_to_on_arrival = attached_id
 		events.append(created)
 	return events
 
@@ -46,6 +61,8 @@ func selections() -> Array[MmSelection]:
 	var used: Array[MmSelection] = []
 	if blocking != null:
 		used.append(blocking)
+	if attached_to != null:
+		used.append(attached_to)
 	return used
 
 

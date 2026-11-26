@@ -636,7 +636,7 @@ func _plan_on(copy: MmEngine) -> PaymentPlan:
 		if spend != null:
 			plan.add_pool(state.player(HERO).mana_pool()[spend.unit_index].type)
 		else:
-			plan.add_source((payment.actions[choice] as ActivateAbilityAction).object_id)
+			plan.add_source(DecisionClicks.object_of(payment.actions[choice]))  # A mana ability or improvise.
 		copy.submit(choice)
 	return plan
 
@@ -647,7 +647,7 @@ static func _take(plan: PaymentPlan, state: MmGameState, action: MmAction) -> vo
 	if spend != null:
 		plan.take_pool(state.player(HERO).mana_pool()[spend.unit_index].type)
 	else:
-		plan.take_source((action as ActivateAbilityAction).object_id)
+		plan.take_source(DecisionClicks.object_of(action))
 
 
 ## What paying for [param answer] to [param priority] would take, or null if it casts and
@@ -796,11 +796,14 @@ func _emit() -> void:
 
 
 ## Calls [param seen] by its card's Modded Name, or an ability by its source's, as the
-## deckbuilder does (ADR 0029). Only the card's printed name is replaced: a name an effect
-## gave it, such as a copy's, is left as the engine gives it. The view is the snapshot's own,
-## so the rules never see the change.
+## deckbuilder does (ADR 0029), and a copy of a spell, or a token made from a card, by the
+## Modded Name of the card it was copied from. Only the card's printed name is replaced: a
+## name an effect gave it, such as that of a creature it became a copy of, is left as the
+## engine gives it. The view is the snapshot's own, so the rules never see the change.
 func _use_modded_name(seen: MmObjectView) -> void:
 	var card_id: int = seen.card_id if seen.card_id != MmGameObject.NO_CARD else seen.source_card_id
+	if card_id == MmGameObject.NO_CARD:
+		card_id = seen.made_from_card_id
 	var run_card: MmRunCard = _engine.run_card(card_id)
 	if run_card == null or not card_names.has(run_card):
 		return

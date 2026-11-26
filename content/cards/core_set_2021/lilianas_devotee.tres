@@ -1,0 +1,103 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_ndvs4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_h7yqu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="2_nedaw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_5g8gy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="3_p31bs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_ytofr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_subtype_filter.gd" id="5_1o8on"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="6_34cre"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="7_7bqgb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="8_0y2kh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="9_sknhd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="10_pq3rj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="11_dbikg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/died_this_turn_condition.gd" id="12_f3gde"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="13_nkvu3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="14_1qsqq"]
+[ext_resource type="Resource" path="res://content/tokens/zombie_2_2_black.tres" id="15_rtkt5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_pay_effect.gd" id="17_si2dd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="18_cqhaw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="19_lvm22"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="20_x6tqe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/step_began_trigger.gd" id="21_p8d6u"]
+
+[sub_resource type="Resource" id="Resource_nedaw"]
+script = ExtResource("5_1o8on")
+subtype = "Zombie"
+
+[sub_resource type="Resource" id="Resource_p31bs"]
+script = ExtResource("6_34cre")
+
+[sub_resource type="Resource" id="Resource_ytofr"]
+script = ExtResource("7_7bqgb")
+filters = Array[ExtResource("3_p31bs")]([SubResource("Resource_nedaw"), SubResource("Resource_p31bs")])
+
+[sub_resource type="Resource" id="Resource_1o8on"]
+script = ExtResource("8_0y2kh")
+filter = SubResource("Resource_ytofr")
+
+[sub_resource type="Resource" id="Resource_34cre"]
+script = ExtResource("9_sknhd")
+value = 1
+
+[sub_resource type="Resource" id="Resource_7bqgb"]
+script = ExtResource("9_sknhd")
+
+[sub_resource type="Resource" id="Resource_0y2kh"]
+script = ExtResource("10_pq3rj")
+power = SubResource("Resource_34cre")
+toughness = SubResource("Resource_7bqgb")
+affected = SubResource("Resource_1o8on")
+
+[sub_resource type="Resource" id="Resource_sknhd"]
+script = ExtResource("11_dbikg")
+effects = Array[ExtResource("2_nedaw")]([SubResource("Resource_0y2kh")])
+
+[sub_resource type="Resource" id="Resource_pq3rj"]
+script = ExtResource("4_ytofr")
+
+[sub_resource type="Resource" id="Resource_dbikg"]
+script = ExtResource("12_f3gde")
+filter = SubResource("Resource_pq3rj")
+
+[sub_resource type="Resource" id="Resource_f3gde"]
+script = ExtResource("14_1qsqq")
+token = ExtResource("15_rtkt5")
+
+[sub_resource type="Resource" id="Resource_nkvu3"]
+script = ExtResource("2_h7yqu")
+generic = 1
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_1qsqq"]
+script = ExtResource("17_si2dd")
+mana_cost = SubResource("Resource_nkvu3")
+effect = SubResource("Resource_f3gde")
+
+[sub_resource type="Resource" id="Resource_rtkt5"]
+script = ExtResource("21_p8d6u")
+step = 10
+
+[sub_resource type="Resource" id="Resource_si2dd"]
+script = ExtResource("19_lvm22")
+trigger = SubResource("Resource_rtkt5")
+condition = SubResource("Resource_dbikg")
+effects = Array[ExtResource("13_nkvu3")]([SubResource("Resource_1qsqq")])
+
+[sub_resource type="Resource" id="Resource_0h3gv"]
+script = ExtResource("2_h7yqu")
+generic = 2
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_5g8gy")
+name = "Liliana's Devotee"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Warlock"])
+mana_cost = SubResource("Resource_0h3gv")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_ndvs4")]([SubResource("Resource_sknhd"), SubResource("Resource_si2dd")])
+rarity = 1

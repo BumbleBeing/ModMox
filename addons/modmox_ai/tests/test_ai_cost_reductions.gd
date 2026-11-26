@@ -65,6 +65,21 @@ func test_a_second_spell_made_cheaper_by_a_permanent_is_cast_with_the_mana_left(
 	assert_eq(AiScenario.cast_name(engine, play), "Footman")
 
 
+func test_a_spell_cheaper_once_another_was_cast_is_cast_with_the_mana_left() -> void:
+	# Engine ADR 0050's addendum: after a Footman, the Titan's {4}{W} costs {1}{W}, which the
+	# two Elves left pay.
+	var footman: MmCardDefinition = Scenario.creature("Footman", 2, 2, [], Scenario.mana_cost(0, [W]))
+	var engine: MmEngine = AiScenario.ready_with([Scenario.elf(), Scenario.elf(), Scenario.elf()], [],
+		[footman, Scenario.titan()])
+	assert_not_null(engine)
+	assert_eq(Scenario.cast_and_resolve(engine, "Footman"), "")
+	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, AiDifficulty.easy())
+
+	var play: int = AiScenario.ask(engine, agent)
+
+	assert_eq(AiScenario.cast_name(engine, play), "Titan")
+
+
 ## A 2/2 Cat costing {0}.
 func _lion() -> MmCardDefinition:
 	var lion: MmCardDefinition = Scenario.creature("Lion", 2, 2)

@@ -1,0 +1,90 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_4kqql"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_6jpub"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_iafmm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_4xabd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="3_mod2d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_d58fo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_nrdeu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_fky8i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/indestructible_ability.gd" id="7_5txj6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="8_12v4q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="9_dfa0k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="10_rfvpt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_j66pi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_66btk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="13_3u3xk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="14_gpm51"]
+
+[sub_resource type="Resource" id="Resource_f6jhb"]
+script = ExtResource("3_mod2d")
+
+[sub_resource type="Resource" id="Resource_xpc4s"]
+script = ExtResource("4_d58fo")
+value = 1
+
+[sub_resource type="Resource" id="Resource_64jxb"]
+script = ExtResource("4_d58fo")
+
+[sub_resource type="Resource" id="Resource_8o5xy"]
+script = ExtResource("5_nrdeu")
+power = SubResource("Resource_xpc4s")
+toughness = SubResource("Resource_64jxb")
+affected = SubResource("Resource_f6jhb")
+
+[sub_resource type="Resource" id="Resource_42ko7"]
+script = ExtResource("6_fky8i")
+continuous = SubResource("Resource_8o5xy")
+
+[sub_resource type="Resource" id="Resource_em10g"]
+script = ExtResource("7_5txj6")
+
+[sub_resource type="Resource" id="Resource_kx2lp"]
+script = ExtResource("3_mod2d")
+
+[sub_resource type="Resource" id="Resource_ecba2"]
+script = ExtResource("8_12v4q")
+abilities = Array[ExtResource("1_4kqql")]([SubResource("Resource_em10g")])
+affected = SubResource("Resource_kx2lp")
+
+[sub_resource type="Resource" id="Resource_pqoc5"]
+script = ExtResource("6_fky8i")
+continuous = SubResource("Resource_ecba2")
+
+[sub_resource type="Resource" id="Resource_6gvqq"]
+script = ExtResource("12_66btk")
+
+[sub_resource type="Resource" id="Resource_3kyay"]
+script = ExtResource("11_j66pi")
+filter = SubResource("Resource_6gvqq")
+most = 2
+is_up_to = true
+
+[sub_resource type="Resource" id="Resource_i3nqp"]
+script = ExtResource("13_3u3xk")
+
+[sub_resource type="Resource" id="Resource_k3q31"]
+script = ExtResource("14_gpm51")
+filter = SubResource("Resource_i3nqp")
+
+[sub_resource type="Resource" id="Resource_brdxt"]
+script = ExtResource("10_rfvpt")
+trigger = SubResource("Resource_k3q31")
+targets = Array[ExtResource("11_j66pi")]([SubResource("Resource_3kyay")])
+effects = Array[ExtResource("2_6jpub")]([SubResource("Resource_42ko7"), SubResource("Resource_pqoc5")])
+
+[sub_resource type="Resource" id="Resource_wu1g8"]
+script = ExtResource("2_iafmm")
+generic = 4
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_4xabd")
+name = "Karfell Kennel-Master"
+card_types = Array[int]([1])
+subtypes = Array[String](["Zombie", "Berserker"])
+mana_cost = SubResource("Resource_wu1g8")
+power = 4
+toughness = 4
+abilities = Array[ExtResource("1_4kqql")]([SubResource("Resource_brdxt")])

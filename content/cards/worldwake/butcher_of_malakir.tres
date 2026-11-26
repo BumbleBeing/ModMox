@@ -1,0 +1,69 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_7covw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_6px0m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_ai7wj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_04go7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_sxc68"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_gc0j3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_opponent_selection.gd" id="5_r81uk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/sacrifice_effect.gd" id="6_8t484"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_uap0n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_23q2o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_1u8re"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_dehrg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="11_8dxao"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="12_oqtav"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="13_ejfh1"]
+
+[sub_resource type="Resource" id="Resource_0q8mq"]
+script = ExtResource("2_ai7wj")
+
+[sub_resource type="Resource" id="Resource_27nnd"]
+script = ExtResource("4_gc0j3")
+
+[sub_resource type="Resource" id="Resource_k0h6f"]
+script = ExtResource("5_r81uk")
+
+[sub_resource type="Resource" id="Resource_cy20k"]
+script = ExtResource("6_8t484")
+players = SubResource("Resource_k0h6f")
+filter = SubResource("Resource_27nnd")
+
+[sub_resource type="Resource" id="Resource_q682t"]
+script = ExtResource("11_8dxao")
+
+[sub_resource type="Resource" id="Resource_yvaqc"]
+script = ExtResource("4_gc0j3")
+
+[sub_resource type="Resource" id="Resource_g7ygn"]
+script = ExtResource("12_oqtav")
+filters = Array[ExtResource("10_dehrg")]([SubResource("Resource_q682t"), SubResource("Resource_yvaqc")])
+
+[sub_resource type="Resource" id="Resource_x0i84"]
+script = ExtResource("13_ejfh1")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_g7ygn")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_d67rf"]
+script = ExtResource("8_23q2o")
+trigger = SubResource("Resource_x0i84")
+effects = Array[ExtResource("3_sxc68")]([SubResource("Resource_cy20k")])
+
+[sub_resource type="Resource" id="Resource_b05bx"]
+script = ExtResource("2_6px0m")
+generic = 5
+symbols = Array[int]([2, 2])
+
+[resource]
+script = ExtResource("3_04go7")
+name = "Butcher of Malakir"
+card_types = Array[int]([1])
+subtypes = Array[String](["Vampire", "Warrior"])
+mana_cost = SubResource("Resource_b05bx")
+power = 5
+toughness = 4
+abilities = Array[ExtResource("1_7covw")]([SubResource("Resource_0q8mq"), SubResource("Resource_d67rf")])
+rarity = 2

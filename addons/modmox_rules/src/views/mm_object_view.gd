@@ -25,6 +25,9 @@ var controller_id: int
 var is_tapped: bool
 ## Exerted (CR 701.43): it won't untap during its controller's next untap step. Public.
 var is_exerted: bool = false
+## It won't untap during its controller's next untap step (CR 502.3), as a DoesntUntapEffect
+## says. Public.
+var skips_next_untap: bool = false
 ## The characteristics a card is drawn from, so the GUI can choose its Frame (ADR 0009).
 ## In WUBRG order; empty means colorless.
 var colors: Array[MmCardTypes.CardColor] = []
@@ -58,6 +61,10 @@ var is_adventure_spell: bool = false
 var adventurer: MmCharacteristics = null
 ## For a card in exile: on an adventure, so its owner may cast it as the creature (CR 715.3d).
 var is_on_adventure: bool = false
+## For a card in exile: the player who may play it and the last Game Turn they may (engine
+## ADR 0100), or MmGameState.NO_PLAYER. Public, like exile.
+var playable_by_player_id: int = MmGameState.NO_PLAYER
+var playable_through_game_turn: int = 0
 ## The cast permissions of this permanent Spent this turn (ADR 0054), by their place among
 ## its abilities, each with the name of the spell it cast. Public, like the permanent.
 var permissions_used_this_turn: Dictionary[int, String] = {}
@@ -96,8 +103,9 @@ var attached_to_object_id: int = 0
 ## 0 for anything else. That object may have left the battlefield since. Public, like the
 ## exile zone.
 var exiled_with_object_id: int = 0
-## Its once-each-game abilities that have been activated, by their place in abilities, so
-## the GUI can gray them (ADR 0036). Public, like the object.
+## Its once-each-game abilities that have been activated, and its once-each-turn ones
+## activated this turn, by their place in abilities, so the GUI can gray them (ADR 0036 and
+## its addendum). Public, like the object.
 var spent_ability_indexes: Array[int] = []
 ## For a Potion: its place in its owner's list of Potions in the Encounter Setup;
 ## MmGameObject.NOT_A_POTION for anything else.
@@ -113,6 +121,10 @@ var is_copy: bool = false
 ## entered, or "". Both players see it (ADR 0052).
 var chosen_creature_type: String = ""
 var token_definition: MmCardDefinition = null
+## For a copy of a spell, and a token made from a card's definition: the Card Identity of
+## the card it was copied from, so the GUI can call it by that card's Modded Name;
+## MmGameObject.NO_CARD for anything else, a token from a Token Definition included.
+var made_from_card_id: int = MmGameObject.NO_CARD
 ## CR 302.6: a creature that cannot attack or pay {T} yet.
 var is_summoning_sick: bool = false
 var is_attacking: bool = false
@@ -138,12 +150,15 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.controller_id = game_object.controller_id
 	view.is_tapped = game_object.is_tapped
 	view.is_exerted = game_object.exerted_by_player_id != MmGameState.NO_PLAYER
+	view.skips_next_untap = game_object.skips_next_untap
 	view.targets = game_object.targets.duplicate()
 	view.chosen_mode = game_object.chosen_mode
 	view.cast_with_flashback = game_object.cast_with_flashback
 	view.cast_from_library = game_object.cast_from_library
 	view.is_adventure_spell = game_object.is_adventure_spell
 	view.is_on_adventure = game_object.is_on_adventure
+	view.playable_by_player_id = game_object.playable_by_player_id
+	view.playable_through_game_turn = game_object.playable_through_game_turn
 	if game_object.is_adventure_spell and game_object.definition != null:
 		# Not the spell's characteristics, which are the Adventure's: the card it is printed on.
 		view.adventurer = MmCharacteristics.printed(game_object.definition)
@@ -181,11 +196,16 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.attached_to_object_id = game_object.attached_to_object_id
 	view.exiled_with_object_id = game_object.exiled_with_object_id
 	view.spent_ability_indexes = game_object.spent_ability_indexes.duplicate()
+	for index: int in game_object.activated_game_turn:
+		if game_object.has_activated_in(index, state.game_turn) and not view.spent_ability_indexes.has(index):
+			view.spent_ability_indexes.append(index)  # ADR 0036's addendum: Spent for the rest of the turn.
 	view.potion_index = game_object.potion_index
 	view.is_token = game_object.is_token
 	view.chosen_creature_type = game_object.chosen_creature_type
 	view.is_copy = game_object.is_copy
 	view.token_definition = game_object.definition if game_object.is_token or game_object.is_copy else null
+	if view.token_definition != null:
+		view.made_from_card_id = state.card_id_made_from(view.token_definition)
 	view.is_summoning_sick = state.is_summoning_sick(game_object)
 	if game_object.zone() == state.battlefield:
 		# CR 604.3: a permanent's numbers are worked out, so it no longer reads "*".

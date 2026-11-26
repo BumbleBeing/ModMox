@@ -1,0 +1,75 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_8xyje"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_8kide"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_n5733"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="3_34ghb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ajgpp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_drf3b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_subtype_filter.gd" id="5_j8lvj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="6_hw0gn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="7_hckuo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/died_this_turn_condition.gd" id="8_u7xw8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="9_6m88o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="10_68cgf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_battlefield_effect.gd" id="11_034nl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="12_wnn5e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="14_kv77l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="15_01cby"]
+
+[sub_resource type="Resource" id="Resource_ewk26"]
+script = ExtResource("2_n5733")
+
+[sub_resource type="Resource" id="Resource_3uf8q"]
+script = ExtResource("4_drf3b")
+
+[sub_resource type="Resource" id="Resource_2trxt"]
+script = ExtResource("5_j8lvj")
+subtype = "Skeleton"
+
+[sub_resource type="Resource" id="Resource_57lnl"]
+script = ExtResource("6_hw0gn")
+filter = SubResource("Resource_2trxt")
+
+[sub_resource type="Resource" id="Resource_v4htt"]
+script = ExtResource("7_hckuo")
+filters = Array[ExtResource("3_34ghb")]([SubResource("Resource_3uf8q"), SubResource("Resource_57lnl")])
+
+[sub_resource type="Resource" id="Resource_nndrw"]
+script = ExtResource("8_u7xw8")
+filter = SubResource("Resource_v4htt")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_q8h1g"]
+script = ExtResource("12_wnn5e")
+
+[sub_resource type="Resource" id="Resource_vtqnu"]
+script = ExtResource("11_034nl")
+selection = SubResource("Resource_q8h1g")
+
+[sub_resource type="Resource" id="Resource_q2x3m"]
+script = ExtResource("2_8kide")
+generic = 1
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_yhc63"]
+script = ExtResource("14_kv77l")
+mana_cost = SubResource("Resource_q2x3m")
+effects = Array[ExtResource("10_68cgf")]([SubResource("Resource_vtqnu")])
+is_activated_from_graveyard = true
+condition = SubResource("Resource_nndrw")
+
+[sub_resource type="Resource" id="Resource_fqlfb"]
+script = ExtResource("2_8kide")
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_ajgpp")
+name = "Cult Conscript"
+card_types = Array[int]([1])
+subtypes = Array[String](["Skeleton", "Warrior"])
+mana_cost = SubResource("Resource_fqlfb")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_8xyje")]([SubResource("Resource_ewk26"), SubResource("Resource_yhc63")])
+rarity = 1

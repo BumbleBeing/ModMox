@@ -39,6 +39,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Human Wizard"
 	},
+	"agent_of_the_fates": {
+		"mana_cost": "{1}{B}{B}",
+		"name": "Agent of the Fates",
+		"oracle_id": "45f88a6a-ac8a-4a53-a96b-f09ca33c79ba",
+		"oracle_text": "Deathtouch\nHeroic — Whenever you cast a spell that targets this creature, each opponent sacrifices a creature of their choice.",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Theros",
+		"toughness": "2",
+		"type_line": "Creature — Human Assassin"
+	},
 	"akrasan_squire": {
 		"mana_cost": "{W}",
 		"name": "Akrasan Squire",
@@ -47,6 +58,17 @@
 		"power": "1",
 		"rarity": "common",
 		"set_name": "Shards of Alara",
+		"toughness": "1",
+		"type_line": "Creature — Human Soldier"
+	},
+	"akroan_crusader": {
+		"mana_cost": "{R}",
+		"name": "Akroan Crusader",
+		"oracle_id": "d981d85c-e97b-4fe7-b415-6e73a3e7e35c",
+		"oracle_text": "Heroic — Whenever you cast a spell that targets this creature, create a 1/1 red Soldier creature token with haste. (It can attack and {T} as soon as it comes under your control.)",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Theros",
 		"toughness": "1",
 		"type_line": "Creature — Human Soldier"
 	},
@@ -124,6 +146,17 @@
 		"set_name": "Core Set 2021",
 		"toughness": "1",
 		"type_line": "Creature — Human Cleric"
+	},
+	"appendage_amalgam": {
+		"mana_cost": "{2}{B}",
+		"name": "Appendage Amalgam",
+		"oracle_id": "9fb95813-05e5-4aa0-bab9-53d8a071fe6a",
+		"oracle_text": "Flash\nWhenever this creature attacks, surveil 1. (Look at the top card of your library. You may put it into your graveyard.)",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Duskmourn: House of Horror",
+		"toughness": "2",
+		"type_line": "Enchantment Creature — Horror"
 	},
 	"arahbo_the_first_fang": {
 		"mana_cost": "{2}{W}",
@@ -220,6 +253,17 @@
 		"set_name": "Commander 2016",
 		"type_line": "Land"
 	},
+	"ashioks_reaper": {
+		"mana_cost": "{3}{B}",
+		"name": "Ashiok's Reaper",
+		"oracle_id": "6f1e5571-ddda-4cea-84ef-36a571d8fd51",
+		"oracle_text": "Whenever an enchantment you control is put into a graveyard from the battlefield, draw a card.",
+		"power": "3",
+		"rarity": "uncommon",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "3",
+		"type_line": "Creature — Nightmare"
+	},
 	"assemble_the_players": {
 		"mana_cost": "{1}{W}",
 		"name": "Assemble the Players",
@@ -251,6 +295,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Human Soldier"
 	},
+	"banehound": {
+		"mana_cost": "{B}",
+		"name": "Banehound",
+		"oracle_id": "63d846e2-4bef-4911-9508-273c75a4a040",
+		"oracle_text": "Lifelink, haste",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "War of the Spark",
+		"toughness": "1",
+		"type_line": "Creature — Nightmare Dog"
+	},
 	"bark_of_doran": {
 		"mana_cost": "{1}{W}",
 		"name": "Bark of Doran",
@@ -260,6 +315,17 @@
 		"set_name": "Lorwyn Eclipsed",
 		"type_line": "Artifact — Equipment"
 	},
+	"bat_whisperer": {
+		"mana_cost": "{3}{B}",
+		"name": "Bat Whisperer",
+		"oracle_id": "f20f6da9-d678-486b-99f9-7121669fef81",
+		"oracle_text": "When this creature enters, if an opponent lost life this turn, create a 1/1 black Bat creature token with flying.",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Innistrad: Midnight Hunt",
+		"toughness": "2",
+		"type_line": "Creature — Vampire"
+	},
 	"battlegrowth": {
 		"mana_cost": "{G}",
 		"name": "Battlegrowth",
@@ -268,6 +334,41 @@
 		"rarity": "common",
 		"set_name": "Mirrodin",
 		"type_line": "Instant"
+	},
+	"belunas_gatekeeper": {
+		"card_faces": [
+			{
+				"artist": "Kai Carpenter",
+				"artist_id": "dcd3cf0d-67b7-4b73-8e62-1d318bf6209c",
+				"flavor_text": "\"And what makes you think Lady Grandsquall wants to see *you*, little one?\"",
+				"illustration_id": "cb3e9af1-8870-419f-a033-bb7a2a67a9c3",
+				"mana_cost": "{5}{U}",
+				"name": "Beluna's Gatekeeper",
+				"object": "card_face",
+				"oracle_text": "",
+				"power": "6",
+				"toughness": "5",
+				"type_line": "Creature — Giant Soldier"
+			},
+			{
+				"artist": "Kai Carpenter",
+				"artist_id": "dcd3cf0d-67b7-4b73-8e62-1d318bf6209c",
+				"mana_cost": "{1}{U}",
+				"name": "Entry Denied",
+				"object": "card_face",
+				"oracle_text": "Return target creature you don't control with mana value 3 or less to its owner's hand. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Sorcery — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{5}{U} // {1}{U}",
+		"name": "Beluna's Gatekeeper // Entry Denied",
+		"oracle_id": "52fd9309-b849-419a-8d19-5882c00a72b4",
+		"power": "6",
+		"rarity": "common",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "5",
+		"type_line": "Creature — Giant Soldier // Sorcery — Adventure"
 	},
 	"benalish_marshal": {
 		"mana_cost": "{W}{W}{W}",
@@ -302,6 +403,39 @@
 		"toughness": "2",
 		"type_line": "Creature — Human Knight"
 	},
+	"blightcaster": {
+		"mana_cost": "{3}{B}",
+		"name": "Blightcaster",
+		"oracle_id": "b40e2aae-3a1d-4bc2-bf67-e821ec800434",
+		"oracle_text": "Whenever you cast an enchantment spell, you may have target creature get -2/-2 until end of turn.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Magic 2014",
+		"toughness": "3",
+		"type_line": "Creature — Human Wizard"
+	},
+	"blood_scrivener": {
+		"mana_cost": "{1}{B}",
+		"name": "Blood Scrivener",
+		"oracle_id": "af66da4b-2f36-4dd2-a5c6-18e6023c5aba",
+		"oracle_text": "If you would draw a card while you have no cards in hand, instead you draw two cards and you lose 1 life.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Dragon's Maze",
+		"toughness": "1",
+		"type_line": "Creature — Zombie Wizard"
+	},
+	"bloodsky_berserker": {
+		"mana_cost": "{1}{B}",
+		"name": "Bloodsky Berserker",
+		"oracle_id": "ed04f170-a4d9-4151-b4ae-1200d523dc6b",
+		"oracle_text": "Whenever you cast your second spell each turn, put two +1/+1 counters on this creature. It gains menace until end of turn. (It can't be blocked except by two or more creatures.)",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Kaldheim",
+		"toughness": "1",
+		"type_line": "Creature — Human Berserker"
+	},
 	"brimaz_king_of_oreskos": {
 		"mana_cost": "{1}{W}{W}",
 		"name": "Brimaz, King of Oreskos",
@@ -324,6 +458,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Merfolk Pirate"
 	},
+	"bushmeat_poacher": {
+		"mana_cost": "{3}{B}",
+		"name": "Bushmeat Poacher",
+		"oracle_id": "0287d541-3f73-4c8b-9a77-87f99898758d",
+		"oracle_text": "{1}, {T}, Sacrifice another creature: You gain life equal to the sacrificed creature's toughness. Draw a card.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Ikoria: Lair of Behemoths",
+		"toughness": "4",
+		"type_line": "Creature — Human Soldier"
+	},
 	"bushwhack": {
 		"mana_cost": "{G}",
 		"name": "Bushwhack",
@@ -332,6 +477,28 @@
 		"rarity": "uncommon",
 		"set_name": "The Brothers' War",
 		"type_line": "Sorcery"
+	},
+	"butcher_ghoul": {
+		"mana_cost": "{1}{B}",
+		"name": "Butcher Ghoul",
+		"oracle_id": "28caeed4-c175-469f-8d8e-f45bc0a51a1c",
+		"oracle_text": "Undying (When this creature dies, if it had no +1/+1 counters on it, return it to the battlefield under its owner's control with a +1/+1 counter on it.)",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Avacyn Restored",
+		"toughness": "1",
+		"type_line": "Creature — Zombie"
+	},
+	"butcher_of_malakir": {
+		"mana_cost": "{5}{B}{B}",
+		"name": "Butcher of Malakir",
+		"oracle_id": "a85197ab-dc94-4b72-9716-8dbdbbe90ff8",
+		"oracle_text": "Flying\nWhenever this creature or another creature you control dies, each opponent sacrifices a creature of their choice.",
+		"power": "5",
+		"rarity": "rare",
+		"set_name": "Worldwake",
+		"toughness": "4",
+		"type_line": "Creature — Vampire Warrior"
 	},
 	"bygone_bishop": {
 		"mana_cost": "{2}{W}",
@@ -399,6 +566,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Cat"
 	},
+	"chitin_gravestalker": {
+		"mana_cost": "{5}{B}",
+		"name": "Chitin Gravestalker",
+		"oracle_id": "acac15c8-877d-49d4-9b42-90181c05a684",
+		"oracle_text": "This spell costs {1} less to cast for each artifact and/or creature card in your graveyard.\nCycling {2} ({2}, Discard this card: Draw a card.)",
+		"power": "5",
+		"rarity": "common",
+		"set_name": "Aetherdrift",
+		"toughness": "4",
+		"type_line": "Creature — Insect Warrior"
+	},
 	"clarion_spirit": {
 		"mana_cost": "{1}{W}",
 		"name": "Clarion Spirit",
@@ -418,6 +596,17 @@
 		"rarity": "uncommon",
 		"set_name": "Foundations",
 		"type_line": "Instant"
+	},
+	"clockwork_percussionist": {
+		"mana_cost": "{R}",
+		"name": "Clockwork Percussionist",
+		"oracle_id": "3b74c8ac-9c19-45b0-935f-8630b8da4543",
+		"oracle_text": "Haste\nWhen this creature dies, exile the top card of your library. You may play it until the end of your next turn.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Duskmourn: House of Horror",
+		"toughness": "1",
+		"type_line": "Artifact Creature — Monkey Toy"
 	},
 	"cloudfin_raptor": {
 		"mana_cost": "{U}",
@@ -440,6 +629,41 @@
 		"set_name": "The Lost Caverns of Ixalan",
 		"toughness": "2",
 		"type_line": "Artifact Creature — Gnome"
+	},
+	"conceited_witch": {
+		"card_faces": [
+			{
+				"artist": "Anna Pavleeva",
+				"artist_id": "32223955-c0eb-49b2-a323-4eec2e067acf",
+				"flavor_text": "She wasn't much for self-reflection.",
+				"illustration_id": "d15d40c5-8c7b-467b-8c51-f79642375475",
+				"mana_cost": "{2}{B}",
+				"name": "Conceited Witch",
+				"object": "card_face",
+				"oracle_text": "Menace (This creature can't be blocked except by two or more creatures.)",
+				"power": "2",
+				"toughness": "3",
+				"type_line": "Creature — Human Warlock"
+			},
+			{
+				"artist": "Anna Pavleeva",
+				"artist_id": "32223955-c0eb-49b2-a323-4eec2e067acf",
+				"mana_cost": "{B}",
+				"name": "Price of Beauty",
+				"object": "card_face",
+				"oracle_text": "Create a Wicked Role token attached to target creature you control. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Sorcery — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{2}{B} // {B}",
+		"name": "Conceited Witch // Price of Beauty",
+		"oracle_id": "1c751201-24ba-4e5c-bf44-71c3e4693a92",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "3",
+		"type_line": "Creature — Human Warlock // Sorcery — Adventure"
 	},
 	"contaminated_aquifer": {
 		"mana_cost": "",
@@ -488,6 +712,17 @@
 		"set_name": "Shards of Alara",
 		"type_line": "Land"
 	},
+	"cult_conscript": {
+		"mana_cost": "{B}",
+		"name": "Cult Conscript",
+		"oracle_id": "e5762815-5fc3-4ae7-abee-69f27c5e4e90",
+		"oracle_text": "This creature enters tapped.\n{1}{B}: Return this card from your graveyard to the battlefield. Activate only if a non-Skeleton creature died under your control this turn.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Dominaria United",
+		"toughness": "1",
+		"type_line": "Creature — Skeleton Warrior"
+	},
 	"cultbrand_cinder": {
 		"mana_cost": "{4}{B/R}",
 		"name": "Cultbrand Cinder",
@@ -498,6 +733,17 @@
 		"set_name": "Shadowmoor",
 		"toughness": "3",
 		"type_line": "Creature — Elemental Shaman"
+	},
+	"cutthroat_centurion": {
+		"mana_cost": "{2}{B}",
+		"name": "Cutthroat Centurion",
+		"oracle_id": "5707c278-dab9-43bc-b3a3-a6b7923511f4",
+		"oracle_text": "Sacrifice another artifact or creature: This creature gets +2/+2 until end of turn. Activate only once each turn.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Phyrexia: All Will Be One",
+		"toughness": "2",
+		"type_line": "Artifact Creature — Phyrexian Warrior"
 	},
 	"dark_ritual": {
 		"mana_cost": "{B}",
@@ -586,6 +832,28 @@
 		"set_name": "Dominaria United",
 		"type_line": "Instant"
 	},
+	"diregraf_ghoul": {
+		"mana_cost": "{B}",
+		"name": "Diregraf Ghoul",
+		"oracle_id": "6048fc70-0dcc-4b54-977d-16e240225f82",
+		"oracle_text": "This creature enters tapped.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Innistrad",
+		"toughness": "2",
+		"type_line": "Creature — Zombie"
+	},
+	"disciple_of_bolas": {
+		"mana_cost": "{3}{B}",
+		"name": "Disciple of Bolas",
+		"oracle_id": "8f2c8498-5b10-4ec7-8678-598c90987556",
+		"oracle_text": "When this creature enters, sacrifice another creature. You gain X life and draw X cards, where X is that creature's power.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Magic 2013",
+		"toughness": "1",
+		"type_line": "Creature — Human Wizard"
+	},
 	"divining_duelist": {
 		"mana_cost": "{2}{U}",
 		"name": "Divining Duelist",
@@ -597,6 +865,28 @@
 		"toughness": "2",
 		"type_line": "Creature — Merfolk Wizard"
 	},
+	"dockside_chef": {
+		"mana_cost": "{B}",
+		"name": "Dockside Chef",
+		"oracle_id": "fed12a16-8920-403c-be63-0601a9d864b0",
+		"oracle_text": "{1}{B}, Sacrifice an artifact or creature: Draw a card.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "2",
+		"type_line": "Enchantment Creature — Human Citizen"
+	},
+	"doomwake_giant": {
+		"mana_cost": "{4}{B}",
+		"name": "Doomwake Giant",
+		"oracle_id": "ba069664-9f92-47c7-b556-9e5143a22579",
+		"oracle_text": "Constellation — Whenever this creature or another enchantment you control enters, creatures your opponents control get -1/-1 until end of turn.",
+		"power": "4",
+		"rarity": "rare",
+		"set_name": "Journey into Nyx",
+		"toughness": "6",
+		"type_line": "Enchantment Creature — Giant"
+	},
 	"dour_port_mage": {
 		"mana_cost": "{1}{U}",
 		"name": "Dour Port-Mage",
@@ -607,6 +897,17 @@
 		"set_name": "Bloomburrow",
 		"toughness": "3",
 		"type_line": "Creature — Frog Wizard"
+	},
+	"dreadmalkin": {
+		"mana_cost": "{B}",
+		"name": "Dreadmalkin",
+		"oracle_id": "118cf682-a532-42e9-8d91-6ce6f0d31ace",
+		"oracle_text": "Menace (This creature can't be blocked except by two or more creatures.)\n{2}{B}, Sacrifice another creature or planeswalker: Put two +1/+1 counters on this creature.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "War of the Spark",
+		"toughness": "1",
+		"type_line": "Creature — Zombie Cat"
 	},
 	"drudge_skeletons": {
 		"mana_cost": "{1}{B}",
@@ -628,6 +929,17 @@
 		"rarity": "rare",
 		"set_name": "March of the Machine",
 		"toughness": "2",
+		"type_line": "Creature — Vampire Soldier"
+	},
+	"dusk_legion_zealot": {
+		"mana_cost": "{1}{B}",
+		"name": "Dusk Legion Zealot",
+		"oracle_id": "ea2dce18-195e-4681-a687-f9819edaf9fc",
+		"oracle_text": "When this creature enters, you draw a card and you lose 1 life.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Rivals of Ixalan",
+		"toughness": "1",
 		"type_line": "Creature — Vampire Soldier"
 	},
 	"eidolon_of_philosophy": {
@@ -740,6 +1052,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Faerie // Sorcery — Adventure"
 	},
+	"faerie_mechanist": {
+		"mana_cost": "{3}{U}",
+		"name": "Faerie Mechanist",
+		"oracle_id": "fcbe14c4-1b0d-486f-bb9c-0fed452668cb",
+		"oracle_text": "Flying\nWhen this creature enters, look at the top three cards of your library. You may reveal an artifact card from among them and put it into your hand. Put the rest on the bottom of your library in any order.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Conflux",
+		"toughness": "2",
+		"type_line": "Artifact Creature — Faerie Artificer"
+	},
 	"faerie_vandal": {
 		"mana_cost": "{1}{U}",
 		"name": "Faerie Vandal",
@@ -751,6 +1074,17 @@
 		"toughness": "2",
 		"type_line": "Creature — Faerie Rogue"
 	},
+	"fanatical_firebrand": {
+		"mana_cost": "{R}",
+		"name": "Fanatical Firebrand",
+		"oracle_id": "d36e11f1-6ab3-4273-8114-a8fbbe21c1c3",
+		"oracle_text": "Haste (This creature can attack and {T} as soon as it comes under your control.)\n{T}, Sacrifice this creature: It deals 1 damage to any target.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Rivals of Ixalan",
+		"toughness": "1",
+		"type_line": "Creature — Goblin Pirate"
+	},
 	"fear_of_isolation": {
 		"mana_cost": "{1}{U}",
 		"name": "Fear of Isolation",
@@ -760,6 +1094,17 @@
 		"rarity": "uncommon",
 		"set_name": "Duskmourn: House of Horror",
 		"toughness": "3",
+		"type_line": "Enchantment Creature — Nightmare"
+	},
+	"fear_of_lost_teeth": {
+		"mana_cost": "{B}",
+		"name": "Fear of Lost Teeth",
+		"oracle_id": "3724cc42-1bbd-4a11-8469-ab8492ddba52",
+		"oracle_text": "When this creature dies, it deals 1 damage to any target and you gain 1 life.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Duskmourn: House of Horror",
+		"toughness": "1",
 		"type_line": "Enchantment Creature — Nightmare"
 	},
 	"fearless_fledgling": {
@@ -793,6 +1138,51 @@
 		"toughness": "3",
 		"type_line": "Creature — Cat Beast"
 	},
+	"fell_horseman": {
+		"card_faces": [
+			{
+				"artist": "Igor Krstic",
+				"artist_id": "44cdd332-50f6-4cab-b606-c4565fc5efeb",
+				"illustration_id": "0a500ace-e962-44a3-b93b-4ff161fc90fe",
+				"mana_cost": "{3}{B}",
+				"name": "Fell Horseman",
+				"object": "card_face",
+				"oracle_text": "When this creature dies, put it on the bottom of its owner's library.",
+				"power": "3",
+				"toughness": "3",
+				"type_line": "Creature — Zombie Knight"
+			},
+			{
+				"artist": "Igor Krstic",
+				"artist_id": "44cdd332-50f6-4cab-b606-c4565fc5efeb",
+				"mana_cost": "{1}{B}",
+				"name": "Deathly Ride",
+				"object": "card_face",
+				"oracle_text": "Return target creature card from your graveyard to your hand. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Sorcery — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{3}{B} // {1}{B}",
+		"name": "Fell Horseman // Deathly Ride",
+		"oracle_id": "fab8d954-807b-426f-8057-99a5d2fec618",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "3",
+		"type_line": "Creature — Zombie Knight // Sorcery — Adventure"
+	},
+	"filigree_attendant": {
+		"mana_cost": "{2}{U}{U}",
+		"name": "Filigree Attendant",
+		"oracle_id": "ab7c9e72-8f30-47f7-918c-cd3c0593d704",
+		"oracle_text": "Flying\nFiligree Attendant's power is equal to the number of artifacts you control.",
+		"power": "*",
+		"rarity": "uncommon",
+		"set_name": "Modern Horizons 2",
+		"toughness": "3",
+		"type_line": "Artifact Creature — Homunculus"
+	},
 	"fog": {
 		"mana_cost": "{G}",
 		"name": "Fog",
@@ -810,6 +1200,40 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Forest"
+	},
+	"foulmire_knight": {
+		"card_faces": [
+			{
+				"artist": "Alex Brock",
+				"artist_id": "ce381d25-868c-4f13-b1e9-e7cd2f67e994",
+				"illustration_id": "467bdd67-4baa-44b9-bc7e-a421163affb6",
+				"mana_cost": "{B}",
+				"name": "Foulmire Knight",
+				"object": "card_face",
+				"oracle_text": "Deathtouch",
+				"power": "1",
+				"toughness": "1",
+				"type_line": "Creature — Zombie Knight"
+			},
+			{
+				"artist": "Alex Brock",
+				"artist_id": "ce381d25-868c-4f13-b1e9-e7cd2f67e994",
+				"mana_cost": "{2}{B}",
+				"name": "Profane Insight",
+				"object": "card_face",
+				"oracle_text": "You draw a card and you lose 1 life. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Instant — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{B} // {2}{B}",
+		"name": "Foulmire Knight // Profane Insight",
+		"oracle_id": "10c0f814-e302-49ff-aded-1b8d8424fd60",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Throne of Eldraine",
+		"toughness": "1",
+		"type_line": "Creature — Zombie Knight // Instant — Adventure"
 	},
 	"frondland_felidar": {
 		"mana_cost": "{2}{G}{W}",
@@ -922,6 +1346,17 @@
 		"set_name": "Battle for Zendikar",
 		"type_line": "Instant"
 	},
+	"gigastorm_titan": {
+		"mana_cost": "{4}{U}",
+		"name": "Gigastorm Titan",
+		"oracle_id": "ef06e10c-553b-45b8-abf0-1d2e87c22128",
+		"oracle_text": "This spell costs {3} less to cast if you've cast another spell this turn.",
+		"power": "4",
+		"rarity": "uncommon",
+		"set_name": "Edge of Eternities",
+		"toughness": "4",
+		"type_line": "Creature — Elemental"
+	},
 	"gird_for_battle": {
 		"mana_cost": "{W}",
 		"name": "Gird for Battle",
@@ -931,6 +1366,28 @@
 		"set_name": "Guilds of Ravnica",
 		"type_line": "Sorcery"
 	},
+	"gixian_puppeteer": {
+		"mana_cost": "{3}{B}",
+		"name": "Gixian Puppeteer",
+		"oracle_id": "9d6a9a37-a245-4503-baeb-9488553798ab",
+		"oracle_text": "Whenever you draw your second card each turn, each opponent loses 2 life and you gain 2 life.\nWhen this creature dies, return another target creature card with mana value 3 or less from your graveyard to the battlefield.",
+		"power": "4",
+		"rarity": "rare",
+		"set_name": "The Brothers' War",
+		"toughness": "3",
+		"type_line": "Creature — Phyrexian Warlock"
+	},
+	"glaze_fiend": {
+		"mana_cost": "{1}{B}",
+		"name": "Glaze Fiend",
+		"oracle_id": "6860cde7-ee8e-4a4d-baed-9dc4a1220e36",
+		"oracle_text": "Flying\nWhenever another artifact you control enters, this creature gets +2/+2 until end of turn.",
+		"power": "0",
+		"rarity": "common",
+		"set_name": "Shards of Alara",
+		"toughness": "1",
+		"type_line": "Artifact Creature — Illusion"
+	},
 	"goblin_balloon_brigade": {
 		"mana_cost": "{R}",
 		"name": "Goblin Balloon Brigade",
@@ -939,6 +1396,28 @@
 		"power": "1",
 		"rarity": "uncommon",
 		"set_name": "Limited Edition Alpha",
+		"toughness": "1",
+		"type_line": "Creature — Goblin Warrior"
+	},
+	"goblin_banneret": {
+		"mana_cost": "{R}",
+		"name": "Goblin Banneret",
+		"oracle_id": "a2d9554e-70c0-4213-ba5e-f0954ad32854",
+		"oracle_text": "Mentor (Whenever this creature attacks, put a +1/+1 counter on target attacking creature with lesser power.)\n{1}{R}: This creature gets +2/+0 until end of turn.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Guilds of Ravnica",
+		"toughness": "1",
+		"type_line": "Creature — Goblin Soldier"
+	},
+	"goblin_gaveleer": {
+		"mana_cost": "{R}",
+		"name": "Goblin Gaveleer",
+		"oracle_id": "739621e6-e138-4ef9-87e8-c730b5a7f495",
+		"oracle_text": "Trample\nThis creature gets +2/+0 for each Equipment attached to it.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Scars of Mirrodin",
 		"toughness": "1",
 		"type_line": "Creature — Goblin Warrior"
 	},
@@ -952,6 +1431,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "2",
 		"type_line": "Creature — Ogre"
+	},
+	"grim_guardian": {
+		"mana_cost": "{2}{B}",
+		"name": "Grim Guardian",
+		"oracle_id": "c1f1babf-13d0-4fc4-b192-127d2d5db7f1",
+		"oracle_text": "Constellation — Whenever this creature or another enchantment you control enters, each opponent loses 1 life.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Journey into Nyx",
+		"toughness": "4",
+		"type_line": "Enchantment Creature — Zombie"
 	},
 	"grizzly_bears": {
 		"mana_cost": "{1}{G}",
@@ -1006,6 +1496,17 @@
 		"toughness": "4",
 		"type_line": "Creature — Giant Soldier"
 	},
+	"harvester_of_souls": {
+		"mana_cost": "{4}{B}{B}",
+		"name": "Harvester of Souls",
+		"oracle_id": "5987ce77-10ad-4871-900a-5a005fcf4955",
+		"oracle_text": "Deathtouch (Any amount of damage this deals to a creature is enough to destroy it.)\nWhenever another nontoken creature dies, you may draw a card.",
+		"power": "5",
+		"rarity": "rare",
+		"set_name": "Avacyn Restored",
+		"toughness": "5",
+		"type_line": "Creature — Demon"
+	},
 	"haunted_mire": {
 		"mana_cost": "",
 		"name": "Haunted Mire",
@@ -1014,6 +1515,17 @@
 		"rarity": "common",
 		"set_name": "Dominaria United",
 		"type_line": "Land — Swamp Forest"
+	},
+	"headless_rider": {
+		"mana_cost": "{2}{B}",
+		"name": "Headless Rider",
+		"oracle_id": "d4fdacd7-3101-44e2-a880-dde7326137a4",
+		"oracle_text": "Whenever this creature or another nontoken Zombie you control dies, create a 2/2 black Zombie creature token.",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Innistrad: Crimson Vow",
+		"toughness": "1",
+		"type_line": "Creature — Zombie"
 	},
 	"helpful_hunter": {
 		"mana_cost": "{1}{W}",
@@ -1068,6 +1580,17 @@
 		"toughness": "3",
 		"type_line": "Creature — Giant"
 	},
+	"homicide_investigator": {
+		"mana_cost": "{1}{B}",
+		"name": "Homicide Investigator",
+		"oracle_id": "dc4d5602-47cb-47c8-8a43-3b840e12b79c",
+		"oracle_text": "Whenever one or more nontoken creatures you control die, investigate. This ability triggers only once each turn. (Create a Clue token. It's an artifact with \"{2}, Sacrifice this token: Draw a card.\")",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Murders at Karlov Manor",
+		"toughness": "2",
+		"type_line": "Creature — Human Detective"
+	},
 	"honor": {
 		"mana_cost": "{W}",
 		"name": "Honor",
@@ -1085,6 +1608,17 @@
 		"rarity": "rare",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Artifact"
+	},
+	"hungry_ghoul": {
+		"mana_cost": "{1}{B}",
+		"name": "Hungry Ghoul",
+		"oracle_id": "4a7a55a3-568c-4c31-9460-5b94dc0121d8",
+		"oracle_text": "{1}, Sacrifice another creature: Put a +1/+1 counter on this creature.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Foundations",
+		"toughness": "2",
+		"type_line": "Creature — Zombie"
 	},
 	"hurloon_minotaur": {
 		"mana_cost": "{1}{R}{R}",
@@ -1251,6 +1785,17 @@
 		"set_name": "Shards of Alara",
 		"type_line": "Land"
 	},
+	"karfell_kennel_master": {
+		"mana_cost": "{4}{B}",
+		"name": "Karfell Kennel-Master",
+		"oracle_id": "2cde1ca7-d126-4d3a-82a6-0acfd7c85cdb",
+		"oracle_text": "When this creature enters, up to two target creatures each get +1/+0 and gain indestructible until end of turn. (Damage and effects that say \"destroy\" don't destroy them.)",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Kaldheim",
+		"toughness": "4",
+		"type_line": "Creature — Zombie Berserker"
+	},
 	"keldon_warlord": {
 		"mana_cost": "{2}{R}{R}",
 		"name": "Keldon Warlord",
@@ -1272,6 +1817,17 @@
 		"set_name": "Phyrexia: All Will Be One",
 		"toughness": "2",
 		"type_line": "Legendary Creature — Cat Cleric"
+	},
+	"kessig_wolfrider": {
+		"mana_cost": "{R}",
+		"name": "Kessig Wolfrider",
+		"oracle_id": "d9c42e56-1818-4b73-9cd6-1c5aaf6a5b56",
+		"oracle_text": "Menace\n{2}{R}, {T}, Exile three cards from your graveyard: Create a 3/2 red Wolf creature token.",
+		"power": "1",
+		"rarity": "rare",
+		"set_name": "Innistrad: Crimson Vow",
+		"toughness": "2",
+		"type_line": "Creature — Human Knight"
 	},
 	"king_of_the_pride": {
 		"mana_cost": "{2}{W}",
@@ -1348,6 +1904,17 @@
 		"set_name": "The Brothers' War",
 		"type_line": "Sorcery"
 	},
+	"leech_gauntlet": {
+		"mana_cost": "{1}{B}",
+		"name": "Leech Gauntlet",
+		"oracle_id": "1aaddaeb-baab-42b6-a442-d97339da54db",
+		"oracle_text": "Lifelink\nEquipped creature has lifelink.\nReconfigure {4} ({4}: Attach to target creature you control; or unattach from a creature. Reconfigure only as a sorcery. While attached, this isn't a creature.)",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "2",
+		"type_line": "Artifact Creature — Equipment Leech"
+	},
 	"leonin_lightbringer": {
 		"mana_cost": "{2}{W}",
 		"name": "Leonin Lightbringer",
@@ -1419,6 +1986,17 @@
 		"set_name": "Aetherdrift",
 		"type_line": "Instant"
 	},
+	"lilianas_devotee": {
+		"mana_cost": "{2}{B}",
+		"name": "Liliana's Devotee",
+		"oracle_id": "b3b8c7d0-46b9-4519-808a-154e503a58b6",
+		"oracle_text": "Zombies you control get +1/+0.\nAt the beginning of your end step, if a creature died this turn, you may pay {1}{B}. If you do, create a 2/2 black Zombie creature token.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Core Set 2021",
+		"toughness": "3",
+		"type_line": "Creature — Human Warlock"
+	},
 	"lion_sash": {
 		"mana_cost": "{1}{W}",
 		"name": "Lion Sash",
@@ -1440,6 +2018,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "1",
 		"type_line": "Creature — Elf Druid"
+	},
+	"makeshift_mauler": {
+		"mana_cost": "{3}{U}",
+		"name": "Makeshift Mauler",
+		"oracle_id": "03025ec0-75fe-439d-b0c1-9bdb0f0ff336",
+		"oracle_text": "As an additional cost to cast this spell, exile a creature card from your graveyard.",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Innistrad",
+		"toughness": "5",
+		"type_line": "Creature — Zombie Horror"
 	},
 	"malamet_war_scribe": {
 		"mana_cost": "{3}{W}{W}",
@@ -1463,6 +2052,28 @@
 		"toughness": "4",
 		"type_line": "Creature — Cat"
 	},
+	"marauding_blight_priest": {
+		"mana_cost": "{2}{B}",
+		"name": "Marauding Blight-Priest",
+		"oracle_id": "814b87fe-2a75-4ff2-8637-7e69e3fb285b",
+		"oracle_text": "Whenever you gain life, each opponent loses 1 life.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Zendikar Rising",
+		"toughness": "2",
+		"type_line": "Creature — Vampire Cleric"
+	},
+	"mardu_skullhunter": {
+		"mana_cost": "{1}{B}",
+		"name": "Mardu Skullhunter",
+		"oracle_id": "2a87e3a9-10e3-4b00-aeb9-d3336b2fa3b3",
+		"oracle_text": "This creature enters tapped.\nRaid — When this creature enters, if you attacked this turn, target opponent discards a card.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Khans of Tarkir",
+		"toughness": "1",
+		"type_line": "Creature — Human Warrior"
+	},
 	"martyr_of_dusk": {
 		"mana_cost": "{1}{W}",
 		"name": "Martyr of Dusk",
@@ -1473,6 +2084,17 @@
 		"set_name": "Rivals of Ixalan",
 		"toughness": "1",
 		"type_line": "Creature — Vampire Soldier"
+	},
+	"mechan_assembler": {
+		"mana_cost": "{4}{U}",
+		"name": "Mechan Assembler",
+		"oracle_id": "2c2ef1ed-2f93-48c5-bf86-e46318599aeb",
+		"oracle_text": "Whenever another artifact you control enters, create a 2/2 colorless Robot artifact creature token. This ability triggers only once each turn.",
+		"power": "4",
+		"rarity": "uncommon",
+		"set_name": "Edge of Eternities",
+		"toughness": "4",
+		"type_line": "Artifact Creature — Robot Artificer"
 	},
 	"mechan_navigator": {
 		"mana_cost": "{1}{U}",
@@ -1536,6 +2158,17 @@
 		"set_name": "Dominaria United",
 		"type_line": "Land — Island Mountain"
 	},
+	"monoist_circuit_feeder": {
+		"mana_cost": "{4}{B}{B}",
+		"name": "Monoist Circuit-Feeder",
+		"oracle_id": "de70a6bb-32ed-4a89-a522-c2a71f08fb02",
+		"oracle_text": "Flying\nWhen this creature enters, until end of turn, target creature you control gets +X/+0 and target creature an opponent controls gets -0/-X, where X is the number of artifacts you control.",
+		"power": "4",
+		"rarity": "uncommon",
+		"set_name": "Edge of Eternities",
+		"toughness": "4",
+		"type_line": "Artifact Creature — Nautilus"
+	},
 	"most_decrepit_old_bird": {
 		"card_faces": [
 			{
@@ -1578,6 +2211,40 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Mountain"
+	},
+	"murderous_rider": {
+		"card_faces": [
+			{
+				"artist": "Josh Hass",
+				"artist_id": "8fa1fdf0-96d6-46f4-a7ff-b1c0257c3735",
+				"illustration_id": "a97fba85-e4ea-4373-8bdd-6085618953ca",
+				"mana_cost": "{1}{B}{B}",
+				"name": "Murderous Rider",
+				"object": "card_face",
+				"oracle_text": "Lifelink\nWhen this creature dies, put it on the bottom of its owner's library.",
+				"power": "2",
+				"toughness": "3",
+				"type_line": "Creature — Zombie Knight"
+			},
+			{
+				"artist": "Josh Hass",
+				"artist_id": "8fa1fdf0-96d6-46f4-a7ff-b1c0257c3735",
+				"mana_cost": "{1}{B}{B}",
+				"name": "Swift End",
+				"object": "card_face",
+				"oracle_text": "Destroy target creature or planeswalker. You lose 2 life. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Instant — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{1}{B}{B} // {1}{B}{B}",
+		"name": "Murderous Rider // Swift End",
+		"oracle_id": "1080c5b5-6651-4c6a-93e6-099fbe389e26",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Throne of Eldraine",
+		"toughness": "3",
+		"type_line": "Creature — Zombie Knight // Instant — Adventure"
 	},
 	"myr_scrapling": {
 		"mana_cost": "{1}",
@@ -1632,6 +2299,28 @@
 		"toughness": "1",
 		"type_line": "Artifact Creature — Moonfolk Rogue"
 	},
+	"niblis_of_frost": {
+		"mana_cost": "{2}{U}{U}",
+		"name": "Niblis of Frost",
+		"oracle_id": "ed2f3339-5c3e-473f-b08e-58288c4ad9c2",
+		"oracle_text": "Flying\nProwess (Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.)\nWhenever you cast an instant or sorcery spell, tap target creature an opponent controls. That creature doesn't untap during its controller's next untap step.",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Eldritch Moon",
+		"toughness": "3",
+		"type_line": "Creature — Spirit"
+	},
+	"nimble_thopterist": {
+		"mana_cost": "{3}{U}",
+		"name": "Nimble Thopterist",
+		"oracle_id": "01813091-75e8-431b-ba3f-b1ea1ba20a3b",
+		"oracle_text": "When this creature enters, create a 1/1 colorless Thopter artifact creature token with flying.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Aetherdrift",
+		"toughness": "2",
+		"type_line": "Creature — Vedalken Artificer"
+	},
 	"nimbus_naiad": {
 		"mana_cost": "{2}{U}",
 		"name": "Nimbus Naiad",
@@ -1672,6 +2361,17 @@
 		"set_name": "Theros",
 		"type_line": "Enchantment — Aura"
 	},
+	"nyxborn_rollicker": {
+		"mana_cost": "{R}",
+		"name": "Nyxborn Rollicker",
+		"oracle_id": "ebf2974a-963e-425a-8f8c-55f0a36984c3",
+		"oracle_text": "Bestow {1}{R} (If you cast this card for its bestow cost, it's an Aura spell with enchant creature. It becomes a creature again if it's not attached.)\nEnchanted creature gets +1/+1.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Born of the Gods",
+		"toughness": "1",
+		"type_line": "Enchantment Creature — Satyr"
+	},
 	"oblivion_ring": {
 		"mana_cost": "{2}{W}",
 		"name": "Oblivion Ring",
@@ -1680,6 +2380,41 @@
 		"rarity": "common",
 		"set_name": "Lorwyn",
 		"type_line": "Enchantment"
+	},
+	"obyras_attendants": {
+		"card_faces": [
+			{
+				"artist": "Andreas Zafiratos",
+				"artist_id": "e2f13a9a-57c5-40de-81d4-3b0723899cdf",
+				"flavor_text": "Obyra's devoted servants shrieked as their sleeping mistress slashed at them, unseeing.",
+				"illustration_id": "d1ea5321-62e2-4894-a79f-03b792daf2c8",
+				"mana_cost": "{4}{U}",
+				"name": "Obyra's Attendants",
+				"object": "card_face",
+				"oracle_text": "Flying",
+				"power": "3",
+				"toughness": "4",
+				"type_line": "Creature — Faerie Wizard"
+			},
+			{
+				"artist": "Andreas Zafiratos",
+				"artist_id": "e2f13a9a-57c5-40de-81d4-3b0723899cdf",
+				"mana_cost": "{1}{U}",
+				"name": "Desperate Parry",
+				"object": "card_face",
+				"oracle_text": "Target creature gets -4/-0 until end of turn. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Instant — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{4}{U} // {1}{U}",
+		"name": "Obyra's Attendants // Desperate Parry",
+		"oracle_id": "396b088d-f9af-4ee1-843f-dbe1633f9cc8",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "4",
+		"type_line": "Creature — Faerie Wizard // Instant — Adventure"
 	},
 	"odrics_outrider": {
 		"mana_cost": "{3}{W}",
@@ -1763,6 +2498,17 @@
 		"set_name": "Throne of Eldraine",
 		"type_line": "Instant"
 	},
+	"pactdoll_terror": {
+		"mana_cost": "{3}{B}",
+		"name": "Pactdoll Terror",
+		"oracle_id": "e02fff6b-9ee4-474f-97fc-d70d4bc8001b",
+		"oracle_text": "Whenever this creature or another artifact you control enters, each opponent loses 1 life and you gain 1 life.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Aetherdrift",
+		"toughness": "4",
+		"type_line": "Artifact Creature — Toy"
+	},
 	"path_of_bravery": {
 		"mana_cost": "{2}{W}",
 		"name": "Path of Bravery",
@@ -1783,6 +2529,17 @@
 		"toughness": "2",
 		"type_line": "Creature — Unicorn"
 	},
+	"phoenix_chick": {
+		"mana_cost": "{R}",
+		"name": "Phoenix Chick",
+		"oracle_id": "40bb7b6b-a75d-4b59-ba45-a5801dcd59a1",
+		"oracle_text": "Flying, haste\nThis creature can't block.\nWhenever you attack with three or more creatures, you may pay {R}{R}. If you do, return this card from your graveyard to the battlefield tapped and attacking with a +1/+1 counter on it.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Dominaria United",
+		"toughness": "1",
+		"type_line": "Creature — Phoenix"
+	},
 	"plains": {
 		"mana_cost": "",
 		"name": "Plains",
@@ -1791,6 +2548,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Plains"
+	},
+	"poisoners_apprentice": {
+		"mana_cost": "{2}{B}",
+		"name": "Poisoner's Apprentice",
+		"oracle_id": "4b0e5626-0282-42e5-abef-a079b26a8e5f",
+		"oracle_text": "Infusion — When this creature enters, target creature an opponent controls gets -4/-4 until end of turn if you gained life this turn.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Secrets of Strixhaven",
+		"toughness": "2",
+		"type_line": "Creature — Orc Warlock"
 	},
 	"pride_sovereign": {
 		"mana_cost": "{2}{G}",
@@ -1893,6 +2661,17 @@
 		"set_name": "Oath of the Gatewatch",
 		"toughness": "2",
 		"type_line": "Creature — Kor Knight Ally"
+	},
+	"replication_specialist": {
+		"mana_cost": "{4}{U}",
+		"name": "Replication Specialist",
+		"oracle_id": "7ce7decb-1438-4c3d-88d2-26b0b3996b33",
+		"oracle_text": "Flying\nWhenever a nontoken artifact you control enters, you may pay {1}{U}. If you do, create a token that's a copy of that artifact.",
+		"power": "3",
+		"rarity": "uncommon",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "4",
+		"type_line": "Creature — Moonfolk Artificer"
 	},
 	"resistance_reunited": {
 		"mana_cost": "{1}{W}",
@@ -2009,6 +2788,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Vampire Cleric"
 	},
+	"sanitarium_skeleton": {
+		"mana_cost": "{B}",
+		"name": "Sanitarium Skeleton",
+		"oracle_id": "d09b0648-e324-4a16-b78c-d1849177c04f",
+		"oracle_text": "{2}{B}: Return this card from your graveyard to your hand.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Shadows over Innistrad",
+		"toughness": "2",
+		"type_line": "Creature — Skeleton"
+	},
 	"savage_lands": {
 		"mana_cost": "",
 		"name": "Savage Lands",
@@ -2039,6 +2829,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "2",
 		"type_line": "Creature — Zombie"
+	},
+	"scion_of_the_swarm": {
+		"mana_cost": "{3}{B}{B}",
+		"name": "Scion of the Swarm",
+		"oracle_id": "ccaeabe1-42fa-4f29-bf80-d9b73498eec6",
+		"oracle_text": "Flying\nWhenever you gain life, put a +1/+1 counter on this creature.",
+		"power": "3",
+		"rarity": "uncommon",
+		"set_name": "Zendikar Rising",
+		"toughness": "3",
+		"type_line": "Creature — Vampire Cleric"
 	},
 	"scythe_leopard": {
 		"mana_cost": "{G}",
@@ -2080,6 +2881,17 @@
 		"set_name": "Shards of Alara",
 		"type_line": "Land"
 	},
+	"selfcraft_mechan": {
+		"mana_cost": "{3}{U}",
+		"name": "Selfcraft Mechan",
+		"oracle_id": "4ba4cb4b-f421-4abd-8fcf-a01174447790",
+		"oracle_text": "When this creature enters, you may sacrifice an artifact. When you do, put a +1/+1 counter on target creature and draw a card.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Edge of Eternities",
+		"toughness": "4",
+		"type_line": "Artifact Creature — Robot Artificer"
+	},
 	"serra_angel": {
 		"mana_cost": "{3}{W}{W}",
 		"name": "Serra Angel",
@@ -2110,6 +2922,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Instant"
+	},
+	"shimmer_dragon": {
+		"mana_cost": "{4}{U}{U}",
+		"name": "Shimmer Dragon",
+		"oracle_id": "de1316f2-1cca-4ac4-aead-0fd8b4036d88",
+		"oracle_text": "Flying\nAs long as you control four or more artifacts, this creature has hexproof. (It can't be the target of spells or abilities your opponents control.)\nTap two untapped artifacts you control: Draw a card.",
+		"power": "5",
+		"rarity": "rare",
+		"set_name": "Throne of Eldraine",
+		"toughness": "6",
+		"type_line": "Creature — Dragon"
 	},
 	"shivan_dragon": {
 		"mana_cost": "{4}{R}{R}",
@@ -2153,6 +2976,28 @@
 		"toughness": "1",
 		"type_line": "Creature — Cat Scout"
 	},
+	"skymarch_bloodletter": {
+		"mana_cost": "{2}{B}",
+		"name": "Skymarch Bloodletter",
+		"oracle_id": "41684707-5118-45cf-892d-46b66045d026",
+		"oracle_text": "Flying\nWhen this creature enters, target opponent loses 1 life and you gain 1 life.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Ixalan",
+		"toughness": "2",
+		"type_line": "Creature — Vampire Soldier"
+	},
+	"slagdrill_scrapper": {
+		"mana_cost": "{R}",
+		"name": "Slagdrill Scrapper",
+		"oracle_id": "7f1edf4c-46a1-426d-8ce9-757a4c27367d",
+		"oracle_text": "{2}, {T}, Sacrifice another artifact or land: Draw a card.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Edge of Eternities",
+		"toughness": "2",
+		"type_line": "Artifact Creature — Robot Scout"
+	},
 	"slash_of_light": {
 		"mana_cost": "{1}{W}",
 		"name": "Slash of Light",
@@ -2161,6 +3006,39 @@
 		"rarity": "common",
 		"set_name": "Final Fantasy",
 		"type_line": "Instant"
+	},
+	"sly_requisitioner": {
+		"mana_cost": "{4}{B}",
+		"name": "Sly Requisitioner",
+		"oracle_id": "15ea4698-86b4-47c5-a9a7-60af16063a61",
+		"oracle_text": "Improvise (Your artifacts can help cast this spell. Each artifact you tap after you're done activating mana abilities pays for {1}.)\nWhenever a nontoken artifact you control is put into a graveyard from the battlefield, create a 1/1 colorless Servo artifact creature token.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Aether Revolt",
+		"toughness": "2",
+		"type_line": "Creature — Human Artificer"
+	},
+	"sneering_shadewriter": {
+		"mana_cost": "{4}{B}",
+		"name": "Sneering Shadewriter",
+		"oracle_id": "21a094d6-de3d-48d4-a35d-b99617da55db",
+		"oracle_text": "Flying\nWhen this creature enters, each opponent loses 2 life and you gain 2 life.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Secrets of Strixhaven",
+		"toughness": "3",
+		"type_line": "Creature — Vampire Warlock"
+	},
+	"soulblade_djinn": {
+		"mana_cost": "{3}{U}{U}",
+		"name": "Soulblade Djinn",
+		"oracle_id": "a598e6ce-21ee-49c1-989e-ee864208262f",
+		"oracle_text": "Flying\nWhenever you cast a noncreature spell, creatures you control get +1/+1 until end of turn.",
+		"power": "4",
+		"rarity": "rare",
+		"set_name": "Magic Origins",
+		"toughness": "3",
+		"type_line": "Creature — Djinn"
 	},
 	"sparring_construct": {
 		"mana_cost": "{1}",
@@ -2326,6 +3204,17 @@
 		"toughness": "2",
 		"type_line": "Creature — Human Soldier"
 	},
+	"thraxodemon": {
+		"mana_cost": "{1}{B}",
+		"name": "Thraxodemon",
+		"oracle_id": "01cf689c-5a64-4ecf-b45d-3f385c9b212b",
+		"oracle_text": "{3}, {T}, Sacrifice another creature or artifact: Draw a card.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "The Brothers' War",
+		"toughness": "2",
+		"type_line": "Creature — Demon"
+	},
 	"tocasias_welcome": {
 		"mana_cost": "{2}{W}",
 		"name": "Tocasia's Welcome",
@@ -2346,6 +3235,17 @@
 		"toughness": "5",
 		"type_line": "Creature — Plant Cat"
 	},
+	"tragic_banshee": {
+		"mana_cost": "{4}{B}",
+		"name": "Tragic Banshee",
+		"oracle_id": "888f58c0-1860-4df4-ad75-53e634150680",
+		"oracle_text": "Morbid — When this creature enters, target creature an opponent controls gets -1/-1 until end of turn. If a creature died this turn, that creature gets -13/-13 until end of turn instead.",
+		"power": "5",
+		"rarity": "uncommon",
+		"set_name": "Foundations",
+		"toughness": "3",
+		"type_line": "Creature — Spirit"
+	},
 	"traveling_minister": {
 		"mana_cost": "{W}",
 		"name": "Traveling Minister",
@@ -2356,6 +3256,17 @@
 		"set_name": "Innistrad: Crimson Vow",
 		"toughness": "1",
 		"type_line": "Creature — Human Cleric"
+	},
+	"treasure_dredger": {
+		"mana_cost": "{1}{B}",
+		"name": "Treasure Dredger",
+		"oracle_id": "9a691e96-fb47-4c23-a063-3b287c51147b",
+		"oracle_text": "{1}, {T}, Pay 1 life: Create a Treasure token. (It's an artifact with \"{T}, Sacrifice this token: Add one mana of any color.\")",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Outlaws of Thunder Junction",
+		"toughness": "2",
+		"type_line": "Creature — Human Rogue"
 	},
 	"tromp_the_domains": {
 		"mana_cost": "{5}{G}",
@@ -2441,6 +3352,17 @@
 		"set_name": "Mirrodin Besieged",
 		"type_line": "Artifact — Equipment"
 	},
+	"virus_beetle": {
+		"mana_cost": "{1}{B}",
+		"name": "Virus Beetle",
+		"oracle_id": "e1e489f6-37e5-469e-bca3-0e9d3fc3fa95",
+		"oracle_text": "When this creature enters, each opponent discards a card.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "1",
+		"type_line": "Artifact Creature — Insect"
+	},
 	"wall_of_stone": {
 		"mana_cost": "{1}{R}{R}",
 		"name": "Wall of Stone",
@@ -2518,6 +3440,28 @@
 		"toughness": "4",
 		"type_line": "Creature — Orc Monk"
 	},
+	"whisper_squad": {
+		"mana_cost": "{B}",
+		"name": "Whisper Squad",
+		"oracle_id": "e6b27729-fea5-46c9-8624-07ba291791df",
+		"oracle_text": "{1}{B}: Search your library for a card named Whisper Squad, put it onto the battlefield tapped, then shuffle.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Ikoria: Lair of Behemoths",
+		"toughness": "1",
+		"type_line": "Creature — Human Soldier"
+	},
+	"whispering_wizard": {
+		"mana_cost": "{3}{U}",
+		"name": "Whispering Wizard",
+		"oracle_id": "321e101c-a426-4d18-be0b-c26c5348b70d",
+		"oracle_text": "Whenever you cast a noncreature spell, create a 1/1 white Spirit creature token with flying. This ability triggers only once each turn.",
+		"power": "3",
+		"rarity": "uncommon",
+		"set_name": "Innistrad: Crimson Vow",
+		"toughness": "2",
+		"type_line": "Creature — Human Wizard"
+	},
 	"white_knight": {
 		"mana_cost": "{W}{W}",
 		"name": "White Knight",
@@ -2559,6 +3503,17 @@
 		"rarity": "common",
 		"set_name": "Dominaria United",
 		"type_line": "Land — Mountain Forest"
+	},
+	"zahid_djinn_of_the_lamp": {
+		"mana_cost": "{4}{U}{U}",
+		"name": "Zahid, Djinn of the Lamp",
+		"oracle_id": "89b07037-64df-4e66-acd8-87d97df61e3a",
+		"oracle_text": "You may pay {3}{U} and tap an untapped artifact you control rather than pay this spell's mana cost.\nFlying",
+		"power": "5",
+		"rarity": "rare",
+		"set_name": "Dominaria",
+		"toughness": "6",
+		"type_line": "Legendary Creature — Djinn"
 	},
 	"zar_ojanen_scion_of_efrava": {
 		"mana_cost": "{3}{G}{W}",

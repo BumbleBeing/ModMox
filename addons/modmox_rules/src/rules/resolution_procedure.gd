@@ -35,9 +35,10 @@ var _is_paying_for_yes: bool = false
 ## The effect begun in place of the current one once its X was paid, the one a
 ## MayPayXEffect wraps, or null.
 var _effect_in_place: MmEffect = null
-## The choice a cost said yes to asks before it is paid, such as which card to exile, and
-## that cost, or null while none is being chosen.
-var _cost_choice: ChooseObjectDecision = null
+## The choice a cost said yes to asks before it is paid, such as which card to exile or which
+## artifact to sacrifice, and that cost, or null while none is being chosen. It is a
+## ChooseObjectDecision or a ChoosePermanentsDecision.
+var _cost_choice: MmPendingDecision = null
 var _cost_being_chosen: MmCost = null
 
 
@@ -179,6 +180,7 @@ func next_decision() -> MmPendingDecision:
 		_state.perform_resumably(batch)
 		if effect.remembers_moved_cards():
 			_remember_moved(batch)
+		_remember_sacrificed(batch)
 	return null
 
 
@@ -194,14 +196,27 @@ func _remember_moved(batch: Array[MmEvent]) -> void:
 	_context = _context.with_moved(ids)
 
 
+## Remembers the permanents [param batch] sacrificed, by the IDs they had on the
+## battlefield, as "that creature" for the effects after it (engine ADR 0098).
+func _remember_sacrificed(batch: Array[MmEvent]) -> void:
+	var ids: Array[int] = []
+	for event: MmEvent in batch:
+		var move: ZoneChangeEvent = event as ZoneChangeEvent
+		if move != null and move.reason == ZoneChangeEvent.Reason.SACRIFICE and move.new_object_id != 0:
+			ids.append(move.object_id)
+	if not ids.is_empty():
+		_context = _context.with_sacrificed(ids)
+
+
 ## Applies an already-validated answer to a choice this procedure asked.
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	var creature_type: ChooseCreatureTypeDecision = decision as ChooseCreatureTypeDecision
 	if creature_type != null:
 		_chosen_creature_type = creature_type.creature_types[answer as int]
 		return
+	var picked: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
 	if decision is ChooseCardsInLibraryDecision or decision is ChooseCardsToDiscardDecision \
-			or decision is ChooseLookedAtCardsDecision:
+			or decision is ChooseLookedAtCardsDecision or (picked != null and picked.is_for_effect):
 		_begin_answer = (answer as Array).duplicate()
 		_has_begin_answer = true
 		return
@@ -221,10 +236,12 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 			# then happens. A cost that asks a choice, such as which card to exile, asks it
 			# first, for this ability (engine ADR 0088), and is paid once it is answered.
 			var source: MmGameObject = _state.object(_context.source_object_id)
-			var choosing: ChooseObjectDecision = asked.resolution_cost.choice(_state, source,
-				asked.player_id) as ChooseObjectDecision
+			var choosing: MmPendingDecision = asked.resolution_cost.choice(_state, source, asked.player_id)
 			if choosing != null:
-				choosing.stack_object_id = _object_id
+				if choosing is ChoosePermanentsDecision:
+					(choosing as ChoosePermanentsDecision).stack_object_id = _object_id
+				else:
+					(choosing as ChooseObjectDecision).stack_object_id = _object_id
 				_cost_choice = choosing
 				_cost_being_chosen = asked.resolution_cost
 				return
@@ -245,17 +262,23 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	if decision is PayManaDecision:
 		_payment.apply_answer(_state, decision as PayManaDecision, answer as int)
 		return
-	var choice: ChooseObjectDecision = decision as ChooseObjectDecision
-	assert(choice != null, "A resolution cannot answer %s." % decision.describe())
-	if choice.purpose == ChooseObjectDecision.Purpose.EXILE_FROM_GRAVEYARD:
-		# Engine ADR 0088: the card chosen pays the cost said yes to, and "if you do" holds.
-		var chosen: Array[int] = [choice.candidates[answer as int].id]
-		_cost_being_chosen.pay(_state, _state.object(_context.source_object_id), choice.player_id, chosen)
+	if _cost_choice != null:  # Asked before anything else while it is set.
+		# Engine ADR 0088: what is chosen pays the cost said yes to, and "if you do" holds.
+		var chosen: Array[int] = []
+		if decision is ChoosePermanentsDecision:
+			for id: Variant in answer as Array:
+				chosen.append(id as int)
+			chosen.sort()
+		else:
+			chosen.append((decision as ChooseObjectDecision).candidates[answer as int].id)
+		_cost_being_chosen.pay(_state, _state.object(_context.source_object_id), decision.player_id, chosen)
 		_cost_choice = null
 		_cost_being_chosen = null
 		_begin_answer = ChooseYesOrNoDecision.Choice.YES
 		_has_begin_answer = true
 		return
+	var choice: ChooseObjectDecision = decision as ChooseObjectDecision
+	assert(choice != null, "A resolution cannot answer %s." % decision.describe())
 	_context = _context.with_choice(choice.choice_index, choice.candidates[answer as int])
 
 

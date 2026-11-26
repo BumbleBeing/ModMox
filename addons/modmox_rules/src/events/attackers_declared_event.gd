@@ -16,6 +16,7 @@ func _init(attacking_id: int, attacking_ids: Array[int], defending_id: int) -> v
 
 func apply(state: MmGameState) -> void:
 	state.combat.declare_attackers(attacker_ids, defending_player_id)
+	state.player(attacking_player_id).record_attack()  # Engine ADR 0095's addendum.
 
 
 func describe() -> String:

@@ -64,6 +64,8 @@ static func _actions(state: MmGameState, kept_ids: Array[int]) -> Array[MmEvent]
 			actions.append(UnattachedEvent.new(aura.id))
 		else:
 			actions.append(_to_graveyard(state, aura, ZoneChangeEvent.Reason.UNATTACHED_AURA))
+	for role: MmGameObject in _roles_beyond_the_newest(state):
+		actions.append(_to_graveyard(state, role, ZoneChangeEvent.Reason.ROLE_RULE))
 	for token: MmGameObject in _tokens_off_the_battlefield(state):
 		actions.append(TokenCeasedEvent.new(token))
 	for copy: MmGameObject in _copies_off_the_stack(state):
@@ -203,6 +205,30 @@ static func _auras_attached_illegally(state: MmGameState) -> Array[MmGameObject]
 		if _is_aura(state, permanent) and (permanent.attached_to_object_id == 0
 				or not AttachmentRules.can_be_attached(state, permanent, state.object(permanent.attached_to_object_id))):
 			found.append(permanent)
+	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return found
+
+
+## CR 303.7: each Role attached to a permanent that one player controls along with a newer
+## Role attached to it, unless _auras_attached_illegally() finds it already. In ID order.
+## The newest is the one with the highest ID, the latest to be created.
+# Later: a Role's timestamp (CR 613.7e), once something can attach a Role that is already on
+# the battlefield to another permanent.
+static func _roles_beyond_the_newest(state: MmGameState) -> Array[MmGameObject]:
+	var newest: Dictionary[String, int] = {}
+	var roles: Array[MmGameObject] = []
+	var illegal: Array[MmGameObject] = _auras_attached_illegally(state)
+	for permanent: MmGameObject in state.battlefield.objects():
+		if permanent.attached_to_object_id == 0 or illegal.has(permanent) \
+				or not state.characteristics_of(permanent).subtypes.has(AttachmentRules.ROLE):
+			continue
+		roles.append(permanent)
+		var key: String = "%d:%d" % [permanent.attached_to_object_id, permanent.controller_id]
+		newest[key] = maxi(newest.get(key, 0), permanent.id)
+	var found: Array[MmGameObject] = []
+	for role: MmGameObject in roles:
+		if role.id != newest["%d:%d" % [role.attached_to_object_id, role.controller_id]]:
+			found.append(role)
 	found.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
 	return found
 

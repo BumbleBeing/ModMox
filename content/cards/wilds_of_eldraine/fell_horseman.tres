@@ -1,0 +1,97 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_sh2wx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_daigh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_m00b6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_on_bottom_of_library_effect.gd" id="3_paoel"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_x0ms1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/triggering_card_selection.gd" id="4_ipisr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_g6w7f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_o26un"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_15aod"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_c3dqm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_rh0nw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_hand_effect.gd" id="10_e7w4g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="11_pp4an"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="12_6usep"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="13_sey18"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="14_i1sds"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/owned_by_filter.gd" id="15_ujrxc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="16_8334c"]
+
+[sub_resource type="Resource" id="Resource_3dsvf"]
+script = ExtResource("4_ipisr")
+
+[sub_resource type="Resource" id="Resource_dnb65"]
+script = ExtResource("3_paoel")
+selection = SubResource("Resource_3dsvf")
+
+[sub_resource type="Resource" id="Resource_08n1r"]
+script = ExtResource("8_c3dqm")
+
+[sub_resource type="Resource" id="Resource_23x7r"]
+script = ExtResource("9_rh0nw")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_08n1r")
+
+[sub_resource type="Resource" id="Resource_be70r"]
+script = ExtResource("6_o26un")
+trigger = SubResource("Resource_23x7r")
+effects = Array[ExtResource("2_m00b6")]([SubResource("Resource_dnb65")])
+
+[sub_resource type="Resource" id="Resource_g1w3r"]
+script = ExtResource("11_pp4an")
+
+[sub_resource type="Resource" id="Resource_11cbq"]
+script = ExtResource("10_e7w4g")
+selection = SubResource("Resource_g1w3r")
+
+[sub_resource type="Resource" id="Resource_mulne"]
+script = ExtResource("14_i1sds")
+
+[sub_resource type="Resource" id="Resource_5pdpc"]
+script = ExtResource("15_ujrxc")
+
+[sub_resource type="Resource" id="Resource_gnijl"]
+script = ExtResource("16_8334c")
+filters = Array[ExtResource("13_sey18")]([SubResource("Resource_mulne"), SubResource("Resource_5pdpc")])
+
+[sub_resource type="Resource" id="Resource_8ndd3"]
+script = ExtResource("7_15aod")
+filter = SubResource("Resource_gnijl")
+among = 2
+
+[sub_resource type="Resource" id="Resource_54uam"]
+script = ExtResource("12_6usep")
+targets = Array[ExtResource("7_15aod")]([SubResource("Resource_8ndd3")])
+effects = Array[ExtResource("2_m00b6")]([SubResource("Resource_11cbq")])
+
+[sub_resource type="Resource" id="Resource_ruu3x"]
+script = ExtResource("2_daigh")
+generic = 1
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_34wd1"]
+script = ExtResource("3_x0ms1")
+name = "Deathly Ride"
+card_types = Array[int]([5])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_ruu3x")
+abilities = Array[ExtResource("1_sh2wx")]([SubResource("Resource_54uam")])
+
+[sub_resource type="Resource" id="Resource_exv5s"]
+script = ExtResource("2_daigh")
+generic = 3
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_x0ms1")
+name = "Fell Horseman"
+card_types = Array[int]([1])
+subtypes = Array[String](["Zombie", "Knight"])
+mana_cost = SubResource("Resource_exv5s")
+power = 3
+toughness = 3
+abilities = Array[ExtResource("1_sh2wx")]([SubResource("Resource_be70r")])
+adventure = SubResource("Resource_34wd1")

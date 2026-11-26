@@ -6,6 +6,27 @@ const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const Step := MmTurn.Step
 
 
+func test_a_player_filter_with_whose_matches_you_or_an_opponent() -> void:
+	# "Target opponent", as Mardu Skullhunter says.
+	var engine: MmEngine = _engine_with_one_forest()
+	var state: MmGameState = engine.game_state()
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+	var hero: MmReference = MmReference.to_player(engine.hero().id)
+	var villain: MmReference = MmReference.to_player(engine.villain().id)
+	var forest: MmReference = MmReference.to_object(state.battlefield.object_ids()[0])
+	var opponent: IsPlayerFilter = IsPlayerFilter.new()
+	opponent.whose = MmTrigger.Whose.OPPONENT
+	var you: IsPlayerFilter = IsPlayerFilter.new()
+	you.whose = MmTrigger.Whose.YOU
+
+	assert_true(opponent.matches(state, villain, context))
+	assert_false(opponent.matches(state, hero, context))
+	assert_false(opponent.matches(state, forest, context))
+	assert_true(you.matches(state, hero, context))
+	assert_false(you.matches(state, villain, context))
+	assert_true(IsPlayerFilter.new().matches(state, villain, context), "Any player, unless told whose.")
+
+
 func test_all_of_any_of_and_not_combine_conditions() -> void:
 	var engine: MmEngine = _engine_with_one_forest()
 	var state: MmGameState = engine.game_state()

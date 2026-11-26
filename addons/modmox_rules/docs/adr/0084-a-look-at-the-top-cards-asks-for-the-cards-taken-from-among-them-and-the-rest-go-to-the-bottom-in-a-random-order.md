@@ -15,3 +15,13 @@ Militia Bugler says "Vigilance" and "When this creature enters, look at the top 
 The Hero answers it in the Look window (game ADR 0085).
 
 Left out until a card needs them (ADR 0001): the rest put on the bottom "in any order" or into the graveyard, more than one taken ("up to two"), the cards taken going anywhere but the hand, a look at another player's library, and the owner knowing which cards lie at the bottom of their library.
+
+## Addendum: the rest on the bottom in any order
+
+Faerie Mechanist says "When this creature enters, look at the top three cards of your library. You may reveal an artifact card from among them and put it into your hand. Put the rest on the bottom of your library in any order." **`LookAtTopCardsEffect.is_rest_in_any_order`** says so; off, as Militia Bugler's is, nothing changes. On, the `ChooseLookedAtCardsDecision` has `orders_rest` set, and its answer is two lists, `[taken, rest]`: the cards taken, as before, then every other card looked at, each exactly once, in the order they go to the bottom, the last the deepest, as a scry's bottom list is (ADR 0087). `answer_taking()` makes the answer that takes some cards and leaves the rest in the order looked at, for whatever answers without choosing an order. The rest go with a `LibraryBottomOrderedEvent` instead of a `LibraryBottomRandomizedEvent`, so they become Known Cards to their owner, who put them there.
+
+The answer's shape depends on the decision, as a surveil's always has two lists: one shape for both cards would have made every Militia Bugler answer change.
+
+**The AI puts the rest on the bottom in the order it looked at them**, CHEAP and FULL: what lies under a library of thirty cards hardly matters in an encounter, and no simulation sees it. Autoplay does the same.
+
+`AbilityText` says "Put the rest on the bottom of your library in any order". The Hero orders the rest in the Look window (game ADR 0085's addendum).

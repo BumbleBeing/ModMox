@@ -15,7 +15,9 @@ extends RefCounted
 ##
 ## A card in the Hero's graveyard that can be cast with flashback is clicked in the
 ## Graveyard window, and its pile glows green (game ADR 0049); so is the top card of the
-## Hero's library, cast with a permission, in the Library window (game ADR 0055).
+## Hero's library, cast with a permission, in the Library window (game ADR 0055). A card
+## whose ability works in the graveyard is clicked there too, and its pile glows purple
+## (engine ADR 0094).
 ##
 ## A card in hand that can be cast or played, or has an ability used from there, glows too,
 ## but one click on it answers nothing (A371): what it offers is kept apart, in
@@ -43,6 +45,10 @@ const MOST_COLORS: int = 2
 ## What the Option Menu row of one color of mana of any color reads, with that color's
 ## symbol: "Add {W}" (game ADR 0073).
 const COLOR_ROW: String = "Add {%s}"
+## The Option Menu row and the Info Panel text of tapping an artifact for improvise (engine
+## ADR 0099), as the user chose them.
+const IMPROVISE_ROW: String = "Improvise"
+const IMPROVISE_TEXT: String = "Improvise: Tap this artifact to pay {1}."
 
 ## Player ID → the kind of Glow that player's panel has.
 var players: Dictionary[int, Kind] = {}
@@ -92,7 +98,9 @@ static func of(decision: MmPendingDecision, view: MmPlayerView) -> DecisionClick
 		var pool: Array = view.mana_pools.get(view.viewer_id, [])
 		for index: int in actions.size():
 			var spend: PayWithManaAction = actions[index] as PayWithManaAction
-			if spend == null:
+			if actions[index] is ImproviseAction:
+				clicks._add_improvise(index, actions[index] as ImproviseAction)
+			elif spend == null:
 				clicks._add_ability(index, actions[index] as ActivateAbilityAction, view,
 					decision as PayManaDecision)
 			elif spend.unit_index < pool.size():
@@ -208,6 +216,8 @@ static func object_of(action: MmAction) -> int:
 		return (action as CastSpellAction).object_id
 	if action is ActivateAbilityAction:
 		return (action as ActivateAbilityAction).object_id
+	if action is ImproviseAction:
+		return (action as ImproviseAction).object_id
 	return -1
 
 
@@ -297,8 +307,9 @@ func clickable_ids() -> Array[int]:
 
 
 ## An ability that [param answer] activates: a permanent's is clicked on it, an Emblem's or
-## a Potion's on its entry in its window, and one of a card in hand is offered when the card
-## is let go. One color of mana of any color reads "Add {W}" and, while the Hero pays
+## a Potion's on its entry in its window, one of a card in hand is offered when the card is
+## let go, and one of a card in the graveyard is clicked in the Graveyard window (engine ADR
+## 0094). One color of mana of any color reads "Add {W}" and, while the Hero pays
 ## [param paying] by hand, glows when that color pays something still owed (game ADR 0073).
 func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView,
 		paying: PayManaDecision = null) -> void:
@@ -310,7 +321,10 @@ func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView
 	var emblem: MmObjectView = _find(view.command, action.object_id)
 	var potion: MmObjectView = _find(view.potions, action.object_id)
 	var held: MmObjectView = emblem if emblem != null else potion
+	var dead: MmObjectView = _find(view.graveyards.get(view.viewer_id, []), action.object_id)
 	var seen: MmObjectView = permanent if permanent != null else (in_hand if in_hand != null else held)
+	if seen == null:
+		seen = dead
 	if seen != null and action.ability_index < seen.abilities.size() and seen.abilities[action.ability_index] is ActivatedAbility:
 		var ability: ActivatedAbility = seen.abilities[action.ability_index]
 		is_mana = ability.is_mana_ability()
@@ -332,6 +346,18 @@ func _add_ability(answer: int, action: ActivateAbilityAction, view: MmPlayerView
 		_append(_options, action.object_id, option)
 	elif in_hand != null:
 		_append(_hand_abilities, action.object_id, option)
+	elif dead != null:
+		_add_to_pile(option, action.object_id, MmZone.Kind.GRAVEYARD, Kind.ABILITY)
+
+
+## Tapping an artifact for improvise (engine ADR 0099), which [param answer] does: clicked on
+## the artifact, which glows blue as a mana source does, and a row of its own beside any mana
+## ability it has.
+func _add_improvise(answer: int, action: ImproviseAction) -> void:
+	var option: ClickOption = ClickOption.new(answer, IMPROVISE_TEXT, true)
+	option.row_text = IMPROVISE_ROW
+	_add_kind(action.object_id, Kind.MANA)
+	_append(_options, action.object_id, option)
 
 
 ## Casting a card or playing it as a land, which [param answer] does. A card in the
@@ -349,9 +375,11 @@ func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
 		_add_pile_play(answer, object_id, "Cast %s from the top of your library" % card_name, MmZone.Kind.LIBRARY)
 		return
 	var exiled: MmObjectView = _find(view.exiles.get(view.viewer_id, []), object_id)
-	if exiled != null and exiled.is_on_adventure:
-		# Engine ADR 0078, game ADR 0079: cast from the Exile window, as flashback is.
-		_add_pile_play(answer, object_id, "Cast %s from exile" % card_name, MmZone.Kind.EXILE)
+	if exiled != null and (exiled.is_on_adventure or exiled.playable_by_player_id == view.viewer_id):
+		# Engine ADR 0078, game ADR 0079: cast from the Exile window, as flashback is; and a
+		# card exiled to be played (engine ADR 0100), a land "Play Mountain from exile", in
+		# the user's words (game ADR 0101).
+		_add_pile_play(answer, object_id, "%s %s from exile" % [verb, card_name], MmZone.Kind.EXILE)
 		return
 	var cast: CastSpellAction = action as CastSpellAction
 	var in_hand: MmObjectView = _find(view.hand, object_id)
@@ -362,17 +390,28 @@ func _add_play(answer: int, action: MmAction, view: MmPlayerView) -> void:
 		# Nimbus Naiad", as "Cast Echo with flashback" reads.
 		_append(_hand_options, object_id, ClickOption.new(answer, "Cast %s with bestow" % card_name))
 		return
+	if cast != null and cast.is_for_alternative_cost:
+		# Engine ADR 0093, the user's words: "Cast Zahid, Djinn of the Lamp for its
+		# alternative cost", after "Cast Zahid, Djinn of the Lamp".
+		_append(_hand_options, object_id, ClickOption.new(answer, "Cast %s for its alternative cost" % card_name))
+		return
 	_append(_hand_options, object_id, ClickOption.new(answer, "%s %s" % [verb, card_name]))
 
 
 ## A card cast from the Hero's pile of [param zone_kind]: it is clicked in that pile's
 ## window, and the pile glows green.
 func _add_pile_play(answer: int, object_id: int, text: String, zone_kind: MmZone.Kind) -> void:
-	_append(_options, object_id, ClickOption.new(answer, text))
+	_add_to_pile(ClickOption.new(answer, text), object_id, zone_kind, Kind.PLAY)
+
+
+## Offers [param option] on [param object_id], a card of the Hero's in the pile of
+## [param zone_kind], which then glows [param kind] unless something before gave it a Glow.
+func _add_to_pile(option: ClickOption, object_id: int, zone_kind: MmZone.Kind, kind: Kind) -> void:
+	_append(_options, object_id, option)
 	var key: String = EncounterLayout.pile_key(zone_kind, true)
 	if not _piles.has(key):
 		_piles.append(key)
-		_pile_kinds[key] = Kind.PLAY
+		_pile_kinds[key] = kind
 		_answers_elsewhere += 1  # Passing, at least: the window waits for a click on the pile.
 
 

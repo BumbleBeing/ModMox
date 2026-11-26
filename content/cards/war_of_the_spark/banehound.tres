@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_si142"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_iaj78"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/lifelink_ability.gd" id="2_pdudm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_pdudm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/haste_ability.gd" id="3_y7cih"]
+
+[sub_resource type="Resource" id="Resource_8cb4x"]
+script = ExtResource("2_pdudm")
+
+[sub_resource type="Resource" id="Resource_rheed"]
+script = ExtResource("3_y7cih")
+
+[sub_resource type="Resource" id="Resource_y7cih"]
+script = ExtResource("2_iaj78")
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_pdudm")
+name = "Banehound"
+card_types = Array[int]([1])
+subtypes = Array[String](["Nightmare", "Dog"])
+mana_cost = SubResource("Resource_y7cih")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_si142")]([SubResource("Resource_8cb4x"), SubResource("Resource_rheed")])

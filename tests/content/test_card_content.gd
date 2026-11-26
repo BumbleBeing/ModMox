@@ -1758,6 +1758,31 @@ func test_jewel_thief_entering_makes_its_controller_a_treasure_whose_white_pays_
 	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int], "Sacrificed to pay.")
 
 
+func test_replication_specialist_pays_to_copy_the_nontoken_artifact_that_entered() -> void:
+	# CR 603.5, 707.2: "you may pay {1}{U}. If you do, create a token that's a copy of that
+	# artifact." The copy is a token, so it triggers nothing more.
+	var mer: MmCardDefinition = Scenario.creature("Mer", 1, 1, [Scenario.tap_for_mana(MmMana.Type.BLUE, 1)])
+	var hero_cards: Array[MmCardDefinition] = [Scenario.free_copy(_card("kamigawa_neon_dynasty", "replication_specialist")),
+		mer, mer.duplicate_deep()]
+	var held: Array[MmCardDefinition] = [Scenario.artifact("Lamp", [])]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero_cards, no_cards, held),
+		hero_cards, no_cards, held, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Lamp")), "")
+	assert_eq(Scenario.pass_to_pay_or_not(engine), "")
+	assert_eq(engine.submit(ChooseYesOrNoDecision.Choice.YES), "")
+	assert_eq(Scenario.auto_pay(engine), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var made: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(made.size(), 1)
+	assert_eq(Scenario.now(engine, made[0]).name, "Lamp")
+	assert_eq(Scenario.permanents_named(engine, engine.hero().id, "Lamp").size(), 2)
+	assert_false(engine.pending_decision() is ChooseYesOrNoDecision, "A token entering is no nontoken artifact.")
+
+
 func test_oltec_matterweaver_makes_a_gnome_then_copies_a_treasure() -> void:
 	# Engine ADR 0046: with no artifact token to copy, the copy mode can't be chosen and the
 	# Gnome is made without asking. Then the Gnome and the Treasure may each be copied (CR 707.2).
@@ -1900,6 +1925,236 @@ func test_militia_bugler_takes_a_small_creature_from_the_top_four_and_puts_the_r
 	assert_eq(bottom, rest)
 	var bugler_now: int = Scenario.permanent_named(engine, engine.hero().id, bugler.name)
 	assert_true(Scenario.now(engine, bugler_now).has_ability(VigilanceAbility))
+
+
+func test_makeshift_mauler_is_cast_only_by_exiling_a_creature_card_from_the_graveyard() -> void:
+	# Engine ADR 0086: an additional cost that asks a choice, here ExileFromGraveyardCost's.
+	var mauler: MmCardDefinition = Scenario.free_copy(_card("innistrad", "makeshift_mauler"))
+	var husk: MmCardDefinition = Scenario.creature("Husk", 0, 0)
+	var gift: MmCardDefinition = Scenario.instant("Gift", Scenario.mana_cost(0), [], [Scenario.gain_life(1, Scenario.you())])
+	var hand: Array[MmCardDefinition] = [mauler, gift, husk]
+	var none: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(none, none, hand), none, none, hand, none, 3,
+		MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var mauler_in_hand: int = Scenario.card_in_hand(engine, engine.hero(), mauler.name)
+	assert_eq(Scenario.cast_and_resolve(engine, "Gift"), "")
+	assert_eq(Scenario.cast_index(engine.pending_decision() as PriorityDecision, mauler_in_hand), -1,
+		"Gift is no creature card, so the cost cannot be paid.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Husk"), "")
+	assert_ne(Scenario.card_in_graveyard(engine, engine.hero(), "Husk"), -1, "The 0/0 Husk died as it entered.")
+
+	assert_eq(Scenario.cast(engine, mauler_in_hand), "")
+
+	var choice: ChooseObjectDecision = engine.pending_decision() as ChooseObjectDecision
+	assert_not_null(choice, "The cost asks which card to exile.")
+	assert_eq(choice.purpose, ChooseObjectDecision.Purpose.EXILE_FROM_GRAVEYARD)
+	assert_eq(choice.candidates.size(), 1, "Only Husk: Gift is no creature card.")
+	assert_eq(engine.submit(0), "")
+	assert_ne(Scenario.card_in_exile(engine, engine.hero(), "Husk"), -1)
+	assert_ne(Scenario.card_in_graveyard(engine, engine.hero(), "Gift"), -1)
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_ne(Scenario.permanent_named(engine, engine.hero().id, mauler.name), -1)
+
+
+func test_headless_rider_makes_a_zombie_when_it_or_another_nontoken_zombie_dies() -> void:
+	# "Whenever this creature or another nontoken Zombie you control dies": the Zombie token
+	# it makes is a token, so its death makes nothing.
+	var hero_cards: Array[MmCardDefinition] = [Scenario.free_copy(_card("innistrad_crimson_vow", "headless_rider")),
+		Scenario.free_copy(_alpha("scathe_zombies"))]
+	var held: Array[MmCardDefinition] = [Scenario.free_destroy("Doom"), Scenario.free_destroy("Ruin"), Scenario.free_destroy("Bane")]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero_cards, no_cards, held),
+		hero_cards, no_cards, held, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero_id: int = engine.hero().id
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Doom",
+		[MmReference.to_object(Scenario.permanent_named(engine, hero_id, "Scathe Zombies"))]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	var made: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(made.size(), 1, "Scathe Zombies is a nontoken Zombie.")
+	assert_eq(Scenario.now(engine, made[0]).name, "Zombie Token")
+	assert_eq(Scenario.pt(engine, made[0]), [2, 2])
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Ruin", [MmReference.to_object(made[0])]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.tokens_on_battlefield(engine).size(), 0, "A Zombie token dying makes nothing.")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Bane",
+		[MmReference.to_object(Scenario.permanent_named(engine, hero_id, "Headless Rider"))]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.tokens_on_battlefield(engine).size(), 1, "The Rider dying makes one too.")
+
+
+func test_lilianas_devotee_pays_for_a_zombie_at_the_end_step_only_after_a_creature_died() -> void:
+	# An intervening "if" (CR 603.4): with no death this turn it does not trigger at all.
+	var bat: MmCardDefinition = Scenario.creature("Bat", 0, 1, [Scenario.tap_for_mana(MmMana.Type.BLACK, 2)])
+	var hero_cards: Array[MmCardDefinition] = [bat, Scenario.free_copy(_card("core_set_2021", "lilianas_devotee")),
+		Scenario.free_copy(_alpha("scathe_zombies"))]
+	var held: Array[MmCardDefinition] = [Scenario.free_destroy("Doom")]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero_cards, no_cards, held),
+		hero_cards, no_cards, held, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero_id: int = engine.hero().id
+	var zombies: int = Scenario.permanent_named(engine, hero_id, "Scathe Zombies")
+	assert_eq(Scenario.pt(engine, zombies), [3, 2], "Zombies you control get +1/+0.")
+	assert_eq(Scenario.pt(engine, Scenario.permanent_named(engine, hero_id, "Liliana's Devotee")), [2, 3], "A Human.")
+	assert_eq(_triggers_of(engine, "Liliana's Devotee"), 0, "Nothing died on Game Turn 1.")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Doom", [MmReference.to_object(zombies)]), "")
+	assert_eq(Scenario.pass_to_pay_or_not(engine), "")
+	assert_eq(engine.game_state().step, MmTurn.Step.END)
+	assert_eq(engine.submit(ChooseYesOrNoDecision.Choice.YES), "")
+	assert_eq(Scenario.auto_pay(engine), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var made: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(made.size(), 1)
+	assert_eq(Scenario.pt(engine, made[0]), [3, 2], "A 2/2 Zombie, pumped by the Devotee.")
+
+
+func test_murderous_rider_goes_to_the_bottom_of_its_owners_library_when_it_dies() -> void:
+	var hero_cards: Array[MmCardDefinition] = [Scenario.free_copy(_card("throne_of_eldraine", "murderous_rider"))]
+	var held: Array[MmCardDefinition] = [Scenario.free_destroy("Doom")]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero_cards, no_cards, held),
+		hero_cards, no_cards, held, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero: MmPlayer = engine.hero()
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Doom",
+		[MmReference.to_object(Scenario.permanent_named(engine, hero.id, "Murderous Rider"))]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.card_in_graveyard(engine, hero, "Murderous Rider"), -1)
+	var library: Array[String] = Scenario.names(engine, hero.library)
+	assert_eq(library[library.size() - 1], "Murderous Rider", "It is the bottom card.")
+
+
+func test_agent_of_the_fates_makes_the_opponent_sacrifice_when_a_spell_of_yours_targets_it() -> void:
+	# Heroic, then "each opponent sacrifices a creature of their choice" (CR 701.21a). A
+	# spell aimed at the opponent's creature is no spell that targets this creature.
+	var hero_cards: Array[MmCardDefinition] = [Scenario.free_copy(_card("theros", "agent_of_the_fates"))]
+	var villain_cards: Array[MmCardDefinition] = [Scenario.creature("Bear", 2, 2)]
+	var held: Array[MmCardDefinition] = [_boost("Boost"), _boost("Lift")]
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero_cards, villain_cards, held),
+		hero_cards, villain_cards, held, [] as Array[MmCardDefinition], 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var bear: int = Scenario.permanent_named(engine, engine.villain().id, "Bear")
+	assert_true(Scenario.now(engine, Scenario.permanent_named(engine, engine.hero().id, "Agent of the Fates"))
+		.has_ability(DeathtouchAbility))
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Lift", [MmReference.to_object(bear)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(Scenario.permanent_named(engine, engine.villain().id, "Bear"), bear, "Lift targeted the Bear.")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Boost",
+		[MmReference.to_object(Scenario.permanent_named(engine, engine.hero().id, "Agent of the Fates"))]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_ne(Scenario.card_in_graveyard(engine, engine.villain(), "Bear"), -1, "Its only creature, sacrificed.")
+
+
+func test_monoist_circuit_feeder_counts_its_artifacts_as_it_resolves_and_lowers_toughness_by_them() -> void:
+	# "+X/+0 and -0/-X, where X is the number of artifacts you control", itself among them:
+	# 0 minus X is a negative change (DifferenceValue), fixed as it resolves (CR 611.2c).
+	var hero_cards: Array[MmCardDefinition] = [Scenario.creature("Bear", 2, 2),
+		Scenario.artifact("Trinket", []), Scenario.artifact("Bauble", [])]
+	var villain_cards: Array[MmCardDefinition] = [Scenario.creature("Wall", 0, 5)]
+	var held: Array[MmCardDefinition] = [Scenario.free_copy(_card("edge_of_eternities", "monoist_circuit_feeder"))]
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero_cards, villain_cards, held),
+		hero_cards, villain_cards, held, [] as Array[MmCardDefinition], 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+	var wall: int = Scenario.permanent_named(engine, engine.villain().id, "Wall")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Monoist Circuit-Feeder"), "")
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(bear)), "")
+	assert_eq(Scenario.choose_target(engine, MmReference.to_object(wall)), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.pt(engine, bear), [5, 2], "Three artifacts: the Feeder and the two others.")
+	assert_eq(Scenario.pt(engine, wall), [0, 2])
+	Scenario.play_until_game_turn(engine, 4)
+	assert_eq(Scenario.pt(engine, wall), [0, 5], "Until end of turn only.")
+
+
+func test_sly_requisitioner_makes_a_servo_when_a_nontoken_artifact_dies_and_none_for_a_servo() -> void:
+	var hero_cards: Array[MmCardDefinition] = [Scenario.free_copy(_card("aether_revolt", "sly_requisitioner")),
+		Scenario.artifact("Trinket", [])]
+	var held: Array[MmCardDefinition] = [_shatter("Shatter"), _shatter("Smash")]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero_cards, no_cards, held),
+		hero_cards, no_cards, held, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var trinket: int = Scenario.permanent_named(engine, engine.hero().id, "Trinket")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Shatter", [MmReference.to_object(trinket)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var servos: Array[int] = Scenario.permanents_named(engine, engine.hero().id, "Servo Token")
+	assert_eq(servos.size(), 1)
+	assert_eq(Scenario.pt(engine, servos[0]), [1, 1])
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Smash", [MmReference.to_object(servos[0])]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.permanents_named(engine, engine.hero().id, "Servo Token").size(), 0, "A token is no nontoken artifact.")
+
+
+## An instant costing {0}: "Destroy target artifact."
+func _shatter(card_name: String) -> MmCardDefinition:
+	return Scenario.instant(card_name, Scenario.mana_cost(0), [Scenario.target(Scenario.of_type(MmCardTypes.CardType.ARTIFACT))],
+		[Scenario.destroy(Scenario.targeted(0))])
+
+
+func test_price_of_beauty_puts_a_wicked_role_on_a_creature_that_drains_one_as_it_goes() -> void:
+	# Conceited Witch's Adventure (engine ADR 0078), and the Wicked Role (CR 111.10, 303.7):
+	# a colorless Aura Role token, "Enchanted creature gets +1/+1" and "When this Aura is put
+	# into a graveyard, each opponent loses 1 life."
+	var witch: MmCardDefinition = Scenario.free_copy(_card("wilds_of_eldraine", "conceited_witch"))
+	witch.adventure.mana_cost = Scenario.mana_cost(0)
+	var hero_cards: Array[MmCardDefinition] = [Scenario.creature("Bear", 2, 2)]
+	var held: Array[MmCardDefinition] = [witch, Scenario.free_destroy("Doom")]
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(hero_cards, [] as Array[MmCardDefinition], held),
+		hero_cards, [] as Array[MmCardDefinition], held, [] as Array[MmCardDefinition], 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+
+	assert_eq(Scenario.cast_adventure(engine, Scenario.card_in_hand(engine, engine.hero(), witch.name),
+		MmReference.to_object(bear)), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var role: int = Scenario.tokens_on_battlefield(engine)[0]
+	var printed: MmCharacteristics = engine.game_state().characteristics_of(engine.game_state().object(role))
+	assert_eq(printed.name, "Wicked Role", "CR 111.10: a predefined token, named by its name.")
+	assert_eq(printed.colors, [] as Array[MmCardTypes.CardColor])
+	assert_eq(printed.subtypes, ["Aura", "Role"] as Array[String])
+	assert_eq(engine.game_state().object(role).attached_to_object_id, bear)
+	assert_eq(Scenario.pt(engine, bear), [3, 3])
+	assert_true(engine.game_state().exile.objects().any(func(card: MmGameObject) -> bool: return card.is_on_adventure))
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Doom", [MmReference.to_object(bear)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(engine.villain().life, 19, "The Role went to the graveyard with its creature.")
+
+
+## An instant costing {0}: "Target creature gets +1/+1 until end of turn."
+func _boost(card_name: String) -> MmCardDefinition:
+	return Scenario.instant(card_name, Scenario.mana_cost(0), [Scenario.target(Scenario.of_type(MmCardTypes.CardType.CREATURE))],
+		[Scenario.until_end_of_turn(Scenario.modify_pt(1, 1, Scenario.targeted(0)))])
+
+
+## How many times an ability of the permanent named [param source_name] has triggered.
+func _triggers_of(engine: MmEngine, source_name: String) -> int:
+	var triggers: int = 0
+	for event: MmEvent in Scenario.events_of(engine, AbilityTriggeredEvent):
+		if (event as AbilityTriggeredEvent).pending.source_name == source_name:
+			triggers += 1
+	return triggers
 
 
 func test_each_deck_is_forty_cards_with_seventeen_lands() -> void:

@@ -1,0 +1,90 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_8df62"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_ce01b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_uvpkn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_2dhqd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="3_sjdsj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_xs0x5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="5_ashab"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="6_e46dg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="7_gtg0l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="8_xlhjo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="9_jd3pr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="10_22j6l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="11_q15iw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="12_ln4gv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="13_wluil"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="14_8uk58"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="15_5cjik"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="16_o08eu"]
+
+[sub_resource type="Resource" id="Resource_k2kvk"]
+script = ExtResource("4_xs0x5")
+
+[sub_resource type="Resource" id="Resource_obmqb"]
+script = ExtResource("5_ashab")
+whose = 2
+
+[sub_resource type="Resource" id="Resource_6162j"]
+script = ExtResource("6_e46dg")
+filters = Array[ExtResource("3_sjdsj")]([SubResource("Resource_k2kvk"), SubResource("Resource_obmqb")])
+
+[sub_resource type="Resource" id="Resource_r66kc"]
+script = ExtResource("7_gtg0l")
+filter = SubResource("Resource_6162j")
+
+[sub_resource type="Resource" id="Resource_rcsdc"]
+script = ExtResource("8_xlhjo")
+value = -1
+
+[sub_resource type="Resource" id="Resource_ix2yt"]
+script = ExtResource("8_xlhjo")
+value = -1
+
+[sub_resource type="Resource" id="Resource_w74yt"]
+script = ExtResource("9_jd3pr")
+power = SubResource("Resource_rcsdc")
+toughness = SubResource("Resource_ix2yt")
+affected = SubResource("Resource_r66kc")
+
+[sub_resource type="Resource" id="Resource_50g28"]
+script = ExtResource("10_22j6l")
+continuous = SubResource("Resource_w74yt")
+
+[sub_resource type="Resource" id="Resource_ch358"]
+script = ExtResource("14_8uk58")
+
+[sub_resource type="Resource" id="Resource_3piyf"]
+script = ExtResource("4_xs0x5")
+card_type = 2
+
+[sub_resource type="Resource" id="Resource_8mcls"]
+script = ExtResource("15_5cjik")
+filters = Array[ExtResource("3_sjdsj")]([SubResource("Resource_ch358"), SubResource("Resource_3piyf")])
+
+[sub_resource type="Resource" id="Resource_tpann"]
+script = ExtResource("16_o08eu")
+filter = SubResource("Resource_8mcls")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_d1ocb"]
+script = ExtResource("12_ln4gv")
+trigger = SubResource("Resource_tpann")
+effects = Array[ExtResource("2_ce01b")]([SubResource("Resource_50g28")])
+
+[sub_resource type="Resource" id="Resource_mfjwi"]
+script = ExtResource("2_uvpkn")
+generic = 4
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_2dhqd")
+name = "Doomwake Giant"
+card_types = Array[int]([2, 1])
+subtypes = Array[String](["Giant"])
+mana_cost = SubResource("Resource_mfjwi")
+power = 4
+toughness = 6
+abilities = Array[ExtResource("1_8df62")]([SubResource("Resource_d1ocb")])
+rarity = 2

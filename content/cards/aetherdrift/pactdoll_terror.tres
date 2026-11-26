@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_ppmh8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_gwfc5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_qcnfu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_c416k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_xwpeu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_opponent_selection.gd" id="4_n35hd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/lose_life_effect.gd" id="5_h8r38"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="6_c46v3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/gain_life_effect.gd" id="7_gxxvn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_kqx0a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="9_xivpt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_4dsq7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_875df"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_e7ddw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="13_kbslu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="14_eb102"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="15_qmx4b"]
+
+[sub_resource type="Resource" id="Resource_deptk"]
+script = ExtResource("3_c416k")
+value = 1
+
+[sub_resource type="Resource" id="Resource_apdra"]
+script = ExtResource("4_n35hd")
+
+[sub_resource type="Resource" id="Resource_qb2k2"]
+script = ExtResource("5_h8r38")
+amount = SubResource("Resource_deptk")
+players = SubResource("Resource_apdra")
+
+[sub_resource type="Resource" id="Resource_up8oa"]
+script = ExtResource("3_c416k")
+value = 1
+
+[sub_resource type="Resource" id="Resource_3vcp4"]
+script = ExtResource("6_c46v3")
+
+[sub_resource type="Resource" id="Resource_0x7vq"]
+script = ExtResource("7_gxxvn")
+amount = SubResource("Resource_up8oa")
+players = SubResource("Resource_3vcp4")
+
+[sub_resource type="Resource" id="Resource_0uu3a"]
+script = ExtResource("12_e7ddw")
+
+[sub_resource type="Resource" id="Resource_gr1k4"]
+script = ExtResource("13_kbslu")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_q66ff"]
+script = ExtResource("14_eb102")
+filters = Array[ExtResource("11_875df")]([SubResource("Resource_0uu3a"), SubResource("Resource_gr1k4")])
+
+[sub_resource type="Resource" id="Resource_xbgpx"]
+script = ExtResource("15_qmx4b")
+filter = SubResource("Resource_q66ff")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_8nonn"]
+script = ExtResource("9_xivpt")
+trigger = SubResource("Resource_xbgpx")
+effects = Array[ExtResource("2_qcnfu")]([SubResource("Resource_qb2k2"), SubResource("Resource_0x7vq")])
+
+[sub_resource type="Resource" id="Resource_bdrpc"]
+script = ExtResource("2_gwfc5")
+generic = 3
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_xwpeu")
+name = "Pactdoll Terror"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Toy"])
+mana_cost = SubResource("Resource_bdrpc")
+power = 3
+toughness = 4
+abilities = Array[ExtResource("1_ppmh8")]([SubResource("Resource_8nonn")])

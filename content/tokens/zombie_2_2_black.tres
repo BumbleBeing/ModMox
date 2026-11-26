@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_8qju0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_4ha10"]
+
+[resource]
+script = ExtResource("2_4ha10")
+name = "Zombie Token"
+card_types = Array[int]([1])
+subtypes = Array[String](["Zombie"])
+color_indicator = Array[int]([2])
+power = 2
+toughness = 2

@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_6kibp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_n6pb3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_vlagf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_lieau"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_xnacv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_opponent_selection.gd" id="4_2njh1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/lose_life_effect.gd" id="5_4u0sr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_22f37"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_r7o35"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_q4r5r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/life_gained_trigger.gd" id="9_fkl3y"]
+
+[sub_resource type="Resource" id="Resource_n6pb3"]
+script = ExtResource("3_lieau")
+value = 1
+
+[sub_resource type="Resource" id="Resource_lieau"]
+script = ExtResource("4_2njh1")
+
+[sub_resource type="Resource" id="Resource_2njh1"]
+script = ExtResource("5_4u0sr")
+amount = SubResource("Resource_n6pb3")
+players = SubResource("Resource_lieau")
+
+[sub_resource type="Resource" id="Resource_4u0sr"]
+script = ExtResource("9_fkl3y")
+
+[sub_resource type="Resource" id="Resource_22f37"]
+script = ExtResource("7_r7o35")
+trigger = SubResource("Resource_4u0sr")
+effects = Array[ExtResource("2_n6pb3")]([SubResource("Resource_2njh1")])
+
+[sub_resource type="Resource" id="Resource_snle8"]
+script = ExtResource("2_vlagf")
+generic = 2
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_xnacv")
+name = "Marauding Blight-Priest"
+card_types = Array[int]([1])
+subtypes = Array[String](["Vampire", "Cleric"])
+mana_cost = SubResource("Resource_snle8")
+power = 3
+toughness = 2
+abilities = Array[ExtResource("1_6kibp")]([SubResource("Resource_22f37")])

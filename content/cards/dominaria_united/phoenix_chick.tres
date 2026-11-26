@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_g5vbl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_jf6fs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_txapx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_gqlqp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/haste_ability.gd" id="3_w1o5s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/cant_block_ability.gd" id="4_bp03l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_cmgx4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_dt63x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_battlefield_effect.gd" id="7_ndfl2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="8_djahl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_pay_effect.gd" id="10_4yes4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="11_fqq6f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="12_s40sv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="13_yavwi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/attackers_declared_trigger.gd" id="14_osci7"]
+
+[sub_resource type="Resource" id="Resource_nicbd"]
+script = ExtResource("2_jf6fs")
+
+[sub_resource type="Resource" id="Resource_f0wnl"]
+script = ExtResource("3_w1o5s")
+
+[sub_resource type="Resource" id="Resource_eqdvx"]
+script = ExtResource("4_bp03l")
+
+[sub_resource type="Resource" id="Resource_glv04"]
+script = ExtResource("6_dt63x")
+value = 1
+
+[sub_resource type="Resource" id="Resource_3v3np"]
+script = ExtResource("8_djahl")
+
+[sub_resource type="Resource" id="Resource_we6uk"]
+script = ExtResource("7_ndfl2")
+selection = SubResource("Resource_3v3np")
+counters = SubResource("Resource_glv04")
+tapped = true
+attacking = true
+
+[sub_resource type="Resource" id="Resource_h0qxb"]
+script = ExtResource("2_txapx")
+symbols = Array[int]([3, 3])
+
+[sub_resource type="Resource" id="Resource_77igl"]
+script = ExtResource("10_4yes4")
+mana_cost = SubResource("Resource_h0qxb")
+effect = SubResource("Resource_we6uk")
+
+[sub_resource type="Resource" id="Resource_x230l"]
+script = ExtResource("14_osci7")
+at_least = 3
+
+[sub_resource type="Resource" id="Resource_qc1ch"]
+script = ExtResource("12_s40sv")
+trigger = SubResource("Resource_x230l")
+effects = Array[ExtResource("5_cmgx4")]([SubResource("Resource_77igl")])
+is_triggered_from_graveyard = true
+
+[sub_resource type="Resource" id="Resource_riopc"]
+script = ExtResource("2_txapx")
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_gqlqp")
+name = "Phoenix Chick"
+card_types = Array[int]([1])
+subtypes = Array[String](["Phoenix"])
+mana_cost = SubResource("Resource_riopc")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_g5vbl")]([SubResource("Resource_nicbd"), SubResource("Resource_f0wnl"), SubResource("Resource_eqdvx"), SubResource("Resource_qc1ch")])
+rarity = 1

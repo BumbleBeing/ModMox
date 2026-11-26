@@ -7,7 +7,8 @@ extends MmPendingDecision
 ## effect moved, such as the cards milled, in their order (engine ADR 0080).
 ## With the purpose EXILE_FROM_GRAVEYARD it is the card a cost said yes to exiles instead,
 ## "a creature card from your graveyard" (ExileFromGraveyardCost), among the cards of the
-## payer's graveyard in their order, and it has no choice index.
+## payer's graveyard in their order, and it has no choice index; a cost exiling several
+## cards asks it once for each, and says how many in all and how many it has exiled.
 
 ## What the card is chosen for: a choice of a ChosenSelection, or a cost being paid.
 enum Purpose { CHOOSE = 0, EXILE_FROM_GRAVEYARD = 1 }
@@ -21,6 +22,10 @@ var purpose: Purpose = Purpose.CHOOSE
 ## What may be chosen, so that what is asked can be put in words. Card data, never changed.
 var filter: MmFilter
 var candidates: Array[MmReference]
+## For EXILE_FROM_GRAVEYARD: how many cards the cost exiles in all, and how many of them it
+## has exiled already, so that what is asked can be put in words.
+var exile_count: int = 1
+var exiled_before: int = 0
 
 
 func _init(deciding_player_id: int, object_id: int, index: int, chosen_from: MmFilter, legal: Array[MmReference]) -> void:

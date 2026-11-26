@@ -41,6 +41,10 @@ var chosen_mana_type: int = MmMana.NO_TYPE
 ## The new objects of the cards an earlier effect of this spell or ability moved and
 ## remembers, such as the cards milled: "them" (MovedCardsSelection, engine ADR 0080).
 var moved_ids: Array[int] = []
+## The permanents this spell or ability sacrificed, to pay its cost or by an earlier effect
+## of its own, by the IDs they had on the battlefield: "the sacrificed creature"
+## (SacrificedSelection, engine ADR 0098).
+var sacrificed_ids: Array[int] = []
 ## Whether the latest "you may" of this spell or ability, a MayEffect or MayPayEffect, was
 ## answered yes, its cost paid: "If you do" (YouDidCondition). False before any is asked.
 var answered_yes: bool = false
@@ -66,6 +70,7 @@ static func of_stack_object(stack_object: MmGameObject, chosen_targets: Array[Mm
 		stack_object.triggering_player_id, stack_object.triggering_object_id)
 	context.own_object_id = stack_object.id
 	context.target_counts = counts.duplicate()
+	context.sacrificed_ids = stack_object.sacrificed_object_ids.duplicate()
 	return context
 
 
@@ -123,6 +128,14 @@ func with_moved(ids: Array[int]) -> MmEffectContext:
 	return copy
 
 
+## This context remembering [param ids] as sacrificed too (engine ADR 0098), a new context
+## as with_choice() makes.
+func with_sacrificed(ids: Array[int]) -> MmEffectContext:
+	var copy: MmEffectContext = _copy()
+	copy.sacrificed_ids.append_array(ids)
+	return copy
+
+
 ## This context with [param is_yes] as the answer to its latest "you may" (YouDidCondition),
 ## a new context as with_choice() makes.
 func with_answered_yes(is_yes: bool) -> MmEffectContext:
@@ -157,6 +170,7 @@ func _copy() -> MmEffectContext:
 	copy.paid_x = paid_x
 	copy.chosen_mana_type = chosen_mana_type
 	copy.moved_ids = moved_ids.duplicate()
+	copy.sacrificed_ids = sacrificed_ids.duplicate()
 	copy.answered_yes = answered_yes
 	copy.overloaded = overloaded.duplicate()
 	copy.overloaded_counts = overloaded_counts.duplicate()

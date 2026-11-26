@@ -32,8 +32,11 @@ static func symbol_paid_by(type: MmMana.Type, symbols: Array[MmMana.Type], gener
 ## abilities they could activate. Exact: each source permanent is used for at most one of
 ## its mana abilities, since they share the {T} cost, and mana of any color is any one color
 ## (ADR 0072). [param tapping_source_id] is the permanent whose own {T} the same cost will
-## pay, or 0: it cannot tap for the mana too (pays_while_paying()).
-static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost, tapping_source_id: int = 0) -> bool:
+## pay, or 0: it cannot tap for the mana too (pays_while_paying()). With [param improvises]
+## it is the mana of a spell with improvise, which each untapped artifact the player controls
+## may pay {1} of (CR 702.126a, engine ADR 0099).
+static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost, tapping_source_id: int = 0,
+		improvises: bool = false) -> bool:
 	if cost == null:
 		return false
 	var available: Array[MmMana.Type] = []
@@ -57,9 +60,30 @@ static func can_afford(state: MmGameState, player_id: int, cost: MmManaCost, tap
 				choices.append(mana_made_by(state, ability, context))
 			for color: MmMana.Type in colors:
 				choices.append(mana_made_by(state, ability, context.with_chosen_mana_type(color)))
+		# CR 702.126a: an untapped artifact may instead tap for improvise, which pays only
+		# generic mana (engine ADR 0099).
+		if improvises and is_improviser(state, source, player_id):
+			choices.append([MmMana.NO_TYPE])
 		if not choices.is_empty():
 			choices_per_source.append(choices)
 	return _covers_with_choices(available, choices_per_source, 0, cost)
+
+
+## The untapped artifacts [param player_id] controls, which may each be tapped for improvise
+## (CR 702.126a, engine ADR 0099), in ID order.
+static func improvisers_of(state: MmGameState, player_id: int) -> Array[MmGameObject]:
+	var artifacts: Array[MmGameObject] = []
+	for permanent: MmGameObject in sorted_permanents_of(state, player_id):
+		if is_improviser(state, permanent, player_id):
+			artifacts.append(permanent)
+	return artifacts
+
+
+## Whether [param object] is an untapped artifact on the battlefield that [param player_id]
+## controls, which may be tapped for improvise.
+static func is_improviser(state: MmGameState, object: MmGameObject, player_id: int) -> bool:
+	return object.zone() == state.battlefield and object.controller_id == player_id and not object.is_tapped \
+		and state.characteristics_of(object).has_card_type(MmCardTypes.CardType.ARTIFACT)
 
 
 ## The types of mana [param ability] would add, one entry per unit, with the color
@@ -90,14 +114,16 @@ static func pays_while_paying(state: MmGameState, source: MmGameObject, ability:
 		return false
 	if not ability.is_mana_ability() or not ability.works_in(state, source) or not ability.can_pay_costs(state, source):
 		return false
-	return not ability.is_sorcery_speed and not (ability.is_once_each_game and source.is_ability_spent(ability_index)) \
-		and ability.is_attachment_allowed(state, source)
+	return not ability.is_sorcery_speed and not ability.is_spent_on(source, ability_index, state.game_turn) \
+		and ability.is_attachment_allowed(state, source) and ability.is_condition_met(state, source, source.controller_id)
 
 
 ## Everything [param player_id] may activate abilities from (CR 113.6): the permanents they
 ## control in ID order, then their Emblems and Potions in ID order (ADR 0036), then the
-## cards in their hand in ID order, whose abilities work there only when they say so
-## (ActivatedAbility.works_in(), ADR 0059).
+## cards in their hand in ID order, then the cards in their graveyard in ID order. A card's
+## abilities work in a hand or a graveyard only when they say so (ActivatedAbility.works_in(),
+## ADR 0059, 0094), and each place comes after the ones before it so that no earlier action
+## changes its index (ADR 0012).
 static func sorted_sources_of(state: MmGameState, player_id: int) -> Array[MmGameObject]:
 	var held: Array[MmGameObject] = []
 	for command_object: MmGameObject in state.command.objects():
@@ -107,7 +133,10 @@ static func sorted_sources_of(state: MmGameState, player_id: int) -> Array[MmGam
 	var hand: Array[MmGameObject] = []
 	hand.assign(state.player(player_id).hand.objects())
 	hand.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
-	return sorted_permanents_of(state, player_id) + held + hand
+	var graveyard: Array[MmGameObject] = []
+	graveyard.assign(state.player(player_id).graveyard.objects())
+	graveyard.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	return sorted_permanents_of(state, player_id) + held + hand + graveyard
 
 
 ## The permanents [param player_id] controls, in ID order.

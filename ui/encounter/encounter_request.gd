@@ -132,10 +132,14 @@ func names() -> PlayerNames:
 	return PlayerNames.new(hero_name, villain_name)
 
 
-## The Agent that plays the Villain, at this request's difficulty.
-func villain_agent() -> MmAgent:
+## The Agent that plays the Villain, at this request's difficulty. Given a [param log_folder],
+## it writes an AI Log of its answers there, a file for this encounter (AiLoggingAgent).
+func villain_agent(log_folder: String = "") -> MmAgent:
 	var level: AiDifficulty = load("res://content/ai/difficulty_%s.tres" % difficulty) as AiDifficulty
-	return AiAgent.new(null, AiAgent.Mode.FULL, level)
+	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, level)
+	if log_folder == "":
+		return agent
+	return AiLoggingAgent.begin(log_folder, encounter_seed, agent)
 
 
 ## An Emblem with the abilities of a card in Content, and nothing else (ADR 0011).

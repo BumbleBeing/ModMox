@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_cahci"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_bh36i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_n4bib"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_3mli5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_hand_effect.gd" id="3_lb365"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_ab8xd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_idrxn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="6_0vcdt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="7_rqtp1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="8_xphg6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_nure0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="10_ul431"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="11_dpock"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mana_value_filter.gd" id="12_w888s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="13_l8drw"]
+
+[sub_resource type="Resource" id="Resource_qc3i6"]
+script = ExtResource("4_ab8xd")
+
+[sub_resource type="Resource" id="Resource_dq8lo"]
+script = ExtResource("3_lb365")
+selection = SubResource("Resource_qc3i6")
+
+[sub_resource type="Resource" id="Resource_4unly"]
+script = ExtResource("9_nure0")
+
+[sub_resource type="Resource" id="Resource_lmc27"]
+script = ExtResource("10_ul431")
+
+[sub_resource type="Resource" id="Resource_akqdr"]
+script = ExtResource("11_dpock")
+filter = SubResource("Resource_lmc27")
+
+[sub_resource type="Resource" id="Resource_jke1o"]
+script = ExtResource("12_w888s")
+amount = 3
+
+[sub_resource type="Resource" id="Resource_7rpvx"]
+script = ExtResource("13_l8drw")
+filters = Array[ExtResource("8_xphg6")]([SubResource("Resource_4unly"), SubResource("Resource_akqdr"), SubResource("Resource_jke1o")])
+
+[sub_resource type="Resource" id="Resource_7cv87"]
+script = ExtResource("6_0vcdt")
+filter = SubResource("Resource_7rpvx")
+
+[sub_resource type="Resource" id="Resource_v1r0v"]
+script = ExtResource("7_rqtp1")
+targets = Array[ExtResource("6_0vcdt")]([SubResource("Resource_7cv87")])
+effects = Array[ExtResource("2_n4bib")]([SubResource("Resource_dq8lo")])
+
+[sub_resource type="Resource" id="Resource_x4fot"]
+script = ExtResource("2_bh36i")
+generic = 1
+symbols = Array[int]([1])
+
+[sub_resource type="Resource" id="Resource_5ck2i"]
+script = ExtResource("3_3mli5")
+name = "Entry Denied"
+card_types = Array[int]([5])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_x4fot")
+abilities = Array[ExtResource("1_cahci")]([SubResource("Resource_v1r0v")])
+
+[sub_resource type="Resource" id="Resource_518op"]
+script = ExtResource("2_bh36i")
+generic = 5
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_3mli5")
+name = "Beluna's Gatekeeper"
+card_types = Array[int]([1])
+subtypes = Array[String](["Giant", "Soldier"])
+mana_cost = SubResource("Resource_518op")
+power = 6
+toughness = 5
+adventure = SubResource("Resource_5ck2i")

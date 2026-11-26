@@ -28,6 +28,12 @@ enum Tag {
 	## such as Pride Sovereign's, and which is otherwise NONE, is considered then too: its
 	## creature was free to block first, and it skips the same untap step either way.
 	SPARE_MANA,
+	## A permanent spell whose own "enters" ability works only if its controller attacked
+	## this turn, as Mardu Skullhunter's raid does (engine ADR 0095's addendum), or only if
+	## an opponent lost life this turn, as Bat Whisperer's does (engine ADR 0082's second
+	## addendum): considered only in its controller's postcombat main phase, once any attack
+	## has been made.
+	AFTER_ATTACKING,
 }
 
 const COMBAT_STEPS: Array[MmTurn.Step] = [
@@ -126,9 +132,12 @@ static func tag_of_action(state: MmGameState, action: MmAction) -> Tag:
 	var flashed: Tag = _tag_of_flash_permanent(state, action)
 	if flashed != Tag.NONE:
 		return flashed
+	if _enters_after_attacking(state, action):
+		return Tag.AFTER_ATTACKING
 	var effects: Array[MmEffect] = effects_of_action(state, action)
 	var activated: ActivatedAbility = activated_ability_of(state, action)
-	if activated != null and not activated.is_sorcery_speed and _only_draws_or_searches_into_the_hand(effects):
+	if activated != null and not activated.is_sorcery_speed \
+			and (_only_draws_or_searches_into_the_hand(effects) or _only_returns_its_card_to_the_hand(activated)):
 		return Tag.SPARE_MANA
 	if activated is EquipAbility and not _at_sorcery_timing(state, state.object((action as ActivateAbilityAction).object_id).controller_id):
 		# Equip offered at instant speed (InstantSpeedEquipAbility) is worth it in a fight:
@@ -157,6 +166,32 @@ static func _tag_of_flash_permanent(state: MmGameState, action: MmAction) -> Tag
 			effects.append_array(triggered.effects)
 	var tag: Tag = tag_of_effects(effects)
 	return tag if tag == Tag.REMOVAL or is_trick(tag) else Tag.NONE
+
+
+## Whether [param action] casts a permanent spell with an "enters" triggered ability of its
+## own that works only if its controller attacked this turn (raid), or only if an opponent
+## lost life this turn, which an attack is the likeliest way to bring about.
+static func _enters_after_attacking(state: MmGameState, action: MmAction) -> bool:
+	var cast: CastSpellAction = action as CastSpellAction
+	if cast == null:
+		return false
+	var characteristics: MmCharacteristics = characteristics_of_cast(state, cast)
+	if not characteristics.is_permanent():
+		return false
+	for ability: MmAbility in characteristics.abilities:
+		var triggered: TriggeredAbility = ability as TriggeredAbility
+		if triggered != null and _is_own_enters(triggered.trigger) and _waits_for_an_attack(triggered.condition):
+			return true
+	return false
+
+
+## Whether [param condition] is one an attack makes true: "if you attacked this turn", or
+## "if an opponent lost life this turn".
+static func _waits_for_an_attack(condition: MmCondition) -> bool:
+	if condition is AttackedThisTurnCondition:
+		return true
+	var lost: LostLifeThisTurnCondition = condition as LostLifeThisTurnCondition
+	return lost != null and lost.whose == MmTrigger.Whose.OPPONENT
 
 
 ## Whether [param trigger] is "when this enters": the source itself arriving on the
@@ -190,6 +225,19 @@ static func _only_draws_or_searches_into_the_hand(effects: Array[MmEffect]) -> b
 		if not (effect is DrawCardsEffect or searches_into_the_hand):
 			return false
 	return not effects.is_empty()
+
+
+## Whether [param activated] works from the graveyard and only returns its own card to its
+## owner's hand, as Sanitarium Skeleton's does (engine ADR 0094): a card back in hand for
+## mana that would otherwise go unused, as cycling is.
+static func _only_returns_its_card_to_the_hand(activated: ActivatedAbility) -> bool:
+	if not activated.is_activated_from_graveyard or activated.effects.is_empty():
+		return false
+	for effect: MmEffect in activated.effects:
+		var returning: ReturnToHandEffect = effect as ReturnToHandEffect
+		if returning == null or not (returning.selection is SourceSelection):
+			return false
+	return true
 
 
 ## The tag of [param spell]. A modal spell's modes share their tag when they agree;
@@ -270,6 +318,8 @@ static func is_in_window(state: MmGameState, player_id: int, tag: Tag) -> bool:
 		return false
 	if tag == Tag.SPARE_MANA:
 		return state.active_player_id != player_id and state.step == MmTurn.Step.END
+	if tag == Tag.AFTER_ATTACKING:
+		return state.active_player_id == player_id and state.step == MmTurn.Step.POSTCOMBAT_MAIN
 	if state.step == MmTurn.Step.DECLARE_BLOCKERS:
 		return true
 	if tag == Tag.EVASION:

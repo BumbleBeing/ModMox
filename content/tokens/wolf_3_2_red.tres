@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_os74b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_26ima"]
+
+[resource]
+script = ExtResource("2_26ima")
+name = "Wolf Token"
+card_types = Array[int]([1])
+subtypes = Array[String](["Wolf"])
+color_indicator = Array[int]([3])
+power = 3
+toughness = 2

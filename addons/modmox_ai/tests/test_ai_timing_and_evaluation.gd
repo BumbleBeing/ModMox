@@ -98,6 +98,35 @@ func test_a_card_in_hand_is_worth_more_the_more_it_costs() -> void:
 		assert_eq(AiBoardEvaluator.hand_card_value(state, card, profile), expected, characteristics.name)
 
 
+func test_a_one_shot_token_is_worth_about_a_cheap_card_in_hand() -> void:
+	# A Treasure, a Clue or a Map gives one payoff and is gone, and cost no card: worth what
+	# a card of mana value 1 is in hand, not the 50 a noncreature permanent card is.
+	var tokens: Array[MmCardDefinition] = []
+	for file_name: String in ["treasure", "clue", "map"]:
+		tokens.append(load("res://content/tokens/%s.tres" % file_name) as MmCardDefinition)
+	var lasting: MmCardDefinition = Scenario.treasure()
+	lasting.name = "Lasting Token"
+	lasting.abilities = [Scenario.tap_for_mana(MmMana.Type.WHITE, 1)]
+	tokens.append(lasting)
+	var engine: MmEngine = AiScenario.ready_with([Scenario.parcel()], [])
+	assert_not_null(engine, "No seed gave the needed board.")
+	var state: MmGameState = engine.game_state()
+	for definition: MmCardDefinition in tokens:
+		state.perform(TokenCreatedEvent.new(definition, engine.hero().id))  # As a card making one would.
+	var profile: AiProfile = AiProfile.new()
+
+	var values: Dictionary[String, int] = {}
+	for permanent: MmGameObject in state.battlefield.objects():
+		values[state.characteristics_of(permanent).name] = AiBoardEvaluator.permanent_value(state, permanent, profile)
+
+	assert_eq(values["Treasure Token"], AiBoardEvaluator.ONE_SHOT_TOKEN_VALUE)
+	assert_eq(values["Clue Token"], AiBoardEvaluator.ONE_SHOT_TOKEN_VALUE)
+	assert_eq(values["Map Token"], AiBoardEvaluator.ONE_SHOT_TOKEN_VALUE)
+	assert_eq(AiBoardEvaluator.ONE_SHOT_TOKEN_VALUE, profile.hand_card_value + profile.hand_mana_value_bonus)
+	assert_eq(values["Lasting Token"], 50, "A token with a lasting ability is not used up.")
+	assert_eq(values["Parcel"], 50, "A card is worth the card it cost, though it is used up too.")
+
+
 func test_winning_and_losing_dwarf_everything_else() -> void:
 	var engine: MmEngine = MmEngine.start(_setup())
 	engine.concede(engine.villain())

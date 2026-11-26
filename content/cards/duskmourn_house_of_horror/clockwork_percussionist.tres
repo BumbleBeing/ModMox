@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_umsnw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_1gkj7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/haste_ability.gd" id="2_6ap01"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_2y0vw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_vid4t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_1oifg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="5_wcr24"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/exile_top_of_library_effect.gd" id="6_h4bxa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_play_exiled_effect.gd" id="7_5mn45"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/moved_cards_selection.gd" id="8_eo7ca"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="9_g2kfg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="10_ioqvb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_6yfvg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_tymw6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="13_5g0w2"]
+
+[sub_resource type="Resource" id="Resource_c2rg7"]
+script = ExtResource("2_6ap01")
+
+[sub_resource type="Resource" id="Resource_w6ewd"]
+script = ExtResource("4_1oifg")
+value = 1
+
+[sub_resource type="Resource" id="Resource_111gl"]
+script = ExtResource("5_wcr24")
+
+[sub_resource type="Resource" id="Resource_efcsp"]
+script = ExtResource("6_h4bxa")
+amount = SubResource("Resource_w6ewd")
+players = SubResource("Resource_111gl")
+
+[sub_resource type="Resource" id="Resource_kmblu"]
+script = ExtResource("8_eo7ca")
+
+[sub_resource type="Resource" id="Resource_6iqv8"]
+script = ExtResource("7_5mn45")
+selection = SubResource("Resource_kmblu")
+
+[sub_resource type="Resource" id="Resource_hpq1h"]
+script = ExtResource("12_tymw6")
+
+[sub_resource type="Resource" id="Resource_mlo61"]
+script = ExtResource("13_5g0w2")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_hpq1h")
+
+[sub_resource type="Resource" id="Resource_xep0l"]
+script = ExtResource("10_ioqvb")
+trigger = SubResource("Resource_mlo61")
+effects = Array[ExtResource("3_vid4t")]([SubResource("Resource_efcsp"), SubResource("Resource_6iqv8")])
+
+[sub_resource type="Resource" id="Resource_oxdpc"]
+script = ExtResource("2_1gkj7")
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_2y0vw")
+name = "Clockwork Percussionist"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Monkey", "Toy"])
+mana_cost = SubResource("Resource_oxdpc")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_umsnw")]([SubResource("Resource_c2rg7"), SubResource("Resource_xep0l")])

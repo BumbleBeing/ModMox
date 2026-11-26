@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_4pb52"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="2_6arg8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enchant_ability.gd" id="3_0kt2k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="4_kajyq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/attached_to_selection.gd" id="5_gmw2a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_pm3e4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="7_uhbo7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="8_723yk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="9_6ri7o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_opponent_selection.gd" id="10_8mcfn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/lose_life_effect.gd" id="11_mcrs7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="12_xsxk6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="13_0eetr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="14_1pacp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="15_tc1ik"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="16_dijab"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="17_uid1w"]
+
+[sub_resource type="Resource" id="Resource_i3hqs"]
+script = ExtResource("2_6arg8")
+
+[sub_resource type="Resource" id="Resource_vstx7"]
+script = ExtResource("3_0kt2k")
+filter = SubResource("Resource_i3hqs")
+
+[sub_resource type="Resource" id="Resource_4sko3"]
+script = ExtResource("5_gmw2a")
+
+[sub_resource type="Resource" id="Resource_uawe2"]
+script = ExtResource("6_pm3e4")
+value = 1
+
+[sub_resource type="Resource" id="Resource_ijee5"]
+script = ExtResource("6_pm3e4")
+value = 1
+
+[sub_resource type="Resource" id="Resource_l6y1s"]
+script = ExtResource("7_uhbo7")
+power = SubResource("Resource_uawe2")
+toughness = SubResource("Resource_ijee5")
+affected = SubResource("Resource_4sko3")
+
+[sub_resource type="Resource" id="Resource_d7ar0"]
+script = ExtResource("8_723yk")
+effects = Array[ExtResource("4_kajyq")]([SubResource("Resource_l6y1s")])
+
+[sub_resource type="Resource" id="Resource_21eov"]
+script = ExtResource("6_pm3e4")
+value = 1
+
+[sub_resource type="Resource" id="Resource_cwyb1"]
+script = ExtResource("10_8mcfn")
+
+[sub_resource type="Resource" id="Resource_smsgf"]
+script = ExtResource("11_mcrs7")
+amount = SubResource("Resource_21eov")
+players = SubResource("Resource_cwyb1")
+
+[sub_resource type="Resource" id="Resource_tkvbi"]
+script = ExtResource("15_tc1ik")
+
+[sub_resource type="Resource" id="Resource_1p5d7"]
+script = ExtResource("16_dijab")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_tkvbi")
+
+[sub_resource type="Resource" id="Resource_jjm18"]
+script = ExtResource("13_0eetr")
+trigger = SubResource("Resource_1p5d7")
+effects = Array[ExtResource("9_6ri7o")]([SubResource("Resource_smsgf")])
+
+[resource]
+script = ExtResource("17_uid1w")
+name = "Wicked Role"
+card_types = Array[int]([2])
+subtypes = Array[String](["Aura", "Role"])
+abilities = Array[ExtResource("1_4pb52")]([SubResource("Resource_vstx7"), SubResource("Resource_d7ar0"), SubResource("Resource_jjm18")])

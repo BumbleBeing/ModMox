@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_kvm87"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_477t2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/haste_ability.gd" id="2_b34uw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_2gf1a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_um1xw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_5xdpj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/sacrifice_this_cost.gd" id="5_6hc5l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="6_5nwkb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="7_xjww4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="8_qexny"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="9_a4q3y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="10_eq80b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_vmcf3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="12_s0s27"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="13_ho5k3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="14_v6nqr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="15_eaex0"]
+
+[sub_resource type="Resource" id="Resource_m1utn"]
+script = ExtResource("2_b34uw")
+
+[sub_resource type="Resource" id="Resource_uowbs"]
+script = ExtResource("4_5xdpj")
+
+[sub_resource type="Resource" id="Resource_qqg3j"]
+script = ExtResource("5_6hc5l")
+
+[sub_resource type="Resource" id="Resource_jog7c"]
+script = ExtResource("7_xjww4")
+value = 1
+
+[sub_resource type="Resource" id="Resource_1a8ii"]
+script = ExtResource("8_qexny")
+
+[sub_resource type="Resource" id="Resource_hklum"]
+script = ExtResource("9_a4q3y")
+amount = SubResource("Resource_jog7c")
+recipients = SubResource("Resource_1a8ii")
+
+[sub_resource type="Resource" id="Resource_b6n8f"]
+script = ExtResource("13_ho5k3")
+
+[sub_resource type="Resource" id="Resource_13rfh"]
+script = ExtResource("14_v6nqr")
+
+[sub_resource type="Resource" id="Resource_aohkd"]
+script = ExtResource("15_eaex0")
+filters = Array[ExtResource("12_s0s27")]([SubResource("Resource_b6n8f"), SubResource("Resource_13rfh")])
+
+[sub_resource type="Resource" id="Resource_04ktq"]
+script = ExtResource("11_vmcf3")
+filter = SubResource("Resource_aohkd")
+
+[sub_resource type="Resource" id="Resource_otkfi"]
+script = ExtResource("10_eq80b")
+costs = Array[ExtResource("3_um1xw")]([SubResource("Resource_uowbs"), SubResource("Resource_qqg3j")])
+targets = Array[ExtResource("11_vmcf3")]([SubResource("Resource_04ktq")])
+effects = Array[ExtResource("6_5nwkb")]([SubResource("Resource_hklum")])
+
+[sub_resource type="Resource" id="Resource_mojyb"]
+script = ExtResource("2_477t2")
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_2gf1a")
+name = "Fanatical Firebrand"
+card_types = Array[int]([1])
+subtypes = Array[String](["Goblin", "Pirate"])
+mana_cost = SubResource("Resource_mojyb")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_kvm87")]([SubResource("Resource_m1utn"), SubResource("Resource_otkfi")])

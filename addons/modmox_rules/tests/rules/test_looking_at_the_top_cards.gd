@@ -4,6 +4,8 @@ extends GutTest
 ## library in a random order.", as Militia Bugler says. Its controller looks at the cards
 ## (CR 701.20e) and chooses up to one that matches from among them; the one taken is revealed
 ## (CR 701.20a) into their hand, and the rest go to the bottom in an order from the Game RNG.
+## Faerie Mechanist's "Put the rest on the bottom of your library in any order." has its
+## controller answer that order too, each card under everything, the last the deepest.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const Step := MmTurn.Step
@@ -123,6 +125,66 @@ func test_the_order_on_the_bottom_comes_from_the_game_rng_and_replays_exactly() 
 	assert_eq(Scenario.events_of(engine, LibraryBottomRandomizedEvent).size(), 1)
 
 
+# --- The rest in any order (Faerie Mechanist) -------------------------------------------
+
+
+func test_in_any_order_the_rest_go_to_the_bottom_in_the_order_answered() -> void:
+	var engine: MmEngine = _mechanist_ready()
+	var decision: ChooseLookedAtCardsDecision = _look(engine, "Mechanist")
+	assert_true(decision.orders_rest)
+	var taken: int = decision.candidate_ids[0]
+	var rest: Array[int] = decision.card_ids.duplicate()
+	rest.erase(taken)
+	rest.reverse()
+
+	assert_eq(engine.submit([[taken], rest]), "")
+
+	assert_eq(_bottom(engine, 2), rest, "Each under everything, the last answered the deepest.")
+	assert_eq(Scenario.events_of(engine, LibraryBottomOrderedEvent).size(), 1)
+	assert_eq(Scenario.events_of(engine, LibraryBottomRandomizedEvent).size(), 0)
+	assert_eq(Scenario.names(engine, engine.hero().hand).count("Trinket"), 1)
+
+
+func test_in_any_order_every_card_not_taken_is_placed_exactly_once() -> void:
+	var engine: MmEngine = _mechanist_ready()
+	var decision: ChooseLookedAtCardsDecision = _look(engine, "Mechanist")
+	var taken: int = decision.candidate_ids[0]
+	var rest: Array[int] = decision.card_ids.duplicate()
+	rest.erase(taken)
+
+	assert_ne(engine.submit([taken]), "", "Both lists are needed.")
+	assert_ne(engine.submit([[taken], rest.slice(0, 1)]), "", "One is left out.")
+	assert_ne(engine.submit([[taken], [rest[0], rest[0]]]), "", "One is placed twice.")
+	assert_ne(engine.submit([[taken], [taken, rest[0], rest[1]]]), "", "The card taken is not on the bottom.")
+	assert_eq(engine.pending_decision(), decision, "Still asked.")
+	assert_eq(engine.submit([[], decision.card_ids]), "", "Taking nothing puts all three on the bottom.")
+
+
+func test_the_answer_taking_cards_gives_the_rest_in_the_order_looked_at() -> void:
+	var engine: MmEngine = _mechanist_ready()
+	var decision: ChooseLookedAtCardsDecision = _look(engine, "Mechanist")
+	var taken: int = decision.candidate_ids[0]
+	var rest: Array[int] = decision.card_ids.duplicate()
+	rest.erase(taken)
+
+	assert_eq(decision.answer_taking([taken] as Array[int]), [[taken], rest])
+	var random: ChooseLookedAtCardsDecision = ChooseLookedAtCardsDecision.new(0, 1, [5, 6] as Array[int], [5] as Array[int],
+		1, null)
+	assert_eq(random.answer_taking([5] as Array[int]), [5], "In a random order, only the cards taken.")
+
+
+func test_in_any_order_a_replay_puts_them_back_the_same() -> void:
+	var engine: MmEngine = _mechanist_ready()
+	var decision: ChooseLookedAtCardsDecision = _look(engine, "Mechanist")
+	var rest: Array[int] = decision.card_ids.duplicate()
+	rest.reverse()
+	assert_eq(engine.submit([[], rest]), "")
+
+	var replayed: MmEngine = MmEngine.replay(_setup, engine.decision_log())
+
+	assert_eq(replayed.fingerprint(), engine.fingerprint())
+
+
 # --- Helpers ---------------------------------------------------------------------------
 
 
@@ -146,9 +208,31 @@ func _bugler_ready() -> MmEngine:
 	return engine
 
 
-## Casts the Bugler in hand and resolves it until its look is asked.
-func _look(engine: MmEngine) -> ChooseLookedAtCardsDecision:
-	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Bugler")), "")
+## The Hero in their main phase on Game Turn 3 holding a Mechanist (Scenario.mechanist()),
+## with Trinkets (artifacts costing {0}) and Pups (1/1) in their library, and among its top
+## three exactly one Trinket.
+func _mechanist_ready() -> MmEngine:
+	var deck: Array[MmCardDefinition] = Scenario.cycled([Scenario.mechanist(), Scenario.creature("Pup", 1, 1),
+		Scenario.artifact("Trinket", []), Scenario.creature("Pup", 1, 1)] as Array[MmCardDefinition])
+	_setup = Scenario.setup_with(deck, Scenario.cycled([] as Array[MmCardDefinition]))
+	var engine: MmEngine = Scenario.find_engine(_setup, func(running: MmEngine) -> bool:
+		if Scenario.play_until_step(running, 3, Step.PRECOMBAT_MAIN) != "":
+			return false
+		if Scenario.card_in_hand(running, running.hero(), "Mechanist") == -1:
+			return false
+		if Scenario.names(running, running.hero().hand).has("Trinket"):
+			return false
+		var names: Array[String] = []
+		for id: int in _top(running, 3):
+			names.append(_name_of(running, id))
+		return names.count("Trinket") == 1)
+	assert_not_null(engine, "No seed gave the needed hand and library.")
+	return engine
+
+
+## Casts the [param card_name] in hand and resolves it until its look is asked.
+func _look(engine: MmEngine, card_name: String = "Bugler") -> ChooseLookedAtCardsDecision:
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), card_name)), "")
 	Scenario.autoplay(engine, func(running: MmEngine) -> bool: return running.pending_decision() is ChooseLookedAtCardsDecision)
 	return engine.pending_decision() as ChooseLookedAtCardsDecision
 

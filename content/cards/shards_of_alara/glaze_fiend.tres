@@ -1,0 +1,83 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_llulf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_0wmve"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_7hjow"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_qckhl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_ysn4t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="4_u25np"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_kqd3x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="6_lq1jp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="7_82ppj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_frqc8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="9_o2uso"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_wtoqc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_u4mcy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="12_g0s7c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="13_7j742"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="14_3vfiv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="15_c0k86"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="16_u76mq"]
+
+[sub_resource type="Resource" id="Resource_8lg3k"]
+script = ExtResource("2_7hjow")
+
+[sub_resource type="Resource" id="Resource_slsb5"]
+script = ExtResource("4_u25np")
+
+[sub_resource type="Resource" id="Resource_3x4af"]
+script = ExtResource("5_kqd3x")
+value = 2
+
+[sub_resource type="Resource" id="Resource_34t32"]
+script = ExtResource("5_kqd3x")
+value = 2
+
+[sub_resource type="Resource" id="Resource_16ui4"]
+script = ExtResource("6_lq1jp")
+power = SubResource("Resource_3x4af")
+toughness = SubResource("Resource_34t32")
+affected = SubResource("Resource_slsb5")
+
+[sub_resource type="Resource" id="Resource_e8646"]
+script = ExtResource("7_82ppj")
+continuous = SubResource("Resource_16ui4")
+
+[sub_resource type="Resource" id="Resource_cq85y"]
+script = ExtResource("12_g0s7c")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_4rs1v"]
+script = ExtResource("13_7j742")
+
+[sub_resource type="Resource" id="Resource_nkp81"]
+script = ExtResource("14_3vfiv")
+filter = SubResource("Resource_4rs1v")
+
+[sub_resource type="Resource" id="Resource_ncfkb"]
+script = ExtResource("15_c0k86")
+filters = Array[ExtResource("11_u4mcy")]([SubResource("Resource_cq85y"), SubResource("Resource_nkp81")])
+
+[sub_resource type="Resource" id="Resource_p3d08"]
+script = ExtResource("16_u76mq")
+filter = SubResource("Resource_ncfkb")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_bcefm"]
+script = ExtResource("9_o2uso")
+trigger = SubResource("Resource_p3d08")
+effects = Array[ExtResource("3_ysn4t")]([SubResource("Resource_e8646")])
+
+[sub_resource type="Resource" id="Resource_ygtnb"]
+script = ExtResource("2_0wmve")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_qckhl")
+name = "Glaze Fiend"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Illusion"])
+mana_cost = SubResource("Resource_ygtnb")
+toughness = 1
+abilities = Array[ExtResource("1_llulf")]([SubResource("Resource_8lg3k"), SubResource("Resource_bcefm")])

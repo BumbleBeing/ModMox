@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_5asfr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_fluaa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_lt0da"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_fel7p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_nem7a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_g3uoe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_lnvyh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="6_4ybxd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="7_j85yw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_bechn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_8wlfb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="10_f1mgc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_vrnbx"]
+
+[sub_resource type="Resource" id="Resource_bgqr3"]
+script = ExtResource("2_fluaa")
+
+[sub_resource type="Resource" id="Resource_dx0rv"]
+script = ExtResource("4_g3uoe")
+
+[sub_resource type="Resource" id="Resource_8yutc"]
+script = ExtResource("5_lnvyh")
+value = -4
+
+[sub_resource type="Resource" id="Resource_4jheo"]
+script = ExtResource("5_lnvyh")
+
+[sub_resource type="Resource" id="Resource_ulsvw"]
+script = ExtResource("6_4ybxd")
+power = SubResource("Resource_8yutc")
+toughness = SubResource("Resource_4jheo")
+affected = SubResource("Resource_dx0rv")
+
+[sub_resource type="Resource" id="Resource_50upm"]
+script = ExtResource("7_j85yw")
+continuous = SubResource("Resource_ulsvw")
+
+[sub_resource type="Resource" id="Resource_utch5"]
+script = ExtResource("11_vrnbx")
+
+[sub_resource type="Resource" id="Resource_df3wl"]
+script = ExtResource("9_8wlfb")
+filter = SubResource("Resource_utch5")
+
+[sub_resource type="Resource" id="Resource_22cs7"]
+script = ExtResource("10_f1mgc")
+targets = Array[ExtResource("9_8wlfb")]([SubResource("Resource_df3wl")])
+effects = Array[ExtResource("3_fel7p")]([SubResource("Resource_50upm")])
+
+[sub_resource type="Resource" id="Resource_4uayn"]
+script = ExtResource("2_lt0da")
+generic = 1
+symbols = Array[int]([1])
+
+[sub_resource type="Resource" id="Resource_8pn02"]
+script = ExtResource("3_nem7a")
+name = "Desperate Parry"
+card_types = Array[int]([3])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_4uayn")
+abilities = Array[ExtResource("1_5asfr")]([SubResource("Resource_22cs7")])
+
+[sub_resource type="Resource" id="Resource_7pvd4"]
+script = ExtResource("2_lt0da")
+generic = 4
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_nem7a")
+name = "Obyra's Attendants"
+card_types = Array[int]([1])
+subtypes = Array[String](["Faerie", "Wizard"])
+mana_cost = SubResource("Resource_7pvd4")
+power = 3
+toughness = 4
+abilities = Array[ExtResource("1_5asfr")]([SubResource("Resource_bgqr3")])
+adventure = SubResource("Resource_8pn02")

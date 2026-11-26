@@ -24,6 +24,11 @@ extends MmAbility
 ## even several events at once. Counted on its source object, so one that leaves and
 ## returns is a new object that may trigger again (ADR 0008).
 @export var is_once_each_turn: bool = false
+## "... return this card from your graveyard ...": it works only while its card is in its
+## owner's graveyard, as Phoenix Chick's does, and never from the battlefield (CR 113.6k,
+## engine ADR 0094's addendum). Saved with the ability, as
+## ActivatedAbility.is_activated_from_graveyard is.
+@export var is_triggered_from_graveyard: bool = false
 
 
 ## Whether the intervening "if" clause, if any, holds right now.

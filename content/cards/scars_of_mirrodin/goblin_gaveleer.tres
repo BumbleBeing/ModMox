@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_nuuw5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/trample_ability.gd" id="2_5qrq2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_dnmuv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_jxfqj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="3_tql4a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="4_68i6v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/product_value.gd" id="5_4av22"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/count_value.gd" id="6_skgnn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="7_gb6to"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_subtype_filter.gd" id="8_gh301"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_attached_to_filter.gd" id="9_ebspn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="10_xkqus"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="11_c52l2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="12_u2kll"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="13_iuwa8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="14_fk1q1"]
+
+[sub_resource type="Resource" id="Resource_e2x6r"]
+script = ExtResource("2_5qrq2")
+
+[sub_resource type="Resource" id="Resource_bjfw8"]
+script = ExtResource("4_68i6v")
+
+[sub_resource type="Resource" id="Resource_6gki4"]
+script = ExtResource("8_gh301")
+subtype = "Equipment"
+
+[sub_resource type="Resource" id="Resource_iilwt"]
+script = ExtResource("4_68i6v")
+
+[sub_resource type="Resource" id="Resource_c4m0q"]
+script = ExtResource("9_ebspn")
+selection = SubResource("Resource_iilwt")
+
+[sub_resource type="Resource" id="Resource_6mac0"]
+script = ExtResource("10_xkqus")
+filters = Array[ExtResource("7_gb6to")]([SubResource("Resource_6gki4"), SubResource("Resource_c4m0q")])
+
+[sub_resource type="Resource" id="Resource_x5p1o"]
+script = ExtResource("11_c52l2")
+filter = SubResource("Resource_6mac0")
+
+[sub_resource type="Resource" id="Resource_204w5"]
+script = ExtResource("6_skgnn")
+selection = SubResource("Resource_x5p1o")
+
+[sub_resource type="Resource" id="Resource_58coh"]
+script = ExtResource("5_4av22")
+factor = 2
+value = SubResource("Resource_204w5")
+
+[sub_resource type="Resource" id="Resource_ma7hw"]
+script = ExtResource("13_iuwa8")
+
+[sub_resource type="Resource" id="Resource_qua28"]
+script = ExtResource("12_u2kll")
+power = SubResource("Resource_58coh")
+toughness = SubResource("Resource_ma7hw")
+affected = SubResource("Resource_bjfw8")
+
+[sub_resource type="Resource" id="Resource_afivh"]
+script = ExtResource("14_fk1q1")
+effects = Array[ExtResource("3_tql4a")]([SubResource("Resource_qua28")])
+
+[sub_resource type="Resource" id="Resource_6bpy5"]
+script = ExtResource("2_dnmuv")
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_jxfqj")
+name = "Goblin Gaveleer"
+card_types = Array[int]([1])
+subtypes = Array[String](["Goblin", "Warrior"])
+mana_cost = SubResource("Resource_6bpy5")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_nuuw5")]([SubResource("Resource_e2x6r"), SubResource("Resource_afivh")])

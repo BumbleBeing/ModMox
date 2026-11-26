@@ -18,6 +18,11 @@ extends MmAbility
 ## "Activate only once each game" (CR 602.5b, ADR 0036): its source marks it Spent when it
 ## is activated, and it is never offered again from that object.
 @export var is_once_each_game: bool = false
+## "Activate only once each turn" (CR 602.5b, ADR 0036's addendum), as Cutthroat
+## Centurion's: its source marks it Spent for the Game Turn it is activated in, whoever's
+## turn that is, and it is offered again in the next. Never set with
+## [member is_once_each_game].
+@export var is_once_each_turn: bool = false
 ## "Activate only as a sorcery" (CR 602.5d): only in its controller's main phase with an
 ## empty stack.
 @export var is_sorcery_speed: bool = false
@@ -26,8 +31,31 @@ extends MmAbility
 @export var is_only_while_attached: bool = false
 ## Works only while its card is in its owner's hand, as cycling does (CR 113.6b, 702.29b,
 ## ADR 0059), and never on the battlefield or in the command zone. Every other activated
-## ability works only there, never from the hand.
+## ability works only there, never from the hand or the graveyard.
 @export var is_activated_from_hand: bool = false
+## Works only while its card is in its owner's graveyard, as Sanitarium Skeleton's "Return
+## this card from your graveyard to your hand" does (CR 113.6k, ADR 0094), and never on the
+## battlefield, in the hand or in the command zone. Never set with
+## [member is_activated_from_hand].
+@export var is_activated_from_graveyard: bool = false
+## "Activate only if [condition]" (CR 602.5b, ADR 0095), as Cult Conscript's "Activate only
+## if a non-Skeleton creature died under your control this turn": it is offered only while
+## the condition holds for its activator. Null for none.
+@export var condition: MmCondition = null
+
+
+## Whether it may be activated only once, each game or each turn (CR 602.5b), so that
+## activating it marks it Spent on its source with an AbilitySpentEvent.
+func is_activated_only_once() -> bool:
+	return is_once_each_game or is_once_each_turn
+
+
+## Whether its source, at [param ability_index] among its abilities, has used up its one
+## activation: ever, for once each game, or in [param game_turn], for once each turn.
+func is_spent_on(source: MmGameObject, ability_index: int, game_turn: int) -> bool:
+	if is_once_each_game and source.is_ability_spent(ability_index):
+		return true
+	return is_once_each_turn and source.has_activated_in(ability_index, game_turn)
 
 
 ## CR 605.1a: it could add mana and it has no target. There are no loyalty abilities in
@@ -58,10 +86,21 @@ func mana_types_to_choose() -> Array[MmMana.Type]:
 	return none
 
 
-## Whether this ability works where [param source] is now (CR 113.6): from the hand if it
-## says so, and otherwise anywhere but the hand.
+## Whether this ability works where [param source] is now (CR 113.6): from the hand or the
+## graveyard if it says so (CR 113.6k, ADR 0059, 0094), and otherwise anywhere but those.
 func works_in(state: MmGameState, source: MmGameObject) -> bool:
-	return is_activated_from_hand == (source.zone() == state.player(source.owner_id).hand)
+	var owner: MmPlayer = state.player(source.owner_id)
+	var in_hand: bool = source.zone() == owner.hand
+	var in_graveyard: bool = source.zone() == owner.graveyard
+	if is_activated_from_graveyard:
+		return in_graveyard
+	return is_activated_from_hand == in_hand and not in_graveyard
+
+
+## Whether [member condition] allows [param player_id] to activate it from [param source]
+## now: always without one (CR 602.5b, ADR 0095).
+func is_condition_met(state: MmGameState, source: MmGameObject, player_id: int) -> bool:
+	return condition == null or condition.is_true(state, MmEffectContext.new(player_id, source.id))
 
 
 ## Whether [member is_only_while_attached] allows activating it from [param source] now:

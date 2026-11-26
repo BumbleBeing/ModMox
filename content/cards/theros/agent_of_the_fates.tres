@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_covw6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/deathtouch_ability.gd" id="2_apndh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_hs3yw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_prqvh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_tjqnt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="4_6ymdn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_opponent_selection.gd" id="5_gsros"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/sacrifice_effect.gd" id="6_a4lmn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_jaw0e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_6xq0t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_pm3jq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="10_jlnv4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/targets_filter.gd" id="11_ytgsf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="12_aaf67"]
+
+[sub_resource type="Resource" id="Resource_xicby"]
+script = ExtResource("2_apndh")
+
+[sub_resource type="Resource" id="Resource_m0pii"]
+script = ExtResource("4_6ymdn")
+
+[sub_resource type="Resource" id="Resource_nnn61"]
+script = ExtResource("5_gsros")
+
+[sub_resource type="Resource" id="Resource_ofp8n"]
+script = ExtResource("6_a4lmn")
+players = SubResource("Resource_nnn61")
+filter = SubResource("Resource_m0pii")
+
+[sub_resource type="Resource" id="Resource_kn47r"]
+script = ExtResource("10_jlnv4")
+
+[sub_resource type="Resource" id="Resource_nn7e8"]
+script = ExtResource("11_ytgsf")
+filter = SubResource("Resource_kn47r")
+
+[sub_resource type="Resource" id="Resource_mfhug"]
+script = ExtResource("12_aaf67")
+filter = SubResource("Resource_nn7e8")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_w5s3l"]
+script = ExtResource("8_6xq0t")
+trigger = SubResource("Resource_mfhug")
+effects = Array[ExtResource("3_tjqnt")]([SubResource("Resource_ofp8n")])
+
+[sub_resource type="Resource" id="Resource_is4sv"]
+script = ExtResource("2_hs3yw")
+generic = 1
+symbols = Array[int]([2, 2])
+
+[resource]
+script = ExtResource("3_prqvh")
+name = "Agent of the Fates"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Assassin"])
+mana_cost = SubResource("Resource_is4sv")
+power = 3
+toughness = 2
+abilities = Array[ExtResource("1_covw6")]([SubResource("Resource_xicby"), SubResource("Resource_w5s3l")])
+rarity = 2

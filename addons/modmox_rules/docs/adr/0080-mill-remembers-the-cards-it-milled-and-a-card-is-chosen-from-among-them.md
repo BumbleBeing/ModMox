@@ -15,3 +15,10 @@ Left out until a card needs them (ADR 0001): "whenever you mill", a replacement 
 ## Addendum: "If you do" reads the answer to the "you may" before it
 
 Riddlesmith says "you may draw a card. If you do, discard a card." The discard asks a decision of its own, which a `MayEffect` cannot wrap, so the sentence is two effects, a `MayEffect` and then an `IfEffect` whose condition is a `YouDidCondition`. The context remembers the answer as it remembers the cards milled: `ResolutionProcedure` sets `MmEffectContext.answered_yes` as each `MayEffect` or `MayPayEffect` begins, true only on a yes, its cost paid, and every context made from it after keeps it. A "you may pay" that could not be paid was never asked, which is no yes. `IfEffect` already asks its effect's own decision only when the effect will happen, so the discard is asked only after a yes. `AbilityText` says "If you do, discard a card." `MayPayEffect` keeps its own "If you do", which pays as it asks. "If you don't" is left out until a card needs it (ADR 0001).
+
+## Second addendum: counting only the cards of a kind in a zone
+
+Chitin Gravestalker says "This spell costs {1} less to cast for each artifact and/or creature card in your graveyard."
+
+**`CardsInZoneValue` takes a `filter`**, null by default, which counts every card as before. With one it is "the number of [filter] cards in [whose] [zone]": each card of the zone that matches counts once, so an artifact creature card is one card however many of the filter's card types it has. The filter is asked of the card where it is, as a search's or a graveyard target's is. A `CostReductionAbility` with it takes off {1} for each, and `AbilityText` says so as Domain's reduction is said: "This spell costs {1} less to cast for each artifact or creature card in your graveyard." "Or" means what "and/or" does, since a card is counted once either way (ADR 0023). Threshold with a filter reads "there are seven or more creature cards in your graveyard".
+

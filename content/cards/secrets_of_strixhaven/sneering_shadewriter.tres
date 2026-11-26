@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_u27lt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_tbs8j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_ybgsq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_21hyl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_etl4i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_rldf6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_opponent_selection.gd" id="5_axes3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/lose_life_effect.gd" id="6_bndkb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="7_tb71h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/gain_life_effect.gd" id="8_iul2a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="9_chqhf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="10_sjuin"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_0rwfj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_qnayg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="13_3doby"]
+
+[sub_resource type="Resource" id="Resource_rlq0w"]
+script = ExtResource("2_ybgsq")
+
+[sub_resource type="Resource" id="Resource_bfh6x"]
+script = ExtResource("4_rldf6")
+value = 2
+
+[sub_resource type="Resource" id="Resource_2oyy4"]
+script = ExtResource("5_axes3")
+
+[sub_resource type="Resource" id="Resource_dx3pe"]
+script = ExtResource("6_bndkb")
+amount = SubResource("Resource_bfh6x")
+players = SubResource("Resource_2oyy4")
+
+[sub_resource type="Resource" id="Resource_mvqtr"]
+script = ExtResource("4_rldf6")
+value = 2
+
+[sub_resource type="Resource" id="Resource_o8q7u"]
+script = ExtResource("7_tb71h")
+
+[sub_resource type="Resource" id="Resource_q5h8j"]
+script = ExtResource("8_iul2a")
+amount = SubResource("Resource_mvqtr")
+players = SubResource("Resource_o8q7u")
+
+[sub_resource type="Resource" id="Resource_pc02q"]
+script = ExtResource("12_qnayg")
+
+[sub_resource type="Resource" id="Resource_oywj1"]
+script = ExtResource("13_3doby")
+filter = SubResource("Resource_pc02q")
+
+[sub_resource type="Resource" id="Resource_ov1cl"]
+script = ExtResource("10_sjuin")
+trigger = SubResource("Resource_oywj1")
+effects = Array[ExtResource("3_etl4i")]([SubResource("Resource_dx3pe"), SubResource("Resource_q5h8j")])
+
+[sub_resource type="Resource" id="Resource_qim3o"]
+script = ExtResource("2_tbs8j")
+generic = 4
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_21hyl")
+name = "Sneering Shadewriter"
+card_types = Array[int]([1])
+subtypes = Array[String](["Vampire", "Warlock"])
+mana_cost = SubResource("Resource_qim3o")
+power = 3
+toughness = 3
+abilities = Array[ExtResource("1_u27lt")]([SubResource("Resource_rlq0w"), SubResource("Resource_ov1cl")])

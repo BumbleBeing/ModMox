@@ -6,7 +6,9 @@ extends MmTrigger
 ## creature is declared as an attacker, not as it becomes tapped, so with vigilance too, and
 ## never for a creature put onto the battlefield attacking (CR 508.4), which is attacking but
 ## never attacked. "That player" is the attacking player. With [member alone] it is
-## "Whenever a [filter] [whose] control attacks alone", as exalted says (CR 702.83a).
+## "Whenever a [filter] [whose] control attacks alone", as exalted says (CR 702.83a). With
+## [member at_least] it is "Whenever you attack with three or more creatures", as Phoenix
+## Chick says: it triggers only when that many of the creatures declared match.
 
 ## Which attackers count. Null matches any creature.
 @export var filter: MmFilter = null
@@ -15,6 +17,8 @@ extends MmTrigger
 ## (CR 506.5), and that creature, matching, is "that creature". One put onto the battlefield
 ## attacking afterwards was never declared, so it changes nothing (CR 508.4).
 @export var alone: bool = false
+## How many of the attackers declared must match.
+@export var at_least: int = 1
 
 
 func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bool:
@@ -23,9 +27,12 @@ func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bo
 		return false
 	if alone and declared.attacker_ids.size() != 1:
 		return false
+	var matching: int = 0
 	for attacker_id: int in declared.attacker_ids:
 		if filter == null or filter.matches(state, MmReference.to_object(attacker_id), context):
-			return true
+			matching += 1
+			if matching >= at_least:
+				return true
 	return false
 
 

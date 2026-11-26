@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_vnyti"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_gw02m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_iwpjx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_ktih8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_kxuhc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_24nte"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="5_n1ywk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_mofaa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_2h1o6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_5cgm4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_wbt3f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_g2xnm"]
+
+[sub_resource type="Resource" id="Resource_wrma0"]
+script = ExtResource("3_ktih8")
+value = 1
+
+[sub_resource type="Resource" id="Resource_e3jxt"]
+script = ExtResource("4_24nte")
+
+[sub_resource type="Resource" id="Resource_r1spb"]
+script = ExtResource("5_n1ywk")
+amount = SubResource("Resource_wrma0")
+players = SubResource("Resource_e3jxt")
+
+[sub_resource type="Resource" id="Resource_1ubxp"]
+script = ExtResource("9_wbt3f")
+card_type = 2
+
+[sub_resource type="Resource" id="Resource_o1fjc"]
+script = ExtResource("10_g2xnm")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_1ubxp")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_ofbyk"]
+script = ExtResource("7_2h1o6")
+trigger = SubResource("Resource_o1fjc")
+effects = Array[ExtResource("2_iwpjx")]([SubResource("Resource_r1spb")])
+
+[sub_resource type="Resource" id="Resource_7mxgt"]
+script = ExtResource("2_gw02m")
+generic = 3
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_kxuhc")
+name = "Ashiok's Reaper"
+card_types = Array[int]([1])
+subtypes = Array[String](["Nightmare"])
+mana_cost = SubResource("Resource_7mxgt")
+power = 3
+toughness = 3
+abilities = Array[ExtResource("1_vnyti")]([SubResource("Resource_ofbyk")])
+rarity = 1

@@ -816,6 +816,108 @@ func test_a_landcycling_card_is_not_landcycled_in_its_own_main_phase() -> void:
 		"Its mana may yet cast something: landcycling waits for the other player's end step.")
 
 
+# --- Abilities that work from the graveyard ---------------------------------------------
+
+func test_a_card_is_returned_from_the_graveyard_in_the_other_players_end_step_with_mana_to_spare() -> void:
+	var engine: MmEngine = _engine_with_a_dead_skeleton(4, Step.END)
+	assert_not_null(engine, "No seed gave the Elves and hand.")
+	if engine == null:
+		return
+	Scenario.pass_priority(engine)
+	assert_eq(engine.pending_decision().player_id, engine.hero().id, "The Hero's pass ends the Villain's turn.")
+
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+
+	var activate: ActivateAbilityAction = AiScenario.action_at(engine, answer) as ActivateAbilityAction
+	assert_not_null(activate, "Engine ADR 0094: the Elves' mana would go unused, and the card is worth more in hand.")
+	if activate != null:
+		assert_eq(engine.game_state().object(activate.object_id).zone(), engine.hero().graveyard)
+
+
+func test_a_card_is_not_returned_from_the_graveyard_in_its_own_main_phase() -> void:
+	var engine: MmEngine = _engine_with_a_dead_skeleton(3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the Elves and hand.")
+	if engine == null:
+		return
+	var dead: int = Scenario.card_in_graveyard(engine, engine.hero(), "Skeleton")
+	var decision: PriorityDecision = engine.pending_decision() as PriorityDecision
+	var index: int = Scenario.activate_index(decision, dead)
+	assert_ne(index, -1, "It could be returned.")
+	if index == -1:
+		return
+	assert_eq(AiTiming.tag_of_action(engine.game_state(), decision.actions[index]), AiTiming.Tag.SPARE_MANA,
+		"Engine ADR 0094: it only returns its own card to its owner's hand.")
+
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+
+	assert_false(AiScenario.action_at(engine, answer) is ActivateAbilityAction,
+		"Its mana may yet cast something: the return waits for the other player's end step.")
+
+
+func test_a_creature_card_is_returned_to_the_battlefield_once_its_condition_holds() -> void:
+	# Engine ADR 0095: Cult Conscript's "Activate only if a non-Skeleton creature died under
+	# your control this turn".
+	var on_battlefield: Array[MmCardDefinition] = [Scenario.elf(), Scenario.elf(),
+		Scenario.conscript("Conscript", Scenario.mana_cost(2)), Scenario.creature("Bear", 2, 2)]
+	var ogre: MmCardDefinition = Scenario.creature("Ogre", 5, 5)
+	ogre.mana_cost = Scenario.mana_cost(5)
+	var held: Array[MmCardDefinition] = [Scenario.free_shock("Shock", 2), Scenario.free_shock("Second Shock", 2), ogre]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(on_battlefield, no_cards, held),
+		on_battlefield, no_cards, held, no_cards, 3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the Elves and hand.")
+	if engine == null:
+		return
+	for pair: Array in [["Shock", "Conscript"], ["Second Shock", "Bear"]]:
+		var aimed_at: int = Scenario.permanents_named(engine, engine.hero().id, pair[1])[0]
+		assert_eq(Scenario.cast_and_resolve(engine, pair[0], [MmReference.to_object(aimed_at)]), "")
+		assert_eq(Scenario.resolve_stack(engine), "")
+	for card_name: String in ["Shock", "Second Shock", "Conscript", "Bear", "Elf"]:
+		while Scenario.card_in_hand(engine, engine.hero(), card_name) != -1:
+			var aimed: Array[MmReference] = []
+			if card_name.ends_with("Shock"):
+				aimed.append(MmReference.to_player(engine.villain().id))
+			assert_eq(Scenario.cast_and_resolve(engine, card_name, aimed), "")
+	var dead: int = Scenario.card_in_graveyard(engine, engine.hero(), "Conscript")
+	assert_ne(Scenario.activate_index(engine.pending_decision() as PriorityDecision, dead), -1, "Bear died this turn.")
+
+	var answer: int = AiScenario.ask(engine, AiAgent.new())
+
+	var activate: ActivateAbilityAction = AiScenario.action_at(engine, answer) as ActivateAbilityAction
+	assert_not_null(activate, "A 2/1 on the battlefield is worth the Elves' mana, which casts nothing else.")
+	if activate != null:
+		assert_eq(activate.object_id, dead)
+
+
+## The Hero with two Elves, "{T}: Add {W}", on the battlefield and Skeleton, a 1/2 with "{2}:
+## Return this card from your graveyard to your hand", in their graveyard, holding Ogre (a
+## 5/5 costing {5}) and nothing else they can cast, at the first decision of [param step] in
+## [param game_turn]. Shock killed the Skeleton in the Hero's main phase of Game Turn 3, and
+## every other Skeleton and Shock in hand was cast too.
+func _engine_with_a_dead_skeleton(game_turn: int, step: Step) -> MmEngine:
+	var on_battlefield: Array[MmCardDefinition] = [Scenario.elf(), Scenario.elf(),
+		Scenario.skeleton("Skeleton", Scenario.mana_cost(2))]
+	var ogre: MmCardDefinition = Scenario.creature("Ogre", 5, 5)
+	ogre.mana_cost = Scenario.mana_cost(5)
+	var held: Array[MmCardDefinition] = [Scenario.free_shock("Shock", 2), ogre]
+	var no_cards: Array[MmCardDefinition] = []
+	var setup: MmEncounterSetup = Scenario.combat_setup(on_battlefield, no_cards, held)
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, on_battlefield, no_cards, held, no_cards,
+		3, Step.PRECOMBAT_MAIN)
+	if engine == null:
+		return null
+	var skeleton: int = Scenario.permanents_named(engine, engine.hero().id, "Skeleton")[0]
+	assert_eq(Scenario.cast(engine, Scenario.card_in_hand(engine, engine.hero(), "Shock"), [MmReference.to_object(skeleton)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	while Scenario.card_in_hand(engine, engine.hero(), "Shock") != -1:
+		assert_eq(Scenario.cast_and_resolve(engine, "Shock", [MmReference.to_player(engine.villain().id)]), "")
+	_cast_every(engine, "Skeleton")
+	_cast_every(engine, "Elf")
+	if game_turn != 3 or step != Step.PRECOMBAT_MAIN:
+		assert_eq(Scenario.play_until_step(engine, game_turn, step), "")
+	return engine
+
+
 ## The Hero with two Elves, "{T}: Add {W}", on the battlefield, holding [param cycler]
 ## (by default Cycler, an instant costing {0}, "You gain 1 life", cycling {2}) and Ogre (a
 ## 5/5 costing {5}), with Forests in their library too when [param cycler] is given, at the

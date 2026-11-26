@@ -42,13 +42,16 @@ static func affected_player_id(state: MmGameState, event: MmEvent) -> int:
 		if damage.recipient.is_player():
 			return damage.recipient.id
 		return state.object_or_last_known(damage.recipient.id).controller_id
+	var drawing: DrawCardEvent = event as DrawCardEvent
+	if drawing != null:
+		return drawing.player_id  # CR 616.1: the player who would draw.
 	var moved: ZoneChangeEvent = event as ZoneChangeEvent
 	assert(moved != null, "No player is affected by %s." % event.describe())
 	return state.object(moved.object_id).controller_id
 
 
 ## The effects static abilities generate right now: protection's prevention (CR 702.16e),
-## and the effects an object entering the battlefield generates for its own entering, read
+## a permanent's replacement of its controller's draws (engine ADR 0097), and the effects an object entering the battlefield generates for its own entering, read
 ## from its characteristics where it is now, standing for those it would have on the
 ## battlefield (CR 614.12).
 # Later: an effect that grants an ability only on the battlefield, which CR 614.12 says an
@@ -71,10 +74,22 @@ static func _from_static_abilities(state: MmGameState, event: MmEvent) -> Array[
 				# ADR 0052: unpaid, or never asked, it enters tapped.
 				found.append(ActiveReplacementEffect.of_static(unless_paid.replacement(), entering, index))
 		return found
-	if not event is DamageEvent:
-		return found  # Only protection generates one for any other event, and it only prevents damage.
 	var permanents: Array[MmGameObject] = state.battlefield.objects()
 	permanents.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
+	if event is DrawCardEvent:
+		for permanent: MmGameObject in permanents:
+			var abilities: Array[MmAbility] = state.characteristics_of(permanent).abilities
+			for index: int in abilities.size():
+				var replacing: DrawReplacementAbility = abilities[index] as DrawReplacementAbility
+				if replacing != null:
+					var active: ActiveReplacementEffect = ActiveReplacementEffect.of_static(replacing.replacement(), permanent, index)
+					# Locked to no object: whose draw it is decides, so two the same are
+					# interchangeable (A146).
+					active.affected = []
+					found.append(active)
+		return found
+	if not event is DamageEvent:
+		return found  # Only protection generates one for any other event, and it only prevents damage.
 	for permanent: MmGameObject in permanents:
 		var abilities: Array[MmAbility] = state.characteristics_of(permanent).abilities
 		for index: int in abilities.size():

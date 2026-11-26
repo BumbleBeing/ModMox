@@ -125,6 +125,7 @@ func test_a_card_to_exile_for_a_cost_said_yes_to_is_asked_for_in_the_costs_words
 	var view: MmPlayerView = _view()
 	var ability: MmObjectView = _object(21, "ability", MmGameObject.NO_CARD)
 	ability.source_object_id = 1
+	ability.ability = TriggeredAbility.new()
 	view.stack = [ability]
 	var exiling: ChooseObjectDecision = ChooseObjectDecision.new(HERO, 21, ChooseObjectDecision.NO_CHOICE_INDEX,
 		HasCardTypeFilter.new(), [MmReference.to_object(5)] as Array[MmReference])
@@ -134,6 +135,94 @@ func test_a_card_to_exile_for_a_cost_said_yes_to_is_asked_for_in_the_costs_words
 
 	assert_eq(prompt.text, "Exile a creature card from your graveyard for Wand")
 	assert_false(prompt.can_cancel, "It is paid as the ability resolves: there is no cast to take back.")
+
+
+func test_a_card_to_exile_for_a_spells_additional_cost_can_be_canceled() -> void:
+	# Makeshift Mauler's "As an additional cost to cast this spell, exile a creature card from
+	# your graveyard" (engine ADR 0086): asked as the spell is cast, which can be taken back.
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Makeshift Mauler", 7)]
+	var exiling: ChooseObjectDecision = ChooseObjectDecision.new(HERO, 20, ChooseObjectDecision.NO_CHOICE_INDEX,
+		HasCardTypeFilter.new(), [MmReference.to_object(5)] as Array[MmReference])
+	exiling.purpose = ChooseObjectDecision.Purpose.EXILE_FROM_GRAVEYARD
+
+	var prompt: InfoPrompt = InfoPrompt.of(exiling, view)
+
+	assert_eq(prompt.text, "Exile a creature card from your graveyard for Makeshift Mauler")
+	assert_true(prompt.can_cancel)
+
+
+func test_cards_to_exile_for_a_cost_of_three_count_down_as_they_are_picked() -> void:
+	# Kessig Wolfrider's "Exile three cards from your graveyard", asked once for each card
+	# (engine ADR 0088's second addendum), in the user's words.
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Kessig Wolfrider", 7)]
+	var texts: Array[String] = []
+	for exiled: int in 3:
+		var exiling: ChooseObjectDecision = ChooseObjectDecision.new(HERO, 20, ChooseObjectDecision.NO_CHOICE_INDEX,
+			null, [MmReference.to_object(5)] as Array[MmReference])
+		exiling.purpose = ChooseObjectDecision.Purpose.EXILE_FROM_GRAVEYARD
+		exiling.exile_count = 3
+		exiling.exiled_before = exiled
+
+		texts.append(InfoPrompt.of(exiling, view).text)
+
+	assert_eq(texts, [
+		"Exile three cards from your graveyard for Kessig Wolfrider",
+		"Exile two more cards from your graveyard for Kessig Wolfrider",
+		"Exile one more card from your graveyard for Kessig Wolfrider",
+	] as Array[String])
+
+
+func test_an_artifact_to_sacrifice_for_a_cost_said_yes_to_is_asked_for_in_the_costs_words() -> void:
+	# Selfcraft Mechan's "you may sacrifice an artifact", paid as its trigger resolves.
+	var view: MmPlayerView = _view()
+	var ability: MmObjectView = _object(21, "ability", MmGameObject.NO_CARD)
+	ability.source_object_id = 1
+	ability.ability = TriggeredAbility.new()
+	view.stack = [ability]
+	var artifacts: HasCardTypeFilter = HasCardTypeFilter.new()
+	artifacts.card_type = MmCardTypes.CardType.ARTIFACT
+	var sacrificing: ChoosePermanentsDecision = ChoosePermanentsDecision.new(HERO, 21, 1, [1, 6] as Array[int], artifacts)
+	sacrificing.purpose = ChoosePermanentsDecision.Purpose.SACRIFICE
+
+	var prompt: InfoPrompt = InfoPrompt.of(sacrificing, view)
+
+	assert_eq(prompt.text, "Sacrifice an artifact for Wand")
+	assert_false(prompt.can_cancel, "It is paid as the ability resolves: there is no cast to take back.")
+
+
+func test_a_creature_to_sacrifice_for_an_effect_names_its_source_and_cannot_be_canceled() -> void:
+	# Agent of the Fates's "each opponent sacrifices a creature" (CR 701.21a), asked of the
+	# Hero as the Villain's trigger resolves.
+	var view: MmPlayerView = _view()
+	var ability: MmObjectView = _object(21, "ability", MmGameObject.NO_CARD)
+	ability.source_object_id = 1
+	ability.ability = TriggeredAbility.new()
+	view.stack = [ability]
+	var sacrificing: ChoosePermanentsDecision = ChoosePermanentsDecision.new(HERO, 21, 1, [1, 6] as Array[int],
+		HasCardTypeFilter.new())
+	sacrificing.purpose = ChoosePermanentsDecision.Purpose.SACRIFICE
+	sacrificing.is_for_effect = true
+
+	var prompt: InfoPrompt = InfoPrompt.of(sacrificing, view)
+
+	assert_eq(prompt.text, "Wand: sacrifice a creature")
+	assert_false(prompt.can_cancel, "An effect resolving: there is nothing to take back.")
+
+
+func test_a_creature_to_sacrifice_for_a_spells_effect_names_the_spell_and_cannot_be_canceled() -> void:
+	var view: MmPlayerView = _view()
+	view.stack = [_object(20, "Edict", 7)]
+	var sacrificing: ChoosePermanentsDecision = ChoosePermanentsDecision.new(HERO, 20, 1, [1, 6] as Array[int],
+		HasCardTypeFilter.new())
+	sacrificing.purpose = ChoosePermanentsDecision.Purpose.SACRIFICE
+	sacrificing.is_for_effect = true
+
+	var prompt: InfoPrompt = InfoPrompt.of(sacrificing, view)
+
+	assert_eq(prompt.text, "Edict: sacrifice a creature")
+	assert_false(prompt.can_cancel, "A spell resolving, not one being cast.")
 
 
 func test_the_legend_rule_asks_which_legend_to_keep_and_cannot_be_canceled() -> void:

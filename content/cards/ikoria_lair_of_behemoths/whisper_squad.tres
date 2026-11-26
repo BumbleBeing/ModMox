@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_ays3v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_1k5uh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_7mfc6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_c68ir"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_qopsa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_t7o0r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_original_name_filter.gd" id="5_ejk8u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/search_library_effect.gd" id="6_m2ioc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_5elt2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_0rwre"]
+
+[sub_resource type="Resource" id="Resource_6cxbu"]
+script = ExtResource("4_t7o0r")
+value = 1
+
+[sub_resource type="Resource" id="Resource_ag6jq"]
+script = ExtResource("5_ejk8u")
+original_name = "Whisper Squad"
+
+[sub_resource type="Resource" id="Resource_7fr12"]
+script = ExtResource("6_m2ioc")
+filter = SubResource("Resource_ag6jq")
+amount = SubResource("Resource_6cxbu")
+reveal = false
+destination = 3
+tapped = true
+
+[sub_resource type="Resource" id="Resource_7w7hw"]
+script = ExtResource("2_1k5uh")
+generic = 1
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_jhomf"]
+script = ExtResource("8_5elt2")
+mana_cost = SubResource("Resource_7w7hw")
+effects = Array[ExtResource("3_c68ir")]([SubResource("Resource_7fr12")])
+
+[sub_resource type="Resource" id="Resource_jrqqo"]
+script = ExtResource("2_1k5uh")
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_qopsa")
+name = "Whisper Squad"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Soldier"])
+mana_cost = SubResource("Resource_jrqqo")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_ays3v")]([SubResource("Resource_jhomf")])

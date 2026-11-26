@@ -18,3 +18,9 @@ Militia Bugler's "look at the top four cards of your library. You may reveal a c
 **The Villain's look shows only in its result.** A card it takes is revealed, so it shows face up in its hand with the Seen Eye, as a searched card does (game ADR 0058). The cards it puts on the bottom show nothing.
 
 Left out until a card needs them: more than one card taken (the choice and the window allow it, the words do not), looking at more than four cards (the window is four wide and scrolls), any text under the cursor on a card looked at, and the rest put on the bottom in an order the Hero chooses.
+
+## Addendum: dragging the rest into order
+
+Faerie Mechanist's look puts the rest on the bottom in any order (engine ADR 0084's addendum). **The Look window's row is then ordered by dragging, as the Surveil window's is** (game ADR 0069): a press moved more than three pixels drags a card, and the row makes room where it is held; letting go where it was pressed still clicks it. The row reads left to right in the order the cards go to the bottom, so the rightmost ends deepest. `LookChoice` keeps the order with `move_to()`, undo takes back a move as well as a card taken, and Done answers the cards taken and then the row. A look whose rest go in a random order, as Militia Bugler's, still has no dragging.
+
+The Info Panel's words are unchanged: "The rest go to the bottom." holds for both.

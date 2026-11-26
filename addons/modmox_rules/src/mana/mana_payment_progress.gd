@@ -13,6 +13,9 @@ var remaining_hybrid_symbols: Array[Vector2i] = []
 ## The permanent whose own {T} is part of the cost this mana is paid for, or 0. It cannot
 ## tap for this mana too ([method ManaPayment.pays_while_paying]).
 var tapping_source_id: int = 0
+## Whether this is the mana of a spell with improvise (CR 702.126a, engine ADR 0099), so
+## each untapped artifact the payer controls may pay {1} of the generic mana owed.
+var improvises: bool = false
 
 
 func _init(paying_player_id: int, generic: int = 0, symbols: Array[MmMana.Type] = [],
@@ -34,6 +37,7 @@ func copy() -> ManaPaymentProgress:
 	var progress: ManaPaymentProgress = ManaPaymentProgress.new(player_id, remaining_generic, remaining_symbols,
 		remaining_hybrid_symbols)
 	progress.tapping_source_id = tapping_source_id
+	progress.improvises = improvises
 	return progress
 
 
@@ -56,9 +60,14 @@ func apply_answer(state: MmGameState, paying: PayManaDecision, index: int) -> vo
 		_spend(state, (action as PayWithManaAction).unit_index)
 	elif action is ActivateAbilityAction:
 		_pay_with_mana_ability(state, action as ActivateAbilityAction)
+	elif action is ImproviseAction:
+		# CR 702.126a: the artifact taps and pays for {1}.
+		state.perform(TapEvent.new((action as ImproviseAction).object_id))
+		remaining_generic -= 1
 
 
-## Unit spends from the pool first, then mana abilities, each in a fixed order (ADR 0012).
+## Unit spends from the pool first, then mana abilities, then improvise's artifacts, each in
+## a fixed order (ADR 0012).
 ## Only what pays something still owed is offered, except that a mana ability adding mana
 ## of any color is offered in every color, in WUBRG order, once any color would pay
 ## something (ADR 0072): mana that pays nothing goes to the pool (CR 605.3a).
@@ -82,6 +91,12 @@ func _options(state: MmGameState) -> Array[MmAction]:
 				if _pays_something(state, ability, activation as ActivateAbilityAction):
 					options.append_array(activations)
 					break
+	if improvises and remaining_generic > 0:
+		# CR 702.126a, engine ADR 0099. Later: improvise only once the mana abilities are
+		# done, once a mana ability makes more for tapped artifacts; until then the order
+		# changes nothing.
+		for artifact: MmGameObject in ManaPayment.improvisers_of(state, player_id):
+			options.append(ImproviseAction.new(artifact.id))
 	return options
 
 
@@ -117,8 +132,8 @@ func _pay_with_mana_ability(state: MmGameState, action: ActivateAbilityAction) -
 	var source: MmGameObject = state.object(action.object_id)
 	var ability: ActivatedAbility = state.characteristics_of(source).abilities[action.ability_index] as ActivatedAbility
 	var pool_size_before: int = state.player(player_id).mana_pool().size()
-	if ability.is_once_each_game:
-		state.perform(AbilitySpentEvent.new(source.id, action.ability_index))  # CR 602.5b
+	if ability.is_activated_only_once():
+		state.perform(AbilitySpentEvent.of(ability, source.id, action.ability_index))  # CR 602.5b
 	ability.pay_costs(state, source)
 	var context: MmEffectContext = MmEffectContext.new(source.controller_id, source.id)
 	ability.resolve_effects(state, context.with_chosen_mana_type(action.mana_type))  # ADR 0072

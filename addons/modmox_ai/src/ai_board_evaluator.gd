@@ -8,6 +8,11 @@ extends RefCounted
 ## The score of an encounter won; minus this for one lost.
 const WIN: int = 1000000
 const LAND_VALUE: int = 8
+## A noncreature token used up by its own abilities, as a Treasure, a Clue or a Map is: one
+## payoff and gone, and no card was spent on it, so it is worth what a card of mana value 1
+## is in hand rather than the 50 a noncreature permanent card starts at. At 50 the Agent
+## would not trade one for a +1/+1 counter and a card, as Selfcraft Mechan offers.
+const ONE_SHOT_TOKEN_VALUE: int = 15
 
 
 ## [param player_id]'s score of [param state].
@@ -48,7 +53,21 @@ static func permanent_value(state: MmGameState, permanent: MmGameObject, profile
 		return value
 	if characteristics.has_card_type(MmCardTypes.CardType.LAND):
 		return LAND_VALUE
+	if permanent.is_token and _is_used_up_by_its_abilities(characteristics):
+		return ONE_SHOT_TOKEN_VALUE
 	return 50 + 30 * characteristics.mana_value()
+
+
+## Whether every ability of [param characteristics] sacrifices its permanent as it is used,
+## and it has one: what it does, it does once.
+static func _is_used_up_by_its_abilities(characteristics: MmCharacteristics) -> bool:
+	if characteristics.abilities.is_empty():
+		return false
+	for ability: MmAbility in characteristics.abilities:
+		var activated: ActivatedAbility = ability as ActivatedAbility
+		if activated == null or not activated.costs.any(func(cost: MmCost) -> bool: return cost is SacrificeThisCost):
+			return false
+	return true
 
 
 ## A creature's worth as it is now, before summoning sickness.
@@ -91,6 +110,39 @@ static func creature_value(state: MmGameState, creature: MmGameObject) -> int:
 			value += 20
 		elif ability is DefenderAbility:
 			value -= 9 * damage + 40
+		elif ability is CantBlockAbility:
+			value -= 5 * toughness  # It never stands in the way of an attack.
 		elif ability is ActivatedAbility:
 			value += 10
 	return value
+
+
+## Whether [param creature] would return to the battlefield as it died now, as one with
+## undying and no +1/+1 counters would (CR 702.93a): it has a triggered ability of its own
+## dying that returns the card it becomes (TriggeringCardSelection, engine ADR 0096), whose
+## intervening "if" holds now. Read from its abilities, so a Modification that gives or
+## takes undying changes the answer.
+static func comes_back_when_it_dies(state: MmGameState, creature: MmGameObject) -> bool:
+	for ability: MmAbility in state.characteristics_of(creature).abilities:
+		var triggered: TriggeredAbility = ability as TriggeredAbility
+		if triggered == null or not _is_own_dying(triggered.trigger) or not _returns_its_card(triggered.effects):
+			continue
+		var context: MmEffectContext = MmEffectContext.new(creature.controller_id, creature.id)
+		context.triggering_object_id = creature.id
+		if triggered.condition == null or triggered.condition.is_true(state, context):
+			return true
+	return false
+
+
+static func _is_own_dying(trigger: MmTrigger) -> bool:
+	var dies: ZoneChangeTrigger = trigger as ZoneChangeTrigger
+	return dies != null and not dies.any_from_zone and dies.from_zone == MmZone.Kind.BATTLEFIELD \
+		and not dies.any_to_zone and dies.to_zone == MmZone.Kind.GRAVEYARD and dies.filter is IsSourceFilter
+
+
+static func _returns_its_card(effects: Array[MmEffect]) -> bool:
+	for effect: MmEffect in effects:
+		var back: ReturnToBattlefieldEffect = effect as ReturnToBattlefieldEffect
+		if back != null and back.selection is TriggeringCardSelection:
+			return true
+	return false

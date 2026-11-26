@@ -14,9 +14,9 @@ var defending_player_id: int = MmGameState.NO_PLAYER
 ## strikers (CR 510.4).
 var is_first_strike_damage_step: bool = false
 
-## The declared attackers, then any put onto the battlefield attacking (CR 508.4).
-## Later (raid, "attacked this turn"): tell the two apart, since those put onto the
-## battlefield attacking never attacked.
+## The declared attackers, then any put onto the battlefield attacking (CR 508.4). Whether
+## a player attacked this turn is kept on the player instead (MmPlayer.has_attacked_this_turn),
+## since those put onto the battlefield attacking never attacked.
 var _attacker_ids: Array[int] = []
 ## CR 509.1h: an attacker stays blocked even once its blockers are gone.
 var _blocked_attacker_ids: Array[int] = []

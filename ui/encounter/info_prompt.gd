@@ -99,8 +99,14 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 		# Kishla Trawlers", as a cost's choice reads, though it can't be canceled.
 		var exiling: ChooseObjectDecision = decision as ChooseObjectDecision
 		var paying_for: MmObjectView = _stack_item(view, exiling.stack_object_id)
-		prompt.text = "Exile %s from your graveyard for %s" % [AbilityText.chosen_card_words(exiling.filter),
+		# Kessig Wolfrider's three, the user's words: "Exile three cards from your graveyard
+		# for Kessig Wolfrider", then "Exile two more cards ...", "Exile one more card ...".
+		prompt.text = "Exile %s from your graveyard for %s" % [
+			AbilityText.exiled_card_words(exiling.exile_count, exiling.filter, exiling.exiled_before),
 			source_name(view, paying_for) if paying_for != null else "this"]
+		# Engine ADR 0086: a spell's additional cost is asked as it is cast, which can be taken
+		# back; a triggered ability paying as it resolves can't be.
+		prompt.can_cancel = paying_for != null and not _is_trigger(view, exiling.stack_object_id)
 	elif decision is ChooseObjectDecision:
 		var choice: ChooseObjectDecision = decision as ChooseObjectDecision
 		# Engine ADR 0080: a card among the cards just milled is "an instant or sorcery card".
@@ -115,9 +121,22 @@ static func of(decision: MmPendingDecision, view: MmPlayerView, paying: PayManaD
 			# Isolation".
 			prompt.text = "Return %s to %s owner's hand for %s" % [picked, "its" if pick.count == 1 else "their",
 				stack_name(view, pick.stack_object_id)]
+		elif pick.purpose == ChoosePermanentsDecision.Purpose.SACRIFICE and pick.is_for_effect:
+			# The user's words: "Agent of the Fates: sacrifice a creature", what its effect makes
+			# a player do as it resolves (CR 701.21a), as a search's prompt says it.
+			var sacrificed_by: MmObjectView = _stack_item(view, pick.stack_object_id)
+			prompt.text = "%s: sacrifice %s" % [source_name(view, sacrificed_by) if sacrificed_by != null else "This",
+				picked]
+		elif pick.purpose == ChoosePermanentsDecision.Purpose.SACRIFICE:
+			# The user's words: "Sacrifice an artifact for Selfcraft Mechan".
+			var paying_for: MmObjectView = _stack_item(view, pick.stack_object_id)
+			prompt.text = "Sacrifice %s for %s" % [picked, source_name(view, paying_for) if paying_for != null else "this"]
 		else:
 			prompt.text = "Tap %s for %s" % [picked, stack_name(view, pick.stack_object_id)]
-		prompt.can_cancel = true
+		# A cost asked as a spell is cast or an ability activated can be taken back; one a
+		# triggered ability's "you may" pays as it resolves can't be (engine ADR 0088).
+		# Later: a resolving spell's or activated ability's "you may [cost]", once a card has one.
+		prompt.can_cancel = not pick.is_for_effect and not _is_trigger(view, pick.stack_object_id)
 	elif decision is ChooseCardsInLibraryDecision:
 		# Game ADR 0058: "Bushwhack: search your library for a basic land card".
 		var search: ChooseCardsInLibraryDecision = decision as ChooseCardsInLibraryDecision

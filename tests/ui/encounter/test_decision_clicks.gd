@@ -370,6 +370,25 @@ func test_while_paying_each_source_answers_with_its_own_step() -> void:
 	assert_eq(decision.validate(clicks.options_of(6)[0].answer), "")
 
 
+func test_while_paying_an_artifact_improvises_blue_and_one_with_mana_offers_both() -> void:
+	# Engine ADR 0099: tapping an artifact for improvise pays {1} of a spell with improvise.
+	var view: MmPlayerView = _view()
+	view.battlefield.append_array([_permanent(6, []), _permanent(7, [Scenario.tap_for_mana(MmMana.Type.RED, 1)])])
+	var decision: PayManaDecision = PayManaDecision.new(HERO, [
+		ActivateAbilityAction.new(7, 0), ImproviseAction.new(6), ImproviseAction.new(7),
+	] as Array[MmAction], 2, [] as Array[MmMana.Type])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(clicks.options_of(6).size(), 1)
+	assert_eq(clicks.options_of(6)[0].answer, 1)
+	assert_eq(clicks.options_of(6)[0].row_text, "Improvise")
+	assert_eq(clicks.options_of(6)[0].text, "Improvise: Tap this artifact to pay {1}.")
+	assert_eq(_kinds(clicks)[6], [DecisionClicks.Kind.MANA])
+	assert_eq(clicks.options_of(7).map(func(option: ClickOption) -> int: return option.answer), [0, 2])
+	assert_eq(DecisionClicks.object_of(ImproviseAction.new(6)), 6)
+
+
 func test_the_tap_preview_keeps_blue_only_on_what_the_plan_taps() -> void:
 	var view: MmPlayerView = _view()
 	var staff: MmObjectView = _permanent(31, [_ping(), Scenario.tap_for_mana(MmMana.Type.RED, 1)])
@@ -558,6 +577,22 @@ func test_a_card_with_bestow_offers_a_second_row_that_casts_it_with_bestow() -> 
 	assert_eq(clicks.hand_options_of(30)[1].answer, 2)
 
 
+func test_a_card_with_an_alternative_cost_offers_a_second_row_that_casts_it_for_that_cost() -> void:
+	# Engine ADR 0093, the user's words.
+	var view: MmPlayerView = _view()
+	view.hand = [_card(30, "Zahid, Djinn of the Lamp")]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new(), CastSpellAction.new(30),
+		CastSpellAction.new(30, false, false, true)] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	var rows: Array[String] = []
+	for option: ClickOption in clicks.hand_options_of(30):
+		rows.append(option.text)
+	assert_eq(rows, ["Cast Zahid, Djinn of the Lamp", "Cast Zahid, Djinn of the Lamp for its alternative cost"] as Array[String])
+	assert_eq(clicks.hand_options_of(30)[1].answer, 2)
+
+
 func test_a_card_cast_from_the_graveyard_is_clicked_in_its_window_and_its_pile_glows_green() -> void:
 	var view: MmPlayerView = _view()
 	view.graveyards[HERO] = [_card(30, "Daydream")]
@@ -573,6 +608,27 @@ func test_a_card_cast_from_the_graveyard_is_clicked_in_its_window_and_its_pile_g
 	assert_eq(clicks.options_of(30)[0].text, "Cast Daydream with flashback")
 	assert_eq(clicks.hand_options_of(30).size(), 0, "It is not in the hand.")
 	assert_eq(_kinds(clicks), {30: [DecisionClicks.Kind.PLAY]})
+
+
+func test_an_ability_of_a_card_in_the_graveyard_is_clicked_in_its_window_and_its_pile_glows_purple() -> void:
+	# Engine ADR 0094: Sanitarium Skeleton's, clicked as flashback is (game ADR 0049).
+	var view: MmPlayerView = _view()
+	var skeleton: MmObjectView = _card(30, "Skeleton")
+	skeleton.card_types = [MmCardTypes.CardType.CREATURE]
+	skeleton.abilities = [Scenario.back_from_the_graveyard(Scenario.mana_cost(2, [MmMana.Type.BLACK]))]
+	view.graveyards[HERO] = [skeleton]
+	var decision: PriorityDecision = PriorityDecision.new(HERO, [PassAction.new(), ActivateAbilityAction.new(30, 0)] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(clicks.piles(), ["hero_graveyard"] as Array[String], "Its pile glows.")
+	assert_eq(clicks.pile_kind_of("hero_graveyard"), DecisionClicks.Kind.ABILITY, "Purple, as an ability to activate is.")
+	assert_false(clicks.is_only_in_piles(), "Passing is an answer too, so its window waits for a click on the pile.")
+	assert_eq(clicks.options_of(30).size(), 1, "Clicked once in the window, it is activated.")
+	assert_eq(clicks.options_of(30)[0].answer, 1)
+	assert_eq(clicks.options_of(30)[0].text, "{2}{B}: Return this card from your graveyard to your hand.")
+	assert_eq(clicks.hand_options_of(30).size(), 0, "It is not in the hand.")
+	assert_eq(_kinds(clicks), {30: [DecisionClicks.Kind.ABILITY]})
 
 
 func test_the_top_card_of_the_library_is_clicked_in_its_window_and_its_pile_glows_green() -> void:

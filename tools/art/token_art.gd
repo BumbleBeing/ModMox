@@ -6,10 +6,14 @@ extends RefCounted
 
 
 ## The Token Definitions, each loaded from its file, that [param definition]'s abilities
-## create, in the order they are written and each once.
+## create, its Adventure's after its own (engine ADR 0078), in the order they are written
+## and each once.
 static func tokens_made_by(definition: MmCardDefinition) -> Array[MmCardDefinition]:
 	var found: Array[MmCardDefinition] = []
-	for ability: MmAbility in definition.abilities:
+	var abilities: Array[MmAbility] = definition.abilities.duplicate()
+	if definition.adventure != null:
+		abilities.append_array(definition.adventure.abilities)
+	for ability: MmAbility in abilities:
 		var effects: Array[MmEffect] = []
 		if ability is SpellAbility:
 			effects.append_array((ability as SpellAbility).effects)
@@ -27,6 +31,24 @@ static func tokens_made_by(definition: MmCardDefinition) -> Array[MmCardDefiniti
 	return found
 
 
+## Where the picture of a flip token's upper face lies in Scryfall's art crop of it, as
+## fractions of its width and height: the panel at its left, below the type line, measured
+## from the Wicked Role's (684 × 570). Scryfall prints Role tokens two to a flip card.
+const FLIP_ART_PANEL: Rect2 = Rect2(0.0, 0.116, 0.346, 0.535)
+
+
+## The art in [param image], the art crop of [param token_card], a Scryfall card object: for
+## a flip token, its upper face's art panel (FLIP_ART_PANEL), since its art crop is the whole
+## face, rules text and all; for any other token, the art crop itself.
+static func art_of(token_card: Dictionary, image: Image) -> Image:
+	if token_card.get("layout", "") != "flip":
+		return image
+	var size: Vector2 = Vector2(image.get_size())
+	var panel: Rect2i = Rect2i(Vector2i((FLIP_ART_PANEL.position * size).round()),
+		Vector2i((FLIP_ART_PANEL.size * size).round()))
+	return image.get_region(panel)
+
+
 ## The art key of [param token]: "tokens/" and its file's name.
 static func key_of(token: MmCardDefinition) -> String:
 	return ArtLibrary.token_key(token.resource_path.get_file().get_basename())
@@ -41,7 +63,14 @@ static func part_for(printing: Dictionary, token: MmCardDefinition) -> Dictionar
 		if not part is Dictionary:
 			continue
 		var related: Dictionary = part
-		if related.get("component", "") == "token" and related.get("name", "") == wanted:
+		if related.get("component", "") != "token":
+			continue
+		var part_name: String = related.get("name", "")
+		if part_name == wanted:
+			return related
+		# Scryfall prints Role tokens two to a flip card, each face named without "Role", as
+		# "Wicked // Cursed" for the Wicked Role and the Cursed Role.
+		if token.subtypes.has(AttachmentRules.ROLE) and part_name.split(" // ").has(wanted.trim_suffix(" Role")):
 			return related
 	return {}
 

@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_lrvxf"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_4xih3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/menace_ability.gd" id="2_dhncj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_865nt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_sc5qk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_lmnw5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/exile_from_graveyard_cost.gd" id="5_hrrwy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="6_pp5tv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="7_f1dgt"]
+[ext_resource type="Resource" path="res://content/tokens/wolf_3_2_red.tres" id="8_x2gij"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="10_04tjg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="11_x35uh"]
+
+[sub_resource type="Resource" id="Resource_6y724"]
+script = ExtResource("2_dhncj")
+
+[sub_resource type="Resource" id="Resource_woxqc"]
+script = ExtResource("4_lmnw5")
+
+[sub_resource type="Resource" id="Resource_g2kd5"]
+script = ExtResource("5_hrrwy")
+count = 3
+
+[sub_resource type="Resource" id="Resource_umbjf"]
+script = ExtResource("7_f1dgt")
+token = ExtResource("8_x2gij")
+
+[sub_resource type="Resource" id="Resource_6rmkv"]
+script = ExtResource("2_4xih3")
+generic = 2
+symbols = Array[int]([3])
+
+[sub_resource type="Resource" id="Resource_rk3pj"]
+script = ExtResource("10_04tjg")
+mana_cost = SubResource("Resource_6rmkv")
+costs = Array[ExtResource("3_865nt")]([SubResource("Resource_woxqc"), SubResource("Resource_g2kd5")])
+effects = Array[ExtResource("6_pp5tv")]([SubResource("Resource_umbjf")])
+
+[sub_resource type="Resource" id="Resource_btkh2"]
+script = ExtResource("2_4xih3")
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_sc5qk")
+name = "Kessig Wolfrider"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Knight"])
+mana_cost = SubResource("Resource_btkh2")
+power = 1
+toughness = 2
+abilities = Array[ExtResource("1_lrvxf")]([SubResource("Resource_6y724"), SubResource("Resource_rk3pj")])
+rarity = 2

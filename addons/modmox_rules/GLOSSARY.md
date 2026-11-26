@@ -37,7 +37,7 @@ A permanent that is not a card, made by an effect from a Token Definition and ow
 _Avoid_: Card (a token never is one), copy (a token that copies something is a later kind), counter (a counter is a marker on a permanent)
 
 **Token Definition**:
-The Card Definition a token is made from: its name (its subtypes plus "Token"), color, types, power, toughness and abilities. Each is its own file in `content/tokens/`, so several cards can make the same token and its art is found by the file's name. A token's color comes from the definition's color indicator, since a token has no mana cost.
+The Card Definition a token is made from: its name (its subtypes plus "Token", or the name the effect gives a predefined token, as the Wicked Role), color, types, power, toughness and abilities. Each is its own file in `content/tokens/`, so several cards can make the same token and its art is found by the file's name. A token's color comes from the definition's color indicator, since a token has no mana cost.
 _Avoid_: Token card, token template
 
 ## Play
@@ -67,11 +67,11 @@ A Game Object in the command zone with one activated ability whose cost uses the
 _Avoid_: Consumable, single-use Emblem, item (the game's word)
 
 **Activation Restriction**:
-A rule on an activated ability about when it may be activated, apart from its costs: only once each game, only as a sorcery, or only while its permanent is attached to a creature (CR 602.5). Checked wherever the engine decides which abilities to offer.
+A rule on an activated ability about when it may be activated, apart from its costs: only once each game, only once each turn, only as a sorcery, only while its permanent is attached to a creature, or only if a condition holds, as "only if a non-Skeleton creature died under your control this turn" (CR 602.5, ADR 0095). Checked wherever the engine decides which abilities to offer.
 _Avoid_: Limit cost, charge, cooldown
 
 **Spent**:
-Said of a once-each-game ability that has been activated this game, whether or not it resolved, of a once-each-turn permission to cast from the top of a library that has been used this turn, from the moment the cast began, and of an ability that triggers only once each turn and has triggered this turn, whether or not it resolved. The source's Game Object keeps the mark, and its Object View shows it. A Spent permission or trigger is ready again the next turn, whoever's it is.
+Said of a once-each-game ability that has been activated this game, whether or not it resolved, of a once-each-turn activated ability that has been activated this turn, whether or not it resolved, of a once-each-turn permission to cast from the top of a library that has been used this turn, from the moment the cast began, and of an ability that triggers only once each turn and has triggered this turn, whether or not it resolved. The source's Game Object keeps the mark, and its Object View shows it. A Spent once-each-turn ability, permission or trigger is ready again the next turn, whoever's it is.
 _Avoid_: Used up (a Potion is used up; an Emblem never is), exhausted, tapped
 
 **Hero**:
@@ -142,6 +142,10 @@ _Avoid_: Mill (which takes from the library), sacrifice (which takes from the ba
 A card exiled as its Adventure resolved (CR 715.3d). Its owner may cast it from exile as the creature, never as the Adventure again, for as long as it stays there.
 _Avoid_: Adventuring, exiled with an Adventure
 
+**Exiled to Be Played**:
+A card in exile marked with the player who may play it and the last Game Turn they may (engine ADR 0100), as Clockwork Percussionist's "exile the top card of your library. You may play it until the end of your next turn." marks it. That player may cast it with its usual timing, or play it as a land with a land play; the other player may not. The mark permits nothing once its turn is past, and stays with the old object when the card leaves exile.
+_Avoid_: Impulse draw (as a term), castable from exile, exile permission
+
 **Hybrid Symbol**:
 A mana symbol in a cost that either of two colors pays, such as {B/R} (CR 107.4e). It counts one toward mana value and makes its card both colors. A unit of mana pays a plain symbol of its type before a Hybrid Symbol of its color, and that before generic mana (ADR 0077). Only two-color ones are in the game.
 _Avoid_: Split symbol, dual symbol, either-or mana
@@ -201,8 +205,12 @@ Counters being put on a permanent, by an effect or as it enters with them (CR 12
 _Avoid_: Gets counters, counters added
 
 **Life Gain**:
-One source causing a player to gain life (CR 119.9): a gain life effect, or the damage of one source with lifelink in one Batch, however many recipients it has. "Whenever you gain life" triggers once for each, so two lifelink creatures dealing combat damage together trigger it twice (ADR 0082). Gaining 0 life is no life gain.
+One source causing a player to gain life (CR 119.9): a gain life effect, or the damage of one source with lifelink in one Batch, however many recipients it has. "Whenever you gain life" triggers once for each, so two lifelink creatures dealing combat damage together trigger it twice (ADR 0082). Gaining 0 life is no life gain. The life a player gained this turn is kept on the player, effects and lifelink alike, for "if you gained life this turn" (ADR 0082's addendum).
 _Avoid_: Life gain event (lifelink's gain is part of its damage, not an Event of its own), lifegain trigger
+
+**Life Loss**:
+A player losing life (CR 119.3): from damage (CR 120.3a), from an effect such as "each opponent loses 1 life", or from paying life (CR 119.4). Losing 0 life is no life loss. The life a player lost this turn is kept on the player, every kind alike, for "if an opponent lost life this turn" (engine ADR 0082's second addendum).
+_Avoid_: Damage (which is one way to lose life, and which prevention stops), life payment (paying life is a life loss)
 
 **Legend Rule**:
 A state-based action: a player who controls two or more legendary permanents with the same name chooses one to keep, and the rest are put into their owners' graveyards with the other state-based actions of that moment (CR 704.5j).
@@ -224,12 +232,24 @@ _Avoid_: Recast, graveyard cast, rebuy
 A keyword, "Cycling [cost]": "[Cost], Discard this card: Draw a card", an activated ability that works only while its card is in its owner's hand, whenever they have priority (CR 702.29). Discarding the card is part of the cost, paid once the mana is, so the card is gone even if the ability is countered (ADR 0059). Every other activated ability works anywhere but the hand. Typecycling, such as "Basic landcycling [cost]", is cycling that searches your library for a card of that quality, reveals it and puts it into your hand instead of drawing (CR 702.29e).
 _Avoid_: Cycle away, recycle, loot (a different action: draw, then discard)
 
+**Improvise**:
+A keyword of a spell: "Your artifacts can help cast this spell. Each artifact you tap after you're done activating mana abilities pays for {1}" (CR 702.126a). While its mana is paid, each untapped artifact its caster controls may be tapped to pay one generic mana, never a colored symbol. It is not the artifact's {T}, so one with summoning sickness may (engine ADR 0099).
+_Avoid_: Convoke (creatures, and colored mana too), tap for mana (an artifact need have no mana ability)
+
+**Undying**:
+A keyword: "When this creature dies, if it had no +1/+1 counters on it, return it to the battlefield under its owner's control with a +1/+1 counter on it" (CR 702.93a). "It" is the card the creature became in the graveyard, so a card that has left the graveyard since stays where it is, and a token never comes back (engine ADR 0096).
+_Avoid_: Comes back, recursion, persist (the same with -1/-1 counters)
+
 **Additional Cost**:
 A cost a spell asks for besides its mana cost or alternative cost, "As an additional cost to cast this spell, [cost]" (CR 601.2f, 118.8), as Fear of Isolation's "return a permanent you control to its owner's hand". The spell may be cast only while it can be paid. Its choice is asked once the mana is paid, so a land just tapped for mana may be returned for it (ADR 0086), and it stays paid whatever becomes of the spell.
 _Avoid_: Extra cost, kicker (an optional one), cost increase
 
+**Alternative Cost**:
+A cost paid instead of a spell's mana cost (CR 118.9). Flashback's and bestow's are alternative costs that come with their keywords; "You may pay {3}{U} and tap an untapped artifact you control rather than pay this spell's mana cost" is one on its own, a static ability of the spell. Its card is then offered a second cast from the hand, for that cost, whose choices are asked before the mana is paid (ADR 0093). Cost reductions take mana off it as they do off a mana cost, and the spell's mana value is still its mana cost's.
+_Avoid_: Free cast, replacement cost, optional cost (an additional one, such as kicker)
+
 **Cost Reduction**:
-A static ability of a spell that makes it cost less to cast: "This spell costs {1} less to cast for each basic land type among lands you control" takes off as much generic mana as a Value comes to, and affinity ("This spell costs {1} less to cast for each Cat you control", CR 702.41a) one for each matching permanent. What it takes off may be generic or colored mana, and comes off the mana cost or an alternative cost such as a flashback cost, by CR 118.7, as the cast begins (CR 601.2f). The spell's mana value never changes (ADR 0050). An activated ability may carry its own, as part of its text: "This ability costs {1} less to activate for each basic land type among lands you control" (CR 602.2b) takes generic mana off its mana cost as the activation begins. A permanent may make its controller's spells cost less too: "The second spell you cast each turn costs {1} less to cast" takes generic mana off the caster's second spell this turn, counting the spells cast before the permanent arrived (ADR 0050's addendum).
+A static ability of a spell that makes it cost less to cast: "This spell costs {1} less to cast for each basic land type among lands you control" takes off as much generic mana as a Value comes to, and affinity ("This spell costs {1} less to cast for each Cat you control", CR 702.41a) one for each matching permanent. What it takes off may be generic or colored mana, and comes off the mana cost or an alternative cost such as a flashback cost, by CR 118.7, as the cast begins (CR 601.2f). The spell's mana value never changes (ADR 0050). An activated ability may carry its own, as part of its text: "This ability costs {1} less to activate for each basic land type among lands you control" (CR 602.2b) takes generic mana off its mana cost as the activation begins. A permanent may make its controller's spells cost less too: "The second spell you cast each turn costs {1} less to cast" takes generic mana off the caster's second spell this turn, counting the spells cast before the permanent arrived (ADR 0050's addendum). A Cost Reduction may hold a condition, "This spell costs {3} less to cast if you've cast another spell this turn", and take its mana off only while that is true as the cast begins (ADR 0050's second addendum).
 _Avoid_: Discount, cheaper cost, cost modifier
 
 **Linked Abilities**:
@@ -319,6 +339,10 @@ _Avoid_: Shroud (no player may target it), ward, protection (different keywords)
 The creature type chosen for a permanent with "As this enters, choose a creature type" as it enters (ADR 0052), before it is on the battlefield, and kept on it from the moment it arrives, so its abilities that say "the chosen type" mean it at once. It is chosen from every creature type there is (CR 205.3m), is public, and is forgotten when the permanent leaves, since it becomes a new Game Object.
 _Avoid_: Named type, selected type, tribe
 
+**Draw**:
+A player taking the top card of their library into their hand, one card at a time (CR 121.2). Replacement effects see each draw before its card is known, so a draw that replaces another takes whatever is on top as it happens, and a draw from an empty library can be replaced too (CR 614.11, engine ADR 0097).
+_Avoid_: Draw event (unqualified), pull, card advantage
+
 **Suspended Batch**:
 A batch of events that stopped part-way because a player must choose which replacement effect applies first. It is kept in the game state until they answer, and then carries on.
 _Avoid_: Paused event, pending event, interrupted batch
@@ -330,7 +354,7 @@ Which creatures are attacking and blocking, which player is defending, and which
 _Avoid_: Battle (a card type in Magic), fight (a keyword action: see Fight)
 
 **Attacks**:
-A creature being declared as an attacker (CR 508.1), as in "Whenever this creature attacks" (CR 508.3a). A creature put onto the battlefield attacking is attacking but never attacked (CR 508.4).
+A creature being declared as an attacker (CR 508.1), as in "Whenever this creature attacks" (CR 508.3a). A creature put onto the battlefield attacking is attacking but never attacked (CR 508.4). A player attacked this turn once they declared one or more attackers in it, as raid's "if you attacked this turn" asks (engine ADR 0095's addendum).
 _Avoid_: Is attacking (that is a state)
 
 **Blocks**:
@@ -352,8 +376,12 @@ _Avoid_: Sick (on its own), fresh, exhausted
 To exert a permanent, as part of a cost such as Pride Sovereign's "{W}, {T}, Exert this creature", is to have it not untap during the next untap step of the player who exerted it (CR 701.43). The permanent remembers that player, and that untap step ends its exertion whether it was tapped then or not. Exerting it again before then still skips only that one untap step, and a permanent that changes zones is a new object, not exerted.
 _Avoid_: Tired, "doesn't untap" (that is the effect, not the action)
 
+**Skipped Untap**:
+What an effect such as Niblis of Frost's "That creature doesn't untap during its controller's next untap step" leaves on a permanent (CR 502.3, ADR 0092): the next untap step of whoever controls it leaves it tapped and ends the Skipped Untap, whether it was tapped then or not. The other player's untap steps leave it alone, and a permanent that changes zones is a new object without it. Unlike exert, it follows the permanent's controller, not a player named as it happened.
+_Avoid_: Frozen, stunned (a stun counter is another thing), exerted (which is the cost)
+
 **Sacrifice**:
-To sacrifice a permanent is for its controller to move it from the battlefield to its owner's graveyard (CR 701.21a), as Ominous Parcel's cost "Sacrifice this artifact" does. Only its controller can, and it is not destruction, so indestructible and regeneration never stop it. A sacrificed creature dies, and an ability whose cost sacrificed its source resolves from the source's last-known information.
+To sacrifice a permanent is for its controller to move it from the battlefield to its owner's graveyard (CR 701.21a), as Ominous Parcel's cost "Sacrifice this artifact" does, or Selfcraft Mechan's "you may sacrifice an artifact", whose payer chooses which (ADR 0088's addendum), or as an effect, as Agent of the Fates's "each opponent sacrifices a creature", whose player chooses which as it resolves (ADR 0088's second addendum). Only its controller can, and it is not destruction, so indestructible and regeneration never stop it. A sacrificed creature dies, and an ability whose cost sacrificed its source resolves from the source's last-known information. "The sacrificed creature", or "that creature" after a sacrifice, is what the spell or ability itself sacrificed, as a cost or by an earlier effect of its own, seen from its Last-Known Information, so its power and toughness are what they were (engine ADR 0098).
 _Avoid_: Destroy (which indestructible stops), discard (which is from a hand)
 
 **Marked Damage**:
@@ -371,6 +399,10 @@ _Avoid_: Gear, item (an Item is a Potion or a Boon), child, parent, host; "the e
 **Aura**:
 An enchantment that is an Attachment from the moment it enters, made so by its enchant ability, such as "Enchant land", which says what it may be attached to. An Aura spell targets what it will enchant, and if that target is gone as it resolves it goes to its owner's graveyard instead of entering; otherwise it enters attached to it. An Aura attached to something it may not enchant, or to nothing, is put into its owner's graveyard (CR 704.5m). "Enchanted land" is what an Aura is attached to, and "this Aura" what an Aura calls itself.
 _Avoid_: Enchantment (an Aura is one kind, and most enchantments are not Auras), buff, modifier; "falls off" (an Aura is put into the graveyard, an Equipment becomes unattached)
+
+**Role**:
+An Aura token with the subtype Role, created attached to a creature, as Price of Beauty's "Create a Wicked Role token attached to target creature you control" (CR 111.10, 303.7). A token created attached enters already attached, and one that could not legally be attached is never created. A player keeps one Role on each permanent: when a permanent has two or more Roles of the same player attached, all but the newest go to their owner's graveyard, a state-based action (the Role rule, ADR 0044's addendum). A Role is named by its name, not by its subtypes and "Token".
+_Avoid_: Role Token as its name, buff token, costume
 
 **Bestow**:
 A keyword, "Bestow [cost]" (CR 702.103): its card, an enchantment creature, may be cast from the hand for that cost instead of its mana cost, as an Aura spell with enchant creature that is no creature. That spell and the Aura it resolves into are bestowed. If its target is gone as it resolves it ceases to be bestowed and enters as an enchantment creature, and once a bestowed Aura becomes unattached it ceases to be bestowed and stays on the battlefield as an enchantment creature, rather than going to its owner's graveyard as an Aura would (ADR 0089).
@@ -413,7 +445,7 @@ The game as an Agent's player might imagine it at one decision: the real game wi
 _Avoid_: Belief state, guess
 
 **Board Evaluator**:
-What turns a game state into one number from a player's point of view: their side's worth minus the other side's, counting life, cards in hand and permanents as they are now.
+What turns a game state into one number from a player's point of view: their side's worth minus the other side's, counting life, cards in hand and permanents as they are now. A noncreature token used up by its own abilities, as a Treasure is, counts as a cheap card in hand (ADR 0088's addendum).
 _Avoid_: Heuristic (unqualified), fitness, score function
 
 **Combat Oracle**:
@@ -421,7 +453,7 @@ What answers "if these attack and these block, what happens?" by running the eng
 _Avoid_: Combat math, damage predictor
 
 **Timing Tag**:
-When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, evasion (a trick that only grants abilities) from the declare attackers step so it can change who blocks whom, removal (damage, fights, destruction and -1/-1 counters) also in its controller's main phases and the other player's end step, a counter only with the other player's spell or ability on top of the stack. A permanent spell has none, unless it has flash and its own "enters" trigger is removal or a trick: then it has that trigger's. It never decides whether a play is good.
+When a spell or ability is worth considering, worked out from what its effects do: a combat trick only in a fight or a response, evasion (a trick that only grants abilities) from the declare attackers step so it can change who blocks whom, removal (damage, fights, destruction and -1/-1 counters) also in its controller's main phases and the other player's end step, a counter only with the other player's spell or ability on top of the stack. A permanent spell has none, unless it has flash and its own "enters" trigger is removal or a trick: then it has that trigger's; or its own "enters" trigger works only if its controller attacked this turn (raid): then it is considered only in their postcombat main phase. It never decides whether a play is good.
 _Avoid_: AI hint, card flag, AILogic
 
 **AI Profile**:
@@ -439,6 +471,10 @@ _Avoid_: Playout, simulation (unqualified), search
 **Repeat Plan**:
 One activated ability activated several times in a row, each after the last has resolved, compared as a single candidate answer. The Agent submits only the first activation and judges again when it next has priority.
 _Avoid_: Multi-activation, pump chain, combo
+
+**AI Log**:
+A file written for each real encounter, beside the Run Logs, of every answer the Villain's AI Agent gave and why: the Game Turn and step, the decision, the answer with its cards' names, the reason, how long it took, the options and their scores. It is for reading a bad play back after a playtest; it never changes an answer and nothing replays it. A forced pass and mana payments are left out.
+_Avoid_: AI trace, debug log, Run Log (which records the choices themselves)
 
 **Tournament**:
 Two AI contenders, each an AI Profile and an AI Difficulty, playing many seeded encounters with the seats swapped on each seed, to measure which plays better. It is how AI settings are tuned.

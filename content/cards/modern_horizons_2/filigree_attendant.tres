@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_m7bn0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_6hfje"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_q6sbq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/count_value.gd" id="3_0ucuk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_5plh0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="4_nb50s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="5_1ebkr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="6_586yu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="7_kc8na"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="8_1wxlt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/characteristic_defining_ability.gd" id="9_1vqqk"]
+
+[sub_resource type="Resource" id="Resource_ns8c8"]
+script = ExtResource("2_6hfje")
+
+[sub_resource type="Resource" id="Resource_6j5bw"]
+script = ExtResource("5_1ebkr")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_k1olm"]
+script = ExtResource("6_586yu")
+
+[sub_resource type="Resource" id="Resource_q26sy"]
+script = ExtResource("7_kc8na")
+filters = Array[ExtResource("4_nb50s")]([SubResource("Resource_6j5bw"), SubResource("Resource_k1olm")])
+
+[sub_resource type="Resource" id="Resource_aao42"]
+script = ExtResource("8_1wxlt")
+filter = SubResource("Resource_q26sy")
+
+[sub_resource type="Resource" id="Resource_d4w1r"]
+script = ExtResource("3_0ucuk")
+selection = SubResource("Resource_aao42")
+
+[sub_resource type="Resource" id="Resource_jo50y"]
+script = ExtResource("9_1vqqk")
+power = SubResource("Resource_d4w1r")
+
+[sub_resource type="Resource" id="Resource_ck6ec"]
+script = ExtResource("2_q6sbq")
+generic = 2
+symbols = Array[int]([1, 1])
+
+[resource]
+script = ExtResource("3_5plh0")
+name = "Filigree Attendant"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Homunculus"])
+mana_cost = SubResource("Resource_ck6ec")
+toughness = 3
+abilities = Array[ExtResource("1_m7bn0")]([SubResource("Resource_ns8c8"), SubResource("Resource_jo50y")])
+rarity = 1

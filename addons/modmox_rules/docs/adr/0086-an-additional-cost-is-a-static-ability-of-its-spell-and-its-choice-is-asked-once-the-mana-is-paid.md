@@ -11,3 +11,13 @@ Fear of Isolation says "As an additional cost to cast this spell, return a perma
 The AI needs nothing of its own: its pick of the permanents simulates each choice at FULL and takes the least valuable at CHEAP, as for a tapping cost, and the simulation weighs what casting costs.
 
 Left out until a card needs them (ADR 0001): additional costs that are optional (kicker, CR 702.33) or chosen from ("sacrifice a creature or discard a card"), cost increases, and additional costs of activated abilities.
+
+## Addendum: a cost that asks which card, and sacrificing, as additional costs
+
+Makeshift Mauler says "As an additional cost to cast this spell, exile a creature card from your graveyard." `ExileFromGraveyardCost` had been paid only as a "you may" resolved (ADR 0088), and its choice is a `ChooseObjectDecision`, which the turn procedure always handed to a resolution; asked during a cast, there was none, and the answer was lost. **A `ChooseObjectDecision` asked while a cast is under way is now the cast's to answer**, and `CastProcedure` pays the cost being chosen with the card chosen, as it pays a `ChoosePermanentsDecision` with the permanents. It is asked once the mana is paid, as every additional cost's choice is here.
+
+**Canceling the cast takes the choice back**, as it does Fear of Isolation's pick. The Info Prompt says "Exile a creature card from your graveyard for Makeshift Mauler", the words ADR 0088 gave Kishla Trawlers's cost, with Cancel while the cost is a spell's or an activated ability's, and none while a triggered ability pays it as it resolves.
+
+`SacrificePermanentsCost` (ADR 0088's addendum) can be an additional cost too, "As an additional cost to cast this spell, sacrifice a creature", asked as the others are; no card says so yet.
+
+The AI exiles the creature card with the least mana value, as it does for Kishla Trawlers, since no simulation sees a graveyard.

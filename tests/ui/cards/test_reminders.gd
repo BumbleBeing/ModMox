@@ -69,6 +69,17 @@ func test_bestow_is_reminded_of_what_it_does_with_no_icon_after_the_keywords_wit
 	assert_eq(KeywordChips.chips_for([bestow] as Array[MmAbility], KeywordChips.Place.ANYWHERE).size(), 0)
 
 
+func test_mentor_is_reminded_of_what_it_does_with_no_icon() -> void:
+	# By the user's choice, mentor has a Reminder but no Keyword Chip, as bestow has.
+	var reminders: Array[Reminder] = Reminders.of([MentorAbility.new(), FlyingAbility.new()] as Array[MmAbility])
+
+	assert_eq(_keywords(reminders), ["Flying", "Mentor"])
+	assert_eq(reminders[1].icon, "")
+	assert_eq(reminders[1].text,
+		"Whenever this creature attacks, put a +1/+1 counter on target attacking creature with lesser power.")
+	assert_eq(KeywordChips.chips_for([MentorAbility.new()] as Array[MmAbility], KeywordChips.Place.ANYWHERE).size(), 0)
+
+
 func test_a_reminder_with_no_icon_is_drawn_with_an_empty_icon_space() -> void:
 	var chipless: Reminder = Reminder.new()
 	chipless.keyword = "Bestow"

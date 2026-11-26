@@ -365,6 +365,7 @@ func _ready() -> void:
 	_look_window = LookWindow.new()
 	_look_window.hide()
 	_look_window.card_clicked.connect(_pick_looked_at)
+	_look_window.moved.connect(_move_looked_at)
 	_look_window.hand_pressed.connect(_take_looked_at)
 	add_child(_look_window)
 	for player_id: int in [HERO, VILLAIN]:
@@ -465,10 +466,12 @@ func _ready() -> void:
 	var setup: MmEncounterSetup = request.setup()
 	# Behind the Scene Fade's black, so the first card drawn costs no more than any other.
 	_warmup.warm(setup)
-	var presenter: EncounterPresenter = EncounterPresenter.new(setup, request.villain_agent())
+	var picture: String = screenshot_path(OS.get_cmdline_user_args())
+	# A real encounter keeps an AI Log of the Villain's answers; a screenshot does not.
+	var presenter: EncounterPresenter = EncounterPresenter.new(setup,
+		request.villain_agent(AiLoggingAgent.FOLDER if picture == "" else ""))
 	presenter.names = request.names()
 	presenter.card_names = request.card_names
-	var picture: String = screenshot_path(OS.get_cmdline_user_args())
 	if picture == "":
 		settings_path = GameSettings.PATH
 		load_settings()
@@ -3577,6 +3580,14 @@ func _pick_looked_at(object_id: int) -> void:
 	if _is_paused or not _look.is_active():
 		return
 	_look.pick(object_id)
+	_redraw()
+
+
+## A card of the Look window was dragged to another place in its row, as the rest go to the
+## bottom in any order (engine ADR 0084's addendum). Nothing is answered.
+func _move_looked_at(from: int, to: int) -> void:
+	if not _is_paused and _look.is_active():
+		_look.move_to(from, to)
 	_redraw()
 
 

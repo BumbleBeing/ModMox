@@ -1,0 +1,21 @@
+# Undying is a keyword, and a dying permanent's "it" is the card it became
+
+Butcher Ghoul brought undying (CR 702.93a): "When this creature dies, if it had no +1/+1 counters on it, return it to the battlefield under its owner's control with a +1/+1 counter on it." It is the first card whose "dies" ability moves the card that died.
+
+**Undying is `UndyingAbility`, a `TriggeredAbility` authored with nothing**, as evolve and battle cry are: it is made with its trigger, its intervening "if" and its effect, saved with it like any triggered ability's, so a Modification changes them the same way. Its trigger is a `ZoneChangeTrigger` from the battlefield to a graveyard of its own source. Its "if" is a `SelectionMatchesCondition` that the triggering object has no +1/+1 counters, read as it last existed on the battlefield (CR 603.10a, 608.2h), as it triggers and again as it resolves (CR 603.4). Its effect is a `ReturnToBattlefieldEffect` with one +1/+1 counter, which a token never satisfies (CR 111.8).
+
+**"It" is the card the permanent became where it went: `TriggeringCardSelection`.** A zone change makes a new object (ADR 0008), so `TriggeringObjectSelection` finds only the permanent as it last existed, which no effect can move. The departed object now remembers the ID of the object it became (`MmGameObject.became_object_id`, set by `ZoneChangeEvent` as it is applied), and the selection finds that object while it exists. Once the card has moved again, as when it is exiled from the graveyard in response, it is yet another object and the selection finds nothing, so the card stays where it is, as the rules say (CR 400.7). Searching the graveyard for a card with the same Card Identity was the alternative: it would find a card that had left and come back, which is a new object that "it" does not mean.
+
+`AbilityText` prints the keyword alone, "Undying", as Oracle does; each instance triggers (CR 603.2), so two print twice, as two prowess do. `TriggeringCardSelection` reads "it", so the effect alone reads "Return it to the battlefield under its owner's control with a +1/+1 counter on it." Undying has no Keyword Chip, as the other triggered keywords (exalted, battle cry, evolve, prowess) have none; a counter on the creature, which the face shows, already says whether it will return.
+
+The Agent's block planner counts a blocker that would come back as it died, one with undying and no +1/+1 counters, as surviving the block (`AiBoardEvaluator.comes_back_when_it_dies()`): the Combat Oracle stops at combat damage and never resolves the trigger, so it sees the creature die. The answer is worked out from the creature's abilities, a "dies" ability of its own that returns the card it became, whose "if" holds now, so a Modification that gives or takes undying changes it. Attacking with such a creature is left to the attack planner as it is.
+
+Left out until a card needs them (ADR 0001): persist (the same with -1/-1 counters), "return it to the battlefield under your control", and the Attack Planner counting an attacker that would come back.
+
+## Addendum: "this" is also the card a source became
+
+Gixian Puppeteer says "When this creature dies, return another target creature card with mana value 3 or less from your graveyard to the battlefield." "Another" means a card other than the Puppeteer's own, which is in the graveyard by then.
+
+**`IsSourceFilter` matches the source, and the new object the source became once it has left its zone** (`MmGameObject.became_object_id`). A "dies" ability's source is the permanent as it last existed, so before this `NotFilter(IsSourceFilter)` let it choose its own card: only the Puppeteer's mana value of 4 kept it out, and a Mod that lowered its cost would have let it in. A permanent still on the battlefield became nothing, so "another" there leaves out only itself, as before. A second Filter for "this card in the graveyard" was the alternative; it would have left every other "another" in a "leaves the battlefield" ability reading the rules wrongly in the same way.
+
+`AbilityText` puts "another" before "target" for a graveyard card too: "return another target creature card with mana value 3 or less from your graveyard to the battlefield".

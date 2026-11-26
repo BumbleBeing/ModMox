@@ -12,7 +12,7 @@ func _init(losing_player_id: int, life: int) -> void:
 
 
 func apply(state: MmGameState) -> void:
-	state.player(player_id).change_life(-amount)
+	state.player(player_id).lose_life(amount)
 
 
 func describe() -> String:

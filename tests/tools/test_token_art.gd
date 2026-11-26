@@ -41,6 +41,17 @@ func test_a_card_makes_the_tokens_an_effect_it_may_pay_for_creates() -> void:
 	assert_eq(TokenArt.tokens_made_by(smith), [cat, cat_beast] as Array[MmCardDefinition])
 
 
+func test_a_card_makes_the_tokens_its_adventure_creates() -> void:
+	# Conceited Witch's Price of Beauty creates its Wicked Role (engine ADR 0078).
+	var cat: MmCardDefinition = load(CAT) as MmCardDefinition
+	var guide: MmCardDefinition = Scenario.adventurer()
+	var make: SpellAbility = SpellAbility.new()
+	make.effects = [Scenario.create_tokens(cat)]
+	guide.adventure.abilities = [make]
+
+	assert_eq(TokenArt.tokens_made_by(guide), [cat] as Array[MmCardDefinition])
+
+
 func test_a_token_made_in_code_has_no_file_and_no_art() -> void:
 	var spell: MmCardDefinition = Scenario.free_tokens("Kitten", Scenario.cat())
 
@@ -56,3 +67,34 @@ func test_the_token_part_is_found_by_its_name_without_the_word_token() -> void:
 
 	assert_eq(TokenArt.part_for(printing, load(CAT) as MmCardDefinition).get("uri", ""), "cat")
 	assert_eq(TokenArt.part_for({}, load(CAT) as MmCardDefinition), {})
+
+
+func test_a_role_token_part_is_found_by_its_face_named_without_the_word_role() -> void:
+	# Scryfall prints the Wicked Role as one face of a flip token, "Wicked // Cursed".
+	var printing: Dictionary = {"all_parts": [
+		{"component": "combo_piece", "name": "Conceited Witch // Price of Beauty", "uri": "card"},
+		{"component": "token", "name": "Wicked // Cursed", "uri": "roles"},
+	]}
+	var wicked: MmCardDefinition = load("res://content/tokens/wicked_role.tres") as MmCardDefinition
+	var monster: MmCardDefinition = MmCardDefinition.new()
+	monster.name = "Monster Role"
+	monster.subtypes = ["Aura", "Role"]
+
+	assert_eq(TokenArt.part_for(printing, wicked).get("uri", ""), "roles")
+	assert_eq(TokenArt.part_for(printing, monster), {}, "No face is a Monster.")
+
+
+func test_a_flip_tokens_art_is_cut_to_the_art_panel_of_its_upper_face() -> void:
+	# Scryfall's art crop of a flip token is its whole upper face, rules text and all; its
+	# picture is the panel at its left, below the type line.
+	var face: Image = Image.create(684, 570, false, Image.FORMAT_RGB8)
+	face.fill(Color.WHITE)
+	face.fill_rect(Rect2i(0, 66, 237, 305), Color.RED)
+
+	var panel: Image = TokenArt.art_of({"layout": "flip"}, face)
+
+	assert_eq(panel.get_size(), Vector2i(237, 305))
+	assert_eq(panel.get_pixel(0, 0), Color.RED)
+	assert_eq(panel.get_pixel(236, 304), Color.RED)
+	assert_eq(TokenArt.art_of({"layout": "token"}, face), face, "Any other token's art crop is its art.")
+

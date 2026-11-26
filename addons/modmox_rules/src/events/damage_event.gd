@@ -26,7 +26,7 @@ func apply(state: MmGameState) -> void:
 	var source: MmGameObject = state.object_or_last_known(source_object_id)
 	is_deathtouch = source != null and state.characteristics_of(source).has_ability(DeathtouchAbility)
 	if recipient.is_player():
-		state.player(recipient.id).change_life(-amount)
+		state.player(recipient.id).lose_life(amount)
 	else:
 		var damaged: MmGameObject = state.object(recipient.id)
 		damaged.mark_damage(amount)
@@ -34,7 +34,7 @@ func apply(state: MmGameState) -> void:
 			damaged.mark_deathtouch_damage()
 	is_lifelink = source != null and state.characteristics_of(source).has_ability(LifelinkAbility)
 	if is_lifelink:
-		state.player(source.controller_id).change_life(amount)
+		state.player(source.controller_id).gain_life(amount)
 
 
 func describe() -> String:

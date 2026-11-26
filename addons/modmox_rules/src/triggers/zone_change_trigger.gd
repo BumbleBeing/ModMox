@@ -31,6 +31,8 @@ extends MmTrigger
 func matches(state: MmGameState, event: MmEvent, context: MmEffectContext) -> bool:
 	var created: TokenCreatedEvent = event as TokenCreatedEvent
 	if created != null:
+		if created.new_object_id == 0:
+			return false  # CR 303.4g: no token was created.
 		return any_from_zone and _goes_to(MmZone.Kind.BATTLEFIELD) and _matches_object(state, created.new_object_id, context)
 	var moved: ZoneChangeEvent = event as ZoneChangeEvent
 	if moved == null or not _goes_to(moved.to_zone_kind):

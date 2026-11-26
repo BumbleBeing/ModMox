@@ -58,6 +58,16 @@ func take_next_event() -> void:
 	_applied_keys.remove_at(0)
 
 
+## Puts [param resolved] in place of the next event, which it stands for, as the draw of
+## the top card does for a DrawCardEvent (engine ADR 0097). The same replacement effects
+## have applied to it, so none applies again (CR 616.2).
+func resolve_next_event(resolved: MmEvent) -> void:
+	var keys: PackedStringArray = _applied_keys[0]
+	take_next_event()
+	_events.insert(0, resolved)
+	_applied_keys.insert(0, keys)
+
+
 ## Puts [param replacing] in place of the next event. The effect with [param applied_key]
 ## has now applied to each of them (CR 616.2).
 func replace_next_event(replacing: Array[MmEvent], applied_key: String) -> void:

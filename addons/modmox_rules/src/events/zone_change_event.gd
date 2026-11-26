@@ -16,7 +16,7 @@ extends MmEvent
 ## destruction.
 ## EXPLORE is CR 701.44a: a card an explore revealed, put into its owner's hand or graveyard.
 enum Reason { DRAW, MULLIGAN, PUT_ON_BOTTOM, DISCARD, PLAY_LAND, CAST, RESOLVED, DID_NOT_RESOLVE, DESTROY, ZERO_TOUGHNESS, COUNTER, RETURN_TO_HAND,
-	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA, SURVEIL, SACRIFICE, MILL, LOOK, EXPLORE }
+	EXILE, RETURN_TO_BATTLEFIELD, LEGEND_RULE, SEARCH, UNATTACHED_AURA, SURVEIL, SACRIFICE, MILL, LOOK, EXPLORE, ROLE_RULE }
 
 ## The object leaving. It stops existing once this event is applied.
 var object_id: int
@@ -51,6 +51,9 @@ var counters_on_arrival: Dictionary[MmCounter.Kind, int] = {}
 ## For a card entering the battlefield: true when it enters tapped (CR 110.5b), tapped as it
 ## arrives so that its "enters" abilities see it tapped.
 var tapped_on_arrival: bool = false
+## For a card entering the battlefield: true when it enters attacking (CR 508.4), as a
+## ReturnToBattlefieldEffect "tapped and attacking" says, never declared as an attacker.
+var attacking_on_arrival: bool = false
 ## For a card entering the battlefield: the creature type chosen as it enters (CR 614.12,
 ## ADR 0052), or "". Recorded as it arrives, so its static abilities apply at once.
 var chosen_creature_type_on_arrival: String = ""
@@ -96,6 +99,7 @@ func copy(state: MmGameState) -> ZoneChangeEvent:
 	same.is_bestowed = is_bestowed
 	same.counters_on_arrival = counters_on_arrival.duplicate()
 	same.tapped_on_arrival = tapped_on_arrival
+	same.attacking_on_arrival = attacking_on_arrival
 	same.chosen_creature_type_on_arrival = chosen_creature_type_on_arrival
 	same.attached_to_on_arrival = attached_to_on_arrival
 	same.entry_cost_paid = entry_cost_paid
@@ -114,6 +118,8 @@ func apply(state: MmGameState) -> void:
 		last_known = state.characteristics_of(leaving)
 		leaving.freeze_last_known(last_known)
 		state.record_departure(leaving)
+	if from_zone_kind == MmZone.Kind.BATTLEFIELD and to_zone_kind == MmZone.Kind.GRAVEYARD:
+		state.record_death(object_id)  # CR 700.4, ADR 0095
 	var hand_size_before: int = from_zone.size()
 	from_zone.remove(leaving)
 	state.retire_object(leaving)
@@ -125,6 +131,7 @@ func apply(state: MmGameState) -> void:
 	var arriving: MmGameObject = state.create_object(leaving.card_id, leaving.owner_id, leaving.definition)
 	to_zone.insert(arriving, position)
 	new_object_id = arriving.id
+	leaving.record_became(arriving.id)  # Engine ADR 0096: "return it".
 	if leaving.is_token:
 		# CR 111.7: a token that leaves the battlefield moves like a card, and is still a
 		# token where it lands until state-based actions see it there (CR 704.5d).
@@ -168,6 +175,8 @@ func apply(state: MmGameState) -> void:
 	if to_zone_kind == MmZone.Kind.BATTLEFIELD:
 		# CR 302.6: summoning sickness counts from when its controller began controlling it.
 		arriving.record_control_since(state.game_turn)
+	if attacking_on_arrival and to_zone_kind == MmZone.Kind.BATTLEFIELD:
+		state.combat.enter_attacking(arriving.id)
 	if reason == Reason.PLAY_LAND:
 		state.player(arriving.controller_id).record_land_play()
 	if reason == Reason.DRAW:
@@ -182,4 +191,5 @@ func describe() -> String:
 	return "%s%s: object %d (card %d) from %s to %s%s%s%s%s as object %d" % [
 		Reason.find_key(reason), "" if can_be_regenerated else " (can't be regenerated)", object_id, card_id,
 		MmZone.describe_zone(from_zone_kind, from_owner_id), MmZone.describe_zone(to_zone_kind, to_owner_id),
-		" tapped" if tapped_on_arrival else "", chosen, attached, exiled_with, new_object_id]
+		(" tapped" if tapped_on_arrival else "") + (" attacking" if attacking_on_arrival else ""), chosen, attached,
+		exiled_with, new_object_id]

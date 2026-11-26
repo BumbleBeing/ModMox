@@ -44,6 +44,31 @@ func test_the_value_counts_whose_graveyard_it_is_told() -> void:
 	assert_false(Scenario.at_least(Scenario.cards_in_graveyard(), 2).is_true(engine.game_state(), context))
 
 
+func test_a_filtered_count_counts_only_the_cards_that_match_each_once() -> void:
+	# Chitin Gravestalker's "for each artifact and/or creature card in your graveyard": an
+	# artifact creature card is one card, counted once (engine ADR 0080's addendum).
+	var held: Array[MmCardDefinition] = [Scenario.creature("Husk", 0, 0), _artifact_creature("Scrap Husk"),
+		Scenario.free_mill("Mill None", 0), Scenario.free_mill("Opponent Mill", 9, true)]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(no_cards, no_cards, held), no_cards,
+		no_cards, held, no_cards, 3, Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hands.")
+	var artifact_or_creature: AnyOfFilter = Scenario.any_of([Scenario.of_type(MmCardTypes.CardType.ARTIFACT),
+		Scenario.of_type(MmCardTypes.CardType.CREATURE)])
+	var counted: CardsInZoneValue = Scenario.cards_in_graveyard(MmTrigger.Whose.YOU, artifact_or_creature)
+	var context: MmEffectContext = MmEffectContext.new(engine.hero().id, 0)
+
+	for card_name: String in ["Husk", "Scrap Husk", "Mill None", "Opponent Mill"]:
+		assert_eq(Scenario.cast_and_resolve(engine, card_name), "")
+		assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(engine.hero().graveyard.size(), 4, "Two 0/0s died, and two instants resolved.")
+	assert_eq(counted.evaluate(engine.game_state(), context), 2, "The instants are not counted.")
+	assert_eq(Scenario.cards_in_graveyard().evaluate(engine.game_state(), context), 4, "No filter counts every card.")
+	assert_eq(Scenario.cards_in_graveyard(MmTrigger.Whose.OPPONENT, artifact_or_creature).evaluate(engine.game_state(), context),
+		_creatures_in(engine.villain().graveyard, engine), "The opponent's own are theirs alone.")
+
+
 ## The Hero in their main phase on Game Turn 3 with Old Bird on the battlefield, holding
 ## Mill Five, Mill None and Opponent Mill (each opponent mills nine).
 func _bird_ready() -> MmEngine:
@@ -60,3 +85,20 @@ func _bird_ready() -> MmEngine:
 func _pt(engine: MmEngine, permanent: MmGameObject) -> Array[int]:
 	var seen: MmCharacteristics = engine.game_state().characteristics_of(permanent)
 	return [seen.power, seen.toughness]
+
+
+## A 0/0 artifact creature costing {0}, which dies as it enters.
+func _artifact_creature(card_name: String) -> MmCardDefinition:
+	var husk: MmCardDefinition = Scenario.creature(card_name, 0, 0)
+	husk.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	return husk
+
+
+## How many of [param pile]'s cards are artifacts or creatures.
+func _creatures_in(pile: MmZone, engine: MmEngine) -> int:
+	var count: int = 0
+	for card: MmGameObject in pile.objects():
+		var seen: MmCharacteristics = engine.game_state().characteristics_of(card)
+		if seen.card_types.has(MmCardTypes.CardType.ARTIFACT) or seen.card_types.has(MmCardTypes.CardType.CREATURE):
+			count += 1
+	return count

@@ -18,6 +18,7 @@ func apply(state: MmGameState) -> void:
 	for each_player: MmPlayer in state.players:
 		each_player.reset_turn_counters()
 	state.clear_ability_resolutions()  # ADR 0056: "this turn".
+	state.clear_deaths()  # ADR 0095: "this turn".
 	var active: MmPlayer = state.player(active_player_id)
 	active.begin_turn(state.game_turn)
 	game_turn = state.game_turn

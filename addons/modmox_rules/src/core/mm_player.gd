@@ -27,6 +27,17 @@ var spells_cast_this_turn: int = 0
 ## The cards this player has drawn this turn (CR 121.1), one at a time (CR 121.2), the draw
 ## step's card among them, for "your second card each turn".
 var cards_drawn_this_turn: int = 0
+## Whether this player declared one or more attackers this turn (CR 508.1), for "if you
+## attacked this turn" (engine ADR 0095's addendum). Never set by a creature put onto the
+## battlefield attacking (CR 508.4).
+var has_attacked_this_turn: bool = false
+## The life this player has gained this turn, from effects and from lifelink damage alike
+## (CR 119.3, 120.3f), for "if you gained life this turn" (engine ADR 0082's addendum).
+var life_gained_this_turn: int = 0
+## The life this player has lost this turn, from damage, effects and paying life alike
+## (CR 119.3, 119.4, 120.3a), for "if an opponent lost life this turn" (engine ADR 0082's
+## second addendum).
+var life_lost_this_turn: int = 0
 ## Land plays this player may make this turn beyond their one, from resolved spells and
 ## abilities (CR 305.2). Ones from static abilities are counted where land plays are offered.
 var additional_land_plays_this_turn: int = 0
@@ -68,6 +79,9 @@ func duplicate_without_objects() -> MmPlayer:
 	copy.lands_played_this_turn = lands_played_this_turn
 	copy.spells_cast_this_turn = spells_cast_this_turn
 	copy.cards_drawn_this_turn = cards_drawn_this_turn
+	copy.has_attacked_this_turn = has_attacked_this_turn
+	copy.life_gained_this_turn = life_gained_this_turn
+	copy.life_lost_this_turn = life_lost_this_turn
 	copy.additional_land_plays_this_turn = additional_land_plays_this_turn
 	copy.has_drawn_from_empty_library = has_drawn_from_empty_library
 	copy.has_lost = has_lost
@@ -105,6 +119,9 @@ func reset_turn_counters() -> void:
 	lands_played_this_turn = 0
 	spells_cast_this_turn = 0
 	cards_drawn_this_turn = 0
+	has_attacked_this_turn = false
+	life_gained_this_turn = 0
+	life_lost_this_turn = 0
 	# CR 514.2 ends "this turn" effects in the cleanup step. Ending them as the next turn
 	# begins is the same, since no land can be played in between.
 	additional_land_plays_this_turn = 0
@@ -123,6 +140,11 @@ func record_spell_cast() -> void:
 ## Event-only: counts a card this player drew this turn (CR 121.1).
 func record_card_drawn() -> void:
 	cards_drawn_this_turn += 1
+
+
+## Event-only: records that this player declared attackers this turn (CR 508.1).
+func record_attack() -> void:
+	has_attacked_this_turn = true
 
 
 ## Event-only: allows [param count] more land plays this turn (CR 305.2).
@@ -162,3 +184,19 @@ func lose(reason: LossReason) -> void:
 ## Event-only: changes the life total by [param amount], which may be negative (CR 119.3).
 func change_life(amount: int) -> void:
 	life += amount
+
+
+## Event-only: this player gains [param amount] life (CR 119.3), counted toward the life
+## gained this turn. Gaining no life is no life gain (CR 119.9).
+func gain_life(amount: int) -> void:
+	assert(amount >= 0, "A gain of %d life is a loss." % amount)
+	change_life(amount)
+	life_gained_this_turn += amount
+
+
+## Event-only: this player loses [param amount] life (CR 119.3), counted toward the life
+## lost this turn. Losing no life is no life loss.
+func lose_life(amount: int) -> void:
+	assert(amount >= 0, "A loss of %d life is a gain." % amount)
+	change_life(-amount)
+	life_lost_this_turn += amount

@@ -1,0 +1,87 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_3wwa1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_lhyje"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_vemiu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_4nlks"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_q5cvs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_2ooiu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="5_aw643"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="6_aaaou"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/gain_life_effect.gd" id="7_klibt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_4ti5v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="9_roq7t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_aagmk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_sbpqv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="12_jeiyc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="13_12c1e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="14_fp503"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="15_ckdmb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="16_jae6e"]
+
+[sub_resource type="Resource" id="Resource_0gcyh"]
+script = ExtResource("3_4nlks")
+value = 1
+
+[sub_resource type="Resource" id="Resource_j3xoi"]
+script = ExtResource("4_2ooiu")
+
+[sub_resource type="Resource" id="Resource_s7eox"]
+script = ExtResource("5_aw643")
+amount = SubResource("Resource_0gcyh")
+recipients = SubResource("Resource_j3xoi")
+
+[sub_resource type="Resource" id="Resource_v68xt"]
+script = ExtResource("3_4nlks")
+value = 1
+
+[sub_resource type="Resource" id="Resource_mw2mg"]
+script = ExtResource("6_aaaou")
+
+[sub_resource type="Resource" id="Resource_mj3ha"]
+script = ExtResource("7_klibt")
+amount = SubResource("Resource_v68xt")
+players = SubResource("Resource_mw2mg")
+
+[sub_resource type="Resource" id="Resource_42wd1"]
+script = ExtResource("12_jeiyc")
+
+[sub_resource type="Resource" id="Resource_ybh56"]
+script = ExtResource("13_12c1e")
+
+[sub_resource type="Resource" id="Resource_1t30u"]
+script = ExtResource("14_fp503")
+filters = Array[ExtResource("11_sbpqv")]([SubResource("Resource_42wd1"), SubResource("Resource_ybh56")])
+
+[sub_resource type="Resource" id="Resource_ld6ir"]
+script = ExtResource("10_aagmk")
+filter = SubResource("Resource_1t30u")
+
+[sub_resource type="Resource" id="Resource_22oli"]
+script = ExtResource("15_ckdmb")
+
+[sub_resource type="Resource" id="Resource_sd68c"]
+script = ExtResource("16_jae6e")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_22oli")
+
+[sub_resource type="Resource" id="Resource_7snbj"]
+script = ExtResource("9_roq7t")
+trigger = SubResource("Resource_sd68c")
+targets = Array[ExtResource("10_aagmk")]([SubResource("Resource_ld6ir")])
+effects = Array[ExtResource("2_lhyje")]([SubResource("Resource_s7eox"), SubResource("Resource_mj3ha")])
+
+[sub_resource type="Resource" id="Resource_nhthg"]
+script = ExtResource("2_vemiu")
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_q5cvs")
+name = "Fear of Lost Teeth"
+card_types = Array[int]([2, 1])
+subtypes = Array[String](["Nightmare"])
+mana_cost = SubResource("Resource_nhthg")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_3wwa1")]([SubResource("Resource_7snbj")])

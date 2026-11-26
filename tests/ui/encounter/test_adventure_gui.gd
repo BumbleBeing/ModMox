@@ -97,6 +97,42 @@ func test_on_an_adventure_it_is_cast_from_the_exile_window_and_says_so() -> void
 
 
 ## Guide costing {W}, its Adventure Gift costing {1}{W}.
+func test_a_card_exiled_to_be_played_is_cast_or_played_from_the_exile_window_and_says_until_when() -> void:
+	# Clockwork Percussionist's "You may play it until the end of your next turn." (engine
+	# ADR 0100, game ADR 0101), in the user's words.
+	var view: MmPlayerView = MmPlayerView.new()
+	view.viewer_id = 1
+	view.game_turn = 3
+	var spark: MmObjectView = _exiled_view(31, "Spark", 1, 5)
+	var mountain: MmObjectView = _exiled_view(32, "Mountain", 1, 3)
+	view.exiles[1] = [spark, mountain]
+	var decision: PriorityDecision = PriorityDecision.new(1, [PassAction.new(), PlayLandAction.new(32),
+		CastSpellAction.new(31)] as Array[MmAction])
+
+	var clicks: DecisionClicks = DecisionClicks.of(decision, view)
+
+	assert_eq(_texts(clicks.options_of(31)), ["Cast Spark from exile"])
+	assert_eq(_texts(clicks.options_of(32)), ["Play Mountain from exile"])
+	assert_true(clicks.piles().has(EncounterLayout.pile_key(MmZone.Kind.EXILE, true)), "Its pile glows green.")
+	assert_eq(_titles_and_texts(StateInformation.of(spark, view)),
+		[["May be played", "May be played until the end of your next turn."]])
+	assert_eq(_titles_and_texts(StateInformation.of(mountain, view)),
+		[["May be played", "May be played until the end of this turn."]])
+	view.game_turn = 6
+	assert_eq(StateInformation.of(spark, view).size(), 0, "Once its time is up it says nothing.")
+
+
+func _exiled_view(object_id: int, card_name: String, player_id: int, through: int) -> MmObjectView:
+	var seen: MmObjectView = MmObjectView.new()
+	seen.id = object_id
+	seen.name = card_name
+	seen.owner_id = player_id
+	seen.controller_id = player_id
+	seen.playable_by_player_id = player_id
+	seen.playable_through_game_turn = through
+	return seen
+
+
 func _white_guide() -> MmCardDefinition:
 	return Scenario.adventurer(Scenario.mana_cost(0, [WHITE]), Scenario.mana_cost(1, [WHITE]))
 

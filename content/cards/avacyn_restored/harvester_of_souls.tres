@@ -1,0 +1,88 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_o2rgt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/deathtouch_ability.gd" id="2_imym7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_qtn8r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_qh1l2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_uylqr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_ou48q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="5_x8oxt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="6_v6r81"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_effect.gd" id="7_8r5aq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_5x2fa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="9_oef4n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_ky1hg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="11_aq6mh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_mvsot"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="13_6hdai"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_token_filter.gd" id="14_vjmxm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="15_3hnat"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="16_ucrhh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="17_2l0oi"]
+
+[sub_resource type="Resource" id="Resource_g46fp"]
+script = ExtResource("2_imym7")
+
+[sub_resource type="Resource" id="Resource_2tmo2"]
+script = ExtResource("4_ou48q")
+value = 1
+
+[sub_resource type="Resource" id="Resource_ushwc"]
+script = ExtResource("5_x8oxt")
+
+[sub_resource type="Resource" id="Resource_wfd0d"]
+script = ExtResource("6_v6r81")
+amount = SubResource("Resource_2tmo2")
+players = SubResource("Resource_ushwc")
+
+[sub_resource type="Resource" id="Resource_1gmow"]
+script = ExtResource("7_8r5aq")
+effect = SubResource("Resource_wfd0d")
+
+[sub_resource type="Resource" id="Resource_by4hm"]
+script = ExtResource("12_mvsot")
+
+[sub_resource type="Resource" id="Resource_sy4ha"]
+script = ExtResource("13_6hdai")
+filter = SubResource("Resource_by4hm")
+
+[sub_resource type="Resource" id="Resource_8psti"]
+script = ExtResource("14_vjmxm")
+
+[sub_resource type="Resource" id="Resource_ocjn6"]
+script = ExtResource("13_6hdai")
+filter = SubResource("Resource_8psti")
+
+[sub_resource type="Resource" id="Resource_hkl5l"]
+script = ExtResource("15_3hnat")
+
+[sub_resource type="Resource" id="Resource_4txrv"]
+script = ExtResource("16_ucrhh")
+filters = Array[ExtResource("11_aq6mh")]([SubResource("Resource_sy4ha"), SubResource("Resource_ocjn6"), SubResource("Resource_hkl5l")])
+
+[sub_resource type="Resource" id="Resource_685b6"]
+script = ExtResource("17_2l0oi")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_4txrv")
+
+[sub_resource type="Resource" id="Resource_t1ksa"]
+script = ExtResource("9_oef4n")
+trigger = SubResource("Resource_685b6")
+effects = Array[ExtResource("3_uylqr")]([SubResource("Resource_1gmow")])
+
+[sub_resource type="Resource" id="Resource_0rv5e"]
+script = ExtResource("2_qtn8r")
+generic = 4
+symbols = Array[int]([2, 2])
+
+[resource]
+script = ExtResource("3_qh1l2")
+name = "Harvester of Souls"
+card_types = Array[int]([1])
+subtypes = Array[String](["Demon"])
+mana_cost = SubResource("Resource_0rv5e")
+power = 5
+toughness = 5
+abilities = Array[ExtResource("1_o2rgt")]([SubResource("Resource_g46fp"), SubResource("Resource_t1ksa")])
+rarity = 2

@@ -85,7 +85,7 @@ func _fetch_token(creator: MmCardDefinition, key: String, library: ArtLibrary) -
 	var token_card: Variant = await _scryfall.json_at(str(part.get("uri", "")))
 	if not token_card is Dictionary or not ((token_card as Dictionary).get("image_uris", {}) as Dictionary).has("art_crop"):
 		return "the token has no art"
-	return await _save_art(token_card as Dictionary, key, library)
+	return await _save_art(token_card as Dictionary, key, library, true)
 
 
 ## The first printing (FirstPrinting) of the card named [param card_name], or a Dictionary
@@ -106,11 +106,17 @@ func _first_printing(card_name: String) -> Dictionary:
 
 
 ## Downloads the art crop of [param chosen], a Scryfall card object, as [param key]'s image
-## and records its credits.
-func _save_art(chosen: Dictionary, key: String, library: ArtLibrary) -> String:
+## and records its credits. With [param is_token], a flip token's is cut to its art panel
+## (TokenArt.art_of()).
+func _save_art(chosen: Dictionary, key: String, library: ArtLibrary, is_token: bool = false) -> String:
 	var image: PackedByteArray = await _scryfall.bytes_at(str((chosen["image_uris"] as Dictionary)["art_crop"]))
 	if image.is_empty():
 		return "download failed"
+	if is_token and chosen.get("layout", "") == "flip":
+		var whole: Image = Image.new()
+		if whole.load_jpg_from_buffer(image) != OK:
+			return "the art could not be read"
+		image = TokenArt.art_of(chosen, whole).save_jpg_to_buffer(0.95)
 	var file: FileAccess = FileAccess.open(ArtLibrary.FOLDER + key + ".jpg", FileAccess.WRITE)
 	file.store_buffer(image)
 	file.close()

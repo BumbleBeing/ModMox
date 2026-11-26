@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_c3pl7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/deathtouch_ability.gd" id="2_l1inp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_qve4t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_clsrx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_gfmfo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_gac7a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="5_50j72"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="6_ullfc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/lose_life_effect.gd" id="7_84v4r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_edbac"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_ur2gc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="10_ihu4w"]
+
+[sub_resource type="Resource" id="Resource_dbfxe"]
+script = ExtResource("2_l1inp")
+
+[sub_resource type="Resource" id="Resource_m8gcb"]
+script = ExtResource("4_gac7a")
+value = 1
+
+[sub_resource type="Resource" id="Resource_k71tb"]
+script = ExtResource("5_50j72")
+
+[sub_resource type="Resource" id="Resource_ih4ig"]
+script = ExtResource("6_ullfc")
+amount = SubResource("Resource_m8gcb")
+players = SubResource("Resource_k71tb")
+
+[sub_resource type="Resource" id="Resource_53vd2"]
+script = ExtResource("4_gac7a")
+value = 1
+
+[sub_resource type="Resource" id="Resource_uhkg3"]
+script = ExtResource("5_50j72")
+
+[sub_resource type="Resource" id="Resource_jyiw5"]
+script = ExtResource("7_84v4r")
+amount = SubResource("Resource_53vd2")
+players = SubResource("Resource_uhkg3")
+
+[sub_resource type="Resource" id="Resource_iklcc"]
+script = ExtResource("10_ihu4w")
+effects = Array[ExtResource("3_gfmfo")]([SubResource("Resource_ih4ig"), SubResource("Resource_jyiw5")])
+
+[sub_resource type="Resource" id="Resource_yqx8x"]
+script = ExtResource("2_qve4t")
+generic = 2
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_x0vp2"]
+script = ExtResource("3_clsrx")
+name = "Profane Insight"
+card_types = Array[int]([3])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_yqx8x")
+abilities = Array[ExtResource("1_c3pl7")]([SubResource("Resource_iklcc")])
+
+[sub_resource type="Resource" id="Resource_84356"]
+script = ExtResource("2_qve4t")
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_clsrx")
+name = "Foulmire Knight"
+card_types = Array[int]([1])
+subtypes = Array[String](["Zombie", "Knight"])
+mana_cost = SubResource("Resource_84356")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_c3pl7")]([SubResource("Resource_dbfxe")])
+rarity = 1
+adventure = SubResource("Resource_x0vp2")

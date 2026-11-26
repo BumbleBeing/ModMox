@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_s77i1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_lujhw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_ot6nw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_7q64q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_8gax8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/return_to_hand_effect.gd" id="4_vxkd3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_hf222"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="7_stcpc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_qmug7"]
+
+[sub_resource type="Resource" id="Resource_iedet"]
+script = ExtResource("5_hf222")
+
+[sub_resource type="Resource" id="Resource_kcmr6"]
+script = ExtResource("4_vxkd3")
+selection = SubResource("Resource_iedet")
+
+[sub_resource type="Resource" id="Resource_iat0y"]
+script = ExtResource("2_lujhw")
+generic = 2
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_11e8y"]
+script = ExtResource("7_stcpc")
+mana_cost = SubResource("Resource_iat0y")
+effects = Array[ExtResource("3_8gax8")]([SubResource("Resource_kcmr6")])
+is_activated_from_graveyard = true
+
+[sub_resource type="Resource" id="Resource_fphxm"]
+script = ExtResource("2_lujhw")
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_7q64q")
+name = "Sanitarium Skeleton"
+card_types = Array[int]([1])
+subtypes = Array[String](["Skeleton"])
+mana_cost = SubResource("Resource_fphxm")
+power = 1
+toughness = 2
+abilities = Array[ExtResource("1_s77i1")]([SubResource("Resource_11e8y")])

@@ -7,7 +7,11 @@ extends MmEffect
 ## battlefield tapped": then it is tapped as it arrives (CR 110.5b). With [member counters]
 ## it reads "... with [counters] [counter_kind] counters on it": it enters with them
 ## (CR 122.6). Either way its "enters" abilities see it as it arrived. A token that left the
-## battlefield never comes back (CR 111.8).
+## battlefield never comes back (CR 111.8). With [member attacking] it reads "... tapped and
+## attacking", as Phoenix Chick's: it enters attacking the player the combat's attackers
+## attack, never declared as an attacker (CR 508.4), as CreateTokenEffect's tokens do (ADR
+## 0044), and only under the control of the attacking player once attackers are declared
+## (CR 506.3b); otherwise it just enters.
 # Later: "under your control", for a card returned from another player's graveyard.
 # Later: ask an AsEntersPayOrEntersTappedAbility's cost before the move (ADR 0052), once a
 # card can return a land; unasked, it enters tapped.
@@ -18,6 +22,8 @@ extends MmEffect
 @export var counter_kind: MmCounter.Kind = MmCounter.Kind.PLUS_ONE_PLUS_ONE
 ## True for "to the battlefield tapped".
 @export var tapped: bool = false
+## True for "... attacking" (CR 508.4).
+@export var attacking: bool = false
 
 
 func numbers(state: MmGameState, context: MmEffectContext) -> Array[int]:
@@ -39,6 +45,10 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, worked_
 		if worked_out[0] > 0:  # CR 107.1b: a negative number is treated as 0.
 			move.counters_on_arrival[counter_kind] = worked_out[0]
 		move.tapped_on_arrival = tapped
+		# CR 506.3b: only for the attacking player, once attackers are declared; it enters
+		# under its owner's control (CR 110.2).
+		move.attacking_on_arrival = attacking and state.combat.has_declared_attackers() \
+			and card.owner_id == state.active_player_id
 		events.append(move)
 	return events
 

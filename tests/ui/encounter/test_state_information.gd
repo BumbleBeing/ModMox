@@ -139,6 +139,15 @@ func test_an_exerted_permanent_says_it_wont_untap_after_summoning_sickness() -> 
 		["Exerted", "Won't untap during its controller's next untap step."]])
 
 
+func test_a_permanent_that_doesnt_untap_says_it_wont() -> void:
+	# Niblis of Frost's "That creature doesn't untap during its controller's next untap step."
+	var bears: MmObjectView = _bears()
+	bears.skips_next_untap = true
+
+	assert_eq(_texts(StateInformation.of(bears, _view())), [
+		["Won't untap", "Won't untap during its controller's next untap step."]])
+
+
 func test_a_token_says_it_ceases_to_exist_if_it_leaves_and_comes_first() -> void:
 	var cat: MmObjectView = _bears()
 	cat.is_token = true

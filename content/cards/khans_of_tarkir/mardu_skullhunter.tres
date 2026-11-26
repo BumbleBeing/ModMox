@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_n53e3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_kp804"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/enters_tapped_ability.gd" id="2_wt4nj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_8bd88"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/attacked_this_turn_condition.gd" id="3_lor1i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_0u8mh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="5_0iwsc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="6_88101"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/discard_effect.gd" id="7_q3afd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_va0d5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="9_cwwau"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_fw8tp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="11_43o6j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_hvp20"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="13_8ecrl"]
+
+[sub_resource type="Resource" id="Resource_eovhq"]
+script = ExtResource("2_wt4nj")
+
+[sub_resource type="Resource" id="Resource_57atm"]
+script = ExtResource("3_lor1i")
+
+[sub_resource type="Resource" id="Resource_u0hhw"]
+script = ExtResource("5_0iwsc")
+value = 1
+
+[sub_resource type="Resource" id="Resource_iav0y"]
+script = ExtResource("6_88101")
+
+[sub_resource type="Resource" id="Resource_dikmw"]
+script = ExtResource("7_q3afd")
+amount = SubResource("Resource_u0hhw")
+players = SubResource("Resource_iav0y")
+
+[sub_resource type="Resource" id="Resource_5xhen"]
+script = ExtResource("11_43o6j")
+whose = 2
+
+[sub_resource type="Resource" id="Resource_t1jx4"]
+script = ExtResource("10_fw8tp")
+filter = SubResource("Resource_5xhen")
+
+[sub_resource type="Resource" id="Resource_5beox"]
+script = ExtResource("12_hvp20")
+
+[sub_resource type="Resource" id="Resource_2fq1i"]
+script = ExtResource("13_8ecrl")
+filter = SubResource("Resource_5beox")
+
+[sub_resource type="Resource" id="Resource_oo33c"]
+script = ExtResource("9_cwwau")
+trigger = SubResource("Resource_2fq1i")
+condition = SubResource("Resource_57atm")
+targets = Array[ExtResource("10_fw8tp")]([SubResource("Resource_t1jx4")])
+effects = Array[ExtResource("4_0u8mh")]([SubResource("Resource_dikmw")])
+
+[sub_resource type="Resource" id="Resource_djc1d"]
+script = ExtResource("2_kp804")
+generic = 1
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_8bd88")
+name = "Mardu Skullhunter"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Warrior"])
+mana_cost = SubResource("Resource_djc1d")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_n53e3")]([SubResource("Resource_eovhq"), SubResource("Resource_oo33c")])

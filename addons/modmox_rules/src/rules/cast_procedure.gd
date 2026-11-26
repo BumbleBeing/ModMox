@@ -37,15 +37,20 @@ var _costs: Array[MmCost] = []
 var _costs_before_mana: int = 0
 var _next_cost: int = 0
 var _paid_cost_indexes: Array[int] = []
+## How many cards the cost at [member _next_cost] has exiled so far, for a cost that exiles
+## several (ExileFromGraveyardCost.count).
+var _exiled_for_next_cost: int = 0
 
 
 ## Begins casting [param card] from [param player_id]'s hand, from their graveyard for its
 ## flashback cost, or from the top of their library with a permission, which is used now
 ## (CR 601.3, ADR 0054): CR 601.2a moves it to the stack. [param as_adventure] casts it as its
 ## Adventure, with only the Adventure's characteristics (CR 715.3a-b, engine ADR 0078), and
-## [param bestowed] as an Aura spell for its bestow cost (CR 702.103a-b, engine ADR 0089).
+## [param bestowed] as an Aura spell for its bestow cost (CR 702.103a-b, engine ADR 0089), and
+## [param for_alternative_cost] for its AlternativeCostAbility's cost (CR 118.9, engine ADR
+## 0093), whose costs that ask a choice are asked before the mana, as a flashback cost's are.
 static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false,
-		bestowed: bool = false) -> CastProcedure:
+		bestowed: bool = false, for_alternative_cost: bool = false) -> CastProcedure:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	if as_adventure:
 		characteristics = characteristics.adventure
@@ -60,7 +65,7 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, a
 		procedure._target_requirements = spell.targets
 	# CR 601.2f: the total cost is fixed now. Choosing modes and targets first, as the rules
 	# order it, can change nothing it counts. Later: cost increases.
-	var mana: MmManaCost = mana_to_pay(state, player_id, card, as_adventure, bestowed)
+	var mana: MmManaCost = mana_to_pay(state, player_id, card, as_adventure, bestowed, for_alternative_cost)
 	if mana != null and mana.x_count > 0:
 		procedure._x_cost = mana
 		if procedure._stage != Stage.CHOOSE_MODE:
@@ -69,10 +74,13 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, a
 	var costs: Array[MmCost] = []
 	if is_flashback:
 		costs.append_array(flashback_of(characteristics).costs)
+	elif for_alternative_cost:
+		costs.append_array(alternative_cost_of(characteristics).costs)
 	procedure._costs_before_mana = costs.size()
 	costs.append_array(additional_costs_of(characteristics))
 	procedure._costs = costs
 	procedure._payment = ManaPaymentProgress.of_cost(player_id, mana)
+	procedure._payment.improvises = improvises(characteristics)
 	if card.zone().kind == MmZone.Kind.LIBRARY:
 		var permission: Array[int] = top_of_library_permission(state, player_id, card)
 		assert(not permission.is_empty(), "Nothing lets player %d cast %s from their library." % [player_id, characteristics.name])
@@ -113,8 +121,10 @@ static func activate_ability(state: MmGameState, player_id: int, source: MmGameO
 ## permanent or Emblem [param player_id] controls. Null when that cost has no mana in it.
 ## [param as_adventure]: its Adventure's mana cost and reductions (CR 715.3a).
 ## [param bestowed]: its bestow cost instead, an alternative cost (CR 118.9, 702.103a).
+## [param for_alternative_cost]: its AlternativeCostAbility's mana instead (CR 118.9, engine
+## ADR 0093).
 static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false,
-		bestowed: bool = false) -> MmManaCost:
+		bestowed: bool = false, for_alternative_cost: bool = false) -> MmManaCost:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	if as_adventure:
 		characteristics = characteristics.adventure
@@ -122,6 +132,9 @@ static func mana_to_pay(state: MmGameState, player_id: int, card: MmGameObject, 
 	if bestowed:
 		var bestow: BestowAbility = BestowRules.bestow_of(characteristics)
 		mana = null if bestow == null else bestow.mana_cost
+	elif for_alternative_cost:
+		var alternative: AlternativeCostAbility = alternative_cost_of(characteristics)
+		mana = null if alternative == null else alternative.mana_cost
 	elif card.zone().kind == MmZone.Kind.GRAVEYARD:
 		var flashback: FlashbackAbility = flashback_of(characteristics)
 		mana = null if flashback == null else flashback.mana_cost
@@ -167,12 +180,19 @@ static func top_of_library_permission(state: MmGameState, player_id: int, card: 
 
 
 ## The largest X [param player_id] could pay now for [param cost], a cost with {X}, with the
-## rest of it (ADR 0076).
-static func most_x(state: MmGameState, player_id: int, cost: MmManaCost) -> int:
+## rest of it (ADR 0076), with improvise's artifacts too for a spell with [param improvises]
+## (engine ADR 0099).
+static func most_x(state: MmGameState, player_id: int, cost: MmManaCost, improvises: bool = false) -> int:
 	var x: int = 0
-	while ManaPayment.can_afford(state, player_id, cost.with_x(x + 1)):
+	while ManaPayment.can_afford(state, player_id, cost.with_x(x + 1), 0, improvises):
 		x += 1
 	return x
+
+
+## Whether a spell with [param characteristics] has improvise, so its artifacts help pay its
+## mana (CR 702.126a, engine ADR 0099).
+static func improvises(characteristics: MmCharacteristics) -> bool:
+	return characteristics.has_ability(ImproviseAbility)
 
 
 ## Every additional cost of a spell with [param characteristics] (CR 601.2f, 118.8), in the
@@ -184,6 +204,14 @@ static func additional_costs_of(characteristics: MmCharacteristics) -> Array[MmC
 		if additional != null:
 			costs.append_array(additional.costs)
 	return costs
+
+
+## The card's alternative cost (CR 118.9, engine ADR 0093), or null for a card without one.
+static func alternative_cost_of(characteristics: MmCharacteristics) -> AlternativeCostAbility:
+	for ability: MmAbility in characteristics.abilities:
+		if ability is AlternativeCostAbility:
+			return ability as AlternativeCostAbility
+	return null
 
 
 ## The card's flashback ability (CR 702.34a), or null for a card without flashback.
@@ -226,6 +254,7 @@ func copy_for(state: MmGameState) -> CastProcedure:
 	copy._costs_before_mana = _costs_before_mana
 	copy._next_cost = _next_cost
 	copy._paid_cost_indexes = _paid_cost_indexes.duplicate()
+	copy._exiled_for_next_cost = _exiled_for_next_cost
 	copy._stage = _stage
 	copy._x_cost = _x_cost
 	return copy
@@ -252,7 +281,7 @@ func next_decision() -> MmPendingDecision:
 					return decision
 				_choose_mode(decision.modes[0])  # The only mode that can be chosen needs no asking.
 			Stage.CHOOSE_X:
-				return ChooseXDecision.new(_player_id, _stack_object_id, most_x(_state, _player_id, _x_cost))
+				return ChooseXDecision.new(_player_id, _stack_object_id, most_x(_state, _player_id, _x_cost, _payment.improvises))
 			Stage.CHOOSE_TARGETS:
 				if _next_target >= _target_requirements.size():
 					_stage = Stage.PAY_COSTS
@@ -290,13 +319,25 @@ func next_decision() -> MmPendingDecision:
 
 ## Applies an already-validated [param answer] to [param decision].
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
-	if decision is ChoosePermanentsDecision:
+	if decision is ChoosePermanentsDecision or decision is ChooseObjectDecision:
 		var chosen: Array[int] = []
-		for id: Variant in answer as Array:
-			chosen.append(id as int)
-		chosen.sort()
+		if decision is ChooseObjectDecision:
+			chosen.append((decision as ChooseObjectDecision).candidates[answer as int].id)
+		else:
+			for id: Variant in answer as Array:
+				chosen.append(id as int)
+			chosen.sort()
 		# CR 601.2h: costs are paid in any order; this part now, as it is chosen.
 		_costs[_next_cost].pay(_state, _cost_source(), _player_id, chosen)
+		if _costs[_next_cost] is SacrificePermanentsCost:
+			# Engine ADR 0098: "the sacrificed creature" is found as it resolves.
+			_state.perform(SacrificedForCostEvent.new(_stack_object_id, chosen))
+		if _costs[_next_cost] is ExileFromGraveyardCost:
+			# Engine ADR 0088's second addendum: one card at a time, each exiled as chosen.
+			_exiled_for_next_cost += 1
+			if _exiled_for_next_cost < (_costs[_next_cost] as ExileFromGraveyardCost).count:
+				return
+			_exiled_for_next_cost = 0
 		_paid_cost_indexes.append(_next_cost)
 		_next_cost += 1
 		return
@@ -338,11 +379,16 @@ func _choose_mode(mode_index: int) -> void:
 func _next_cost_choice(end: int) -> MmPendingDecision:
 	while _next_cost < end:
 		var cost: MmCost = _costs[_next_cost]
-		if not cost.can_pay(_state, _cost_source(), _player_id):
+		# A cost exiling several cards was payable as a whole before its first pick; each
+		# pick since has taken one of them away.
+		if _exiled_for_next_cost == 0 and not cost.can_pay(_state, _cost_source(), _player_id):
 			_stage = Stage.STUCK  # Something since has made it unpayable.
 			return null
 		var choice: MmPendingDecision = cost.choice(_state, _cost_source(), _player_id)
 		if choice != null:
+			if cost is ExileFromGraveyardCost:
+				(choice as ChooseObjectDecision).exile_count = (cost as ExileFromGraveyardCost).count
+				(choice as ChooseObjectDecision).exiled_before = _exiled_for_next_cost
 			return choice
 		_next_cost += 1
 	return null
@@ -366,10 +412,10 @@ func _pay_remaining_costs() -> void:
 func _finish() -> void:
 	var activated: ActivatedAbility = _ability as ActivatedAbility
 	if activated != null:
-		if activated.is_once_each_game:
+		if activated.is_activated_only_once():
 			# CR 602.5b: it has been activated, whatever becomes of it on the stack. Marked
 			# before the costs are paid, since a cost may remove the source.
-			_state.perform(AbilitySpentEvent.new(_source_object_id, _ability_index))
+			_state.perform(AbilitySpentEvent.of(activated, _source_object_id, _ability_index))
 		_pay_remaining_costs()
 	else:
 		_pay_remaining_costs()

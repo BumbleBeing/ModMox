@@ -29,9 +29,10 @@ const TEXTS: Dictionary[String, String] = {
 
 
 ## What each keyword with a Reminder and no Keyword Chip means, by the user's choice
-## (engine ADR 0089): listed after those with chips, with no icon.
+## (engine ADR 0089, and mentor's): listed after those with chips, with no icon.
 const WITHOUT_CHIPS: Dictionary[String, String] = {
 	"Bestow": "You may cast this card as an Aura for its bestow cost. It becomes a creature again if it's not attached.",
+	"Mentor": "Whenever this creature attacks, put a +1/+1 counter on target attacking creature with lesser power.",
 }
 
 
@@ -61,6 +62,8 @@ static func _keywords_without_chips(abilities: Array[MmAbility]) -> Array[String
 	for ability: MmAbility in abilities:
 		if ability is BestowAbility and not found.has("Bestow"):
 			found.append("Bestow")
+		elif ability is MentorAbility and not found.has("Mentor"):
+			found.append("Mentor")
 	return found
 
 

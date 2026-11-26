@@ -49,6 +49,10 @@ var chosen_mode: int = SpellAbility.NO_MODE
 ## For a spell on the stack with {X} in its mana cost: the X chosen as it was cast (CR 107.3a,
 ## ADR 0076). 0 for anything else.
 var chosen_x: int = 0
+## For a spell or ability on the stack: the permanents sacrificed to pay its cost, by the IDs
+## they had on the battlefield, so "the sacrificed creature" finds them as they last existed
+## (CR 608.2h, engine ADR 0098). Empty for anything else.
+var sacrificed_object_ids: Array[int] = []
 ## For a spell on the stack: cast from a graveyard for its flashback cost, so it is exiled
 ## instead of going anywhere else as it leaves the stack (CR 702.34a).
 var cast_with_flashback: bool = false
@@ -109,6 +113,10 @@ var permission_used_spell_name: Dictionary[int, String] = {}
 ## place among its abilities: the Game Turn each last triggered in (ADR 0054's addendum).
 ## One is Spent while its Game Turn is the current one, as a permission is.
 var triggered_game_turn: Dictionary[int, int] = {}
+## The once-each-turn activated abilities of this object that have been activated, by their
+## place among its abilities: the Game Turn each was last activated in (CR 602.5b, ADR
+## 0036's addendum). One is Spent while its Game Turn is the current one.
+var activated_game_turn: Dictionary[int, int] = {}
 ## For a card in exile: the object whose ability exiled it, so that object's linked ability
 ## can find "the exiled card" (CR 607.2a); 0 for anything else. The object that exiled it
 ## may have left the battlefield since, and is then known only by this ID.
@@ -116,6 +124,10 @@ var exiled_with_object_id: int = 0
 ## For a card in exile: true when it was exiled "until [that object] leaves the
 ## battlefield" (CR 610.3, ADR 0065), so it comes back once that object has left.
 var returns_when_exiler_leaves: bool = false
+## For an object that has left its zone: the ID of the new object it became where it went
+## (ADR 0008), so "return it" in a "dies" ability finds the card in the graveyard (engine
+## ADR 0096); 0 while it has not moved.
+var became_object_id: int = 0
 ## For a permanent attached to another, such as an Equipment (CR 301.5): the ID of the
 ## permanent it is attached to; 0 when it is attached to nothing. That permanent may have
 ## left the battlefield since, until state-based actions unattach this one (CR 704.5n).
@@ -136,6 +148,15 @@ var chosen_creature_type: String = ""
 ## won't untap in; MmGameState.NO_PLAYER for one not exerted. That untap step ends it, and a
 ## zone change leaves it behind with the old object (ADR 0008). Public, like the permanent.
 var exerted_by_player_id: int = MmGameState.NO_PLAYER
+## Whether it won't untap during its controller's next untap step (CR 502.3), as a
+## DoesntUntapEffect says. That untap step ends it, and a zone change leaves it behind with
+## the old object (ADR 0008). Public, like the permanent.
+var skips_next_untap: bool = false
+## For a card in exile: the player who may play it, as MayPlayExiledEffect says (engine ADR
+## 0100), or MmGameState.NO_PLAYER; and the last Game Turn they may, which ends it. A zone
+## change leaves it behind with the old object (ADR 0008). Public, like exile.
+var playable_by_player_id: int = MmGameState.NO_PLAYER
+var playable_through_game_turn: int = 0
 ## Weak, because the zone already holds this object strongly; a strong reference both ways
 ## is a cycle that reference counting never frees.
 var _zone_ref: WeakRef = null
@@ -161,6 +182,7 @@ func duplicate_object() -> MmGameObject:
 	copy.targets = targets.duplicate()  # MmReferences never change, so sharing them is safe.
 	copy.chosen_mode = chosen_mode
 	copy.chosen_x = chosen_x
+	copy.sacrificed_object_ids = sacrificed_object_ids.duplicate()
 	copy.cast_with_flashback = cast_with_flashback
 	copy.is_adventure_spell = is_adventure_spell
 	copy.is_on_adventure = is_on_adventure
@@ -182,13 +204,18 @@ func duplicate_object() -> MmGameObject:
 	copy.permission_used_game_turn = permission_used_game_turn.duplicate()
 	copy.permission_used_spell_name = permission_used_spell_name.duplicate()
 	copy.triggered_game_turn = triggered_game_turn.duplicate()
+	copy.activated_game_turn = activated_game_turn.duplicate()
 	copy.exiled_with_object_id = exiled_with_object_id
+	copy.became_object_id = became_object_id
 	copy.returns_when_exiler_leaves = returns_when_exiler_leaves
 	copy.attached_to_object_id = attached_to_object_id
 	copy.is_token = is_token
 	copy.is_copy = is_copy
 	copy.chosen_creature_type = chosen_creature_type
 	copy.exerted_by_player_id = exerted_by_player_id
+	copy.skips_next_untap = skips_next_untap
+	copy.playable_by_player_id = playable_by_player_id
+	copy.playable_through_game_turn = playable_through_game_turn
 	return copy
 
 
@@ -223,6 +250,12 @@ func is_permission_used_in(ability_index: int, game_turn: int) -> bool:
 ## [param game_turn].
 func has_triggered_in(ability_index: int, game_turn: int) -> bool:
 	return triggered_game_turn.get(ability_index, -1) == game_turn
+
+
+## Whether the once-each-turn activated ability at [param ability_index] was activated in
+## [param game_turn].
+func has_activated_in(ability_index: int, game_turn: int) -> bool:
+	return activated_game_turn.get(ability_index, -1) == game_turn
 
 
 ## The zone holding this object, or null while it is between zones.
@@ -284,6 +317,29 @@ func end_exertion() -> void:
 	exerted_by_player_id = MmGameState.NO_PLAYER
 
 
+## Event-only: this permanent won't untap during its controller's next untap step.
+func skip_next_untap() -> void:
+	skips_next_untap = true
+
+
+## Event-only: [param player_id] may play this card in exile through Game Turn
+## [param game_turn] (engine ADR 0100).
+func permit_playing(player_id: int, game_turn: int) -> void:
+	playable_by_player_id = player_id
+	playable_through_game_turn = game_turn
+
+
+## Whether [param player_id] may play this card from exile in Game Turn [param game_turn]
+## (engine ADR 0100). The caller checks that it is in exile.
+func may_be_played_by(player_id: int, game_turn: int) -> bool:
+	return playable_by_player_id == player_id and game_turn <= playable_through_game_turn
+
+
+## Event-only: the untap step this permanent was to skip has come.
+func end_skipping_untap() -> void:
+	skips_next_untap = false
+
+
 ## Event-only: marks [param amount] more damage on this permanent.
 func mark_damage(amount: int) -> void:
 	damage_marked += amount
@@ -328,6 +384,12 @@ func record_control_since(game_turn: int) -> void:
 ## Event-only: freezes this object's last-known information as it leaves the battlefield.
 func freeze_last_known(characteristics: MmCharacteristics) -> void:
 	last_known_characteristics = characteristics
+
+
+## Event-only: records the new object [param object_id] this one became as it moved
+## (ADR 0008, engine ADR 0096).
+func record_became(object_id: int) -> void:
+	became_object_id = object_id
 
 
 ## Event-only: marks a spell as cast as its Adventure (CR 715.3), as it is put on the stack.
@@ -380,6 +442,12 @@ func record_triggered(ability_index: int, game_turn: int) -> void:
 	triggered_game_turn[ability_index] = game_turn
 
 
+## Event-only: the once-each-turn activated ability at [param ability_index] was activated
+## in [param game_turn].
+func record_activated(ability_index: int, game_turn: int) -> void:
+	activated_game_turn[ability_index] = game_turn
+
+
 ## Event-only: records the creature type chosen as this permanent entered (CR 614.12).
 func record_chosen_creature_type(creature_type: String) -> void:
 	chosen_creature_type = creature_type
@@ -393,6 +461,12 @@ func set_chosen_mode(mode_index: int) -> void:
 
 func set_chosen_x(x: int) -> void:
 	chosen_x = x
+
+
+## Event-only: records [param ids] as permanents sacrificed to pay this spell's or ability's
+## cost (engine ADR 0098).
+func record_sacrificed(ids: Array[int]) -> void:
+	sacrificed_object_ids.append_array(ids)
 
 
 ## Event-only: records the target chosen for place [param index] of the targets.

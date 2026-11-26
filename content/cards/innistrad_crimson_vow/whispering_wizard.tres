@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_64xku"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_7q1a8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_yvmmd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_drhlw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ghede"]
+[ext_resource type="Resource" path="res://content/tokens/spirit_1_1_white_flying.tres" id="4_h102i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_xlab4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_qr1jk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_p3r6m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="8_bjx77"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="9_1ry2m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="10_2cx5a"]
+
+[sub_resource type="Resource" id="Resource_4y4ao"]
+script = ExtResource("3_drhlw")
+token = ExtResource("4_h102i")
+
+[sub_resource type="Resource" id="Resource_g3sju"]
+script = ExtResource("8_bjx77")
+
+[sub_resource type="Resource" id="Resource_xp0js"]
+script = ExtResource("9_1ry2m")
+filter = SubResource("Resource_g3sju")
+
+[sub_resource type="Resource" id="Resource_6i0n3"]
+script = ExtResource("10_2cx5a")
+filter = SubResource("Resource_xp0js")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_wh4mq"]
+script = ExtResource("6_qr1jk")
+trigger = SubResource("Resource_6i0n3")
+effects = Array[ExtResource("2_yvmmd")]([SubResource("Resource_4y4ao")])
+is_once_each_turn = true
+
+[sub_resource type="Resource" id="Resource_mdfyq"]
+script = ExtResource("2_7q1a8")
+generic = 3
+symbols = Array[int]([1])
+
+[resource]
+script = ExtResource("3_ghede")
+name = "Whispering Wizard"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Wizard"])
+mana_cost = SubResource("Resource_mdfyq")
+power = 3
+toughness = 2
+abilities = Array[ExtResource("1_64xku")]([SubResource("Resource_wh4mq")])
+rarity = 1

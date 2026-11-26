@@ -97,6 +97,23 @@ func test_does_not_chump_block_while_life_is_safe() -> void:
 	assert_eq(agent.explain(), AiAgent.Reason.SAFE_BLOCKS)
 
 
+func test_blocks_with_an_undying_creature_that_would_come_back_while_life_is_safe() -> void:
+	# CR 702.93a: a creature with undying and no +1/+1 counters returns as it dies, bigger, so
+	# blocking with it costs nothing.
+	var engine: MmEngine = _villain_to_block([AiScenario.free_alpha("craw_wurm")], [Scenario.ghoul()])
+	var ghoul: int = Scenario.permanent_named(engine, engine.villain().id, "Ghoul")
+	var wurm: int = Scenario.permanent_named(engine, engine.hero().id, "Craw Wurm")
+
+	assert_eq(AiScenario.ask(engine, AiAgent.new()), [[ghoul, wurm]])
+
+
+func test_does_not_block_with_an_undying_creature_that_has_a_counter_while_life_is_safe() -> void:
+	var countered: MmCardDefinition = Scenario.ghoul("Ghoul", [Scenario.enters_with_counters(Scenario.constant(1))])
+	var engine: MmEngine = _villain_to_block([AiScenario.free_alpha("craw_wurm")], [countered])
+
+	assert_eq(AiScenario.ask(engine, AiAgent.new()), [], "With a counter it would stay dead.")
+
+
 func test_chump_blocks_when_the_attack_would_be_lethal() -> void:
 	var engine: MmEngine = _villain_to_block([AiScenario.free_alpha("craw_wurm")], [AiScenario.free_alpha("grizzly_bears")], 6)
 	var agent: AiAgent = AiAgent.new()

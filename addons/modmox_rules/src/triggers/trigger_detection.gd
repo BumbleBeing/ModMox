@@ -7,19 +7,24 @@ extends RefCounted
 ## trigger looks at the game after the batch, so things entering together see each other
 ## (CR 603.6a). Abilities work from the battlefield and, for Emblems, the command zone; a
 ## spell's ability whose trigger can't trigger from the battlefield works on the stack
-## instead, as "When you cast this spell" does (CR 113.6k). One
+## instead, as "When you cast this spell" does (CR 113.6k); and one that says it works from
+## the graveyard works only there (TriggeredAbility.is_triggered_from_graveyard, engine ADR
+## 0094's addendum). One
 ## event may trigger an ability several times, once for each object it is about (ADR 0017's
 ## addendum). One that triggers only once each turn triggers for the first match of a
 ## batch, and for none once its source has marked it Spent this turn (ADR 0054's addendum).
 ## Events of a batch its trigger calls one occasion trigger it once, for the first of them
 ## (MmTrigger.occasion_of(), ADR 0082).
 ##
-## Later: abilities that trigger from other zones, such as a graveyard.
+## Later: abilities that trigger from exile or the library, once a card needs them.
 
 
-## The objects whose triggered abilities are working right now, in ID order.
+## The objects whose triggered abilities are working right now, in ID order: those on the
+## battlefield and in the command zone, and the cards in a graveyard with an ability that
+## works there (engine ADR 0094's addendum).
 static func observers(state: MmGameState) -> Array[MmGameObject]:
 	var result: Array[MmGameObject] = state.battlefield.objects() + state.command.objects()
+	result.append_array(_graveyard_observers(state))
 	result.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
 	return result
 
@@ -30,6 +35,12 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 	var after: Array[MmGameObject] = observers(state)
 	# CR 113.6k: spells on the stack watch only with the triggers that work there.
 	var spells: Array[MmGameObject] = _spells_on_the_stack(state)
+	# Engine ADR 0094's addendum: a card in a graveyard watches only with the abilities that
+	# work there, and those never work anywhere else.
+	var in_graveyard_ids: Dictionary[int, bool] = {}
+	for observer: MmGameObject in after:
+		if observer.zone() != null and observer.zone().kind == MmZone.Kind.GRAVEYARD:
+			in_graveyard_ids[observer.id] = true
 	var spell_ids: Dictionary[int, bool] = {}
 	for spell: MmGameObject in spells:
 		spell_ids[spell.id] = true
@@ -58,6 +69,8 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 					continue
 				if spell_ids.has(observer.id) != triggered.trigger.functions_on_the_stack():
 					continue
+				if in_graveyard_ids.has(observer.id) != triggered.is_triggered_from_graveyard:
+					continue
 				var watching: bool = before_ids.has(observer.id) if triggered.trigger.looks_back() else after_ids.has(observer.id)
 				if not watching:
 					continue
@@ -85,6 +98,20 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 						occasions[occasion_key] = true
 	for pending: PendingTrigger in found:
 		state.perform(AbilityTriggeredEvent.new(pending))
+
+
+## The cards in each player's graveyard, in turn order, with a triggered ability that works
+## there.
+static func _graveyard_observers(state: MmGameState) -> Array[MmGameObject]:
+	var found: Array[MmGameObject] = []
+	for player: MmPlayer in state.players:
+		for card: MmGameObject in player.graveyard.objects():
+			for ability: MmAbility in state.characteristics_of(card).abilities:
+				var triggered: TriggeredAbility = ability as TriggeredAbility
+				if triggered != null and triggered.is_triggered_from_graveyard:
+					found.append(card)
+					break
+	return found
 
 
 ## The spells on the stack, in ID order: cards and copies, not abilities.

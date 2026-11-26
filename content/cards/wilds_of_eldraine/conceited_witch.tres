@@ -1,0 +1,75 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_1efji"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ix205"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/menace_ability.gd" id="2_sq18t"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_q4aj0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_v21iu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_1wr8i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="5_k4x6f"]
+[ext_resource type="Resource" path="res://content/tokens/wicked_role.tres" id="6_s0r7y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_xs6rj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_20uvj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="9_437e2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_t34mq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_cno5a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="12_srhhk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="13_4f4f3"]
+
+[sub_resource type="Resource" id="Resource_4gigj"]
+script = ExtResource("2_sq18t")
+
+[sub_resource type="Resource" id="Resource_53vhk"]
+script = ExtResource("4_1wr8i")
+
+[sub_resource type="Resource" id="Resource_i4tto"]
+script = ExtResource("5_k4x6f")
+token = ExtResource("6_s0r7y")
+attached_to = SubResource("Resource_53vhk")
+
+[sub_resource type="Resource" id="Resource_kpv26"]
+script = ExtResource("11_cno5a")
+
+[sub_resource type="Resource" id="Resource_mdr6b"]
+script = ExtResource("12_srhhk")
+
+[sub_resource type="Resource" id="Resource_eni5a"]
+script = ExtResource("13_4f4f3")
+filters = Array[ExtResource("10_t34mq")]([SubResource("Resource_kpv26"), SubResource("Resource_mdr6b")])
+
+[sub_resource type="Resource" id="Resource_l7hbi"]
+script = ExtResource("8_20uvj")
+filter = SubResource("Resource_eni5a")
+
+[sub_resource type="Resource" id="Resource_d6kdi"]
+script = ExtResource("9_437e2")
+targets = Array[ExtResource("8_20uvj")]([SubResource("Resource_l7hbi")])
+effects = Array[ExtResource("3_v21iu")]([SubResource("Resource_i4tto")])
+
+[sub_resource type="Resource" id="Resource_u0j3k"]
+script = ExtResource("2_ix205")
+symbols = Array[int]([2])
+
+[sub_resource type="Resource" id="Resource_dvvn2"]
+script = ExtResource("3_q4aj0")
+name = "Price of Beauty"
+card_types = Array[int]([5])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_u0j3k")
+abilities = Array[ExtResource("1_1efji")]([SubResource("Resource_d6kdi")])
+
+[sub_resource type="Resource" id="Resource_luvdj"]
+script = ExtResource("2_ix205")
+generic = 2
+symbols = Array[int]([2])
+
+[resource]
+script = ExtResource("3_q4aj0")
+name = "Conceited Witch"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Warlock"])
+mana_cost = SubResource("Resource_luvdj")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_1efji")]([SubResource("Resource_4gigj")])
+adventure = SubResource("Resource_dvvn2")
