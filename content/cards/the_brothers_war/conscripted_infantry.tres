@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_kplut"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_hi0m5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_xpj8l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_8ksim"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_76kc1"]
+[ext_resource type="Resource" path="res://content/tokens/soldier_1_1_colorless_artifact.tres" id="4_ftgwm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_qxma0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_ldhww"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_l5p2g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_l75uk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_cn24i"]
+
+[sub_resource type="Resource" id="Resource_5n5nw"]
+script = ExtResource("3_8ksim")
+token = ExtResource("4_ftgwm")
+
+[sub_resource type="Resource" id="Resource_wlmw6"]
+script = ExtResource("8_l75uk")
+
+[sub_resource type="Resource" id="Resource_vwka2"]
+script = ExtResource("9_cn24i")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_wlmw6")
+
+[sub_resource type="Resource" id="Resource_o4otq"]
+script = ExtResource("6_ldhww")
+trigger = SubResource("Resource_vwka2")
+effects = Array[ExtResource("2_hi0m5")]([SubResource("Resource_5n5nw")])
+
+[sub_resource type="Resource" id="Resource_wcvh0"]
+script = ExtResource("2_xpj8l")
+generic = 2
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_76kc1")
+name = "Conscripted Infantry"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Soldier"])
+mana_cost = SubResource("Resource_wcvh0")
+power = 3
+toughness = 1
+abilities = Array[ExtResource("1_kplut")]([SubResource("Resource_o4otq")])

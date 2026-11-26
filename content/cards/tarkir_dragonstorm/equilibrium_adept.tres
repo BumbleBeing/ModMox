@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_n7w8a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_5ofg4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_uyyl7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_0kvab"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_tytpd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="4_cm8a8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/exile_top_of_library_effect.gd" id="5_0j7gv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/may_play_exiled_effect.gd" id="6_vuotg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/moved_cards_selection.gd" id="7_3lfy0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="8_qejfy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="9_41t3j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_6tluq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="11_2wv1x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="12_fdatm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/double_strike_ability.gd" id="13_y13im"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="14_prkpc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="15_m8yl2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="16_26npc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="17_w52mo"]
+
+[sub_resource type="Resource" id="Resource_exrl7"]
+script = ExtResource("3_0kvab")
+value = 1
+
+[sub_resource type="Resource" id="Resource_cruje"]
+script = ExtResource("4_cm8a8")
+
+[sub_resource type="Resource" id="Resource_xlqhi"]
+script = ExtResource("5_0j7gv")
+amount = SubResource("Resource_exrl7")
+players = SubResource("Resource_cruje")
+
+[sub_resource type="Resource" id="Resource_4sfjg"]
+script = ExtResource("7_3lfy0")
+
+[sub_resource type="Resource" id="Resource_cgg1n"]
+script = ExtResource("6_vuotg")
+selection = SubResource("Resource_4sfjg")
+
+[sub_resource type="Resource" id="Resource_pwg31"]
+script = ExtResource("11_2wv1x")
+
+[sub_resource type="Resource" id="Resource_yhlmw"]
+script = ExtResource("12_fdatm")
+filter = SubResource("Resource_pwg31")
+
+[sub_resource type="Resource" id="Resource_mu2ei"]
+script = ExtResource("9_41t3j")
+trigger = SubResource("Resource_yhlmw")
+effects = Array[ExtResource("2_uyyl7")]([SubResource("Resource_xlqhi"), SubResource("Resource_cgg1n")])
+
+[sub_resource type="Resource" id="Resource_rep4n"]
+script = ExtResource("13_y13im")
+
+[sub_resource type="Resource" id="Resource_pd4da"]
+script = ExtResource("14_prkpc")
+
+[sub_resource type="Resource" id="Resource_r3jh5"]
+script = ExtResource("15_m8yl2")
+abilities = Array[ExtResource("1_n7w8a")]([SubResource("Resource_rep4n")])
+affected = SubResource("Resource_pd4da")
+
+[sub_resource type="Resource" id="Resource_r5np6"]
+script = ExtResource("16_26npc")
+continuous = SubResource("Resource_r3jh5")
+
+[sub_resource type="Resource" id="Resource_5psag"]
+script = ExtResource("17_w52mo")
+whose = 1
+nth_each_turn = 2
+
+[sub_resource type="Resource" id="Resource_l407i"]
+script = ExtResource("9_41t3j")
+trigger = SubResource("Resource_5psag")
+effects = Array[ExtResource("2_uyyl7")]([SubResource("Resource_r5np6")])
+
+[sub_resource type="Resource" id="Resource_sorxe"]
+script = ExtResource("2_5ofg4")
+generic = 3
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_tytpd")
+name = "Equilibrium Adept"
+card_types = Array[int]([1])
+subtypes = Array[String](["Dog", "Monk"])
+mana_cost = SubResource("Resource_sorxe")
+power = 2
+toughness = 4
+abilities = Array[ExtResource("1_n7w8a")]([SubResource("Resource_mu2ei"), SubResource("Resource_l407i")])
+rarity = 1

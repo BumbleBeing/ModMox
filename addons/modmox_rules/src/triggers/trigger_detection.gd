@@ -14,7 +14,9 @@ extends RefCounted
 ## addendum). One that triggers only once each turn triggers for the first match of a
 ## batch, and for none once its source has marked it Spent this turn (ADR 0054's addendum).
 ## Events of a batch its trigger calls one occasion trigger it once, for the first of them
-## (MmTrigger.occasion_of(), ADR 0082).
+## (MmTrigger.occasion_of(), ADR 0082). A delayed triggered ability waits in the game state,
+## not on an object, and triggers for the first event of a batch that meets its trigger,
+## once only, after the objects' abilities of that batch (CR 603.7c, engine ADR 0103).
 ##
 ## Later: abilities that trigger from exile or the library, once a card needs them.
 
@@ -101,6 +103,28 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 						occasions[occasion_key] = true
 	for pending: PendingTrigger in found:
 		state.perform(AbilityTriggeredEvent.new(pending))
+	_detect_delayed(state, events)
+
+
+## Records each delayed triggered ability that one of [param events] triggers, and ends it:
+## it triggers only once (CR 603.7c, engine ADR 0103).
+static func _detect_delayed(state: MmGameState, events: Array[MmEvent]) -> void:
+	var fired: Array[DelayedTrigger] = []
+	var found: Array[PendingTrigger] = []
+	for delayed: DelayedTrigger in state.delayed_triggers:
+		for event: MmEvent in events:
+			if event is AbilityTriggeredEvent:
+				continue
+			var trigger: MmTrigger = delayed.ability.trigger
+			var object_ids: Array[int] = trigger.triggering_object_ids(state, event, delayed.context())
+			if object_ids.is_empty():
+				continue
+			fired.append(delayed)
+			found.append(delayed.triggered(trigger.triggering_player_id(state, event), object_ids[0]))
+			break
+	for index: int in fired.size():
+		state.perform(DelayedTriggerEndedEvent.new(fired[index]))
+		state.perform(AbilityTriggeredEvent.new(found[index]))
 
 
 ## The cards in each player's graveyard, in turn order, with a triggered ability that works

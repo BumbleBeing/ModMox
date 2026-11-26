@@ -6,8 +6,9 @@ extends RefCounted
 ## choice it offers (CR 608.2d) and for any decision it asks of its own, such as a search
 ## (ADR 0057) or a "you may" (CR 603.5), for each step of paying a "you may pay {X}"
 ## (ADR 0061) or a cost said yes to, as ward's (ADR 0062), and whenever a batch is waiting for a replacement choice,
-## carrying on once it is answered (A143). The spell or ability leaves the stack only once
-## every effect is done.
+## carrying on once it is answered (A143). An effect that casts a spell begins its cast and
+## stops for the turn to run it, carrying on once it is cast (engine ADR 0104). The spell or
+## ability leaves the stack only once every effect is done.
 
 var _state: MmGameState
 var _object_id: int
@@ -40,6 +41,9 @@ var _effect_in_place: MmEffect = null
 ## ChooseObjectDecision or a ChoosePermanentsDecision.
 var _cost_choice: MmPendingDecision = null
 var _cost_being_chosen: MmCost = null
+## The cast the current effect began, until the turn takes it to run (engine ADR 0104), or
+## null.
+var _handed_off_cast: CastProcedure = null
 
 
 ## Begins resolving the top of the stack.
@@ -130,7 +134,16 @@ func copy_for(state: MmGameState) -> ResolutionProcedure:
 	copy._effect_in_place = _effect_in_place  # Card data, never changed.
 	copy._cost_choice = _cost_choice  # Never changed once made.
 	copy._cost_being_chosen = _cost_being_chosen  # Card data, never changed.
+	copy._handed_off_cast = null if _handed_off_cast == null else _handed_off_cast.copy_for(state)
 	return copy
+
+
+## The cast the current effect began, which the turn now runs, or null: next_decision()
+## returned null for it without being done (engine ADR 0104).
+func take_cast() -> CastProcedure:
+	var handed: CastProcedure = _handed_off_cast
+	_handed_off_cast = null
+	return handed
 
 
 ## Performs the next batches until a replacement choice is needed, which it returns, or
@@ -168,6 +181,14 @@ func next_decision() -> MmPendingDecision:
 				# What "If you do" reads (YouDidCondition). A cost that could not be paid
 				# was never asked, which is no yes.
 				_context = _context.with_answered_yes(_has_begin_answer and _begin_answer as int == ChooseYesOrNoDecision.Choice.YES)
+			var casting: MmGameObject = effect.card_to_cast(_state, _context, _numbers)
+			if casting != null:
+				# Engine ADR 0104: cast at once (CR 601.2a-i) by the turn, paying no mana
+				# (CR 118.9); this carries on with the effect's batches once it is cast.
+				_handed_off_cast = CastProcedure.cast_spell(_state, _context.controller_id, casting, false, false, false,
+					true, effect.exiles_cast_instead_of_graveyard())
+				_step = 1
+				return null
 		var batch: Array[MmEvent] = effect.next_batch(_state, _context, _step, _numbers)
 		if batch.is_empty():
 			_effect_index += 1
@@ -184,7 +205,8 @@ func next_decision() -> MmPendingDecision:
 	return null
 
 
-## Remembers the new objects of the cards [param batch] moved as "them" (engine ADR 0080).
+## Remembers the new objects of the cards [param batch] moved as "them" (engine ADR 0080),
+## and the tokens it created (its third addendum).
 # Later: a card whose move a replacement effect is still waiting to change, once one can
 # change a milled card's.
 func _remember_moved(batch: Array[MmEvent]) -> void:
@@ -193,6 +215,9 @@ func _remember_moved(batch: Array[MmEvent]) -> void:
 		var move: ZoneChangeEvent = event as ZoneChangeEvent
 		if move != null and move.new_object_id != 0:
 			ids.append(move.new_object_id)
+		var created: TokenCreatedEvent = event as TokenCreatedEvent
+		if created != null and created.new_object_id != 0:
+			ids.append(created.new_object_id)
 	_context = _context.with_moved(ids)
 
 

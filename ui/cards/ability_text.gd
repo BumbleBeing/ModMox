@@ -56,8 +56,8 @@ const UNMODIFIED: String = "unmodified"
 ## The predefined tokens the game has (CR 111.10), by subtype, which is a token's name less
 ## "Token" (CR 111.4). One is created by that word alone, "create a Treasure token", since
 ## the rules give its characteristics, and calls itself "this token", as CR 111.10a words a
-## Treasure's ability. Treasure, Clue and Map so far (ADR 0001).
-const PREDEFINED_TOKENS: Array[String] = ["Treasure", "Clue", "Map"]
+## Treasure's ability. Treasure, Clue, Map and Blood so far (ADR 0001).
+const PREDEFINED_TOKENS: Array[String] = ["Treasure", "Clue", "Map", "Blood"]
 
 ## What the ability's source calls itself.
 var _noun: String
@@ -742,6 +742,25 @@ func _reflexive_words(reflexive: ReflexiveTriggerEffect) -> String:
 	return _listed(clauses)
 
 
+## What a delayed triggered ability does, then when, as one clause without its full stop
+## (engine ADR 0103), as Harried Dronesmith words it: "sacrifice it at the beginning of your
+## next end step".
+func _delayed_words(delayed: CreateDelayedTriggerEffect) -> String:
+	var clauses: PackedStringArray = []
+	for effect: MmEffect in delayed.ability.effects:
+		var one: Array[MmEffect] = [effect]
+		clauses.append(_sentences(one, false).trim_suffix("."))
+	var step: StepBeganTrigger = delayed.ability.trigger as StepBeganTrigger
+	if step == null:
+		return "%s %s" % [_listed(clauses), _fallback(delayed.ability.trigger, "_trigger")]
+	var whose: String = "your next"
+	if step.whose == MmTrigger.Whose.ANY:
+		whose = "the next"
+	elif step.whose == MmTrigger.Whose.OPPONENT:
+		whose = "an opponent's next"
+	return "%s at the beginning of %s %s" % [_listed(clauses), whose, STEP_NAMES.get(step.step, "step")]
+
+
 ## Whether [param costs] sacrifice the ability's own source and nothing else does, in them
 ## or in [param effects].
 static func _sacrifices_only_itself(costs: Array[MmCost], effects: Array[MmEffect]) -> bool:
@@ -915,7 +934,8 @@ func _trigger_text(trigger: MmTrigger, is_one_or_more: bool = false) -> String:
 			whose = " an opponent controls"
 		var is_this: bool = aimed_at.filter is IsSourceFilter
 		var subject: String = _noun if is_this else _with_article(_noun_phrase(aimed_at.filter, false))
-		return "whenever %s becomes the target of a spell or ability%s" % [subject, whose]
+		var of_what: String = "a spell" if aimed_at.is_spells_only else "a spell or ability"
+		return "whenever %s becomes the target of %s%s" % [subject, of_what, whose]
 	var tapped: BecomesTappedTrigger = trigger as BecomesTappedTrigger
 	if tapped != null:
 		var is_this: bool = tapped.filter is IsSourceFilter
@@ -1009,6 +1029,10 @@ func _condition(condition: MmCondition) -> String:
 		# Threshold's "there are seven or more cards in your graveyard" (engine ADR 0080).
 		return "there are %s or more %s" % [_number_word(at_least.amount),
 			_cards_in_zone(at_least.value as CardsInZoneValue, true)]
+	if at_least != null and at_least.value is CardsDrawnThisTurnValue:
+		# Spinehorn Minotaur's "you've drawn two or more cards this turn".
+		return "%s drawn %s or more cards this turn" % [_drawers((at_least.value as CardsDrawnThisTurnValue).players),
+			_number_word(at_least.amount)]
 	var at_most: ValueAtMostCondition = condition as ValueAtMostCondition
 	if at_most != null and at_most.value is HandSizeValue and at_most.amount == 0:
 		# Blood Scrivener's "you have no cards in hand" (engine ADR 0097).
@@ -1070,6 +1094,11 @@ func _condition(condition: MmCondition) -> String:
 ## "You control an artifact", or "you control three or more artifacts", as Gearsmith
 ## Prodigy's condition: [param at_least] over the number of [filter] you control, counted by
 ## an EachSelection whose Filter is that and a ControlledByFilter of yours. Otherwise "".
+## "you've" or "[players] has", before "drawn ... this turn".
+func _drawers(players: MmSelection) -> String:
+	return "you've" if players is YouSelection else _selection(players) + " has"
+
+
 func _you_control_condition(at_least: ValueAtLeastCondition) -> String:
 	var count: CountValue = at_least.value as CountValue
 	var each: EachSelection = null if count == null else count.selection as EachSelection
@@ -1391,6 +1420,8 @@ func _effect(effect: MmEffect) -> String:
 	if effect is CantBlockThisTurnEffect:
 		# CR 509.1a, Arena Athlete's "target creature an opponent controls can't block this turn".
 		return _selection((effect as CantBlockThisTurnEffect).selection) + " can't block this turn"
+	if effect is DamageCantBePreventedEffect:
+		return "damage can't be prevented this turn"  # CR 615.12, Stomp's.
 	if effect is UntapEffect:
 		return "untap " + _selection((effect as UntapEffect).selection)
 	if effect is IfEffect and (effect as IfEffect).is_unless:
@@ -1430,6 +1461,9 @@ func _effect(effect: MmEffect) -> String:
 			# Blightcaster: "you may have target creature get -2/-2 until end of turn".
 			return "you may have %s%s" % [_continuous(created_maybe.continuous, false, true),
 				_duration_words(created_maybe.duration)]
+		if maybe is DealDamageEffect:
+			# Igneous Elemental: "you may have this creature deal 2 damage to target creature".
+			return "you may have " + _effect(maybe).replace(" deals ", " deal ")
 		# CR 603.5: "you may tap target creature".
 		return "you may " + _effect(maybe)
 	if effect is MayPayEffect:
@@ -1449,6 +1483,10 @@ func _effect(effect: MmEffect) -> String:
 		return done + (". Do this only once each turn" if paying.is_once_each_turn else "")
 	if effect is ReflexiveTriggerEffect:
 		return "when you do, " + _reflexive_words(effect as ReflexiveTriggerEffect)
+	if effect is CreateDelayedTriggerEffect:
+		return _delayed_words(effect as CreateDelayedTriggerEffect)
+	if effect is SacrificeSelectedEffect:
+		return "sacrifice " + _selection((effect as SacrificeSelectedEffect).selection)
 	if effect is MayPayXEffect:
 		# ADR 0061: "you may pay {X}. If you do, search your library for ...".
 		return "you may pay {X}. If you do, " + _effect((effect as MayPayXEffect).effect)
@@ -1456,6 +1494,14 @@ func _effect(effect: MmEffect) -> String:
 		# CR 611.2a: one with no duration says none (engine ADR 0091).
 		var created: CreateContinuousEffect = effect as CreateContinuousEffect
 		return _continuous(created.continuous, false) + _duration_words(created.duration)
+	if effect is CastWithoutPayingEffect:
+		# Engine ADR 0104, Goblin Dark-Dwellers: "cast target instant or sorcery card with mana
+		# value 3 or less from your graveyard without paying its mana cost".
+		var casting: CastWithoutPayingEffect = effect as CastWithoutPayingEffect
+		var words: String = "cast %s without paying its mana cost" % _selection(casting.selection)
+		if casting.is_exiled_instead_of_graveyard:
+			words += ". If that spell would be put into your graveyard, exile it instead"
+		return words
 	if effect is CreateTokenEffect:
 		return "create " + _tokens(effect as CreateTokenEffect)
 	if effect is CopySpellEffect:
@@ -1794,6 +1840,11 @@ func _selection(selection: MmSelection) -> String:
 		return "that " + _triggering_noun()
 	if selection is TriggeringCardSelection:
 		return "it"  # Undying's "return it to the battlefield" (engine ADR 0096).
+	if selection is MovedCardsSelection:
+		# Harried Dronesmith's "It gains haste", the token just created (engine ADR 0080's
+		# third addendum), and its "sacrifice it" later (engine ADR 0103).
+		# Later: "them" for several, once a card creates several and goes on to say so.
+		return "it"
 	if selection is SacrificedSelection:
 		if _sacrifices_itself:
 			return "it"  # Heartfire Immolator's "its power" (engine ADR 0098's addendum).
@@ -1961,7 +2012,7 @@ func _triggering_noun() -> String:
 	if _trigger is SpellCastTrigger:
 		return "spell"
 	if _trigger is BecomesTargetTrigger:
-		return "spell or ability"
+		return "spell" if (_trigger as BecomesTargetTrigger).is_spells_only else "spell or ability"
 	if _trigger is BlockersDeclaredTrigger:
 		return "creature"  # The attacker it blocks.
 	if _trigger is AttackersDeclaredTrigger:
@@ -2384,6 +2435,8 @@ func _value_phrase(value: MmValue) -> String:
 			return "the number of basic land types among " + _noun_phrase(among.filter, true)
 	if value is HandSizeValue:
 		return "the number of cards in %s hand" % _possessive(_selection((value as HandSizeValue).players))
+	if value is CardsDrawnThisTurnValue:
+		return "the number of cards %s drawn this turn" % _drawers((value as CardsDrawnThisTurnValue).players)
 	if value is CardsInZoneValue:
 		return "the number of " + _cards_in_zone(value as CardsInZoneValue, true)
 	if value is DifferenceValue:

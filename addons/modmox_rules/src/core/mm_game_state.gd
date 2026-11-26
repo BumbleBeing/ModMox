@@ -25,6 +25,9 @@ var is_over: bool = false
 var winner_id: int = NO_PLAYER
 ## Triggered abilities waiting to be put on the stack, in the order they triggered.
 var pending_triggers: Array[PendingTrigger] = []
+## Delayed triggered abilities waiting for their event, in the order they were created
+## (CR 603.7, engine ADR 0103). Each triggers once and is gone.
+var delayed_triggers: Array[DelayedTrigger] = []
 ## Continuous effects created by resolved spells and abilities, until they end (CR 611.2).
 var continuous_effects: Array[ActiveContinuousEffect] = []
 ## Replacement and prevention effects created by resolved spells and abilities, in the
@@ -39,6 +42,9 @@ var _ability_resolutions: Array[AbilityResolution] = []
 ## it had there, in the order they went. Each is found as it last existed with
 ## object_or_last_known(). Cleared as each turn begins.
 var _died_this_turn: Array[int] = []
+## CR 615.12: the Game Turn in which damage can't be prevented, as Stomp says; 0 for none.
+## Read with can_damage_be_prevented().
+var damage_unpreventable_in_game_turn: int = 0
 ## Every event performed, in order. Read-only outside perform(). Events never change once
 ## applied, so copies of the state share them.
 var event_log: Array[MmEvent] = []
@@ -117,9 +123,11 @@ func duplicate_state() -> MmGameState:
 	copy.is_over = is_over
 	copy.winner_id = winner_id
 	copy.pending_triggers = pending_triggers.duplicate()  # Pending triggers never change.
+	copy.delayed_triggers = delayed_triggers.duplicate()  # Nor do delayed ones.
 	copy._departed = _departed.duplicate()  # Departed objects are frozen.
 	copy._ability_resolutions = _ability_resolutions.duplicate()  # Resolutions never change.
 	copy._died_this_turn = _died_this_turn.duplicate()
+	copy.damage_unpreventable_in_game_turn = damage_unpreventable_in_game_turn
 	copy._next_batch = _next_batch
 	copy.continuous_effects = continuous_effects.duplicate()  # Active effects never change.
 	copy.replacement_effects = replacement_effects.duplicate()  # Nor do these.
@@ -216,9 +224,10 @@ func turn_order() -> Array[MmPlayer]:
 ## The zone of [param kind] owned by [param owner_id] (MmZone.NO_OWNER for shared zones).
 ## Where [param card], a spell, goes as it leaves the stack for its owner's graveyard: there,
 ## or into exile if it was cast with flashback (CR 702.34a), which replaces every way it
-## could leave. Nothing else could apply instead, so no one is asked (CR 616.1).
+## could leave, or cast by an effect that exiles it instead of putting it into a graveyard
+## (engine ADR 0104). Nothing else could apply instead, so no one is asked (CR 616.1).
 func graveyard_from_stack(card: MmGameObject) -> MmZone:
-	return exile if card.cast_with_flashback else player(card.owner_id).graveyard
+	return exile if card.cast_with_flashback or card.exiled_instead_of_graveyard else player(card.owner_id).graveyard
 
 
 func zone(kind: MmZone.Kind, owner_id: int) -> MmZone:
@@ -445,6 +454,16 @@ func remove_pending_trigger(pending: PendingTrigger) -> void:
 	pending_triggers.erase(pending)
 
 
+## Event-only: records a delayed triggered ability just created (engine ADR 0103).
+func add_delayed_trigger(delayed: DelayedTrigger) -> void:
+	delayed_triggers.append(delayed)
+
+
+## Event-only: a delayed triggered ability has triggered, and is gone (CR 603.7c).
+func remove_delayed_trigger(delayed: DelayedTrigger) -> void:
+	delayed_triggers.erase(delayed)
+
+
 ## How many times ability [param ability_index] of the object [param source_object_id] has
 ## resolved this turn (ADR 0056). The object may have left the battlefield since.
 func times_resolved_this_turn(source_object_id: int, ability_index: int) -> int:
@@ -537,6 +556,17 @@ func create_object(card_id: int, owner_id: int, definition: MmCardDefinition) ->
 	return created
 
 
+## Whether damage can be prevented right now: false for the rest of a Game Turn in which a
+## DamageCantBePreventedEffect resolved (CR 615.12).
+func can_damage_be_prevented() -> bool:
+	return damage_unpreventable_in_game_turn == 0 or damage_unpreventable_in_game_turn != game_turn
+
+
+## Event-only: damage can't be prevented in [param in_game_turn] (CR 615.12).
+func forbid_damage_prevention_in(in_game_turn: int) -> void:
+	damage_unpreventable_in_game_turn = in_game_turn
+
+
 ## Event-only: the object has left its zone and stops existing (CR 400.7).
 func retire_object(game_object: MmGameObject) -> void:
 	_objects.erase(game_object.id)
@@ -552,10 +582,14 @@ func fingerprint() -> String:
 	lines.append("over %s winner %d batch %d departed %d" % [is_over, winner_id, _next_batch, _departed.size()])
 	for pending: PendingTrigger in pending_triggers:
 		lines.append("pending " + pending.describe())
+	for delayed: DelayedTrigger in delayed_triggers:
+		lines.append("delayed " + delayed.describe())
 	for resolution: AbilityResolution in _ability_resolutions:
 		lines.append("resolved " + resolution.describe())
 	for object_id: int in _died_this_turn:
 		lines.append("died %d" % object_id)
+	if damage_unpreventable_in_game_turn != 0:
+		lines.append("damage unpreventable in %d" % damage_unpreventable_in_game_turn)
 	for active: ActiveContinuousEffect in continuous_effects:
 		lines.append("continuous " + active.describe())
 	for active: ActiveReplacementEffect in replacement_effects:
@@ -617,6 +651,8 @@ func fingerprint() -> String:
 					game_object.playable_through_game_turn])
 			if game_object.cast_with_flashback:
 				entries.append("%d flashback" % game_object.id)
+			if game_object.exiled_instead_of_graveyard:
+				entries.append("%d exiled instead of graveyard" % game_object.id)
 			if game_object.is_adventure_spell:
 				entries.append("%d adventure spell" % game_object.id)
 			if game_object.is_on_adventure:

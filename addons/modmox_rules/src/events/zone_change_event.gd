@@ -38,6 +38,9 @@ var exiled_with_object_id: int = 0
 var exiled_until_source_leaves: bool = false
 ## For a card cast from a graveyard for its flashback cost (CR 702.34a): marks the spell.
 var cast_with_flashback: bool = false
+## For a card cast "without paying its mana cost" by an effect that says "If that spell would
+## be put into your graveyard, exile it instead" (engine ADR 0104): marks the spell.
+var exiled_instead_of_graveyard: bool = false
 ## For an Adventurer card cast as its Adventure (CR 715.3): marks the spell.
 var cast_as_adventure: bool = false
 ## For a spell cast as an Adventure that resolved (CR 715.3d): marks the card in exile.
@@ -94,6 +97,7 @@ func copy(state: MmGameState) -> ZoneChangeEvent:
 	same.exiled_with_object_id = exiled_with_object_id
 	same.exiled_until_source_leaves = exiled_until_source_leaves
 	same.cast_with_flashback = cast_with_flashback
+	same.exiled_instead_of_graveyard = exiled_instead_of_graveyard
 	same.cast_as_adventure = cast_as_adventure
 	same.exiled_on_adventure = exiled_on_adventure
 	same.is_bestowed = is_bestowed
@@ -156,6 +160,8 @@ func apply(state: MmGameState) -> void:
 				arriving.make_known_to(player.id)
 	if cast_with_flashback:
 		arriving.record_cast_with_flashback()
+	if exiled_instead_of_graveyard and to_zone_kind == MmZone.Kind.STACK:
+		arriving.record_exiled_instead_of_graveyard()
 	if cast_as_adventure and to_zone_kind == MmZone.Kind.STACK:
 		arriving.record_cast_as_adventure()
 	if exiled_on_adventure and to_zone_kind == MmZone.Kind.EXILE:

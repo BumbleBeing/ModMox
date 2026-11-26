@@ -21,6 +21,7 @@ func apply(state: MmGameState) -> void:
 	created.source_name = pending.source_name
 	created.triggering_player_id = pending.triggering_player_id
 	created.triggering_object_id = pending.triggering_object_id
+	created.moved_object_ids = pending.moved_ids.duplicate()  # Engine ADR 0103: a delayed trigger's "it".
 	state.stack.insert(created, MmZone.BOTTOM)
 	new_object_id = created.id
 

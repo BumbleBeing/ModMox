@@ -71,6 +71,7 @@ static func of_stack_object(stack_object: MmGameObject, chosen_targets: Array[Mm
 	context.own_object_id = stack_object.id
 	context.target_counts = counts.duplicate()
 	context.sacrificed_ids = stack_object.sacrificed_object_ids.duplicate()
+	context.moved_ids = stack_object.moved_object_ids.duplicate()  # Engine ADR 0103.
 	return context
 
 

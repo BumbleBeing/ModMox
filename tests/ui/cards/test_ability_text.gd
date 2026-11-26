@@ -55,6 +55,7 @@ const PRINTED: Dictionary[String, String] = {
 	"blightcaster": "Whenever you cast an enchantment spell, you may have target creature get -2/-2 until end of turn.",
 	"blood_scrivener": "If you would draw a card while you have no cards in hand, instead you draw two cards and you lose 1 life.",
 	"bloodsky_berserker": "Whenever you cast your second spell each turn, put two +1/+1 counters on this creature. This creature gains menace until end of turn.",
+	"bonecrusher_giant": "Whenever this creature becomes the target of a spell, this creature deals 2 damage to that player.",
 	"brimaz_king_of_oreskos": "Vigilance\n"
 		+ "Whenever this creature attacks, create a 1/1 white Cat Soldier creature token with vigilance that's attacking.\n"
 		+ "Whenever this creature blocks a creature, create a 1/1 white Cat Soldier creature token with vigilance that's blocking that creature.",
@@ -73,6 +74,7 @@ const PRINTED: Dictionary[String, String] = {
 	"celestial_unicorn": "Whenever you gain life, put a +1/+1 counter on this creature.",
 	"champion_of_the_flame": "Trample\nThis creature gets +2/+2 for each Aura or Equipment attached to it.",
 	"charmed_stray": "Lifelink\nWhen this creature enters, put a +1/+1 counter on each other creature you control originally named Charmed Stray.",
+	"chimney_rabble": "Haste\nWhen this creature enters, create a 1/1 red Phyrexian Goblin creature token.",
 	"chitin_gravestalker": "This spell costs {1} less to cast for each artifact or creature card in your graveyard.\nCycling {2}",
 	"clarion_spirit": "Whenever you cast your second spell each turn, create a 1/1 white Spirit creature token with flying.",
 	"claws_out": "Affinity for Cats\nEach creature you control gets +2/+2 until end of turn.",
@@ -80,10 +82,12 @@ const PRINTED: Dictionary[String, String] = {
 	"cloudfin_raptor": "Flying, evolve",
 	"cogwork_wrestler": "Flash\nWhen this creature enters, target creature an opponent controls gets -2/-0 until end of turn.",
 	"conceited_witch": "Menace",
+	"conscripted_infantry": "When this creature dies, create a 1/1 colorless Soldier artifact creature token.",
 	"contaminated_aquifer": "This land enters tapped.\n{T}: Add {U}.\n{T}: Add {B}.",
 	"coordinated_maneuver": "Choose one —\n"
 		+ "• Coordinated Maneuver deals damage to target creature equal to the number of creatures you control.\n"
 		+ "• Destroy target enchantment.",
+	"cornered_crook": "When this creature enters, you may sacrifice an artifact. When you do, this creature deals 3 damage to any target.",
 	"counterspell": "Counter target spell.",
 	"crumbling_necropolis": "This land enters tapped.\n{T}: Add {U}, {B}, or {R}.",
 	"cult_conscript": "This creature enters tapped.\n{1}{B}: Return this card from your graveyard to the battlefield. Activate only if a non-Skeleton creature died under your control this turn.",
@@ -104,6 +108,7 @@ const PRINTED: Dictionary[String, String] = {
 	"devoted_duelist": "Haste\nWhenever you cast your second spell each turn, this creature deals 1 damage to each opponent.",
 	"diregraf_ghoul": "This creature enters tapped.",
 	"disciple_of_bolas": "When this creature enters, sacrifice another creature. You gain X life, where X is the sacrificed creature's power. Draw X cards, where X is the sacrificed creature's power.",
+	"diversion_specialist": "Menace\n{1}, Sacrifice another creature or enchantment: Exile the top card of your library. You may play it this turn.",
 	"divining_duelist": "Flash\nWhen this creature enters, choose one —\n"
 		+ "• Tap target creature.\n"
 		+ "• Untap target creature.\n"
@@ -112,6 +117,7 @@ const PRINTED: Dictionary[String, String] = {
 	"doomwake_giant": "Whenever this creature or another enchantment you control enters, each creature an opponent controls gets -1/-1 until end of turn.",
 	"dour_port_mage": "Whenever one or more other creatures you control leave the battlefield without dying, draw a card.\n{1}{U}, {T}: Return another target creature you control to its owner's hand.",
 	"dreadmalkin": "Menace\n{2}{B}, Sacrifice another creature: Put two +1/+1 counters on this creature.",
+	"dreamstalker_manticore": "Whenever you cast your first spell each turn during an opponent's turn, this creature deals 1 damage to any target.",
 	"drudge_skeletons": "{B}: Regenerate this creature.",
 	"dusk_legion_duelist": "Vigilance\nWhenever one or more +1/+1 counters are put on this creature, draw a card. This ability triggers only once each turn.",
 	"dusk_legion_zealot": "When this creature enters, draw a card. You lose 1 life.",
@@ -120,6 +126,7 @@ const PRINTED: Dictionary[String, String] = {
 	"elementalist_adept": "Flash, prowess",
 	"elvish_archers": "First strike",
 	"emeria_angel": "Flying\nWhenever a land you control enters, you may create a 1/1 white Bird creature token with flying.",
+	"equilibrium_adept": "When this creature enters, exile the top card of your library. You may play it until the end of your next turn.\nWhenever you cast your second spell each turn, this creature gains double strike until end of turn.",
 	"etherium_spinner": "Whenever you cast a spell with mana value 4 or greater, create a 1/1 colorless Thopter artifact creature token with flying.",
 	"exemplar_of_light": "Flying\nWhenever you gain life, put a +1/+1 counter on this creature.\n"
 		+ "Whenever you put one or more +1/+1 counters on this creature, draw a card. This ability triggers only once each turn.",
@@ -127,6 +134,7 @@ const PRINTED: Dictionary[String, String] = {
 	"faerie_guidemother": "Flying",
 	"faerie_mechanist": "Flying\nWhen this creature enters, look at the top three cards of your library. You may reveal an artifact card from among them and put it into your hand. Put the rest on the bottom of your library in any order.",
 	"faerie_vandal": "Flash, flying\nWhenever you draw your second card each turn, put a +1/+1 counter on this creature.",
+	"falkenrath_celebrants": "Menace\nWhen this creature enters, create two Blood tokens.",
 	"fanatical_firebrand": "Haste\n{T}, Sacrifice this creature: This creature deals 1 damage to any target.",
 	"fear_of_isolation": "As an additional cost to cast this spell, return a permanent you control to its owner's hand.\nFlying",
 	"fear_of_lost_teeth": "When this creature dies, this creature deals 1 damage to any target. You gain 1 life.",
@@ -138,11 +146,13 @@ const PRINTED: Dictionary[String, String] = {
 	"fell_horseman": "When this creature dies, put it on the bottom of its owner's library.",
 	"filigree_attendant": "Flying\nThis creature's power is equal to the number of artifacts you control.",
 	"fog": "Prevent all combat damage that would be dealt this turn.",
+	"forgeborn_oreads": "Whenever this creature or another enchantment you control enters, this creature deals 1 damage to any target.",
 	"foulmire_knight": "Deathtouch",
 	"frondland_felidar": "Vigilance\nEach creature you control with vigilance has \"{1}, {T}: Tap target creature.\"",
 	"forest": "({T}: Add {G}.)",
 	"frontier_bivouac": "This land enters tapped.\n{T}: Add {G}, {U}, or {R}.",
 	"frozen_shade": "{B}: This creature gets +1/+1 until end of turn.",
+	"furnace_hellkite": "Affinity for artifacts\nFlying\n{R}: This creature gets +1/+0 until end of turn.",
 	"gaeas_might": "Target creature gets +X/+X until end of turn, where X is the number of basic land types among lands you control.",
 	"garrison_cat": "When this creature dies, create a 1/1 white Human Soldier creature token.",
 	"gearsmith_prodigy": "This creature gets +1/+0 as long as you control an artifact.",
@@ -157,19 +167,24 @@ const PRINTED: Dictionary[String, String] = {
 	"glaze_fiend": "Flying\nWhenever another artifact you control enters, this creature gets +2/+2 until end of turn.",
 	"goblin_balloon_brigade": "{R}: This creature gains flying until end of turn.",
 	"goblin_banneret": "Mentor\n{1}{R}: This creature gets +2/+0 until end of turn.",
+	"goblin_dark_dwellers": "Menace\nWhen this creature enters, you may cast target instant or sorcery card with mana value 3 or less from your graveyard without paying its mana cost. If that spell would be put into your graveyard, exile it instead.",
 	"goblin_gaveleer": "Trample\nThis creature gets +2/+0 for each Equipment attached to it.",
 	"goblin_instigator": "When this creature enters, create a 1/1 red Goblin creature token.",
+	"grabby_giant": "Reach\n{2}{R}, Sacrifice an artifact or land: Draw a card.",
 	"grim_guardian": "Whenever this creature or another enchantment you control enters, each opponent loses 1 life.",
 	"group_project": "Create a 2/2 white and red Spirit creature token.\nFlashback—Tap three untapped creatures you control",
 	"guarded_heir": "Lifelink\nWhen this creature enters, create two 3/3 white Knight creature tokens.",
 	"guiding_hydra": "This creature enters with X +1/+1 counters on it.\nAt the beginning of combat on your turn, you may remove a +1/+1 counter from this creature. If you do, put a +1/+1 counter on each other creature you control.",
 	"haazda_vigilante": "When this creature enters, put a +1/+1 counter on target creature you control with power 2 or less.\nWhenever this creature attacks, put a +1/+1 counter on target creature you control with power 2 or less.",
+	"harried_dronesmith": "At the beginning of combat on your turn, create a 1/1 colorless Thopter artifact creature token with flying. It gains haste until end of turn. Sacrifice it at the beginning of your next end step.",
 	"harvester_of_souls": "Deathtouch\nWhenever another nontoken creature dies, you may draw a card.",
 	"haunted_mire": "This land enters tapped.\n{T}: Add {B}.\n{T}: Add {G}.",
 	"headless_rider": "Whenever this creature or another nontoken Zombie you control dies, create a 2/2 black Zombie creature token.",
 	"heartfire_immolator": "Prowess\n{R}, Sacrifice this creature: This creature deals damage to target creature equal to its power.",
+	"hearthborn_battler": "Haste\nWhenever a player casts their second spell each turn, this creature deals 2 damage to target opponent.",
 	"helpful_hunter": "When this creature enters, draw a card.",
 	"helping_hand": "Return target creature card with mana value 3 or less from your graveyard to the battlefield tapped.",
+	"hero_of_the_games": "Whenever you cast a spell that targets this creature, each creature you control gets +1/+0 until end of turn.",
 	"hero_of_the_pride": "Whenever you cast a spell that targets this creature, each creature you control gets +1/+0 until end of turn.",
 	"highspire_bell_ringer": "Flying\nThe second spell you cast each turn costs {1} less to cast.",
 	"homicide_investigator": "Whenever one or more nontoken creatures you control die, create a Clue token. This ability triggers only once each turn.",
@@ -178,6 +193,7 @@ const PRINTED: Dictionary[String, String] = {
 	"hungry_ghoul": "{1}, Sacrifice another creature: Put a +1/+1 counter on this creature.",
 	"hypnotic_sprite": "Flying",
 	"idyllic_beachfront": "This land enters tapped.\n{T}: Add {W}.\n{T}: Add {U}.",
+	"igneous_elemental": "This spell costs {2} less to cast if there are one or more land cards in your graveyard.\nWhen this creature enters, you may have this creature deal 2 damage to target creature.",
 	"ingenious_prodigy": "Skulk\nThis creature enters with X +1/+1 counters on it.\n"
 		+ "At the beginning of your upkeep, if this creature has a +1/+1 counter on it, you may remove a +1/+1 counter from this creature. "
 		+ "If you do, draw a card.",
@@ -246,6 +262,7 @@ const PRINTED: Dictionary[String, String] = {
 		+ "When this enchantment leaves the battlefield, return the exiled card to the battlefield under its owner's control.",
 	"obyras_attendants": "Flying",
 	"odrics_outrider": "Whenever a creature you control dies, put a +1/+1 counter on target creature you control.",
+	"ogre_battledriver": "Whenever another creature you control enters, that creature gets +2/+0 until end of turn. That creature gains haste until end of turn.",
 	"oltec_matterweaver": "Whenever you cast a creature spell, choose one —\n"
 		+ "• Create a 1/1 colorless Gnome artifact creature token.\n"
 		+ "• Create a token that's a copy of target artifact token you control.",
@@ -259,11 +276,13 @@ const PRINTED: Dictionary[String, String] = {
 	"ornithopter": "Flying",
 	"outflank": "Outflank deals damage to target attacking or blocking creature equal to the number of creatures you control.",
 	"pactdoll_terror": "Whenever this creature or another artifact you control enters, each opponent loses 1 life. You gain 1 life.",
+	"panicked_altisaur": "Reach\n{T}: This creature deals 2 damage to each opponent.",
 	"path_of_bravery": "As long as your life total is greater than or equal to your starting life total, each creature you control gets +1/+1.\n"
 		+ "Whenever one or more creatures you control attack, you gain X life, where X is the number of attacking creatures.",
 	"phoenix_chick": "Flying, haste\nThis creature can't block.\n"
 		+ "Whenever you attack with three or more creatures, you may pay {R}{R}. If you do, return this card from your graveyard to the battlefield tapped and attacking with a +1/+1 counter on it.",
 	"plains": "({T}: Add {W}.)",
+	"plundering_pirate": "When this creature enters, create a Treasure token.",
 	"poisoners_apprentice": "When this creature enters, target creature an opponent controls gets -4/-4 until end of turn if you gained life this turn.",
 	"prophetic_prism": "When this artifact enters, draw a card.\n{1}, {T}: Add one mana of any color.",
 	"radiant_grove": "This land enters tapped.\n{T}: Add {G}.\n{T}: Add {W}.",
@@ -273,6 +292,7 @@ const PRINTED: Dictionary[String, String] = {
 	"prodigal_sorcerer": "{T}: This creature deals 1 damage to any target.",
 	"prowling_felidar": "Vigilance\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
 	"rally_the_ranks": "As this enchantment enters, choose a creature type.\nEach creature you control of the chosen type gets +1/+1.",
+	"rapacious_dragon": "Flying\nWhen this creature enters, create two Treasure tokens.",
 	"razzle_dazzler": "Whenever you cast your second spell each turn, put a +1/+1 counter on this creature. This creature gains \"This creature can't be blocked.\" until end of turn.",
 	"relief_captain": "When this creature enters, put a +1/+1 counter on each of up to three other target creatures.",
 	"replication_specialist": "Flying\nWhenever a nontoken artifact you control enters, you may pay {1}{U}. If you do, create a token that's a copy of that artifact.",
@@ -284,6 +304,7 @@ const PRINTED: Dictionary[String, String] = {
 	"roving_harper": "When this creature enters, draw a card.",
 	"sacred_peaks": "This land enters tapped.\n{T}: Add {R}.\n{T}: Add {W}.",
 	"sage_of_the_skies": "When you cast this spell, if you've cast another spell this turn, copy this spell.\nFlying, lifelink",
+	"salivating_gremlins": "Whenever an artifact you control enters, this creature gets +2/+0 and gains trample until end of turn.",
 	"salt_road_packbeast": "Affinity for creatures\nWhen this creature enters, draw a card.",
 	"samite_healer": "{T}: Prevent the next 1 damage that would be dealt to any target this turn.",
 	"sandsteppe_citadel": "This land enters tapped.\n{T}: Add {W}, {B}, or {G}.",
@@ -305,6 +326,7 @@ const PRINTED: Dictionary[String, String] = {
 	"shimmer_dragon": "Flying\nThis creature has hexproof as long as you control four or more artifacts.\nTap two untapped artifacts you control: Draw a card.",
 	"shivan_dragon": "Flying\n{R}: This creature gets +1/+0 until end of turn.",
 	"short_sword": "Equipped creature gets +1/+1.\nEquip {1}",
+	"sizzling_changeling": "Changeling\nWhen this creature dies, exile the top card of your library. You may play it until the end of your next turn.",
 	"skyhunter_prowler": "Flying, vigilance",
 	"skyknight_squire": "Whenever another creature you control enters, put a +1/+1 counter on this creature.\n"
 		+ "As long as this creature has three or more +1/+1 counters on it, it has flying and is a Knight in addition to its other types.",
@@ -315,6 +337,7 @@ const PRINTED: Dictionary[String, String] = {
 	"sneering_shadewriter": "Flying\nWhen this creature enters, each opponent loses 2 life. You gain 2 life.",
 	"soulblade_djinn": "Flying\nWhenever you cast a noncreature spell, each creature you control gets +1/+1 until end of turn.",
 	"sparring_construct": "When this creature dies, put a +1/+1 counter on target creature you control.",
+	"spinehorn_minotaur": "This creature has double strike as long as you've drawn two or more cards this turn.",
 	"spirited_companion": "When this creature enters, draw a card.",
 	"splitskin_doll": "When this creature enters, draw a card. Discard a card unless you control another creature with power 2 or less.",
 	"steppe_lynx": "Whenever a land you control enters, this creature gets +2/+2 until end of turn.",
@@ -326,6 +349,7 @@ const PRINTED: Dictionary[String, String] = {
 	"tangled_islet": "This land enters tapped.\n{T}: Add {G}.\n{T}: Add {U}.",
 	"temple_garden": "As this land enters, you may pay 2 life. If you don't, it enters tapped.\n{T}: Add {G}.\n{T}: Add {W}.",
 	"territorial_scythecat":"Trample\nWhenever a land you control enters, put a +1/+1 counter on this creature.",
+	"terror_of_mount_velus": "Flying, double strike\nWhen this creature enters, each creature you control gains double strike until end of turn.",
 	"tethmos_high_priest": "Whenever you cast a spell that targets this creature, return target creature card with mana value 2 or less from your graveyard to the battlefield.",
 	"terror": "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
 	"thopter_mechanic": "Whenever you draw your second card each turn, put a +1/+1 counter on this creature.\nWhen this creature dies, create a 1/1 colorless Thopter artifact creature token with flying.",
@@ -340,6 +364,8 @@ const PRINTED: Dictionary[String, String] = {
 	"treasure_dredger": "{1}, {T}, Pay 1 life: Create a Treasure token.",
 	"tromp_the_domains": "Each creature you control gains trample until end of turn. Each creature you control gets +X/+X until end of turn, where X is the number of basic land types among lands you control.",
 	"tunnel_surveyor": "When this creature enters, create a 1/1 white Glimmer enchantment creature token.",
+	"twinshot_sniper": "Reach\nWhen this creature enters, this creature deals 2 damage to any target.\n{1}{R}, Discard this card: This creature deals 2 damage to any target.",
+	"two_headed_hunter": "Menace",
 	"undergrowth_leopard": "Vigilance\n{1}, Sacrifice this creature: Destroy target artifact or enchantment.",
 	"unflinching_hortimancer": "Ward {1}\nWhenever you gain life, put a +1/+1 counter on this creature.",
 	"universal_automaton": "Changeling",
@@ -359,6 +385,7 @@ const PRINTED: Dictionary[String, String] = {
 	"white_knight": "First strike\nProtection from black",
 	"whitemane_lion": "Flash\nWhen this creature enters, return a creature you control to its owner's hand.",
 	"wingblade_disciple": "Flying\nWhenever you cast your second spell each turn, create a 1/1 white Bird creature token with flying.",
+	"witty_roastmaster": "Whenever another creature you control enters, this creature deals 1 damage to each opponent.",
 	"wooded_ridgeline": "This land enters tapped.\n{T}: Add {R}.\n{T}: Add {G}.",
 	"zahid_djinn_of_the_lamp": "You may pay {3}{U} and tap an untapped artifact you control rather than pay this spell's mana cost.\nFlying",
 	"zar_ojanen_scion_of_efrava": "Whenever this creature becomes tapped, put a +1/+1 counter on each creature you control with toughness less than the number of basic land types among lands you control.",
@@ -370,15 +397,19 @@ const PRINTED_ADVENTURES: Dictionary[String, String] = {
 	"animating_faerie": "Target noncreature artifact you control becomes a 0/0 artifact creature. Put four +1/+1 counters on it.",
 	"ardenvale_tactician": "Tap up to two target creatures.",
 	"belunas_gatekeeper": "Return target creature you don't control with mana value 3 or less to its owner's hand.",
+	"bonecrusher_giant": "Damage can't be prevented this turn. Stomp deals 2 damage to any target.",
 	"conceited_witch": "Create a Wicked Role token attached to target creature you control.",
 	"faerie_guidemother": "Target creature gets +2/+1 and gains flying until end of turn.",
 	"fell_horseman": "Return target creature card from your graveyard to your hand.",
 	"foulmire_knight": "Draw a card. You lose 1 life.",
+	"grabby_giant": "Create a Treasure token.",
 	"hypnotic_sprite": "Counter target spell with mana value 3 or less.",
+	"minecart_daredevil": "Target creature gets +2/+1 until end of turn.",
 	"most_decrepit_old_bird": "Mill four cards. Put an instant or sorcery card from among them into your hand.",
 	"murderous_rider": "Destroy target creature. You lose 2 life.",
 	"obyras_attendants": "Target creature gets -4/-0 until end of turn.",
 	"rimrock_knight": "Target creature gets +2/+0 until end of turn.",
+	"two_headed_hunter": "Target creature gains double strike until end of turn.",
 }
 
 ## Each authored instant and sorcery with a target, as it reads with every "target" changed
@@ -2146,6 +2177,29 @@ func test_becoming_a_target_and_counter_unless_paid_are_worded() -> void:
 	assert_eq(AbilityText.of_ability(leak, "Sample"), "Counter target spell unless its controller pays {3}.")
 
 
+func test_becoming_the_target_of_a_spell_only_says_a_spell() -> void:
+	var countering: Array[MmEffect] = [Scenario.counter(TriggeringObjectSelection.new())]
+
+	assert_eq(_text(Scenario.giant()),
+		"Whenever this creature becomes the target of a spell, this creature deals 2 damage to that player.")
+	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.becomes_target_of_a_spell(), countering), "this creature"),
+		"Whenever this creature becomes the target of a spell, counter that spell.")
+
+
+func test_damage_that_cant_be_prevented_is_worded_as_stomp_words_it() -> void:
+	assert_eq(_text(Scenario.free_stomp("Stomp", 2)), "Damage can't be prevented this turn. Stomp deals 2 damage to any target.")
+
+
+func test_a_delayed_trigger_and_the_token_it_remembers_are_worded_as_harried_dronesmith_words_them() -> void:
+	var at_upkeep: Array[MmEffect] = [Scenario.delayed([Scenario.gain_life(1, Scenario.you())], MmTurn.Step.UPKEEP)]
+
+	assert_eq(_text(Scenario.dronesmith()), "At the beginning of combat on your turn, create a 1/1 colorless Thopter "
+		+ "artifact creature token with flying. It gains haste until end of turn. Sacrifice it at the beginning of "
+		+ "your next end step.")
+	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.enters(IsSourceFilter.new()), at_upkeep), "this creature"),
+		"When this creature enters, you gain 1 life at the beginning of your next upkeep.")
+
+
 func test_becoming_tapped_is_worded() -> void:
 	var gain: Array[MmEffect] = [Scenario.gain_life(1, Scenario.you())]
 	var counter: Array[MmEffect] = [Scenario.put_counters(MmCounter.Kind.PLUS_ONE_PLUS_ONE, 1, TriggeringObjectSelection.new())]
@@ -2235,6 +2289,16 @@ func test_a_card_drawn_is_worded_with_whose_and_any_ordinal() -> void:
 		"Whenever you draw a card, you gain 1 life.")
 	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.draws(0, Whose.ANY), gain), "Sample"),
 		"Whenever a player draws a card, you gain 1 life.")
+
+
+func test_the_cards_drawn_this_turn_are_worded_as_spinehorn_minotaur_words_them() -> void:
+	var gain: GainLifeEffect = Scenario.gain_life(0, Scenario.you())
+	gain.amount = Scenario.cards_drawn_this_turn(EachOpponentSelection.new())
+	var gain_x: Array[MmEffect] = [gain]
+
+	assert_eq(_text(Scenario.minotaur()), "This creature has double strike as long as you've drawn two or more cards this turn.")
+	assert_eq(AbilityText.of_ability(Scenario.triggered(Scenario.draws(2), gain_x), "this creature"),
+		"Whenever you draw your second card each turn, you gain X life, where X is the number of cards each opponent has drawn this turn.")
 
 
 func test_a_spell_cast_during_whose_turn_says_so() -> void:

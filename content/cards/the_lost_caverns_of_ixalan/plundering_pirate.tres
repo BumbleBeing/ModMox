@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_cfqid"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ud8pu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_w4n5o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_ehyrm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_pa4v3"]
+[ext_resource type="Resource" path="res://content/tokens/treasure.tres" id="4_qrqp4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_hmmwj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_redc1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_jijyv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_buo28"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_wukcu"]
+
+[sub_resource type="Resource" id="Resource_jcikt"]
+script = ExtResource("3_ehyrm")
+token = ExtResource("4_qrqp4")
+
+[sub_resource type="Resource" id="Resource_2rwhm"]
+script = ExtResource("8_buo28")
+
+[sub_resource type="Resource" id="Resource_pmaka"]
+script = ExtResource("9_wukcu")
+filter = SubResource("Resource_2rwhm")
+
+[sub_resource type="Resource" id="Resource_v0rd5"]
+script = ExtResource("6_redc1")
+trigger = SubResource("Resource_pmaka")
+effects = Array[ExtResource("2_w4n5o")]([SubResource("Resource_jcikt")])
+
+[sub_resource type="Resource" id="Resource_snlct"]
+script = ExtResource("2_ud8pu")
+generic = 2
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_pa4v3")
+name = "Plundering Pirate"
+card_types = Array[int]([1])
+subtypes = Array[String](["Orc", "Pirate"])
+mana_cost = SubResource("Resource_snlct")
+power = 3
+toughness = 2
+abilities = Array[ExtResource("1_cfqid")]([SubResource("Resource_v0rd5")])

@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_ikdm2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_8f4lg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_bxq7a"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_eq6sj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="3_sn6a5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="4_rqkrj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="5_f7kfc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_hqsug"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_o8k87"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_bgstu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="9_rxs4k"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="10_nkq30"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_hst18"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="12_je4wr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="13_gn80q"]
+
+[sub_resource type="Resource" id="Resource_v4mol"]
+script = ExtResource("3_sn6a5")
+value = 1
+
+[sub_resource type="Resource" id="Resource_gwce5"]
+script = ExtResource("4_rqkrj")
+
+[sub_resource type="Resource" id="Resource_bjtse"]
+script = ExtResource("5_f7kfc")
+amount = SubResource("Resource_v4mol")
+recipients = SubResource("Resource_gwce5")
+
+[sub_resource type="Resource" id="Resource_wmc7c"]
+script = ExtResource("10_nkq30")
+
+[sub_resource type="Resource" id="Resource_taa5j"]
+script = ExtResource("11_hst18")
+
+[sub_resource type="Resource" id="Resource_0ce1u"]
+script = ExtResource("12_je4wr")
+filters = Array[ExtResource("9_rxs4k")]([SubResource("Resource_wmc7c"), SubResource("Resource_taa5j")])
+
+[sub_resource type="Resource" id="Resource_w3be1"]
+script = ExtResource("8_bgstu")
+filter = SubResource("Resource_0ce1u")
+
+[sub_resource type="Resource" id="Resource_n70we"]
+script = ExtResource("13_gn80q")
+whose = 1
+nth_each_turn = 1
+during_whose_turn = 2
+
+[sub_resource type="Resource" id="Resource_te78r"]
+script = ExtResource("7_o8k87")
+trigger = SubResource("Resource_n70we")
+targets = Array[ExtResource("8_bgstu")]([SubResource("Resource_w3be1")])
+effects = Array[ExtResource("2_8f4lg")]([SubResource("Resource_bjtse")])
+
+[sub_resource type="Resource" id="Resource_cb6vu"]
+script = ExtResource("2_bxq7a")
+generic = 2
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_eq6sj")
+name = "Dreamstalker Manticore"
+card_types = Array[int]([2, 1])
+subtypes = Array[String](["Manticore"])
+mana_cost = SubResource("Resource_cb6vu")
+power = 4
+toughness = 2
+abilities = Array[ExtResource("1_ikdm2")]([SubResource("Resource_te78r")])
+rarity = 1

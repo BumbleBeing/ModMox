@@ -447,3 +447,38 @@ func _villain_to_block(hero_creatures: Array[MmCardDefinition], villain_creature
 	engine.submit((engine.pending_decision() as DeclareAttackersDecision).candidate_ids.duplicate())
 	Scenario.pass_to_blockers(engine)
 	return engine
+
+
+func test_a_token_sacrificed_at_end_of_turn_attacks_into_a_blocker_that_kills_it() -> void:
+	# Engine ADR 0103: Dronesmith's Thopter is gone at the end step whatever it does, so it
+	# loses nothing by attacking. A Kite, the same 1/1 flyer to stay, holds back.
+	var spider: MmCardDefinition = Scenario.creature("Spider", 2, 4, [ReachAbility.new()])
+	var smith: MmEngine = Scenario.combat_ready([Scenario.dronesmith()], [spider])
+	var kite: MmEngine = Scenario.combat_ready([Scenario.creature("Kite", 1, 1, [FlyingAbility.new()])], [spider])
+	assert_not_null(smith)
+	assert_not_null(kite)
+	var thopter: int = Scenario.tokens_on_battlefield(smith)[0]
+
+	var smith_attackers: Array = AiScenario.ask(smith, AiAgent.new())
+	var kite_attackers: Array = AiScenario.ask(kite, AiAgent.new())
+
+	assert_true(smith_attackers.has(thopter))
+	assert_eq(kite_attackers, [], "A Spider kills a 1/1 flyer and survives.")
+
+
+func test_a_token_sacrificed_at_end_of_turn_is_not_kept_home_to_block_the_swing_back() -> void:
+	# At 3 life against two Ogres, a 1/1 kept home would block one of them, but the Thopter
+	# is sacrificed before they attack, so keeping it home saves nothing: it attacks. The
+	# Dronesmith, which a blocking Ogre would kill, stays home.
+	var hero_creatures: Array[MmCardDefinition] = [Scenario.dronesmith()]
+	var ogre: MmCardDefinition = Scenario.creature("Ogre", 3, 3)
+	var villain_creatures: Array[MmCardDefinition] = [ogre, ogre]
+	var setup: MmEncounterSetup = Scenario.combat_setup(hero_creatures, villain_creatures)
+	setup.hero.starting_life = 3
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(setup, hero_creatures, villain_creatures, no_cards, no_cards,
+		3, Step.DECLARE_ATTACKERS)
+	assert_not_null(engine)
+	var thopter: int = Scenario.tokens_on_battlefield(engine)[0]
+
+	assert_eq(AiScenario.ask(engine, AiAgent.new()), [thopter])

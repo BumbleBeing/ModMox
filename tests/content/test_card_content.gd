@@ -1471,6 +1471,44 @@ func test_lightshield_parry_pumps_a_creature_when_cast_and_draws_a_card_when_cyc
 		"Cycled, its spell does not happen.")
 
 
+func test_harried_dronesmiths_thopter_has_haste_and_is_sacrificed_as_the_end_step_begins() -> void:
+	var smith: MmCardDefinition = Scenario.free_copy(_card("murders_at_karlov_manor", "harried_dronesmith"))
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.combat_ready([smith], no_cards)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var thopters: Array[int] = Scenario.tokens_on_battlefield(engine)
+	assert_eq(thopters.size(), 1, "Made at this turn's beginning of combat; Game Turn 1's is gone.")
+	var thopter: int = thopters[0]
+	assert_true(Scenario.now(engine, thopter).has_ability(FlyingAbility))
+	assert_true((engine.pending_decision() as DeclareAttackersDecision).candidate_ids.has(thopter), "Haste.")
+
+	assert_eq(Scenario.play_until_step(engine, 3, MmTurn.Step.END), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int])
+	assert_ne(Scenario.permanent_named(engine, engine.hero().id, "Harried Dronesmith"), -1)
+
+
+func test_twinshot_sniper_channels_from_the_hand_to_deal_2_damage_as_the_discarded_card() -> void:
+	var yours: Array[MmCardDefinition] = [
+		Scenario.creature("Ember Elf", 1, 1, [Scenario.tap_for_mana(MmMana.Type.RED, 1)]),
+		Scenario.creature("Cinder Elf", 1, 1, [Scenario.tap_for_mana(MmMana.Type.RED, 1)])]
+	var hand: Array[MmCardDefinition] = [_card("kamigawa_neon_dynasty", "twinshot_sniper")]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(yours, no_cards, hand),
+		yours, no_cards, hand, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	var hero: MmPlayer = engine.hero()
+	var villain_life: int = engine.villain().life
+
+	assert_eq(Scenario.activate(engine, Scenario.card_in_hand(engine, hero, "Twinshot Sniper"),
+		[MmReference.to_player(engine.villain().id)]), "", "Channel {1}{R}, paid by the two Elves.")
+	assert_ne(Scenario.card_in_graveyard(engine, hero, "Twinshot Sniper"), -1, "Discarded to channel it.")
+	assert_eq(Scenario.resolve_stack(engine), "")
+	assert_eq(engine.villain().life, villain_life - 2, "It deals the damage from the graveyard.")
+	assert_eq(Scenario.permanent_named(engine, hero.id, "Twinshot Sniper"), -1, "Never cast.")
+
+
 func test_crumbling_necropolis_enters_tapped_and_later_taps_for_each_of_its_three_colors() -> void:
 	var necropolis: MmCardDefinition = _card("shards_of_alara", "crumbling_necropolis")
 	var engine: MmEngine = MmEngine.start(Scenario.setup_with(Scenario.copies(necropolis, 40), Scenario.copies(Scenario.vanilla("Card"), 40)))
@@ -1678,6 +1716,38 @@ func test_the_clue_token_is_a_colorless_clue_artifact_that_sacrifices_itself_for
 	Scenario.resolve_stack(engine)
 
 	assert_eq(engine.hero().hand.size(), hand + 1, "It drew a card.")
+	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int], "Sacrificed, then gone (CR 111.7).")
+
+
+func test_the_blood_token_is_a_colorless_blood_artifact_that_discards_and_sacrifices_itself_for_a_card() -> void:
+	# CR 111.10g, engine ADR 0072's addendum.
+	var blood: MmCardDefinition = load("res://content/tokens/blood.tres") as MmCardDefinition
+	var printed: MmCharacteristics = MmCharacteristics.printed(blood)
+	assert_eq(printed.name, "Blood Token", "CR 111.4.")
+	assert_eq(printed.card_types, [MmCardTypes.CardType.ARTIFACT] as Array[MmCardTypes.CardType])
+	assert_eq(printed.subtypes, ["Blood"] as Array[String])
+	assert_eq(printed.colors, [] as Array[MmCardTypes.CardColor])
+	var bird: Array[MmCardDefinition] = [Scenario.mana_bird()]
+	var vial: Array[MmCardDefinition] = [Scenario.free_tokens("Vial", blood)]
+	var no_cards: Array[MmCardDefinition] = []
+	var engine: MmEngine = Scenario.permanents_ready_with(Scenario.combat_setup(bird, no_cards, vial),
+		bird, no_cards, vial, no_cards, 3, MmTurn.Step.PRECOMBAT_MAIN)
+	assert_not_null(engine, "No seed gave the needed hand.")
+	assert_eq(Scenario.cast_and_resolve(engine, "Vial"), "")
+	var made: int = Scenario.tokens_on_battlefield(engine)[0]
+	var hand: int = engine.hero().hand.size()
+	var graveyard: int = engine.hero().graveyard.size()
+	assert_gt(hand, 1, "A card to discard, and a choice of which.")
+
+	assert_eq(engine.submit(Scenario.activate_index(engine.pending_decision() as PriorityDecision, made)), "")
+	var discard: ChooseCardsToDiscardDecision = engine.pending_decision() as ChooseCardsToDiscardDecision
+	assert_not_null(discard, "Discard a card is part of its cost.")
+	assert_eq(engine.submit(discard.candidate_ids.slice(0, 1)), "")
+	assert_eq(Scenario.auto_pay(engine), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.hero().hand.size(), hand, "One discarded, one drawn.")
+	assert_eq(engine.hero().graveyard.size(), graveyard + 1, "The discarded card; the token ceased to exist.")
 	assert_eq(Scenario.tokens_on_battlefield(engine), [] as Array[int], "Sacrificed, then gone (CR 111.7).")
 
 

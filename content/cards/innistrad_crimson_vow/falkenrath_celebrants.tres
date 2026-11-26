@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_5vbpo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/menace_ability.gd" id="2_mocg8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_xaoh2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_cxbx4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_r6025"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="4_m0kqy"]
+[ext_resource type="Resource" path="res://content/tokens/blood.tres" id="5_nm8mq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_febf0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_bgosm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_6rla3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_4mo8i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_7tyrl"]
+
+[sub_resource type="Resource" id="Resource_5rmit"]
+script = ExtResource("2_mocg8")
+
+[sub_resource type="Resource" id="Resource_2tiyi"]
+script = ExtResource("4_m0kqy")
+token = ExtResource("5_nm8mq")
+amount = 2
+
+[sub_resource type="Resource" id="Resource_f5lgd"]
+script = ExtResource("9_4mo8i")
+
+[sub_resource type="Resource" id="Resource_l0w3l"]
+script = ExtResource("10_7tyrl")
+filter = SubResource("Resource_f5lgd")
+
+[sub_resource type="Resource" id="Resource_g74vk"]
+script = ExtResource("7_bgosm")
+trigger = SubResource("Resource_l0w3l")
+effects = Array[ExtResource("3_r6025")]([SubResource("Resource_2tiyi")])
+
+[sub_resource type="Resource" id="Resource_wmrq8"]
+script = ExtResource("2_xaoh2")
+generic = 4
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_cxbx4")
+name = "Falkenrath Celebrants"
+card_types = Array[int]([1])
+subtypes = Array[String](["Vampire"])
+mana_cost = SubResource("Resource_wmrq8")
+power = 4
+toughness = 4
+abilities = Array[ExtResource("1_5vbpo")]([SubResource("Resource_5rmit"), SubResource("Resource_g74vk")])

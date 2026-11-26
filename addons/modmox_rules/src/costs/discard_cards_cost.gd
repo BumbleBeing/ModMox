@@ -6,9 +6,10 @@ extends MmCost
 ## hand holds [member count] cards, so "if you do" never happens with an empty hand
 ## (CR 118.3). The choice is the ChooseCardsToDiscardDecision a DiscardEffect asks, asked only
 ## when there is a choice: a hand of exactly that many cards is discarded whole. It needs
-## nothing of its source, so it can be paid after the source has left.
-# Later: as a cost of a cast or an activation, which CastProcedure asks with other
-# decisions, once a card says so.
+## nothing of its source, so it can be paid after the source has left. As part of an
+## activated ability's cost, as a Blood token's "{1}, {T}, Discard a card, Sacrifice this
+## token: Draw a card." (CR 111.10g), CastProcedure asks it with the ability's other costs,
+## before the mana (CR 601.2h).
 
 ## How many cards are discarded.
 @export var count: int = 1

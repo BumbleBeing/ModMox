@@ -53,9 +53,17 @@ var chosen_x: int = 0
 ## they had on the battlefield, so "the sacrificed creature" finds them as they last existed
 ## (CR 608.2h, engine ADR 0098). Empty for anything else.
 var sacrificed_object_ids: Array[int] = []
+## For a delayed triggered ability on the stack: what the ability that created it
+## remembered, so "it" (MovedCardsSelection) finds that token (engine ADR 0103). Empty for
+## anything else.
+var moved_object_ids: Array[int] = []
 ## For a spell on the stack: cast from a graveyard for its flashback cost, so it is exiled
 ## instead of going anywhere else as it leaves the stack (CR 702.34a).
 var cast_with_flashback: bool = false
+## For a spell on the stack: cast by an effect that exiles it if it would be put into its
+## owner's graveyard, as Goblin Dark-Dwellers' does (engine ADR 0104). Unlike flashback's,
+## it changes only a move to the graveyard.
+var exiled_instead_of_graveyard: bool = false
 ## For a spell on the stack: an Adventurer card cast as its Adventure (CR 715.3), so it has
 ## only its Adventure's characteristics and, if it resolves, is exiled on an adventure.
 var is_adventure_spell: bool = false
@@ -192,7 +200,9 @@ func duplicate_object() -> MmGameObject:
 	copy.chosen_mode = chosen_mode
 	copy.chosen_x = chosen_x
 	copy.sacrificed_object_ids = sacrificed_object_ids.duplicate()
+	copy.moved_object_ids = moved_object_ids.duplicate()
 	copy.cast_with_flashback = cast_with_flashback
+	copy.exiled_instead_of_graveyard = exiled_instead_of_graveyard
 	copy.is_adventure_spell = is_adventure_spell
 	copy.is_on_adventure = is_on_adventure
 	copy.is_bestowed = is_bestowed
@@ -431,6 +441,12 @@ func record_on_adventure() -> void:
 ## Event-only: marks a spell as cast with flashback (CR 702.34a), as it is put on the stack.
 func record_cast_with_flashback() -> void:
 	cast_with_flashback = true
+
+
+## Event-only: marks a spell as exiled if it would be put into its owner's graveyard (engine
+## ADR 0104), as it is put on the stack.
+func record_exiled_instead_of_graveyard() -> void:
+	exiled_instead_of_graveyard = true
 
 
 ## Event-only: marks a spell as cast from the top of a library (ADR 0054), as it is put on

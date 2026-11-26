@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_vql1m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_o71j4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/conditions/value_at_least_condition.gd" id="2_woy4s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="3_6r25b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_h6we3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/cards_drawn_this_turn_value.gd" id="4_r2gnd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/mm_continuous_effect.gd" id="5_c6cq7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/double_strike_ability.gd" id="6_dxrrw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="7_tv78j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="8_6buhm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/continuous_static_ability.gd" id="9_7inyx"]
+
+[sub_resource type="Resource" id="Resource_sriy2"]
+script = ExtResource("3_6r25b")
+
+[sub_resource type="Resource" id="Resource_fmr11"]
+script = ExtResource("4_r2gnd")
+players = SubResource("Resource_sriy2")
+
+[sub_resource type="Resource" id="Resource_6mf3t"]
+script = ExtResource("2_woy4s")
+value = SubResource("Resource_fmr11")
+amount = 2
+
+[sub_resource type="Resource" id="Resource_0uqeg"]
+script = ExtResource("6_dxrrw")
+
+[sub_resource type="Resource" id="Resource_vcdyc"]
+script = ExtResource("7_tv78j")
+
+[sub_resource type="Resource" id="Resource_5arq7"]
+script = ExtResource("8_6buhm")
+abilities = Array[ExtResource("1_vql1m")]([SubResource("Resource_0uqeg")])
+affected = SubResource("Resource_vcdyc")
+
+[sub_resource type="Resource" id="Resource_y3ltr"]
+script = ExtResource("9_7inyx")
+effects = Array[ExtResource("5_c6cq7")]([SubResource("Resource_5arq7")])
+condition = SubResource("Resource_6mf3t")
+
+[sub_resource type="Resource" id="Resource_gweji"]
+script = ExtResource("2_o71j4")
+generic = 2
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_h6we3")
+name = "Spinehorn Minotaur"
+card_types = Array[int]([1])
+subtypes = Array[String](["Minotaur", "Berserker"])
+mana_cost = SubResource("Resource_gweji")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_vql1m")]([SubResource("Resource_y3ltr")])

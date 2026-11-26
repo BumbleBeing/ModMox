@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_k2ax6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/reach_ability.gd" id="2_lpd8o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_vih3g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_0tq62"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_6ajmi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="4_du4dm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="5_6rnq0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="6_438km"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_opponent_selection.gd" id="7_poith"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="8_6i1r2"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="9_h3m1b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="10_cr1mu"]
+
+[sub_resource type="Resource" id="Resource_nn2nl"]
+script = ExtResource("2_lpd8o")
+
+[sub_resource type="Resource" id="Resource_iagv5"]
+script = ExtResource("4_du4dm")
+
+[sub_resource type="Resource" id="Resource_d0vgu"]
+script = ExtResource("6_438km")
+value = 2
+
+[sub_resource type="Resource" id="Resource_amlmn"]
+script = ExtResource("7_poith")
+
+[sub_resource type="Resource" id="Resource_7b0f0"]
+script = ExtResource("8_6i1r2")
+amount = SubResource("Resource_d0vgu")
+recipients = SubResource("Resource_amlmn")
+
+[sub_resource type="Resource" id="Resource_iy81a"]
+script = ExtResource("9_h3m1b")
+costs = Array[ExtResource("3_6ajmi")]([SubResource("Resource_iagv5")])
+effects = Array[ExtResource("5_6rnq0")]([SubResource("Resource_7b0f0")])
+
+[sub_resource type="Resource" id="Resource_sogyv"]
+script = ExtResource("2_vih3g")
+generic = 4
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_0tq62")
+name = "Panicked Altisaur"
+card_types = Array[int]([1])
+subtypes = Array[String](["Dinosaur"])
+mana_cost = SubResource("Resource_sogyv")
+power = 4
+toughness = 5
+abilities = Array[ExtResource("1_k2ax6")]([SubResource("Resource_nn2nl"), SubResource("Resource_iy81a")])

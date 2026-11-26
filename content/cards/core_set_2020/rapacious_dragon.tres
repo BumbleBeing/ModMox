@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_r1lft"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_5cr0s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_h6c7u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_j3m6w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ut3mn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="4_rivv0"]
+[ext_resource type="Resource" path="res://content/tokens/treasure.tres" id="5_yptst"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="6_wv0vk"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="7_6r83h"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_n505m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="9_j1udd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="10_04ste"]
+
+[sub_resource type="Resource" id="Resource_md5qg"]
+script = ExtResource("2_5cr0s")
+
+[sub_resource type="Resource" id="Resource_b0a5k"]
+script = ExtResource("4_rivv0")
+token = ExtResource("5_yptst")
+amount = 2
+
+[sub_resource type="Resource" id="Resource_ftmtd"]
+script = ExtResource("9_j1udd")
+
+[sub_resource type="Resource" id="Resource_d045k"]
+script = ExtResource("10_04ste")
+filter = SubResource("Resource_ftmtd")
+
+[sub_resource type="Resource" id="Resource_yfwlt"]
+script = ExtResource("7_6r83h")
+trigger = SubResource("Resource_d045k")
+effects = Array[ExtResource("3_j3m6w")]([SubResource("Resource_b0a5k")])
+
+[sub_resource type="Resource" id="Resource_la63b"]
+script = ExtResource("2_h6c7u")
+generic = 4
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_ut3mn")
+name = "Rapacious Dragon"
+card_types = Array[int]([1])
+subtypes = Array[String](["Dragon"])
+mana_cost = SubResource("Resource_la63b")
+power = 3
+toughness = 3
+abilities = Array[ExtResource("1_r1lft")]([SubResource("Resource_md5qg"), SubResource("Resource_yfwlt")])
+rarity = 1

@@ -1,0 +1,82 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_imxfh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_iuggj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_uyd62"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_n317f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_qohl3"]
+[ext_resource type="Resource" path="res://content/tokens/thopter_1_1_colorless_flying.tres" id="4_f67r6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/haste_ability.gd" id="5_x8cxu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/moved_cards_selection.gd" id="6_3gwfr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="7_38mlc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="8_dpd12"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/sacrifice_selected_effect.gd" id="9_4s3ae"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="10_lw227"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="11_friy5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="12_01qr5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/step_began_trigger.gd" id="13_hyd4i"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_delayed_trigger_effect.gd" id="14_v4dck"]
+
+[sub_resource type="Resource" id="Resource_4ry6p"]
+script = ExtResource("3_n317f")
+token = ExtResource("4_f67r6")
+
+[sub_resource type="Resource" id="Resource_op4uc"]
+script = ExtResource("5_x8cxu")
+
+[sub_resource type="Resource" id="Resource_gjt1n"]
+script = ExtResource("6_3gwfr")
+
+[sub_resource type="Resource" id="Resource_a3nec"]
+script = ExtResource("7_38mlc")
+abilities = Array[ExtResource("1_imxfh")]([SubResource("Resource_op4uc")])
+affected = SubResource("Resource_gjt1n")
+
+[sub_resource type="Resource" id="Resource_24exd"]
+script = ExtResource("8_dpd12")
+continuous = SubResource("Resource_a3nec")
+
+[sub_resource type="Resource" id="Resource_uc6cd"]
+script = ExtResource("6_3gwfr")
+
+[sub_resource type="Resource" id="Resource_momk4"]
+script = ExtResource("9_4s3ae")
+selection = SubResource("Resource_uc6cd")
+
+[sub_resource type="Resource" id="Resource_8hmer"]
+script = ExtResource("13_hyd4i")
+step = 10
+
+[sub_resource type="Resource" id="Resource_4f3oy"]
+script = ExtResource("11_friy5")
+trigger = SubResource("Resource_8hmer")
+effects = Array[ExtResource("2_iuggj")]([SubResource("Resource_momk4")])
+
+[sub_resource type="Resource" id="Resource_a0u1g"]
+script = ExtResource("14_v4dck")
+ability = SubResource("Resource_4f3oy")
+
+[sub_resource type="Resource" id="Resource_3cdng"]
+script = ExtResource("13_hyd4i")
+step = 4
+
+[sub_resource type="Resource" id="Resource_45p2p"]
+script = ExtResource("11_friy5")
+trigger = SubResource("Resource_3cdng")
+effects = Array[ExtResource("2_iuggj")]([SubResource("Resource_4ry6p"), SubResource("Resource_24exd"), SubResource("Resource_a0u1g")])
+
+[sub_resource type="Resource" id="Resource_d4usi"]
+script = ExtResource("2_uyd62")
+generic = 3
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_qohl3")
+name = "Harried Dronesmith"
+card_types = Array[int]([1])
+subtypes = Array[String](["Human", "Artificer"])
+mana_cost = SubResource("Resource_d4usi")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_imxfh")]([SubResource("Resource_45p2p")])
+rarity = 1

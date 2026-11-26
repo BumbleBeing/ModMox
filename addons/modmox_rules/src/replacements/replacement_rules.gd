@@ -9,10 +9,15 @@ extends RefCounted
 
 ## Every effect that applies to [param event] and has not already applied to it
 ## ([param applied_keys], CR 616.2): created effects in the order they were created, then
-## those static abilities generate, in object ID order.
+## those static abilities generate, in object ID order. No prevention effect applies while
+## damage can't be prevented (CR 615.12).
 static func applicable(state: MmGameState, event: MmEvent, applied_keys: PackedStringArray) -> Array[ActiveReplacementEffect]:
 	var found: Array[ActiveReplacementEffect] = []
+	var can_prevent: bool = state.can_damage_be_prevented()
 	for active: ActiveReplacementEffect in state.replacement_effects + _from_static_abilities(state, event):
+		# CR 615.12: while damage can't be prevented, no prevention applies, and no shield is used up.
+		if not can_prevent and active.effect is PreventDamageReplacementEffect:
+			continue
 		if not applied_keys.has(active.key()) and active.effect.applies_to(state, event, active):
 			found.append(active)
 	return found

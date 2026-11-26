@@ -458,6 +458,41 @@
 		"toughness": "1",
 		"type_line": "Creature — Human Berserker"
 	},
+	"bonecrusher_giant": {
+		"card_faces": [
+			{
+				"artist": "Victor Adame Minguez",
+				"artist_id": "bd8f7368-5b10-4554-b6b8-d052c6aca89f",
+				"flavor_text": "Not every tale ends in glory.",
+				"illustration_id": "c7f49422-def6-4502-bc02-38aee9924371",
+				"mana_cost": "{2}{R}",
+				"name": "Bonecrusher Giant",
+				"object": "card_face",
+				"oracle_text": "Whenever this creature becomes the target of a spell, this creature deals 2 damage to that spell's controller.",
+				"power": "4",
+				"toughness": "3",
+				"type_line": "Creature — Giant"
+			},
+			{
+				"artist": "Victor Adame Minguez",
+				"artist_id": "bd8f7368-5b10-4554-b6b8-d052c6aca89f",
+				"mana_cost": "{1}{R}",
+				"name": "Stomp",
+				"object": "card_face",
+				"oracle_text": "Damage can't be prevented this turn. Stomp deals 2 damage to any target.",
+				"type_line": "Instant — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{2}{R} // {1}{R}",
+		"name": "Bonecrusher Giant // Stomp",
+		"oracle_id": "d6d72f5f-8f5d-4180-b514-f22ff5482902",
+		"power": "4",
+		"rarity": "rare",
+		"set_name": "Throne of Eldraine",
+		"toughness": "3",
+		"type_line": "Creature — Giant // Instant — Adventure"
+	},
 	"brimaz_king_of_oreskos": {
 		"mana_cost": "{1}{W}{W}",
 		"name": "Brimaz, King of Oreskos",
@@ -610,6 +645,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Cat"
 	},
+	"chimney_rabble": {
+		"mana_cost": "{3}{R}",
+		"name": "Chimney Rabble",
+		"oracle_id": "f6b499d5-0e39-46ce-9de9-f64a2cc2cb32",
+		"oracle_text": "Haste\nWhen this creature enters, create a 1/1 red Phyrexian Goblin creature token.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Phyrexia: All Will Be One",
+		"toughness": "3",
+		"type_line": "Creature — Phyrexian Goblin Warrior"
+	},
 	"chitin_gravestalker": {
 		"mana_cost": "{5}{B}",
 		"name": "Chitin Gravestalker",
@@ -709,6 +755,17 @@
 		"toughness": "3",
 		"type_line": "Creature — Human Warlock // Sorcery — Adventure"
 	},
+	"conscripted_infantry": {
+		"mana_cost": "{2}{R}",
+		"name": "Conscripted Infantry",
+		"oracle_id": "cf0f3aee-78b6-4a98-8e09-8861b73c2e74",
+		"oracle_text": "When this creature dies, create a 1/1 colorless Soldier artifact creature token.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "The Brothers' War",
+		"toughness": "1",
+		"type_line": "Creature — Human Soldier"
+	},
 	"contaminated_aquifer": {
 		"mana_cost": "",
 		"name": "Contaminated Aquifer",
@@ -726,6 +783,17 @@
 		"rarity": "common",
 		"set_name": "Tarkir: Dragonstorm",
 		"type_line": "Instant"
+	},
+	"cornered_crook": {
+		"mana_cost": "{4}{R}",
+		"name": "Cornered Crook",
+		"oracle_id": "4477eeab-a51a-4dc2-9c97-83f2551d8b54",
+		"oracle_text": "When this creature enters, you may sacrifice an artifact. When you do, this creature deals 3 damage to any target.",
+		"power": "5",
+		"rarity": "uncommon",
+		"set_name": "Murders at Karlov Manor",
+		"toughness": "4",
+		"type_line": "Creature — Lizard Warrior"
 	},
 	"counterspell": {
 		"mana_cost": "{U}{U}",
@@ -920,6 +988,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Human Wizard"
 	},
+	"diversion_specialist": {
+		"mana_cost": "{3}{R}",
+		"name": "Diversion Specialist",
+		"oracle_id": "7130d063-fc1b-408b-97f2-14cb6b55d9cd",
+		"oracle_text": "Menace (This creature can't be blocked except by two or more creatures.)\n{1}, Sacrifice another creature or enchantment: Exile the top card of your library. You may play it this turn.",
+		"power": "4",
+		"rarity": "uncommon",
+		"set_name": "Duskmourn: House of Horror",
+		"toughness": "3",
+		"type_line": "Creature — Human Warrior"
+	},
 	"divining_duelist": {
 		"mana_cost": "{2}{U}",
 		"name": "Divining Duelist",
@@ -974,6 +1053,17 @@
 		"set_name": "War of the Spark",
 		"toughness": "1",
 		"type_line": "Creature — Zombie Cat"
+	},
+	"dreamstalker_manticore": {
+		"mana_cost": "{2}{R}",
+		"name": "Dreamstalker Manticore",
+		"oracle_id": "1ecb3349-ccb8-4b54-bd81-8d649d6f96f0",
+		"oracle_text": "Whenever you cast your first spell during each opponent's turn, this creature deals 1 damage to any target.",
+		"power": "4",
+		"rarity": "uncommon",
+		"set_name": "Theros Beyond Death",
+		"toughness": "2",
+		"type_line": "Enchantment Creature — Manticore"
 	},
 	"drudge_skeletons": {
 		"mana_cost": "{1}{B}",
@@ -1063,6 +1153,17 @@
 		"toughness": "3",
 		"type_line": "Creature — Angel"
 	},
+	"equilibrium_adept": {
+		"mana_cost": "{3}{R}",
+		"name": "Equilibrium Adept",
+		"oracle_id": "42bf9435-02e6-428f-a93c-fe4652deb4fc",
+		"oracle_text": "When this creature enters, exile the top card of your library. Until the end of your next turn, you may play that card.\nFlurry — Whenever you cast your second spell each turn, this creature gains double strike until end of turn.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Tarkir: Dragonstorm",
+		"toughness": "4",
+		"type_line": "Creature — Dog Monk"
+	},
 	"etherium_spinner": {
 		"mana_cost": "{2}{U}",
 		"name": "Etherium Spinner",
@@ -1150,6 +1251,17 @@
 		"set_name": "Throne of Eldraine",
 		"toughness": "2",
 		"type_line": "Creature — Faerie Rogue"
+	},
+	"falkenrath_celebrants": {
+		"mana_cost": "{4}{R}",
+		"name": "Falkenrath Celebrants",
+		"oracle_id": "3c0be888-0d66-4bad-84f4-90c3934915d7",
+		"oracle_text": "Menace (This creature can't be blocked except by two or more creatures.)\nWhen this creature enters, create two Blood tokens. (They're artifacts with \"{1}, {T}, Discard a card, Sacrifice this token: Draw a card.\")",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Innistrad: Crimson Vow",
+		"toughness": "4",
+		"type_line": "Creature — Vampire"
 	},
 	"fanatical_firebrand": {
 		"mana_cost": "{R}",
@@ -1278,6 +1390,17 @@
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Forest"
 	},
+	"forgeborn_oreads": {
+		"mana_cost": "{2}{R}{R}",
+		"name": "Forgeborn Oreads",
+		"oracle_id": "8289190c-b180-48e3-b92f-7dccbca61b39",
+		"oracle_text": "Constellation — Whenever this creature or another enchantment you control enters, this creature deals 1 damage to any target.",
+		"power": "4",
+		"rarity": "uncommon",
+		"set_name": "Journey into Nyx",
+		"toughness": "2",
+		"type_line": "Enchantment Creature — Nymph"
+	},
 	"foulmire_knight": {
 		"card_faces": [
 			{
@@ -1342,6 +1465,17 @@
 		"set_name": "Limited Edition Alpha",
 		"toughness": "1",
 		"type_line": "Creature — Shade"
+	},
+	"furnace_hellkite": {
+		"mana_cost": "{5}{R}{R}",
+		"name": "Furnace Hellkite",
+		"oracle_id": "647980b2-088c-43a4-bdc4-5865f03a4fc4",
+		"oracle_text": "Affinity for artifacts (This spell costs {1} less to cast for each artifact you control.)\nFlying\n{R}: This creature gets +1/+0 until end of turn.",
+		"power": "5",
+		"rarity": "uncommon",
+		"set_name": "Modern Horizons 3",
+		"toughness": "5",
+		"type_line": "Artifact Creature — Dragon"
 	},
 	"gaeas_might": {
 		"mana_cost": "{G}",
@@ -1487,6 +1621,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Goblin Soldier"
 	},
+	"goblin_dark_dwellers": {
+		"mana_cost": "{3}{R}{R}",
+		"name": "Goblin Dark-Dwellers",
+		"oracle_id": "bab0ab8d-74d2-49a3-b258-b93d19925d99",
+		"oracle_text": "Menace (This creature can't be blocked except by two or more creatures.)\nWhen this creature enters, you may cast target instant or sorcery card with mana value 3 or less from your graveyard without paying its mana cost. If that spell would be put into your graveyard, exile it instead.",
+		"power": "4",
+		"rarity": "rare",
+		"set_name": "Oath of the Gatewatch",
+		"toughness": "4",
+		"type_line": "Creature — Goblin"
+	},
 	"goblin_gaveleer": {
 		"mana_cost": "{R}",
 		"name": "Goblin Gaveleer",
@@ -1508,6 +1653,40 @@
 		"set_name": "Core Set 2019",
 		"toughness": "1",
 		"type_line": "Creature — Goblin Rogue"
+	},
+	"grabby_giant": {
+		"card_faces": [
+			{
+				"artist": "Johann Bodin",
+				"artist_id": "d92e2dd9-9ef6-43f6-81f8-df87f9066983",
+				"illustration_id": "5b68fb6f-84ac-41b9-864a-06423c614e79",
+				"mana_cost": "{3}{R}",
+				"name": "Grabby Giant",
+				"object": "card_face",
+				"oracle_text": "Reach\n{2}{R}, Sacrifice an artifact or land: Draw a card.",
+				"power": "4",
+				"toughness": "3",
+				"type_line": "Creature — Giant"
+			},
+			{
+				"artist": "Johann Bodin",
+				"artist_id": "d92e2dd9-9ef6-43f6-81f8-df87f9066983",
+				"mana_cost": "{1}{R}",
+				"name": "That's Mine",
+				"object": "card_face",
+				"oracle_text": "Create a Treasure token. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Instant — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{3}{R} // {1}{R}",
+		"name": "Grabby Giant // That's Mine",
+		"oracle_id": "e6f59807-eaf6-4889-8c89-2ac915afefff",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "3",
+		"type_line": "Creature — Giant // Instant — Adventure"
 	},
 	"gray_ogre": {
 		"mana_cost": "{2}{R}",
@@ -1584,6 +1763,17 @@
 		"toughness": "4",
 		"type_line": "Creature — Giant Soldier"
 	},
+	"harried_dronesmith": {
+		"mana_cost": "{3}{R}",
+		"name": "Harried Dronesmith",
+		"oracle_id": "a6e2d8bd-8fe7-4de0-af25-7ad3e9dcb81b",
+		"oracle_text": "At the beginning of combat on your turn, create a 1/1 colorless Thopter artifact creature token with flying. It gains haste until end of turn. Sacrifice it at the beginning of your next end step.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Murders at Karlov Manor",
+		"toughness": "3",
+		"type_line": "Creature — Human Artificer"
+	},
 	"harvester_of_souls": {
 		"mana_cost": "{4}{B}{B}",
 		"name": "Harvester of Souls",
@@ -1626,6 +1816,17 @@
 		"toughness": "2",
 		"type_line": "Creature — Human Wizard"
 	},
+	"hearthborn_battler": {
+		"mana_cost": "{2}{R}",
+		"name": "Hearthborn Battler",
+		"oracle_id": "beb02f49-95a6-49bf-b176-4e4b2ab5b651",
+		"oracle_text": "Haste\nWhenever a player casts their second spell each turn, this creature deals 2 damage to target opponent.",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Bloomburrow",
+		"toughness": "3",
+		"type_line": "Creature — Lizard Warlock"
+	},
 	"helpful_hunter": {
 		"mana_cost": "{1}{W}",
 		"name": "Helpful Hunter",
@@ -1645,6 +1846,17 @@
 		"rarity": "uncommon",
 		"set_name": "The Lost Caverns of Ixalan",
 		"type_line": "Sorcery"
+	},
+	"hero_of_the_games": {
+		"mana_cost": "{2}{R}",
+		"name": "Hero of the Games",
+		"oracle_id": "fc594e38-4297-44d4-b11b-3ab804cfcbdd",
+		"oracle_text": "Whenever you cast a spell that targets this creature, creatures you control get +1/+0 until end of turn.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Theros Beyond Death",
+		"toughness": "2",
+		"type_line": "Creature — Human Soldier"
 	},
 	"hero_of_the_pride": {
 		"mana_cost": "{1}{W}",
@@ -1772,6 +1984,17 @@
 		"rarity": "common",
 		"set_name": "Dominaria United",
 		"type_line": "Land — Plains Island"
+	},
+	"igneous_elemental": {
+		"mana_cost": "{4}{R}{R}",
+		"name": "Igneous Elemental",
+		"oracle_id": "4dc8e91a-2c00-4de2-bada-80f323a4ec9d",
+		"oracle_text": "This spell costs {2} less to cast if there is a land card in your graveyard.\nWhen this creature enters, you may have it deal 2 damage to target creature.",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Modern Horizons",
+		"toughness": "3",
+		"type_line": "Creature — Elemental"
 	},
 	"ingenious_prodigy": {
 		"mana_cost": "{X}{U}",
@@ -2248,6 +2471,41 @@
 		"set_name": "Weatherlight",
 		"type_line": "Artifact"
 	},
+	"minecart_daredevil": {
+		"card_faces": [
+			{
+				"artist": "Edgar Sánchez Hidalgo",
+				"artist_id": "cd897b75-a7b0-4902-8dc4-b1fda5303ec8",
+				"flavor_text": "Mines that once rang with the strikes of pickaxes now echo with shouts of reckless glee.",
+				"illustration_id": "bf20e484-2387-42e0-a363-b51a27b35b6a",
+				"mana_cost": "{2}{R}",
+				"name": "Minecart Daredevil",
+				"object": "card_face",
+				"oracle_text": "",
+				"power": "4",
+				"toughness": "2",
+				"type_line": "Creature — Dwarf Knight"
+			},
+			{
+				"artist": "Edgar Sánchez Hidalgo",
+				"artist_id": "cd897b75-a7b0-4902-8dc4-b1fda5303ec8",
+				"mana_cost": "{1}{R}",
+				"name": "Ride the Rails",
+				"object": "card_face",
+				"oracle_text": "Target creature gets +2/+1 until end of turn. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Instant — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{2}{R} // {1}{R}",
+		"name": "Minecart Daredevil // Ride the Rails",
+		"oracle_id": "df555f60-2164-49dc-be67-00aca9eb0d45",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "2",
+		"type_line": "Creature — Dwarf Knight // Instant — Adventure"
+	},
 	"mist_cloaked_herald": {
 		"mana_cost": "{U}",
 		"name": "Mist-Cloaked Herald",
@@ -2537,6 +2795,17 @@
 		"toughness": "4",
 		"type_line": "Creature — Human Knight"
 	},
+	"ogre_battledriver": {
+		"mana_cost": "{2}{R}{R}",
+		"name": "Ogre Battledriver",
+		"oracle_id": "c834c4b5-c122-4c63-81c7-884ca4c0dc3b",
+		"oracle_text": "Whenever another creature you control enters, that creature gets +2/+0 and gains haste until end of turn. (It can attack and {T} this turn.)",
+		"power": "3",
+		"rarity": "rare",
+		"set_name": "Magic 2014",
+		"toughness": "3",
+		"type_line": "Creature — Ogre Warrior"
+	},
 	"oltec_matterweaver": {
 		"mana_cost": "{2}{W}",
 		"name": "Oltec Matterweaver",
@@ -2630,6 +2899,17 @@
 		"toughness": "4",
 		"type_line": "Artifact Creature — Toy"
 	},
+	"panicked_altisaur": {
+		"mana_cost": "{4}{R}",
+		"name": "Panicked Altisaur",
+		"oracle_id": "6de64e59-0a47-46c4-90bf-c56e63266f19",
+		"oracle_text": "Reach\n{T}: This creature deals 2 damage to each opponent.",
+		"power": "4",
+		"rarity": "common",
+		"set_name": "The Lost Caverns of Ixalan",
+		"toughness": "5",
+		"type_line": "Creature — Dinosaur"
+	},
 	"path_of_bravery": {
 		"mana_cost": "{2}{W}",
 		"name": "Path of Bravery",
@@ -2669,6 +2949,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Basic Land — Plains"
+	},
+	"plundering_pirate": {
+		"mana_cost": "{2}{R}",
+		"name": "Plundering Pirate",
+		"oracle_id": "3ab13412-1eaf-40c0-905d-8a3ca0c51be5",
+		"oracle_text": "When this creature enters, create a Treasure token. (It's an artifact with \"{T}, Sacrifice this token: Add one mana of any color.\")",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "The Lost Caverns of Ixalan",
+		"toughness": "2",
+		"type_line": "Creature — Orc Pirate"
 	},
 	"poisoners_apprentice": {
 		"mana_cost": "{2}{B}",
@@ -2760,6 +3051,17 @@
 		"rarity": "rare",
 		"set_name": "Kaldheim",
 		"type_line": "Enchantment"
+	},
+	"rapacious_dragon": {
+		"mana_cost": "{4}{R}",
+		"name": "Rapacious Dragon",
+		"oracle_id": "0944ec2e-1dd9-459f-8f1d-667242cf52fe",
+		"oracle_text": "Flying\nWhen this creature enters, create two Treasure tokens. (They're artifacts with \"{T}, Sacrifice this token: Add one mana of any color.\")",
+		"power": "3",
+		"rarity": "uncommon",
+		"set_name": "Core Set 2020",
+		"toughness": "3",
+		"type_line": "Creature — Dragon"
 	},
 	"razzle_dazzler": {
 		"mana_cost": "{1}{U}",
@@ -2889,6 +3191,17 @@
 		"set_name": "Tarkir: Dragonstorm",
 		"toughness": "3",
 		"type_line": "Creature — Human Monk"
+	},
+	"salivating_gremlins": {
+		"mana_cost": "{2}{R}",
+		"name": "Salivating Gremlins",
+		"oracle_id": "4766f232-8275-4256-b756-8dd5c5e825a3",
+		"oracle_text": "Whenever an artifact you control enters, this creature gets +2/+0 and gains trample until end of turn.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Kaladesh",
+		"toughness": "3",
+		"type_line": "Creature — Gremlin"
 	},
 	"salt_road_packbeast": {
 		"mana_cost": "{5}{W}",
@@ -3109,6 +3422,17 @@
 		"set_name": "Dominaria",
 		"type_line": "Artifact — Equipment"
 	},
+	"sizzling_changeling": {
+		"mana_cost": "{2}{R}",
+		"name": "Sizzling Changeling",
+		"oracle_id": "60ad7aaa-8ce6-4449-8e8d-4ccf925010db",
+		"oracle_text": "Changeling (This card is every creature type.)\nWhen this creature dies, exile the top card of your library. Until the end of your next turn, you may play that card.",
+		"power": "3",
+		"rarity": "uncommon",
+		"set_name": "Lorwyn Eclipsed",
+		"toughness": "2",
+		"type_line": "Creature — Shapeshifter"
+	},
 	"skyhunter_prowler": {
 		"mana_cost": "{2}{W}",
 		"name": "Skyhunter Prowler",
@@ -3205,6 +3529,17 @@
 		"set_name": "Dominaria",
 		"toughness": "1",
 		"type_line": "Artifact Creature — Construct"
+	},
+	"spinehorn_minotaur": {
+		"mana_cost": "{2}{R}",
+		"name": "Spinehorn Minotaur",
+		"oracle_id": "db46b8f4-22bb-4042-abe8-dd83b2426142",
+		"oracle_text": "As long as you've drawn two or more cards this turn, this creature has double strike.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Modern Horizons",
+		"toughness": "3",
+		"type_line": "Creature — Minotaur Berserker"
 	},
 	"spirited_companion": {
 		"mana_cost": "{1}{W}",
@@ -3325,6 +3660,17 @@
 		"rarity": "common",
 		"set_name": "Limited Edition Alpha",
 		"type_line": "Instant"
+	},
+	"terror_of_mount_velus": {
+		"mana_cost": "{5}{R}{R}",
+		"name": "Terror of Mount Velus",
+		"oracle_id": "8161248c-16a3-47db-a3ae-cdfd878d49e0",
+		"oracle_text": "Flying\nDouble strike (This creature deals both first-strike and regular combat damage.)\nWhen this creature enters, creatures you control gain double strike until end of turn.",
+		"power": "5",
+		"rarity": "rare",
+		"set_name": "Theros Beyond Death",
+		"toughness": "5",
+		"type_line": "Creature — Dragon"
 	},
 	"tethmos_high_priest": {
 		"mana_cost": "{2}{W}",
@@ -3453,6 +3799,52 @@
 		"set_name": "Duskmourn: House of Horror",
 		"toughness": "2",
 		"type_line": "Creature — Human Detective"
+	},
+	"twinshot_sniper": {
+		"mana_cost": "{3}{R}",
+		"name": "Twinshot Sniper",
+		"oracle_id": "b72fd535-0051-4f59-9d99-75895f751006",
+		"oracle_text": "Reach\nWhen this creature enters, it deals 2 damage to any target.\nChannel — {1}{R}, Discard this card: It deals 2 damage to any target.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "3",
+		"type_line": "Artifact Creature — Goblin Archer"
+	},
+	"two_headed_hunter": {
+		"card_faces": [
+			{
+				"artist": "Filip Burburan",
+				"artist_id": "66082c3b-a623-4d34-be51-2475214b85d3",
+				"flavor_text": "\"I point, you club!\"",
+				"illustration_id": "0cb8edb2-dcfe-4456-ae1d-211ec352d50c",
+				"mana_cost": "{4}{R}",
+				"name": "Two-Headed Hunter",
+				"object": "card_face",
+				"oracle_text": "Menace (This creature can't be blocked except by two or more creatures.)",
+				"power": "5",
+				"toughness": "4",
+				"type_line": "Creature — Giant"
+			},
+			{
+				"artist": "Filip Burburan",
+				"artist_id": "66082c3b-a623-4d34-be51-2475214b85d3",
+				"mana_cost": "{1}{R}",
+				"name": "Twice the Rage",
+				"object": "card_face",
+				"oracle_text": "Target creature gains double strike until end of turn. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Instant — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{4}{R} // {1}{R}",
+		"name": "Two-Headed Hunter // Twice the Rage",
+		"oracle_id": "0f222f3d-f02b-42b9-aedf-fb7ed92d4889",
+		"power": "5",
+		"rarity": "uncommon",
+		"set_name": "Wilds of Eldraine",
+		"toughness": "4",
+		"type_line": "Creature — Giant // Instant — Adventure"
 	},
 	"undergrowth_leopard": {
 		"mana_cost": "{1}{G}",
@@ -3660,6 +4052,17 @@
 		"set_name": "Tarkir: Dragonstorm",
 		"toughness": "2",
 		"type_line": "Creature — Human Monk"
+	},
+	"witty_roastmaster": {
+		"mana_cost": "{2}{R}",
+		"name": "Witty Roastmaster",
+		"oracle_id": "34edbf1b-0826-49f1-a04d-15cc8c543b22",
+		"oracle_text": "Alliance — Whenever another creature you control enters, this creature deals 1 damage to each opponent.",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Streets of New Capenna",
+		"toughness": "2",
+		"type_line": "Creature — Devil Citizen"
 	},
 	"wooded_ridgeline": {
 		"mana_cost": "",

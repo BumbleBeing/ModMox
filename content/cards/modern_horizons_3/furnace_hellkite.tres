@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_3enx8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="2_gvyly"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_uixtv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/affinity_ability.gd" id="3_i8vt6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_yxan1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="4_11adb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="5_5c6yr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="6_qttps"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="7_nk52b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="8_7iibv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="9_gjpcl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="10_q8dym"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="12_nl0ro"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="13_k6g88"]
+
+[sub_resource type="Resource" id="Resource_qgp0s"]
+script = ExtResource("2_gvyly")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_gwec3"]
+script = ExtResource("3_i8vt6")
+filter = SubResource("Resource_qgp0s")
+
+[sub_resource type="Resource" id="Resource_c3qam"]
+script = ExtResource("4_11adb")
+
+[sub_resource type="Resource" id="Resource_yfv86"]
+script = ExtResource("7_nk52b")
+
+[sub_resource type="Resource" id="Resource_uafvr"]
+script = ExtResource("8_7iibv")
+value = 1
+
+[sub_resource type="Resource" id="Resource_s1jip"]
+script = ExtResource("8_7iibv")
+
+[sub_resource type="Resource" id="Resource_f43r3"]
+script = ExtResource("9_gjpcl")
+power = SubResource("Resource_uafvr")
+toughness = SubResource("Resource_s1jip")
+affected = SubResource("Resource_yfv86")
+
+[sub_resource type="Resource" id="Resource_osr1k"]
+script = ExtResource("10_q8dym")
+continuous = SubResource("Resource_f43r3")
+
+[sub_resource type="Resource" id="Resource_kspin"]
+script = ExtResource("2_uixtv")
+symbols = Array[int]([3])
+
+[sub_resource type="Resource" id="Resource_53fx2"]
+script = ExtResource("12_nl0ro")
+mana_cost = SubResource("Resource_kspin")
+effects = Array[ExtResource("6_qttps")]([SubResource("Resource_osr1k")])
+
+[sub_resource type="Resource" id="Resource_gobrx"]
+script = ExtResource("2_uixtv")
+generic = 5
+symbols = Array[int]([3, 3])
+
+[resource]
+script = ExtResource("3_yxan1")
+name = "Furnace Hellkite"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Dragon"])
+mana_cost = SubResource("Resource_gobrx")
+power = 5
+toughness = 5
+abilities = Array[ExtResource("1_3enx8")]([SubResource("Resource_gwec3"), SubResource("Resource_c3qam"), SubResource("Resource_53fx2")])
+rarity = 1

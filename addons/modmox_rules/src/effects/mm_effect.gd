@@ -33,6 +33,19 @@ func next_batch(_state: MmGameState, _context: MmEffectContext, _step: int, _num
 	return []
 
 
+## The card this effect has its controller cast now, as it happens with [param worked_out]
+## its numbers, or null for none (CastWithoutPayingEffect, engine ADR 0104). The resolution
+## hands that cast to the turn, then carries on with this effect's batches.
+func card_to_cast(_state: MmGameState, _context: MmEffectContext, _worked_out: Array[int]) -> MmGameObject:
+	return null
+
+
+## Whether the spell card_to_cast() names is exiled if it would be put into its owner's
+## graveyard (engine ADR 0104).
+func exiles_cast_instead_of_graveyard() -> bool:
+	return false
+
+
 ## Performs every step of this effect at once, for the few places that cannot stop for a
 ## decision, such as a mana ability (CR 605.3a). MmGameState asserts that none of its
 ## batches needs a replacement choice.

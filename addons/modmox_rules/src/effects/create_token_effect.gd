@@ -13,6 +13,9 @@ extends MmEffect
 ## "Create a Wicked Role token attached to target creature you control": each Aura token
 ## enters already attached, and one that could not legally be attached is never created
 ## (CR 303.4g, engine ADR 0044's addendum).
+## The spell or ability remembers the tokens it created, so a later effect of it can say
+## "it", as Harried Dronesmith's "It gains haste until end of turn" does (MovedCardsSelection,
+## engine ADR 0080's third addendum).
 
 ## The steps in which blockers have been declared, if there are any attackers to block.
 const BLOCKS_DECLARED_STEPS: Array[MmTurn.Step] = [
@@ -55,6 +58,10 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, _number
 		created.attached_to_on_arrival = attached_id
 		events.append(created)
 	return events
+
+
+func remembers_moved_cards() -> bool:
+	return true
 
 
 func selections() -> Array[MmSelection]:

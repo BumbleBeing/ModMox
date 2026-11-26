@@ -1,0 +1,100 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_47ohq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/reach_ability.gd" id="2_c64q8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_owkgi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_nkem1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="3_qxt67"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="4_7t0a6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="5_wpiie"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="6_jg3th"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/sacrifice_permanents_cost.gd" id="7_rgw3e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="8_vkxtq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="9_hs8xq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="10_l7gnt"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="11_k2oxp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="13_e5qsv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="14_708uu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="15_qsl8w"]
+[ext_resource type="Resource" path="res://content/tokens/treasure.tres" id="16_qdvyc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="17_wji5m"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="18_rci1h"]
+
+[sub_resource type="Resource" id="Resource_lk8g6"]
+script = ExtResource("2_c64q8")
+
+[sub_resource type="Resource" id="Resource_3wldb"]
+script = ExtResource("5_wpiie")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_o5lf2"]
+script = ExtResource("5_wpiie")
+card_type = 4
+
+[sub_resource type="Resource" id="Resource_7gaxr"]
+script = ExtResource("6_jg3th")
+filters = Array[ExtResource("4_7t0a6")]([SubResource("Resource_3wldb"), SubResource("Resource_o5lf2")])
+
+[sub_resource type="Resource" id="Resource_trsnc"]
+script = ExtResource("7_rgw3e")
+filter = SubResource("Resource_7gaxr")
+
+[sub_resource type="Resource" id="Resource_2ju5c"]
+script = ExtResource("9_hs8xq")
+value = 1
+
+[sub_resource type="Resource" id="Resource_o7v1k"]
+script = ExtResource("10_l7gnt")
+
+[sub_resource type="Resource" id="Resource_6iudo"]
+script = ExtResource("11_k2oxp")
+amount = SubResource("Resource_2ju5c")
+players = SubResource("Resource_o7v1k")
+
+[sub_resource type="Resource" id="Resource_0q8go"]
+script = ExtResource("2_owkgi")
+generic = 2
+symbols = Array[int]([3])
+
+[sub_resource type="Resource" id="Resource_eg4bi"]
+script = ExtResource("13_e5qsv")
+mana_cost = SubResource("Resource_0q8go")
+costs = Array[ExtResource("3_qxt67")]([SubResource("Resource_trsnc")])
+effects = Array[ExtResource("8_vkxtq")]([SubResource("Resource_6iudo")])
+
+[sub_resource type="Resource" id="Resource_eaheg"]
+script = ExtResource("15_qsl8w")
+token = ExtResource("16_qdvyc")
+
+[sub_resource type="Resource" id="Resource_62fgw"]
+script = ExtResource("18_rci1h")
+effects = Array[ExtResource("8_vkxtq")]([SubResource("Resource_eaheg")])
+
+[sub_resource type="Resource" id="Resource_354f0"]
+script = ExtResource("2_owkgi")
+generic = 1
+symbols = Array[int]([3])
+
+[sub_resource type="Resource" id="Resource_4ovol"]
+script = ExtResource("3_nkem1")
+name = "That's Mine"
+card_types = Array[int]([3])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_354f0")
+abilities = Array[ExtResource("1_47ohq")]([SubResource("Resource_62fgw")])
+
+[sub_resource type="Resource" id="Resource_p62ol"]
+script = ExtResource("2_owkgi")
+generic = 3
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_nkem1")
+name = "Grabby Giant"
+card_types = Array[int]([1])
+subtypes = Array[String](["Giant"])
+mana_cost = SubResource("Resource_p62ol")
+power = 4
+toughness = 3
+abilities = Array[ExtResource("1_47ohq")]([SubResource("Resource_lk8g6"), SubResource("Resource_eg4bi")])
+adventure = SubResource("Resource_4ovol")

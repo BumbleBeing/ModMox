@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_cs8cc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_e2frd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/tap_cost.gd" id="3_chst1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/discard_cards_cost.gd" id="4_3m1pc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/sacrifice_this_cost.gd" id="5_ecbh1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="6_ya5rv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="7_65bra"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="8_5nkx1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="9_ac12s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="10_di3wy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="11_5xgre"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="12_uv583"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="13_loxdx"]
+
+[sub_resource type="Resource" id="Resource_e6u30"]
+script = ExtResource("3_chst1")
+
+[sub_resource type="Resource" id="Resource_jn5iv"]
+script = ExtResource("4_3m1pc")
+
+[sub_resource type="Resource" id="Resource_6n2ns"]
+script = ExtResource("5_ecbh1")
+
+[sub_resource type="Resource" id="Resource_11mfc"]
+script = ExtResource("7_65bra")
+value = 1
+
+[sub_resource type="Resource" id="Resource_7h08q"]
+script = ExtResource("8_5nkx1")
+
+[sub_resource type="Resource" id="Resource_viddf"]
+script = ExtResource("9_ac12s")
+amount = SubResource("Resource_11mfc")
+players = SubResource("Resource_7h08q")
+
+[sub_resource type="Resource" id="Resource_kjx0q"]
+script = ExtResource("10_di3wy")
+generic = 1
+
+[sub_resource type="Resource" id="Resource_fy2c2"]
+script = ExtResource("11_5xgre")
+mana_cost = SubResource("Resource_kjx0q")
+costs = Array[ExtResource("2_e2frd")]([SubResource("Resource_e6u30"), SubResource("Resource_jn5iv"), SubResource("Resource_6n2ns")])
+effects = Array[ExtResource("6_ya5rv")]([SubResource("Resource_viddf")])
+
+[resource]
+script = ExtResource("13_loxdx")
+name = "Blood Token"
+card_types = Array[int]([0])
+subtypes = Array[String](["Blood"])
+abilities = Array[ExtResource("1_cs8cc")]([SubResource("Resource_fy2c2")])

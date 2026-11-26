@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_5oton"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="2_3b84t"]
+
+[resource]
+script = ExtResource("2_3b84t")
+name = "Soldier Token"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Soldier"])
+power = 1
+toughness = 1

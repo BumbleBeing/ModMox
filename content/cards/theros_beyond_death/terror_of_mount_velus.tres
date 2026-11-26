@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_ru2cl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_ujimu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/flying_ability.gd" id="2_xhx3f"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/double_strike_ability.gd" id="3_8qxva"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_vl7fu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="4_e1xqg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="5_gegmm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="6_yv4a0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/controlled_by_filter.gd" id="7_hop5q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="8_6xyhp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/each_selection.gd" id="9_eifs0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/gain_abilities_continuous_effect.gd" id="10_fm17d"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="11_5pis8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="12_4kfsc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="13_m1ibs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="14_tkn56"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="15_a4dgg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="16_f2bca"]
+
+[sub_resource type="Resource" id="Resource_t4wlh"]
+script = ExtResource("2_xhx3f")
+
+[sub_resource type="Resource" id="Resource_6byfl"]
+script = ExtResource("3_8qxva")
+
+[sub_resource type="Resource" id="Resource_lojax"]
+script = ExtResource("3_8qxva")
+
+[sub_resource type="Resource" id="Resource_hfuc3"]
+script = ExtResource("6_yv4a0")
+
+[sub_resource type="Resource" id="Resource_0lgju"]
+script = ExtResource("7_hop5q")
+
+[sub_resource type="Resource" id="Resource_pfopk"]
+script = ExtResource("8_6xyhp")
+filters = Array[ExtResource("5_gegmm")]([SubResource("Resource_hfuc3"), SubResource("Resource_0lgju")])
+
+[sub_resource type="Resource" id="Resource_cdt0k"]
+script = ExtResource("9_eifs0")
+filter = SubResource("Resource_pfopk")
+
+[sub_resource type="Resource" id="Resource_co4pl"]
+script = ExtResource("10_fm17d")
+abilities = Array[ExtResource("1_ru2cl")]([SubResource("Resource_lojax")])
+affected = SubResource("Resource_cdt0k")
+
+[sub_resource type="Resource" id="Resource_yjb6y"]
+script = ExtResource("11_5pis8")
+continuous = SubResource("Resource_co4pl")
+
+[sub_resource type="Resource" id="Resource_qjay1"]
+script = ExtResource("15_a4dgg")
+
+[sub_resource type="Resource" id="Resource_q6boe"]
+script = ExtResource("16_f2bca")
+filter = SubResource("Resource_qjay1")
+
+[sub_resource type="Resource" id="Resource_s7tsx"]
+script = ExtResource("13_m1ibs")
+trigger = SubResource("Resource_q6boe")
+effects = Array[ExtResource("4_e1xqg")]([SubResource("Resource_yjb6y")])
+
+[sub_resource type="Resource" id="Resource_nu67j"]
+script = ExtResource("2_ujimu")
+generic = 5
+symbols = Array[int]([3, 3])
+
+[resource]
+script = ExtResource("3_vl7fu")
+name = "Terror of Mount Velus"
+card_types = Array[int]([1])
+subtypes = Array[String](["Dragon"])
+mana_cost = SubResource("Resource_nu67j")
+power = 5
+toughness = 5
+abilities = Array[ExtResource("1_ru2cl")]([SubResource("Resource_t4wlh"), SubResource("Resource_6byfl"), SubResource("Resource_s7tsx")])
+rarity = 2

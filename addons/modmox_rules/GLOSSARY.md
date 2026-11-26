@@ -192,6 +192,10 @@ _Avoid_: Queued trigger, trigger instance
 A triggered ability that a resolving ability creates as its controller takes the action it offers, "When you do, [ability]", as Kishla Trawlers's "you may exile a creature card from your graveyard. When you do, return target instant or sorcery card from your graveyard to your hand." (CR 603.12). It has no trigger of its own: it triggers as the action is taken, waits as a Pending Trigger, and goes on the stack the next time a player would receive priority, its targets chosen then, so the opponent may respond to it. Its source is the ability's source, as it last existed if it has gone (ADR 0088).
 _Avoid_: Follow-up ability, "if you do" (an effect of the same ability, which uses no stack), delayed trigger
 
+**Delayed Triggered Ability**:
+A triggered ability that a resolving spell or ability creates to trigger later, as Harried Dronesmith's "Sacrifice it at the beginning of your next end step" (CR 603.7). It waits in the game, not on its source, so it triggers whatever has become of the source since. It triggers only the next time its trigger is met, then is gone, so one created in your end step waits for your next turn's. It is bound to what the ability that created it remembered, so its "it" is the token created just before it, never another permanent (ADR 0103).
+_Avoid_: Reflexive trigger (which triggers at once, as its action is taken), "until end of turn" (a duration, not a trigger)
+
 **Batch**:
 Events that happen at the same moment, such as everything state-based actions do at once or all combat damage in a step. Triggers are looked for once, after the whole batch. A trigger that says "one or more", as "Whenever one or more other creatures you control leave the battlefield without dying", triggers once for a batch however many of its events it matches.
 _Avoid_: Transaction, group
@@ -310,6 +314,10 @@ _Avoid_: Override, interceptor, hook
 **Prevention Effect**:
 A replacement effect that stops damage from being dealt: all of it, or up to an amount. Prevented damage is never dealt, so nothing that reacts to damage sees it.
 _Avoid_: Damage reduction, absorb, block (blocking is combat)
+
+**Damage Can't Be Prevented**:
+What an effect such as Stomp's "Damage can't be prevented this turn" leaves on the game (CR 615.12, ADR 0019's addendum): the Game Turn it is in, for the rest of which no Prevention Effect prevents any damage, protection's included, and no shield is used up. It is a rule of the turn, so it reaches damage from sources and to recipients that arrive later, and a later turn ends it by passing.
+_Avoid_: Unpreventable damage (said of the damage, where it is the turn that is marked)
 
 **Scry**:
 A keyword action: its player looks at the top N cards of their library, puts any number of them on the bottom of it in any order and the rest back on top in any order (CR 701.22a). It is asked and answered as a surveil is, with the cards sent to the bottom, the last sent the deepest, and the order of the rest; no card leaves the library, and every card looked at becomes a Known Card to its owner (ADR 0087).

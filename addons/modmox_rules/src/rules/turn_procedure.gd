@@ -76,10 +76,13 @@ func next_decision() -> MmPendingDecision:
 			if _cast.is_stuck():
 				_needs_rewind = true
 				return null
-			# CR 117.3c: after casting or activating, that player receives priority.
 			_cast = null
-			_passes_in_succession = 0
-			_stage = Stage.PRIORITY
+			# Engine ADR 0104: a spell cast as something resolves gives no one priority; the
+			# resolution carries on below. Otherwise, CR 117.3c: after casting or activating,
+			# that player receives priority.
+			if _resolution == null:
+				_passes_in_succession = 0
+				_stage = Stage.PRIORITY
 		if _stacking != null:
 			var stacking_decision: MmPendingDecision = _stacking.next_decision()
 			if stacking_decision != null:
@@ -97,6 +100,10 @@ func next_decision() -> MmPendingDecision:
 			var resolving: MmPendingDecision = _resolution.next_decision()
 			if resolving != null:
 				return resolving
+			var handed: CastProcedure = _resolution.take_cast()
+			if handed != null:
+				_cast = handed  # Engine ADR 0104: cast now; the resolution carries on once it is.
+				continue
 			_resolution = null
 			# CR 117.3b: after resolution the active player receives priority.
 			_priority_player_id = _state.active_player_id
@@ -154,7 +161,7 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_resolution.apply_answer(decision, answer)  # ADR 0061: paying X as it resolves.
 	elif decision is ChoosePermanentsDecision and _cast == null and _resolution != null:
 		_resolution.apply_answer(decision, answer)  # Engine ADR 0088: a cost said yes to, such as a sacrifice.
-	elif decision is ChooseCardsToDiscardDecision and _resolution != null:
+	elif decision is ChooseCardsToDiscardDecision and _cast == null and _resolution != null:
 		_resolution.apply_answer(decision, answer)  # A DiscardEffect's; cleanup's is below.
 	elif _cast != null:
 		_cast.apply_answer(decision, answer)

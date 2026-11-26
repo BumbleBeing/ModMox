@@ -1,0 +1,75 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_sky7l"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_lw2hx"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_qu3jj"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="3_iughc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_wt4vl"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_n0e3q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_p8atn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_d1d24"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_cx2oc"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="8_psx1v"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/spell_ability.gd" id="9_ga1fs"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="10_t0bdl"]
+
+[sub_resource type="Resource" id="Resource_uhu08"]
+script = ExtResource("3_iughc")
+
+[sub_resource type="Resource" id="Resource_c44sn"]
+script = ExtResource("4_n0e3q")
+value = 2
+
+[sub_resource type="Resource" id="Resource_nq7e6"]
+script = ExtResource("4_n0e3q")
+value = 1
+
+[sub_resource type="Resource" id="Resource_hrdnj"]
+script = ExtResource("5_p8atn")
+power = SubResource("Resource_c44sn")
+toughness = SubResource("Resource_nq7e6")
+affected = SubResource("Resource_uhu08")
+
+[sub_resource type="Resource" id="Resource_wt76k"]
+script = ExtResource("6_d1d24")
+continuous = SubResource("Resource_hrdnj")
+
+[sub_resource type="Resource" id="Resource_v3qyq"]
+script = ExtResource("10_t0bdl")
+
+[sub_resource type="Resource" id="Resource_iv4lk"]
+script = ExtResource("8_psx1v")
+filter = SubResource("Resource_v3qyq")
+
+[sub_resource type="Resource" id="Resource_lcp0e"]
+script = ExtResource("9_ga1fs")
+targets = Array[ExtResource("8_psx1v")]([SubResource("Resource_iv4lk")])
+effects = Array[ExtResource("2_qu3jj")]([SubResource("Resource_wt76k")])
+
+[sub_resource type="Resource" id="Resource_mu2p6"]
+script = ExtResource("2_lw2hx")
+generic = 1
+symbols = Array[int]([3])
+
+[sub_resource type="Resource" id="Resource_n0uxn"]
+script = ExtResource("3_wt4vl")
+name = "Ride the Rails"
+card_types = Array[int]([3])
+subtypes = Array[String](["Adventure"])
+mana_cost = SubResource("Resource_mu2p6")
+abilities = Array[ExtResource("1_sky7l")]([SubResource("Resource_lcp0e")])
+
+[sub_resource type="Resource" id="Resource_86ttt"]
+script = ExtResource("2_lw2hx")
+generic = 2
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_wt4vl")
+name = "Minecart Daredevil"
+card_types = Array[int]([1])
+subtypes = Array[String](["Dwarf", "Knight"])
+mana_cost = SubResource("Resource_86ttt")
+power = 4
+toughness = 2
+adventure = SubResource("Resource_n0uxn")

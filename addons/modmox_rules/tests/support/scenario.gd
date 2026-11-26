@@ -1015,6 +1015,12 @@ static func free_shield(card_name: String, amount: int) -> MmCardDefinition:
 	return instant(card_name, mana_cost(0), [any_target()], [prevent_next(amount, targeted(0))])
 
 
+## An instant costing {0} after Stomp: "Damage can't be prevented this turn. [card name]
+## deals [param amount] damage to any target."
+static func free_stomp(card_name: String, amount: int) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [any_target()], [DamageCantBePreventedEffect.new(), deal_damage(amount, targeted(0))])
+
+
 ## A 1/1 creature costing {0}: "{T}: Prevent the next 1 damage that would be dealt to any
 ## target this turn."
 static func healer(card_name: String) -> MmCardDefinition:
@@ -2357,6 +2363,20 @@ static func ward(cost: MmManaCost = null) -> WardAbility:
 	return ability
 
 
+## "Whenever this permanent becomes the target of a spell", never an ability's.
+static func becomes_target_of_a_spell() -> BecomesTargetTrigger:
+	var trigger: BecomesTargetTrigger = BecomesTargetTrigger.new()
+	trigger.filter = IsSourceFilter.new()
+	trigger.is_spells_only = true
+	return trigger
+
+
+## A 4/3 creature costing {0} with Bonecrusher Giant's first ability: "Whenever this creature
+## becomes the target of a spell, this creature deals 2 damage to that spell's controller."
+static func giant(card_name: String = "Giant") -> MmCardDefinition:
+	return creature(card_name, 4, 3, [triggered(becomes_target_of_a_spell(), [deal_damage(2, TriggeringPlayerSelection.new())])])
+
+
 ## A 2/2 creature costing {0} with ward [param cost], {2} unless another cost is given.
 static func warden(card_name: String = "Warden", cost: MmManaCost = null) -> MmCardDefinition:
 	return creature(card_name, 2, 2, [ward(cost)])
@@ -3306,6 +3326,21 @@ static func vandal(card_name: String = "Vandal") -> MmCardDefinition:
 	return creature(card_name, 1, 2, [triggered(draws(2), [gain_life(1, you())])])
 
 
+## "The number of cards [param players] have drawn this turn", you unless others are given.
+static func cards_drawn_this_turn(players: MmSelection = null) -> CardsDrawnThisTurnValue:
+	var value: CardsDrawnThisTurnValue = CardsDrawnThisTurnValue.new()
+	value.players = players if players != null else you()
+	return value
+
+
+## A 2/3 creature costing {0} with Spinehorn Minotaur's ability: "As long as you've drawn
+## two or more cards this turn, this creature has double strike."
+static func minotaur(card_name: String = "Minotaur") -> MmCardDefinition:
+	var double_strike: Array[MmAbility] = [DoubleStrikeAbility.new()]
+	var granted: GainAbilitiesContinuousEffect = gain_abilities(double_strike, SourceSelection.new())
+	return creature(card_name, 2, 3, [continuous_static([granted], at_least(cards_drawn_this_turn(), 2))])
+
+
 # --- Card track: prowess ---------------------------------------------------------------
 
 
@@ -3429,6 +3464,20 @@ static func your_dead_spell() -> TargetRequirement:
 static func trawler(card_name: String = "Trawler") -> MmCardDefinition:
 	var returns: ReflexiveTriggerEffect = reflexive([return_to_hand(targeted(0))], [your_dead_spell()])
 	return creature(card_name, 3, 2, [triggered(enters(IsSourceFilter.new()), [may_pay(exile_from_graveyard(), returns)])])
+
+
+## A 1/1 creature costing {0} with Goblin Dark-Dwellers' ability (engine ADR 0104): "When
+## this creature enters, you may cast target instant or sorcery card with mana value 3 or
+## less from your graveyard without paying its mana cost. If that spell would be put into
+## your graveyard, exile it instead."
+static func dweller(card_name: String = "Dweller") -> MmCardDefinition:
+	var casting: CastWithoutPayingEffect = CastWithoutPayingEffect.new()
+	casting.selection = targeted(0)
+	casting.is_exiled_instead_of_graveyard = true
+	var spell_card: AnyOfFilter = any_of([of_type(MmCardTypes.CardType.INSTANT), of_type(MmCardTypes.CardType.SORCERY)])
+	var filter: AllOfFilter = all_of([spell_card, owned_by(MmTrigger.Whose.YOU), mana_value(3)])
+	return creature(card_name, 1, 1, [triggered(enters(IsSourceFilter.new()), [may(casting)],
+		[target_graveyard_card(filter)])])
 
 
 ## "Sacrifice [param count] [param filter]" (CR 701.21a), "an artifact" unless another
@@ -3844,3 +3893,55 @@ static func improvisers_offered(engine: MmEngine) -> Array[int]:
 		if action is ImproviseAction:
 			offered.append((action as ImproviseAction).object_id)
 	return offered
+
+
+# --- Card track: delayed triggers -----------------------------------------------------------
+
+
+## "[param effects] at the beginning of your next [param step]" (CR 603.7), the end step
+## unless another is given: a delayed triggered ability, created as the effect happens
+## (engine ADR 0103).
+static func delayed(effects: Array[MmEffect], step: MmTurn.Step = MmTurn.Step.END) -> CreateDelayedTriggerEffect:
+	var effect: CreateDelayedTriggerEffect = CreateDelayedTriggerEffect.new()
+	effect.ability = triggered(at_step(step, MmTrigger.Whose.YOU), effects)
+	return effect
+
+
+## "Sacrifice [param selected]" (CR 701.21a): "sacrifice it".
+static func sacrifice_selected(selected: MmSelection) -> SacrificeSelectedEffect:
+	var effect: SacrificeSelectedEffect = SacrificeSelectedEffect.new()
+	effect.selection = selected
+	return effect
+
+
+## A 1/1 colorless Thopter artifact creature token with flying, made in code, with
+## [param abilities] as well.
+static func thopter(abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var all: Array[MmAbility] = [FlyingAbility.new()]
+	all.append_array(abilities)
+	var definition: MmCardDefinition = token(1, 1, [], ["Thopter"], all)
+	definition.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.CREATURE]
+	return definition
+
+
+## "Create [param made]. It gains haste until end of turn. Sacrifice it at the beginning of
+## your next end step.", as Harried Dronesmith says.
+static func fleeting_tokens(made: MmCardDefinition) -> Array[MmEffect]:
+	var haste: Array[MmAbility] = [HasteAbility.new()]
+	var sacrifice: Array[MmEffect] = [sacrifice_selected(MovedCardsSelection.new())]
+	return [create_tokens(made), until_end_of_turn(gain_abilities(haste, MovedCardsSelection.new())),
+		delayed(sacrifice)]
+
+
+## A 2/3 creature costing {0} with Harried Dronesmith's ability: "At the beginning of combat
+## on your turn, create a 1/1 colorless Thopter artifact creature token with flying. It
+## gains haste until end of turn. Sacrifice it at the beginning of your next end step."
+static func dronesmith(card_name: String = "Dronesmith") -> MmCardDefinition:
+	return creature(card_name, 2, 3, [triggered(at_step(MmTurn.Step.BEGINNING_OF_COMBAT, MmTrigger.Whose.YOU),
+		fleeting_tokens(thopter()))])
+
+
+## An instant costing {0} with what Harried Dronesmith's ability does, of [param made] (a
+## Thopter unless another token is given), so it can be cast in any step of either turn.
+static func free_fleeting(card_name: String = "Fleeting", made: MmCardDefinition = null) -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [], fleeting_tokens(thopter() if made == null else made))

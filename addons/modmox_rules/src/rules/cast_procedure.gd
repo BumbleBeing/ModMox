@@ -49,8 +49,14 @@ var _exiled_for_next_cost: int = 0
 ## [param bestowed] as an Aura spell for its bestow cost (CR 702.103a-b, engine ADR 0089), and
 ## [param for_alternative_cost] for its AlternativeCostAbility's cost (CR 118.9, engine ADR
 ## 0093), whose costs that ask a choice are asked before the mana, as a flashback cost's are.
+## [param without_paying] casts it "without paying its mana cost" as an effect resolves
+## (CR 118.9, engine ADR 0104): no mana, so X is 0 (CR 107.3b), and from a graveyard no
+## flashback cost either (CR 118.9a), its additional costs still paid; and
+## [param exiled_instead_of_graveyard] marks it to be exiled if it would be put into its
+## owner's graveyard.
 static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, as_adventure: bool = false,
-		bestowed: bool = false, for_alternative_cost: bool = false) -> CastProcedure:
+		bestowed: bool = false, for_alternative_cost: bool = false, without_paying: bool = false,
+		exiled_instead_of_graveyard: bool = false) -> CastProcedure:
 	var characteristics: MmCharacteristics = state.characteristics_of(card)
 	if as_adventure:
 		characteristics = characteristics.adventure
@@ -65,12 +71,13 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, a
 		procedure._target_requirements = spell.targets
 	# CR 601.2f: the total cost is fixed now. Choosing modes and targets first, as the rules
 	# order it, can change nothing it counts. Later: cost increases.
-	var mana: MmManaCost = mana_to_pay(state, player_id, card, as_adventure, bestowed, for_alternative_cost)
+	var mana: MmManaCost = null if without_paying else mana_to_pay(state, player_id, card, as_adventure, bestowed,
+		for_alternative_cost)
 	if mana != null and mana.x_count > 0:
 		procedure._x_cost = mana
 		if procedure._stage != Stage.CHOOSE_MODE:
 			procedure._stage = Stage.CHOOSE_X  # CR 601.2b: X after any mode, before targets.
-	var is_flashback: bool = card.zone().kind == MmZone.Kind.GRAVEYARD
+	var is_flashback: bool = card.zone().kind == MmZone.Kind.GRAVEYARD and not without_paying
 	var costs: Array[MmCost] = []
 	if is_flashback:
 		costs.append_array(flashback_of(characteristics).costs)
@@ -87,6 +94,7 @@ static func cast_spell(state: MmGameState, player_id: int, card: MmGameObject, a
 		state.perform(CastPermissionUsedEvent.new(permission[0], permission[1], characteristics.name))
 	var move: ZoneChangeEvent = ZoneChangeEvent.new(card, state.stack, MmZone.BOTTOM, ZoneChangeEvent.Reason.CAST)
 	move.cast_with_flashback = is_flashback
+	move.exiled_instead_of_graveyard = exiled_instead_of_graveyard
 	move.cast_as_adventure = as_adventure
 	move.is_bestowed = bestowed
 	state.perform(move)
@@ -177,6 +185,39 @@ static func top_of_library_permission(state: MmGameState, player_id: int, card: 
 			if permission.filter == null or permission.filter.matches(state, candidate, MmEffectContext.new(player_id, source.id)):
 				return [source.id, index]
 	return []
+
+
+## Whether [param player_id] could cast [param card] now "without paying its mana cost" as an
+## effect resolves (engine ADR 0104): not a land (CR 305.9), with a target for each of its
+## spell's target requirements, or a mode whose targets can be chosen (CR 700.2a), and every
+## additional cost payable. Its type's timing is not checked: it is cast during a resolution,
+## not at priority.
+static func can_cast_without_paying(state: MmGameState, player_id: int, card: MmGameObject) -> bool:
+	var characteristics: MmCharacteristics = state.characteristics_of(card)
+	if characteristics.has_card_type(MmCardTypes.CardType.LAND):
+		return false
+	var context: MmEffectContext = MmEffectContext.new(player_id, card.id)
+	var spell: SpellAbility = spell_ability_of(characteristics)
+	if spell != null and not spell.is_modal() and not _every_target_can_be_chosen(state, spell.targets, context):
+		return false
+	if spell != null and spell.is_modal():
+		var choosable: bool = false
+		for mode: AbilityMode in spell.modes:
+			choosable = choosable or _every_target_can_be_chosen(state, mode.targets, context)
+		if not choosable:
+			return false
+	for cost: MmCost in additional_costs_of(characteristics):
+		if not cost.can_pay(state, card, player_id):
+			return false
+	return true
+
+
+static func _every_target_can_be_chosen(state: MmGameState, requirements: Array[TargetRequirement],
+		context: MmEffectContext) -> bool:
+	for requirement: TargetRequirement in requirements:
+		if not requirement.can_be_chosen(state, context):
+			return false
+	return true
 
 
 ## The largest X [param player_id] could pay now for [param cost], a cost with {X}, with the
@@ -319,7 +360,7 @@ func next_decision() -> MmPendingDecision:
 
 ## Applies an already-validated [param answer] to [param decision].
 func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
-	if decision is ChoosePermanentsDecision or decision is ChooseObjectDecision:
+	if decision is ChoosePermanentsDecision or decision is ChooseObjectDecision or decision is ChooseCardsToDiscardDecision:
 		var chosen: Array[int] = []
 		if decision is ChooseObjectDecision:
 			chosen.append((decision as ChooseObjectDecision).candidates[answer as int].id)

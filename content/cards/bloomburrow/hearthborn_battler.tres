@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_u8u17"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/haste_ability.gd" id="2_ordfw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_vy347"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_ormwa"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_t8mya"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_6t5p1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/target_selection.gd" id="5_p2f26"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/deal_damage_effect.gd" id="6_v3dqv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_a87di"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_ctjq8"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_cdwj1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_player_filter.gd" id="10_ttum3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="11_84l0y"]
+
+[sub_resource type="Resource" id="Resource_las3k"]
+script = ExtResource("2_ordfw")
+
+[sub_resource type="Resource" id="Resource_pnmv8"]
+script = ExtResource("4_6t5p1")
+value = 2
+
+[sub_resource type="Resource" id="Resource_6yl86"]
+script = ExtResource("5_p2f26")
+
+[sub_resource type="Resource" id="Resource_m5htb"]
+script = ExtResource("6_v3dqv")
+amount = SubResource("Resource_pnmv8")
+recipients = SubResource("Resource_6yl86")
+
+[sub_resource type="Resource" id="Resource_6agxq"]
+script = ExtResource("10_ttum3")
+whose = 2
+
+[sub_resource type="Resource" id="Resource_etbsy"]
+script = ExtResource("9_cdwj1")
+filter = SubResource("Resource_6agxq")
+
+[sub_resource type="Resource" id="Resource_3kqhv"]
+script = ExtResource("11_84l0y")
+nth_each_turn = 2
+
+[sub_resource type="Resource" id="Resource_mngqw"]
+script = ExtResource("8_ctjq8")
+trigger = SubResource("Resource_3kqhv")
+targets = Array[ExtResource("9_cdwj1")]([SubResource("Resource_etbsy")])
+effects = Array[ExtResource("3_ormwa")]([SubResource("Resource_m5htb")])
+
+[sub_resource type="Resource" id="Resource_x8sef"]
+script = ExtResource("2_vy347")
+generic = 2
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_t8mya")
+name = "Hearthborn Battler"
+card_types = Array[int]([1])
+subtypes = Array[String](["Lizard", "Warlock"])
+mana_cost = SubResource("Resource_x8sef")
+power = 2
+toughness = 3
+abilities = Array[ExtResource("1_u8u17")]([SubResource("Resource_las3k"), SubResource("Resource_mngqw")])
+rarity = 2

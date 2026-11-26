@@ -43,6 +43,17 @@ func next_batch(state: MmGameState, context: MmEffectContext, step: int, worked_
 	return effect.next_batch(state, context, step, worked_out.slice(1))
 
 
+## The card [member effect] has cast on yes, and none on no (engine ADR 0104).
+func card_to_cast(state: MmGameState, context: MmEffectContext, worked_out: Array[int]) -> MmGameObject:
+	if worked_out.is_empty() or worked_out[0] != 1:
+		return null
+	return effect.card_to_cast(state, context, worked_out.slice(1))
+
+
+func exiles_cast_instead_of_graveyard() -> bool:
+	return effect.exiles_cast_instead_of_graveyard()
+
+
 ## [member effect]'s Selections, so what it targets is what the ability targets.
 func selections() -> Array[MmSelection]:
 	return effect.selections()

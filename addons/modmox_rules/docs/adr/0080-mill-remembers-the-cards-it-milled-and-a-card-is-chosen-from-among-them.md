@@ -22,3 +22,9 @@ Chitin Gravestalker says "This spell costs {1} less to cast for each artifact an
 
 **`CardsInZoneValue` takes a `filter`**, null by default, which counts every card as before. With one it is "the number of [filter] cards in [whose] [zone]": each card of the zone that matches counts once, so an artifact creature card is one card however many of the filter's card types it has. The filter is asked of the card where it is, as a search's or a graveyard target's is. A `CostReductionAbility` with it takes off {1} for each, and `AbilityText` says so as Domain's reduction is said: "This spell costs {1} less to cast for each artifact or creature card in your graveyard." "Or" means what "and/or" does, since a card is counted once either way (ADR 0023). Threshold with a filter reads "there are seven or more creature cards in your graveyard".
 
+
+## Third addendum: the tokens an effect created are remembered too
+
+Harried Dronesmith says "create a 1/1 colorless Thopter artifact creature token with flying. It gains haste until end of turn. Sacrifice it at the beginning of your next end step."
+
+**`CreateTokenEffect` remembers the tokens it creates.** Its `remembers_moved_cards()` is true, and `ResolutionProcedure` adds the new object of each `TokenCreatedEvent` of its batch to the context's `moved_ids`, as it adds a moved card's. So `MovedCardsSelection` is "it", the token just created, for the effects after it: "It gains haste until end of turn" is a continuous effect on it. A token that leaves the battlefield ceases to exist, so it is no longer among them. `AbilityText` calls them "it". No card yet both creates a token and says "them" of cards an effect of its own moved, which would find both. Engine ADR 0103 carries what the ability remembered into the delayed trigger it creates, whose "sacrifice it" is that token.

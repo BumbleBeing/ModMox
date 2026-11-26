@@ -8,7 +8,10 @@ extends RefCounted
 ## again beside the chosen, and each that clears the bar in their company joins them; when
 ## something its player controls cares whether a creature attacks alone (exalted, CR 506.5),
 ## the chosen attackers are judged again beside each other, and the least valuable that no
-## longer clears the bar stays home, until the rest do.
+## longer clears the bar stays home, until the rest do. A creature its player's own delayed
+## trigger will sacrifice before the other player's turn (engine ADR 0103), as Harried
+## Dronesmith's Thopter, is worth nothing at home: it always attacks, and is never kept home
+## or counted on to block the swing back.
 
 ## The aggression levels.
 enum Aggression { STAY_HOME = 0, EVASION_ONLY = 1, SAFE = 2, GOOD_TRADES = 3, EXPECT_TRADES = 4, ALL_OUT = 5 }
@@ -48,8 +51,9 @@ func plan(candidate_ids: Array[int]) -> Array[int]:
 		aggression = Aggression.ALL_OUT
 		return candidate_ids.duplicate()
 	aggression = _aggression(candidate_ids)
+	var doomed: Array[int] = _doomed_ids()
 	for attacker_id: int in candidate_ids:
-		if _should_attack(attacker_id, aggression, [attacker_id] as Array[int]):
+		if doomed.has(attacker_id) or _should_attack(attacker_id, aggression, [attacker_id] as Array[int]):
 			attacking.append(attacker_id)
 	if _any_has(attacking, BattleCryAbility):
 		attacking = _beside_battle_cry(candidate_ids, attacking)
@@ -199,12 +203,14 @@ func _trades_well(attacker_id: int, killers: Array[int], victims: Array[int]) ->
 
 
 ## Keeps attackers home, sturdiest first, until the other player's swing back could not kill.
+## One that will be sacrificed before then would block nothing, so it never stays.
 func _hold_back(attacking: Array[int]) -> Array[int]:
 	var kept: Array[int] = attacking.duplicate()
+	var doomed: Array[int] = _doomed_ids()
 	while not kept.is_empty() and _swing_back(kept) >= _state.player(_player_id).life:
 		var sturdiest: int = -1
 		for attacker_id: int in kept:
-			if _has(attacker_id, VigilanceAbility):
+			if _has(attacker_id, VigilanceAbility) or doomed.has(attacker_id):
 				continue
 			if sturdiest == -1 or _toughness(attacker_id) > _toughness(sturdiest):
 				sturdiest = attacker_id
@@ -225,8 +231,9 @@ func _swing_back(attacking: Array[int]) -> int:
 	damages.sort()
 	damages.reverse()
 	var defenders: int = 0
+	var doomed: Array[int] = _doomed_ids()
 	for creature: MmGameObject in _creatures_of(_player_id):
-		if creature.is_tapped:
+		if creature.is_tapped or doomed.has(creature.id):
 			continue
 		if not attacking.has(creature.id) or _has(creature.id, VigilanceAbility):
 			defenders += 1
@@ -250,6 +257,25 @@ func _blockers_of(attacker_id: int) -> Array[int]:
 		if (_blockable[blocker_id] as Array).has(attacker_id):
 			blockers.append(blocker_id)
 	return blockers
+
+
+## The permanents of this player that one of their own delayed triggers will sacrifice at
+## the beginning of a step still to come this turn, before the other player's turn
+## (engine ADR 0103): "sacrifice it at the beginning of your next end step".
+# Later: a delayed trigger that exiles or destroys "it", once a card has one.
+func _doomed_ids() -> Array[int]:
+	var doomed: Array[int] = []
+	for delayed: DelayedTrigger in _state.delayed_triggers:
+		var step: StepBeganTrigger = delayed.ability.trigger as StepBeganTrigger
+		if delayed.controller_id != _player_id or step == null or step.whose != MmTrigger.Whose.YOU:
+			continue
+		if _state.active_player_id != _player_id or step.step <= _state.step:
+			continue
+		for effect: MmEffect in delayed.ability.effects:
+			var sacrifice: SacrificeSelectedEffect = effect as SacrificeSelectedEffect
+			if sacrifice != null and sacrifice.selection is MovedCardsSelection:
+				doomed.append_array(delayed.moved_ids)
+	return doomed
 
 
 func _creatures_of(player_id: int) -> Array[MmGameObject]:
