@@ -286,6 +286,83 @@ func test_mana_cost_pips_come_generic_first_then_each_symbol() -> void:
 	assert_eq(ManaSymbols.pip_names(null), [] as Array[String], "No mana cost is not {0}.")
 
 
+# --- Enchantments -------------------------------------------------------------------
+
+
+func test_an_enchantment_creature_gets_its_colors_nyx_frame_and_its_colors_pt_box() -> void:
+	var spec: FrameSpec = FrameSpec.of(_look(_enchantment([MmMana.Type.BLUE], true)))
+
+	assert_eq(_layers(spec), ["nyx/u", "pt/u"])
+	assert_eq(spec.key(), "card1:u:nyx:pt")
+
+
+func test_a_noncreature_enchantment_gets_the_nyx_frame_too() -> void:
+	assert_eq(_layers(FrameSpec.of(_look(_enchantment([MmMana.Type.WHITE], false)))), ["nyx/w"])
+
+
+func test_a_colorless_enchantment_gets_the_colorless_nyx_frame() -> void:
+	assert_eq(_layers(FrameSpec.of(_look(_enchantment([], false)))), ["nyx/c"])
+
+
+func test_a_two_color_enchantment_is_gold_nyx_with_its_colors_in_the_pinlines_and_rules_box() -> void:
+	assert_eq(_layers(FrameSpec.of(_look(_enchantment([MmMana.Type.WHITE, MmMana.Type.BLUE], false)))), [
+		"nyx/m",
+		"nyx/w through rules",
+		"nyx/u through rules ∩ right_half",
+		"nyx/w through pinline",
+		"nyx/u through pinline ∩ right_half",
+	])
+
+
+func test_a_hybrid_enchantment_blends_its_colors_nyx_frames_under_silver_nyx_bars() -> void:
+	var naiad: MmCardDefinition = _enchantment([], true)
+	naiad.mana_cost = Scenario.hybrid_cost(0, [[MmMana.Type.BLACK, MmMana.Type.RED]])
+
+	assert_eq(_layers(FrameSpec.of(_look(naiad))), [
+		"nyx/b",
+		"nyx/r through hybrid_blend",
+		"nyx/c through title",
+		"nyx/c through type",
+		"pt/c",
+	])
+
+
+func test_a_colored_artifact_enchantment_keeps_the_artifact_border_in_nyx() -> void:
+	var relic: MmCardDefinition = _enchantment([MmMana.Type.RED], false)
+	relic.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.ENCHANTMENT]
+	var colorless: MmCardDefinition = _enchantment([], false)
+	colorless.card_types = [MmCardTypes.CardType.ARTIFACT, MmCardTypes.CardType.ENCHANTMENT]
+
+	assert_eq(_layers(FrameSpec.of(_look(relic))), ["nyx/r", "nyx/a through frame"])
+	assert_eq(_layers(FrameSpec.of(_look(colorless))), ["nyx/a"])
+
+
+func test_a_legendary_enchantment_keeps_its_colors_crown() -> void:
+	var god: MmCardDefinition = _enchantment([MmMana.Type.GREEN], true)
+	god.supertypes = [MmCardTypes.Supertype.LEGENDARY]
+
+	assert_eq(_layers(FrameSpec.of(_look(god))), ["nyx/g", "pt/g", "cover", "crowns/g"])
+
+
+func test_an_enchantment_land_keeps_the_land_frame() -> void:
+	var land: MmCardDefinition = _land("Shrine", [MmMana.Type.BLUE])
+	land.card_types = [MmCardTypes.CardType.ENCHANTMENT, MmCardTypes.CardType.LAND]
+
+	assert_eq(_layers(FrameSpec.of(_look(land))), ["lands/u"])
+
+
+func test_an_enchantments_battlefield_border_stays_nyx() -> void:
+	var spec: FrameSpec = FrameSpec.of(_look(_enchantment([MmMana.Type.BLUE], true))).without_power_toughness()
+
+	assert_eq(_layers(spec), ["nyx/u"])
+
+
+func test_a_printed_enchantment_creature_is_drawn_in_nyx() -> void:
+	var naiad: MmCardDefinition = load("res://content/cards/theros/nimbus_naiad.tres") as MmCardDefinition
+
+	assert_eq(_layers(FrameSpec.of(CardLook.of_definition(naiad)))[0], "nyx/u")
+
+
 func _alpha(file_name: String) -> MmCardDefinition:
 	return load(ALPHA % file_name) as MmCardDefinition
 
@@ -295,6 +372,19 @@ func _artifact(colors: Array[MmMana.Type]) -> MmCardDefinition:
 	var relic: MmCardDefinition = Scenario.artifact("Relic", [])
 	relic.mana_cost = Scenario.mana_cost(0, colors)
 	return relic
+
+
+## An enchantment of [param colors], from the symbols in its cost, and a 2/2 creature too
+## when [param creature].
+func _enchantment(colors: Array[MmMana.Type], creature: bool) -> MmCardDefinition:
+	var card: MmCardDefinition = Scenario.vanilla("Nymph")
+	card.mana_cost = Scenario.mana_cost(0, colors)
+	card.card_types = [MmCardTypes.CardType.ENCHANTMENT]
+	if creature:
+		card.card_types.append(MmCardTypes.CardType.CREATURE)
+		card.power = 2
+		card.toughness = 2
+	return card
 
 
 func _look(definition: MmCardDefinition) -> CardLook:

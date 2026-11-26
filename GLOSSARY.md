@@ -17,7 +17,7 @@ A deliberate change to a Card Definition away from its Oracle Data, made for the
 _Avoid_: Deviation, nerf, buff, errata (Wizards' own change to Oracle text)
 
 **Frame**:
-The layered image a card is drawn on, worked out from its characteristics: a frame for its color category (a land's follows the colors of mana it can produce), a power/toughness box if it is a creature, and a crown if it is legendary. A colored artifact keeps its colors' frame, box and crown inside the artifact frame's silver border.
+The layered image a card is drawn on, worked out from its characteristics: a frame for its color category (a land's follows the colors of mana it can produce), a power/toughness box if it is a creature, and a crown if it is legendary. A colored artifact keeps its colors' frame, box and crown inside the artifact frame's silver border. An enchantment that is not a land is drawn in the Nyx frame of its color category, its border a starfield.
 _Avoid_: Card background, border, template
 
 **Status**:

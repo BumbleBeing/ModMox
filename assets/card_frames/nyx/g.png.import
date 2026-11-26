@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://kph48fqximro"
+path="res://.godot/imported/g.png-b2828403f8b60ec9ba0e99cf3ac9d167.image"
+
+[deps]
+
+source_file="res://assets/card_frames/nyx/g.png"
+dest_files=["res://.godot/imported/g.png-b2828403f8b60ec9ba0e99cf3ac9d167.image"]
+
+[params]
+

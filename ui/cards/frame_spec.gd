@@ -3,7 +3,8 @@ extends RefCounted
 ## Which Frame a card is drawn with, worked out from its characteristics alone, so a card
 ## whose colors or types change gets the right Frame automatically (ADR 0009). It turns
 ## into a stack of FrameLayers, bottom to top. A colored artifact keeps its colors' Frame
-## inside the artifact Frame's border.
+## inside the artifact Frame's border. An enchantment's Frame is CardConjurer's Nyx one, its
+## border a starfield.
 
 ## Frame letters, in WUBRG order.
 const LETTERS: String = "wubrg"
@@ -25,6 +26,10 @@ var is_hybrid: bool = false
 ## An Adventurer card (engine ADR 0078): CardConjurer's Adventure frame, its rules box an open
 ## book, in its color, gold for two or more, and the artifact one for none (game ADR 0079).
 var is_adventure: bool = false
+## An enchantment that is not a land or an Adventurer: every frame layer comes from
+## CardConjurer's Nyx frames (`nyx/`), laid out as the plain ones, so gold, hybrid and the
+## artifact border work alike. Its P/T box and crown are the plain ones.
+var is_enchantment: bool = false
 
 
 ## The Frame for [param look]. A land's color category follows the colors of mana it can
@@ -50,6 +55,8 @@ static func of(look: CardLook) -> FrameSpec:
 	spec.letters = found
 	spec.is_hybrid = not spec.is_land and found.size() == 2 and _has_hybrid_of(look.mana_cost, found)
 	spec.is_adventure = not spec.is_land and look.adventure != null
+	spec.is_enchantment = not spec.is_land and not spec.is_adventure \
+		and look.has_card_type(MmCardTypes.CardType.ENCHANTMENT)
 	return spec
 
 
@@ -61,6 +68,8 @@ func key() -> String:
 		text += ":hybrid"
 	if is_adventure:
 		text += ":adventure"
+	if is_enchantment:
+		text += ":nyx"
 	if is_artifact and not is_land:
 		text += ":artifact"
 	if is_creature:
@@ -79,29 +88,30 @@ func without_power_toughness() -> FrameSpec:
 	copy.is_legendary = is_legendary
 	copy.is_hybrid = is_hybrid
 	copy.is_adventure = is_adventure
+	copy.is_enchantment = is_enchantment
 	return copy
 
 
 ## The layers to draw, bottom to top.
 func layers() -> Array[FrameLayer]:
 	var result: Array[FrameLayer] = []
-	var folder: String = "lands" if is_land else "frames"
+	var folder: String = "lands" if is_land else ("nyx" if is_enchantment else "frames")
 	match letters.size():
 		_ when is_adventure:
 			result.append(FrameLayer.full("adventure/" + (letters[0] if letters.size() == 1 else ("a" if letters.is_empty() else "m"))))
 		0:
-			result.append(FrameLayer.full("lands/c" if is_land else ("frames/a" if is_artifact else "frames/c")))
+			result.append(FrameLayer.full("lands/c" if is_land else (folder + ("/a" if is_artifact else "/c"))))
 		1:
 			result.append(FrameLayer.full(folder + "/" + letters[0]))
 		2 when is_hybrid:
-			result.append(FrameLayer.full("frames/" + letters[0]))
-			result.append(FrameLayer.full("frames/" + letters[1], ["hybrid_blend"]))
-			result.append(FrameLayer.full("frames/c", ["title"]))
-			result.append(FrameLayer.full("frames/c", ["type"]))
+			result.append(FrameLayer.full(folder + "/" + letters[0]))
+			result.append(FrameLayer.full(folder + "/" + letters[1], ["hybrid_blend"]))
+			result.append(FrameLayer.full(folder + "/c", ["title"]))
+			result.append(FrameLayer.full(folder + "/c", ["type"]))
 		2:
 			var left: String = folder + "/" + letters[0]
 			var right: String = folder + "/" + letters[1]
-			result.append(FrameLayer.full("lands/c" if is_land else "frames/m"))
+			result.append(FrameLayer.full("lands/c" if is_land else folder + "/m"))
 			result.append(FrameLayer.full(left, ["rules"]))
 			result.append(FrameLayer.full(right, ["rules", "right_half"]))
 			result.append(FrameLayer.full(left, ["pinline"]))
@@ -109,7 +119,7 @@ func layers() -> Array[FrameLayer]:
 		_:
 			result.append(FrameLayer.full(folder + "/m"))
 	if has_artifact_border():
-		result.append(FrameLayer.full("frames/a", ["frame"]))
+		result.append(FrameLayer.full(folder + "/a", ["frame"]))
 	if is_creature:
 		result.append(FrameLayer.placed(power_toughness_image(), CardGeometry.POWER_TOUGHNESS))
 	if is_legendary:
