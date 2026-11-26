@@ -404,7 +404,12 @@ func _pay_remaining_costs() -> void:
 	var nothing_chosen: Array[int] = []
 	for index: int in _costs.size():
 		if not _paid_cost_indexes.has(index):
-			_costs[index].pay(_state, _cost_source(), _player_id, nothing_chosen)
+			var source: MmGameObject = _cost_source()
+			_costs[index].pay(_state, source, _player_id, nothing_chosen)
+			if _costs[index] is SacrificeThisCost:
+				# Engine ADR 0098's addendum: Heartfire Immolator's "its power" is the
+				# sacrificed creature's, read as it last existed.
+				_state.perform(SacrificedForCostEvent.new(_stack_object_id, [source.id] as Array[int]))
 
 
 ## CR 601.2h and 602.2b: pay the remaining, non-mana costs. The spell or ability is now

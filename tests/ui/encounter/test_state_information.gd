@@ -148,6 +148,15 @@ func test_a_permanent_that_doesnt_untap_says_it_wont() -> void:
 		["Won't untap", "Won't untap during its controller's next untap step."]])
 
 
+func test_a_permanent_that_cant_block_this_turn_says_so() -> void:
+	# Arena Athlete's "target creature an opponent controls can't block this turn", the
+	# user's words.
+	var bears: MmObjectView = _bears()
+	bears.cant_block_this_turn = true
+
+	assert_eq(_texts(StateInformation.of(bears, _view())), [["Can't block", "Can't block this turn."]])
+
+
 func test_a_token_says_it_ceases_to_exist_if_it_leaves_and_comes_first() -> void:
 	var cat: MmObjectView = _bears()
 	cat.is_token = true

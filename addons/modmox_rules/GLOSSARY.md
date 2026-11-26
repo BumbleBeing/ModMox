@@ -71,7 +71,7 @@ A rule on an activated ability about when it may be activated, apart from its co
 _Avoid_: Limit cost, charge, cooldown
 
 **Spent**:
-Said of a once-each-game ability that has been activated this game, whether or not it resolved, of a once-each-turn activated ability that has been activated this turn, whether or not it resolved, of a once-each-turn permission to cast from the top of a library that has been used this turn, from the moment the cast began, and of an ability that triggers only once each turn and has triggered this turn, whether or not it resolved. The source's Game Object keeps the mark, and its Object View shows it. A Spent once-each-turn ability, permission or trigger is ready again the next turn, whoever's it is.
+Said of a once-each-game ability that has been activated this game, whether or not it resolved, of a once-each-turn activated ability that has been activated this turn, whether or not it resolved, of a once-each-turn permission to cast from the top of a library that has been used this turn, from the moment the cast began, of an ability that triggers only once each turn and has triggered this turn, whether or not it resolved, and of a triggered ability whose "you may" is done only once each turn and was said yes to and paid this turn, as Irreverent Gremlin's "Do this only once each turn" (a declined one is not Spent). The source's Game Object keeps the mark, and its Object View shows it. A Spent once-each-turn ability, permission or trigger is ready again the next turn, whoever's it is.
 _Avoid_: Used up (a Potion is used up; an Emblem never is), exhausted, tapped
 
 **Hero**:
@@ -379,6 +379,14 @@ _Avoid_: Tired, "doesn't untap" (that is the effect, not the action)
 **Skipped Untap**:
 What an effect such as Niblis of Frost's "That creature doesn't untap during its controller's next untap step" leaves on a permanent (CR 502.3, ADR 0092): the next untap step of whoever controls it leaves it tapped and ends the Skipped Untap, whether it was tapped then or not. The other player's untap steps leave it alone, and a permanent that changes zones is a new object without it. Unlike exert, it follows the permanent's controller, not a player named as it happened.
 _Avoid_: Frozen, stunned (a stun counter is another thing), exerted (which is the cost)
+
+**Modified**:
+Said of a permanent with one or more counters on it, an Equipment attached, or an Aura its controller controls attached (CR 700.9, ADR 0102), as Akki Ember-Keeper's "nontoken modified creature" is. A creature that has died is seen as it last existed, with the Equipment and Auras still on the battlefield pointing at it and those that left in the same batch it did.
+_Avoid_: Upgraded, enhanced, modded (a Mod is a Modification of a card, which is another thing)
+
+**Can't Block This Turn**:
+What an effect such as Arena Athlete's "target creature an opponent controls can't block this turn" leaves on a permanent (CR 509.1a, ADR 0092's addendum): the Game Turn it is in, in which its controller can't declare it as a blocker. A later turn ends it by passing, and a permanent that changes zones is a new object without it. It is a rule of the turn, not an ability, so a permanent that loses all its abilities still can't block; "This creature can't block" is the ability.
+_Avoid_: Pacified, scared
 
 **Sacrifice**:
 To sacrifice a permanent is for its controller to move it from the battlefield to its owner's graveyard (CR 701.21a), as Ominous Parcel's cost "Sacrifice this artifact" does, or Selfcraft Mechan's "you may sacrifice an artifact", whose payer chooses which (ADR 0088's addendum), or as an effect, as Agent of the Fates's "each opponent sacrifices a creature", whose player chooses which as it resolves (ADR 0088's second addendum). Only its controller can, and it is not destruction, so indestructible and regeneration never stop it. A sacrificed creature dies, and an ability whose cost sacrificed its source resolves from the source's last-known information. "The sacrificed creature", or "that creature" after a sacrifice, is what the spell or ability itself sacrificed, as a cost or by an earlier effect of its own, seen from its Last-Known Information, so its power and toughness are what they were (engine ADR 0098).

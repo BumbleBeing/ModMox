@@ -13,4 +13,12 @@ Bushmeat Poacher says "{1}, {T}, Sacrifice another creature: You gain life equal
 
 The Agent needs nothing of its own: its simulations run the engine, so what a sacrifice gives back is scored, and it already chooses what to sacrifice for a cost or an effect.
 
-Left out until a card needs them (ADR 0001): what a "you may sacrifice" resolution cost sacrificed (Selfcraft Mechan's, engine ADR 0088), what `SacrificeThisCost` sacrificed ("this creature" already finds it), and "life equal to" worded as Oracle words it.
+Left out until a card needs them (ADR 0001): what a "you may sacrifice" resolution cost sacrificed (Selfcraft Mechan's, engine ADR 0088), and "life equal to" worded as Oracle words it.
+
+## Addendum: a source that sacrifices itself
+
+Heartfire Immolator says "{R}, Sacrifice this creature: It deals damage equal to its power to target creature or planeswalker." "This creature" does not find it: `SourceSelection` selects nothing once its object has left, so its power would be 0. It deals the damage as it last existed, which `DealDamageEffect` already does for a source that has gone (CR 608.2h), and "its power" is the power it had as it was sacrificed, a pump until end of turn and prowess included.
+
+**A source sacrificed by `SacrificeThisCost` is what the ability sacrificed.** As `CastProcedure` pays the cost, it performs the same `SacrificedForCostEvent` a `SacrificePermanentsCost` does, with the source's ID, so `PowerValue` of `SacrificedSelection` reads it as it last existed. `SourceSelection` is left as it is: an effect that changes "this creature" must find nothing once it has gone.
+
+`AbilityText` calls what an ability sacrificed "it" when its only sacrifice is its own source, so Heartfire Immolator reads "{R}, Sacrifice this creature: This creature deals damage to target creature equal to its power.", plainly the card's meaning (ADR 0023). The Agent needs nothing of its own: the ability is Removal by its effects, and its simulation reads the damage from the power as it was.

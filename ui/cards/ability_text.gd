@@ -50,6 +50,9 @@ const PLURAL_AS_SINGULAR: Array[String] = ["Equipment", "Plains"]
 ## What a triggered ability limited to once each turn says after what it does (engine ADR
 ## 0054's addendum).
 const ONCE_EACH_TURN: String = "This ability triggers only once each turn."
+## What a ModifiedFilter names (CR 700.9), and what one negated names.
+const MODIFIED: String = "modified"
+const UNMODIFIED: String = "unmodified"
 ## The predefined tokens the game has (CR 111.10), by subtype, which is a token's name less
 ## "Token" (CR 111.4). One is created by that word alone, "create a Treasure token", since
 ## the rules give its characteristics, and calls itself "this token", as CR 111.10a words a
@@ -95,6 +98,10 @@ var _is_from_graveyard: bool = false
 ## What "the sacrificed [noun]" calls what the ability being written sacrifices, as a cost
 ## or by an effect (engine ADR 0098): "creature" for "another creature".
 var _sacrificed_noun: String = "permanent"
+## Whether the only thing the ability being written sacrifices is its own source, as
+## Heartfire Immolator's "Sacrifice this creature: It deals damage equal to its power" does
+## (engine ADR 0098's addendum), so "the sacrificed creature" is "it".
+var _sacrifices_itself: bool = false
 
 
 ## The words of a Filter: what goes before its noun, the noun, and what follows it.
@@ -456,6 +463,7 @@ func _ability(ability: MmAbility) -> String:
 		_targets = activated.targets
 		_read_where_it_works(activated)
 		_sacrificed_noun = _sacrificed_noun_of(activated.costs, activated.effects)
+		_sacrifices_itself = _sacrifices_only_itself(activated.costs, activated.effects)
 		var does: String = _sentences(activated.effects, true) + _reduction(activated) + _restrictions(activated)
 		# A Potion prints only what it does: using it up is what a Potion is (ADR 0036).
 		return does if _uses_up_its_source(activated) else "%s: %s" % [_costs(activated), does]
@@ -703,6 +711,10 @@ func _cost_parts(mana: MmManaCost, costs: Array[MmCost]) -> PackedStringArray:
 			# Selfcraft Mechan's "sacrifice an artifact" (CR 701.21a).
 			var sacrificing: SacrificePermanentsCost = cost as SacrificePermanentsCost
 			parts.append("Sacrifice " + _how_many(sacrificing.count, sacrificing.filter))
+		elif cost is DiscardCardsCost:
+			var how_many: ConstantValue = ConstantValue.new()
+			how_many.value = (cost as DiscardCardsCost).count
+			parts.append("Discard " + _cards(how_many))  # CR 701.9a.
 		elif cost is ExileFromGraveyardCost:
 			# Kishla Trawlers's "exile a creature card from your graveyard", Kessig
 			# Wolfrider's "exile three cards from your graveyard".
@@ -728,6 +740,20 @@ func _reflexive_words(reflexive: ReflexiveTriggerEffect) -> String:
 		clauses.append(_sentences(one, false).trim_suffix("."))
 	_targets = outer
 	return _listed(clauses)
+
+
+## Whether [param costs] sacrifice the ability's own source and nothing else does, in them
+## or in [param effects].
+static func _sacrifices_only_itself(costs: Array[MmCost], effects: Array[MmEffect]) -> bool:
+	var itself: bool = false
+	for cost: MmCost in costs:
+		if cost is SacrificePermanentsCost:
+			return false
+		itself = itself or cost is SacrificeThisCost
+	for effect: MmEffect in effects:
+		if effect is SacrificeEffect:
+			return false
+	return itself
 
 
 ## The noun of the first thing [param costs] or [param effects] sacrifice, "creature" for
@@ -757,6 +783,7 @@ func _triggered(ability: TriggeredAbility) -> String:
 	_trigger = ability.trigger
 	_says_triggering_object = false
 	_sacrificed_noun = _sacrificed_noun_of([], ability.effects)
+	_sacrifices_itself = false
 	var condition: String = "" if ability.condition == null else "if %s, " % _condition(ability.condition)
 	if ability.is_modal():
 		# Later: "one or more" for a modal one, whose modes are worded apart.
@@ -1361,6 +1388,9 @@ func _effect(effect: MmEffect) -> String:
 		var frozen: String = _selection((effect as DoesntUntapEffect).selection)
 		_names_again_with_that = false
 		return frozen + " doesn't untap during its controller's next untap step"
+	if effect is CantBlockThisTurnEffect:
+		# CR 509.1a, Arena Athlete's "target creature an opponent controls can't block this turn".
+		return _selection((effect as CantBlockThisTurnEffect).selection) + " can't block this turn"
 	if effect is UntapEffect:
 		return "untap " + _selection((effect as UntapEffect).selection)
 	if effect is IfEffect and (effect as IfEffect).is_unless:
@@ -1414,7 +1444,9 @@ func _effect(effect: MmEffect) -> String:
 			# CR 603.12, engine ADR 0088: "you may exile ... When you do, return ...".
 			return "you may %s. When you do, %s" % [uncapitalized,
 				_reflexive_words(paying.effect as ReflexiveTriggerEffect)]
-		return "you may %s. If you do, %s" % [uncapitalized, _effect(paying.effect)]
+		var done: String = "you may %s. If you do, %s" % [uncapitalized, _effect(paying.effect)]
+		# Engine ADR 0054's second addendum: Irreverent Gremlin's, a sentence of its own.
+		return done + (". Do this only once each turn" if paying.is_once_each_turn else "")
 	if effect is ReflexiveTriggerEffect:
 		return "when you do, " + _reflexive_words(effect as ReflexiveTriggerEffect)
 	if effect is MayPayXEffect:
@@ -1763,6 +1795,8 @@ func _selection(selection: MmSelection) -> String:
 	if selection is TriggeringCardSelection:
 		return "it"  # Undying's "return it to the battlefield" (engine ADR 0096).
 	if selection is SacrificedSelection:
+		if _sacrifices_itself:
+			return "it"  # Heartfire Immolator's "its power" (engine ADR 0098's addendum).
 		return "the sacrificed " + _sacrificed_noun  # Bushmeat Poacher's (engine ADR 0098).
 	if selection is ControllerOfSelection:
 		var controller: ControllerOfSelection = selection as ControllerOfSelection
@@ -1983,9 +2017,14 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 	# other adjectives.
 	var adjectives: PackedStringArray = []
 	var subtypes: PackedStringArray = []
+	# "Nontoken modified creature": "modified" stands next to its noun too (CR 700.9), with
+	# no comma, as Akki Ember-Keeper's words have it.
+	var beside_noun: PackedStringArray = []
 	for adjective: String in words.adjectives:
 		if _is_subtype_word(adjective):
 			subtypes.append(adjective)
+		elif adjective == MODIFIED or adjective == UNMODIFIED:
+			beside_noun.append(adjective)
 		else:
 			adjectives.append(adjective)
 	var noun: String = words.noun
@@ -2004,10 +2043,14 @@ func _noun_phrase(filter: MmFilter, is_plural: bool, whose: MmTrigger.Whose = Mm
 			after[index] = after[index].replace(WHO_CONTROL, "who controls").replace(WHO_DONT_CONTROL, "who doesn't control")
 	if not subtypes.is_empty():
 		noun = " ".join(subtypes) + " " + noun
+	if not beside_noun.is_empty():
+		noun = " ".join(beside_noun) + " " + noun
+	# Oracle names who controls it before what it has: "another creature you control with
+	# power 2 or less", as Irreverent Gremlin's.
 	if whose == MmTrigger.Whose.YOU:
-		after.append("you control")
+		after.insert(0, "you control")
 	elif whose == MmTrigger.Whose.OPPONENT:
-		after.append("an opponent controls")
+		after.insert(0, "an opponent controls")
 	var phrase: String = noun
 	if not adjectives.is_empty():
 		phrase = ", ".join(adjectives) + " " + phrase
@@ -2118,6 +2161,8 @@ func _collect(filter: MmFilter, is_negated: bool, adjectives: Array[String], nou
 		adjectives.append("nonblocking" if is_negated else "blocking")
 	elif filter is IsEquippedFilter:
 		adjectives.append("unequipped" if is_negated else "equipped")
+	elif filter is ModifiedFilter:
+		adjectives.append(UNMODIFIED if is_negated else MODIFIED)  # CR 700.9, engine ADR 0102.
 	elif filter is IsAttachedToFilter:
 		# Goblin Gaveleer's "Equipment attached to it": the source, named already.
 		var attached_to: MmSelection = (filter as IsAttachedToFilter).selection

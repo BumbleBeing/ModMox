@@ -1,0 +1,70 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_p5fy0"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_6b10p"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/trample_ability.gd" id="2_okxl3"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_1ts7e"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_t4eef"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_x462x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="5_q67r1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/put_counters_effect.gd" id="6_kn1uh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_4gdq4"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_ygw31"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_3ba7o"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_yb5cg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_ry80g"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/any_of_filter.gd" id="12_jinxh"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/spell_cast_trigger.gd" id="13_obmp2"]
+
+[sub_resource type="Resource" id="Resource_3ksya"]
+script = ExtResource("2_okxl3")
+
+[sub_resource type="Resource" id="Resource_in8hg"]
+script = ExtResource("4_x462x")
+value = 1
+
+[sub_resource type="Resource" id="Resource_fasow"]
+script = ExtResource("5_q67r1")
+
+[sub_resource type="Resource" id="Resource_6fsng"]
+script = ExtResource("6_kn1uh")
+amount = SubResource("Resource_in8hg")
+recipients = SubResource("Resource_fasow")
+
+[sub_resource type="Resource" id="Resource_ejt15"]
+script = ExtResource("11_ry80g")
+card_type = 3
+
+[sub_resource type="Resource" id="Resource_2eacc"]
+script = ExtResource("11_ry80g")
+card_type = 5
+
+[sub_resource type="Resource" id="Resource_tohex"]
+script = ExtResource("12_jinxh")
+filters = Array[ExtResource("10_yb5cg")]([SubResource("Resource_ejt15"), SubResource("Resource_2eacc")])
+
+[sub_resource type="Resource" id="Resource_021jx"]
+script = ExtResource("13_obmp2")
+filter = SubResource("Resource_tohex")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_7j8xt"]
+script = ExtResource("8_ygw31")
+trigger = SubResource("Resource_021jx")
+effects = Array[ExtResource("3_1ts7e")]([SubResource("Resource_6fsng")])
+
+[sub_resource type="Resource" id="Resource_1akuq"]
+script = ExtResource("2_6b10p")
+generic = 1
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_t4eef")
+name = "Electrostatic Infantry"
+card_types = Array[int]([1])
+subtypes = Array[String](["Dwarf", "Wizard"])
+mana_cost = SubResource("Resource_1akuq")
+power = 1
+toughness = 2
+abilities = Array[ExtResource("1_p5fy0")]([SubResource("Resource_3ksya"), SubResource("Resource_7j8xt")])
+rarity = 1

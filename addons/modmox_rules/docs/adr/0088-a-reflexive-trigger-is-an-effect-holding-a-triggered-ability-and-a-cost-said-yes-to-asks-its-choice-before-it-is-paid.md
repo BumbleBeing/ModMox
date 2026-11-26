@@ -50,3 +50,12 @@ Kessig Wolfrider says "{2}{R}, {T}, Exile three cards from your graveyard: Creat
 **The Agent picks each card as it picks one** (least mana value). `AbilityText` says "Exile three cards from your graveyard".
 
 Left out until a card needs it: several cards exiled for a cost said yes to as an effect resolves, as Kishla Trawlers's "you may exile a creature card" is.
+
+## Addendum: discarding a card as the cost said yes to
+
+Irreverent Gremlin's "you may discard a card. If you do, draw a card." could not be a `MayEffect` around a `DiscardEffect`: a "you may" cannot wrap an effect that asks a choice of its own, and with an empty hand its yes would draw a card for discarding none, where "if you do" means it was done (CR 118.3, 608.2c).
+
+**`DiscardCardsCost` is "Discard [count] cards" as a cost** (CR 701.9a): payable only while the payer's hand holds that many, so a "you may" with it is not asked with an empty hand. Its choice is the `ChooseCardsToDiscardDecision` a `DiscardEffect` and cleanup ask, asked only when there is a choice, so the GUI's discard picks and the Agent's choice of the card it can least use serve it unchanged; a hand of exactly that many is discarded whole. `ResolutionProcedure` holds it as the cost's choice as it holds the other kinds, and an answer to it while it is held pays the cost rather than beginning an effect. The cards discarded move together, as new objects in the graveyard (ADR 0008).
+
+Left out until a card needs them (ADR 0001): a discard as the cost of a cast or an activation ("{T}, Discard a card: ..."), which `CastProcedure` would ask with its other choices, and discarding a card of a kind ("discard a creature card").
+

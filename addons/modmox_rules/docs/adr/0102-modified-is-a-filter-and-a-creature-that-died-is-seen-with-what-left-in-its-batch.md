@@ -1,0 +1,13 @@
+# "Modified" is a Filter, and a creature that died is seen with what left in its batch
+
+Akki Ember-Keeper says "Whenever a nontoken modified creature you control dies, create a 1/1 colorless Spirit creature token. (Equipment, Auras you control, and counters are modifications.)" It is the first card to say "modified" (CR 700.9): "A permanent is modified if it has one or more counters on it, is equipped, or is enchanted by an Aura that is controlled by its controller."
+
+**"Modified" is `ModifiedFilter`**, with no fields, combined with the others as any Filter is ("nontoken modified creature" is an `AllOfFilter` of a creature, a `NotFilter` of `IsTokenFilter`, and it). It matches a permanent with a counter of any kind, any Equipment attached whoever controls it, or an Aura attached that its controller controls. The permanent keeps no list of its attachments (ADR 0041), so, as `IsEquippedFilter` does, it looks for an Equipment or Aura pointing at it. A card in any other zone is never modified.
+
+**A creature that has left the battlefield is seen as it last existed** (CR 603.10a), which a "dies" trigger asks for (ADR 0017). Its counters are on its departed object. An Equipment or Aura that was on it is still on the battlefield as the trigger is looked for, pointing at it, since state-based actions have not yet unattached the one or put the other into the graveyard (CR 704.5m-n). An Aura destroyed in the same batch as its creature, as by "destroy each creature and each Aura", has left too, and it was still on the creature as the creature died, so it counts. One that left before, by an earlier batch, had stopped modifying the creature, and does not.
+
+**So a departed object remembers the batch it left in.** `MmGameState.record_departure()` sets `MmGameObject.departed_in_batch` from the batch being performed, and `MmGameState.departed_with()` finds the objects that left in the same batch as another, in ID order. A departed object is frozen once it has left, and the batch is set as it leaves, so a copy of the game shares it unchanged. Keeping, on each departing object, the attachments it had as its batch began was rejected: the batch is applied one event at a time, so an Aura that went first would already be gone from the creature that went after it.
+
+`AbilityText` calls it "modified", next to its noun with no comma, as Oracle does: "Whenever a nontoken modified creature you control dies". The Agent needs nothing: the Filter is asked through the engine, in its simulations too.
+
+Left out until a card needs it (ADR 0001): "modified" as a count, as in "for each modified creature you control".

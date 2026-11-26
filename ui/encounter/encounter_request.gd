@@ -139,7 +139,7 @@ func villain_agent(log_folder: String = "") -> MmAgent:
 	var agent: AiAgent = AiAgent.new(null, AiAgent.Mode.FULL, level)
 	if log_folder == "":
 		return agent
-	return AiLoggingAgent.begin(log_folder, encounter_seed, agent)
+	return AiLoggingAgent.begin(log_folder, encounter_seed, agent, Time.get_datetime_string_from_system())
 
 
 ## An Emblem with the abilities of a card in Content, and nothing else (ADR 0011).

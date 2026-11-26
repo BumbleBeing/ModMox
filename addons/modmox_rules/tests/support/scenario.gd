@@ -1273,6 +1273,19 @@ static func free_frost(card_name: String = "Frost") -> MmCardDefinition:
 		[tap(targeted(0)), doesnt_untap(targeted(0))])
 
 
+## "[param selection] can't block this turn" (CR 509.1a), as Arena Athlete's Heroic says.
+static func cant_block_this_turn(selection: MmSelection) -> CantBlockThisTurnEffect:
+	var effect: CantBlockThisTurnEffect = CantBlockThisTurnEffect.new()
+	effect.selection = selection
+	return effect
+
+
+## An instant costing {0}: "Target creature can't block this turn."
+static func free_scare(card_name: String = "Scare") -> MmCardDefinition:
+	return instant(card_name, mana_cost(0), [target(of_type(MmCardTypes.CardType.CREATURE))],
+		[cant_block_this_turn(targeted(0))])
+
+
 ## "Untap [param selection]" (CR 701.26b).
 static func untap(selection: MmSelection) -> UntapEffect:
 	var effect: UntapEffect = UntapEffect.new()
@@ -2944,6 +2957,24 @@ static func may_pay(cost: MmCost, effect: MmEffect) -> MayPayEffect:
 	return paying
 
 
+## "Discard [param count] cards" as a cost (CR 701.9a, 118), as Irreverent Gremlin's "you may
+## discard a card".
+static func discard_cards_cost(count: int = 1) -> DiscardCardsCost:
+	var cost: DiscardCardsCost = DiscardCardsCost.new()
+	cost.count = count
+	return cost
+
+
+## A 2/2 costing {0} with Irreverent Gremlin's second ability: "Whenever another creature you
+## control with power 2 or less enters, you may discard a card. If you do, draw a card. Do
+## this only once each turn."
+static func gremlin(card_name: String = "Gremlin") -> MmCardDefinition:
+	var looting: MayPayEffect = may_pay(discard_cards_cost(), draw_cards(1, you()))
+	looting.is_once_each_turn = true
+	var another: AllOfFilter = all_of([of_type(MmCardTypes.CardType.CREATURE), is_not(IsSourceFilter.new()), power(2)])
+	return creature(card_name, 2, 2, [triggered(enters(another, MmTrigger.Whose.YOU), [looting])])
+
+
 ## "You may pay [param mana]. If you do, [param effect]." (ADR 0076's addendum), as
 ## Myrsmith's "you may pay {1}".
 static func may_pay_mana(mana: MmManaCost, effect: MmEffect) -> MayPayEffect:
@@ -3711,6 +3742,20 @@ static func poacher(card_name: String = "Poacher") -> MmCardDefinition:
 	gain.players = you()
 	var costs: Array[MmCost] = [TapCost.new(), sacrifice_permanents(1, another_creature())]
 	return creature(card_name, 2, 4, [activated(mana_cost(0), costs, [gain, draw_cards(1, you())])])
+
+
+## A 2/2 costing {0} with Heartfire Immolator's second ability at {0}: "{0}, Sacrifice this
+## creature: It deals damage equal to its power to target creature." (engine ADR 0098's
+## addendum), then [param abilities].
+static func immolator(card_name: String = "Immolator", abilities: Array[MmAbility] = []) -> MmCardDefinition:
+	var power: PowerValue = PowerValue.new()
+	power.selection = sacrificed()
+	var damage: DealDamageEffect = DealDamageEffect.new()
+	damage.amount = power
+	damage.recipients = targeted(0)
+	var all: Array[MmAbility] = abilities.duplicate()
+	all.append(activated(mana_cost(0), [SacrificeThisCost.new()], [damage], [target(of_type(MmCardTypes.CardType.CREATURE))]))
+	return creature(card_name, 2, 2, all)
 
 
 ## A 2/1 costing {0} with Disciple of Bolas's ability: "When this creature enters, sacrifice

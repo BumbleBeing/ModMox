@@ -214,6 +214,9 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 	if creature_type != null:
 		_chosen_creature_type = creature_type.creature_types[answer as int]
 		return
+	if _cost_choice != null and decision is ChooseCardsToDiscardDecision:
+		_pay_chosen_cost(decision, answer)  # Irreverent Gremlin's "you may discard a card".
+		return
 	var picked: ChoosePermanentsDecision = decision as ChoosePermanentsDecision
 	if decision is ChooseCardsInLibraryDecision or decision is ChooseCardsToDiscardDecision \
 			or decision is ChooseLookedAtCardsDecision or (picked != null and picked.is_for_effect):
@@ -240,7 +243,7 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 			if choosing != null:
 				if choosing is ChoosePermanentsDecision:
 					(choosing as ChoosePermanentsDecision).stack_object_id = _object_id
-				else:
+				elif choosing is ChooseObjectDecision:
 					(choosing as ChooseObjectDecision).stack_object_id = _object_id
 				_cost_choice = choosing
 				_cost_being_chosen = asked.resolution_cost
@@ -263,23 +266,28 @@ func apply_answer(decision: MmPendingDecision, answer: Variant) -> void:
 		_payment.apply_answer(_state, decision as PayManaDecision, answer as int)
 		return
 	if _cost_choice != null:  # Asked before anything else while it is set.
-		# Engine ADR 0088: what is chosen pays the cost said yes to, and "if you do" holds.
-		var chosen: Array[int] = []
-		if decision is ChoosePermanentsDecision:
-			for id: Variant in answer as Array:
-				chosen.append(id as int)
-			chosen.sort()
-		else:
-			chosen.append((decision as ChooseObjectDecision).candidates[answer as int].id)
-		_cost_being_chosen.pay(_state, _state.object(_context.source_object_id), decision.player_id, chosen)
-		_cost_choice = null
-		_cost_being_chosen = null
-		_begin_answer = ChooseYesOrNoDecision.Choice.YES
-		_has_begin_answer = true
+		_pay_chosen_cost(decision, answer)
 		return
 	var choice: ChooseObjectDecision = decision as ChooseObjectDecision
 	assert(choice != null, "A resolution cannot answer %s." % decision.describe())
 	_context = _context.with_choice(choice.choice_index, choice.candidates[answer as int])
+
+
+## Engine ADR 0088: what is chosen in [param decision] pays the cost said yes to, and "if
+## you do" holds.
+func _pay_chosen_cost(decision: MmPendingDecision, answer: Variant) -> void:
+	var chosen: Array[int] = []
+	if decision is ChoosePermanentsDecision or decision is ChooseCardsToDiscardDecision:
+		for id: Variant in answer as Array:
+			chosen.append(id as int)
+		chosen.sort()
+	else:
+		chosen.append((decision as ChooseObjectDecision).candidates[answer as int].id)
+	_cost_being_chosen.pay(_state, _state.object(_context.source_object_id), decision.player_id, chosen)
+	_cost_choice = null
+	_cost_being_chosen = null
+	_begin_answer = ChooseYesOrNoDecision.Choice.YES
+	_has_begin_answer = true
 
 
 ## The next step of paying the X chosen for the current MayPayXEffect (CR 605.3a), or, once

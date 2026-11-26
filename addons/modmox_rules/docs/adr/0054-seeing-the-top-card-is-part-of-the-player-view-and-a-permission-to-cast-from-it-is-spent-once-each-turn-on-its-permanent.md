@@ -39,3 +39,16 @@ Tocasia's Welcome, in the Villain deck `brimaz_king_of_oreskos`, says "Whenever 
 **The AI needs nothing.** The mark is on the Game Object, so every Simulation Copy carries it, and a FULL Agent's lookahead sees one draw a turn, never two. The GUI dims a permanent whose trigger is Spent (game ADR 0055's addendum).
 
 Left out until a card needs them (ADR 0001): "one or more" in the words of a modal limited trigger, a "one or more" zone-change trigger without the limit, and abilities that trigger a set number of times other than once.
+
+## Addendum: "Do this only once each turn" is Spent by a yes
+
+Irreverent Gremlin says "Whenever another creature you control with power 2 or less enters, you may discard a card. If you do, draw a card. Do this only once each turn." It is not "This ability triggers only once each turn": "do this" is the discarding and drawing, so a trigger that is declined, or that finds no card to discard, leaves the ability free for the next creature that turn (the user's reading).
+
+**It is `MayPayEffect.is_once_each_turn`**, on the "you may" it limits, and it uses the same mark. Once its controller has paid and the effect happens, an `OnceEachTurnDoneEvent` in the effect's first batch records the Game Turn on the source (`MmGameObject.triggered_game_turn`, by ability index), as triggering does for a limited trigger. While the mark is this turn's, `TriggerDetection` does not trigger the ability (`TriggeredAbility.is_done_only_once_each_turn()`), and the "you may" of one already waiting on the stack asks nothing and does nothing. A trigger that would only be removed as it resolved never goes on the stack, which changes nothing a player could do with it. Unlike a limited trigger, several may trigger in one batch, since none has done it yet: two creatures entering at once trigger it twice, and the first yes spends the second. The mark is copied, in the fingerprint, and in the Object View's `triggered_this_turn`, so the GUI dims the permanent and its State Information says "Triggered this turn: Won't trigger again this turn.", which is true of it from then on.
+
+**`AbilityText` words it as Oracle does**, as a sentence of its own after the "if you do": "... you may discard a card. If you do, draw a card. Do this only once each turn."
+
+**The AI needs nothing.** A FULL Agent weighs the "you may" by simulation, as any with a cost, and every Simulation Copy carries the mark.
+
+Left out until a card needs them (ADR 0001): "Do this only once each turn" on a "you may" without a cost (`MayEffect`), on an activated ability, or with a reflexive trigger.
+

@@ -94,6 +94,10 @@ var triggering_object_id: int = 0
 ## Set once this object has left the battlefield: its characteristics as it last existed
 ## there (CR 608.2h). The object never changes after that.
 var last_known_characteristics: MmCharacteristics = null
+## Set as it leaves the battlefield or a graveyard: the batch it left in, so what left with
+## it can be told from what left before, as "modified" asks of the Auras that were on a
+## creature that died (CR 603.10a, engine ADR 0102).
+var departed_in_batch: int = 0
 ## For a card in a library: the players who know which card this is, in the order they
 ## learned it. Empty anywhere else, where the zone itself says who may see a card.
 var known_to_player_ids: Array[int] = []
@@ -110,8 +114,9 @@ var spent_ability_indexes: Array[int] = []
 var permission_used_game_turn: Dictionary[int, int] = {}
 var permission_used_spell_name: Dictionary[int, String] = {}
 ## The once-each-turn triggered abilities of this object that have triggered, by their
-## place among its abilities: the Game Turn each last triggered in (ADR 0054's addendum).
-## One is Spent while its Game Turn is the current one, as a permission is.
+## place among its abilities: the Game Turn each last triggered in (ADR 0054's addendum),
+## or, for one whose "you may" is done only once each turn, was done in (its second
+## addendum). One is Spent while its Game Turn is the current one, as a permission is.
 var triggered_game_turn: Dictionary[int, int] = {}
 ## The once-each-turn activated abilities of this object that have been activated, by their
 ## place among its abilities: the Game Turn each was last activated in (CR 602.5b, ADR
@@ -152,6 +157,10 @@ var exerted_by_player_id: int = MmGameState.NO_PLAYER
 ## DoesntUntapEffect says. That untap step ends it, and a zone change leaves it behind with
 ## the old object (ADR 0008). Public, like the permanent.
 var skips_next_untap: bool = false
+## The Game Turn it can't block in (CR 509.1a), as a CantBlockThisTurnEffect says, or 0. A
+## later turn ends it by passing, and a zone change leaves it behind with the old object
+## (ADR 0008). Public, like the permanent.
+var cant_block_in_game_turn: int = 0
 ## For a card in exile: the player who may play it, as MayPlayExiledEffect says (engine ADR
 ## 0100), or MmGameState.NO_PLAYER; and the last Game Turn they may, which ends it. A zone
 ## change leaves it behind with the old object (ADR 0008). Public, like exile.
@@ -198,6 +207,7 @@ func duplicate_object() -> MmGameObject:
 	copy.triggering_player_id = triggering_player_id
 	copy.triggering_object_id = triggering_object_id
 	copy.last_known_characteristics = last_known_characteristics  # Read-only, so shared.
+	copy.departed_in_batch = departed_in_batch
 	copy.known_to_player_ids = known_to_player_ids.duplicate()
 	copy.potion_index = potion_index
 	copy.spent_ability_indexes = spent_ability_indexes.duplicate()
@@ -214,6 +224,7 @@ func duplicate_object() -> MmGameObject:
 	copy.chosen_creature_type = chosen_creature_type
 	copy.exerted_by_player_id = exerted_by_player_id
 	copy.skips_next_untap = skips_next_untap
+	copy.cant_block_in_game_turn = cant_block_in_game_turn
 	copy.playable_by_player_id = playable_by_player_id
 	copy.playable_through_game_turn = playable_through_game_turn
 	return copy
@@ -320,6 +331,11 @@ func end_exertion() -> void:
 ## Event-only: this permanent won't untap during its controller's next untap step.
 func skip_next_untap() -> void:
 	skips_next_untap = true
+
+
+## Event-only: this permanent can't block in Game Turn [param game_turn] (CR 509.1a).
+func forbid_blocking_in(game_turn: int) -> void:
+	cant_block_in_game_turn = game_turn
 
 
 ## Event-only: [param player_id] may play this card in exile through Game Turn

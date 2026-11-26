@@ -1483,7 +1483,7 @@ func _divide_damage(decision: DivideCombatDamageDecision, world: MmGameState) ->
 func _guess_blockable(world: MmGameState, me: int, candidate_ids: Array[int]) -> Dictionary[int, Array]:
 	var blockable: Dictionary[int, Array] = {}
 	for blocker: MmGameObject in _creatures_of(world, 1 - me):
-		if blocker.is_tapped:
+		if blocker.is_tapped or blocker.cant_block_in_game_turn == world.game_turn:
 			continue
 		var blocking: MmCharacteristics = world.characteristics_of(blocker)
 		var reaches: bool = blocking.has_ability(FlyingAbility) or blocking.has_ability(ReachAbility)

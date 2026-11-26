@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_xsa6r"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_6psnr"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_xxp08"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_pmbxd"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_u2eax"]
+[ext_resource type="Resource" path="res://content/tokens/spirit_1_1_colorless.tres" id="4_efmfy"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_n1xf1"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_i7yo5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_eoqhv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="8_wgx3u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="9_rysmq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_token_filter.gd" id="10_1eaip"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="11_x8r7c"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/modified_filter.gd" id="12_k7lpp"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="13_xh86u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="14_roajy"]
+
+[sub_resource type="Resource" id="Resource_mv6g4"]
+script = ExtResource("3_pmbxd")
+token = ExtResource("4_efmfy")
+
+[sub_resource type="Resource" id="Resource_2gvr8"]
+script = ExtResource("9_rysmq")
+
+[sub_resource type="Resource" id="Resource_sft5f"]
+script = ExtResource("10_1eaip")
+
+[sub_resource type="Resource" id="Resource_vu3od"]
+script = ExtResource("11_x8r7c")
+filter = SubResource("Resource_sft5f")
+
+[sub_resource type="Resource" id="Resource_gc78j"]
+script = ExtResource("12_k7lpp")
+
+[sub_resource type="Resource" id="Resource_aghfj"]
+script = ExtResource("13_xh86u")
+filters = Array[ExtResource("8_wgx3u")]([SubResource("Resource_2gvr8"), SubResource("Resource_vu3od"), SubResource("Resource_gc78j")])
+
+[sub_resource type="Resource" id="Resource_602lm"]
+script = ExtResource("14_roajy")
+any_from_zone = false
+to_zone = 2
+filter = SubResource("Resource_aghfj")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_frrxl"]
+script = ExtResource("6_i7yo5")
+trigger = SubResource("Resource_602lm")
+effects = Array[ExtResource("2_6psnr")]([SubResource("Resource_mv6g4")])
+
+[sub_resource type="Resource" id="Resource_40lrw"]
+script = ExtResource("2_xxp08")
+generic = 1
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_u2eax")
+name = "Akki Ember-Keeper"
+card_types = Array[int]([2, 1])
+subtypes = Array[String](["Goblin", "Warrior"])
+mana_cost = SubResource("Resource_40lrw")
+power = 2
+toughness = 1
+abilities = Array[ExtResource("1_xsa6r")]([SubResource("Resource_frrxl")])

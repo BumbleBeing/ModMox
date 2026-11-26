@@ -28,6 +28,8 @@ var is_exerted: bool = false
 ## It won't untap during its controller's next untap step (CR 502.3), as a DoesntUntapEffect
 ## says. Public.
 var skips_next_untap: bool = false
+## It can't block this turn (CR 509.1a), as a CantBlockThisTurnEffect says. Public.
+var cant_block_this_turn: bool = false
 ## The characteristics a card is drawn from, so the GUI can choose its Frame (ADR 0009).
 ## In WUBRG order; empty means colorless.
 var colors: Array[MmCardTypes.CardColor] = []
@@ -151,6 +153,7 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 	view.is_tapped = game_object.is_tapped
 	view.is_exerted = game_object.exerted_by_player_id != MmGameState.NO_PLAYER
 	view.skips_next_untap = game_object.skips_next_untap
+	view.cant_block_this_turn = game_object.cant_block_in_game_turn == state.game_turn
 	view.targets = game_object.targets.duplicate()
 	view.chosen_mode = game_object.chosen_mode
 	view.cast_with_flashback = game_object.cast_with_flashback
@@ -218,5 +221,11 @@ static func of(state: MmGameState, game_object: MmGameObject) -> MmObjectView:
 
 
 ## How many counters of [param kind] are on it.
+
+## Whether someone may play this card in exile in Game Turn [param game_turn] (engine ADR
+## 0100), for the GUI, which never names the game state (ADR 0021).
+func is_playable_in(game_turn: int) -> bool:
+	return playable_by_player_id != MmGameState.NO_PLAYER and game_turn <= playable_through_game_turn
+
 func counters_of(kind: MmCounter.Kind) -> int:
 	return counters.get(kind, 0)

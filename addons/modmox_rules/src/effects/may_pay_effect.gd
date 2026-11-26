@@ -11,6 +11,11 @@ extends MmEffect
 ## [member ChooseYesOrNoDecision.cost], so ResolutionProcedure has yes paid one
 ## PayManaDecision at a time, as ward's cost is (ADR 0062), and [member effect] happens once
 ## it is paid.
+##
+## With [member is_once_each_turn] it ends "Do this only once each turn", as Irreverent
+## Gremlin's does (engine ADR 0054's second addendum): once its controller has paid and the
+## effect happens, the triggered ability it is part of is Spent on its source for the turn,
+## so it triggers no more and one already on the stack asks nothing. No leaves it as it was.
 # Later: a cost of mana and something else at once, and "if you don't". Each once a card
 # needs it.
 
@@ -20,9 +25,13 @@ extends MmEffect
 @export var mana_cost: MmManaCost = null
 ## What happens once the cost is paid.
 @export var effect: MmEffect
+## "Do this only once each turn": a yes spends its triggered ability for the turn.
+@export var is_once_each_turn: bool = false
 
 
 func decision_as_it_begins(state: MmGameState, context: MmEffectContext, stack_object_id: int) -> MmPendingDecision:
+	if is_once_each_turn and _is_done_this_turn(state, context):
+		return null  # Engine ADR 0054's second addendum: done once already.
 	if mana_cost != null:
 		if not ManaPayment.can_afford(state, context.controller_id, mana_cost):
 			return null  # CR 118.3: mana that cannot be paid is not paid.
@@ -52,7 +61,12 @@ func numbers_with_answer(state: MmGameState, context: MmEffectContext, answer: V
 func next_batch(state: MmGameState, context: MmEffectContext, step: int, worked_out: Array[int]) -> Array[MmEvent]:
 	if worked_out.is_empty() or worked_out[0] != 1:
 		return []
-	return effect.next_batch(state, context, step, worked_out.slice(1))
+	var batch: Array[MmEvent] = effect.next_batch(state, context, step, worked_out.slice(1))
+	if step == 0 and is_once_each_turn:
+		var done: OnceEachTurnDoneEvent = _done_event(state, context)
+		if done != null:
+			batch.push_front(done)
+	return batch
 
 
 ## [member effect]'s Selections, so what it targets is what the ability targets.
@@ -62,3 +76,22 @@ func selections() -> Array[MmSelection]:
 
 func adds_mana() -> bool:
 	return effect.adds_mana()
+
+
+## Whether the triggered ability resolving has been done once this turn already, on its
+## source.
+func _is_done_this_turn(state: MmGameState, context: MmEffectContext) -> bool:
+	var resolving: MmGameObject = state.object(context.own_object_id) if context.own_object_id != 0 else null
+	var source: MmGameObject = state.object(context.source_object_id)
+	if resolving == null or resolving.ability == null or source == null:
+		return false
+	return source.has_triggered_in(resolving.source_ability_index, state.game_turn)
+
+
+## What marks the ability resolving done this turn on its source, or null when its source
+## has gone, which never triggers again (ADR 0008).
+func _done_event(state: MmGameState, context: MmEffectContext) -> OnceEachTurnDoneEvent:
+	var resolving: MmGameObject = state.object(context.own_object_id) if context.own_object_id != 0 else null
+	if resolving == null or resolving.ability == null or state.object(context.source_object_id) == null:
+		return null
+	return OnceEachTurnDoneEvent.new(context.source_object_id, resolving.source_ability_index)

@@ -50,6 +50,17 @@
 		"toughness": "2",
 		"type_line": "Creature — Human Assassin"
 	},
+	"akki_ember_keeper": {
+		"mana_cost": "{1}{R}",
+		"name": "Akki Ember-Keeper",
+		"oracle_id": "8df42f4a-022c-4fcb-a953-fb165fdbfc13",
+		"oracle_text": "Whenever a nontoken modified creature you control dies, create a 1/1 colorless Spirit creature token. (Equipment, Auras you control, and counters are modifications.)",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "1",
+		"type_line": "Enchantment Creature — Goblin Warrior"
+	},
 	"akrasan_squire": {
 		"mana_cost": "{W}",
 		"name": "Akrasan Squire",
@@ -212,6 +223,17 @@
 		"set_name": "Throne of Eldraine",
 		"toughness": "3",
 		"type_line": "Creature — Human Knight // Instant — Adventure"
+	},
+	"arena_athlete": {
+		"mana_cost": "{1}{R}",
+		"name": "Arena Athlete",
+		"oracle_id": "4dfea3bf-dfd1-4abd-a17e-f3a07488a069",
+		"oracle_text": "Heroic — Whenever you cast a spell that targets this creature, target creature an opponent controls can't block this turn.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Theros",
+		"toughness": "1",
+		"type_line": "Creature — Human"
 	},
 	"armguard_familiar": {
 		"mana_cost": "{1}{U}",
@@ -458,6 +480,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Merfolk Pirate"
 	},
+	"burning_prophet": {
+		"mana_cost": "{1}{R}",
+		"name": "Burning Prophet",
+		"oracle_id": "1e462ce2-15d3-473c-8f48-9c9363fc65eb",
+		"oracle_text": "Whenever you cast a noncreature spell, this creature gets +1/+0 until end of turn, then scry 1.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "War of the Spark",
+		"toughness": "3",
+		"type_line": "Creature — Human Wizard"
+	},
 	"bushmeat_poacher": {
 		"mana_cost": "{3}{B}",
 		"name": "Bushmeat Poacher",
@@ -554,6 +587,17 @@
 		"set_name": "Adventures in the Forgotten Realms",
 		"toughness": "2",
 		"type_line": "Creature — Unicorn"
+	},
+	"champion_of_the_flame": {
+		"mana_cost": "{1}{R}",
+		"name": "Champion of the Flame",
+		"oracle_id": "d9dbe40f-38e9-460a-b84f-4aa22650017e",
+		"oracle_text": "Trample\nThis creature gets +2/+2 for each Aura and Equipment attached to it.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Dominaria",
+		"toughness": "1",
+		"type_line": "Creature — Human Warrior"
 	},
 	"charmed_stray": {
 		"mana_cost": "{W}",
@@ -745,6 +789,17 @@
 		"toughness": "2",
 		"type_line": "Artifact Creature — Phyrexian Warrior"
 	},
+	"dark_dweller_oracle": {
+		"mana_cost": "{1}{R}",
+		"name": "Dark-Dweller Oracle",
+		"oracle_id": "17917b7a-2b2b-4a96-a21e-10cd91375660",
+		"oracle_text": "{1}, Sacrifice a creature: Exile the top card of your library. You may play that card this turn. (You still pay its costs. You can play a land this way only if you have an available land play remaining.)",
+		"power": "2",
+		"rarity": "rare",
+		"set_name": "Core Set 2019",
+		"toughness": "2",
+		"type_line": "Creature — Goblin Shaman"
+	},
 	"dark_ritual": {
 		"mana_cost": "{B}",
 		"name": "Dark Ritual",
@@ -831,6 +886,17 @@
 		"rarity": "common",
 		"set_name": "Dominaria United",
 		"type_line": "Instant"
+	},
+	"devoted_duelist": {
+		"mana_cost": "{1}{R}",
+		"name": "Devoted Duelist",
+		"oracle_id": "f7620c46-b3d8-4694-ac7c-a43933c86c22",
+		"oracle_text": "Haste\nFlurry — Whenever you cast your second spell each turn, this creature deals 1 damage to each opponent.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Tarkir: Dragonstorm",
+		"toughness": "1",
+		"type_line": "Creature — Goblin Monk"
 	},
 	"diregraf_ghoul": {
 		"mana_cost": "{B}",
@@ -952,6 +1018,17 @@
 		"set_name": "Theros Beyond Death",
 		"toughness": "2",
 		"type_line": "Enchantment Creature — Spirit"
+	},
+	"electrostatic_infantry": {
+		"mana_cost": "{1}{R}",
+		"name": "Electrostatic Infantry",
+		"oracle_id": "ba8883fc-db24-4c3d-ae36-05085089c9cc",
+		"oracle_text": "Trample\nWhenever you cast an instant or sorcery spell, put a +1/+1 counter on this creature.",
+		"power": "1",
+		"rarity": "uncommon",
+		"set_name": "Dominaria United",
+		"toughness": "2",
+		"type_line": "Creature — Dwarf Wizard"
 	},
 	"elementalist_adept": {
 		"mana_cost": "{1}{U}",
@@ -1421,6 +1498,17 @@
 		"toughness": "1",
 		"type_line": "Creature — Goblin Warrior"
 	},
+	"goblin_instigator": {
+		"mana_cost": "{1}{R}",
+		"name": "Goblin Instigator",
+		"oracle_id": "8b022754-6d16-470e-b754-4df6e4f4709e",
+		"oracle_text": "When this creature enters, create a 1/1 red Goblin creature token.",
+		"power": "1",
+		"rarity": "common",
+		"set_name": "Core Set 2019",
+		"toughness": "1",
+		"type_line": "Creature — Goblin Rogue"
+	},
 	"gray_ogre": {
 		"mana_cost": "{2}{R}",
 		"name": "Gray Ogre",
@@ -1526,6 +1614,17 @@
 		"set_name": "Innistrad: Crimson Vow",
 		"toughness": "1",
 		"type_line": "Creature — Zombie"
+	},
+	"heartfire_immolator": {
+		"mana_cost": "{1}{R}",
+		"name": "Heartfire Immolator",
+		"oracle_id": "1e414a4f-6e76-4cbe-9c69-d52852cd5bc0",
+		"oracle_text": "Prowess (Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.)\n{R}, Sacrifice this creature: It deals damage equal to its power to target creature or planeswalker.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Core Set 2021",
+		"toughness": "2",
+		"type_line": "Creature — Human Wizard"
 	},
 	"helpful_hunter": {
 		"mana_cost": "{1}{W}",
@@ -1726,6 +1825,17 @@
 		"set_name": "Modern Horizons",
 		"toughness": "2",
 		"type_line": "Creature — Shapeshifter"
+	},
+	"irreverent_gremlin": {
+		"mana_cost": "{1}{R}",
+		"name": "Irreverent Gremlin",
+		"oracle_id": "44594004-52e7-4ce6-8eb0-61f72fd9c73b",
+		"oracle_text": "Menace (This creature can't be blocked except by two or more creatures.)\nWhenever another creature you control with power 2 or less enters, you may discard a card. If you do, draw a card. Do this only once each turn.",
+		"power": "2",
+		"rarity": "uncommon",
+		"set_name": "Duskmourn: House of Horror",
+		"toughness": "2",
+		"type_line": "Creature — Gremlin"
 	},
 	"isamaru_hound_of_konda": {
 		"mana_cost": "{W}",
@@ -2456,6 +2566,17 @@
 		"set_name": "Khans of Tarkir",
 		"type_line": "Land"
 	},
+	"oreplate_pangolin": {
+		"mana_cost": "{1}{R}",
+		"name": "Oreplate Pangolin",
+		"oracle_id": "72e8c978-f66d-42e1-ac5f-d1c307d7b93c",
+		"oracle_text": "Whenever another artifact you control enters, you may pay {1}. If you do, put a +1/+1 counter on this creature.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Edge of Eternities",
+		"toughness": "2",
+		"type_line": "Artifact Creature — Robot Pangolin"
+	},
 	"oreskos_explorer": {
 		"mana_cost": "{1}{W}",
 		"name": "Oreskos Explorer",
@@ -2703,6 +2824,40 @@
 		"set_name": "Scars of Mirrodin",
 		"toughness": "1",
 		"type_line": "Creature — Human Artificer"
+	},
+	"rimrock_knight": {
+		"card_faces": [
+			{
+				"artist": "Chris Rallis",
+				"artist_id": "a8e7b854-b15a-421a-b66d-6e68187ae285",
+				"illustration_id": "c82a6d15-3976-4fca-9142-2db874d3ed10",
+				"mana_cost": "{1}{R}",
+				"name": "Rimrock Knight",
+				"object": "card_face",
+				"oracle_text": "This creature can't block.",
+				"power": "3",
+				"toughness": "1",
+				"type_line": "Creature — Dwarf Knight"
+			},
+			{
+				"artist": "Chris Rallis",
+				"artist_id": "a8e7b854-b15a-421a-b66d-6e68187ae285",
+				"mana_cost": "{R}",
+				"name": "Boulder Rush",
+				"object": "card_face",
+				"oracle_text": "Target creature gets +2/+0 until end of turn. (Then exile this card. You may cast the creature later from exile.)",
+				"type_line": "Instant — Adventure"
+			}
+		],
+		"layout": "adventure",
+		"mana_cost": "{1}{R} // {R}",
+		"name": "Rimrock Knight // Boulder Rush",
+		"oracle_id": "24db950b-e4fe-42d0-977b-4957eb8229d9",
+		"power": "3",
+		"rarity": "common",
+		"set_name": "Throne of Eldraine",
+		"toughness": "1",
+		"type_line": "Creature — Dwarf Knight // Instant — Adventure"
 	},
 	"roving_harper": {
 		"mana_cost": "{2}{W}",
@@ -3234,6 +3389,17 @@
 		"set_name": "Murders at Karlov Manor",
 		"toughness": "5",
 		"type_line": "Creature — Plant Cat"
+	},
+	"towashi_songshaper": {
+		"mana_cost": "{1}{R}",
+		"name": "Towashi Songshaper",
+		"oracle_id": "d2c7d10e-86d9-4e2d-a0da-2e39c172aae2",
+		"oracle_text": "Whenever another artifact you control enters, this creature gets +1/+0 until end of turn.",
+		"power": "2",
+		"rarity": "common",
+		"set_name": "Kamigawa: Neon Dynasty",
+		"toughness": "2",
+		"type_line": "Artifact Creature — Human Artificer"
 	},
 	"tragic_banshee": {
 		"mana_cost": "{4}{B}",

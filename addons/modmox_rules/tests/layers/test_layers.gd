@@ -290,6 +290,24 @@ func test_a_characteristic_defining_ability_works_everywhere_and_prints_as_a_sta
 	assert_false(MmCharacteristics.printed(_bear()).is_power_variable)
 
 
+func test_a_characteristic_defining_ability_in_a_graveyard_counting_permanents_ends() -> void:
+	# The layers are worked out for the battlefield and the command zone only (ADR 0018). A
+	# Warlord in the graveyard counts creatures on the battlefield; were the graveyard among
+	# the objects the layers work out, asking its characteristics would work them out again
+	# from inside, without end.
+	var engine: MmEngine = _hero_main([_warlord(), _bear()], [], [Scenario.free_destroy("Doom")])
+	var warlord: int = Scenario.permanent_named(engine, engine.hero().id, "Warlord")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+
+	assert_eq(Scenario.cast_and_resolve(engine, "Doom", [_object(warlord)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	var dead: MmGameObject = engine.game_state().object(Scenario.card_in_graveyard(engine, engine.hero(), "Warlord"))
+	var in_graveyard: MmCharacteristics = engine.game_state().characteristics_of(dead)
+	assert_eq([in_graveyard.power, in_graveyard.toughness], [1, 1], "CR 604.3: the Bear alone.")
+	assert_eq(Scenario.pt(engine, bear), [2, 2])
+
+
 func test_a_power_defining_ability_keeps_the_printed_toughness() -> void:
 	# CR 604.3: a */3 defines its power alone, in every zone.
 	var engine: MmEngine = _hero_main([_strider(), _bear()], [_bear()], [_strider()])

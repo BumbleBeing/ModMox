@@ -484,9 +484,26 @@ func clear_deaths() -> void:
 	_died_this_turn.clear()
 
 
-## Event-only: keeps [param leaving], frozen, as it leaves the battlefield or a graveyard.
+## Event-only: keeps [param leaving], frozen, as it leaves the battlefield or a graveyard,
+## with the batch it left in.
 func record_departure(leaving: MmGameObject) -> void:
+	leaving.departed_in_batch = _next_batch
 	_departed[leaving.id] = leaving
+
+
+## The objects that left the battlefield or a graveyard in the same batch as
+## [param departed], itself among them, in ID order, as they last existed (CR 603.10a). None
+## for an object that has not left.
+func departed_with(departed: MmGameObject) -> Array[MmGameObject]:
+	var found: Array[MmGameObject] = []
+	if departed.departed_in_batch == 0:
+		return found
+	var ids: Array[int] = _departed.keys()
+	ids.sort()
+	for id: int in ids:
+		if _departed[id].departed_in_batch == departed.departed_in_batch:
+			found.append(_departed[id])
+	return found
 
 
 ## Draws [param count] cards for a player, one at a time from the top (CR 121.2), each
@@ -593,6 +610,8 @@ func fingerprint() -> String:
 				entries.append("%d exerted by %d" % [game_object.id, game_object.exerted_by_player_id])
 			if game_object.skips_next_untap:
 				entries.append("%d skips next untap" % game_object.id)
+			if game_object.cant_block_in_game_turn != 0:
+				entries.append("%d can't block in %d" % [game_object.id, game_object.cant_block_in_game_turn])
 			if game_object.playable_by_player_id != NO_PLAYER:
 				entries.append("%d playable by %d through %d" % [game_object.id, game_object.playable_by_player_id,
 					game_object.playable_through_game_turn])

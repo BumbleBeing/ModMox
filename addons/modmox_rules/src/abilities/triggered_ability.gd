@@ -37,6 +37,17 @@ func condition_holds(state: MmGameState, context: MmEffectContext) -> bool:
 
 
 ## Its modes: empty when it is not modal.
+## Whether a "you may" of it is done only once each turn ("Do this only once each turn", engine
+## ADR 0054's second addendum): once done, it is Spent for the turn, as an ability that
+## triggers only once each turn is once it triggers, and triggers no more.
+func is_done_only_once_each_turn() -> bool:
+	for effect: MmEffect in effects:
+		var paying: MayPayEffect = effect as MayPayEffect
+		if paying != null and paying.is_once_each_turn:
+			return true
+	return false
+
+
 func modes_or_none() -> Array[AbilityMode]:
 	return modes
 

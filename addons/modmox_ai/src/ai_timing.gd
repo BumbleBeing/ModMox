@@ -95,10 +95,12 @@ static func is_harmful(effects: Array[MmEffect]) -> bool:
 
 
 ## Whether any of [param effects] taps: worth something only in a fight this turn or the
-## next, so its targets are scored once the turn is over.
+## next, so its targets are scored once the turn is over. "Can't block this turn"
+## (CantBlockThisTurnEffect, CR 509.1a) is read as a tap: it keeps a creature out of this
+## turn's combat, and is wasted on one already tapped.
 static func taps(effects: Array[MmEffect]) -> bool:
 	for effect: MmEffect in unwrapped(effects):
-		if effect is TapEffect:
+		if effect is TapEffect or effect is CantBlockThisTurnEffect:
 			return true
 	return false
 

@@ -93,6 +93,9 @@ static func detect(state: MmGameState, events: Array[MmEvent], before: Array[MmG
 					if triggered.is_once_each_turn and (observer.has_triggered_in(ability_index, state.game_turn)
 							or _has_triggered_among(found, observer.id, ability_index)):
 						continue
+					# Its second addendum: done once this turn, it triggers no more.
+					if triggered.is_done_only_once_each_turn() and observer.has_triggered_in(ability_index, state.game_turn):
+						continue
 					found.append(pending)
 					if occasion != "":
 						occasions[occasion_key] = true

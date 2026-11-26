@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_rus7y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_4iqw6"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_giup7"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/source_selection.gd" id="3_8m2pm"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ia5tn"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_wd455"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/layers/modify_power_toughness_continuous_effect.gd" id="5_21vsv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_continuous_effect.gd" id="6_e2wi5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="7_u0uik"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="8_d8f3b"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_iqpuo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/mm_filter.gd" id="10_qrpkw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/has_card_type_filter.gd" id="11_kr0i5"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="12_n6amw"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/not_filter.gd" id="13_nbhbv"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/all_of_filter.gd" id="14_tmshi"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="15_y1a86"]
+
+[sub_resource type="Resource" id="Resource_qcrf2"]
+script = ExtResource("3_8m2pm")
+
+[sub_resource type="Resource" id="Resource_bq7dc"]
+script = ExtResource("4_wd455")
+value = 1
+
+[sub_resource type="Resource" id="Resource_lpyts"]
+script = ExtResource("4_wd455")
+
+[sub_resource type="Resource" id="Resource_ecqgl"]
+script = ExtResource("5_21vsv")
+power = SubResource("Resource_bq7dc")
+toughness = SubResource("Resource_lpyts")
+affected = SubResource("Resource_qcrf2")
+
+[sub_resource type="Resource" id="Resource_5rrtl"]
+script = ExtResource("6_e2wi5")
+continuous = SubResource("Resource_ecqgl")
+
+[sub_resource type="Resource" id="Resource_lflni"]
+script = ExtResource("11_kr0i5")
+card_type = 0
+
+[sub_resource type="Resource" id="Resource_yv0t7"]
+script = ExtResource("12_n6amw")
+
+[sub_resource type="Resource" id="Resource_a0u0c"]
+script = ExtResource("13_nbhbv")
+filter = SubResource("Resource_yv0t7")
+
+[sub_resource type="Resource" id="Resource_tucaw"]
+script = ExtResource("14_tmshi")
+filters = Array[ExtResource("10_qrpkw")]([SubResource("Resource_lflni"), SubResource("Resource_a0u0c")])
+
+[sub_resource type="Resource" id="Resource_uuq6v"]
+script = ExtResource("15_y1a86")
+filter = SubResource("Resource_tucaw")
+whose = 1
+
+[sub_resource type="Resource" id="Resource_hy5ji"]
+script = ExtResource("8_d8f3b")
+trigger = SubResource("Resource_uuq6v")
+effects = Array[ExtResource("2_4iqw6")]([SubResource("Resource_5rrtl")])
+
+[sub_resource type="Resource" id="Resource_l2ygp"]
+script = ExtResource("2_giup7")
+generic = 1
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_ia5tn")
+name = "Towashi Songshaper"
+card_types = Array[int]([0, 1])
+subtypes = Array[String](["Human", "Artificer"])
+mana_cost = SubResource("Resource_l2ygp")
+power = 2
+toughness = 2
+abilities = Array[ExtResource("1_rus7y")]([SubResource("Resource_hy5ji")])

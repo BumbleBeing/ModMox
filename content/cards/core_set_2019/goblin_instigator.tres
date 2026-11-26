@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_r14is"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="2_7q0mb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="2_cd66u"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/create_token_effect.gd" id="3_ih4uo"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="3_ravgr"]
+[ext_resource type="Resource" path="res://content/tokens/goblin_1_1_red.tres" id="4_h1v5j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/ability_mode.gd" id="5_a870q"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/triggered_ability.gd" id="6_lc464"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="7_7y83x"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/filters/is_source_filter.gd" id="8_lhs3s"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/triggers/zone_change_trigger.gd" id="9_ihc55"]
+
+[sub_resource type="Resource" id="Resource_fcvu2"]
+script = ExtResource("3_ih4uo")
+token = ExtResource("4_h1v5j")
+
+[sub_resource type="Resource" id="Resource_ehv1x"]
+script = ExtResource("8_lhs3s")
+
+[sub_resource type="Resource" id="Resource_xov24"]
+script = ExtResource("9_ihc55")
+filter = SubResource("Resource_ehv1x")
+
+[sub_resource type="Resource" id="Resource_8cob8"]
+script = ExtResource("6_lc464")
+trigger = SubResource("Resource_xov24")
+effects = Array[ExtResource("2_7q0mb")]([SubResource("Resource_fcvu2")])
+
+[sub_resource type="Resource" id="Resource_8r5kx"]
+script = ExtResource("2_cd66u")
+generic = 1
+symbols = Array[int]([3])
+
+[resource]
+script = ExtResource("3_ravgr")
+name = "Goblin Instigator"
+card_types = Array[int]([1])
+subtypes = Array[String](["Goblin", "Rogue"])
+mana_cost = SubResource("Resource_8r5kx")
+power = 1
+toughness = 1
+abilities = Array[ExtResource("1_r14is")]([SubResource("Resource_8cob8")])

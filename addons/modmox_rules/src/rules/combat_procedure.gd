@@ -176,12 +176,14 @@ func _attacker_candidates() -> Array[int]:
 
 
 ## CR 509.1a: untapped creatures the defending player controls that can block at least
-## one attacker, but not one that can't block (CantBlockAbility). Fills [param legal] with the attackers each one can block, and
+## one attacker, but not one that can't block (CantBlockAbility), nor one that can't block this
+## turn (CantBlockThisTurnEffect). Fills [param legal] with the attackers each one can block, and
 ## [param most] with how many it may block (CR 509.1a, BlockAdditionalAbility).
 func _blocker_candidates(defending_id: int, attackers: Array[int], legal: Dictionary[int, Array], most: Dictionary[int, int]) -> Array[int]:
 	var candidates: Array[int] = []
 	for permanent: MmGameObject in ManaPayment.sorted_permanents_of(_state, defending_id):
-		if not _is_untapped_creature(permanent) or _state.characteristics_of(permanent).has_ability(CantBlockAbility):
+		if not _is_untapped_creature(permanent) or _state.characteristics_of(permanent).has_ability(CantBlockAbility) \
+				or permanent.cant_block_in_game_turn == _state.game_turn:
 			continue
 		var blockable: Array[int] = []
 		for attacker_id: int in attackers:

@@ -13,7 +13,12 @@ extends RefCounted
 
 ## The characteristics of every object on the battlefield and in the command zone, by ID.
 static func compute(state: MmGameState) -> Dictionary[int, MmCharacteristics]:
-	var objects: Array[MmGameObject] = TriggerDetection.observers(state)
+	# Not TriggerDetection.observers(), which also lists graveyard cards with an ability that
+	# works there: finding those asks each graveyard card's characteristics, and a
+	# characteristic-defining ability counting permanents would then ask for the layers
+	# again from inside this, without end.
+	var objects: Array[MmGameObject] = state.battlefield.objects() + state.command.objects()
+	objects.sort_custom(func(a: MmGameObject, b: MmGameObject) -> bool: return a.id < b.id)
 	var current: Dictionary[int, MmCharacteristics] = {}
 	for game_object: MmGameObject in objects:
 		current[game_object.id] = MmCharacteristics.printed(game_object.definition)

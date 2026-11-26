@@ -102,6 +102,32 @@ func test_with_no_other_creature_nothing_is_sacrificed_and_nothing_is_gained() -
 	assert_eq(engine.hero().hand.size(), hand - 1)
 
 
+func test_a_creature_that_sacrifices_itself_deals_damage_equal_to_its_power_as_it_last_existed() -> void:
+	# Heartfire Immolator's "Sacrifice this creature: It deals damage equal to its power"
+	# (CR 608.2h): the pump counts, though the card in the graveyard is a 2/2.
+	var engine: MmEngine = _hero_main([Scenario.immolator(), Scenario.creature("Wall", 0, 4)], [_pump(2, 0)])
+	var immolator: int = Scenario.permanent_named(engine, engine.hero().id, "Immolator")
+	var wall: int = Scenario.permanent_named(engine, engine.hero().id, "Wall")
+	assert_eq(Scenario.cast_and_resolve(engine, "Pump", [MmReference.to_object(immolator)]), "")
+
+	assert_eq(Scenario.activate(engine, immolator, [MmReference.to_object(wall)]), "")
+	assert_eq(Scenario.resolve_stack(engine), "")
+
+	assert_ne(Scenario.card_in_graveyard(engine, engine.hero(), "Immolator"), -1, "It sacrificed itself.")
+	assert_ne(Scenario.card_in_graveyard(engine, engine.hero(), "Wall"), -1, "4 damage destroyed the 0/4.")
+
+
+func test_a_creature_that_sacrifices_itself_is_kept_on_its_ability_on_the_stack() -> void:
+	var engine: MmEngine = _hero_main([Scenario.immolator(), Scenario.creature("Wall", 0, 4)], [])
+	var immolator: int = Scenario.permanent_named(engine, engine.hero().id, "Immolator")
+	var wall: int = Scenario.permanent_named(engine, engine.hero().id, "Wall")
+
+	assert_eq(Scenario.activate(engine, immolator, [MmReference.to_object(wall)]), "")
+
+	var ability: MmGameObject = engine.game_state().object(Scenario.stack_ids(engine)[0])
+	assert_eq(ability.sacrificed_object_ids, [immolator] as Array[int])
+
+
 func test_nothing_sacrificed_selects_nothing() -> void:
 	var engine: MmEngine = _hero_main([], [])
 
