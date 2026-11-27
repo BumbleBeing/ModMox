@@ -44,11 +44,24 @@ func test_arriving_at_an_encounter_opens_the_deckbox_against_its_villain() -> vo
 	assert_eq(RunFlow.villain, run.stage_visit.meeting)
 
 
-func test_arriving_anywhere_else_opens_nothing() -> void:
+## Milestone 24: arriving at a Store opens the Store (SR10).
+func test_arriving_at_a_store_opens_the_store() -> void:
 	var run: Run = _on_the_map()
 	run.move_to(run.stage_visit.choices()[0])
 
 	assert_eq(run.stage_visit.node().kind, StageMap.Kind.STORE)
+	assert_eq(RunFlow.arrive(), RunFlow.Screen.STORE)
+	assert_null(RunFlow.villain)
+
+
+## Arriving at a Workshop opens nothing yet (milestone 25).
+func test_arriving_anywhere_else_opens_nothing() -> void:
+	var run: Run = _on_the_map()
+	for id: int in run.stage_visit.choices():
+		if run.stage_visit.map.nodes[id].kind == StageMap.Kind.WORKSHOP:
+			run.move_to(id)
+
+	assert_eq(run.stage_visit.node().kind, StageMap.Kind.WORKSHOP)
 	assert_eq(RunFlow.arrive(), RunFlow.Screen.NONE)
 	assert_null(RunFlow.villain)
 

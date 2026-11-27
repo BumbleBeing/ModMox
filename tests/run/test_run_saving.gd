@@ -62,11 +62,11 @@ func test_the_run_is_saved_as_each_of_its_screens_opens() -> void:
 	assert_eq(_saved_screen(), "STAGE_MAP")
 
 
-## S2: arriving at a Node that is not an encounter saves the run on the Stage Map, with the
-## Hero on that Node.
+## S2: arriving at a Node that is not an encounter (nor, from milestone 24, a Store) saves the
+## run on the Stage Map, with the Hero on that Node.
 func test_arriving_anywhere_saves_the_run_with_the_hero_there() -> void:
 	var run: Run = _on_the_map()
-	run.move_to(run.stage_visit.choices()[0])
+	_move_to_the_workshop(run)
 
 	assert_eq(RunFlow.arrive(), RunFlow.Screen.NONE)
 
@@ -96,7 +96,7 @@ func test_nothing_is_saved_during_an_encounter_or_in_the_deckbuilder() -> void:
 ## S2: Continue reopens the Screen the run was saved on, with the run as it was.
 func test_continue_reopens_the_screen_the_run_was_saved_on() -> void:
 	var run: Run = _on_the_map()
-	run.move_to(run.stage_visit.choices()[0])
+	_move_to_the_workshop(run)
 	RunFlow.arrive()
 	var node: int = run.stage_visit.current
 
@@ -262,6 +262,14 @@ func _saved_screen() -> String:
 
 func _saved_node() -> int:
 	return int(_saved()["run"]["stage_visit"]["current"])
+
+
+## Moves the Hero from the Start Node to the Workshop beside the first Store.
+func _move_to_the_workshop(run: Run) -> void:
+	for id: int in run.stage_visit.choices():
+		if run.stage_visit.map.nodes[id].kind == StageMap.Kind.WORKSHOP:
+			run.move_to(id)
+	assert_eq(run.stage_visit.node().kind, StageMap.Kind.WORKSHOP)
 
 
 func _move_to_an_encounter(run: Run) -> void:

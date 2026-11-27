@@ -91,6 +91,89 @@ func test_changed_potions_used_are_caught_at_their_line() -> void:
 	assert_string_contains(replay.reason, "potions_used")
 
 
+## SR8 (milestone 24): a run that sells cards and buys at a Store, opens the Deckbox there,
+## quits and continues at the Store, and then plays on, replays to the same run.
+func test_buying_and_selling_at_a_store_replays() -> void:
+	var played: Run = _shop_and_play_on()
+
+	var replay: RunReplay = RunReplay.replay(_log())
+
+	assert_eq(replay.reason, "", "The replay holds at every line.")
+	assert_eq(replay.line, -1)
+	assert_eq(_state_of(replay.run), _state_of(played))
+
+
+## SR8: a purchase logged at another price than the good's is caught at its line.
+func test_a_changed_price_is_caught_at_its_line() -> void:
+	_shop_and_play_on()
+	var lines: Array[Dictionary] = _log()
+	var index: int = _first(lines, "store_bought")
+	lines[index]["price"] = int(lines[index]["price"]) + 5
+
+	var replay: RunReplay = RunReplay.replay(lines)
+
+	assert_eq(replay.line, index)
+	assert_string_contains(replay.reason, "price")
+
+
+## SR8: a sale of a card the Collection does not hold is caught at its line.
+func test_a_sale_of_a_card_not_held_is_caught_at_its_line() -> void:
+	_shop_and_play_on()
+	var lines: Array[Dictionary] = _log()
+	var index: int = _first(lines, "card_sold")
+	lines[index]["card"] = 99999
+
+	var replay: RunReplay = RunReplay.replay(lines)
+
+	assert_eq(replay.line, index)
+
+
+## A run walked onto its first Store, where the Hero sells six Rare cards and buys the
+## cheapest good, opens and closes the Deckbox, quits and continues, sells one more card and
+## buys again if it can; then on to the first encounter, won.
+func _shop_and_play_on() -> Run:
+	var run: Run = Run.debug(21, load(KITTY_KEEP) as StageDefinition)
+	RunFlow.start(run)
+	RunFlow.close_deckbox()
+	RunFlow.finish_intro()
+	for id: int in run.stage_visit.choices():
+		if run.stage_visit.map.nodes[id].kind == StageMap.Kind.STORE:
+			run.move_to(id)
+	assert_eq(RunFlow.arrive(), RunFlow.Screen.STORE)
+	for count: int in 6:
+		assert_eq(run.sell(_a_rare(run)), "")
+	assert_eq(run.buy(_cheapest(run)), "")
+	RunFlow.open_deckbox(RunFlow.Screen.STORE)
+	RunFlow.close_deckbox()
+	RunFlow.quit()
+	assert_eq(RunFlow.continue_run(SavedRun.read(SAVE)), RunFlow.Screen.STORE)
+	run = RunFlow.run
+	assert_eq(run.sell(_a_rare(run)), "")
+	if _cheapest(run) != null and _cheapest(run).price() <= run.gold:
+		run.buy(_cheapest(run))
+	RunFlow.leave_store()
+	_walk_to_an_encounter(run)
+	_play(run, true)
+	return RunFlow.run
+
+
+## The first Rare card in [param run]'s Collection.
+func _a_rare(run: Run) -> DeckbuilderCard:
+	for card: DeckbuilderCard in run.collection.cards():
+		if card.run_card.base.rarity == MmCardDefinition.Rarity.RARE:
+			return card
+	return null
+
+
+## The cheapest good the Store has not sold.
+func _cheapest(run: Run) -> StoreGood:
+	var found: StoreGood = null
+	for good: StoreGood in run.store_stock().goods():
+		if not good.is_sold and (found == null or good.price() < found.price()):
+			found = good
+	return found
+
+
 ## A run walked to its first encounter, which the Hero wins when the Villain concedes on Game
 ## Turn 3, with a Deck saved and made Active and the first Armor held put on on the way; then
 ## on to the next with the Armor taken off and put on again, quit partway and continued, and

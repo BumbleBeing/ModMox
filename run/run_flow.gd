@@ -8,7 +8,8 @@ extends RefCounted
 ## the Deckbox against the Boss after losing to it. A beaten Boss's Spoils lead to the next
 ## Tier's Stage Intro, and the fifth Boss's to Run Won, then the Credits, then the main
 ## menu; losing the last Heart, at any Tier, leads to Run Lost and then the main menu
-## (milestone 19).
+## (milestone 19). Arriving at a Store opens the Store, whose Leave returns to the Stage Map,
+## and a click on its Node there opens it again until the Hero moves on (milestone 24).
 ##
 ## The run is saved as a snapshot each time one of its screens opens, never during an
 ## encounter, and Continue opens the Screen it was saved on (milestone 21, ADR 0074). An
@@ -19,7 +20,7 @@ extends RefCounted
 ## The screens a run moves between. RunFlow says which comes next and never which scene it
 ## is: only the GUI knows that, so the run knows nothing of the scene tree. NONE means
 ## staying where the Hero is.
-enum Screen { NONE, MENU, DECKBOX, DECKBUILDER, STAGE_INTRO, STAGE_MAP, SPOILS, RUN_WON, RUN_LOST, CREDITS }
+enum Screen { NONE, MENU, DECKBOX, DECKBUILDER, STAGE_INTRO, STAGE_MAP, SPOILS, RUN_WON, RUN_LOST, CREDITS, STORE }
 
 static var run: Run = null
 ## The Villain the Deckbox shows before an encounter, or null when it is opened to close.
@@ -108,9 +109,11 @@ static func finish_intro() -> Screen:
 	return _saved_on(Screen.STAGE_MAP)
 
 
-## The Deckbox opened from the Stage Map's Run Bar, with Close.
-static func open_deckbox() -> Screen:
+## The Deckbox opened from the Stage Map's Run Bar, with Close, or from [param from], the
+## Store, whose Close then leads back there.
+static func open_deckbox(from: Screen = Screen.STAGE_MAP) -> Screen:
 	villain = null
+	back_from_deckbox = from
 	return _saved_on(Screen.DECKBOX)
 
 
@@ -120,13 +123,31 @@ static func close_deckbox() -> Screen:
 
 
 ## The Hero has arrived at a Node; says which Screen opens: the Deckbox against its
-## Villain if it is an encounter, or NONE to stay on the Stage Map.
+## Villain if it is an encounter, the Store if it is a Store, or NONE to stay on the Stage
+## Map.
 static func arrive() -> Screen:
-	if not run.stage_visit.must_play():
-		_saved_on(Screen.STAGE_MAP)
+	if run.stage_visit.must_play():
+		villain = run.stage_visit.meeting
+		return _saved_on(Screen.DECKBOX)
+	if run.store_stock() != null:
+		return _saved_on(Screen.STORE)
+	_saved_on(Screen.STAGE_MAP)
+	return Screen.NONE
+
+
+## A click on the Node the Hero stands on; says which Screen opens: the Store, as it was
+## left, if they stand on one, or NONE.
+static func open_store() -> Screen:
+	if run.store_stock() == null:
 		return Screen.NONE
-	villain = run.stage_visit.meeting
-	return _saved_on(Screen.DECKBOX)
+	return _saved_on(Screen.STORE)
+
+
+## The Store's Leave; says which Screen opens: the Stage Map, which the Deckbox's Close now
+## leads back to.
+static func leave_store() -> Screen:
+	back_from_deckbox = Screen.STAGE_MAP
+	return _saved_on(Screen.STAGE_MAP)
 
 
 ## The Deckbox's Start: the encounter begins. Nothing is saved until it ends.

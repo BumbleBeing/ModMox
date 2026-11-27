@@ -171,7 +171,9 @@ func begin(run: Run) -> void:
 	add_child(_bar)
 	_bar.show_run(run)
 	_bar.deckbox_pressed.connect(func() -> void: navigate.call(Screens.scene(RunFlow.open_deckbox())))
-	# Under the Pause Menu, which opens over it.
+	# Under the Pause Menu, which opens over it. What it always draws is painted now, while the
+	# map is still behind the Scene Fade's black, so that opening it does not stall.
+	SatchelLook.warm()
 	_satchel = SatchelWindow.over(self, run)
 	_satchel.use_pace(is_paced, game_speed)
 	_bar.satchel_pressed.connect(_satchel.open)
@@ -279,10 +281,14 @@ func label_rect() -> Rect2:
 	return _label.get_rect()
 
 
-## A click at [param point]: on a glowing Node, the Hero sets off for it. Says whether it
-## did anything.
+## A click at [param point]: on a glowing Node, the Hero sets off for it, and on the Store
+## they stand on, it opens again (milestone 24). Says whether it did anything.
 func click_at(point: Vector2) -> bool:
 	var id: int = StageMapLayout.node_at(point, _run.stage_visit, _scroll_row)
+	# Milestone 24: the Store the Hero stands on opens again, as it was left.
+	if id != -1 and id == _run.stage_visit.current and _gliding_to == -1 and _run.store_stock() != null:
+		navigate.call(Screens.scene(RunFlow.open_store()))
+		return true
 	if id == -1 or not glowing().has(id):
 		return false
 	var from: MapNode = _run.stage_visit.node()

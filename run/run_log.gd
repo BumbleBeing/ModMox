@@ -16,6 +16,10 @@ extends RefCounted
 ##   Card Definition.
 ## - armor_put_on: armor, its path, and slot, its Armor Slot ("HELM"). armor_taken_off: slot,
 ##   and armor, the path of what was Worn there.
+## - store_bought: good, its place in the stock of the Store the Hero stands on; name, its
+##   name; and price, what was paid (milestone 24).
+## - card_sold: card, the identity of the card sold; name, its Modded Name; and price, what
+##   the Store paid (milestone 24).
 ## - encounter_started: villain, encounter_seed, and the Deck played (deck, card_ids,
 ##   basic_lands).
 ## - answer: by ("hero" or "villain"), decision, the decision's words, answer, as given, and
@@ -28,8 +32,8 @@ extends RefCounted
 ## - run_ended: how ("won", "lost" or "abandoned").
 
 ## Bump it whenever a line changes what it holds. 2: encounter_ended holds potions_used
-## (milestone 24).
-const FORMAT: int = 2
+## (milestone 24). 3: store_bought and card_sold (milestone 24).
+const FORMAT: int = 3
 ## Where the game keeps its Run Logs. Tests use another.
 const FOLDER: String = "user://run_logs/"
 const EXTENSION: String = ".jsonl"

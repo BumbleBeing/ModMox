@@ -27,6 +27,9 @@ var offsets: Dictionary[int, Vector2] = {}
 ## The seed the Stage Map places the Stage's Scenery from, drawn from the Run Seed
 ## (ADR 0038).
 var scenery_seed: int = 0
+## What the Store the Hero stands on has for sale and has sold, or null when they stand on no
+## Store (milestone 24, ADR 0071). The Run rolls it as they arrive, and moving on forgets it.
+var stock: StoreStock = null
 
 var _visited: Dictionary[int, bool] = {}
 ## Each link walked, as [lower id, higher id].
@@ -74,6 +77,7 @@ func move_to(id: int, random: RunRandom) -> String:
 		return "The Hero cannot move from Node %d to Node %d." % [current, id]
 	_walked[_link(current, id)] = true
 	current = id
+	stock = null
 	_visited[id] = true
 	var arrived: MapNode = node()
 	if arrived.kind == StageMap.Kind.BOSS:
@@ -97,7 +101,7 @@ func record(won: bool) -> void:
 
 
 ## The walk as plain data, for a saved run (ADR 0074): its Stage, Boss and the Villain being
-## met by their Content paths.
+## met by their Content paths, and the stock of the Store the Hero stands on.
 func to_data() -> Dictionary:
 	var saved_offsets: Dictionary = {}
 	for id: int in offsets:
@@ -109,6 +113,7 @@ func to_data() -> Dictionary:
 		"stage": SavedRun.path_of(stage), "map": map.to_data(), "boss": SavedRun.path_of(boss),
 		"current": current, "meeting": SavedRun.path_of(meeting) if meeting != null else "", "is_won": is_won,
 		"offsets": saved_offsets, "scenery_seed": scenery_seed, "visited": _visited.keys(), "walked": walked,
+		"stock": stock.to_data() if stock != null else null,
 	}
 
 
@@ -128,6 +133,8 @@ static func from_data(data: Dictionary) -> StageVisit:
 		visit._visited[int(id)] = true
 	for link: Array in data["walked"]:
 		visit._walked[Vector2i(int(link[0]), int(link[1]))] = true
+	if data["stock"] != null:
+		visit.stock = StoreStock.from_data(data["stock"])
 	return visit
 
 

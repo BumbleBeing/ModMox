@@ -6,7 +6,7 @@ extends RefCounted
 ## each rolled on entering it among the colors not yet played; everything the Hero holds
 ## carries from one to the next, and Hearts never refill. The fifth Boss wins it and the
 ## last Heart, at any Tier, loses it. It knows nothing of screens; they change it only
-## through its own methods. Gold is held but not yet spent.
+## through its own methods. Gold is spent and earned at a Store (milestone 24).
 
 const STARTING_HEARTS: int = 3
 const DEBUG_DECK: String = "red_green"
@@ -197,13 +197,79 @@ func enter_stage(stage: StageDefinition) -> void:
 
 
 ## Moves the Hero to the Node [param id] of the Stage, meeting its Villain if it is an
-## encounter. Says why not, changing nothing, if a Path does not allow it.
+## encounter, or rolling its stock if it is a Store (ADR 0071). Says why not, changing
+## nothing, if a Path does not allow it.
 func move_to(id: int) -> String:
 	var options: Array[int] = stage_visit.choices()
 	var refusal: String = stage_visit.move_to(id, _random)
-	if refusal == "" and run_log != null:
+	if refusal != "":
+		return refusal
+	if stage_visit.node().kind == StageMap.Kind.STORE:
+		stage_visit.stock = StoreStock.of_content(stage_visit.stage.tier, _random)
+	if run_log != null:
 		run_log.record("node_chosen", {"node": id, "options": options})
-	return refusal
+	return ""
+
+
+## What the Store the Hero stands on has for sale and has sold, or null when they stand on
+## no Store.
+func store_stock() -> StoreStock:
+	return stage_visit.stock if stage_visit != null else null
+
+
+## Buys [param good] at the Store the Hero stands on (ADR 0070): its price comes off the gold,
+## and a card joins the Collection as it is, Mods and Hexes included, in no Deck, while a
+## Potion or an Armor joins the Satchel, the Armor not put on. The good is Sold. Says why
+## not, changing nothing, if it is not for sale here or cannot be afforded.
+func buy(good: StoreGood) -> String:
+	var stock: StoreStock = store_stock()
+	if stock == null or not stock.has(good):
+		return "That good is not for sale where the Hero stands."
+	if good.is_sold:
+		return "%s is already Sold." % good.name()
+	var price: int = good.price()
+	if price > gold:
+		return "%s costs %d, and the Hero holds %d." % [good.name(), price, gold]
+	gold -= price
+	good.is_sold = true
+	match good.kind:
+		StoreGood.Kind.CARD:
+			# The Collection's own Run Card: the good's stays the Store's.
+			var run_card: MmRunCard = MmRunCard.new()
+			run_card.base = good.card.run_card.base
+			collection.add(run_card, good.card.mods)
+		StoreGood.Kind.POTION:
+			held_potions.add(good.potion)
+		StoreGood.Kind.ARMOR:
+			held_armor.add(good.armor)
+	if run_log != null:
+		run_log.record("store_bought", {"good": stock.goods().find(good), "name": good.name(), "price": price})
+	return ""
+
+
+## Whether a Store buys [param card]: not a Power-9 card nor a basic land (Prices).
+func can_sell(card: DeckbuilderCard) -> bool:
+	return Prices.can_be_sold(card)
+
+
+## Sells [param card] to the Store the Hero stands on, for a third of its Store price as it
+## is (ADR 0070): it leaves the Collection and every Deck, its Mods with it, though that
+## leaves a Deck under 40 cards (ADR 0037). Says why not, changing nothing, away from a Store
+## or for a card the Store does not buy or the Collection does not hold.
+func sell(card: DeckbuilderCard) -> String:
+	if store_stock() == null:
+		return "There is no Store where the Hero stands."
+	if card == null or not collection.owns(card):
+		return "The Collection does not hold that card."
+	if not can_sell(card):
+		return "A Store does not buy %s." % card.card_name()
+	var price: int = Prices.sale_of_card(card)
+	gold += price
+	collection.remove(card)
+	deckbox.forget(card.id)
+	if run_log != null:
+		run_log.record("card_sold", {"card": card.id, "name": card.card_name(), "price": price})
+	return ""
 
 
 ## A new Encounter Seed, so that each attempt at an encounter is a new game (ADR 0025).

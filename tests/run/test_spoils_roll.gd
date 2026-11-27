@@ -12,29 +12,32 @@ const BOSS: StageMap.Kind = StageMap.Kind.BOSS
 const MANY: int = 4000
 
 
-## T5: Lesser gold is 10 to 20 at Tier 1, and every amount in that range comes up.
-func test_lesser_gold_at_tier_1_is_from_10_to_20() -> void:
+## T5, retuned in milestone 24 (SR9): Lesser gold is 15 to 30 at Tier 1, and every amount in
+## that range comes up.
+func test_lesser_gold_at_tier_1_is_from_15_to_30() -> void:
 	var seen: Dictionary[int, bool] = {}
-	for run_seed: int in 600:
+	for run_seed: int in 800:
 		var gold: int = SpoilsRoll.roll(LESSER, 1, _villain(["lightning_bolt"]), RunRandom.new(run_seed)).gold
-		assert_between(gold, 10, 20)
+		assert_between(gold, 15, 30)
 		seen[gold] = true
-	assert_eq(seen.size(), 11, "every amount from 10 to 20 comes up")
+	assert_eq(seen.size(), 16, "every amount from 15 to 30 comes up")
 
 
-## T5: each end of a Rank's range is multiplied by 1.5 at Tier 2: a Boss pays 90 to 135.
-func test_boss_gold_at_tier_2_is_from_90_to_135() -> void:
+## T5 and SR9: each end of a Rank's range is multiplied by 1.5 at Tier 2: a Boss pays 85 to
+## 130 at Tier 1, and 128 (127.5, rounded) to 195 at Tier 2.
+func test_boss_gold_at_tier_2_is_from_128_to_195() -> void:
 	var lowest: int = 1000
 	var highest: int = 0
 	for run_seed: int in 1500:
 		var gold: int = SpoilsRoll.roll(BOSS, 2, _villain(["lightning_bolt"]), RunRandom.new(run_seed)).gold
 		lowest = mini(lowest, gold)
 		highest = maxi(highest, gold)
-	assert_eq(lowest, 90)
-	assert_eq(highest, 135)
+	assert_eq(lowest, 128)
+	assert_eq(highest, 195)
 
 
-## T5: an Elite pays 25 to 40 at Tier 1 and, at Tier 5 (three times as much), 75 to 120.
+## T5 and SR9: an Elite pays 35 to 55 at Tier 1 and, at Tier 5 (three times as much), 105 to
+## 165.
 func test_elite_gold_at_tiers_1_and_5() -> void:
 	for tier: int in [1, 5]:
 		var lowest: int = 1000
@@ -43,7 +46,7 @@ func test_elite_gold_at_tiers_1_and_5() -> void:
 			var gold: int = SpoilsRoll.roll(ELITE, tier, _villain(["lightning_bolt"]), RunRandom.new(run_seed)).gold
 			lowest = mini(lowest, gold)
 			highest = maxi(highest, gold)
-		assert_eq([lowest, highest], [25, 40] if tier == 1 else [75, 120], "Tier %d" % tier)
+		assert_eq([lowest, highest], [35, 55] if tier == 1 else [105, 165], "Tier %d" % tier)
 
 
 ## T4: a Lesser win pays 1, 2 or 3 cards, 60%, 30% and 10% of the time.

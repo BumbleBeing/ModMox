@@ -94,6 +94,10 @@ func _replay_line(logged: Dictionary) -> String:
 			if worn == null or worn.resource_path != str(logged["armor"]):
 				return "%s was not Worn in the %s slot." % [logged["armor"], logged["slot"]]
 			playing.held_armor.take_off(worn.slot)
+		"store_bought":
+			return _buy(playing, logged)
+		"card_sold":
+			return _sell(playing, logged)
 		"encounter_started":
 			return _start_encounter(playing, logged)
 		"answer":
@@ -137,6 +141,12 @@ func _go_to(wanted: RunFlow.Screen) -> String:
 				_screen = RunFlow.close_deckbox()
 			RunFlow.Screen.STAGE_MAP when wanted == RunFlow.Screen.DECKBOX:
 				_screen = RunFlow.open_deckbox()
+			RunFlow.Screen.STAGE_MAP when wanted == RunFlow.Screen.STORE and RunFlow.run.store_stock() != null:
+				_screen = RunFlow.open_store()
+			RunFlow.Screen.STORE when wanted == RunFlow.Screen.DECKBOX:
+				_screen = RunFlow.open_deckbox(RunFlow.Screen.STORE)
+			RunFlow.Screen.STORE:
+				_screen = RunFlow.leave_store()
 			_:
 				break
 	return "The run was on %s, which does not lead to %s." % [
@@ -178,6 +188,40 @@ func _apply_mod(playing: Run, logged: Dictionary) -> String:
 	if card.id != id:
 		return "The card the Mod went on became %d, not %d." % [card.id, id]
 	return ""
+
+
+## Buys the good at the place in the Store's stock that [param logged] names, which must be
+## the good it names at the price it says (milestone 24).
+func _buy(playing: Run, logged: Dictionary) -> String:
+	var moved: String = _go_to(RunFlow.Screen.STORE)
+	if moved != "":
+		return moved
+	var goods: Array[StoreGood] = playing.store_stock().goods()
+	var place: int = int(logged["good"])
+	if place < 0 or place >= goods.size():
+		return "The Store has no good %d." % place
+	var good: StoreGood = goods[place]
+	if good.name() != str(logged["name"]):
+		return "Good %d is %s, not %s." % [place, good.name(), logged["name"]]
+	if good.price() != int(logged["price"]):
+		return "%s's price is %d, not %s." % [good.name(), good.price(), logged["price"]]
+	return playing.buy(good)
+
+
+## Sells the card [param logged] names, which must be the card it names, for the price it
+## says (milestone 24).
+func _sell(playing: Run, logged: Dictionary) -> String:
+	var moved: String = _go_to(RunFlow.Screen.STORE)
+	if moved != "":
+		return moved
+	var card: DeckbuilderCard = playing.collection.card(int(logged["card"]))
+	if card == null:
+		return "The Collection holds no card %s." % logged["card"]
+	if card.card_name() != str(logged["name"]):
+		return "Card %s is %s, not %s." % [logged["card"], card.card_name(), logged["name"]]
+	if Prices.sale_of_card(card) != int(logged["price"]):
+		return "%s sells for the price of %d, not %s." % [card.card_name(), Prices.sale_of_card(card), logged["price"]]
+	return playing.sell(card)
 
 
 func _start_encounter(playing: Run, logged: Dictionary) -> String:

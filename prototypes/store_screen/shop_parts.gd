@@ -407,7 +407,7 @@ static func button(label: String, icon_name: String = "", height: int = BUTTON_H
 	var made: Button = Button.new()
 	made.text = label
 	if icon_name != "":
-		made.icon = RunBar._scaled(icon_name)
+		made.icon = RunBar.scaled_icon(icon_name)
 		made.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		made.add_theme_constant_override("h_separation", 10)
 	made.focus_mode = Control.FOCUS_NONE

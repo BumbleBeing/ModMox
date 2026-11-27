@@ -9,8 +9,9 @@ extends RefCounted
 ## Where the game keeps its saved run. Tests use another.
 const PATH: String = "user://saves/run.json"
 ## Bump it whenever a change would make an older snapshot load wrongly. 2: the Armor held
-## and Worn (milestone 23). 3: the Potions held (milestone 24).
-const FORMAT: int = 3
+## and Worn (milestone 23). 3: the Potions held (milestone 24). 4: the stock of the Store the
+## Hero stands on (milestone 24).
+const FORMAT: int = 4
 ## The project setting that names the build's version (milestone 20).
 const VERSION_SETTING: String = "application/config/version"
 

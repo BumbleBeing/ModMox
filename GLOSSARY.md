@@ -671,6 +671,10 @@ _Avoid_: Reminder text (the real cards' parenthesized words), tooltip, help text
 How scarce a card, a Potion or a Mod is: Common, Uncommon, Rare, Mythic, then Power-9 for a card or Unique for a Mod. A Unique Mod is strong but needs just the right deck; it is won only from a rare Twist, never in Spoils or for sale at a Workshop, though a Workshop buys and removes one like any other. No Hex is Unique. It is part of the card's design, set on its Card Definition, and no rule reads it. The Inspector glows around the card in the Rarity's color: gray, silver, gold, honey and light green, and a Potion's type line there names it. A Potion Icon's plate is the same color, but for a Mythic's, which is sienna so that it is not taken for Rare's gold. A Mod Icon is in its Rarity's color itself: orange for a Mythic, light purple for a Unique. An Emblem has none, and neither has an Armor.
 _Avoid_: Tier (a part of a run), quality, grade
 
+**Rarity Odds**:
+How likely each Rarity is to come up at a Tier: one table, from Common to Mythic, that a Store's cards, its Potions and the Mods its cards carry all share, and that the Spoils' Items and the Trove draw from too. A later Tier makes rarer things likelier. Power-9 and Unique never come up by them.
+_Avoid_: Drop rates, loot table
+
 **Divider**:
 The bar in the deckbuilder between the Collection and the Deck's columns. Dragging it up or down gives one more height and the other less; it changes no card's size, which the two zoom sliders set. Neither side can be made smaller than one whole card, and a double-click puts it back where it started. It stays where it was left until the deckbuilder closes.
 _Avoid_: Slider (the zoom sliders), splitter, sash, handle

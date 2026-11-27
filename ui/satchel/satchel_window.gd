@@ -478,11 +478,11 @@ func _entry_panel(entry: SatchelEntry) -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.custom_minimum_size = Vector2(SatchelLook.ENTRY_WIDTH, 0.0)
 	panel.add_theme_stylebox_override("panel", SatchelLook.paper_style(0))
-	panel.resized.connect(func() -> void:
-		panel.add_theme_stylebox_override("panel", SatchelLook.paper_style(int(panel.size.y))))
+	panel.resized.connect(_fit_paper.bind(panel))
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
+	row.add_theme_constant_override("separation", SatchelLook.ENTRY_SEPARATION)
 	panel.add_child(row)
 	var picture: Control = _picture_of(entry)
 	var tile: Control = Control.new()
@@ -514,6 +514,8 @@ func _entry_panel(entry: SatchelEntry) -> PanelContainer:
 	column.add_child(gap)
 	for line: String in entry.lines:
 		var words: SymbolLabel = SymbolLabel.new()
+		# Its final width from the start, so that it is never laid out wrapping narrower.
+		words.custom_minimum_size = Vector2(SatchelLook.words_width(), 0.0)
 		words.set_font_size(20)
 		words.write_in(line, SatchelLook.INK)
 		column.add_child(words)
@@ -521,6 +523,16 @@ func _entry_panel(entry: SatchelEntry) -> PanelContainer:
 	_entry_nodes[entry.name] = panel
 	_texts[entry.name] = texts
 	return panel
+
+
+## Paints [param panel]'s parchment for the height it is now, once it is as wide as an entry,
+## and only when that height has changed.
+func _fit_paper(panel: PanelContainer) -> void:
+	var height: int = int(panel.size.y)
+	if panel.size.x < SatchelLook.ENTRY_WIDTH or panel.get_meta(&"paper_height", -1) == height:
+		return
+	panel.set_meta(&"paper_height", height)
+	panel.add_theme_stylebox_override("panel", SatchelLook.paper_style(height))
 
 
 ## [param entry]'s picture: an Armor Icon bare on the parchment, a Mod Icon in its Rarity's

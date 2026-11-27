@@ -214,6 +214,12 @@ func _apply(card: DeckbuilderCard, face_height: float) -> void:
 	_fill_mods()
 
 
+## Says [param words] while no card is shown, in place of the deckbuilder's hint, whose
+## words are not a shop's: a Store's Inspector says nothing (milestone 24).
+func set_hint(words: String) -> void:
+	_hint.text = words
+
+
 ## Whether Apply a Mod can be pressed, and if not, [param why_not] as its tooltip.
 func set_apply(why_not: String) -> void:
 	_apply_button.disabled = why_not != ""

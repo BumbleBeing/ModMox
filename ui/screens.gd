@@ -12,6 +12,7 @@ const SPOILS: String = "res://ui/spoils/spoils_screen.tscn"
 const RUN_WON: String = "res://ui/run_end/run_won.tscn"
 const RUN_LOST: String = "res://ui/run_end/run_lost.tscn"
 const CREDITS: String = "res://ui/credits/credits_screen.tscn"
+const STORE: String = "res://ui/store/store_screen.tscn"
 
 const _SCENES: Dictionary[RunFlow.Screen, String] = {
 	RunFlow.Screen.MENU: MENU,
@@ -23,6 +24,7 @@ const _SCENES: Dictionary[RunFlow.Screen, String] = {
 	RunFlow.Screen.RUN_WON: RUN_WON,
 	RunFlow.Screen.RUN_LOST: RUN_LOST,
 	RunFlow.Screen.CREDITS: CREDITS,
+	RunFlow.Screen.STORE: STORE,
 }
 
 

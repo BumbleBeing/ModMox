@@ -321,6 +321,40 @@ func test_the_satchel_flag_opens_the_stage_map_with_the_satchel_open() -> void:
 	assert_false(StageMapScreen.opens_satchel, "Only once: the map reopened later opens it no more.")
 
 
+## Opening it stalled the game for seconds: an entry's parchment was painted, pixel by pixel,
+## for every height it passed through while its words wrapped at a width it never kept, up to
+## thousands of pixels. It is painted only for heights an entry ends at.
+func test_no_parchment_is_painted_taller_than_an_entry_ends() -> void:
+	SatchelLook.forget_painted()
+	await _open_satchel()
+	await _click(_center(_satchel().tab(Page.MODS)))
+	await wait_process_frames(3)
+
+	var tallest: int = 0
+	for entry: SatchelEntry in _satchel().entries():
+		tallest = maxi(tallest, int(_satchel().entry_node(entry.name).size.y))
+	assert_gt(tallest, 0)
+	assert_lte(SatchelLook.painted_paper_heights().max(), tallest)
+
+
+## What never changes is painted once: opening the Satchel again and turning its pages paints
+## nothing it painted before.
+func test_opening_it_again_paints_nothing_new() -> void:
+	SatchelLook.forget_painted()
+	await _open_satchel()
+	for page: Page in [Page.MODS, Page.POTIONS, Page.ARMOR]:
+		await _click(_center(_satchel().tab(page)))
+	await _click(_center(_satchel().close_button()))
+	var painted: int = SatchelLook.painted_count()
+	assert_gt(painted, 0)
+
+	await _open_satchel_again()
+	for page: Page in [Page.MODS, Page.POTIONS, Page.ARMOR]:
+		await _click(_center(_satchel().tab(page)))
+
+	assert_eq(SatchelLook.painted_count(), painted)
+
+
 ## A debug run's Stage Map in a viewport of its own, so that real events reach it.
 func _open_map() -> void:
 	_viewport = SubViewport.new()

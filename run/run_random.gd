@@ -13,6 +13,8 @@ const MAP_LAYOUT: String = "map_layout"
 const SPOILS_GOLD: String = "spoils_gold"
 const SPOILS_CARDS: String = "spoils_cards"
 const SCENERY: String = "scenery"
+## What a Store stocks (milestone 24, ADR 0071).
+const STORE_STOCK: String = "store_stock"
 
 var _run_seed: int
 var _streams: Dictionary[String, RandomNumberGenerator] = {}

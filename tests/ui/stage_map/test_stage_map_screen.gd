@@ -39,6 +39,14 @@ func _go_to(id: int) -> void:
 	_screen.advance(10.0)
 
 
+## Walks the first Node offered until the Hero arrives at an encounter, passing any Store
+## that opens on the way as though it were left at once.
+func _walk_to_an_encounter() -> void:
+	while not _run.stage_visit.must_play():
+		_went_to.clear()
+		_go_to(_run.stage_visit.choices()[0])
+
+
 ## S2: a click on a glowing Node glides the Portrait and the view there.
 func test_a_click_on_a_glowing_node_glides_the_hero_there() -> void:
 	await _open()
@@ -94,8 +102,7 @@ func test_the_view_follows_the_hero_up_the_map() -> void:
 func test_arriving_at_an_encounter_opens_the_deckbox_against_its_villain() -> void:
 	await _open()
 
-	while _went_to.is_empty():
-		_go_to(_run.stage_visit.choices()[0])
+	_walk_to_an_encounter()
 
 	assert_eq(_went_to, [Screens.DECKBOX] as Array[String])
 	assert_true(StageMap.is_encounter(_run.stage_visit.node()))
@@ -105,8 +112,7 @@ func test_arriving_at_an_encounter_opens_the_deckbox_against_its_villain() -> vo
 ## S4: after the encounter the Stage Map opens with the Hero there and Hearts updated.
 func test_after_an_encounter_the_map_shows_the_hero_there_with_hearts_updated() -> void:
 	await _open()
-	while _went_to.is_empty():
-		_go_to(_run.stage_visit.choices()[0])
+	_walk_to_an_encounter()
 	var at: int = _run.stage_visit.current
 	_screen.queue_free()
 	_went_to.clear()
@@ -119,13 +125,25 @@ func test_after_an_encounter_the_map_shows_the_hero_there_with_hearts_updated() 
 	assert_false(_screen.glowing().is_empty(), "The Hero may move on.")
 
 
-## S5: arriving at any other Node opens nothing.
-func test_arriving_anywhere_else_opens_nothing() -> void:
+## Milestone 24 (ST10): arriving at a Store opens the Store.
+func test_arriving_at_a_store_opens_the_store() -> void:
 	await _open()
 
 	_go_to(_run.stage_visit.choices()[0])
 
 	assert_eq(_run.stage_visit.node().kind, StageMap.Kind.STORE)
+	assert_eq(_went_to, [Screens.STORE] as Array[String])
+
+
+## S5: arriving at any other Node, such as a Workshop until milestone 25, opens nothing.
+func test_arriving_anywhere_else_opens_nothing() -> void:
+	await _open()
+
+	for id: int in _run.stage_visit.choices():
+		if _run.stage_visit.map.nodes[id].kind == StageMap.Kind.WORKSHOP:
+			_go_to(id)
+
+	assert_eq(_run.stage_visit.node().kind, StageMap.Kind.WORKSHOP)
 	assert_true(_went_to.is_empty())
 	assert_false(_screen.glowing().is_empty())
 

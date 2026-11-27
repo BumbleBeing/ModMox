@@ -143,7 +143,7 @@ func _text(font_size: int, color: Color, is_bold: bool) -> Label:
 func _add_button(parent: Control, text: String, icon_name: String, on_press: Callable) -> void:
 	var made: Button = Button.new()
 	made.text = text
-	made.icon = _scaled(icon_name)
+	made.icon = scaled_icon(icon_name)
 	made.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	made.add_theme_font_override("font", UiText.bold())
 	made.add_theme_constant_override("h_separation", 10)
@@ -168,7 +168,7 @@ func _plate(state: String) -> StyleBoxTexture:
 
 ## The icon called [param icon_name] at twice its size with hard edges, for a Button, which
 ## draws its icon at the texture's own size. Never changes the loaded image.
-static func _scaled(icon_name: String) -> Texture2D:
+static func scaled_icon(icon_name: String) -> Texture2D:
 	var image: Image = (load(ICONS % icon_name) as Texture2D).get_image().duplicate() as Image
 	image.resize(image.get_width() * ICON_SCALE, image.get_height() * ICON_SCALE, Image.INTERPOLATE_NEAREST)
 	return ImageTexture.create_from_image(image)

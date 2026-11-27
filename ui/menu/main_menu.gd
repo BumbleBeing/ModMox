@@ -6,7 +6,8 @@ extends Control
 ## it names something that does not exist, which the menu then says. --deckbuilder opens
 ## the deckbuilder on a made-up run, for pictures. --stage-map opens the Stage Map of a
 ## debug run (--run-seed=N, --stage=red, --tier=N), for pictures, --satchel the same with
-## the Satchel open (milestone 24), and --spoils the Spoils
+## the Satchel open (milestone 24), --store the Store beside its Start Node (milestone 24),
+## and --spoils the Spoils
 ## screen of a win in one (--rank=lesser, elite or boss). --run-won and --run-lost open the
 ## end of a debug run, and --credits the Credits (milestone 19). Start Run (debug) begins a debug
 ## run at the Deckbox, in Kitty Keep, the Stage being built first (milestones 16 and 17).
@@ -123,6 +124,13 @@ func _ready() -> void:
 		StageMapScreen.opens_satchel = wants_satchel
 		RunFlow.start(StageMapScreen.debug_run_from(arguments))
 		navigate.call_deferred(Screens.scene(RunFlow.finish_intro()))
+		return
+	if arguments.has(StoreScreen.FLAG) and not StoreScreen.has_left:
+		_is_skipping = true
+		RunFlow.start(StageMapScreen.debug_run_from(arguments))
+		RunFlow.finish_intro()
+		StoreScreen.walk_to_a_store(RunFlow.run)
+		navigate.call_deferred(Screens.scene(RunFlow.arrive()))
 		return
 	if arguments.has(SpoilsScreen.FLAG) and not SpoilsScreen.has_left:
 		_is_skipping = true

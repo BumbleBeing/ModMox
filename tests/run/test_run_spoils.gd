@@ -4,7 +4,7 @@ extends GutTest
 ## screen to show; a loss pays nothing.
 
 
-## T3: a win at a Lesser or Elite Encounter of a Tier 1 Stage pays 10 to 40 gold and 1 to 3
+## T3: a win at a Lesser or Elite Encounter of a Tier 1 Stage pays 15 to 55 gold and 1 to 3
 ## cards into the Collection, and the run keeps them as its last Spoils.
 func test_a_win_pays_gold_and_cards_into_the_run() -> void:
 	var run: Run = Run.debug(5)
@@ -16,7 +16,7 @@ func test_a_win_pays_gold_and_cards_into_the_run() -> void:
 
 	var paid: Spoils = run.last_spoils
 	assert_not_null(paid)
-	assert_between(paid.gold, 10, 40)
+	assert_between(paid.gold, 15, 55)
 	assert_eq(run.gold, gold_before + paid.gold)
 	assert_between(paid.cards.size(), 1, 3)
 	var owned: Array[DeckbuilderCard] = run.collection.cards()
@@ -61,7 +61,7 @@ func test_a_win_away_from_an_encounter_pays_nothing() -> void:
 	assert_null(run.last_spoils)
 
 
-## A beaten Boss pays 60 to 90 gold and 2 or 3 cards at Tier 1.
+## A beaten Boss pays 85 to 130 gold and 2 or 3 cards at Tier 1 (retuned in milestone 24).
 func test_beating_the_boss_pays_a_bosss_spoils() -> void:
 	var run: Run = Run.debug(5)
 	while run.stage_visit.node().kind != StageMap.Kind.BOSS:
@@ -74,7 +74,7 @@ func test_beating_the_boss_pays_a_bosss_spoils() -> void:
 	run.record_encounter(true)
 
 	assert_true(run.is_stage_beaten())
-	assert_between(run.last_spoils.gold, 60, 90)
+	assert_between(run.last_spoils.gold, 85, 130)
 	assert_between(run.last_spoils.cards.size(), 2, 3)
 	assert_eq(run.gold, gold_before + run.last_spoils.gold)
 
