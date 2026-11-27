@@ -33,6 +33,15 @@ static func turning(rarity: Mod.Rarity) -> ModIcon:
 	return made
 
 
+## The cog of [param rarity], still, as the Satchel shows a Mod held (milestone 24).
+static func still(rarity: Mod.Rarity) -> ModIcon:
+	var made: ModIcon = ModIcon.new()
+	made._rarity = rarity
+	made.texture = load(STILL % file_name(rarity)) as Texture2D
+	made.set_process(false)
+	return made
+
+
 ## The cog of [param rarity], darkened and still.
 static func darkened(rarity: Mod.Rarity) -> ModIcon:
 	var made: ModIcon = ModIcon.new()

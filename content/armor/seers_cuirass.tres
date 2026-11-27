@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Armor" format=3]
+
+[ext_resource type="Texture2D" path="res://ui/sprites/armor/seers_cuirass.png" id="1_8oudq"]
+[ext_resource type="Script" path="res://run/armor.gd" id="2_nq37a"]
+[ext_resource type="Script" path="res://run/starting_conditions/starting_condition.gd" id="3_u64vr"]
+[ext_resource type="Resource" path="res://content/emblems/seers_cuirass.tres" id="4_free8"]
+[ext_resource type="Script" path="res://run/starting_conditions/emblem_starting_condition.gd" id="5_m6q12"]
+
+[sub_resource type="Resource" id="Resource_nw02u"]
+script = ExtResource("5_m6q12")
+emblem = ExtResource("4_free8")
+
+[resource]
+script = ExtResource("2_nq37a")
+name = "Seer's Cuirass"
+slot = 1
+starting_conditions = Array[ExtResource("3_u64vr")]([SubResource("Resource_nw02u")])
+icon = ExtResource("1_8oudq")
+price = 200

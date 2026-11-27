@@ -8,6 +8,9 @@ const PATH: String = FOLDER + "run.json"
 const MOD_PATH: String = FOLDER + "ember.tres"
 const HEX_PATH: String = FOLDER + "burden.tres"
 const KITTY_KEEP: String = "res://content/stages/kitty_keep.tres"
+const HELM_PATH: String = FOLDER + "test_helm.tres"
+const CUIRASS_PATH: String = FOLDER + "test_cuirass.tres"
+const ArmorSample := preload("res://tests/support/armor_sample.gd")
 
 
 func before_each() -> void:
@@ -42,6 +45,45 @@ func test_a_saved_run_loads_as_the_same_run() -> void:
 	assert_eq(_visit_of(loaded.stages_beaten()[0]), _visit_of(run.stages_beaten()[0]))
 	assert_eq(SavedRun.data_of(loaded, RunFlow.Screen.STAGE_MAP, RunFlow.Screen.STAGE_MAP),
 		SavedRun.data_of(run, RunFlow.Screen.STAGE_MAP, RunFlow.Screen.STAGE_MAP))
+
+
+## A9 (milestone 23): the Armor held, each as often as held, and what is Worn in each Armor
+## Slot load as they were, by path.
+func test_the_armor_held_and_worn_loads_as_it_was() -> void:
+	var run: Run = _walked_run()
+	var helm: Armor = _saved_armor(ArmorSample.armor("Test Helm", Armor.Slot.HELM, [ArmorSample.life(3)]), HELM_PATH)
+	var cuirass: Armor = _saved_armor(
+		ArmorSample.armor("Test Cuirass", Armor.Slot.CUIRASS, [ArmorSample.emblem(ArmorSample.DIVINERS_BOON)]), CUIRASS_PATH)
+	run.held_armor.add(helm)
+	run.held_armor.add(cuirass)
+	run.held_armor.add(helm)
+	run.held_armor.put_on(cuirass)
+
+	var loaded: Run = _round_trip(run).run
+
+	var test_armor: Array[String] = []
+	for armor: Armor in loaded.held_armor.kinds():
+		if armor.resource_path.begins_with(FOLDER):
+			test_armor.append(armor.resource_path)
+	assert_eq(test_armor, [HELM_PATH, CUIRASS_PATH] as Array[String])
+	assert_eq(loaded.held_armor.count_of(load(HELM_PATH) as Armor), 2)
+	assert_eq(loaded.held_armor.worn_in(Armor.Slot.CUIRASS).resource_path, CUIRASS_PATH)
+	assert_null(loaded.held_armor.worn_in(Armor.Slot.HELM))
+	assert_eq(loaded.hero_setup().emblems.back().name, "Diviner's Boon", "The Worn Armor still brings its Emblem.")
+
+
+## P3 (milestone 24): the Potions held, each as often as held and in the order held, load as
+## they were, by path.
+func test_the_potions_held_load_as_they_were() -> void:
+	var run: Run = _walked_run()
+	run.held_potions.use_up([0])
+	run.held_potions.add(load("res://content/potions/big_gulp.tres") as MmCardDefinition)
+
+	var loaded: Run = _round_trip(run).run
+
+	assert_eq(_paths(loaded.held_potions.all()), _paths(run.held_potions.all()))
+	assert_eq(loaded.held_potions.all().size(), 2)
+	assert_eq(loaded.hero_setup().potions.size(), 2, "They are still the Hero's in an encounter.")
 
 
 ## S1: a card's Mods are the same Mods, in the same order, and do to the card what they did.
@@ -182,6 +224,11 @@ func _walked_run() -> Run:
 	copy.basic_lands["Forest"] = copy.basic_lands.get("Forest", 0) + 2
 	run.deckbox.set_active(copy)
 	return run
+
+
+func _saved_armor(armor: Armor, path: String) -> Armor:
+	assert_eq(ResourceSaver.save(armor, path), OK)
+	return load(path) as Armor
 
 
 func _round_trip(run: Run, screen: RunFlow.Screen = RunFlow.Screen.STAGE_MAP,

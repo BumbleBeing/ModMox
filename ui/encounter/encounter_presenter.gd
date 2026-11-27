@@ -151,8 +151,9 @@ func record() -> Dictionary:
 ## "villain"), its "decision"'s words and the "answer" itself, and for a choice among
 ## Actions how many "options" there were and the words of the one "chosen", with its card's
 ## name; a concession is one too. Then the "winner" ("hero", "villain", "draw", or "" while it
-## goes on), the "turns" played and both players' life. It is worked out on an engine of its
-## own fed the same answers, which is how the Run Log is replayed too.
+## goes on), the "turns" played, both players' life, and the Hero's "potions_used", by their
+## places in the setup, for the run to use up (milestone 24). It is worked out on an engine of
+## its own fed the same answers, which is how the Run Log is replayed too.
 static func record_of(setup: MmEncounterSetup, answers: Array) -> Dictionary:
 	var engine: MmEngine = MmEngine.start(setup)
 	var lines: Array = []
@@ -181,6 +182,7 @@ static func record_of(setup: MmEncounterSetup, answers: Array) -> Dictionary:
 	return {
 		"answers": lines, "winner": winners.get(engine.outcome(), ""), "turns": engine.game_state().game_turn,
 		"hero_life": engine.hero().life, "villain_life": engine.villain().life,
+		"potions_used": engine.used_potion_indexes(engine.hero()),
 	}
 
 

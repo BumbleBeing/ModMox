@@ -182,4 +182,4 @@ Draw the sheet from the built icon, `armor.py preview ui/sprites/armor/<key>.png
 
 ## 7. Hook it up
 
-Nothing reads `ui/sprites/armor/` yet: Armor joins the game in the roadmap's milestone "What an Armor is", and the Satchel in "The Store and the Satchel". Tell the user the icon is waiting for its Armor, whose definition will take the icon's key as its file name. There is no test to run for it.
+An Armor's file in `content/armor/<key>.tres` names its icon by the same key (game ADR 0106). When `/add-armor` sent you here, go back to its step 4 with the icon signed off. Otherwise, if no Armor of that key exists yet, tell the user the icon is waiting for its Armor, which `/add-armor` makes, and that it reads the icon by its key.

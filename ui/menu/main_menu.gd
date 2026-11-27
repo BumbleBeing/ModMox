@@ -5,7 +5,8 @@ extends Control
 ## (--hero=, --villain= or --seed=) skips it and opens the Encounter Screen (A246), unless
 ## it names something that does not exist, which the menu then says. --deckbuilder opens
 ## the deckbuilder on a made-up run, for pictures. --stage-map opens the Stage Map of a
-## debug run (--run-seed=N, --stage=red, --tier=N), for pictures, and --spoils the Spoils
+## debug run (--run-seed=N, --stage=red, --tier=N), for pictures, --satchel the same with
+## the Satchel open (milestone 24), and --spoils the Spoils
 ## screen of a win in one (--rank=lesser, elite or boss). --run-won and --run-lost open the
 ## end of a debug run, and --credits the Credits (milestone 19). Start Run (debug) begins a debug
 ## run at the Deckbox, in Kitty Keep, the Stage being built first (milestones 16 and 17).
@@ -116,8 +117,10 @@ func _ready() -> void:
 		_is_skipping = true
 		navigate.call_deferred(DECKBUILDER)
 		return
-	if arguments.has(StageMapScreen.FLAG) and not StageMapScreen.has_left:
+	var wants_satchel: bool = arguments.has(SatchelWindow.FLAG)
+	if (arguments.has(StageMapScreen.FLAG) or wants_satchel) and not StageMapScreen.has_left:
 		_is_skipping = true
+		StageMapScreen.opens_satchel = wants_satchel
 		RunFlow.start(StageMapScreen.debug_run_from(arguments))
 		navigate.call_deferred(Screens.scene(RunFlow.finish_intro()))
 		return

@@ -183,14 +183,16 @@ func test_the_run_bar_shows_the_stage_tier_hearts_and_gold() -> void:
 	assert_eq(bar.gold_text(), "135")
 
 
-## S9: Satchel does nothing; Deckbox opens the Deckbox with Close, which returns here.
-func test_satchel_does_nothing_and_deckbox_opens_the_deckbox_with_close() -> void:
+## S9: Satchel opens the Satchel over the map and goes nowhere (milestone 24, where it did
+## nothing before); Deckbox opens the Deckbox with Close, which returns here.
+func test_satchel_opens_the_satchel_and_deckbox_opens_the_deckbox_with_close() -> void:
 	await _open()
 	var bar: RunBar = _screen.run_bar()
 
 	bar.button(RunBar.SATCHEL).pressed.emit()
 	assert_true(_went_to.is_empty())
-	assert_false(bar.button(RunBar.SATCHEL).disabled)
+	assert_true(_screen.satchel().is_open())
+	_screen.satchel().close()
 	bar.button(RunBar.DECKBOX).pressed.emit()
 
 	assert_eq(_went_to, [Screens.DECKBOX] as Array[String])

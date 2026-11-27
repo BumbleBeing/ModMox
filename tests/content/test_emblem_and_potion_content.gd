@@ -1,7 +1,7 @@
 extends GutTest
-## The authored Emblems and Potions (ADR 0036, A516 and A517, and milestone 17's Playtest
-## Bolt): what each one does when it
-## is used in a game, so a changed default or a mis-saved file is caught.
+## The authored Emblems and Potions (ADR 0036, A516 and A517, milestone 17's Playtest Bolt,
+## and each Armor's Emblem, game ADR 0106): what each one does when it is used in a game, so
+## a changed default or a mis-saved file is caught.
 
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const Step := MmTurn.Step
@@ -44,6 +44,27 @@ func test_diviners_boon_costs_two_and_blue_and_draws_two_as_a_sorcery_once_each_
 	assert_eq(engine.view_for(engine.hero()).command[0].name, "Diviner's Boon")
 	Scenario.play_until_step(engine, 7, Step.PRECOMBAT_MAIN, true)
 	assert_false(_offers(engine, boon), "Only once each game.")
+
+
+func test_seers_cuirass_costs_two_and_blue_and_draws_one_as_a_sorcery_once_each_game() -> void:
+	var engine: MmEngine = _engine_with(MmMana.Type.BLUE, [load(EMBLEMS + "seers_cuirass.tres")] as Array[MmCardDefinition], [])
+	Scenario.play_until_step(engine, 3, Step.PRECOMBAT_MAIN, true)
+	var emblem: int = engine.view_for(engine.hero()).command[0].id
+	Scenario.play_first_land(engine)
+	assert_false(_offers(engine, emblem), "Two lands do not pay {2}{U}.")
+	Scenario.play_until_step(engine, 5, Step.UPKEEP, true)
+	assert_false(_offers(engine, emblem), "Only as a sorcery.")
+	Scenario.play_until_step(engine, 5, Step.PRECOMBAT_MAIN, true)
+	Scenario.play_first_land(engine)
+	var hand_size: int = engine.hero().hand.size()
+
+	assert_eq(Scenario.activate(engine, emblem), "")
+	Scenario.resolve_stack(engine)
+
+	assert_eq(engine.hero().hand.size(), hand_size + 1)
+	assert_eq(engine.view_for(engine.hero()).command[0].name, "Seer's Cuirass")
+	Scenario.play_until_step(engine, 7, Step.PRECOMBAT_MAIN, true)
+	assert_false(_offers(engine, emblem), "Only once each game.")
 
 
 func test_playtest_bolt_costs_nothing_and_deals_twenty_damage_with_no_limit() -> void:
@@ -89,13 +110,21 @@ func test_big_gulp_is_a_common_potion_that_gives_plus_two_plus_two_and_is_used_u
 	assert_eq(engine.used_potion_indexes(engine.hero()), [0] as Array[int])
 
 
+## Every Emblem in content/emblems/, an Armor's included (game ADR 0106), so a new one is
+## checked without being listed here.
 func test_an_authored_emblem_has_abilities_and_nothing_else() -> void:
-	for file_name: String in ["electromancers_boon", "diviners_boon", "playtest_bolt"]:
-		var emblem: MmCardDefinition = load(EMBLEMS + file_name + ".tres")
+	var files: PackedStringArray = DirAccess.get_files_at(EMBLEMS)
+	assert_true(files.has("diviners_boon.tres"), "The scan found the Emblems.")
+	for file: String in files:
+		# An exported game lists a resource as "name.tres.remap".
+		if not file.trim_suffix(".remap").ends_with(".tres"):
+			continue
+		var emblem: MmCardDefinition = load(EMBLEMS + file.trim_suffix(".remap"))
 
+		assert_ne(emblem.name, "", file)
 		assert_eq(emblem.card_types.size(), 0, "ADR 0011: \"Emblem\" is not a card type.")
-		assert_null(emblem.mana_cost)
-		assert_eq(emblem.abilities.size(), 1)
+		assert_null(emblem.mana_cost, file)
+		assert_false(emblem.abilities.is_empty(), file)
 
 
 ## A game whose Hero has a deck of lands for [param type] and free 2/2 Bears, in turn.

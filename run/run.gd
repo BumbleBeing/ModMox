@@ -1,7 +1,7 @@
 class_name Run
 extends RefCounted
-## One run's state: its Run Seed, the Collection, the Deckbox and its Active Deck, the Mods
-## held, Hearts and gold (milestone 16), the Stage being walked (milestone 17) and the
+## One run's state: its Run Seed, the Collection, the Deckbox and its Active Deck, the Mods,
+## Armor and Potions held (the Satchel), Hearts and gold (milestone 16), the Stage being walked (milestone 17) and the
 ## Stages beaten before it (milestone 19). A run plays five Stages, Tiers 1 to 5 in order,
 ## each rolled on entering it among the colors not yet played; everything the Hero holds
 ## carries from one to the next, and Hearts never refill. The fifth Boss wins it and the
@@ -17,6 +17,9 @@ const BASIC_LANDS: String = "res://content/cards/alpha/%s.tres"
 const BASIC_LAND_FILES: Array[String] = ["plains", "island", "swamp", "mountain", "forest"]
 ## The Emblem the Hero holds in every debug run, to end encounters quickly when playtesting.
 const PLAYTEST_EMBLEM: String = "res://content/emblems/playtest_bolt.tres"
+## The Potion a debug run holds two of, to try the Satchel and Potions out.
+const DEBUG_POTION: String = "res://content/potions/big_gulp.tres"
+const DEBUG_POTIONS: int = 2
 const FIRST_TIER: int = 1
 ## The Tier whose Boss wins the run.
 const LAST_TIER: int = Villain.TIERS
@@ -25,6 +28,10 @@ var run_seed: int
 var collection: Collection = Collection.new()
 var deckbox: Deckbox = Deckbox.new()
 var held_mods: HeldMods = HeldMods.new()
+## The Armor held and what is Worn (milestone 23, game ADR 0106).
+var held_armor: HeldArmor = HeldArmor.new()
+## The Potions held between encounters (milestone 24).
+var held_potions: HeldPotions = HeldPotions.new()
 ## The basic lands a Deck may count, free and unlimited (ADR 0028).
 var basic_lands: Array[MmCardDefinition] = []
 var hearts: int = STARTING_HEARTS
@@ -60,7 +67,8 @@ func _init(seed_of_run: int) -> void:
 ## [constant DEBUG_COPIES] copies of every nonland card in Content, more of a card some
 ## Villain's deck has more of; a Deck built from each Villain's deck, named after it, with
 ## the one built from red_green first as the Active Deck; the Playtest Bolt; one of every
-## Mod in Content that is not a Hex, to try them out; and a Tier 1
+## Mod in Content that is not a Hex, one of every Armor, none Worn, and two Big Gulps, to try
+## them out; and a Tier 1
 ## Stage rolled from the Run Seed, entered; or [param stage], when given. Asked for at a
 ## later [param tier], it walks there, each Stage before it counted as won (its Boss beaten
 ## and nothing paid), for pictures and playtesting.
@@ -111,6 +119,11 @@ static func debug(seed_of_run: int, stage: StageDefinition = null, tier: int = F
 	for mod: Mod in ContentMods.all():
 		if not mod.is_hex:
 			run.held_mods.add(mod)
+	# And the Armor, until a Store or the Spoils hand it out (milestone 24).
+	for armor: Armor in ContentArmor.all():
+		run.held_armor.add(armor)
+	for count: int in DEBUG_POTIONS:
+		run.held_potions.add(load(DEBUG_POTION) as MmCardDefinition)
 	run.enter_stage(stage if stage != null else run.roll_stage(FIRST_TIER))
 	while run.stage_visit.stage.tier < clampi(tier, FIRST_TIER, LAST_TIER):
 		run.stage_visit.is_won = true
@@ -119,11 +132,12 @@ static func debug(seed_of_run: int, stage: StageDefinition = null, tier: int = F
 
 
 ## Logs every choice made in the run from here on in [param log_to]: the Nodes walked to, the
-## encounters begun, and what the Deckbox and the Mods held log of their own.
+## encounters begun, and what the Deckbox, the Mods held and the Armor held log of their own.
 func use_log(log_to: RunLog) -> void:
 	run_log = log_to
 	deckbox.run_log = log_to
 	held_mods.run_log = log_to
+	held_armor.run_log = log_to
 
 
 ## A Stage of [param tier] from Content, rolled from the Run Seed among the colors not yet
@@ -246,6 +260,8 @@ func to_data() -> Dictionary:
 		"collection": collection.to_data(),
 		"deckbox": deckbox.to_data(),
 		"held_mods": held_mods.to_data(),
+		"held_armor": held_armor.to_data(),
+		"held_potions": held_potions.to_data(),
 		"hearts": hearts,
 		"gold": gold,
 		"emblems": SavedRun.paths_of(hero_emblems),
@@ -265,6 +281,8 @@ static func from_data(data: Dictionary) -> Run:
 	run.collection = Collection.from_data(data["collection"])
 	run.deckbox = Deckbox.from_data(data["deckbox"])
 	run.held_mods = HeldMods.from_data(data["held_mods"])
+	run.held_armor = HeldArmor.from_data(data["held_armor"])
+	run.held_potions = HeldPotions.from_data(data["held_potions"])
 	run.hearts = int(data["hearts"])
 	run.gold = int(data["gold"])
 	for path: Variant in data["emblems"]:
@@ -309,10 +327,14 @@ func is_lost() -> bool:
 
 
 ## The Hero's setup for an encounter: the Active Deck's Run Cards with their Mods, a fresh
-## Run Card for each basic land it counts (ADR 0028), and the Emblems the Hero holds.
+## Run Card for each basic land it counts (ADR 0028), the Emblems the Hero holds, then the
+## Starting Conditions of the Armor Worn (game ADR 0106), and every Potion held, in the order
+## held (milestone 24).
 func hero_setup() -> MmPlayerSetup:
 	var setup: MmPlayerSetup = MmPlayerSetup.new()
 	setup.emblems = hero_emblems.duplicate()
+	setup.potions = held_potions.all()
+	StartingCondition.apply_all(held_armor.starting_conditions(), setup)
 	var active: Deck = deckbox.active()
 	for id: int in active.card_ids:
 		setup.deck.append(collection.card(id).run_card)

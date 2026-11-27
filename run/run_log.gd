@@ -14,18 +14,22 @@ extends RefCounted
 ## - deck_duplicated and deck_deleted: deck, its place. active_deck: deck, its place.
 ## - mod_applied: mod, its path; card, the identity of the card it went on; base, that card's
 ##   Card Definition.
+## - armor_put_on: armor, its path, and slot, its Armor Slot ("HELM"). armor_taken_off: slot,
+##   and armor, the path of what was Worn there.
 ## - encounter_started: villain, encounter_seed, and the Deck played (deck, card_ids,
 ##   basic_lands).
 ## - answer: by ("hero" or "villain"), decision, the decision's words, answer, as given, and
 ##   for a choice from a list options, how many there were, and chosen, the words of the one
 ##   chosen. A concession is an answer of its own: ["concede", player ID] (ADR 0010).
-## - encounter_ended: won, winner, turns, hero_life and villain_life.
+## - encounter_ended: won, winner, turns, hero_life, villain_life, and potions_used, the
+##   places in the Hero's setup of the Potions used (milestone 24), which the Satchel loses.
 ## - encounter_quit: the encounter was left for the main menu, to start over on Continue.
 ## - quit: screen, where the run was left. continued: screen, where it was taken up again.
 ## - run_ended: how ("won", "lost" or "abandoned").
 
-## Bump it whenever a line changes what it holds.
-const FORMAT: int = 1
+## Bump it whenever a line changes what it holds. 2: encounter_ended holds potions_used
+## (milestone 24).
+const FORMAT: int = 2
 ## Where the game keeps its Run Logs. Tests use another.
 const FOLDER: String = "user://run_logs/"
 const EXTENSION: String = ".jsonl"

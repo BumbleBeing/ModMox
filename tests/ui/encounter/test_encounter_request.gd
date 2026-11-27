@@ -128,6 +128,35 @@ func test_the_potions_flag_gives_the_hero_one_big_gulp_on_a_copy() -> void:
 	assert_eq(setup.validate(), "")
 
 
+## A10 (milestone 23): --armor= wears an Armor from Content in a debug encounter, on a copy of
+## the loaded deck.
+func test_the_armor_flag_wears_armor_from_content_on_a_copy() -> void:
+	var request: EncounterRequest = EncounterRequest.from_arguments(PackedStringArray(["--seed=3", "--armor=seers_cuirass"]))
+
+	var setup: MmEncounterSetup = request.setup()
+
+	assert_eq(request.worn_armor, ["seers_cuirass"] as Array[String])
+	assert_eq(request.validate(), "")
+	assert_has(_names(setup.hero.emblems), "Seer's Cuirass")
+	assert_eq((load("res://content/decks/red_green.tres") as MmPlayerSetup).emblems.size(), 0)
+	assert_eq(setup.validate(), "")
+
+
+## A10: several Armor are named with commas, and one not in Content is refused by its name.
+func test_armor_not_in_content_is_refused_by_its_name() -> void:
+	var request: EncounterRequest = EncounterRequest.from_arguments(
+		PackedStringArray(["--seed=3", "--armor=seers_cuirass,paper_hat"]))
+
+	assert_eq(request.worn_armor, ["seers_cuirass", "paper_hat"] as Array[String])
+	assert_eq(request.validate(), "There is no Armor named \"paper_hat\".")
+
+
+## A10: the Armor flag alone still asks for the start form, and a request without it wears none.
+func test_the_armor_flag_alone_still_asks_for_the_start_form() -> void:
+	assert_null(EncounterRequest.from_arguments(PackedStringArray(["--armor=seers_cuirass"])))
+	assert_eq(EncounterRequest.from_arguments(PackedStringArray(["--seed=3"])).worn_armor, [] as Array[String])
+
+
 func test_a_request_from_the_command_line_has_no_villain_portrait_of_its_own() -> void:
 	assert_null(EncounterRequest.from_arguments(PackedStringArray(["--villain=charmed_stray"])).villain_portrait)
 

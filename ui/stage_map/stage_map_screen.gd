@@ -8,14 +8,15 @@ extends Control
 ## Game Speed, clicks ignored until it arrives. Only the links the Hero can take now are
 ## lit. The Stage's Map Backdrop lies behind it all, scrolling with the map, its Scenery
 ## over it, and each Node stands in a halo that sets it off from the picture (ADR 0038). Hovering a Node names it.
-## The Boss breathes in its disc. Arriving at an encounter opens the Deckbox against its
-## Villain. A beaten Boss's Spoils lead on to the next Tier's Stage Intro, or to Run Won
+## The Boss breathes in its disc. The Run Bar's Satchel button opens the Satchel over it all
+## (milestone 24), under which nothing on the map takes a click. Arriving at an encounter
+## opens the Deckbox against its Villain. A beaten Boss's Spoils lead on to the next Tier's Stage Intro, or to Run Won
 ## (milestone 19), so the map is never shown with its Boss beaten.
 ##
 ## Opened on its own (godot --path . res://ui/stage_map/stage_map_screen.tscn, or the main
 ## menu's --stage-map) it begins a debug run: --run-seed=N picks the run, --stage=red its
 ## Tier 1 Stage, --tier=N walks it up to Tier N, and --screenshot=/absolute/path.png saves
-## a picture and quits.
+## a picture and quits. The main menu's --satchel opens it with the Satchel open.
 
 const FLAG: String = "--stage-map"
 const ICONS: String = "res://ui/sprites/map_nodes/%s.png"
@@ -84,11 +85,15 @@ var run_pause: RunPause = null
 ## Whether a run has ended at the main menu, so the menu's --stage-map does not open its
 ## Stage Map again. Run Lost and the Credits set it as they lead there.
 static var has_left: bool = false
+## Whether the next Stage Map to begin opens with the Satchel open, as the main menu's
+## --satchel asks (S15, milestone 24). Only once: beginning clears it.
+static var opens_satchel: bool = false
 
 var _run: Run = null
 var _icons: Dictionary[StageMap.Kind, Texture2D] = {}
 var _portrait: Texture2D
 var _bar: RunBar
+var _satchel: SatchelWindow
 var _label: PanelContainer
 var _label_text: Label
 var _label_tween: Tween
@@ -166,6 +171,10 @@ func begin(run: Run) -> void:
 	add_child(_bar)
 	_bar.show_run(run)
 	_bar.deckbox_pressed.connect(func() -> void: navigate.call(Screens.scene(RunFlow.open_deckbox())))
+	# Under the Pause Menu, which opens over it.
+	_satchel = SatchelWindow.over(self, run)
+	_satchel.use_pace(is_paced, game_speed)
+	_bar.satchel_pressed.connect(_satchel.open)
 	run_pause = RunPause.over(self, func(scene: String) -> void: navigate.call(scene),
 		GameSettings.PATH if starts_itself else "")
 	_scroll_row = StageMapLayout.framed_row(_hero_row())
@@ -173,6 +182,13 @@ func begin(run: Run) -> void:
 	_ease_glows(1.0)
 	_scenery = SceneryLayout.place(run.stage_visit)
 	queue_redraw()
+	if opens_satchel:
+		opens_satchel = false
+		# At once, for a picture.
+		var seconds: float = _satchel.ease_seconds
+		_satchel.ease_seconds = 0.0
+		_satchel.open()
+		_satchel.ease_seconds = seconds
 
 
 ## The Stage's Map Backdrop, or null when it shows the plain slate.
@@ -193,6 +209,11 @@ func scenery() -> Array[SceneryPiece]:
 ## Where the Scenery Piece [param index] is drawn now.
 func scenery_rect(index: int) -> Rect2:
 	return SceneryLayout.screen_rect(_scenery[index], _scroll_row)
+
+
+## The Satchel, which the Run Bar's Satchel button opens over the map.
+func satchel() -> SatchelWindow:
+	return _satchel
 
 
 func run_bar() -> RunBar:
@@ -277,7 +298,8 @@ func click_at(point: Vector2) -> bool:
 ## where the cursor is; tests call it.
 func point_at(point: Vector2) -> void:
 	var id: int = -1
-	if _gliding_to == -1:
+	# Under the open Satchel, the map is only dimmed.
+	if _gliding_to == -1 and not _satchel.is_open():
 		id = StageMapLayout.node_at(point, _run.stage_visit, _scroll_row)
 	_point(id)
 

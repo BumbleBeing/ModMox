@@ -155,7 +155,7 @@ Anything the Hero holds between encounters and can buy, sell or win other than a
 _Avoid_: Gear, equipment (an Equipment is a card), inventory object
 
 **Potion**:
-An Item that is used up when it is used. It is used only in the middle of an encounter, never between them, and does there what a spell would, such as "gain 2 life" or "each opponent discards a card". A Potion has no mana cost, and has a Rarity and a Potion Icon. The Hero's panel counts them on its Potions button, which glows while one could be used, is purple with any and gray with none, and opens the Potions window, where a click on a Potion uses it. Whatever is gone for good once used is a Potion and never an Emblem: an Emblem's ability is static or triggered, or can be activated, sometimes only once each game, and the Emblem itself stays (A491 to A493). The only Potion so far is a mock, Big Gulp: "Target creature gets +2/+2 until end of turn."
+An Item that is used up when it is used. It is used only in the middle of an encounter, never between them, and does there what a spell would, such as "gain 2 life" or "each opponent discards a card". Every Potion held in the Satchel is the Hero's in each encounter, and one used there is gone afterwards, whether the encounter is won or lost. A Potion has no mana cost, and has a Rarity and a Potion Icon. The Hero's panel counts them on its Potions button, which glows while one could be used, is purple with any and gray with none, and opens the Potions window, where a click on a Potion uses it. Whatever is gone for good once used is a Potion and never an Emblem: an Emblem's ability is static or triggered, or can be activated, sometimes only once each game, and the Emblem itself stays (A491 to A493). The only Potion so far is a mock, Big Gulp: "Target creature gets +2/+2 until end of turn."
 _Avoid_: Consumable, single-use Emblem, single-use Boon, charge
 
 **Held**:
@@ -199,7 +199,7 @@ A Mod's picture: a 32 × 32 pixel cog, the same for every Mod, in its Rarity's c
 _Avoid_: Mod art, mod sprite, cog (the shape, not the term), Mod Slot (the place on a card, not the picture)
 
 **Armor**:
-An Item the Hero wears. Each Armor is a Helm, Cuirass or Greaves, and fills the Armor Slot of that name. It holds one or more Starting Conditions, as a Status does, and they count only while it is Worn: the two share one system and differ only in how they are come by. A Status is picked on Choose your Hero and lasts the run; an Armor is won, bought and sold, and put on or taken off between encounters, in the Satchel, as often as the Hero likes. Held but not Worn, it does nothing. It has an Armor Icon and no Rarity, though Armor is the scarcest and most valuable kind of Item.
+An Item the Hero wears. Each Armor is a Helm, Cuirass or Greaves, and fills the Armor Slot of that name. It holds one or more Starting Conditions, as a Status does, and they count only while it is Worn: the two share one system and differ only in how they are come by. A Status is picked on Choose your Hero and lasts the run; an Armor is won, bought and sold, and put on or taken off between encounters, in the Satchel, as often as the Hero likes. Held but not Worn, it does nothing. It has an Armor Icon and no Rarity, though Armor is the scarcest and most valuable kind of Item, so its price is its own. Its words are written from its Starting Conditions, never by hand.
 _Avoid_: Gear, equipment (an Equipment is a card), armor type (a Helm, Cuirass or Greaves is told by its Armor Slot)
 
 **Armor Slot**:

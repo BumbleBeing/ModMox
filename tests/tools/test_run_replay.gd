@@ -26,13 +26,15 @@ func after_each() -> void:
 		DirAccess.remove_absolute(folder)
 
 
-## S8: a short run (Nodes walked, a Deck saved and made Active, an encounter won, one quit and
-## continued, then lost) replays from its Run Log to the same run.
+## S8: a short run (Nodes walked, a Deck saved and made Active, Armor put on, taken off and put
+## on again (A9, milestone 23), an encounter won, one quit and continued, then lost) replays
+## from its Run Log to the same run.
 func test_a_run_log_replays_to_the_same_run() -> void:
 	var played: Run = _play_a_short_run()
 
 	var replay: RunReplay = RunReplay.replay(_log())
 
+	assert_false(played.held_armor.worn().is_empty(), "The run ended with Armor Worn.")
 	assert_eq(replay.reason, "", "The replay holds at every line.")
 	assert_eq(replay.line, -1)
 	assert_eq(_state_of(replay.run), _state_of(played))
@@ -75,9 +77,24 @@ func test_a_changed_ending_is_caught_at_its_line() -> void:
 	assert_eq(replay.line, index)
 
 
+## P2 (milestone 24): a log whose encounter used other Potions than its answers say is caught
+## at its end, since the Potions held would then differ.
+func test_changed_potions_used_are_caught_at_their_line() -> void:
+	_play_a_short_run()
+	var lines: Array[Dictionary] = _log()
+	var index: int = _first(lines, "encounter_ended")
+	lines[index]["potions_used"] = [0]
+
+	var replay: RunReplay = RunReplay.replay(lines)
+
+	assert_eq(replay.line, index)
+	assert_string_contains(replay.reason, "potions_used")
+
+
 ## A run walked to its first encounter, which the Hero wins when the Villain concedes on Game
-## Turn 3, with a Deck saved and made Active on the way; then on to the next, quit partway
-## and continued, and lost when the Hero concedes.
+## Turn 3, with a Deck saved and made Active and the first Armor held put on on the way; then
+## on to the next with the Armor taken off and put on again, quit partway and continued, and
+## lost when the Hero concedes.
 func _play_a_short_run() -> Run:
 	var run: Run = Run.debug(21, load(KITTY_KEEP) as StageDefinition)
 	RunFlow.start(run)
@@ -87,9 +104,14 @@ func _play_a_short_run() -> Run:
 	deck.basic_lands["Forest"] = deck.basic_lands.get("Forest", 0) + 1
 	run.deckbox.put(deck)
 	run.deckbox.set_active(deck)
+	assert_false(run.held_armor.kinds().is_empty(), "A debug run holds the Armor in Content.")
+	var armor: Armor = run.held_armor.kinds()[0]
+	run.held_armor.put_on(armor)
 	_walk_to_an_encounter(run)
 	_play(run, true)
 	RunFlow.finish_spoils()
+	run.held_armor.take_off(armor.slot)
+	run.held_armor.put_on(armor)
 	_walk_to_an_encounter(run)
 	RunFlow.begin_encounter()
 	var request: EncounterRequest = EncounterRequest.for_run(run)

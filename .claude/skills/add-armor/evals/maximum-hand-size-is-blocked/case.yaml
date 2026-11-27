@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: maximum-hand-size-is-blocked
+expected_outcome: |
+  The Armor is triaged as Blocked, since a maximum hand size is not one of the four kinds of Starting Condition; a new kind is proposed (a StartingCondition subclass, its words for sign-off, its tests) and nothing is built or added without the user's yes.

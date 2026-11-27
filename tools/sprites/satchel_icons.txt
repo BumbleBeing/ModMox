@@ -1,0 +1,18 @@
+; Satchel icons (milestone 24): the star that marks a Worn Armor's entry in the Satchel, 11
+; rows of 11, after the one the Satchel's prototype painted, in the shared palette.
+; . transparent; see KEY in build_sprites.lua for every color.
+; Once an icon's .aseprite file is touched up by hand, that file is the truth, not this.
+@size 11
+
+= worn_star
+.....0.....
+....0y0....
+....0y0....
+00000$00000
+0yy$$$$$$$0
+.0y$$$$$$0.
+..0$$$$$0..
+..0$$$$$0..
+.0$$$0$$$0.
+.0$00.00$0.
+.00.....00.

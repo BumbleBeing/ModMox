@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: lionguard-helm-life-and-mulligan
+expected_outcome: |
+  Lionguard Helm is added as a Helm at 250 gold with two Starting Conditions, 3 more life then an extra free mulligan, using the icon already in place; no Emblem file is made; its words are accepted and the suite passes.

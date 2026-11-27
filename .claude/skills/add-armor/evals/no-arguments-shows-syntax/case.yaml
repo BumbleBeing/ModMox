@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: no-arguments-shows-syntax
+expected_outcome: |
+  The reply gives the /add-armor syntax with every part explained, and adds nothing.

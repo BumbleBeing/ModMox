@@ -86,6 +86,14 @@ func _replay_line(logged: Dictionary) -> String:
 					playing.deckbox.set_active(deck)
 		"mod_applied":
 			return _apply_mod(playing, logged)
+		"armor_put_on":
+			if not playing.held_armor.put_on(load(str(logged["armor"])) as Armor):
+				return "%s is not held, so it cannot be put on." % logged["armor"]
+		"armor_taken_off":
+			var worn: Armor = playing.held_armor.worn_in(Armor.Slot.get(str(logged["slot"]), -1) as Armor.Slot)
+			if worn == null or worn.resource_path != str(logged["armor"]):
+				return "%s was not Worn in the %s slot." % [logged["armor"], logged["slot"]]
+			playing.held_armor.take_off(worn.slot)
 		"encounter_started":
 			return _start_encounter(playing, logged)
 		"answer":
@@ -193,11 +201,11 @@ func _end_encounter(logged: Dictionary) -> String:
 	for answer: Dictionary in record["answers"]:
 		if answer.has("refused"):
 			return "An answer was refused: %s" % answer["refused"]
-	for key: String in ["winner", "turns", "hero_life", "villain_life"]:
+	for key: String in ["winner", "turns", "hero_life", "villain_life", "potions_used"]:
 		if str(record[key]) != str(_whole(logged.get(key))):
 			return "The encounter ended with %s %s, not %s." % [key, record[key], logged.get(key)]
 	_request = null
-	_screen = RunFlow.finish_encounter(bool(logged["won"]))
+	_screen = RunFlow.finish_encounter(bool(logged["won"]), {"potions_used": record["potions_used"]})
 	return ""
 
 

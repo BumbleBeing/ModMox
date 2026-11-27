@@ -26,8 +26,12 @@ var backdrop: String = Backdrops.PLAIN
 ## activate: the Hero Howling Winds and both Boons, the Villain Ankh's Curse and
 ## Electromancer's Boon (A527).
 var has_sample_emblems: bool = false
-## Gives the Hero one Big Gulp, until something holds Items between encounters (A523).
+## Gives the Hero one Big Gulp in a debug encounter outside a run (A523); in a run the Hero has
+## the Potions held in the Satchel (milestone 24).
 var has_sample_potions: bool = false
+## The file names of Armor in Content the Hero wears, "seers_cuirass", so an Armor can be
+## seen in play before the Satchel puts one on (game ADR 0106).
+var worn_armor: Array[String] = []
 ## The Hero's setup when it comes from a run's Active Deck rather than a deck in Content;
 ## hero_deck is then not read (milestone 16).
 var hero_setup: MmPlayerSetup = null
@@ -60,7 +64,7 @@ static func for_run(run: Run) -> EncounterRequest:
 
 ## The request in [param arguments], as passed after "--" on the command line, such as
 ## --hero=red_green --villain=white_black --seed=7 --difficulty=normal --emblems --potions
-## --hero-name=Jackson --villain-name=Mishra --backdrop=red. Null when
+## --hero-name=Jackson --villain-name=Mishra --backdrop=red --armor=seers_cuirass. Null when
 ## they name no deck and no seed, which means "show the start form".
 static func from_arguments(arguments: PackedStringArray) -> EncounterRequest:
 	var request: EncounterRequest = EncounterRequest.new()
@@ -87,6 +91,9 @@ static func from_arguments(arguments: PackedStringArray) -> EncounterRequest:
 			request.has_sample_emblems = true
 		elif argument == "--potions":
 			request.has_sample_potions = true
+		elif argument.begins_with("--armor="):
+			for armor: String in argument.trim_prefix("--armor=").split(",", false):
+				request.worn_armor.append(armor)
 	return request if is_asked_for else null
 
 
@@ -104,18 +111,22 @@ func validate() -> String:
 		return "There is no difficulty named \"%s\"." % difficulty
 	if not Backdrops.has(backdrop):
 		return "There is no backdrop named \"%s\"." % backdrop
+	for armor: String in worn_armor:
+		if ContentArmor.named(armor) == null:
+			return "There is no Armor named \"%s\"." % armor
 	return ""
 
 
 ## The Encounter Setup this request describes. Loaded decks are never changed: sample
-## Emblems go on copies.
+## Emblems and the Armor worn go on copies.
 func setup() -> MmEncounterSetup:
 	var encounter: MmEncounterSetup = MmEncounterSetup.new()
 	encounter.hero = hero_setup if hero_setup != null else ContentDecks.load_deck(hero_deck)
 	encounter.villain = villain_setup if villain_setup != null else ContentDecks.load_deck(villain_deck)
 	encounter.encounter_seed = encounter_seed
-	if has_sample_emblems or has_sample_potions:
+	if has_sample_emblems or has_sample_potions or not worn_armor.is_empty():
 		encounter.hero = encounter.hero.duplicate() as MmPlayerSetup
+		encounter.hero.emblems = encounter.hero.emblems.duplicate()
 		encounter.villain = encounter.villain.duplicate() as MmPlayerSetup
 	if has_sample_emblems:
 		encounter.hero.emblems = [_sample_emblem("Sample Boon: Howling Winds", "howling_mine"),
@@ -124,6 +135,8 @@ func setup() -> MmEncounterSetup:
 			_emblem("electromancers_boon")] as Array[MmCardDefinition]
 	if has_sample_potions:
 		encounter.hero.potions = [load(POTIONS + "big_gulp.tres") as MmCardDefinition] as Array[MmCardDefinition]
+	if not worn_armor.is_empty():
+		StartingCondition.apply_all(_wearing().starting_conditions(), encounter.hero)
 	return encounter
 
 
@@ -151,6 +164,19 @@ static func _sample_emblem(emblem_name: String, card: String) -> MmCardDefinitio
 	# It has no file of its own, so it says which card's art and credit it borrows.
 	emblem.set_meta(EncounterPresenter.ART_KEY_META, card)
 	return emblem
+
+
+## The Armor named in worn_armor, each put on in turn, a later one in place of an earlier one
+## for the same Armor Slot, as the Satchel puts Armor on.
+func _wearing() -> HeldArmor:
+	var held: HeldArmor = HeldArmor.new()
+	for file_name: String in worn_armor:
+		var armor: Armor = ContentArmor.named(file_name)
+		if armor == null:
+			continue  # validate() names it.
+		held.add(armor)
+		held.put_on(armor)
+	return held
 
 
 static func _emblem(file_name: String) -> MmCardDefinition:

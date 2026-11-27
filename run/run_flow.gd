@@ -141,15 +141,19 @@ static func is_in_encounter() -> bool:
 
 ## Counts the encounter's end and says which Screen opens next: Run Lost once the last
 ## Heart is gone, the run kept for it to show. [param record] is what the encounter logs: its
-## answers, each with its words, then who won, the turns played and both players' life.
+## answers, each with its words, then who won, the turns played, both players' life and the
+## Hero's Potions used, by their places in the setup, which are used up, won or lost.
 static func finish_encounter(won: bool, record: Dictionary = {}) -> Screen:
 	_is_in_encounter = false
+	var potions_used: Array = record.get("potions_used", [])
 	if run.run_log != null:
 		_log_answers(record)
 		run.run_log.record("encounter_ended", {
 			"won": won, "winner": record.get("winner", ""), "turns": record.get("turns", 0),
 			"hero_life": record.get("hero_life", 0), "villain_life": record.get("villain_life", 0),
+			"potions_used": potions_used,
 		})
+	run.held_potions.use_up(potions_used)
 	run.record_encounter(won)
 	villain = null
 	if run.is_lost():

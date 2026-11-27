@@ -2,10 +2,11 @@ class_name RunBar
 extends PanelContainer
 ## The Run Bar (game glossary) across the top of the Stage Map (milestone 17, signed off as
 ## prototypes/stage_map_screen): the Stage's name and Tier at the left, then the Hearts left
-## and the gold held, then the Satchel button, which does nothing yet, and the Deckbox
-## button. A plate with Dither Shading in the Spoils screen's window color, its buttons
+## and the gold held, then the Satchel button, which opens the Satchel (milestone 24), and the
+## Deckbox button. A plate with Dither Shading in the Spoils screen's window color, its buttons
 ## drawn as the Spoils screen's Continue is (milestone 18).
 
+signal satchel_pressed
 signal deckbox_pressed
 
 const HEIGHT: int = 96
@@ -74,8 +75,7 @@ func _init() -> void:
 	var buttons: HBoxContainer = HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	# Later (milestone 24): the Satchel opens.
-	_add_button(buttons, SATCHEL, "satchel", func() -> void: pass)
+	_add_button(buttons, SATCHEL, "satchel", satchel_pressed.emit)
 	_add_button(buttons, DECKBOX, "deckbox", deckbox_pressed.emit)
 	row.add_child(buttons)
 

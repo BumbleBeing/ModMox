@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: seers-cuirass-emblem
+expected_outcome: |
+  Seer's Cuirass is added as a Cuirass at the default price of 200, with one Emblem named Seer's Cuirass that draws one card for {2}{U}, only as a sorcery and only once each game; its words match the user's, it is in ACCEPTED, its Emblem has a play test, the whole suite passes, and a screenshot shows it worn.
+context:
+  scaffold_script: place-files.sh

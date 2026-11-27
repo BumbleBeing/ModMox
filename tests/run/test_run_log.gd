@@ -8,6 +8,8 @@ const SAVE: String = FOLDER + "run.json"
 const LOGS: String = FOLDER + "logs/"
 const KITTY_KEEP: String = "res://content/stages/kitty_keep.tres"
 const MOD_PATH: String = FOLDER + "ember.tres"
+const ARMOR_PATH: String = FOLDER + "test_helm.tres"
+const ArmorSample := preload("res://tests/support/armor_sample.gd")
 
 
 func before_each() -> void:
@@ -95,6 +97,25 @@ func test_each_mod_applied_is_logged() -> void:
 	assert_eq(line["base"], card.run_card.base.resource_path)
 
 
+## A9 (milestone 23): each Armor put on is logged with its Armor Slot, and each taken off
+## with its slot and what was Worn there.
+func test_armor_put_on_and_taken_off_is_logged() -> void:
+	var run: Run = _on_the_map()
+	assert_eq(ResourceSaver.save(ArmorSample.armor("Test Helm", Armor.Slot.HELM, [ArmorSample.life(3)]), ARMOR_PATH), OK)
+	var helm: Armor = load(ARMOR_PATH) as Armor
+	run.held_armor.add(helm)
+
+	run.held_armor.put_on(helm)
+	run.held_armor.take_off(Armor.Slot.HELM)
+
+	var put_on: Dictionary = _last("armor_put_on")
+	assert_eq(put_on["armor"], ARMOR_PATH)
+	assert_eq(put_on["slot"], "HELM")
+	var taken_off: Dictionary = _last("armor_taken_off")
+	assert_eq(taken_off["slot"], "HELM")
+	assert_eq(taken_off["armor"], ARMOR_PATH)
+
+
 ## S7: an encounter's start is logged with its Villain, its Encounter Seed and the Deck the
 ## Hero plays; its answers, each with its words, and its end follow it.
 func test_an_encounter_is_logged_from_its_start_to_its_end() -> void:
@@ -123,6 +144,7 @@ func test_an_encounter_is_logged_from_its_start_to_its_end() -> void:
 	assert_eq(int(ended["turns"]), 7)
 	assert_eq(int(ended["hero_life"]), 12)
 	assert_eq(int(ended["villain_life"]), 0)
+	assert_eq(_ints(ended["potions_used"]), [1] as Array[int], "P2 (milestone 24): the Potions used, by place.")
 	assert_eq(_kinds().slice(-4), ["encounter_started", "answer", "answer", "encounter_ended"])
 
 
@@ -168,7 +190,7 @@ func _record() -> Dictionary:
 			{"by": "hero", "decision": "priority for player 1", "answer": 1, "options": 3, "chosen": "Play Forest"},
 			{"by": "villain", "decision": "priority for player 2", "answer": 0, "options": 1, "chosen": "Pass"},
 		],
-		"winner": "hero", "turns": 7, "hero_life": 12, "villain_life": 0,
+		"winner": "hero", "turns": 7, "hero_life": 12, "villain_life": 0, "potions_used": [1],
 	}
 
 

@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="MmCardDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/mm_ability.gd" id="1_lhopu"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/costs/mm_cost.gd" id="2_o6x1w"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/mm_effect.gd" id="3_ngj2n"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/values/constant_value.gd" id="4_al00y"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/selections/you_selection.gd" id="5_0jfpb"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/effects/draw_cards_effect.gd" id="6_kuadg"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/mana/mm_mana_cost.gd" id="7_qam7j"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/abilities/activated_ability.gd" id="8_tspoq"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/targets/target_requirement.gd" id="9_n7lwe"]
+[ext_resource type="Script" path="res://addons/modmox_rules/src/cards/mm_card_definition.gd" id="10_bqn4g"]
+
+[sub_resource type="Resource" id="Resource_ywk60"]
+script = ExtResource("4_al00y")
+value = 1
+
+[sub_resource type="Resource" id="Resource_v3lby"]
+script = ExtResource("5_0jfpb")
+
+[sub_resource type="Resource" id="Resource_qys4v"]
+script = ExtResource("6_kuadg")
+amount = SubResource("Resource_ywk60")
+players = SubResource("Resource_v3lby")
+
+[sub_resource type="Resource" id="Resource_8uv7k"]
+script = ExtResource("7_qam7j")
+generic = 2
+symbols = Array[int]([1])
+
+[sub_resource type="Resource" id="Resource_88t13"]
+script = ExtResource("8_tspoq")
+mana_cost = SubResource("Resource_8uv7k")
+effects = Array[ExtResource("3_ngj2n")]([SubResource("Resource_qys4v")])
+is_once_each_game = true
+is_sorcery_speed = true
+
+[resource]
+script = ExtResource("10_bqn4g")
+name = "Seer's Cuirass"
+abilities = Array[ExtResource("1_lhopu")]([SubResource("Resource_88t13")])

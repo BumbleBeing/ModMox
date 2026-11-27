@@ -95,3 +95,50 @@ func _ability(ability: MmAbility) -> AddAbilityModification:
 	var modification: AddAbilityModification = AddAbilityModification.new()
 	modification.ability = ability
 	return modification
+
+
+## S6 (milestone 24): a Mod's type line names its Rarity, the card types it accepts in
+## alphabetical order joined by "/", and "Mod", wherever a Mod is shown off a card.
+func test_a_mods_type_line_names_its_rarity_and_the_card_types_it_accepts() -> void:
+	assert_eq(ModText.type_line_of(_typed(Mod.Rarity.RARE, [CardType.CREATURE])), "Rare Creature Mod")
+	assert_eq(ModText.type_line_of(_typed(Mod.Rarity.COMMON, [CardType.LAND])), "Common Land Mod")
+	assert_eq(ModText.type_line_of(_typed(Mod.Rarity.UNIQUE, [CardType.SORCERY, CardType.INSTANT])),
+		"Unique Instant/Sorcery Mod")
+
+
+## S6: the card types are alphabetical whatever order the Mod lists them in.
+func test_a_mods_card_types_are_named_in_alphabetical_order() -> void:
+	var mod: Mod = _typed(Mod.Rarity.COMMON, [CardType.CREATURE, CardType.ARTIFACT, CardType.ENCHANTMENT])
+
+	assert_eq(ModText.type_line_of(mod), "Common Artifact/Creature/Enchantment Mod")
+
+
+## S6: a Mod that accepts every card type is an Omni Mod, and one that accepts every type but
+## land is a Nonland one.
+func test_every_card_type_is_omni_and_every_type_but_land_is_nonland() -> void:
+	var every: Array[CardType] = []
+	var nonland: Array[CardType] = []
+	for card_type: int in CardType.values():
+		every.append(card_type as CardType)
+		if card_type != CardType.LAND:
+			nonland.append(card_type as CardType)
+
+	assert_eq(ModText.type_line_of(_typed(Mod.Rarity.COMMON, every)), "Common Omni Mod")
+	assert_eq(ModText.type_line_of(_typed(Mod.Rarity.UNCOMMON, nonland)), "Uncommon Nonland Mod")
+
+
+## S6: every Mod in Content has a type line of that shape.
+func test_every_mod_in_content_has_a_type_line() -> void:
+	for mod: Mod in ContentMods.all():
+		var line: String = ModText.type_line_of(mod)
+
+		assert_true(line.ends_with(" Mod"), "%s: %s" % [mod.name, line])
+		assert_false(line.contains("["), "%s: %s" % [mod.name, line])
+
+
+func _typed(rarity: Mod.Rarity, card_types: Array) -> Mod:
+	var mod: Mod = Mod.new()
+	mod.name = "Typed"
+	mod.rarity = rarity
+	mod.card_types.assign(card_types)
+	return mod

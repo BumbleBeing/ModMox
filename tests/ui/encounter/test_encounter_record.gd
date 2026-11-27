@@ -7,6 +7,7 @@ extends GutTest
 const Scenario := preload("res://addons/modmox_rules/tests/support/scenario.gd")
 const DefaultAnswerAgent := preload("res://addons/modmox_rules/tests/support/default_answer_agent.gd")
 const FOREST: String = "res://content/cards/alpha/forest.tres"
+const BIG_GULP: String = "res://content/potions/big_gulp.tres"
 
 
 ## S7: each answer is recorded with who gave it, its decision's words and the answer; a
@@ -62,6 +63,29 @@ func test_an_encounter_not_over_has_no_winner() -> void:
 	Scenario.play_until_game_turn(engine, 2, true)
 
 	assert_eq(EncounterPresenter.record_of(setup, engine.decision_log())["winner"], "")
+
+
+## P2 (milestone 24): the record names the Hero's Potions used, by their places in the
+## setup, so the run can take them out of the Satchel; none used is an empty list.
+func test_the_potions_the_hero_used_are_recorded_by_their_places() -> void:
+	var big_gulp: MmCardDefinition = load(BIG_GULP) as MmCardDefinition
+	var setup: MmEncounterSetup = Scenario.setup_with(
+		Scenario.cycled([Scenario.mana_land("Land", MmMana.Type.GREEN, 1), Scenario.creature("Bear", 2, 2)]),
+		Scenario.cycled([]))
+	setup.hero.potions = [big_gulp, big_gulp] as Array[MmCardDefinition]
+	setup.hero.maximum_hand_size = MmPlayerSetup.NO_MAXIMUM_HAND_SIZE
+	var engine: MmEngine = Scenario.find_engine(setup, func(found: MmEngine) -> bool:
+		return Scenario.keep_all(found) == "" and Scenario.ready_in_main(found, 1, 1, "Bear"))
+	assert_eq(EncounterPresenter.record_of(setup, engine.decision_log())["potions_used"], [] as Array[int])
+	Scenario.cast_and_resolve(engine, "Bear")
+	var bear: int = Scenario.permanent_named(engine, engine.hero().id, "Bear")
+	var second: MmObjectView = engine.view_for(engine.hero()).potions[1]
+	assert_eq(Scenario.activate(engine, second.id, [MmReference.to_object(bear)]), "")
+	Scenario.resolve_stack(engine)
+
+	var record: Dictionary = EncounterPresenter.record_of(setup, engine.decision_log())
+
+	assert_eq(record["potions_used"], [1] as Array[int])
 
 
 ## The presenter records its own encounter from its setup and its decisions, undone ones

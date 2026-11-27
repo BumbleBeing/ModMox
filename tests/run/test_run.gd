@@ -146,6 +146,18 @@ func test_a_debug_run_holds_one_of_every_mod_in_content_and_no_hex() -> void:
 	assert_eq(run.held_mods.kinds().size(), mods.filter(func(mod: Mod) -> bool: return not mod.is_hex).size())
 
 
+## Milestone 23: a debug run holds one of every Armor in Content, to try them out, and wears
+## none of it.
+func test_a_debug_run_holds_one_of_every_armor_in_content_and_wears_none() -> void:
+	var run: Run = Run.debug(1)
+
+	var armor: Array[Armor] = ContentArmor.all()
+	for each: Armor in armor:
+		assert_eq(run.held_armor.count_of(each), 1, each.name)
+	assert_eq(run.held_armor.kinds().size(), armor.size())
+	assert_eq(run.held_armor.worn(), [] as Array[Armor])
+
+
 ## T8 (milestone 17): beating the Boss beats the Stage; only the fifth wins the run
 ## (milestone 19).
 func test_beating_the_boss_beats_the_stage() -> void:

@@ -20,6 +20,25 @@ const ANY_CARD_NOUN: String = "this card"
 const OVERLOADED: String = "has every \"target\" in its text changed to \"each\""
 
 
+## What a Mod's Rarity is called on its type line.
+const RARITY_NAMES: Dictionary[Mod.Rarity, String] = {
+	Mod.Rarity.COMMON: "Common", Mod.Rarity.UNCOMMON: "Uncommon", Mod.Rarity.RARE: "Rare",
+	Mod.Rarity.MYTHIC: "Mythic", Mod.Rarity.UNIQUE: "Unique",
+}
+## What a Mod that accepts every card type is called on its type line, and one that accepts
+## every type but land.
+const OMNI: String = "Omni"
+const NONLAND: String = "Nonland"
+
+
+## [param mod]'s type line, wherever a Mod is shown off a card (milestone 24): its Rarity, the
+## card types it accepts in alphabetical order joined by "/", and "Mod": "Rare Creature Mod",
+## "Common Artifact/Creature/Enchantment Mod", or "Common Omni Mod" for one that accepts every
+## card type and "Uncommon Nonland Mod" for one that accepts every type but land.
+static func type_line_of(mod: Mod) -> String:
+	return "%s %s Mod" % [RARITY_NAMES[mod.rarity], _accepted_by(mod)]
+
+
 ## The whole text of [param mod]: its Augmentation's sentence, then its Mod Cost's if it has
 ## one that costs anything. A Mod Cost of {0} adds nothing to say.
 static func of(mod: Mod) -> String:
@@ -93,3 +112,22 @@ static func joined(parts: Array[String]) -> String:
 
 static func _signed(amount: int) -> String:
 	return "+%d" % amount if amount >= 0 else "%d" % amount
+
+
+## The card types [param mod] accepts, as its type line names them.
+static func _accepted_by(mod: Mod) -> String:
+	var missing: Array[MmCardTypes.CardType] = []
+	for card_type: int in MmCardTypes.CardType.values():
+		if not mod.card_types.has(card_type):
+			missing.append(card_type as MmCardTypes.CardType)
+	if missing.is_empty():
+		return OMNI
+	if missing.size() == 1 and missing[0] == MmCardTypes.CardType.LAND:
+		return NONLAND
+	var names: Array[String] = []
+	for card_type: MmCardTypes.CardType in mod.card_types:
+		var type_name: String = (MmCardTypes.CardType.find_key(card_type) as String).capitalize()
+		if not names.has(type_name):
+			names.append(type_name)
+	names.sort()
+	return "/".join(names)
